@@ -1,0 +1,77 @@
+root = true
+
+# =========================================================
+#  공통 기본기 (IntelliJ / VSCode 둘 다 읽음)
+# =========================================================
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = tab
+indent_size = 4
+tab_width = 4
+max_line_length = 120
+
+# Spring 설정/데이터 파일은 관례상 스페이스 2칸 (YAML은 탭 들여쓰기 금지)
+[*.{yml,yaml,json}]
+indent_style = space
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false
+
+# =========================================================
+#  Java
+#  - 위 [*] 기본기는 두 에디터 공통 적용
+#  - 아래 ij_* 속성은 IntelliJ만 읽음 (VSCode는 무시)
+#    → Wooteco 코드 스타일 XML을 그대로 옮긴 것
+# =========================================================
+[*.java]
+indent_size = 4
+tab_width = 4
+max_line_length = 120
+ij_continuation_indent_size = 8
+
+# import
+ij_java_class_count_to_use_import_on_demand = 999
+ij_java_names_count_to_use_import_on_demand = 999
+ij_java_insert_inner_class_imports = true
+ij_java_imports_layout = $*, |, *
+
+# JavaDoc
+ij_java_doc_align_param_comments = false
+ij_java_doc_align_exception_comments = false
+ij_java_doc_add_p_tag_on_empty_lines = false
+ij_java_doc_keep_empty_parameter_tag = false
+ij_java_doc_keep_empty_throws_tag = false
+ij_java_doc_keep_empty_return_tag = false
+
+# 빈 줄 / 한 줄 유지
+ij_java_keep_control_statement_in_one_line = false
+ij_java_keep_blank_lines_in_code = 1
+ij_java_keep_blank_lines_before_right_brace = 0
+ij_java_blank_lines_after_class_header = 0
+
+# wrap 규칙 (normal = "필요 시 줄바꿈")
+ij_java_call_parameters_wrap = normal
+ij_java_method_parameters_wrap = normal
+ij_java_extends_list_wrap = normal
+ij_java_throws_keyword_wrap = normal
+ij_java_method_call_chain_wrap = normal
+ij_java_binary_operation_wrap = normal
+ij_java_binary_operation_sign_on_next_line = true
+ij_java_ternary_operation_wrap = normal
+ij_java_ternary_operation_signs_on_next_line = true
+ij_java_for_statement_wrap = normal
+ij_java_array_initializer_wrap = normal
+ij_java_wrap_comments = true
+
+# 중괄호 강제 (always = 항상 {} 붙이기)
+ij_java_if_brace_force = always
+ij_java_do_while_brace_force = always
+ij_java_while_brace_force = always
+ij_java_for_brace_force = always
+
+# 배열 초기화자 { 앞 공백
+ij_java_space_before_array_initializer_left_brace = true
