@@ -22,11 +22,18 @@ repositories {
 
 val asciidoctorExt: Configuration by configurations.creating
 
+dependencyManagement {
+	imports {
+		mavenBom("org.springframework.modulith:spring-modulith-bom:2.1.0")
+	}
+}
+
 dependencies {
 	implementation("org.springframework.boot:spring-boot-h2console")
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 	implementation("org.springframework.boot:spring-boot-starter-webmvc")
 	implementation("org.springframework.boot:spring-boot-starter-validation")
+	implementation("org.springframework.modulith:spring-modulith-starter-core")
 	compileOnly("org.projectlombok:lombok")
 	runtimeOnly("com.h2database:h2")
 	annotationProcessor("org.projectlombok:lombok")
@@ -36,6 +43,7 @@ dependencies {
 	testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
 	testImplementation("org.springframework.restdocs:spring-restdocs-mockmvc")
 	testImplementation("com.tngtech.archunit:archunit-junit5:1.4.2")
+	testImplementation("org.springframework.modulith:spring-modulith-starter-test")
 	testCompileOnly("org.projectlombok:lombok")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 	testAnnotationProcessor("org.projectlombok:lombok")
