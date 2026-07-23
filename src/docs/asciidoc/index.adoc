@@ -1,0 +1,16 @@
+= 멍코치 API 문서
+:doctype: book
+:icons: font
+:source-highlighter: highlightjs
+:toc: left
+:toclevels: 2
+:sectlinks:
+
+API 문서는 테스트를 통과한 스니펫으로부터 생성됩니다.
+모듈별로 `== {모듈} API` 섹션을 추가하고, `operation::` 매크로로 스니펫을 포함합니다.
+
+// == User API
+//
+// === 회원 가입
+//
+// operation::user/register[snippets='http-request,path-parameters,request-fields,http-response,response-fields']
