@@ -4,7 +4,25 @@ GitHub Actions 워크플로우 [.github/workflows/ci.yml](../.github/workflows/c
 
 ## 트리거
 
-- `main`, `dev` 브랜치 대상 push / pull request
+- `main`, `dev` 브랜치 대상 push
+- `main`, `dev` 대상 PR의 `opened` / `synchronize`(커밋 추가) / `reopened` / `ready_for_review`(draft 해제)
+- **draft PR에서는 실행하지 않는다.** draft를 해제(`ready_for_review`)하면 그 시점에 실행된다.
+
+## CD 연동 (예정)
+
+CI는 `workflow_call` 트리거를 함께 선언해 **재사용 가능한 워크플로우**로 만들어져 있다.
+CD를 추가할 때는 CD 워크플로우에서 CI를 선행 job으로 호출하고 배포 job에 `needs`를 걸어, CI 통과 → 배포가 항상 순차적으로 보장되도록 한다.
+
+```yaml
+# .github/workflows/cd.yml (예정)
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+  deploy:
+    needs: ci        # CI 성공 시에만 배포 실행
+    runs-on: ubuntu-latest
+    steps: ...
+```
 
 ## 실행 단계
 

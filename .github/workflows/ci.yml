@@ -5,9 +5,14 @@ on:
     branches: [main, dev]
   pull_request:
     branches: [main, dev]
+    types: [opened, synchronize, reopened, ready_for_review]
+  # CD 워크플로우가 CI를 선행 job으로 호출할 수 있도록 재사용을 허용한다
+  workflow_call:
 
 jobs:
   test:
+    # draft PR에서는 실행하지 않는다
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
