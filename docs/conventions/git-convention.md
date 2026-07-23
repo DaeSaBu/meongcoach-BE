@@ -47,6 +47,8 @@ chore: JaCoCo 커버리지 임계값 조정
 - **머지 방향**: `feature → dev → main`
 - **리뷰**: 최소 1명 승인 필수 (팀 3명 기준)
 - **셀프 머지 금지**: 승인 없이는 본인이 머지할 수 없다. (GitHub Branch protection으로 강제)
+- **라벨**: PR 제목의 type과 동일한 라벨을 붙인다. (`feature`, `fix`, `refactor`, `test`, `docs`, `chore`, `style`)
+- **Assignee**: PR 작성자 본인을 지정한다.
 - **PR 템플릿** (`.github/PULL_REQUEST_TEMPLATE.md`):
 
 ```markdown
