@@ -33,7 +33,7 @@
 
 ## Lombok 사용 규칙
 
-- 허용: `@Getter`, `@RequiredArgsConstructor`, `@NoArgsConstructor(access = AccessLevel.PROTECTED)`(JPA 엔티티)
+- 허용: `@Getter`, `@RequiredArgsConstructor`, `@NoArgsConstructor(access = AccessLevel.PROTECTED)`(JPA 엔티티), `@Slf4j`(로깅)
 - 지양: `@Setter`, `@Data`, `@AllArgsConstructor`, `@Builder`, `@ToString`(엔티티 — 연관관계 순환 참조 위험)
 - 도메인 객체의 상태 변경은 setter가 아닌 의도가 드러나는 메서드로 표현합니다.
 

@@ -9,6 +9,7 @@
 - 아키텍처는 Spring Modulith 기반 모듈 구조를 따릅니다. 모듈 내부 의존 방향은 항상 `adapter → application → domain`이며, 모듈 간 접근은 `application/provided` 인터페이스로만 합니다.
 - `main` 브랜치에 직접 push하지 않습니다. 모든 변경은 작업 브랜치에서 PR을 통해 merge합니다.
 - 문서, 커밋 메시지, 코드 주석은 한국어로 작성합니다.
+- 예외는 각 모듈 `domain`에 `{모듈}ErrorCode` enum + `DomainException` 하위 클래스로 정의해 던지기만 하고, 에러 응답 변환은 전역 핸들러가 RFC 9457 Problem Details 형식으로 전담합니다. 컨트롤러/서비스에서 개별 처리하지 않습니다.
 
 ## 상세 문서
 
@@ -19,6 +20,7 @@
 | [docs/conventions/test-convention.md](docs/conventions/test-convention.md) | 테스트 작성 규칙                  |
 | [docs/conventions/restdocs-convention.md](docs/conventions/restdocs-convention.md) | RestDocs API 문서화 규칙   |
 | [docs/conventions/archunit-convention.md](docs/conventions/archunit-convention.md) | ArchUnit 아키텍처 검증 규칙  |
+| [docs/conventions/exception-convention.md](docs/conventions/exception-convention.md) | 예외 정의 패턴, Problem Details 에러 응답 규칙 |
 | [docs/architecture.md](docs/architecture.md)                               | Spring Modulith 모듈 구조, 의존 규칙   |
 | [docs/ci.md](docs/ci.md)                                                   | CI 파이프라인, 커버리지 기준        |
 
