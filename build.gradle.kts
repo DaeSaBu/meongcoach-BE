@@ -46,9 +46,10 @@ tasks.withType<Test> {
 	useJUnitPlatform()
 }
 
+// 테스트가 끝나면 커버리지 리포트와 RestDocs 문서(build/docs/asciidoc)를 로컬에 생성한다
 tasks.test {
 	outputs.dir(snippetsDir)
-	finalizedBy(tasks.jacocoTestReport)
+	finalizedBy(tasks.jacocoTestReport, tasks.asciidoctor)
 }
 
 // REST Docs 4.0의 asciidoctor 확장은 AsciidoctorJ 3.x를 요구한다

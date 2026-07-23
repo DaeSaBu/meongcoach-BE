@@ -41,5 +41,10 @@ class UserControllerTest {
 
 - 스니펫 생성 위치: `build/generated-snippets/{모듈}/{행위}/`
 - `src/docs/asciidoc/index.adoc`에 모듈별 섹션(`== User API`)을 만들고 `operation::` 매크로로 스니펫을 포함합니다.
-- `./gradlew asciidoctor` 실행 시 `build/docs/asciidoc/index.html`이 생성됩니다. (test → asciidoctor 순으로 자동 실행)
+- `./gradlew test` 실행 시 테스트 종료 후 asciidoctor가 자동 실행되어 `build/docs/asciidoc/index.html`이 생성됩니다.
 - 새 API를 추가한 PR에는 해당 API의 `index.adoc` 섹션 추가를 포함합니다.
+
+## 문서 확인 경로
+
+- 문서는 **로컬 빌드 산출물로만 생성**되며, 배포 산출물(jar)에는 포함되지 않습니다.
+- 테스트 실행 후 `build/docs/asciidoc/index.html`을 브라우저로 열어 확인합니다.
