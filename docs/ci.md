@@ -29,6 +29,7 @@ jobs:
 1. JDK 25 (temurin) 셋업 + Gradle 캐시
 2. `./gradlew test jacocoTestCoverageVerification` — 전체 테스트 실행 및 커버리지 검증
 3. JaCoCo HTML 리포트를 CI 아티팩트(`jacoco-report`)로 업로드 (실패 시에도 업로드)
+4. PR 이벤트인 경우 [madrapps/jacoco-report](https://github.com/Madrapps/jacoco-report)가 커버리지 수치를 PR 코멘트로 작성 (커밋 추가 시 기존 코멘트를 갱신)
 
 ## 커버리지 기준
 
@@ -39,5 +40,6 @@ jobs:
 ## 실패 시 확인 방법
 
 - 로컬 재현: `./gradlew test jacocoTestCoverageVerification`
+- 커버리지 수치: PR 코멘트(전체/변경 파일별)로 확인
 - 커버리지 리포트: `build/reports/jacoco/test/html/index.html` (CI에서는 아티팩트 다운로드)
 - 테스트 리포트: `build/reports/tests/test/index.html`
