@@ -30,6 +30,7 @@ dependencies {
 	runtimeOnly("com.h2database:h2")
 	annotationProcessor("org.projectlombok:lombok")
 	asciidoctorExt("org.springframework.restdocs:spring-restdocs-asciidoctor")
+	testImplementation("org.springframework.boot:spring-boot-restdocs")
 	testImplementation("org.springframework.boot:spring-boot-starter-data-jpa-test")
 	testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
 	testImplementation("org.springframework.restdocs:spring-restdocs-mockmvc")

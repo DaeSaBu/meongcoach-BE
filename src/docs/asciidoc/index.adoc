@@ -14,3 +14,9 @@ API 문서는 테스트를 통과한 스니펫으로부터 생성됩니다.
 // === 회원 가입
 //
 // operation::user/register[snippets='http-request,path-parameters,request-fields,http-response,response-fields']
+
+== Health API
+
+=== 헬스체크
+
+operation::health/check[snippets='http-request,http-response,response-fields']
