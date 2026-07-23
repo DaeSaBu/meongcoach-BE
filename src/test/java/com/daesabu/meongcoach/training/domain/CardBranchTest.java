@@ -1,0 +1,22 @@
+package com.daesabu.meongcoach.training.domain;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import org.junit.jupiter.api.Test;
+
+class CardBranchTest {
+
+	@Test
+	void createSetsCardAndNextCardId() {
+		TrainingCategory category = TrainingCategory.create("기본 훈련", 1);
+		Topic topic = Topic.create(category, "산책 훈련", 1);
+		Curriculum curriculum = Curriculum.create(topic, "리드줄 적응", 1, null, false, null);
+		Lesson lesson = Lesson.create(curriculum, "리드줄 보여주기", 1, 5);
+		Card card = Card.create(lesson, "리드줄 냄새 맡게 하기", 1, null);
+
+		CardBranch branch = CardBranch.create(card, 99L);
+
+		assertThat(branch.getCard()).isEqualTo(card);
+		assertThat(branch.getNextCardId()).isEqualTo(99L);
+	}
+}
