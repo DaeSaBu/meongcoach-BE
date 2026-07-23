@@ -80,6 +80,16 @@ class GlobalExceptionHandlerTest {
 	}
 
 	@Test
+	void serverSideDomainExceptionReturnsProblemDetailWithErrorCode() throws Exception {
+		mockMvc.perform(get("/test/domain-error-5xx"))
+				.andExpect(status().isInternalServerError())
+				.andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+				.andExpect(jsonPath("$.status").value(500))
+				.andExpect(jsonPath("$.code").value("TEST_INTERNAL"))
+				.andExpect(jsonPath("$.detail").value("테스트 처리 중 서버 오류가 발생했습니다."));
+	}
+
+	@Test
 	void unknownPathReturnsNotFoundProblem() throws Exception {
 		mockMvc.perform(get("/test/unknown"))
 				.andExpect(status().isNotFound())
@@ -115,7 +125,8 @@ class GlobalExceptionHandlerTest {
 	}
 
 	enum TestErrorCode implements ErrorCode {
-		TEST_NOT_FOUND(404, "테스트 리소스를 찾을 수 없습니다.");
+		TEST_NOT_FOUND(404, "테스트 리소스를 찾을 수 없습니다."),
+		TEST_INTERNAL(500, "테스트 처리 중 서버 오류가 발생했습니다.");
 
 		private final int status;
 		private final String message;
@@ -148,6 +159,13 @@ class GlobalExceptionHandlerTest {
 		}
 	}
 
+	static class TestInternalException extends DomainException {
+
+		TestInternalException() {
+			super(TestErrorCode.TEST_INTERNAL);
+		}
+	}
+
 	record TestRequest(@NotBlank String name) {
 	}
 
@@ -157,6 +175,11 @@ class GlobalExceptionHandlerTest {
 		@GetMapping("/test/domain-error")
 		void domainError() {
 			throw new TestNotFoundException();
+		}
+
+		@GetMapping("/test/domain-error-5xx")
+		void domainError5xx() {
+			throw new TestInternalException();
 		}
 
 		@PostMapping("/test/validation")
