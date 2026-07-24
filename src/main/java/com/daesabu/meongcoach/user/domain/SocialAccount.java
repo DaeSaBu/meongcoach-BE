@@ -41,6 +41,7 @@ public class SocialAccount extends BaseEntity {
 	@Column(nullable = false, length = 255)
 	private String providerId;
 
+	// 소셜 제공자가 이메일을 내려주지 않을 수 있으므로 nullable
 	@Column(length = 255)
 	private String email;
 
