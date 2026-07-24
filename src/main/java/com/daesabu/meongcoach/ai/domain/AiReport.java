@@ -38,7 +38,7 @@ public class AiReport extends BaseTimeEntity {
 	private String content;
 
 	@Enumerated(EnumType.STRING)
-	@Column(length = 20)
+	@Column(nullable = false, length = 20)
 	private AiReportStatus status;
 
 	public static AiReport create(AiAnalysis analysis, String content, AiReportStatus status) {

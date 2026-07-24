@@ -30,6 +30,7 @@ public class AiAnalysis extends BaseEntity {
 	@Column(nullable = false)
 	private Long userId;
 
+	// 강아지 미지정 분석 업로드를 허용하므로 nullable
 	private Long dogId;
 
 	// presigned S3 업로드 URL
@@ -37,8 +38,10 @@ public class AiAnalysis extends BaseEntity {
 	private String videoUrl;
 
 	// 길이/용량 제한 검증에 사용한다 (U-0404)
+	@Column(nullable = false)
 	private Integer videoLengthSec;
 
+	@Column(nullable = false)
 	private Long fileSizeBytes;
 
 	@Enumerated(EnumType.STRING)
