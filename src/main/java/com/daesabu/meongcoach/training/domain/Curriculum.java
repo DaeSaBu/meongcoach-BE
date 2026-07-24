@@ -37,12 +37,17 @@ public class Curriculum extends BaseEntity {
 	@Column(length = 512)
 	private String thumbnailUrl;
 
-	public static Curriculum create(Topic topic, String title, Integer sortOrder, String thumbnailUrl) {
+	@Column(columnDefinition = "TEXT")
+	private String description;
+
+	public static Curriculum create(Topic topic, String title, Integer sortOrder, String thumbnailUrl,
+	                                String description) {
 		Curriculum curriculum = new Curriculum();
 		curriculum.topic = topic;
 		curriculum.title = title;
 		curriculum.sortOrder = sortOrder;
 		curriculum.thumbnailUrl = thumbnailUrl;
+		curriculum.description = description;
 		return curriculum;
 	}
 }

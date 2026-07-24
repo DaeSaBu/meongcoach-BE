@@ -10,7 +10,7 @@ class CardMediaTest {
 	void createSetsCardAndMediaType() {
 		TrainingCategory category = TrainingCategory.create("기본 훈련", 1);
 		Topic topic = Topic.create(category, "산책 훈련", 1);
-		Curriculum curriculum = Curriculum.create(topic, "리드줄 적응", 1, null);
+		Curriculum curriculum = Curriculum.create(topic, "리드줄 적응", 1, null, null);
 		Lesson lesson = Lesson.create(curriculum, "리드줄 보여주기", 1, 5);
 		Card card = Card.create(lesson, "리드줄 냄새 맡게 하기", 1, null);
 
