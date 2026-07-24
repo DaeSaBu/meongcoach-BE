@@ -32,6 +32,10 @@ public class User extends BaseEntity {
 	@Column(nullable = false, length = 20)
 	private UserStatus status;
 
+	/**
+	 * 회원 가입은 첫 소셜 로그인 또는 테스트 계정 시드에서만 일어난다.
+	 * 반드시 자격증명(SocialAccount/LocalAccount) 생성과 같은 트랜잭션에서 호출해야 한다.
+	 */
 	public static User registerMember() {
 		return create(UserType.MEMBER);
 	}
