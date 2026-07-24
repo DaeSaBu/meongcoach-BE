@@ -8,12 +8,11 @@ import org.junit.jupiter.api.Test;
 class UserProfileTest {
 
 	@Test
-	void createInitializesCompletionFlagsToFalse() {
+	void createInitializesTooltipFlagToFalse() {
 		UserProfile profile = UserProfile.create(User.registerMember(), "멍멍이집사");
 
 		assertThat(profile.getNickname()).isEqualTo("멍멍이집사");
 		assertThat(profile.getIsCompletedTooltip()).isFalse();
-		assertThat(profile.getIsCompletedOnboarding()).isFalse();
 	}
 
 	@Test
@@ -74,14 +73,5 @@ class UserProfileTest {
 		profile.completeTooltip();
 
 		assertThat(profile.getIsCompletedTooltip()).isTrue();
-	}
-
-	@Test
-	void completeOnboardingMarksOnboardingCompleted() {
-		UserProfile profile = UserProfile.create(User.registerMember(), "멍멍이집사");
-
-		profile.completeOnboarding();
-
-		assertThat(profile.getIsCompletedOnboarding()).isTrue();
 	}
 }

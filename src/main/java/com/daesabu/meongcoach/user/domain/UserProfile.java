@@ -18,6 +18,10 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+/**
+ * 사용자 프로필. 온보딩은 스킵할 수 없으므로 온보딩 완료 시점에 생성되며,
+ * 온보딩 완료 여부는 별도 플래그 없이 프로필 행 존재 여부로 판단한다.
+ */
 @Getter
 @Entity
 @Table(name = "user_profiles")
@@ -48,15 +52,11 @@ public class UserProfile extends BaseEntity {
 	// 스킵해도 완료로 기록한다 (U-0104)
 	private Boolean isCompletedTooltip;
 
-	// 스킵해도 완료로 기록한다 (U-0105)
-	private Boolean isCompletedOnboarding;
-
 	public static UserProfile create(User user, String nickname) {
 		UserProfile profile = new UserProfile();
 		profile.user = user;
 		profile.nickname = nickname;
 		profile.isCompletedTooltip = false;
-		profile.isCompletedOnboarding = false;
 		return profile;
 	}
 
@@ -85,9 +85,5 @@ public class UserProfile extends BaseEntity {
 
 	public void completeTooltip() {
 		this.isCompletedTooltip = true;
-	}
-
-	public void completeOnboarding() {
-		this.isCompletedOnboarding = true;
 	}
 }
