@@ -10,7 +10,7 @@ class CurriculumDetailTest {
 	void createSetsDescriptionAndDifficulty() {
 		TrainingCategory category = TrainingCategory.create("기본 훈련", 1);
 		Topic topic = Topic.create(category, "산책 훈련", 1);
-		Curriculum curriculum = Curriculum.create(topic, "리드줄 적응", 1, null, false, null);
+		Curriculum curriculum = Curriculum.create(topic, "리드줄 적응", 1, null);
 
 		CurriculumDetail detail = CurriculumDetail.create(curriculum, "리드줄에 익숙해지는 훈련", Difficulty.EASY);
 

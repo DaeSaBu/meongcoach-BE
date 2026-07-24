@@ -9,27 +9,16 @@ class CurriculumTest {
 	private Curriculum createCurriculum() {
 		TrainingCategory category = TrainingCategory.create("기본 훈련", 1);
 		Topic topic = Topic.create(category, "산책 훈련", 1);
-		return Curriculum.create(topic, "리드줄 적응", 1, "https://cdn.meongcoach.com/thumb.png", false,
-				TargetDogSize.SMALL);
+		return Curriculum.create(topic, "리드줄 적응", 1, "https://cdn.meongcoach.com/thumb.png");
 	}
 
 	@Test
-	void createInitializesStatusToActive() {
+	void createSetsFields() {
 		Curriculum curriculum = createCurriculum();
 
 		assertThat(curriculum.getTitle()).isEqualTo("리드줄 적응");
-		assertThat(curriculum.isPremium()).isFalse();
-		assertThat(curriculum.getTargetDogSize()).isEqualTo(TargetDogSize.SMALL);
-		assertThat(curriculum.getStatus()).isEqualTo(CurriculumStatus.ACTIVE);
-	}
-
-	@Test
-	void deactivateChangesStatusToInactive() {
-		Curriculum curriculum = createCurriculum();
-
-		curriculum.deactivate();
-
-		assertThat(curriculum.getStatus()).isEqualTo(CurriculumStatus.INACTIVE);
+		assertThat(curriculum.getSortOrder()).isEqualTo(1);
+		assertThat(curriculum.getThumbnailUrl()).isEqualTo("https://cdn.meongcoach.com/thumb.png");
 	}
 
 	@Test
