@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 class DogTest {
@@ -25,6 +26,24 @@ class DogTest {
 		assertThat(dog.getWeightKg()).isEqualByComparingTo("4.50");
 		assertThat(dog.getSize()).isEqualTo(DogSize.SMALL);
 		assertThat(dog.getStatus()).isEqualTo(DogStatus.SELECTED);
+	}
+
+	@Test
+	void registerCreatesDogWithoutPersonalities() {
+		Dog dog = registerDog();
+
+		assertThat(dog.getPersonalities()).isEmpty();
+	}
+
+	@Test
+	void changePersonalitiesReplacesPersonalities() {
+		Dog dog = registerDog();
+		dog.changePersonalities(Set.of(Personality.TIMID));
+
+		dog.changePersonalities(Set.of(Personality.LIVELY, Personality.FRIENDLY));
+
+		assertThat(dog.getPersonalities())
+				.containsExactlyInAnyOrder(Personality.LIVELY, Personality.FRIENDLY);
 	}
 
 	@Test

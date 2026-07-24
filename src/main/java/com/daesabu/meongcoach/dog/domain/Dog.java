@@ -1,17 +1,24 @@
 package com.daesabu.meongcoach.dog.domain;
 
 import com.daesabu.meongcoach.shared.domain.BaseEntity;
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.Period;
+import java.util.HashSet;
+import java.util.Set;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -57,6 +64,15 @@ public class Dog extends BaseEntity {
 	@Column(length = 512)
 	private String profileImageUrl;
 
+	@ElementCollection(fetch = FetchType.LAZY)
+	@CollectionTable(
+			name = "dog_personalities",
+			joinColumns = @JoinColumn(name = "dog_id"),
+			uniqueConstraints = @UniqueConstraint(columnNames = {"dog_id", "personality"}))
+	@Enumerated(EnumType.STRING)
+	@Column(name = "personality", nullable = false, length = 30)
+	private Set<Personality> personalities = new HashSet<>();
+
 	public static Dog register(Long userId, String name, String breed, DogSex sex, LocalDate birthDate,
 	                           BigDecimal weightKg, DogSize size) {
 		Dog dog = new Dog();
@@ -81,6 +97,10 @@ public class Dog extends BaseEntity {
 
 	public void changeProfileImage(String profileImageUrl) {
 		this.profileImageUrl = profileImageUrl;
+	}
+
+	public void changePersonalities(Set<Personality> personalities) {
+		this.personalities = new HashSet<>(personalities);
 	}
 
 	// 나이는 저장하지 않고 생년월일로 계산한다
