@@ -1,8 +1,7 @@
 package com.daesabu.meongcoach.user.domain;
 
-import java.util.regex.Pattern;
-
 import jakarta.persistence.Embeddable;
+import java.util.regex.Pattern;
 
 /**
  * 이메일 값 객체. 생성 시점에 형식을 검증하므로 인스턴스가 존재하면 항상 유효한 이메일이다.

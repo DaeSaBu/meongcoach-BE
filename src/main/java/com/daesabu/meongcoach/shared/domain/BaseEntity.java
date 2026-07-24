@@ -1,11 +1,10 @@
 package com.daesabu.meongcoach.shared.domain;
 
-import java.time.LocalDateTime;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.MappedSuperclass;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
+import java.time.LocalDateTime;
 import lombok.Getter;
 
 /**

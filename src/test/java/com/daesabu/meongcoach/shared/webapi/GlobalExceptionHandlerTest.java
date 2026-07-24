@@ -9,6 +9,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.daesabu.meongcoach.shared.exception.DomainException;
+import com.daesabu.meongcoach.shared.exception.ErrorCode;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
@@ -20,12 +24,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
-
-import com.daesabu.meongcoach.shared.exception.DomainException;
-import com.daesabu.meongcoach.shared.exception.ErrorCode;
-
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
 
 @WebMvcTest(GlobalExceptionHandlerTest.ExceptionTriggerController.class)
 @Import(GlobalExceptionHandlerTest.ExceptionTriggerController.class)

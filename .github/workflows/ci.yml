@@ -28,6 +28,9 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
+      - name: Spotless 포맷 검사
+        run: ./gradlew spotlessCheck
+
       - name: 테스트 및 커버리지 검증
         run: ./gradlew test jacocoTestCoverageVerification
 

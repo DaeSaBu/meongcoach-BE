@@ -4,6 +4,7 @@ plugins {
 	id("org.springframework.boot") version "4.1.0"
 	id("io.spring.dependency-management") version "1.1.7"
 	id("org.asciidoctor.jvm.convert") version "4.0.4"
+	id("com.diffplug.spotless") version "8.8.0"
 }
 
 group = "com.daesabu"
@@ -47,6 +48,30 @@ dependencies {
 	testCompileOnly("org.projectlombok:lombok")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 	testAnnotationProcessor("org.projectlombok:lombok")
+}
+
+// .editorconfig(Wooteco 스타일) 중 Spotless로 검사 가능한 규칙만 강제한다
+// 120자 제한·중괄호 강제 등 파서 수준 규칙은 IDE(.editorconfig)가 담당한다
+spotless {
+	java {
+		target("src/**/*.java")
+		importOrder("\\#", "")
+		removeUnusedImports()
+		leadingSpacesToTabs()
+		trimTrailingWhitespace()
+		endWithNewline()
+	}
+	kotlinGradle {
+		target("*.gradle.kts")
+		leadingSpacesToTabs()
+		trimTrailingWhitespace()
+		endWithNewline()
+	}
+	yaml {
+		target("src/**/*.yml", "src/**/*.yaml")
+		trimTrailingWhitespace()
+		endWithNewline()
+	}
 }
 
 val snippetsDir = layout.buildDirectory.dir("generated-snippets")
