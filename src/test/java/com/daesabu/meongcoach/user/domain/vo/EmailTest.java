@@ -1,8 +1,9 @@
-package com.daesabu.meongcoach.user.domain;
+package com.daesabu.meongcoach.user.domain.vo;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.daesabu.meongcoach.user.domain.exception.InvalidEmailException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;

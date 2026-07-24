@@ -1,5 +1,6 @@
-package com.daesabu.meongcoach.user.domain;
+package com.daesabu.meongcoach.user.domain.vo;
 
+import com.daesabu.meongcoach.user.domain.exception.InvalidEmailException;
 import jakarta.persistence.Embeddable;
 import java.util.regex.Pattern;
 
