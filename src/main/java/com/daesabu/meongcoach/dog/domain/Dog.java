@@ -18,6 +18,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.Period;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -40,29 +41,30 @@ public class Dog extends BaseEntity {
 	@Column(nullable = false, length = 50)
 	private String name;
 
-	@Column(length = 50)
+	@Column(nullable = false, length = 50)
 	private String breed;
 
 	@Enumerated(EnumType.STRING)
-	@Column(length = 10)
+	@Column(nullable = false, length = 10)
 	private DogSex sex;
 
-	// 타임존 무관 — LocalDate 유지
+	// 나이 미상 강아지를 허용하므로 nullable — getAge()가 null 반환. 타임존 무관 — LocalDate 유지
 	private LocalDate birthDate;
 
-	@Column(precision = 5, scale = 2)
+	@Column(nullable = false, precision = 5, scale = 2)
 	private BigDecimal weightKg;
 
 	@Enumerated(EnumType.STRING)
-	@Column(length = 10)
+	@Column(nullable = false, length = 10)
 	private DogSize size;
 
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, length = 20)
 	private DogStatus status;
 
-	@Column(length = 512)
-	private String profileImageUrl;
+	// 등록 후 별도 API로 채워지는 값 — 미설정은 빈 문자열로 저장한다
+	@Column(nullable = false, length = 512)
+	private String profileImageUrl = "";
 
 	@ElementCollection(fetch = FetchType.LAZY)
 	@CollectionTable(
@@ -96,7 +98,7 @@ public class Dog extends BaseEntity {
 	}
 
 	public void changeProfileImage(String profileImageUrl) {
-		this.profileImageUrl = profileImageUrl;
+		this.profileImageUrl = Objects.requireNonNullElse(profileImageUrl, "");
 	}
 
 	public void changePersonalities(Set<Personality> personalities) {
