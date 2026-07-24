@@ -4,12 +4,16 @@ import com.daesabu.meongcoach.shared.domain.BaseEntity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.MapsId;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import java.time.LocalDate;
+import java.time.Period;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -34,6 +38,13 @@ public class UserProfile extends BaseEntity {
 	@Column(length = 512)
 	private String profileImageUrl;
 
+	// 타임존 무관 — LocalDate 유지, 나이는 저장하지 않고 계산으로 파생한다
+	private LocalDate birthDate;
+
+	@Enumerated(EnumType.STRING)
+	@Column(length = 4)
+	private Mbti mbti;
+
 	// 스킵해도 완료로 기록한다 (U-0104)
 	private Boolean isCompletedTooltip;
 
@@ -55,6 +66,21 @@ public class UserProfile extends BaseEntity {
 
 	public void changeProfileImage(String profileImageUrl) {
 		this.profileImageUrl = profileImageUrl;
+	}
+
+	public void changeBirthDate(LocalDate birthDate) {
+		this.birthDate = birthDate;
+	}
+
+	public void changeMbti(Mbti mbti) {
+		this.mbti = mbti;
+	}
+
+	public Integer getAge() {
+		if (birthDate == null) {
+			return null;
+		}
+		return Period.between(birthDate, LocalDate.now()).getYears();
 	}
 
 	public void completeTooltip() {

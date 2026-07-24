@@ -2,6 +2,7 @@ package com.daesabu.meongcoach.user.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.LocalDate;
 import org.junit.jupiter.api.Test;
 
 class UserProfileTest {
@@ -31,6 +32,39 @@ class UserProfileTest {
 		profile.changeProfileImage("https://cdn.meongcoach.com/profile.png");
 
 		assertThat(profile.getProfileImageUrl()).isEqualTo("https://cdn.meongcoach.com/profile.png");
+	}
+
+	@Test
+	void changeBirthDateReplacesBirthDate() {
+		UserProfile profile = UserProfile.create(User.registerMember(), "멍멍이집사");
+
+		profile.changeBirthDate(LocalDate.of(2000, 1, 1));
+
+		assertThat(profile.getBirthDate()).isEqualTo(LocalDate.of(2000, 1, 1));
+	}
+
+	@Test
+	void changeMbtiReplacesMbti() {
+		UserProfile profile = UserProfile.create(User.registerMember(), "멍멍이집사");
+
+		profile.changeMbti(Mbti.INFP);
+
+		assertThat(profile.getMbti()).isEqualTo(Mbti.INFP);
+	}
+
+	@Test
+	void getAgeCalculatesFromBirthDate() {
+		UserProfile profile = UserProfile.create(User.registerMember(), "멍멍이집사");
+		profile.changeBirthDate(LocalDate.now().minusYears(20));
+
+		assertThat(profile.getAge()).isEqualTo(20);
+	}
+
+	@Test
+	void getAgeReturnsNullWhenBirthDateIsNull() {
+		UserProfile profile = UserProfile.create(User.registerMember(), "멍멍이집사");
+
+		assertThat(profile.getAge()).isNull();
 	}
 
 	@Test
