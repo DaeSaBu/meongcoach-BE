@@ -11,6 +11,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import java.util.Objects;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -32,22 +33,23 @@ public class Card extends BaseEntity {
 	@JoinColumn(name = "lesson_id", nullable = false)
 	private Lesson lesson;
 
-	@Column(length = 200)
+	// 영상/이미지만 있는 카드는 제목이 없을 수 있다 — 미설정은 빈 문자열로 저장한다
+	@Column(nullable = false, length = 200)
 	private String title;
 
 	@Column(nullable = false)
 	private int sortOrder;
 
-	// 영상/이미지만 있는 카드를 허용하므로 nullable
-	@Column(columnDefinition = "TEXT")
+	// 영상/이미지만 있는 카드를 허용한다 — 미설정은 빈 문자열로 저장한다
+	@Column(nullable = false, columnDefinition = "TEXT")
 	private String instruction;
 
 	public static Card create(Lesson lesson, String title, int sortOrder, String instruction) {
 		Card card = new Card();
 		card.lesson = lesson;
-		card.title = title;
+		card.title = Objects.requireNonNullElse(title, "");
 		card.sortOrder = sortOrder;
-		card.instruction = instruction;
+		card.instruction = Objects.requireNonNullElse(instruction, "");
 		return card;
 	}
 }

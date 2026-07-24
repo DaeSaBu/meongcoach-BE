@@ -32,6 +32,7 @@ public class CardBranch extends BaseEntity {
 	@JoinColumn(name = "card_id", nullable = false)
 	private Card card;
 
+	// 분기 종착 카드는 다음 카드가 없으므로 nullable
 	@Column(name = "next_card_id")
 	private Long nextCardId;
 

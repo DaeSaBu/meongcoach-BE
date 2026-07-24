@@ -30,7 +30,7 @@ class CardTest {
 	void createAllowsMediaOnlyCardWithoutInstruction() {
 		Card card = Card.create(createLesson(), null, 2, null);
 
-		assertThat(card.getTitle()).isNull();
-		assertThat(card.getInstruction()).isNull();
+		assertThat(card.getTitle()).isEmpty();
+		assertThat(card.getInstruction()).isEmpty();
 	}
 }

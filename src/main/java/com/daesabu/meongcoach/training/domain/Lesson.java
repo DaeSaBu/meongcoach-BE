@@ -35,6 +35,7 @@ public class Lesson extends BaseEntity {
 	@Column(nullable = false)
 	private int sortOrder;
 
+	@Column(nullable = false)
 	private Integer estimatedMinutes;
 
 	public static Lesson create(Curriculum curriculum, String title, int sortOrder, Integer estimatedMinutes) {
