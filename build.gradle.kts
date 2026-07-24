@@ -52,12 +52,12 @@ dependencies {
 
 // .editorconfig(Wooteco 스타일) 중 Spotless로 검사 가능한 규칙만 강제한다
 // 120자 제한·중괄호 강제 등 파서 수준 규칙은 IDE(.editorconfig)가 담당한다
+// 탭 강제는 IntelliJ의 파라미터 스페이스 정렬과 충돌해 Java에는 적용하지 않는다
 spotless {
 	java {
 		target("src/**/*.java")
 		importOrder("\\#", "")
 		removeUnusedImports()
-		leadingSpacesToTabs()
 		trimTrailingWhitespace()
 		endWithNewline()
 	}
