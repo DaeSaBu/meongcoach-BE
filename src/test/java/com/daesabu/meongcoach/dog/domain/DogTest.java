@@ -28,6 +28,31 @@ class DogTest {
 	}
 
 	@Test
+	void changeProfileImageReplacesImageUrl() {
+		Dog dog = registerDog();
+
+		dog.changeProfileImage("https://cdn.meongcoach.com/dog.png");
+
+		assertThat(dog.getProfileImageUrl()).isEqualTo("https://cdn.meongcoach.com/dog.png");
+	}
+
+	@Test
+	void getAgeCalculatesFromBirthDate() {
+		Dog dog = Dog.register(1L, "초코", "푸들", DogSex.MALE, LocalDate.now().minusYears(3),
+				new BigDecimal("4.50"), DogSize.SMALL);
+
+		assertThat(dog.getAge()).isEqualTo(3);
+	}
+
+	@Test
+	void getAgeReturnsNullWhenBirthDateIsNull() {
+		Dog dog = Dog.register(1L, "초코", "푸들", DogSex.MALE, null,
+				new BigDecimal("4.50"), DogSize.SMALL);
+
+		assertThat(dog.getAge()).isNull();
+	}
+
+	@Test
 	void unselectChangesStatusToUnselected() {
 		Dog dog = registerDog();
 

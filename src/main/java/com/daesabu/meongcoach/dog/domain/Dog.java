@@ -11,6 +11,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.Period;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -53,6 +54,9 @@ public class Dog extends BaseEntity {
 	@Column(nullable = false, length = 20)
 	private DogStatus status;
 
+	@Column(length = 512)
+	private String profileImageUrl;
+
 	public static Dog register(Long userId, String name, String breed, DogSex sex, LocalDate birthDate,
 	                           BigDecimal weightKg, DogSize size) {
 		Dog dog = new Dog();
@@ -73,5 +77,17 @@ public class Dog extends BaseEntity {
 
 	public void unselect() {
 		this.status = DogStatus.UNSELECTED;
+	}
+
+	public void changeProfileImage(String profileImageUrl) {
+		this.profileImageUrl = profileImageUrl;
+	}
+
+	// 나이는 저장하지 않고 생년월일로 계산한다
+	public Integer getAge() {
+		if (birthDate == null) {
+			return null;
+		}
+		return Period.between(birthDate, LocalDate.now()).getYears();
 	}
 }
