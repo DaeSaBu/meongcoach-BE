@@ -75,18 +75,19 @@ public class Dog extends BaseEntity {
 	@Column(name = "personality", nullable = false, length = 30)
 	private Set<Personality> personalities = new HashSet<>();
 
-	public static Dog register(Long userId, String name, String breed, DogSex sex, LocalDate birthDate,
-	                           BigDecimal weightKg, DogSize size) {
-		Dog dog = new Dog();
-		dog.userId = userId;
-		dog.name = name;
-		dog.breed = breed;
-		dog.sex = sex;
-		dog.birthDate = birthDate;
-		dog.weightKg = weightKg;
-		dog.size = size;
-		dog.status = DogStatus.SELECTED;
-		return dog;
+	private Dog(DogRegisterCommand command) {
+		this.userId = command.userId();
+		this.name = command.name();
+		this.breed = command.breed();
+		this.sex = command.sex();
+		this.birthDate = command.birthDate();
+		this.weightKg = command.weightKg();
+		this.size = command.size();
+		this.status = DogStatus.SELECTED;
+	}
+
+	public static Dog register(DogRegisterCommand command) {
+		return new Dog(command);
 	}
 
 	public void select() {

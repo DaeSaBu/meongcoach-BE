@@ -12,8 +12,12 @@ import org.junit.jupiter.api.Test;
 class DogTest {
 
 	private Dog registerDog() {
-		return Dog.register(1L, "초코", "푸들", DogSex.MALE, LocalDate.of(2024, 3, 1),
-				new BigDecimal("4.50"), DogSize.SMALL);
+		return registerDog(LocalDate.of(2024, 3, 1));
+	}
+
+	private Dog registerDog(LocalDate birthDate) {
+		return Dog.register(new DogRegisterCommand(1L, "초코", "푸들", DogSex.MALE, birthDate,
+				new BigDecimal("4.50"), DogSize.SMALL));
 	}
 
 	@Test
@@ -64,8 +68,7 @@ class DogTest {
 	@Test
 	@DisplayName("생년월일로 나이를 계산한다")
 	void getAgeCalculatesFromBirthDate() {
-		Dog dog = Dog.register(1L, "초코", "푸들", DogSex.MALE, LocalDate.now().minusYears(3),
-				new BigDecimal("4.50"), DogSize.SMALL);
+		Dog dog = registerDog(LocalDate.now().minusYears(3));
 
 		assertThat(dog.getAge()).isEqualTo(3);
 	}
@@ -73,8 +76,7 @@ class DogTest {
 	@Test
 	@DisplayName("생년월일이 없으면 나이는 null을 반환한다")
 	void getAgeReturnsNullWhenBirthDateIsNull() {
-		Dog dog = Dog.register(1L, "초코", "푸들", DogSex.MALE, null,
-				new BigDecimal("4.50"), DogSize.SMALL);
+		Dog dog = registerDog(null);
 
 		assertThat(dog.getAge()).isNull();
 	}
