@@ -21,7 +21,7 @@ com.daesabu.meongcoach
 │   │   └── UserFinderService
 │   └── domain
 │       ├── User
-│       └── UserRegisterRequest
+│       └── UserRegisterCommand
 ├── walk                              ← 모듈 (동일 구조)
 ├── matching                          ← 모듈 (동일 구조)
 └── shared                            ← 횡단 관심사
@@ -42,7 +42,7 @@ com.daesabu.meongcoach
 |---|---|---|
 | `adapter` | 외부 세계와의 연결 | `webapi/` — 컨트롤러, 웹 요청/응답 DTO. 웹 기술(Spring MVC)은 여기에만 둔다 |
 | `application` | 유스케이스 | `provided/` — 모듈이 외부에 공개하는 인터페이스, `required/` — 모듈이 필요로 하는 자원 인터페이스(리포지토리, 메일 등), 그리고 이를 구현·사용하는 서비스 |
-| `domain` | 도메인 모델·로직 | 엔티티(`User`), 도메인 입력 모델(`UserRegisterRequest`) |
+| `domain` | 도메인 모델·로직 | 엔티티(`User`), 도메인 입력 모델(`UserRegisterCommand`) |
 
 ### 계층 의존 방향
 

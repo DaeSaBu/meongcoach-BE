@@ -47,6 +47,13 @@ static final ArchRule 모듈_순환_금지 = slices()
 static final ArchRule 컨트롤러_네이밍 = classes()
 	.that().areAnnotatedWith(RestController.class)
 	.should().haveSimpleNameEndingWith("Controller");
+
+// domain 루트의 입력 모델 record는 ~Command 네이밍을 따른다 (값 객체가 있는 domain/vo는 제외)
+@ArchTest
+static final ArchRule 도메인_입력_모델_커맨드_네이밍 = classes()
+	.that().resideInAPackage("..domain")
+	.and().areRecords()
+	.should().haveSimpleNameEndingWith("Command");
 ```
 
 ### 4. 애노테이션 적용 패턴
