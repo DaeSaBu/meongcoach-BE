@@ -41,11 +41,13 @@ public class AiReport extends BaseTimeEntity {
 	@Column(nullable = false, length = 20)
 	private AiReportStatus status;
 
-	public static AiReport create(AiAnalysis analysis, String content, AiReportStatus status) {
-		AiReport report = new AiReport();
-		report.analysis = analysis;
-		report.content = content;
-		report.status = status;
-		return report;
+	private AiReport(AiAnalysis analysis, AiReportCreateCommand command) {
+		this.analysis = analysis;
+		this.content = command.content();
+		this.status = command.status();
+	}
+
+	public static AiReport create(AiAnalysis analysis, AiReportCreateCommand command) {
+		return new AiReport(analysis, command);
 	}
 }

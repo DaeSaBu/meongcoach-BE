@@ -9,7 +9,8 @@ import org.junit.jupiter.api.Test;
 class AiAnalysisTest {
 
 	private AiAnalysis uploadAnalysis() {
-		return AiAnalysis.upload(1L, 5L, "https://s3.meongcoach.com/video.mp4", 60, 10_000_000L);
+		return AiAnalysis.upload(new AiAnalysisUploadCommand(1L, 5L, "https://s3.meongcoach.com/video.mp4", 60,
+				10_000_000L));
 	}
 
 	@Test

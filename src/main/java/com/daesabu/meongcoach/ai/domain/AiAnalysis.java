@@ -48,16 +48,17 @@ public class AiAnalysis extends BaseEntity {
 	@Column(nullable = false, length = 20)
 	private AiAnalysisStatus status;
 
-	public static AiAnalysis upload(Long userId, Long dogId, String videoUrl, Integer videoLengthSec,
-	                                Long fileSizeBytes) {
-		AiAnalysis analysis = new AiAnalysis();
-		analysis.userId = userId;
-		analysis.dogId = dogId;
-		analysis.videoUrl = videoUrl;
-		analysis.videoLengthSec = videoLengthSec;
-		analysis.fileSizeBytes = fileSizeBytes;
-		analysis.status = AiAnalysisStatus.UPLOADED;
-		return analysis;
+	private AiAnalysis(AiAnalysisUploadCommand command) {
+		this.userId = command.userId();
+		this.dogId = command.dogId();
+		this.videoUrl = command.videoUrl();
+		this.videoLengthSec = command.videoLengthSec();
+		this.fileSizeBytes = command.fileSizeBytes();
+		this.status = AiAnalysisStatus.UPLOADED;
+	}
+
+	public static AiAnalysis upload(AiAnalysisUploadCommand command) {
+		return new AiAnalysis(command);
 	}
 
 	public void startProcessing() {

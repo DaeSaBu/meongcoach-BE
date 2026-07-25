@@ -11,9 +11,11 @@ class AiReportTest {
 	@Test
 	@DisplayName("생성하면 분석과 리포트 내용이 설정된다")
 	void createSetsAnalysisAndContent() {
-		AiAnalysis analysis = AiAnalysis.upload(1L, null, "https://s3.meongcoach.com/video.mp4", 60, 10_000_000L);
+		AiAnalysis analysis = AiAnalysis.upload(new AiAnalysisUploadCommand(1L, null,
+				"https://s3.meongcoach.com/video.mp4", 60, 10_000_000L));
 
-		AiReport report = AiReport.create(analysis, "분리불안 징후가 관찰됩니다.", AiReportStatus.PUBLISHED);
+		AiReport report = AiReport.create(analysis,
+				new AiReportCreateCommand("분리불안 징후가 관찰됩니다.", AiReportStatus.PUBLISHED));
 
 		assertThat(report.getAnalysis()).isEqualTo(analysis);
 		assertThat(report.getContent()).isEqualTo("분리불안 징후가 관찰됩니다.");
