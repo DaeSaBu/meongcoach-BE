@@ -11,7 +11,7 @@ class LessonCompletionLogTest {
 	@Test
 	@DisplayName("기록하면 사용자·레슨·강아지 정보가 설정된다")
 	void recordSetsUserLessonAndDog() {
-		LessonCompletionLog log = LessonCompletionLog.record(1L, 10L, 5L);
+		LessonCompletionLog log = LessonCompletionLog.record(new LessonCompletionLogRecordCommand(1L, 10L, 5L));
 
 		assertThat(log.getUserId()).isEqualTo(1L);
 		assertThat(log.getLessonId()).isEqualTo(10L);

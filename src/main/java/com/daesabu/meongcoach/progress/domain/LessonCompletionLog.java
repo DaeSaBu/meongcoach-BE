@@ -35,11 +35,13 @@ public class LessonCompletionLog extends BaseTimeEntity {
 	@Column(nullable = false)
 	private Long dogId;
 
-	public static LessonCompletionLog record(Long userId, Long lessonId, Long dogId) {
-		LessonCompletionLog log = new LessonCompletionLog();
-		log.userId = userId;
-		log.lessonId = lessonId;
-		log.dogId = dogId;
-		return log;
+	private LessonCompletionLog(LessonCompletionLogRecordCommand command) {
+		this.userId = command.userId();
+		this.lessonId = command.lessonId();
+		this.dogId = command.dogId();
+	}
+
+	public static LessonCompletionLog record(LessonCompletionLogRecordCommand command) {
+		return new LessonCompletionLog(command);
 	}
 }
