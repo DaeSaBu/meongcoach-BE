@@ -10,9 +10,9 @@ class CardTest {
 
 	private Lesson createLesson() {
 		TrainingCategory category = TrainingCategory.create("기본 훈련", 1);
-		Topic topic = Topic.create(category, "산책 훈련", 1);
-		Curriculum curriculum = Curriculum.create(topic, "리드줄 적응", 1, null, null);
-		return Lesson.create(curriculum, "리드줄 보여주기", 1, 5);
+		Topic topic = Topic.create(category, new TopicCreateCommand("산책 훈련", 1));
+		Curriculum curriculum = Curriculum.create(topic, new CurriculumCreateCommand("리드줄 적응", 1, null, null));
+		return Lesson.create(curriculum, new LessonCreateCommand("리드줄 보여주기", 1, 5));
 	}
 
 	@Test
@@ -20,7 +20,7 @@ class CardTest {
 	void createSetsLessonAndInstruction() {
 		Lesson lesson = createLesson();
 
-		Card card = Card.create(lesson, "리드줄 냄새 맡게 하기", 1, "리드줄을 바닥에 두고 냄새를 맡게 하세요.");
+		Card card = Card.create(lesson, new CardCreateCommand("리드줄 냄새 맡게 하기", 1, "리드줄을 바닥에 두고 냄새를 맡게 하세요."));
 
 		assertThat(card.getLesson()).isEqualTo(lesson);
 		assertThat(card.getTitle()).isEqualTo("리드줄 냄새 맡게 하기");
@@ -32,7 +32,7 @@ class CardTest {
 	@Test
 	@DisplayName("지시문 없이 미디어만 있는 카드를 생성할 수 있다")
 	void createAllowsMediaOnlyCardWithoutInstruction() {
-		Card card = Card.create(createLesson(), null, 2, null);
+		Card card = Card.create(createLesson(), new CardCreateCommand(null, 2, null));
 
 		assertThat(card.getTitle()).isEmpty();
 		assertThat(card.getInstruction()).isEmpty();

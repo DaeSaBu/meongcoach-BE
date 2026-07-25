@@ -41,12 +41,14 @@ public class CardMedia extends BaseEntity {
 	@Column(nullable = false)
 	private int sortOrder;
 
-	public static CardMedia create(Card card, MediaType mediaType, String url, int sortOrder) {
-		CardMedia media = new CardMedia();
-		media.card = card;
-		media.mediaType = mediaType;
-		media.url = url;
-		media.sortOrder = sortOrder;
-		return media;
+	private CardMedia(Card card, CardMediaCreateCommand command) {
+		this.card = card;
+		this.mediaType = command.mediaType();
+		this.url = command.url();
+		this.sortOrder = command.sortOrder();
+	}
+
+	public static CardMedia create(Card card, CardMediaCreateCommand command) {
+		return new CardMedia(card, command);
 	}
 }

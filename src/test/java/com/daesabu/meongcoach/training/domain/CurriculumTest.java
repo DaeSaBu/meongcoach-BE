@@ -10,9 +10,9 @@ class CurriculumTest {
 
 	private Curriculum createCurriculum() {
 		TrainingCategory category = TrainingCategory.create("기본 훈련", 1);
-		Topic topic = Topic.create(category, "산책 훈련", 1);
-		return Curriculum.create(topic, "리드줄 적응", 1, "https://cdn.meongcoach.com/thumb.png",
-				"리드줄에 익숙해지는 훈련");
+		Topic topic = Topic.create(category, new TopicCreateCommand("산책 훈련", 1));
+		return Curriculum.create(topic, new CurriculumCreateCommand("리드줄 적응", 1,
+				"https://cdn.meongcoach.com/thumb.png", "리드줄에 익숙해지는 훈련"));
 	}
 
 	@Test

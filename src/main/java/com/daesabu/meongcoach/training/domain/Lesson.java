@@ -38,12 +38,14 @@ public class Lesson extends BaseEntity {
 	@Column(nullable = false)
 	private Integer estimatedMinutes;
 
-	public static Lesson create(Curriculum curriculum, String title, int sortOrder, Integer estimatedMinutes) {
-		Lesson lesson = new Lesson();
-		lesson.curriculum = curriculum;
-		lesson.title = title;
-		lesson.sortOrder = sortOrder;
-		lesson.estimatedMinutes = estimatedMinutes;
-		return lesson;
+	private Lesson(Curriculum curriculum, LessonCreateCommand command) {
+		this.curriculum = curriculum;
+		this.title = command.title();
+		this.sortOrder = command.sortOrder();
+		this.estimatedMinutes = command.estimatedMinutes();
+	}
+
+	public static Lesson create(Curriculum curriculum, LessonCreateCommand command) {
+		return new Lesson(curriculum, command);
 	}
 }

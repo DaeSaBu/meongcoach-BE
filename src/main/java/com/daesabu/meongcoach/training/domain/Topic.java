@@ -35,11 +35,13 @@ public class Topic extends BaseEntity {
 	@Column(nullable = false)
 	private int sortOrder;
 
-	public static Topic create(TrainingCategory trainingCategory, String title, int sortOrder) {
-		Topic topic = new Topic();
-		topic.trainingCategory = trainingCategory;
-		topic.title = title;
-		topic.sortOrder = sortOrder;
-		return topic;
+	private Topic(TrainingCategory trainingCategory, TopicCreateCommand command) {
+		this.trainingCategory = trainingCategory;
+		this.title = command.title();
+		this.sortOrder = command.sortOrder();
+	}
+
+	public static Topic create(TrainingCategory trainingCategory, TopicCreateCommand command) {
+		return new Topic(trainingCategory, command);
 	}
 }

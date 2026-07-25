@@ -44,12 +44,14 @@ public class Card extends BaseEntity {
 	@Column(nullable = false, columnDefinition = "TEXT")
 	private String instruction;
 
-	public static Card create(Lesson lesson, String title, int sortOrder, String instruction) {
-		Card card = new Card();
-		card.lesson = lesson;
-		card.title = Objects.requireNonNullElse(title, "");
-		card.sortOrder = sortOrder;
-		card.instruction = Objects.requireNonNullElse(instruction, "");
-		return card;
+	private Card(Lesson lesson, CardCreateCommand command) {
+		this.lesson = lesson;
+		this.title = Objects.requireNonNullElse(command.title(), "");
+		this.sortOrder = command.sortOrder();
+		this.instruction = Objects.requireNonNullElse(command.instruction(), "");
+	}
+
+	public static Card create(Lesson lesson, CardCreateCommand command) {
+		return new Card(lesson, command);
 	}
 }

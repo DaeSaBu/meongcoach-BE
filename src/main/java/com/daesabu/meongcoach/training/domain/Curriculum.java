@@ -44,14 +44,15 @@ public class Curriculum extends BaseEntity {
 	@Column(nullable = false, columnDefinition = "TEXT")
 	private String description;
 
-	public static Curriculum create(Topic topic, String title, int sortOrder, String thumbnailUrl,
-	                                String description) {
-		Curriculum curriculum = new Curriculum();
-		curriculum.topic = topic;
-		curriculum.title = title;
-		curriculum.sortOrder = sortOrder;
-		curriculum.thumbnailUrl = Objects.requireNonNullElse(thumbnailUrl, "");
-		curriculum.description = Objects.requireNonNullElse(description, "");
-		return curriculum;
+	private Curriculum(Topic topic, CurriculumCreateCommand command) {
+		this.topic = topic;
+		this.title = command.title();
+		this.sortOrder = command.sortOrder();
+		this.thumbnailUrl = Objects.requireNonNullElse(command.thumbnailUrl(), "");
+		this.description = Objects.requireNonNullElse(command.description(), "");
+	}
+
+	public static Curriculum create(Topic topic, CurriculumCreateCommand command) {
+		return new Curriculum(topic, command);
 	}
 }
