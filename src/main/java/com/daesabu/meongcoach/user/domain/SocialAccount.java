@@ -45,12 +45,14 @@ public class SocialAccount extends BaseEntity {
 	@Column(length = 255)
 	private String email;
 
-	public static SocialAccount link(User user, SocialProvider provider, String providerId, String email) {
-		SocialAccount account = new SocialAccount();
-		account.user = user;
-		account.provider = provider;
-		account.providerId = providerId;
-		account.email = email;
-		return account;
+	private SocialAccount(User user, SocialAccountLinkCommand command) {
+		this.user = user;
+		this.provider = command.provider();
+		this.providerId = command.providerId();
+		this.email = command.email();
+	}
+
+	public static SocialAccount link(User user, SocialAccountLinkCommand command) {
+		return new SocialAccount(user, command);
 	}
 }

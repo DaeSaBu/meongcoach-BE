@@ -13,7 +13,8 @@ class SocialAccountTest {
 	void linkCreatesAccountWithProviderInfo() {
 		User user = User.registerMember();
 
-		SocialAccount account = SocialAccount.link(user, SocialProvider.KAKAO, "kakao-123", "test@kakao.com");
+		SocialAccount account = SocialAccount.link(user,
+				new SocialAccountLinkCommand(SocialProvider.KAKAO, "kakao-123", "test@kakao.com"));
 
 		assertThat(account.getUser()).isEqualTo(user);
 		assertThat(account.getProvider()).isEqualTo(SocialProvider.KAKAO);

@@ -44,11 +44,13 @@ public class LocalAccount extends BaseEntity {
 	@Column(nullable = false, length = 255)
 	private String passwordHash;
 
-	public static LocalAccount create(User user, Email email, String passwordHash) {
-		LocalAccount account = new LocalAccount();
-		account.user = user;
-		account.email = email;
-		account.passwordHash = passwordHash;
-		return account;
+	private LocalAccount(User user, LocalAccountCreateCommand command) {
+		this.user = user;
+		this.email = command.email();
+		this.passwordHash = command.passwordHash();
+	}
+
+	public static LocalAccount create(User user, LocalAccountCreateCommand command) {
+		return new LocalAccount(user, command);
 	}
 }

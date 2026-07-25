@@ -15,7 +15,7 @@ class LocalAccountTest {
 		User user = User.registerMember();
 		Email email = new Email("test1@meongcoach.com");
 
-		LocalAccount account = LocalAccount.create(user, email, "hashed-password");
+		LocalAccount account = LocalAccount.create(user, new LocalAccountCreateCommand(email, "hashed-password"));
 
 		assertThat(account.getUser()).isEqualTo(user);
 		assertThat(account.getEmail()).isEqualTo(email);
