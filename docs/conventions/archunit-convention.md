@@ -5,7 +5,14 @@
 ## 위치와 작성 방법
 
 - 전 모듈 공통 아키텍처 테스트는 `src/test/java/com/daesabu/meongcoach/architecture/`에 둡니다.
-- `@AnalyzeClasses(packages = "com.daesabu.meongcoach")` + `@ArchTest` 필드 방식으로 작성합니다.
+- `ClassFileImporter`로 임포트한 `JavaClasses` 상수를 두고, 일반 `@Test` 메서드에서 `ArchRule.check()`로 검증합니다.
+- 메서드명은 영어 camelCase로 쓰고, 한글 설명은 `@DisplayName`으로 붙입니다. (`@ArchTest` 필드에는 `@DisplayName`을 붙일 수 없으므로 필드 방식을 쓰지 않습니다)
+
+```java
+private static final JavaClasses CLASSES = new ClassFileImporter()
+		.withImportOption(new ImportOption.DoNotIncludeTests())
+		.importPackages("com.daesabu.meongcoach");
+```
 
 ## 검증 항목
 
@@ -16,15 +23,19 @@
 모듈 내부 의존 방향 `adapter → application → domain`을 검증합니다.
 
 ```java
-@ArchTest
-static final ArchRule 계층_의존_방향 = layeredArchitecture()
-	.consideringOnlyDependenciesInLayers()
-	.layer("Adapter").definedBy("..adapter..")
-	.layer("Application").definedBy("..application..")
-	.layer("Domain").definedBy("..domain..")
-	.whereLayer("Adapter").mayNotBeAccessedByAnyLayer()
-	.whereLayer("Application").mayOnlyBeAccessedByLayers("Adapter")
-	.whereLayer("Domain").mayOnlyBeAccessedByLayers("Adapter", "Application");
+@Test
+@DisplayName("모듈 내부 의존은 adapter → application → domain 방향을 따른다")
+void layersFollowDependencyDirection() {
+	layeredArchitecture()
+		.consideringOnlyDependenciesInLayers()
+		.layer("Adapter").definedBy("..adapter..")
+		.layer("Application").definedBy("..application..")
+		.layer("Domain").definedBy("..domain..")
+		.whereLayer("Adapter").mayNotBeAccessedByAnyLayer()
+		.whereLayer("Application").mayOnlyBeAccessedByLayers("Adapter")
+		.whereLayer("Domain").mayOnlyBeAccessedByLayers("Adapter", "Application")
+		.check(CLASSES);
+}
 ```
 
 ### 2. 순환 의존성
@@ -32,10 +43,14 @@ static final ArchRule 계층_의존_방향 = layeredArchitecture()
 패키지·클래스 간 순환 의존성을 금지합니다.
 
 ```java
-@ArchTest
-static final ArchRule 모듈_순환_금지 = slices()
-	.matching("com.daesabu.meongcoach.(*)..")
-	.should().beFreeOfCycles();
+@Test
+@DisplayName("모듈 간 순환 의존이 없다")
+void modulesAreFreeOfCycles() {
+	slices()
+		.matching("com.daesabu.meongcoach.(*)..")
+		.should().beFreeOfCycles()
+		.check(CLASSES);
+}
 ```
 
 ### 3. 이름 형식
@@ -43,17 +58,25 @@ static final ArchRule 모듈_순환_금지 = slices()
 클래스 이름이 [code-convention.md](code-convention.md)의 역할별 네이밍을 따르는지 검증합니다.
 
 ```java
-@ArchTest
-static final ArchRule 컨트롤러_네이밍 = classes()
-	.that().areAnnotatedWith(RestController.class)
-	.should().haveSimpleNameEndingWith("Controller");
+@Test
+@DisplayName("RestController는 Controller 접미사를 가진다")
+void controllersEndWithControllerSuffix() {
+	classes()
+		.that().areAnnotatedWith(RestController.class)
+		.should().haveSimpleNameEndingWith("Controller")
+		.check(CLASSES);
+}
 
 // domain 루트의 입력 모델 record는 ~Command 네이밍을 따른다 (값 객체가 있는 domain/vo는 제외)
-@ArchTest
-static final ArchRule 도메인_입력_모델_커맨드_네이밍 = classes()
-	.that().resideInAPackage("..domain")
-	.and().areRecords()
-	.should().haveSimpleNameEndingWith("Command");
+@Test
+@DisplayName("domain 루트의 입력 모델 record는 Command 접미사를 가진다")
+void domainInputModelRecordsEndWithCommand() {
+	classes()
+		.that().resideInAPackage("..domain")
+		.and().areRecords()
+		.should().haveSimpleNameEndingWith("Command")
+		.check(CLASSES);
+}
 ```
 
 ### 4. 애노테이션 적용 패턴
@@ -61,15 +84,23 @@ static final ArchRule 도메인_입력_모델_커맨드_네이밍 = classes()
 애노테이션이 허용된 계층에만 사용되는지 검증합니다.
 
 ```java
-@ArchTest
-static final ArchRule 컨트롤러_위치 = classes()
-	.that().areAnnotatedWith(RestController.class)
-	.should().resideInAPackage("..adapter.webapi..");
+@Test
+@DisplayName("RestController는 adapter/webapi에만 둔다")
+void controllersResideInAdapterWebapi() {
+	classes()
+		.that().areAnnotatedWith(RestController.class)
+		.should().resideInAPackage("..adapter.webapi..")
+		.check(CLASSES);
+}
 
-@ArchTest
-static final ArchRule 도메인_스프링_금지 = noClasses()
-	.that().resideInAPackage("..domain..")
-	.should().dependOnClassesThat().resideInAPackage("org.springframework..");
+@Test
+@DisplayName("domain은 스프링에 의존하지 않는다")
+void domainDoesNotDependOnSpring() {
+	noClasses()
+		.that().resideInAPackage("..domain..")
+		.should().dependOnClassesThat().resideInAPackage("org.springframework..")
+		.check(CLASSES);
+}
 ```
 
 ### 5. 의존관계와 사용관계 구분
