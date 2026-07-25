@@ -2,8 +2,10 @@ package com.daesabu.meongcoach.ai.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+@DisplayName("AiAnalysis 도메인")
 class AiAnalysisTest {
 
 	private AiAnalysis uploadAnalysis() {
@@ -11,6 +13,7 @@ class AiAnalysisTest {
 	}
 
 	@Test
+	@DisplayName("업로드하면 상태가 UPLOADED로 초기화된다")
 	void uploadInitializesStatusToUploaded() {
 		AiAnalysis analysis = uploadAnalysis();
 
@@ -23,6 +26,7 @@ class AiAnalysisTest {
 	}
 
 	@Test
+	@DisplayName("처리를 시작하면 상태가 PROCESSING으로 변경된다")
 	void startProcessingChangesStatusToProcessing() {
 		AiAnalysis analysis = uploadAnalysis();
 
@@ -32,6 +36,7 @@ class AiAnalysisTest {
 	}
 
 	@Test
+	@DisplayName("완료하면 상태가 COMPLETED로 변경된다")
 	void completeChangesStatusToCompleted() {
 		AiAnalysis analysis = uploadAnalysis();
 		analysis.startProcessing();
@@ -42,6 +47,7 @@ class AiAnalysisTest {
 	}
 
 	@Test
+	@DisplayName("실패 처리하면 상태가 FAILED로 변경된다")
 	void failChangesStatusToFailed() {
 		AiAnalysis analysis = uploadAnalysis();
 		analysis.startProcessing();

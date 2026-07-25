@@ -2,11 +2,14 @@ package com.daesabu.meongcoach.training.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+@DisplayName("CardMedia 도메인")
 class CardMediaTest {
 
 	@Test
+	@DisplayName("생성하면 카드와 미디어 타입이 설정된다")
 	void createSetsCardAndMediaType() {
 		TrainingCategory category = TrainingCategory.create("기본 훈련", 1);
 		Topic topic = Topic.create(category, "산책 훈련", 1);

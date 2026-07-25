@@ -13,6 +13,7 @@ import com.daesabu.meongcoach.shared.exception.DomainException;
 import com.daesabu.meongcoach.shared.exception.ErrorCode;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
@@ -28,12 +29,14 @@ import org.springframework.web.bind.annotation.RestController;
 @WebMvcTest(GlobalExceptionHandlerTest.ExceptionTriggerController.class)
 @Import(GlobalExceptionHandlerTest.ExceptionTriggerController.class)
 @AutoConfigureRestDocs
+@DisplayName("전역 예외 처리")
 class GlobalExceptionHandlerTest {
 
 	@Autowired
 	private MockMvc mockMvc;
 
 	@Test
+	@DisplayName("도메인 예외는 에러 코드가 담긴 ProblemDetail을 반환한다")
 	void domainExceptionReturnsProblemDetailWithErrorCode() throws Exception {
 		mockMvc.perform(get("/test/domain-error"))
 				.andExpect(status().isNotFound())
@@ -55,6 +58,7 @@ class GlobalExceptionHandlerTest {
 	}
 
 	@Test
+	@DisplayName("검증에 실패하면 필드 에러 목록을 반환한다")
 	void validationFailureReturnsFieldErrors() throws Exception {
 		mockMvc.perform(post("/test/validation")
 						.contentType(MediaType.APPLICATION_JSON)
@@ -78,6 +82,7 @@ class GlobalExceptionHandlerTest {
 	}
 
 	@Test
+	@DisplayName("서버 측 도메인 예외도 에러 코드가 담긴 ProblemDetail을 반환한다")
 	void serverSideDomainExceptionReturnsProblemDetailWithErrorCode() throws Exception {
 		mockMvc.perform(get("/test/domain-error-5xx"))
 				.andExpect(status().isInternalServerError())
@@ -88,6 +93,7 @@ class GlobalExceptionHandlerTest {
 	}
 
 	@Test
+	@DisplayName("알 수 없는 경로는 NOT_FOUND를 반환한다")
 	void unknownPathReturnsNotFoundProblem() throws Exception {
 		mockMvc.perform(get("/test/unknown"))
 				.andExpect(status().isNotFound())
@@ -96,6 +102,7 @@ class GlobalExceptionHandlerTest {
 	}
 
 	@Test
+	@DisplayName("지원하지 않는 HTTP 메서드는 METHOD_NOT_ALLOWED를 반환한다")
 	void unsupportedMethodReturnsMethodNotAllowed() throws Exception {
 		mockMvc.perform(post("/test/domain-error"))
 				.andExpect(status().isMethodNotAllowed())
@@ -104,6 +111,7 @@ class GlobalExceptionHandlerTest {
 	}
 
 	@Test
+	@DisplayName("잘못된 형식의 JSON은 BAD_REQUEST를 반환한다")
 	void malformedJsonReturnsBadRequest() throws Exception {
 		mockMvc.perform(post("/test/validation")
 						.contentType(MediaType.APPLICATION_JSON)
@@ -114,6 +122,7 @@ class GlobalExceptionHandlerTest {
 	}
 
 	@Test
+	@DisplayName("예상치 못한 예외는 내부 정보 노출 없이 INTERNAL_SERVER_ERROR를 반환한다")
 	void unexpectedExceptionReturnsInternalServerErrorWithoutInternalDetail() throws Exception {
 		mockMvc.perform(get("/test/unexpected"))
 				.andExpect(status().isInternalServerError())
