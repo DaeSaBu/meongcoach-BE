@@ -4,6 +4,7 @@ plugins {
 	id("org.springframework.boot") version "4.1.0"
 	id("io.spring.dependency-management") version "1.1.7"
 	id("org.asciidoctor.jvm.convert") version "4.0.4"
+	id("com.diffplug.spotless") version "8.8.0"
 }
 
 group = "com.daesabu"
@@ -22,11 +23,18 @@ repositories {
 
 val asciidoctorExt: Configuration by configurations.creating
 
+dependencyManagement {
+	imports {
+		mavenBom("org.springframework.modulith:spring-modulith-bom:2.1.0")
+	}
+}
+
 dependencies {
 	implementation("org.springframework.boot:spring-boot-h2console")
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 	implementation("org.springframework.boot:spring-boot-starter-webmvc")
 	implementation("org.springframework.boot:spring-boot-starter-validation")
+	implementation("org.springframework.modulith:spring-modulith-starter-core")
 	compileOnly("org.projectlombok:lombok")
 	runtimeOnly("com.h2database:h2")
 	annotationProcessor("org.projectlombok:lombok")
@@ -36,9 +44,34 @@ dependencies {
 	testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
 	testImplementation("org.springframework.restdocs:spring-restdocs-mockmvc")
 	testImplementation("com.tngtech.archunit:archunit-junit5:1.4.2")
+	testImplementation("org.springframework.modulith:spring-modulith-starter-test")
 	testCompileOnly("org.projectlombok:lombok")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 	testAnnotationProcessor("org.projectlombok:lombok")
+}
+
+// .editorconfig(Wooteco 스타일) 중 Spotless로 검사 가능한 규칙만 강제한다
+// 120자 제한·중괄호 강제 등 파서 수준 규칙은 IDE(.editorconfig)가 담당한다
+// 탭 강제는 IntelliJ의 파라미터 스페이스 정렬과 충돌해 Java에는 적용하지 않는다
+spotless {
+	java {
+		target("src/**/*.java")
+		importOrder("\\#", "")
+		removeUnusedImports()
+		trimTrailingWhitespace()
+		endWithNewline()
+	}
+	kotlinGradle {
+		target("*.gradle.kts")
+		leadingSpacesToTabs()
+		trimTrailingWhitespace()
+		endWithNewline()
+	}
+	yaml {
+		target("src/**/*.yml", "src/**/*.yaml")
+		trimTrailingWhitespace()
+		endWithNewline()
+	}
 }
 
 val snippetsDir = layout.buildDirectory.dir("generated-snippets")

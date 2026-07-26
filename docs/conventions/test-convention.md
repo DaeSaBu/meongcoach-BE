@@ -18,10 +18,11 @@ MVP 개발 기간을 고려하여 아래 순서로 우선순위를 정해 작성
 ## 스타일
 
 - given-when-then 구조를 가져가되, 주석으로 명시하지 않고 빈 줄로 구간을 구분합니다.
-- `@DisplayName`은 사용하지 않습니다. 테스트 메서드명이 검증 의도를 서술합니다.
+- 테스트 클래스와 메서드에 한국어 `@DisplayName`을 붙입니다. 메서드명은 영어 camelCase로 검증 의도를 서술합니다.
 
 ```java
 @Test
+@DisplayName("이메일이 중복되면 가입에 실패한다")
 void registerFailsWhenEmailIsDuplicated() {
 	when(userRepository.existsByEmail(any())).thenReturn(true);
 

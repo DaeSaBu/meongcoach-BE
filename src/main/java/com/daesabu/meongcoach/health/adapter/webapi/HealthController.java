@@ -1,10 +1,9 @@
 package com.daesabu.meongcoach.health.adapter.webapi;
 
+import com.daesabu.meongcoach.health.adapter.webapi.dto.HealthResponse;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import com.daesabu.meongcoach.health.adapter.webapi.dto.HealthResponse;
 
 @RestController
 @RequestMapping("/api/health")

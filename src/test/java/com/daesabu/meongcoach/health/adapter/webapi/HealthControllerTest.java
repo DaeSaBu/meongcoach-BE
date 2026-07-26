@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
@@ -15,12 +16,14 @@ import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(HealthController.class)
 @AutoConfigureRestDocs
+@DisplayName("헬스 체크 API")
 class HealthControllerTest {
 
 	@Autowired
 	private MockMvc mockMvc;
 
 	@Test
+	@DisplayName("헬스 체크 시 UP 상태를 반환한다")
 	void checkReturnsUp() throws Exception {
 		mockMvc.perform(get("/api/health"))
 				.andExpect(status().isOk())

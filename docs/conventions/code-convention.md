@@ -29,7 +29,12 @@
 | 필요 자원 인터페이스 | `application/required` | 자원 이름 그대로 | `UserRepository`, `EmailSender` |
 | 애플리케이션 서비스 | `application` | `~Service` | `UserQueryService`, `UserFinderService` |
 | 컨트롤러 | `adapter/webapi` | `~Controller` | `UserController` |
-| 도메인 모델 | `domain` | 개념 이름 그대로 | `User`, `UserRegisterRequest` |
+| 도메인 모델 | `domain` | 개념 이름 그대로 | `User` |
+| 도메인 입력 모델 | `domain` | `~Command` (record) | `DogRegisterCommand` |
+| 값 객체 | `domain/vo` | 개념 이름 그대로 | `Email` |
+| 도메인 예외·에러코드 | `domain/exception` | `{모듈}ErrorCode`, `~Exception` | `UserErrorCode`, `InvalidEmailException` |
+
+- `domain` 루트에는 엔티티와 enum을 두고, 값 객체는 `domain/vo`, 예외·에러코드는 `domain/exception`으로 분리합니다.
 
 ## Lombok 사용 규칙
 
@@ -41,6 +46,8 @@
 
 - 요청/응답 DTO는 Java `record`로 작성합니다.
 - 웹 요청/응답 DTO는 `adapter/webapi/dto`에 두고, 접미사는 요청 `~Request`, 응답 `~Response`를 사용합니다. (예: `UserSignupRequest`, `UserResponse`)
-- 도메인 입력 모델(예: `UserRegisterRequest`)은 `domain`에 두며, 웹 DTO와 별개로 유지합니다.
+- 도메인 입력 모델은 `~Command` 접미사의 record로 `domain`에 두며, 웹 DTO와 별개로 유지합니다. (예: `DogRegisterCommand`)
+	- 엔티티 정적 팩토리의 순수 값 파라미터가 3개 이상이면 Command로 묶고, 팩토리는 Command를 받아 생성자에 전달합니다.
+	- 연관 엔티티는 Command에 담지 않고 별도 인자로 전달합니다. (예: `Curriculum.create(Topic topic, CurriculumCreateCommand command)`)
 - DTO ↔ 도메인 변환은 DTO의 정적 팩토리 메서드(`from`, `of`) 또는 `toXxx` 메서드로 처리합니다.
 - 엔티티를 컨트롤러 응답으로 직접 노출하지 않습니다.
