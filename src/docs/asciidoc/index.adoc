@@ -80,6 +80,18 @@ operation::training/lesson-cards[snippets='http-request,path-parameters,http-res
 
 operation::training/lesson-cards-error[snippets='http-response,response-fields']
 
+=== 레슨 완료
+
+레슨을 끝냈을 때 반복 완료 횟수를 1 올리고 갱신된 횟수를 반환합니다.
+`X-User-Id` 헤더로 사용자를 식별하며 요청 바디는 받지 않습니다.
+첫 완료 시 진행도가 생성되어 완료 횟수가 1이 되고, 이후 호출할 때마다 1씩 증가합니다.
+
+operation::training/lesson-complete[snippets='http-request,request-headers,path-parameters,http-response,response-fields']
+
+존재하지 않는 레슨을 요청하면 404(`TRAINING_LESSON_NOT_FOUND`)를 반환하며 진행도는 변경되지 않습니다.
+
+operation::training/lesson-complete-error[snippets='http-response,response-fields']
+
 === 커리큘럼 화면 변경
 
 커리큘럼 탭에 표시할 토픽을 변경합니다.

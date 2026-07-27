@@ -1,8 +1,12 @@
 package com.daesabu.meongcoach.training.adapter.webapi;
 
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
+import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
+import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.get;
+import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.post;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
@@ -12,6 +16,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.daesabu.meongcoach.training.application.provided.CardMediaView;
 import com.daesabu.meongcoach.training.application.provided.CardView;
+import com.daesabu.meongcoach.training.application.provided.LessonCompleter;
 import com.daesabu.meongcoach.training.application.provided.LessonFinder;
 import com.daesabu.meongcoach.training.domain.MediaType;
 import com.daesabu.meongcoach.training.domain.exception.LessonNotFoundException;
@@ -25,18 +30,23 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 /**
- * 레슨 시작 카드 조회 API 검증.
+ * 레슨 카드 조회·완료 API 검증.
  */
 @WebMvcTest(TrainingLessonController.class)
 @AutoConfigureRestDocs
-@DisplayName("레슨 시작 카드 조회 API")
+@DisplayName("레슨 API")
 class TrainingLessonControllerTest {
+
+	private static final String USER_ID_HEADER = "X-User-Id";
 
 	@Autowired
 	private MockMvc mockMvc;
 
 	@MockitoBean
 	private LessonFinder lessonFinder;
+
+	@MockitoBean
+	private LessonCompleter lessonCompleter;
 
 	@Test
 	@DisplayName("레슨의 카드와 미디어 목록을 반환한다")
@@ -131,5 +141,73 @@ class TrainingLessonControllerTest {
 								fieldWithPath("timestamp").description("에러 발생 시각(UTC)")
 						)
 				));
+	}
+
+	@Test
+	@DisplayName("레슨을 완료하면 레슨 ID와 갱신된 완료 횟수를 반환한다")
+	void completeLessonReturnsUpdatedCompletedCount() throws Exception {
+		given(lessonCompleter.completeLesson(42L, 1L)).willReturn(3);
+
+		mockMvc.perform(post("/api/training/lessons/{lessonId}", 1L).header(USER_ID_HEADER, "42"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.lessonId").value(1))
+				.andExpect(jsonPath("$.completedCount").value(3))
+				.andDo(document("training/lesson-complete",
+						requestHeaders(
+								headerWithName(USER_ID_HEADER).description("로그인 사용자 ID")
+						),
+						pathParameters(
+								parameterWithName("lessonId").description("완료한 레슨 ID")
+						),
+						responseFields(
+								fieldWithPath("lessonId").description("완료한 레슨 ID"),
+								fieldWithPath("completedCount").description("증가가 반영된 반복 완료 횟수")
+						)
+				));
+	}
+
+	@Test
+	@DisplayName("헤더에서 읽은 사용자로 레슨 완료를 위임한다")
+	void completeLessonDelegatesWithLoginUser() throws Exception {
+		mockMvc.perform(post("/api/training/lessons/{lessonId}", 7L).header(USER_ID_HEADER, "42"))
+				.andExpect(status().isOk());
+
+		then(lessonCompleter).should().completeLesson(42L, 7L);
+	}
+
+	@Test
+	@DisplayName("존재하지 않는 레슨을 완료하면 404와 에러 코드를 반환한다")
+	void completeLessonReturnsNotFoundWhenLessonDoesNotExist() throws Exception {
+		given(lessonCompleter.completeLesson(42L, 999L)).willThrow(new LessonNotFoundException(999L));
+
+		mockMvc.perform(post("/api/training/lessons/{lessonId}", 999L).header(USER_ID_HEADER, "42"))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.status").value(404))
+				.andExpect(jsonPath("$.code").value("TRAINING_LESSON_NOT_FOUND"))
+				.andExpect(jsonPath("$.detail").value("id가 999인 레슨을 찾을 수 없습니다."))
+				.andDo(document("training/lesson-complete-error",
+						requestHeaders(
+								headerWithName(USER_ID_HEADER).description("로그인 사용자 ID")
+						),
+						pathParameters(
+								parameterWithName("lessonId").description("완료한 레슨 ID")
+						),
+						responseFields(
+								fieldWithPath("title").description("HTTP 상태 이름"),
+								fieldWithPath("status").description("HTTP 상태 코드"),
+								fieldWithPath("detail").description("사람이 읽을 수 있는 에러 설명"),
+								fieldWithPath("instance").description("에러가 발생한 요청 경로"),
+								fieldWithPath("code").description("클라이언트 분기용 에러 코드"),
+								fieldWithPath("timestamp").description("에러 발생 시각(UTC)")
+						)
+				));
+	}
+
+	@Test
+	@DisplayName("레슨 완료 시 X-User-Id 헤더가 없으면 400을 반환한다")
+	void completeLessonReturnsBadRequestWhenUserIdHeaderIsMissing() throws Exception {
+		mockMvc.perform(post("/api/training/lessons/{lessonId}", 1L))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("BAD_REQUEST"));
 	}
 }
