@@ -9,7 +9,6 @@ import com.daesabu.meongcoach.training.domain.Topic;
 import com.daesabu.meongcoach.training.domain.TopicCreateCommand;
 import com.daesabu.meongcoach.training.domain.TrainingCategory;
 import com.daesabu.meongcoach.training.domain.exception.TopicNotFoundException;
-import java.time.LocalDateTime;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,7 +44,7 @@ class TopicSelectServiceTest {
 
 		flushAndClear();
 		assertThat(countEntries()).isOne();
-		assertThat(findUpdatedAt(USER_ID, topic.getId())).isNotNull();
+		assertThat(findEnteredTopicId(USER_ID)).isEqualTo(topic.getId());
 	}
 
 	@Test
@@ -62,25 +61,8 @@ class TopicSelectServiceTest {
 	}
 
 	@Test
-	@DisplayName("같은 토픽을 다시 선택하면 수정 시각이 갱신된다")
-	void selectTopicRenewsUpdatedAtOnReselect() {
-		Topic topic = persistTopic("앉아", 1);
-		flushAndClear();
-		topicSelector.selectTopic(USER_ID, topic.getId());
-		entityManager.flush();
-		LocalDateTime backdated = LocalDateTime.of(2026, 1, 1, 0, 0);
-		backdateUpdatedAt(USER_ID, topic.getId(), backdated);
-		entityManager.clear();
-
-		topicSelector.selectTopic(USER_ID, topic.getId());
-
-		flushAndClear();
-		assertThat(findUpdatedAt(USER_ID, topic.getId())).isAfter(backdated);
-	}
-
-	@Test
-	@DisplayName("다른 토픽을 선택하면 진입 기록이 따로 생성된다")
-	void selectTopicCreatesSeparateEntryForAnotherTopic() {
+	@DisplayName("다른 토픽을 선택하면 진입 기록의 토픽이 바뀐다")
+	void selectTopicMovesEntryToAnotherTopic() {
 		Topic sit = persistTopic("앉아", 1);
 		Topic wait = persistTopic("기다려", 2);
 		flushAndClear();
@@ -89,8 +71,8 @@ class TopicSelectServiceTest {
 		topicSelector.selectTopic(USER_ID, wait.getId());
 
 		flushAndClear();
-		assertThat(countEntries()).isEqualTo(2);
-		assertThat(findUpdatedAt(USER_ID, wait.getId())).isNotNull();
+		assertThat(countEntries()).isOne();
+		assertThat(findEnteredTopicId(USER_ID)).isEqualTo(wait.getId());
 	}
 
 	@Test
@@ -117,30 +99,15 @@ class TopicSelectServiceTest {
 
 	private long countEntries() {
 		return entityManager.getEntityManager()
-				.createQuery("select count(p) from UserCurriculumProgress p", Long.class)
+				.createQuery("select count(c) from UserSelectedTopic c", Long.class)
 				.getSingleResult();
 	}
 
-	private LocalDateTime findUpdatedAt(Long userId, Long topicId) {
+	private Long findEnteredTopicId(Long userId) {
 		return entityManager.getEntityManager()
-				.createQuery("select p.updatedAt from UserCurriculumProgress p "
-						+ "where p.userId = :userId and p.topicId = :topicId", LocalDateTime.class)
+				.createQuery("select c.topicId from UserSelectedTopic c where c.userId = :userId", Long.class)
 				.setParameter("userId", userId)
-				.setParameter("topicId", topicId)
 				.getSingleResult();
-	}
-
-	/**
-	 * 수정 시각을 명시적으로 지정한다. {@code LocalDateTime.now()}는 연속 호출 시 같은 값이 나올 수 있어 갱신 검증이 흔들린다.
-	 */
-	private void backdateUpdatedAt(Long userId, Long topicId, LocalDateTime updatedAt) {
-		entityManager.getEntityManager()
-				.createQuery("update UserCurriculumProgress p set p.updatedAt = :updatedAt "
-						+ "where p.userId = :userId and p.topicId = :topicId")
-				.setParameter("updatedAt", updatedAt)
-				.setParameter("userId", userId)
-				.setParameter("topicId", topicId)
-				.executeUpdate();
 	}
 
 	private void flushAndClear() {

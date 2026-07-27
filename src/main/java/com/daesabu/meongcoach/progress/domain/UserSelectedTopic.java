@@ -14,16 +14,16 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
- * 사용자별 토픽 진입 기록. updatedAt으로 커리큘럼 진입 시 최근 L3 분기(U-0201)를 판단한다.
+ * 사용자가 마지막으로 선택한 토픽. 커리큘럼 진입 시 어느 토픽 화면을 보여줄지 판단한다(U-0201).
  */
 @Getter
 @Entity
 @Table(
-		name = "user_curriculums_progress",
-		uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "topic_id"})
+		name = "user_selected_topic",
+		uniqueConstraints = @UniqueConstraint(columnNames = "user_id")
 )
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class UserCurriculumProgress extends BaseEntity {
+public class UserSelectedTopic extends BaseEntity {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -35,17 +35,17 @@ public class UserCurriculumProgress extends BaseEntity {
 	@Column(nullable = false)
 	private Long topicId;
 
-	public static UserCurriculumProgress enter(Long userId, Long topicId) {
-		UserCurriculumProgress progress = new UserCurriculumProgress();
-		progress.userId = userId;
-		progress.topicId = topicId;
-		return progress;
+	public static UserSelectedTopic enter(Long userId, Long topicId) {
+		UserSelectedTopic selectedTopic = new UserSelectedTopic();
+		selectedTopic.userId = userId;
+		selectedTopic.topicId = topicId;
+		return selectedTopic;
 	}
 
 	/**
-	 * 같은 토픽에 다시 진입했음을 기록한다. 바뀔 필드가 없으므로 수정 시각만 갱신한다.
+	 * 선택 토픽을 옮긴다. 같은 토픽이면 값이 바뀌지 않아 더티 체킹이 일어나지 않고 UPDATE도 나가지 않는다.
 	 */
-	public void reenter() {
-		touch();
+	public void moveTo(Long topicId) {
+		this.topicId = topicId;
 	}
 }

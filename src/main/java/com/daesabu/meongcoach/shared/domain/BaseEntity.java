@@ -26,11 +26,4 @@ public abstract class BaseEntity extends BaseTimeEntity {
 	void renewUpdatedAt() {
 		this.updatedAt = LocalDateTime.now();
 	}
-
-	/**
-	 * 바뀔 필드가 없어 더티 체킹이 일어나지 않는 변경에서 수정 시각만 직접 갱신한다.
-	 */
-	protected void touch() {
-		this.updatedAt = LocalDateTime.now();
-	}
 }

@@ -387,7 +387,7 @@ class CurriculumQueryServiceTest {
 
 	private long countTopicEntries() {
 		return entityManager.getEntityManager()
-				.createQuery("select count(p) from UserCurriculumProgress p", Long.class)
+				.createQuery("select count(c) from UserSelectedTopic c", Long.class)
 				.getSingleResult();
 	}
 
