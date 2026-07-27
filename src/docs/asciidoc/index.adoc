@@ -35,6 +35,19 @@ operation::health/check[snippets='http-request,http-response,response-fields']
 
 == Training API
 
+=== 커리큘럼 리스트 조회
+
+커리큘럼 탭에 표시할 토픽과 그 토픽의 커리큘럼 목록을 진행 상태와 함께 조회합니다.
+대상 토픽은 `X-User-Id` 헤더로 식별한 사용자가 마지막으로 진입한 토픽이며,
+진입 기록이 없거나 기록된 토픽이 더 이상 없으면 카테고리·토픽 노출 순서 기준 첫 토픽으로 폴백합니다.
+커리큘럼은 노출 순서(`sortOrder`) 오름차순으로 정렬되며, 이 요청은 어떤 데이터도 저장하지 않습니다.
+
+operation::training/curriculum-list[snippets='http-request,request-headers,http-response,response-fields']
+
+등록된 토픽이 하나도 없으면 404(`TRAINING_TOPIC_NOT_CONFIGURED`)를 반환합니다.
+
+operation::training/curriculum-list-error[snippets='http-response,response-fields']
+
 === 라이브러리 탭 진입
 
 전체 훈련 카테고리와 각 카테고리에 속한 토픽을 조회합니다.
