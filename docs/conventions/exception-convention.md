@@ -139,7 +139,21 @@ mockMvc.perform(post("/api/users")
 | `NoResourceFoundException` | 404 | `NOT_FOUND` | 매핑 없는 경로 |
 | `HttpRequestMethodNotSupportedException` | 405 | `METHOD_NOT_ALLOWED` | 미지원 HTTP 메서드 |
 | `HttpMediaTypeNotSupportedException` | 415 | `UNSUPPORTED_MEDIA_TYPE` | 미지원 Content-Type |
+| `AuthenticationException` | 401 | `UNAUTHORIZED` | 인증 실패. 원인을 detail에 노출하지 않음 |
+| `AccessDeniedException` | 403 | `FORBIDDEN` | 권한 부족 |
 | 그 외 모든 `Exception` (fallback) | 500 | `INTERNAL_SERVER_ERROR` | detail에 내부 정보를 노출하지 않음 |
+
+### 시큐리티 필터 체인 예외
+
+`AuthenticationException`과 `AccessDeniedException`은 `DispatcherServlet` **밖**(시큐리티 필터 체인)에서 던져지므로 `@RestControllerAdvice`가 잡지 못합니다.
+
+`shared/security/SecurityExceptionTranslator`가 `AuthenticationEntryPoint`와 `AccessDeniedHandler`를 구현해 이 예외를 Spring MVC의 `handlerExceptionResolver`로 되돌려 보내고, 그 결과 `GlobalExceptionHandler`가 처리합니다. **Problem Details 형식을 만드는 곳은 여전히 한 군데뿐이며, 필터 체인 응답과 컨트롤러 응답이 완전히 동일합니다.**
+
+### 외부 API 연동 예외
+
+외부 시스템 연동 어댑터(`adapter/client`)는 인프라 예외(`RestClientException` 등)를 **그 자리에서 도메인 예외로 변환**합니다. 이는 "예외를 catch해서 에러 DTO를 조립하지 않는다"는 규칙과 충돌하지 않습니다 — DTO를 만드는 것이 아니라 계층 경계에서 예외 타입을 번역하는 것입니다.
+
+호출 실패는 원인에 따라 구분합니다. 예를 들어 소셜 로그인은 "토큰이 무효"(401)와 "제공자와 통신 실패"(502)를 다른 에러 코드로 내려, 클라이언트가 재로그인과 재시도를 구분할 수 있게 합니다.
 
 프레임워크 예외는 `ResponseEntityExceptionHandler` 상속으로 처리되므로 위 표에 없는 Spring MVC 예외도 자동으로 Problem Details 형식이 됩니다.
 

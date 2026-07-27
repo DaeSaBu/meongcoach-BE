@@ -35,6 +35,7 @@ jobs:
 
 - **라인 커버리지 70% 이상.** 미달 시 빌드가 실패하고 PR을 merge할 수 없습니다.
 - 검증 제외 대상: `MeongcoachApplication`(부트스트랩), `shared/config`(설정 클래스) — `build.gradle.kts`의 `jacocoExcludes` 참고
+- **`shared/config`에는 빈 정의만 두고 로직을 넣지 않습니다.** 제외 대상이므로 로직을 옮기면 커버리지 게이트를 우회하게 됩니다. 검증 로직은 `shared/security`처럼 측정되는 패키지에 두고, 설정 클래스의 동작은 별도 통합 테스트로 검증합니다.
 - 기준치·제외 대상 변경은 팀 합의 후 `build.gradle.kts`와 이 문서를 함께 수정합니다.
 
 ## 실패 시 확인 방법
