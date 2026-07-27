@@ -53,3 +53,14 @@ operation::training/lesson-cards[snippets='http-request,path-parameters,http-res
 존재하지 않는 레슨을 요청하면 404(`TRAINING_LESSON_NOT_FOUND`)를 반환합니다.
 
 operation::training/lesson-cards-error[snippets='http-response,response-fields']
+
+=== 커리큘럼 화면 변경
+
+커리큘럼 탭에 표시할 토픽을 변경합니다.
+`X-User-Id` 헤더로 사용자를 식별하며, 같은 토픽을 연속으로 선택해도 진입 기록은 한 건만 유지되는 멱등 요청입니다.
+
+operation::training/topic-select[snippets='http-request,request-headers,path-parameters,http-response,response-fields']
+
+존재하지 않는 토픽을 요청하면 404(`TRAINING_TOPIC_NOT_FOUND`)를 반환합니다.
+
+operation::training/topic-select-error[snippets='http-response,response-fields']
