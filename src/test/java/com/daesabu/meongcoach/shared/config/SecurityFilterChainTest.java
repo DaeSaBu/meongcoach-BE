@@ -68,6 +68,13 @@ class SecurityFilterChainTest {
 	}
 
 	@Test
+	@DisplayName("local 프로파일이 아니면 h2-console 경로도 인증이 필요하다")
+	void h2ConsoleIsProtectedOutsideLocal() throws Exception {
+		mockMvc.perform(get("/h2-console"))
+				.andExpect(status().isUnauthorized());
+	}
+
+	@Test
 	@DisplayName("위조된 토큰은 거부된다")
 	void forgedTokenIsRejected() throws Exception {
 		mockMvc.perform(get(PROTECTED_PATH).header(HttpHeaders.AUTHORIZATION, "Bearer forged.token.value"))

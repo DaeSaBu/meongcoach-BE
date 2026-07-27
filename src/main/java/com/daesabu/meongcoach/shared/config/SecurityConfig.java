@@ -7,6 +7,8 @@ import javax.crypto.SecretKey;
 import org.springframework.boot.security.autoconfigure.web.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -26,7 +28,8 @@ import org.springframework.security.web.access.AccessDeniedHandler;
 
 /**
  * 인증·인가 구성. 클라이언트가 네이티브 앱뿐이라 세션·CSRF·폼 로그인이 필요 없고,
- * 자체 발급 JWT를 Bearer 토큰으로 검증하는 무상태 필터 체인 하나만 둔다.
+ * 자체 발급 JWT를 Bearer 토큰으로 검증하는 무상태 필터 체인을 둔다.
+ * h2-console 전용 체인은 local 프로파일에서만 추가로 등록된다.
  * 이 클래스는 빈 정의만 담고 로직은 shared/security에 두어 커버리지 측정 대상으로 남긴다.
  */
 @Configuration
@@ -50,10 +53,7 @@ public class SecurityConfig {
 				.httpBasic(AbstractHttpConfigurer::disable)
 				.logout(AbstractHttpConfigurer::disable)
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-				// h2-console은 프레임을 쓰므로 동일 출처 프레임만 허용한다 (로컬 전용)
-				.headers(headers -> headers.frameOptions(FrameOptionsConfig::sameOrigin))
 				.authorizeHttpRequests(auth -> auth
-						.requestMatchers(PathRequest.toH2Console()).permitAll()
 						.requestMatchers(PERMIT_ALL_PATHS).permitAll()
 						.anyRequest().authenticated())
 				.oauth2ResourceServer(oauth2 -> oauth2
@@ -62,6 +62,21 @@ public class SecurityConfig {
 				.exceptionHandling(handling -> handling
 						.authenticationEntryPoint(authenticationEntryPoint)
 						.accessDeniedHandler(accessDeniedHandler))
+				.build();
+	}
+
+	// h2-console은 local 전용 별도 체인으로 분리한다. local 외 프로파일에서는 이 빈이 없어
+	// 콘솔 경로도 메인 체인의 anyRequest().authenticated()에 걸린다
+	@Bean
+	@Profile("local")
+	@Order(0)
+	SecurityFilterChain h2ConsoleFilterChain(HttpSecurity http) throws Exception {
+		return http
+				.securityMatcher(PathRequest.toH2Console())
+				.csrf(AbstractHttpConfigurer::disable)
+				// h2-console은 프레임을 쓰므로 동일 출처 프레임만 허용한다
+				.headers(headers -> headers.frameOptions(FrameOptionsConfig::sameOrigin))
+				.authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
 				.build();
 	}
 
