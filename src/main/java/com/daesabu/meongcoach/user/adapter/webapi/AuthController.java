@@ -4,7 +4,9 @@ import com.daesabu.meongcoach.user.adapter.webapi.dto.SocialLoginRequest;
 import com.daesabu.meongcoach.user.adapter.webapi.dto.SocialLoginResponse;
 import com.daesabu.meongcoach.user.adapter.webapi.dto.TokenRefreshRequest;
 import com.daesabu.meongcoach.user.adapter.webapi.dto.TokenRefreshResponse;
+import com.daesabu.meongcoach.user.application.provided.AuthToken;
 import com.daesabu.meongcoach.user.application.provided.SocialLogin;
+import com.daesabu.meongcoach.user.application.provided.SocialLoginResult;
 import com.daesabu.meongcoach.user.application.provided.TokenRefresher;
 import com.daesabu.meongcoach.user.domain.SocialProvider;
 import jakarta.validation.Valid;
@@ -27,11 +29,13 @@ public class AuthController {
 	@PostMapping("/social/{provider}")
 	public SocialLoginResponse socialLogin(@PathVariable String provider,
 	                                       @Valid @RequestBody SocialLoginRequest request) {
-		return SocialLoginResponse.from(socialLogin.login(SocialProvider.from(provider), request.token()));
+		SocialLoginResult result = socialLogin.login(SocialProvider.from(provider), request.token());
+		return SocialLoginResponse.from(result);
 	}
 
 	@PostMapping("/token/refresh")
 	public TokenRefreshResponse refresh(@Valid @RequestBody TokenRefreshRequest request) {
-		return TokenRefreshResponse.from(tokenRefresher.refresh(request.refreshToken()));
+		AuthToken token = tokenRefresher.refresh(request.refreshToken());
+		return TokenRefreshResponse.from(token);
 	}
 }
