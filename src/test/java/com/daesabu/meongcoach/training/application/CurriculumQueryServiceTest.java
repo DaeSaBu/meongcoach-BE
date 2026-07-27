@@ -7,9 +7,11 @@ import com.daesabu.meongcoach.progress.application.LessonProgressService;
 import com.daesabu.meongcoach.progress.application.TopicEntryService;
 import com.daesabu.meongcoach.progress.application.provided.LessonProgressRecorder;
 import com.daesabu.meongcoach.progress.application.provided.TopicEntryRecorder;
+import com.daesabu.meongcoach.training.application.provided.CurriculumDetailView;
 import com.daesabu.meongcoach.training.application.provided.CurriculumFinder;
 import com.daesabu.meongcoach.training.application.provided.CurriculumListView;
 import com.daesabu.meongcoach.training.application.provided.CurriculumView;
+import com.daesabu.meongcoach.training.application.provided.LessonView;
 import com.daesabu.meongcoach.training.domain.Curriculum;
 import com.daesabu.meongcoach.training.domain.CurriculumCreateCommand;
 import com.daesabu.meongcoach.training.domain.CurriculumStatus;
@@ -18,6 +20,7 @@ import com.daesabu.meongcoach.training.domain.LessonCreateCommand;
 import com.daesabu.meongcoach.training.domain.Topic;
 import com.daesabu.meongcoach.training.domain.TopicCreateCommand;
 import com.daesabu.meongcoach.training.domain.TrainingCategory;
+import com.daesabu.meongcoach.training.domain.exception.CurriculumNotFoundException;
 import com.daesabu.meongcoach.training.domain.exception.TopicNotConfiguredException;
 import jakarta.persistence.EntityManagerFactory;
 import org.hibernate.SessionFactory;
@@ -31,12 +34,12 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.TestPropertySource;
 
 /**
- * 커리큘럼 리스트 조회 서비스 검증.
+ * 커리큘럼 리스트·세부 조회 서비스 검증.
  */
 @DataJpaTest
 @Import({CurriculumQueryService.class, TopicEntryService.class, LessonProgressService.class})
 @TestPropertySource(properties = "spring.jpa.properties.hibernate.generate_statistics=true")
-@DisplayName("커리큘럼 리스트 조회 서비스")
+@DisplayName("커리큘럼 조회 서비스")
 class CurriculumQueryServiceTest {
 
 	private static final Long USER_ID = 42L;
@@ -244,6 +247,118 @@ class CurriculumQueryServiceTest {
 		assertThat(countTopicEntries()).isZero();
 	}
 
+	@Test
+	@DisplayName("커리큘럼과 그 레슨 목록을 반환한다")
+	void findCurriculumReturnsCurriculumWithLessons() {
+		Topic topic = persistTopicWithCategory();
+		Curriculum curriculum = persistCurriculum(topic, "앉아 2단계", 2);
+		persistLesson(curriculum, "손 위의 간식", 1, 5);
+		persistLesson(curriculum, "간식 없이 앉아", 2, 10);
+		flushAndClear();
+
+		CurriculumDetailView detail = curriculumFinder.findCurriculum(USER_ID, curriculum.getId());
+
+		assertThat(detail.id()).isEqualTo(curriculum.getId());
+		assertThat(detail.topicId()).isEqualTo(topic.getId());
+		assertThat(detail.title()).isEqualTo("앉아 2단계");
+		assertThat(detail.sortOrder()).isEqualTo(2);
+		assertThat(detail.lessons()).extracting(LessonView::title)
+				.containsExactly("손 위의 간식", "간식 없이 앉아");
+		assertThat(detail.lessons()).extracting(LessonView::estimatedMinutes)
+				.containsExactly(5, 10);
+	}
+
+	@Test
+	@DisplayName("레슨을 정렬 순서 오름차순으로 반환하고 다른 커리큘럼의 레슨은 제외한다")
+	void findCurriculumOrdersLessonsBySortOrder() {
+		Topic topic = persistTopicWithCategory();
+		Curriculum curriculum = persistCurriculum(topic, "1단계", 1);
+		Curriculum other = persistCurriculum(topic, "2단계", 2);
+		persistLesson(curriculum, "셋째 레슨", 3, 5);
+		persistLesson(curriculum, "첫째 레슨", 1, 5);
+		persistLesson(curriculum, "둘째 레슨", 2, 5);
+		persistLesson(other, "다른 커리큘럼 레슨", 1, 5);
+		flushAndClear();
+
+		CurriculumDetailView detail = curriculumFinder.findCurriculum(USER_ID, curriculum.getId());
+
+		assertThat(detail.lessons()).extracting(LessonView::title)
+				.containsExactly("첫째 레슨", "둘째 레슨", "셋째 레슨");
+	}
+
+	@Test
+	@DisplayName("레슨마다 사용자의 반복 완료 횟수를 반환하고 기록이 없으면 0으로 채운다")
+	void findCurriculumReturnsCompletedCountOfEachLesson() {
+		Topic topic = persistTopicWithCategory();
+		Curriculum curriculum = persistCurriculum(topic, "1단계", 1);
+		Lesson twice = persistLesson(curriculum, "첫째 레슨", 1, 5);
+		Lesson once = persistLesson(curriculum, "둘째 레슨", 2, 5);
+		persistLesson(curriculum, "셋째 레슨", 3, 5);
+		flushAndClear();
+		lessonProgressRecorder.completeLesson(USER_ID, twice.getId());
+		lessonProgressRecorder.completeLesson(USER_ID, twice.getId());
+		lessonProgressRecorder.completeLesson(USER_ID, once.getId());
+		flushAndClear();
+
+		CurriculumDetailView detail = curriculumFinder.findCurriculum(USER_ID, curriculum.getId());
+
+		assertThat(detail.lessons()).extracting(LessonView::completedCount)
+				.containsExactly(2, 1, 0);
+	}
+
+	@Test
+	@DisplayName("다른 사용자의 완료 기록은 세지 않는다")
+	void findCurriculumIgnoresOtherUsersProgress() {
+		Topic topic = persistTopicWithCategory();
+		Curriculum curriculum = persistCurriculum(topic, "1단계", 1);
+		Lesson lesson = persistLesson(curriculum, "손 위의 간식", 1, 5);
+		flushAndClear();
+		lessonProgressRecorder.completeLesson(OTHER_USER_ID, lesson.getId());
+		flushAndClear();
+
+		CurriculumDetailView detail = curriculumFinder.findCurriculum(USER_ID, curriculum.getId());
+
+		assertThat(detail.lessons().getFirst().completedCount()).isZero();
+	}
+
+	@Test
+	@DisplayName("존재하지 않는 커리큘럼이면 예외를 던진다")
+	void findCurriculumThrowsWhenCurriculumDoesNotExist() {
+		assertThatThrownBy(() -> curriculumFinder.findCurriculum(USER_ID, 999L))
+				.isInstanceOf(CurriculumNotFoundException.class);
+	}
+
+	@Test
+	@DisplayName("레슨이 없는 커리큘럼은 빈 레슨 목록을 반환한다")
+	void findCurriculumReturnsEmptyLessonsWhenCurriculumHasNoLesson() {
+		Topic topic = persistTopicWithCategory();
+		Curriculum empty = persistCurriculum(topic, "레슨 없는 커리큘럼", 1);
+		Curriculum other = persistCurriculum(topic, "레슨 있는 커리큘럼", 2);
+		persistLesson(other, "손 위의 간식", 1, 5);
+		flushAndClear();
+
+		CurriculumDetailView detail = curriculumFinder.findCurriculum(USER_ID, empty.getId());
+
+		assertThat(detail.id()).isEqualTo(empty.getId());
+		assertThat(detail.lessons()).isEmpty();
+	}
+
+	@Test
+	@DisplayName("레슨 수와 무관하게 세 번의 쿼리로 조회한다")
+	void findCurriculumExecutesConstantQueryCount() {
+		Topic topic = persistTopicWithCategory();
+		Curriculum curriculum = persistCurriculum(topic, "1단계", 1);
+		persistLesson(curriculum, "첫째 레슨", 1, 5);
+		persistLesson(curriculum, "둘째 레슨", 2, 5);
+		persistLesson(curriculum, "셋째 레슨", 3, 5);
+		flushAndClear();
+		Statistics statistics = clearedStatistics();
+
+		curriculumFinder.findCurriculum(USER_ID, curriculum.getId());
+
+		assertThat(statistics.getPrepareStatementCount()).isEqualTo(3);
+	}
+
 	private TrainingCategory persistCategory(String title, int sortOrder) {
 		return entityManager.persist(TrainingCategory.create(title, sortOrder));
 	}
@@ -262,7 +377,12 @@ class CurriculumQueryServiceTest {
 	}
 
 	private Lesson persistLesson(Curriculum curriculum, String title, int sortOrder) {
-		return entityManager.persist(Lesson.create(curriculum, new LessonCreateCommand(title, sortOrder, 5)));
+		return persistLesson(curriculum, title, sortOrder, 5);
+	}
+
+	private Lesson persistLesson(Curriculum curriculum, String title, int sortOrder, int estimatedMinutes) {
+		LessonCreateCommand command = new LessonCreateCommand(title, sortOrder, estimatedMinutes);
+		return entityManager.persist(Lesson.create(curriculum, command));
 	}
 
 	private long countTopicEntries() {

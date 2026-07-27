@@ -2,9 +2,11 @@ package com.daesabu.meongcoach.training.application;
 
 import com.daesabu.meongcoach.progress.application.provided.LessonProgressFinder;
 import com.daesabu.meongcoach.progress.application.provided.TopicEntryFinder;
+import com.daesabu.meongcoach.training.application.provided.CurriculumDetailView;
 import com.daesabu.meongcoach.training.application.provided.CurriculumFinder;
 import com.daesabu.meongcoach.training.application.provided.CurriculumListView;
 import com.daesabu.meongcoach.training.application.provided.CurriculumView;
+import com.daesabu.meongcoach.training.application.provided.LessonView;
 import com.daesabu.meongcoach.training.application.required.CurriculumRepository;
 import com.daesabu.meongcoach.training.application.required.LessonRepository;
 import com.daesabu.meongcoach.training.application.required.TopicRepository;
@@ -12,6 +14,7 @@ import com.daesabu.meongcoach.training.domain.Curriculum;
 import com.daesabu.meongcoach.training.domain.CurriculumStatus;
 import com.daesabu.meongcoach.training.domain.Lesson;
 import com.daesabu.meongcoach.training.domain.Topic;
+import com.daesabu.meongcoach.training.domain.exception.CurriculumNotFoundException;
 import com.daesabu.meongcoach.training.domain.exception.TopicNotConfiguredException;
 import java.util.List;
 import java.util.Map;
@@ -22,7 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 커리큘럼 리스트 조회 서비스. 레슨과 진행도를 각각 한 번에 읽어 커리큘럼 수와 무관하게 쿼리 수를 상수로 유지한다.
+ * 커리큘럼 리스트·세부 조회 서비스. 레슨과 진행도를 각각 한 번에 읽어 커리큘럼·레슨 수와 무관하게 쿼리 수를 상수로 유지한다.
  */
 @Service
 @RequiredArgsConstructor
@@ -52,6 +55,24 @@ public class CurriculumQueryService implements CurriculumFinder {
 						lessonsByCurriculumId.getOrDefault(curriculum.getId(), List.of()), completedLessonIds))
 				.toList();
 		return new CurriculumListView(topic.getId(), topic.getTitle(), curriculumViews);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public CurriculumDetailView findCurriculum(Long userId, Long curriculumId) {
+		Curriculum curriculum = curriculumRepository.findById(curriculumId)
+				.orElseThrow(() -> new CurriculumNotFoundException(curriculumId));
+
+		List<Lesson> lessons = lessonRepository.findAllByCurriculum_IdOrderBySortOrderAscIdAsc(curriculumId);
+		List<Long> lessonIds = lessons.stream().map(Lesson::getId).toList();
+		Map<Long, Integer> completedCounts = lessonProgressFinder.findCompletedCounts(userId, lessonIds);
+
+		List<LessonView> lessonViews = lessons.stream()
+				.map(lesson -> toLessonView(lesson, completedCounts.get(lesson.getId())))
+				.toList();
+		// 토픽은 지연 로딩 프록시의 id만 읽어 추가 쿼리 없이 얻는다
+		return new CurriculumDetailView(curriculum.getId(), curriculum.getTopic().getId(), curriculum.getTitle(),
+				curriculum.getSortOrder(), lessonViews);
 	}
 
 	// 진입 기록이 없거나 기록된 토픽이 더 이상 없으면 카테고리·토픽 정렬 순서 기준 첫 토픽으로 폴백한다
@@ -89,5 +110,10 @@ public class CurriculumQueryService implements CurriculumFinder {
 				.count();
 		return new CurriculumView(curriculum.getId(), curriculum.getTitle(), totalLessons, completedLessons,
 				CurriculumStatus.of(totalLessons, completedLessons));
+	}
+
+	private LessonView toLessonView(Lesson lesson, int completedCount) {
+		return new LessonView(lesson.getId(), lesson.getTitle(), lesson.getSortOrder(), lesson.getEstimatedMinutes(),
+				completedCount);
 	}
 }

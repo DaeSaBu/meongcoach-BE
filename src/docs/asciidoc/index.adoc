@@ -48,6 +48,19 @@ operation::training/curriculum-list[snippets='http-request,request-headers,http-
 
 operation::training/curriculum-list-error[snippets='http-response,response-fields']
 
+=== 커리큘럼 세부 조회
+
+커리큘럼 하나와 그 커리큘럼에 속한 레슨 목록을 조회합니다.
+레슨은 노출 순서(`sortOrder`) 오름차순으로 정렬되며, 각 레슨에는 `X-User-Id` 헤더로 식별한 사용자의
+반복 완료 횟수(`userLessonProgress.completedCount`)가 함께 내려갑니다.
+진행 기록이 없는 레슨의 완료 횟수는 0이고, 레슨이 없는 커리큘럼은 빈 배열로 내려갑니다.
+
+operation::training/curriculum-detail[snippets='http-request,request-headers,path-parameters,http-response,response-fields']
+
+존재하지 않는 커리큘럼을 요청하면 404(`TRAINING_CURRICULUM_NOT_FOUND`)를 반환합니다.
+
+operation::training/curriculum-detail-error[snippets='http-response,response-fields']
+
 === 라이브러리 탭 진입
 
 전체 훈련 카테고리와 각 카테고리에 속한 토픽을 조회합니다.
