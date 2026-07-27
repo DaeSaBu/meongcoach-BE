@@ -41,4 +41,11 @@ public class UserCurriculumProgress extends BaseEntity {
 		progress.topicId = topicId;
 		return progress;
 	}
+
+	/**
+	 * 같은 토픽에 다시 진입했음을 기록한다. 바뀔 필드가 없으므로 수정 시각만 갱신한다.
+	 */
+	public void reenter() {
+		touch();
+	}
 }

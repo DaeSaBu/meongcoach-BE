@@ -42,4 +42,16 @@ class BaseEntityTest {
 		assertThat(user.getCreatedAt()).isEqualTo(createdAt);
 		assertThat(user.getUpdatedAt()).isAfterOrEqualTo(updatedAt);
 	}
+
+	@Test
+	@DisplayName("touch를 호출하면 수정 시각이 갱신된다")
+	void touchRenewsUpdatedAt() {
+		User user = User.registerMember();
+		entityManager.persistAndFlush(user);
+		LocalDateTime updatedAt = user.getUpdatedAt();
+
+		user.touch();
+
+		assertThat(user.getUpdatedAt()).isAfter(updatedAt);
+	}
 }
