@@ -41,3 +41,15 @@ operation::health/check[snippets='http-request,http-response,response-fields']
 카테고리와 토픽 모두 노출 순서(`sortOrder`) 오름차순으로 정렬되며, 토픽이 없는 카테고리는 빈 배열로 내려갑니다.
 
 operation::training/training-categories[snippets='http-request,http-response,response-fields']
+
+=== 레슨 시작 카드 조회
+
+레슨에 속한 카드 전체를 페이지네이션 없이 조회합니다.
+카드와 각 카드의 미디어 모두 노출 순서(`sortOrder`) 오름차순으로 정렬되며, 미디어가 없는 카드는 빈 배열로 내려갑니다.
+이 API는 조회만 수행하며 진행 기록을 만들지 않습니다.
+
+operation::training/lesson-cards[snippets='http-request,path-parameters,http-response,response-fields']
+
+존재하지 않는 레슨을 요청하면 404(`TRAINING_LESSON_NOT_FOUND`)를 반환합니다.
+
+operation::training/lesson-cards-error[snippets='http-response,response-fields']
