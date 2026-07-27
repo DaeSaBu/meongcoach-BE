@@ -33,7 +33,7 @@ import org.springframework.test.web.servlet.MockMvc;
 @DisplayName("인증 API")
 class AuthControllerTest {
 
-	private static final String VALID_TOKEN = "kakao-access-token";
+	private static final String VALID_TOKEN = "kakao-id-token";
 	private static final String VALID_REFRESH_TOKEN = "valid-refresh-token";
 
 	@Autowired
@@ -42,7 +42,7 @@ class AuthControllerTest {
 	@Test
 	@DisplayName("소셜 로그인에 성공하면 토큰과 온보딩 필요 여부를 반환한다")
 	void socialLoginReturnsTokens() throws Exception {
-		mockMvc.perform(post("/api/v1/auth/social/{provider}", "kakao")
+		mockMvc.perform(post("/api/users/social/{provider}", "kakao")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"token\": \"" + VALID_TOKEN + "\"}"))
 				.andExpect(status().isOk())
@@ -54,7 +54,7 @@ class AuthControllerTest {
 								parameterWithName("provider").description("소셜 로그인 제공자. 현재 `kakao`만 지원")
 						),
 						requestFields(
-								fieldWithPath("token").description("앱이 제공자 SDK로 받은 자격증명. 카카오는 액세스 토큰")
+								fieldWithPath("token").description("앱이 제공자 SDK로 받은 자격증명. 카카오는 OIDC ID 토큰")
 						),
 						responseFields(
 								fieldWithPath("accessToken").description("API 호출에 사용할 액세스 토큰"),
@@ -67,7 +67,7 @@ class AuthControllerTest {
 	@Test
 	@DisplayName("제공자가 토큰을 거부하면 401을 반환한다")
 	void socialLoginFailsWhenTokenIsInvalid() throws Exception {
-		mockMvc.perform(post("/api/v1/auth/social/{provider}", "kakao")
+		mockMvc.perform(post("/api/users/social/{provider}", "kakao")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"token\": \"invalid\"}"))
 				.andExpect(status().isUnauthorized())
@@ -87,7 +87,7 @@ class AuthControllerTest {
 	@Test
 	@DisplayName("지원하지 않는 제공자면 400을 반환한다")
 	void socialLoginFailsWhenProviderIsUnsupported() throws Exception {
-		mockMvc.perform(post("/api/v1/auth/social/{provider}", "naver")
+		mockMvc.perform(post("/api/users/social/{provider}", "naver")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"token\": \"" + VALID_TOKEN + "\"}"))
 				.andExpect(status().isBadRequest())
@@ -97,7 +97,7 @@ class AuthControllerTest {
 	@Test
 	@DisplayName("자격증명이 비어 있으면 검증에 실패한다")
 	void socialLoginFailsWhenTokenIsBlank() throws Exception {
-		mockMvc.perform(post("/api/v1/auth/social/{provider}", "kakao")
+		mockMvc.perform(post("/api/users/social/{provider}", "kakao")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"token\": \"\"}"))
 				.andExpect(status().isBadRequest())
@@ -108,7 +108,7 @@ class AuthControllerTest {
 	@Test
 	@DisplayName("리프레시 토큰으로 새 토큰을 발급받는다")
 	void refreshReturnsNewTokens() throws Exception {
-		mockMvc.perform(post("/api/v1/auth/token/refresh")
+		mockMvc.perform(post("/api/users/token/refresh")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"refreshToken\": \"" + VALID_REFRESH_TOKEN + "\"}"))
 				.andExpect(status().isOk())
@@ -128,7 +128,7 @@ class AuthControllerTest {
 	@Test
 	@DisplayName("유효하지 않은 리프레시 토큰이면 401을 반환한다")
 	void refreshFailsWhenTokenIsInvalid() throws Exception {
-		mockMvc.perform(post("/api/v1/auth/token/refresh")
+		mockMvc.perform(post("/api/users/token/refresh")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"refreshToken\": \"invalid\"}"))
 				.andExpect(status().isUnauthorized())

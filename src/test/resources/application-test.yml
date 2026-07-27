@@ -5,4 +5,4 @@ meongcoach:
     secret: meongcoach-test-only-jwt-secret-key-32b
   social:
     kakao:
-      app-id: 1234567
+      audiences: test-kakao-native-app-key

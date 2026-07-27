@@ -26,7 +26,7 @@ import org.springframework.test.web.servlet.MockMvc;
 class SecurityFilterChainTest {
 
 	// 매핑되지 않은 보호 경로. 인증 없으면 401, 인증되면 401이 아닌 응답이 나온다
-	private static final String PROTECTED_PATH = "/api/v1/dogs";
+	private static final String PROTECTED_PATH = "/api/dogs";
 
 	@Autowired
 	private MockMvc mockMvc;
@@ -44,10 +44,17 @@ class SecurityFilterChainTest {
 	@Test
 	@DisplayName("토큰 재발급은 인증 없이 호출할 수 있다")
 	void tokenRefreshIsPermitted() throws Exception {
-		mockMvc.perform(post("/api/v1/auth/token/refresh")
+		mockMvc.perform(post("/api/users/token/refresh")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"refreshToken\": \"\"}"))
 				.andExpect(status().isBadRequest());
+	}
+
+	@Test
+	@DisplayName("인증 엔드포인트가 아닌 회원 경로는 인증이 필요하다")
+	void otherUserPathsAreProtected() throws Exception {
+		mockMvc.perform(get("/api/users/me"))
+				.andExpect(status().isUnauthorized());
 	}
 
 	@Test

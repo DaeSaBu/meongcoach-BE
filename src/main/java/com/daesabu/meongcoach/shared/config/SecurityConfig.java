@@ -33,7 +33,12 @@ import org.springframework.security.web.access.AccessDeniedHandler;
 @EnableWebSecurity
 public class SecurityConfig {
 
-	private static final String[] PERMIT_ALL_PATHS = {"/api/health", "/api/v1/auth/**"};
+	// 토큰을 아직 받지 못한 요청만 열어둔다. `/api/users/**`로 넓히면 이후 추가될 회원 API까지 공개된다
+	private static final String[] PERMIT_ALL_PATHS = {
+			"/api/health",
+			"/api/users/social/**",
+			"/api/users/token/refresh"
+	};
 
 	@Bean
 	SecurityFilterChain securityFilterChain(HttpSecurity http, JwtDecoder accessTokenDecoder,

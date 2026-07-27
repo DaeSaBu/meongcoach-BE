@@ -17,7 +17,7 @@ spring:
     console:
       enabled: true
       path: /h2-console
-  # 로그인 경로에 카카오 API 호출이 끼므로 타임아웃을 반드시 건다 (기본값은 무제한)
+  # 로그인 경로에 카카오 공개 키 조회가 끼므로 타임아웃을 반드시 건다 (기본값은 무제한)
   http:
     clients:
       connect-timeout: 2s
@@ -32,6 +32,8 @@ meongcoach:
     refresh-token-validity: P14D
   social:
     kakao:
-      api-base-url: https://kapi.kakao.com
-      # 카카오 개발자 콘솔의 앱 ID. 다른 앱에서 발급된 토큰을 걸러내는 데 쓴다
-      app-id: ${KAKAO_APP_ID}
+      issuer: https://kauth.kakao.com
+      jwk-set-uri: https://kauth.kakao.com/.well-known/jwks.json
+      # id_token의 aud 후보. 네이티브 앱은 네이티브 앱 키, 웹은 REST API 키라 쉼표로 나열한다.
+      # 다른 앱에서 발급된 토큰을 걸러내는 값이므로 반드시 우리 앱의 키만 넣는다
+      audiences: ${KAKAO_AUDIENCES}
