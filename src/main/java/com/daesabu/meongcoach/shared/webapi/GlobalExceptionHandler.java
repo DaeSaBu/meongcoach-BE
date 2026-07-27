@@ -10,6 +10,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -29,6 +31,9 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 	private static final String PROPERTY_ERRORS = "errors";
 	private static final String INTERNAL_ERROR_CODE = "INTERNAL_SERVER_ERROR";
 	private static final String INTERNAL_ERROR_MESSAGE = "서버 내부 오류가 발생했습니다.";
+	// 인증 실패 원인을 그대로 노출하면 공격자에게 힌트가 되므로 일반화된 문구만 응답한다
+	private static final String UNAUTHORIZED_MESSAGE = "인증이 필요합니다.";
+	private static final String FORBIDDEN_MESSAGE = "접근 권한이 없습니다.";
 
 	@ExceptionHandler(DomainException.class)
 	ProblemDetail handleDomainException(DomainException e) {
@@ -39,6 +44,19 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 			log.warn("도메인 예외(4xx): code={}, message={}", e.getErrorCode().code(), e.getMessage());
 		}
 		return problemDetail(status, e.getErrorCode().code(), e.getMessage());
+	}
+
+	// 시큐리티 필터 체인에서 던져진 예외가 SecurityExceptionTranslator를 거쳐 여기로 들어온다
+	@ExceptionHandler(AuthenticationException.class)
+	ProblemDetail handleAuthenticationException(AuthenticationException e) {
+		log.warn("인증 실패: message={}", e.getMessage());
+		return problemDetail(HttpStatus.UNAUTHORIZED, HttpStatus.UNAUTHORIZED.name(), UNAUTHORIZED_MESSAGE);
+	}
+
+	@ExceptionHandler(AccessDeniedException.class)
+	ProblemDetail handleAccessDeniedException(AccessDeniedException e) {
+		log.warn("접근 권한 없음: message={}", e.getMessage());
+		return problemDetail(HttpStatus.FORBIDDEN, HttpStatus.FORBIDDEN.name(), FORBIDDEN_MESSAGE);
 	}
 
 	@ExceptionHandler(Exception.class)
