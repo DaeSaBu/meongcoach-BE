@@ -4,8 +4,8 @@ GitHub Actions 워크플로우 [.github/workflows/ci.yml](../.github/workflows/c
 
 ## 트리거
 
-- `main`, `dev` 브랜치 대상 push
-- `main`, `dev` 대상 PR의 `opened` / `synchronize`(커밋 추가) / `reopened` / `ready_for_review`(draft 해제)
+- `main`, `develop` 브랜치 대상 push
+- `main`, `develop` 대상 PR의 `opened` / `synchronize`(커밋 추가) / `reopened` / `ready_for_review`(draft 해제)
 - **draft PR에서는 실행하지 않는다.** draft를 해제(`ready_for_review`)하면 그 시점에 실행된다.
 
 ## CD 연동 (예정)
