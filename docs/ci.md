@@ -12,6 +12,8 @@ GitHub Actions 워크플로우 [.github/workflows/ci.yml](../.github/workflows/c
 
 CI는 `workflow_call` 트리거를 함께 선언해 **재사용 가능한 워크플로우**로 만들어져 있다.
 CD를 추가할 때는 CD 워크플로우에서 CI를 선행 job으로 호출하고 배포 job에 `needs`를 걸어, CI 통과 → 배포가 항상 순차적으로 보장되도록 한다.
+배포 job은 `SPRING_PROFILES_ACTIVE=dev|prod`와 `DB_URL`/`DB_USERNAME`/`DB_PASSWORD`/`JWT_SECRET`/`KAKAO_AUDIENCES`를
+GitHub Actions secrets로 주입해야 한다 ([profiles.md](profiles.md) 참고). CI 자체는 test 프로파일이라 주입할 것이 없다.
 
 ```yaml
 # .github/workflows/cd.yml (예정)

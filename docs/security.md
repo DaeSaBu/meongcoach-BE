@@ -98,14 +98,24 @@ Google·Apple도 동일하게 ID 토큰의 `aud` 클레임 확인입니다.
 
 ## 필터 체인 구성
 
-리다이렉트 흐름이 없어 세션이 필요 없으므로 **무상태 체인 하나**만 둡니다.
+리다이렉트 흐름이 없어 세션이 필요 없으므로 **무상태 체인 하나**를 기본으로 둡니다.
 
 - `csrf` / `formLogin` / `httpBasic` / `logout` 비활성화
 - `SessionCreationPolicy.STATELESS`
-- permitAll: `/api/health`, `/api/users/social/**`, `/api/users/token/refresh`, h2-console
+- permitAll: `/api/health`, `/api/users/social/**`, `/api/users/token/refresh`
   (인증 엔드포인트만 열고 `/api/users/**`로 넓히지 않습니다. 이후 추가되는 회원 API가 자동으로 공개되는 것을 막기 위함입니다)
 - 그 외 모든 요청은 인증 필요
 - `oauth2ResourceServer.jwt()` — Bearer 토큰 파싱·검증은 프레임워크가 담당하므로 커스텀 필터가 없습니다
+- 헤더는 기본값 유지 — `X-Frame-Options: DENY`
+
+### h2-console 전용 체인 (local 프로파일 전용)
+
+h2-console 경로는 `@Profile("local")` + `@Order(0)`이 붙은 별도 체인이 담당합니다.
+이 체인에서만 permitAll과 `frameOptions sameOrigin`(콘솔이 프레임을 쓰기 때문)을 허용합니다.
+local 외 프로파일에서는 이 빈 자체가 등록되지 않아 콘솔 경로도 메인 체인의
+`anyRequest().authenticated()`에 걸려 401이며, 콘솔 서블릿도 등록되지 않습니다
+(`spring.h2.console.enabled`는 `application-local.yml`에만 있습니다).
+프로파일 구성은 [profiles.md](profiles.md)를 참고하세요.
 
 ### 인증 실패 응답
 
@@ -166,11 +176,10 @@ Google과 같은 구조(`iss=https://appleid.apple.com`, `jwk-set-uri=https://ap
 
 로컬은 환경 변수로 export하고, CI/배포는 GitHub Actions secrets로 주입합니다.
 테스트는 `src/test/resources/application-test.yml`의 더미 값을 쓰므로 환경 변수가 필요 없습니다.
+dev/prod의 DB 접속 변수(`DB_URL` 등)는 [profiles.md](profiles.md)를 참고하세요.
 
 ## 알려진 제약
 
-- **H2 콘솔이 permitAll이고 `frameOptions`가 sameOrigin입니다.** 인메모리 MVP 전용이며,
-  실제 배포 전에 반드시 제거하거나 프로파일로 분리해야 합니다.
 - **최초 로그인 동시성** — 같은 신규 계정으로 동시에 두 요청이 오면 `(provider, provider_id)`
   유니크 제약 위반으로 한쪽이 500이 될 수 있습니다. 확률이 낮아 MVP에서는 두고, 필요 시
   제약 위반을 잡아 재조회하도록 보완합니다.

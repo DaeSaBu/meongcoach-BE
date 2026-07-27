@@ -1,6 +1,6 @@
 # 멍코치 Back-End 규칙
 
-멍코치 백엔드 저장소입니다. Spring Boot 4.1 / Java 25 / Gradle(Kotlin DSL) / JPA + H2 기반이며, 팀원 3명이 협업합니다.
+멍코치 백엔드 저장소입니다. Spring Boot 4.1 / Java 25 / Gradle(Kotlin DSL) / JPA + H2(로컬)/PostgreSQL(배포) 기반이며, 팀원 3명이 협업합니다.
 
 ## 핵심 규칙
 
@@ -26,6 +26,7 @@
 | [docs/architecture.md](docs/architecture.md)                               | Spring Modulith 모듈 구조, 의존 규칙   |
 | [docs/security.md](docs/security.md)                                       | 인증 흐름, JWT 토큰 정책, 소셜 제공자 확장 방법 |
 | [docs/ci.md](docs/ci.md)                                                   | CI 파이프라인, 커버리지 기준        |
+| [docs/profiles.md](docs/profiles.md)                                       | local/dev/prod 프로파일 구성, DB·ddl-auto 정책 |
 
 ## 문서 추가 방법
 

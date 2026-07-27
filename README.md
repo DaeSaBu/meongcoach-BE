@@ -3,6 +3,9 @@ DaeSaBu's Back-End Repository
 
 ## 로컬 실행
 
+프로파일을 지정하지 않으면 `local`(인메모리 H2)로 기동합니다. dev/prod 프로파일은
+[docs/profiles.md](docs/profiles.md)를 참고하세요.
+
 다음 환경 변수를 설정해야 애플리케이션이 기동합니다. 기본값이 없으므로 미설정 시 기동에 실패합니다.
 
 | 변수 | 설명 |
