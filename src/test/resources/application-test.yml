@@ -1,5 +1,16 @@
 # 테스트 전용 더미 값. 파일명을 application.yml로 만들면 main의 설정을 통째로 가리므로
 # 반드시 프로파일 파일(application-{프로파일}.yml)로 두어 위에 얹히게 한다.
+# datasource는 베이스가 아니라 application-local.yml에 있으므로 테스트용 H2를 명시한다.
+spring:
+  datasource:
+    url: jdbc:h2:mem:meongcoach-test
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+
 meongcoach:
   jwt:
     secret: meongcoach-test-only-jwt-secret-key-32b

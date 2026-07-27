@@ -1,22 +1,14 @@
 spring:
   application:
     name: meongcoach
-  datasource:
-    url: jdbc:h2:mem:meongcoach
-    driver-class-name: org.h2.Driver
-    username: sa
-    password: ""
+  profiles:
+    # 프로파일 미지정 시 로컬 개발로 기동한다 — `./gradlew bootRun`만으로 실행 가능
+    default: local
   jpa:
-    hibernate:
-      ddl-auto: create-drop
     properties:
       hibernate:
         format_sql: true
     open-in-view: false
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
   # 로그인 경로에 카카오 공개 키 조회가 끼므로 타임아웃을 반드시 건다 (기본값은 무제한)
   http:
     clients:
