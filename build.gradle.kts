@@ -41,6 +41,7 @@ dependencies {
 	testImplementation("org.springframework.security:spring-security-test")
 	compileOnly("org.projectlombok:lombok")
 	runtimeOnly("com.h2database:h2")
+	runtimeOnly("org.postgresql:postgresql")
 	annotationProcessor("org.projectlombok:lombok")
 	asciidoctorExt("org.springframework.restdocs:spring-restdocs-asciidoctor")
 	testImplementation("org.springframework.boot:spring-boot-restdocs")
