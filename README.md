@@ -8,11 +8,11 @@ DaeSaBu's Back-End Repository
 | 변수 | 설명 |
 |---|---|
 | `JWT_SECRET` | JWT 서명 키. **32바이트 이상** |
-| `KAKAO_APP_ID` | 카카오 개발자 콘솔의 앱 ID(숫자) |
+| `KAKAO_AUDIENCES` | 허용할 카카오 id_token `aud` 목록(쉼표 구분). 네이티브 앱 키, 필요하면 REST API 키 |
 
 ```bash
 export JWT_SECRET=local-dev-secret-key-at-least-32-bytes-long
-export KAKAO_APP_ID=<카카오 콘솔의 앱 ID>
+export KAKAO_AUDIENCES=<카카오 콘솔의 네이티브 앱 키>
 ./gradlew bootRun
 ```
 
