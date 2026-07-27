@@ -72,6 +72,10 @@ HTTP 요청
 - 컨트롤러는 `provided` 인터페이스에만 의존하며, 웹 DTO ↔ 도메인 입력 모델 변환까지만 담당합니다.
 - 서비스는 도메인 객체를 조합해 유스케이스를 수행하고, 외부 자원은 `required` 인터페이스를 통해서만 접근합니다.
 
+## 임시 인증 방식 (X-User-Id)
+
+Spring Security를 아직 도입하지 않았으므로, 로그인 사용자 식별은 `X-User-Id` 요청 헤더로 임시 처리합니다. 컨트롤러는 `@LoginUser Long userId` 파라미터로 사용자를 받을 뿐이고, 헤더 해석은 `shared/webapi/LoginUserArgumentResolver`가 전담합니다(`shared/config/WebMvcConfig`에서 등록). 헤더가 없거나 값이 숫자가 아니면 리졸버는 스프링 예외를 그대로 던지고, 전역 핸들러가 400 Problem Details로 변환합니다. 인증을 실제 방식(예: Spring Security + JWT)으로 교체할 때 고쳐야 할 지점은 `LoginUserArgumentResolver` **한 곳**이며, `@LoginUser`를 쓰는 컨트롤러 시그니처는 그대로 둘 수 있습니다.
+
 ## 모듈 경계 검증
 
 모듈 경계 위반은 테스트로 검증합니다.

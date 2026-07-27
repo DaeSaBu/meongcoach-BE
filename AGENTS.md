@@ -7,6 +7,7 @@
 - 코드 스타일은 `.editorconfig`(Wooteco 스타일)를 따릅니다 — 탭 들여쓰기, 한 줄 120자 제한, 중괄호 항상 사용.
 - 커밋 메시지는 `type: 한글 설명` 형식을 사용합니다. (예: `feature(user): 회원 가입 API 추가` — 허용 타입은 git-convention.md 참고, `feat`이 아니라 `feature`)
 - 아키텍처는 Spring Modulith 기반 모듈 구조를 따릅니다. 모듈 내부 의존 방향은 항상 `adapter → application → domain`이며, 모듈 간 접근은 `application/provided` 인터페이스로만 합니다.
+- 로그인 사용자 식별은 Spring Security 도입 전까지 `X-User-Id` 헤더 + `@LoginUser` 파라미터로 임시 처리합니다. 교체 지점은 `shared/webapi/LoginUserArgumentResolver` 한 곳입니다. (architecture.md 참고)
 - `main` 브랜치에 직접 push하지 않습니다. 모든 변경은 작업 브랜치에서 PR을 통해 merge합니다.
 - 문서, 커밋 메시지, 코드 주석은 한국어로 작성합니다.
 - 예외는 각 모듈 `domain`에 `{모듈}ErrorCode` enum + `DomainException` 하위 클래스로 정의해 던지기만 하고, 에러 응답 변환은 전역 핸들러가 RFC 9457 Problem Details 형식으로 전담합니다. 컨트롤러/서비스에서 개별 처리하지 않습니다.

@@ -26,6 +26,7 @@
 | 역할 | 위치 | 규칙 | 예시 |
 | --- | --- | --- | --- |
 | 모듈 공개 API 인터페이스 | `application/provided` | 능력을 나타내는 이름, 접미사 없음 | `UserRegister`, `UserFinder` |
+| 애플리케이션 조회 결과 모델 | `application/provided` | `~View` (record) | `CurriculumView`, `LessonView` |
 | 필요 자원 인터페이스 | `application/required` | 자원 이름 그대로 | `UserRepository`, `EmailSender` |
 | 애플리케이션 서비스 | `application` | `~Service` | `UserQueryService`, `UserFinderService` |
 | 컨트롤러 | `adapter/webapi` | `~Controller` | `UserController` |
@@ -49,5 +50,6 @@
 - 도메인 입력 모델은 `~Command` 접미사의 record로 `domain`에 두며, 웹 DTO와 별개로 유지합니다. (예: `DogRegisterCommand`)
 	- 엔티티 정적 팩토리의 순수 값 파라미터가 3개 이상이면 Command로 묶고, 팩토리는 Command를 받아 생성자에 전달합니다.
 	- 연관 엔티티는 Command에 담지 않고 별도 인자로 전달합니다. (예: `Curriculum.create(Topic topic, CurriculumCreateCommand command)`)
+- 애플리케이션 조회 결과는 `application/provided`의 `~View` record로 반환합니다. 필드명은 도메인 기준(`id`, `title`, `sortOrder`)으로 두고, 웹 노출 이름(`topicId`, `topicTitle`)으로 바꾸는 일은 `~Response.from(~View)` 정적 팩토리에서만 합니다. `~View`에 웹 네이밍을 쓰면 `application`이 `adapter`의 관심사를 떠안게 됩니다.
 - DTO ↔ 도메인 변환은 DTO의 정적 팩토리 메서드(`from`, `of`) 또는 `toXxx` 메서드로 처리합니다.
 - 엔티티를 컨트롤러 응답으로 직접 노출하지 않습니다.
