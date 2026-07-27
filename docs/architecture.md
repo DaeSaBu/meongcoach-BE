@@ -22,8 +22,11 @@ com.daesabu.meongcoach
 │   └── domain
 │       ├── User
 │       └── UserRegisterCommand
-├── walk                              ← 모듈 (동일 구조)
-├── matching                          ← 모듈 (동일 구조)
+├── dog                               ← 모듈 (동일 구조)
+├── training                          ← 모듈 (동일 구조)
+├── progress                          ← 모듈 (동일 구조)
+├── ai                                ← 모듈 (동일 구조)
+├── health                            ← 모듈 (동일 구조)
 └── shared                            ← 횡단 관심사
     ├── security
     └── integration

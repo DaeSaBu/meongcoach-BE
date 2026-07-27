@@ -16,7 +16,7 @@
 
 | 대상 | 규칙 | 예시 |
 | --- | --- | --- |
-| 패키지(모듈) | 소문자, 단수형 | `user`, `walk`, `shared` |
+| 패키지(모듈) | 소문자, 단수형 | `user`, `dog`, `shared` |
 | 클래스 | PascalCase | `UserQueryService` |
 | 메서드/변수 | camelCase | `findByName` |
 | 상수 | UPPER_SNAKE_CASE | `MAX_WALK_TIME` |
