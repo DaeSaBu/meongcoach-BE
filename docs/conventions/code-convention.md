@@ -37,6 +37,14 @@
 
 - `domain` 루트에는 엔티티와 enum을 두고, 값 객체는 `domain/vo`, 예외·에러코드는 `domain/exception`으로 분리합니다.
 
+## 트랜잭션
+
+- `@Transactional`은 `application` 계층의 서비스 **구현 클래스**에만 붙입니다. `application/provided` 인터페이스에는 붙이지 않습니다. (트랜잭션 경계는 계약이 아니라 구현 관심사)
+- 서비스 클래스에 `@Transactional(readOnly = true)`를 붙여 기본값을 읽기 전용으로 두고, **쓰기 메서드에만** `@Transactional`로 오버라이드합니다. 쓰기 메서드만 있는 서비스도 동일하게 적용합니다.
+	- 어노테이션 순서는 `@Service` → `@RequiredArgsConstructor` → `@Transactional(readOnly = true)`.
+- 메서드 어노테이션은 클래스 설정과 **병합되지 않고 통째로 대체**합니다. `@Transactional(timeout = 5)`처럼 일부 속성만 쓰면 `readOnly`가 기본값 `false`로 리셋되므로, 조회 메서드에 다른 속성이 필요하면 `readOnly = true`를 함께 명시합니다.
+- 같은 클래스 내부 호출(`this.method()`)은 프록시를 거치지 않아 트랜잭션이 걸리지 않습니다. 별도 빈으로 분리해 해결하고, `AopContext.currentProxy()`나 자기 주입은 쓰지 않습니다.
+
 ## Lombok 사용 규칙
 
 - 허용: `@Getter`, `@RequiredArgsConstructor`, `@NoArgsConstructor(access = AccessLevel.PROTECTED)`(JPA 엔티티), `@Slf4j`(로깅)
