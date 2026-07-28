@@ -5,7 +5,7 @@ API 문서는 Spring REST Docs로 작성합니다. 문서 스니펫은 `adapter/
 ## 작성 방법
 
 - `@WebMvcTest` + `@AutoConfigureRestDocs` 조합으로 작성하고, 테스트에 `document(...)` 호출을 포함합니다.
-- snippet identifier는 `{모듈}/{행위}` 형식을 사용합니다. (예: `user/register`, `walk/start`)
+- snippet identifier는 `{모듈}/{행위}` 형식을 사용합니다. (예: `user/register`, `dog/register`)
 
 ```java
 @WebMvcTest(UserController.class)
