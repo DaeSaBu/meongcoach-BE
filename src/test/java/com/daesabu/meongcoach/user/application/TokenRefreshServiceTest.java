@@ -1,0 +1,56 @@
+package com.daesabu.meongcoach.user.application;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import com.daesabu.meongcoach.user.application.provided.AuthToken;
+import com.daesabu.meongcoach.user.application.required.TokenProvider;
+import com.daesabu.meongcoach.user.domain.exception.InvalidRefreshTokenException;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+@DisplayName("토큰 재발급 서비스")
+class TokenRefreshServiceTest {
+
+	@Test
+	@DisplayName("리프레시 토큰의 회원으로 새 토큰을 발급한다")
+	void refreshIssuesNewTokenForTokenOwner() {
+		TokenRefreshService service = new TokenRefreshService(new StubTokenProvider(7L));
+
+		AuthToken token = service.refresh("refresh-token");
+
+		assertThat(token.accessToken()).isEqualTo("access-7");
+		assertThat(token.refreshToken()).isEqualTo("refresh-7");
+	}
+
+	@Test
+	@DisplayName("유효하지 않은 리프레시 토큰이면 예외를 그대로 전파한다")
+	void refreshPropagatesInvalidTokenException() {
+		TokenRefreshService service = new TokenRefreshService(new StubTokenProvider(null));
+
+		assertThatThrownBy(() -> service.refresh("invalid"))
+				.isInstanceOf(InvalidRefreshTokenException.class);
+	}
+
+	private static class StubTokenProvider implements TokenProvider {
+
+		private final Long userId;
+
+		StubTokenProvider(Long userId) {
+			this.userId = userId;
+		}
+
+		@Override
+		public AuthToken issue(Long userId) {
+			return new AuthToken("access-" + userId, "refresh-" + userId);
+		}
+
+		@Override
+		public Long extractUserId(String refreshToken) {
+			if (userId == null) {
+				throw new InvalidRefreshTokenException();
+			}
+			return userId;
+		}
+	}
+}

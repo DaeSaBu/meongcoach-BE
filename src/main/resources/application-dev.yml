@@ -1,0 +1,11 @@
+# 개발 서버 — PostgreSQL. 접속 정보는 배포 환경 변수로 주입하며 기본값이 없어 미주입 시 기동에 실패한다
+spring:
+  datasource:
+    url: ${DB_URL}
+    driver-class-name: org.postgresql.Driver
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  jpa:
+    hibernate:
+      # 마이그레이션 도구 도입 전까지 엔티티 변경을 자동 반영한다. 컬럼 삭제·이름 변경은 반영되지 않는다
+      ddl-auto: update
