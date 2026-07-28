@@ -24,29 +24,31 @@ class LoginUserArgumentResolverTest {
 	private MockMvc mockMvc;
 
 	@Test
-	@DisplayName("X-User-Id 헤더 값이 로그인 사용자 식별자로 바인딩된다")
-	void bindsUserIdFromHeader() throws Exception {
-		mockMvc.perform(get("/test/login-user").header("X-User-Id", "42"))
+	@WithLoginUser("42")
+	@DisplayName("액세스 토큰의 sub 클레임이 로그인 사용자 식별자로 바인딩된다")
+	void bindsUserIdFromTokenSubject() throws Exception {
+		mockMvc.perform(get("/test/login-user"))
 				.andExpect(status().isOk())
 				.andExpect(content().string("42"));
 	}
 
 	@Test
-	@DisplayName("X-User-Id 헤더가 없으면 400을 반환한다")
-	void missingHeaderReturnsBadRequest() throws Exception {
+	@DisplayName("인증 정보가 없으면 401을 반환한다")
+	void missingAuthenticationReturnsUnauthorized() throws Exception {
 		mockMvc.perform(get("/test/login-user"))
-				.andExpect(status().isBadRequest())
+				.andExpect(status().isUnauthorized())
 				.andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
-				.andExpect(jsonPath("$.code").value("BAD_REQUEST"));
+				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
 	}
 
 	@Test
-	@DisplayName("X-User-Id 헤더 값이 숫자가 아니면 400을 반환한다")
-	void nonNumericHeaderReturnsBadRequest() throws Exception {
-		mockMvc.perform(get("/test/login-user").header("X-User-Id", "not-a-number"))
-				.andExpect(status().isBadRequest())
+	@WithLoginUser("not-a-number")
+	@DisplayName("sub 클레임이 회원 ID 형식이 아니면 401을 반환한다")
+	void nonNumericSubjectReturnsUnauthorized() throws Exception {
+		mockMvc.perform(get("/test/login-user"))
+				.andExpect(status().isUnauthorized())
 				.andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
-				.andExpect(jsonPath("$.code").value("BAD_REQUEST"));
+				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
 	}
 
 	@RestController

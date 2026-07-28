@@ -2,8 +2,6 @@ package com.daesabu.meongcoach.training.adapter.webapi;
 
 import static org.mockito.BDDMockito.then;
 import static org.mockito.BDDMockito.willThrow;
-import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
-import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.put;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
@@ -13,6 +11,7 @@ import static org.springframework.restdocs.request.RequestDocumentation.pathPara
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.daesabu.meongcoach.shared.webapi.WithLoginUser;
 import com.daesabu.meongcoach.training.application.provided.TopicSelector;
 import com.daesabu.meongcoach.training.domain.exception.TopicNotFoundException;
 import org.junit.jupiter.api.DisplayName;
@@ -31,8 +30,6 @@ import org.springframework.test.web.servlet.MockMvc;
 @DisplayName("커리큘럼 화면 변경 API")
 class TrainingTopicControllerTest {
 
-	private static final String USER_ID_HEADER = "X-User-Id";
-
 	@Autowired
 	private MockMvc mockMvc;
 
@@ -40,15 +37,13 @@ class TrainingTopicControllerTest {
 	private TopicSelector topicSelector;
 
 	@Test
+	@WithLoginUser
 	@DisplayName("선택한 토픽 ID를 반환한다")
 	void selectTopicReturnsSelectedTopicId() throws Exception {
-		mockMvc.perform(put("/api/training/topics/{topicId}", 1L).header(USER_ID_HEADER, "42"))
+		mockMvc.perform(put("/api/training/topics/{topicId}", 1L))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.topicId").value(1))
 				.andDo(document("training/topic-select",
-						requestHeaders(
-								headerWithName(USER_ID_HEADER).description("로그인 사용자 ID")
-						),
 						pathParameters(
 								parameterWithName("topicId").description("커리큘럼 화면에 표시할 토픽 ID")
 						),
@@ -59,40 +54,40 @@ class TrainingTopicControllerTest {
 	}
 
 	@Test
-	@DisplayName("헤더에서 읽은 사용자로 토픽 선택을 위임한다")
+	@WithLoginUser
+	@DisplayName("액세스 토큰에서 읽은 사용자로 토픽 선택을 위임한다")
 	void selectTopicDelegatesWithLoginUser() throws Exception {
-		mockMvc.perform(put("/api/training/topics/{topicId}", 7L).header(USER_ID_HEADER, "42"))
+		mockMvc.perform(put("/api/training/topics/{topicId}", 7L))
 				.andExpect(status().isOk());
 
 		then(topicSelector).should().selectTopic(42L, 7L);
 	}
 
 	@Test
+	@WithLoginUser
 	@DisplayName("같은 토픽을 연속으로 선택해도 200을 반환한다")
 	void selectTopicReturnsOkWhenSelectedRepeatedly() throws Exception {
-		mockMvc.perform(put("/api/training/topics/{topicId}", 1L).header(USER_ID_HEADER, "42"))
+		mockMvc.perform(put("/api/training/topics/{topicId}", 1L))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.topicId").value(1));
 
-		mockMvc.perform(put("/api/training/topics/{topicId}", 1L).header(USER_ID_HEADER, "42"))
+		mockMvc.perform(put("/api/training/topics/{topicId}", 1L))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.topicId").value(1));
 	}
 
 	@Test
+	@WithLoginUser
 	@DisplayName("존재하지 않는 토픽이면 404와 에러 코드를 반환한다")
 	void selectTopicReturnsNotFoundWhenTopicDoesNotExist() throws Exception {
 		willThrow(new TopicNotFoundException(999L)).given(topicSelector).selectTopic(42L, 999L);
 
-		mockMvc.perform(put("/api/training/topics/{topicId}", 999L).header(USER_ID_HEADER, "42"))
+		mockMvc.perform(put("/api/training/topics/{topicId}", 999L))
 				.andExpect(status().isNotFound())
 				.andExpect(jsonPath("$.status").value(404))
 				.andExpect(jsonPath("$.code").value("TRAINING_TOPIC_NOT_FOUND"))
 				.andExpect(jsonPath("$.detail").value("id가 999인 토픽을 찾을 수 없습니다."))
 				.andDo(document("training/topic-select-error",
-						requestHeaders(
-								headerWithName(USER_ID_HEADER).description("로그인 사용자 ID")
-						),
 						pathParameters(
 								parameterWithName("topicId").description("커리큘럼 화면에 표시할 토픽 ID")
 						),
@@ -108,10 +103,10 @@ class TrainingTopicControllerTest {
 	}
 
 	@Test
-	@DisplayName("X-User-Id 헤더가 없으면 400을 반환한다")
-	void selectTopicReturnsBadRequestWhenUserIdHeaderIsMissing() throws Exception {
+	@DisplayName("인증 정보가 없으면 401을 반환한다")
+	void selectTopicReturnsUnauthorizedWhenNotAuthenticated() throws Exception {
 		mockMvc.perform(put("/api/training/topics/{topicId}", 1L))
-				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.code").value("BAD_REQUEST"));
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
 	}
 }

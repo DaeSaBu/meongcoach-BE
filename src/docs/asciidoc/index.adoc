@@ -31,6 +31,7 @@ operation::shared/error-unauthorized[snippets='http-response,response-fields']
 
 앱이 소셜 제공자 SDK로 로그인해 받은 자격증명을 서버가 검증하고, 우리 서비스의 JWT를 발급합니다.
 이후 모든 API는 발급받은 액세스 토큰을 `Authorization: Bearer {accessToken}` 헤더로 전달해 호출합니다.
+인증이 필요한 API에서 사용자를 식별하는 값은 액세스 토큰의 `sub` 클레임(회원 ID)이며, 별도 요청 헤더나 파라미터로 받지 않습니다.
 
 === 소셜 로그인
 
@@ -61,11 +62,11 @@ operation::health/check[snippets='http-request,http-response,response-fields']
 === 커리큘럼 리스트 조회
 
 커리큘럼 탭에 표시할 토픽과 그 토픽의 커리큘럼 목록을 진행 상태와 함께 조회합니다.
-대상 토픽은 `X-User-Id` 헤더로 식별한 사용자가 마지막으로 진입한 토픽이며,
+대상 토픽은 액세스 토큰으로 식별한 사용자가 마지막으로 진입한 토픽이며,
 진입 기록이 없거나 기록된 토픽이 더 이상 없으면 카테고리·토픽 노출 순서 기준 첫 토픽으로 폴백합니다.
 커리큘럼은 노출 순서(`sortOrder`) 오름차순으로 정렬되며, 이 요청은 어떤 데이터도 저장하지 않습니다.
 
-operation::training/curriculum-list[snippets='http-request,request-headers,http-response,response-fields']
+operation::training/curriculum-list[snippets='http-request,http-response,response-fields']
 
 등록된 토픽이 하나도 없으면 404(`TRAINING_TOPIC_NOT_CONFIGURED`)를 반환합니다.
 
@@ -74,11 +75,11 @@ operation::training/curriculum-list-error[snippets='http-response,response-field
 === 커리큘럼 세부 조회
 
 커리큘럼 하나와 그 커리큘럼에 속한 레슨 목록을 조회합니다.
-레슨은 노출 순서(`sortOrder`) 오름차순으로 정렬되며, 각 레슨에는 `X-User-Id` 헤더로 식별한 사용자의
+레슨은 노출 순서(`sortOrder`) 오름차순으로 정렬되며, 각 레슨에는 액세스 토큰으로 식별한 사용자의
 반복 완료 횟수(`userLessonProgress.completedCount`)가 함께 내려갑니다.
 진행 기록이 없는 레슨의 완료 횟수는 0이고, 레슨이 없는 커리큘럼은 빈 배열로 내려갑니다.
 
-operation::training/curriculum-detail[snippets='http-request,request-headers,path-parameters,http-response,response-fields']
+operation::training/curriculum-detail[snippets='http-request,path-parameters,http-response,response-fields']
 
 존재하지 않는 커리큘럼을 요청하면 404(`TRAINING_CURRICULUM_NOT_FOUND`)를 반환합니다.
 
@@ -106,10 +107,10 @@ operation::training/lesson-cards-error[snippets='http-response,response-fields']
 === 레슨 완료
 
 레슨을 끝냈을 때 반복 완료 횟수를 1 올리고 갱신된 횟수를 반환합니다.
-`X-User-Id` 헤더로 사용자를 식별하며 요청 바디는 받지 않습니다.
+액세스 토큰으로 사용자를 식별하며 요청 바디는 받지 않습니다.
 첫 완료 시 진행도가 생성되어 완료 횟수가 1이 되고, 이후 호출할 때마다 1씩 증가합니다.
 
-operation::training/lesson-complete[snippets='http-request,request-headers,path-parameters,http-response,response-fields']
+operation::training/lesson-complete[snippets='http-request,path-parameters,http-response,response-fields']
 
 존재하지 않는 레슨을 요청하면 404(`TRAINING_LESSON_NOT_FOUND`)를 반환하며 진행도는 변경되지 않습니다.
 
@@ -118,9 +119,9 @@ operation::training/lesson-complete-error[snippets='http-response,response-field
 === 커리큘럼 화면 변경
 
 커리큘럼 탭에 표시할 토픽을 변경합니다.
-`X-User-Id` 헤더로 사용자를 식별하며, 같은 토픽을 연속으로 선택해도 진입 기록은 한 건만 유지되는 멱등 요청입니다.
+액세스 토큰으로 사용자를 식별하며, 같은 토픽을 연속으로 선택해도 진입 기록은 한 건만 유지되는 멱등 요청입니다.
 
-operation::training/topic-select[snippets='http-request,request-headers,path-parameters,http-response,response-fields']
+operation::training/topic-select[snippets='http-request,path-parameters,http-response,response-fields']
 
 존재하지 않는 토픽을 요청하면 404(`TRAINING_TOPIC_NOT_FOUND`)를 반환합니다.
 

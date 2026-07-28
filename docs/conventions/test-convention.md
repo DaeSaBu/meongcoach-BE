@@ -44,6 +44,15 @@ void registerFailsWhenEmailIsDuplicated() {
 
 **주의:** 첫 인증 필요 엔드포인트를 테스트하려고 이 의존성을 추가하는 순간(`@WithMockUser`, `SecurityMockMvcRequestPostProcessors.jwt()` 등), `WebMvcTypeExcludeFilter`가 우리 `SecurityConfig`를 슬라이스에 포함하지 **않기** 때문에 Boot의 기본 "전부 인증" 체인이 적용되어 **기존 `@WebMvcTest`가 모두 401이 됩니다.** 그때는 순수 MVC 슬라이스에 `@AutoConfigureMockMvc(addFilters = false)`를 붙이거나 permit-all `@TestConfiguration`을 함께 도입해야 합니다.
 
+그래서 `@LoginUser`가 필요한 컨트롤러 슬라이스에서는 `SecurityMockMvcRequestPostProcessors.jwt()`를 쓸 수 없습니다. 이 후처리기는 SecurityContext를 `SecurityContextRepository`에 저장할 뿐이고, 그것을 다시 `SecurityContextHolder`로 올려주는 것은 필터 체인이기 때문입니다. 대신 테스트용 `@WithLoginUser`(`shared/webapi`) 애노테이션을 테스트 메서드에 붙입니다. `@WithSecurityContext` 기반이라 스프링 시큐리티 테스트 리스너가 컨텍스트를 직접 세우고 테스트 후 정리까지 하므로 필터 체인이 필요 없습니다. 인증되지 않은 상황은 애노테이션을 붙이지 않는 것으로 표현합니다.
+
+```java
+@Test
+@WithLoginUser("42")
+@DisplayName("액세스 토큰에서 읽은 사용자로 조회를 위임한다")
+void findDelegatesWithLoginUser() throws Exception { ... }
+```
+
 필터 체인 자체의 동작(`SecurityConfig`는 커버리지 검증 제외 대상)은 `shared/config/SecurityFilterChainTest`가 `@SpringBootTest`로 실제 요청을 보내 검증합니다.
 - `@SpringBootTest` 전체 통합 테스트는 꼭 필요한 시나리오에만 최소한으로 사용합니다.
 
