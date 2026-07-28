@@ -109,8 +109,9 @@ class SocialLoginServiceTest {
 	}
 
 	private SocialLoginService socialLoginService(SocialProfileReader reader) {
-		return new SocialLoginService(List.of(reader), userRepository, socialAccountRepository,
-				userProfileRepository, new StubTokenProvider());
+		return new SocialLoginService(List.of(reader),
+				new SocialUserRegisterService(userRepository, socialAccountRepository, userProfileRepository),
+				new StubTokenProvider());
 	}
 
 	private static class StubSocialProfileReader implements SocialProfileReader {
