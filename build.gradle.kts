@@ -37,6 +37,7 @@ dependencies {
 	implementation("org.springframework.modulith:spring-modulith-starter-core")
 	compileOnly("org.projectlombok:lombok")
 	runtimeOnly("com.h2database:h2")
+	runtimeOnly("org.postgresql:postgresql")
 	annotationProcessor("org.projectlombok:lombok")
 	asciidoctorExt("org.springframework.restdocs:spring-restdocs-asciidoctor")
 	testImplementation("org.springframework.boot:spring-boot-restdocs")
