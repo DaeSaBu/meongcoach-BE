@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class TopicSelectService implements TopicSelector {
 
 	private final TopicRepository topicRepository;

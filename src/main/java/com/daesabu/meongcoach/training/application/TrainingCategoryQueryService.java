@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class TrainingCategoryQueryService implements TrainingCategoryFinder {
 
 	private final TrainingCategoryRepository trainingCategoryRepository;
@@ -26,7 +27,6 @@ public class TrainingCategoryQueryService implements TrainingCategoryFinder {
 	private final TopicRepository topicRepository;
 
 	@Override
-	@Transactional(readOnly = true)
 	public List<TrainingCategoryView> findAll() {
 		List<TrainingCategory> categories = trainingCategoryRepository.findAllByOrderBySortOrderAscIdAsc();
 		Map<Long, List<Topic>> topicsByCategoryId = groupTopicsByCategoryId();

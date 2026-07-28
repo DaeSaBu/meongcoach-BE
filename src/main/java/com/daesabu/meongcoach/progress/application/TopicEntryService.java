@@ -14,12 +14,12 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class TopicEntryService implements TopicEntryFinder, TopicEntryRecorder {
 
 	private final UserSelectedTopicRepository userSelectedTopicRepository;
 
 	@Override
-	@Transactional(readOnly = true)
 	public Optional<Long> findLatestEnteredTopicId(Long userId) {
 		return userSelectedTopicRepository.findByUserId(userId)
 				.map(UserSelectedTopic::getTopicId);

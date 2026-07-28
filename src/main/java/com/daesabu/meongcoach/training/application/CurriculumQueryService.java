@@ -29,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class CurriculumQueryService implements CurriculumFinder {
 
 	private final TopicRepository topicRepository;
@@ -42,7 +43,6 @@ public class CurriculumQueryService implements CurriculumFinder {
 	private final LessonProgressFinder lessonProgressFinder;
 
 	@Override
-	@Transactional(readOnly = true)
 	public CurriculumListView findCurriculums(Long userId) {
 		Topic topic = resolveTopic(userId);
 
@@ -58,7 +58,6 @@ public class CurriculumQueryService implements CurriculumFinder {
 	}
 
 	@Override
-	@Transactional(readOnly = true)
 	public CurriculumDetailView findCurriculum(Long userId, Long curriculumId) {
 		Curriculum curriculum = curriculumRepository.findById(curriculumId)
 				.orElseThrow(() -> new CurriculumNotFoundException(curriculumId));

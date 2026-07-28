@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class LessonProgressService implements LessonProgressFinder, LessonProgressRecorder {
 
 	private static final int COMPLETED_THRESHOLD = 1;
@@ -25,7 +26,6 @@ public class LessonProgressService implements LessonProgressFinder, LessonProgre
 	private final UserLessonProgressRepository userLessonProgressRepository;
 
 	@Override
-	@Transactional(readOnly = true)
 	public Set<Long> findCompletedLessonIds(Long userId, Collection<Long> lessonIds) {
 		return userLessonProgressRepository.findAllByUserIdAndLessonIdIn(userId, lessonIds).stream()
 				.filter(progress -> progress.getCompletedCount() >= COMPLETED_THRESHOLD)
@@ -34,7 +34,6 @@ public class LessonProgressService implements LessonProgressFinder, LessonProgre
 	}
 
 	@Override
-	@Transactional(readOnly = true)
 	public Map<Long, Integer> findCompletedCounts(Long userId, Collection<Long> lessonIds) {
 		Map<Long, Integer> recordedCounts = userLessonProgressRepository
 				.findAllByUserIdAndLessonIdIn(userId, lessonIds).stream()

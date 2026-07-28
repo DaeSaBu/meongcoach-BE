@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class LessonQueryService implements LessonFinder {
 
 	private final LessonRepository lessonRepository;
@@ -30,7 +31,6 @@ public class LessonQueryService implements LessonFinder {
 	private final CardMediaRepository cardMediaRepository;
 
 	@Override
-	@Transactional(readOnly = true)
 	public List<CardView> findCards(Long lessonId) {
 		if (!lessonRepository.existsById(lessonId)) {
 			throw new LessonNotFoundException(lessonId);

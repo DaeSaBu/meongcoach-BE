@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class LessonCompleteService implements LessonCompleter {
 
 	private final LessonRepository lessonRepository;
