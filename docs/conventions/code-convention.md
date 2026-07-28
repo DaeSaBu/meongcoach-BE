@@ -16,7 +16,7 @@
 
 | 대상 | 규칙 | 예시 |
 | --- | --- | --- |
-| 패키지(모듈) | 소문자, 단수형 | `user`, `walk`, `shared` |
+| 패키지(모듈) | 소문자, 단수형 | `user`, `dog`, `shared` |
 | 클래스 | PascalCase | `UserQueryService` |
 | 메서드/변수 | camelCase | `findByName` |
 | 상수 | UPPER_SNAKE_CASE | `MAX_WALK_TIME` |
@@ -29,7 +29,9 @@
 | 애플리케이션 조회 결과 모델 | `application/provided` | `~View` (record) | `CurriculumView`, `LessonView` |
 | 필요 자원 인터페이스 | `application/required` | 자원 이름 그대로 | `UserRepository`, `EmailSender` |
 | 애플리케이션 서비스 | `application` | `~Service` | `UserQueryService`, `UserFinderService` |
-| 컨트롤러 | `adapter/webapi` | `~Controller` | `UserController` |
+| 컨트롤러 | `adapter/webapi` | `~Controller` | `AuthController` |
+| 외부 API 연동 포트 | `application/required` | 자원 이름 그대로 | `SocialProfileReader` |
+| 외부 API 연동 구현 | `adapter/client` | `{제공자}~` | `KakaoSocialProfileReader` |
 | 도메인 모델 | `domain` | 개념 이름 그대로 | `User` |
 | 도메인 입력 모델 | `domain` | `~Command` (record) | `DogRegisterCommand` |
 | 값 객체 | `domain/vo` | 개념 이름 그대로 | `Email` |
@@ -55,6 +57,7 @@
 
 - 요청/응답 DTO는 Java `record`로 작성합니다.
 - 웹 요청/응답 DTO는 `adapter/webapi/dto`에 두고, 접미사는 요청 `~Request`, 응답 `~Response`를 사용합니다. (예: `UserSignupRequest`, `UserResponse`)
+- 외부 API 응답 DTO는 `adapter/client/dto`에 `~Response` record로 두고, 필드 매핑은 `@JsonProperty`로 지정합니다. 전역 네이밍 전략(`spring.jackson.property-naming-strategy`)을 바꾸면 우리 API 응답까지 영향을 받으므로 쓰지 않습니다.
 - 도메인 입력 모델은 `~Command` 접미사의 record로 `domain`에 두며, 웹 DTO와 별개로 유지합니다. (예: `DogRegisterCommand`)
 	- 엔티티 정적 팩토리의 순수 값 파라미터가 3개 이상이면 Command로 묶고, 팩토리는 Command를 받아 생성자에 전달합니다.
 	- 연관 엔티티는 Command에 담지 않고 별도 인자로 전달합니다. (예: `Curriculum.create(Topic topic, CurriculumCreateCommand command)`)

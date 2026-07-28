@@ -10,7 +10,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * 계층 의존 방향 검증. 모듈 내부 의존은 adapter → application → domain 단방향이어야 한다.
+ * 모듈 내부 계층 의존 방향 검증. 의존은 항상 adapter → application → domain 이어야 한다.
  */
 @DisplayName("계층 의존 방향 검증")
 class LayerDependencyTest {
@@ -19,13 +19,11 @@ class LayerDependencyTest {
 			.withImportOption(new ImportOption.DoNotIncludeTests())
 			.importPackages("com.daesabu.meongcoach");
 
-	// 아직 클래스가 없는 계층이 있어도 통과하도록 withOptionalLayers(true)를 적용한다
 	@Test
-	@DisplayName("모듈 내부 의존은 adapter → application → domain 방향을 따른다")
-	void layersFollowDependencyDirection() {
+	@DisplayName("계층 의존은 adapter에서 application, domain 방향으로만 흐른다")
+	void layersDependInOneDirection() {
 		layeredArchitecture()
 				.consideringOnlyDependenciesInLayers()
-				.withOptionalLayers(true)
 				.layer("Adapter").definedBy("..adapter..")
 				.layer("Application").definedBy("..application..")
 				.layer("Domain").definedBy("..domain..")
@@ -36,7 +34,7 @@ class LayerDependencyTest {
 	}
 
 	@Test
-	@DisplayName("모듈 간 순환 의존이 없다")
+	@DisplayName("최상위 모듈 사이에 순환 의존이 없다")
 	void modulesAreFreeOfCycles() {
 		slices()
 				.matching("com.daesabu.meongcoach.(*)..")

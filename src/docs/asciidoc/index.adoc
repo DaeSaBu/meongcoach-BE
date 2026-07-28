@@ -9,12 +9,6 @@
 API 문서는 테스트를 통과한 스니펫으로부터 생성됩니다.
 모듈별로 `== {모듈} API` 섹션을 추가하고, `operation::` 매크로로 스니펫을 포함합니다.
 
-// == User API
-//
-// === 회원 가입
-//
-// operation::user/register[snippets='http-request,path-parameters,request-fields,http-response,response-fields']
-
 == 공통 에러 응답
 
 모든 에러 응답은 RFC 9457 Problem Details 형식(`application/problem+json`)을 따릅니다.
@@ -26,6 +20,35 @@ operation::shared/error[snippets='http-response,response-fields']
 === 입력값 검증 실패
 
 operation::shared/error-validation[snippets='http-response,response-fields']
+
+=== 인증 실패
+
+토큰이 없거나 유효하지 않으면 시큐리티 필터 체인에서 401을 반환합니다.
+
+operation::shared/error-unauthorized[snippets='http-response,response-fields']
+
+== Auth API
+
+앱이 소셜 제공자 SDK로 로그인해 받은 자격증명을 서버가 검증하고, 우리 서비스의 JWT를 발급합니다.
+이후 모든 API는 발급받은 액세스 토큰을 `Authorization: Bearer {accessToken}` 헤더로 전달해 호출합니다.
+
+=== 소셜 로그인
+
+operation::user/social-login[snippets='http-request,path-parameters,request-fields,http-response,response-fields']
+
+==== 실패 응답
+
+operation::user/social-login-error[snippets='http-response,response-fields']
+
+=== 토큰 재발급
+
+액세스 토큰이 만료되면 리프레시 토큰으로 새 토큰 쌍을 발급받습니다.
+
+operation::user/token-refresh[snippets='http-request,request-fields,http-response,response-fields']
+
+==== 실패 응답
+
+operation::user/token-refresh-error[snippets='http-response,response-fields']
 
 == Health API
 

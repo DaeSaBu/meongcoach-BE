@@ -20,6 +20,8 @@ import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDoc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -131,6 +133,37 @@ class GlobalExceptionHandlerTest {
 				.andExpect(jsonPath("$.detail").value("서버 내부 오류가 발생했습니다."));
 	}
 
+	@Test
+	@DisplayName("인증 실패는 원인 노출 없이 UNAUTHORIZED를 반환한다")
+	void authenticationFailureReturnsUnauthorized() throws Exception {
+		mockMvc.perform(get("/test/authentication-error"))
+				.andExpect(status().isUnauthorized())
+				.andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
+				.andExpect(jsonPath("$.detail").value("인증이 필요합니다."))
+				.andExpect(jsonPath("$.timestamp").exists())
+				.andDo(document("shared/error-unauthorized",
+						responseFields(
+								fieldWithPath("title").description("HTTP 상태 이름"),
+								fieldWithPath("status").description("HTTP 상태 코드"),
+								fieldWithPath("detail").description("사람이 읽을 수 있는 에러 설명"),
+								fieldWithPath("instance").description("에러가 발생한 요청 경로"),
+								fieldWithPath("code").description("클라이언트 분기용 에러 코드"),
+								fieldWithPath("timestamp").description("에러 발생 시각(UTC)")
+						)
+				));
+	}
+
+	@Test
+	@DisplayName("권한 부족은 FORBIDDEN을 반환한다")
+	void accessDeniedReturnsForbidden() throws Exception {
+		mockMvc.perform(get("/test/access-denied"))
+				.andExpect(status().isForbidden())
+				.andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+				.andExpect(jsonPath("$.code").value("FORBIDDEN"))
+				.andExpect(jsonPath("$.detail").value("접근 권한이 없습니다."));
+	}
+
 	enum TestErrorCode implements ErrorCode {
 		TEST_NOT_FOUND(404, "테스트 리소스를 찾을 수 없습니다."),
 		TEST_INTERNAL(500, "테스트 처리 중 서버 오류가 발생했습니다.");
@@ -196,6 +229,17 @@ class GlobalExceptionHandlerTest {
 		@GetMapping("/test/unexpected")
 		void unexpected() {
 			throw new IllegalStateException("내부 구현 정보가 담긴 메시지");
+		}
+
+		// 실제로는 시큐리티 필터 체인이 던지고 SecurityExceptionTranslator가 여기로 되돌린다
+		@GetMapping("/test/authentication-error")
+		void authenticationError() {
+			throw new BadCredentialsException("자격증명이 올바르지 않습니다");
+		}
+
+		@GetMapping("/test/access-denied")
+		void accessDenied() {
+			throw new AccessDeniedException("권한이 없습니다");
 		}
 	}
 }
