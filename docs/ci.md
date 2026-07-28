@@ -1,45 +1,42 @@
-# CI
+# CI/CD
 
-GitHub Actions 워크플로우 [.github/workflows/ci.yml](../.github/workflows/ci.yml)이 코드 품질을 검증합니다.
+[.github/workflows/ci-dev.yml](../.github/workflows/ci-dev.yml)과 [.github/workflows/ci-prod.yml](../.github/workflows/ci-prod.yml)이 코드 검증을 담당합니다. [.github/workflows/cd-dev.yml](../.github/workflows/cd-dev.yml)과 [.github/workflows/cd-prod.yml](../.github/workflows/cd-prod.yml)이 환경별 배포를 담당합니다.
 
-## 트리거
+## 실행 조건
 
-- `main`, `dev` 브랜치 대상 push
-- `main`, `dev` 대상 PR의 `opened` / `synchronize`(커밋 추가) / `reopened` / `ready_for_review`(draft 해제)
-- **draft PR에서는 실행하지 않는다.** draft를 해제(`ready_for_review`)하면 그 시점에 실행된다.
+- `main`, `develop` 대상 PR: CI만 실행
+- `develop` push: CI 통과 후 dev 자동 배포
+- `main`에서 수동 실행: CI 통과와 입력 검증 후 prod 배포
+- draft PR: 실행하지 않고 draft를 해제하면 실행
 
-## CD 연동 (예정)
+prod 배포는 health check까지 성공한 dev 배포의 `dev_commit_sha`, `release_version`의 `vMAJOR.MINOR.PATCH`, `confirmation`의 `DEPLOY_PRODUCTION`을 입력해야 합니다. dev와 prod의 Git tree가 같아야 하며 GitHub `production` environment의 필수 승인자를 설정합니다.
 
-CI는 `workflow_call` 트리거를 함께 선언해 **재사용 가능한 워크플로우**로 만들어져 있다.
-CD를 추가할 때는 CD 워크플로우에서 CI를 선행 job으로 호출하고 배포 job에 `needs`를 걸어, CI 통과 → 배포가 항상 순차적으로 보장되도록 한다.
+## CI
 
-```yaml
-# .github/workflows/cd.yml (예정)
-jobs:
-  ci:
-    uses: ./.github/workflows/ci.yml
-  deploy:
-    needs: ci        # CI 성공 시에만 배포 실행
-    runs-on: ubuntu-latest
-    steps: ...
-```
+1. JDK 25와 Gradle 캐시 설정
+2. Spotless 포맷 검사
+3. 전체 테스트와 JaCoCo 커버리지 검증
+4. JaCoCo HTML 리포트 업로드
+5. PR 커버리지 코멘트 작성
 
-## 실행 단계
+라인 커버리지는 70% 이상이어야 합니다. `MeongcoachApplication`과 `shared/config`는 검증에서 제외합니다.
 
-1. JDK 25 (temurin) 셋업 + Gradle 캐시
-2. `./gradlew test jacocoTestCoverageVerification` — 전체 테스트 실행 및 커버리지 검증
-3. JaCoCo HTML 리포트를 CI 아티팩트(`jacoco-report`)로 업로드 (실패 시에도 업로드)
-4. PR 이벤트인 경우 [madrapps/jacoco-report](https://github.com/Madrapps/jacoco-report)가 커버리지 수치를 PR 코멘트로 작성 (커밋 추가 시 기존 코멘트를 갱신)
+## 배포
 
-## 커버리지 기준
+| 구분 | dev | prod |
+| --- | --- | --- |
+| 브랜치 | `develop` | `main` |
+| 실행 | push 자동 | 수동 |
+| GitHub environment | 없음 | `production` |
+| ECR | `meongcoach-dev-ecr` | `meongcoach-prod-ecr` |
+| ECS cluster | `meongcoach-dev-cluster` | `meongcoach-prod-cluster` |
+| ECS service | `meongcoach-dev-svc` | `meongcoach-prod-svc` |
+| AWS role secret | `AWS_DEV_DEPLOY_ROLE_ARN` | `AWS_PROD_DEPLOY_ROLE_ARN` |
 
-- **라인 커버리지 70% 이상.** 미달 시 빌드가 실패하고 PR을 merge할 수 없습니다.
-- 검증 제외 대상: `MeongcoachApplication`(부트스트랩), `shared/config`(설정 클래스) — `build.gradle.kts`의 `jacocoExcludes` 참고
-- 기준치·제외 대상 변경은 팀 합의 후 `build.gradle.kts`와 이 문서를 함께 수정합니다.
+배포는 `linux/amd64` 이미지를 커밋 SHA 태그로 ECR에 올리고 현재 task definition의 `api` 이미지만 교체합니다. dev는 `SPRING_PROFILES_ACTIVE=dev`를 함께 설정해 ECS의 `DB_*` 환경변수로 RDS PostgreSQL에 연결하며, 서비스 안정화 후 환경별 health endpoint를 확인합니다.
 
-## 실패 시 확인 방법
+## 알림과 실패 확인
 
-- 로컬 재현: `./gradlew test jacocoTestCoverageVerification`
-- 커버리지 수치: PR 코멘트(전체/변경 파일별)로 확인
-- 커버리지 리포트: `build/reports/jacoco/test/html/index.html` (CI에서는 아티팩트 다운로드)
-- 테스트 리포트: `build/reports/tests/test/index.html`
+- CI는 PR 코멘트, JaCoCo artifact, Actions 로그에서 확인합니다.
+- Slack 채널에서 `/github subscribe DaeSaBu/meongcoach-BE workflows:{name:"CI - Dev","CD - Dev","CI - Prod","CD - Prod"}`로 workflow 알림을 구독합니다.
+- 로컬 CI는 `./gradlew spotlessCheck test jacocoTestCoverageVerification`으로 재현합니다.
