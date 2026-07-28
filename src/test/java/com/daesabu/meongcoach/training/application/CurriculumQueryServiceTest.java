@@ -64,7 +64,7 @@ class CurriculumQueryServiceTest {
 	@Test
 	@DisplayName("가장 최근에 진입한 토픽의 커리큘럼을 반환한다")
 	void findCurriculumsReturnsCurriculumsOfLatestEnteredTopic() {
-		TrainingCategory category = persistCategory("기본 훈련", 1);
+		TrainingCategory category = persistCategory("기본 교육", 1);
 		Topic first = persistTopic(category, "앉아", 1);
 		Topic second = persistTopic(category, "기다려", 2);
 		persistCurriculum(first, "앉아 1단계", 1);
@@ -84,8 +84,8 @@ class CurriculumQueryServiceTest {
 	@Test
 	@DisplayName("진입 기록이 없으면 첫 토픽으로 폴백한다")
 	void findCurriculumsFallsBackToFirstTopicWhenNoEntryRecorded() {
-		TrainingCategory advanced = persistCategory("심화 훈련", 2);
-		TrainingCategory basic = persistCategory("기본 훈련", 1);
+		TrainingCategory advanced = persistCategory("심화 교육", 2);
+		TrainingCategory basic = persistCategory("기본 교육", 1);
 		Topic advancedTopic = persistTopic(advanced, "이리와", 1);
 		Topic basicTopic = persistTopic(basic, "앉아", 1);
 		persistCurriculum(advancedTopic, "이리와 1단계", 1);
@@ -103,7 +103,7 @@ class CurriculumQueryServiceTest {
 	@Test
 	@DisplayName("진입 기록의 토픽이 더 이상 존재하지 않으면 첫 토픽으로 폴백한다")
 	void findCurriculumsFallsBackToFirstTopicWhenEnteredTopicIsGone() {
-		TrainingCategory category = persistCategory("기본 훈련", 1);
+		TrainingCategory category = persistCategory("기본 교육", 1);
 		Topic topic = persistTopic(category, "앉아", 1);
 		persistCurriculum(topic, "앉아 1단계", 1);
 		flushAndClear();
@@ -368,7 +368,7 @@ class CurriculumQueryServiceTest {
 	}
 
 	private Topic persistTopicWithCategory() {
-		return persistTopic(persistCategory("기본 훈련", 1), "앉아", 1);
+		return persistTopic(persistCategory("기본 교육", 1), "앉아", 1);
 	}
 
 	private Curriculum persistCurriculum(Topic topic, String title, int sortOrder) {

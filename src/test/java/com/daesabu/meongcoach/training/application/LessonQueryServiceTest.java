@@ -52,7 +52,7 @@ class LessonQueryServiceTest {
 	@Test
 	@DisplayName("카드를 정렬 순서 오름차순으로 반환한다")
 	void findCardsOrdersCardsBySortOrder() {
-		Lesson lesson = persistLesson("기본 훈련");
+		Lesson lesson = persistLesson("기본 교육");
 		persistCard(lesson, "나중 카드 지시문", 2);
 		persistCard(lesson, "먼저 카드 지시문", 1);
 		flushAndClear();
@@ -66,7 +66,7 @@ class LessonQueryServiceTest {
 	@Test
 	@DisplayName("카드 안의 미디어를 정렬 순서 오름차순으로 반환한다")
 	void findCardsOrdersCardMediaBySortOrderWithinCard() {
-		Lesson lesson = persistLesson("기본 훈련");
+		Lesson lesson = persistLesson("기본 교육");
 		Card card = persistCard(lesson, "지시문", 1);
 		persistCardMedia(card, MediaType.IMAGE, "https://cdn.example.com/3.png", 3);
 		persistCardMedia(card, MediaType.IMAGE, "https://cdn.example.com/1.png", 1);
@@ -84,7 +84,7 @@ class LessonQueryServiceTest {
 	@Test
 	@DisplayName("미디어를 소속 카드에 담아 반환한다")
 	void findCardsGroupsCardMediaIntoOwningCard() {
-		Lesson lesson = persistLesson("기본 훈련");
+		Lesson lesson = persistLesson("기본 교육");
 		Card first = persistCard(lesson, "첫째 지시문", 1);
 		Card second = persistCard(lesson, "둘째 지시문", 2);
 		persistCardMedia(first, MediaType.IMAGE, "https://cdn.example.com/first.png", 1);
@@ -104,7 +104,7 @@ class LessonQueryServiceTest {
 	@Test
 	@DisplayName("미디어 유형과 소속 카드 id를 그대로 반환한다")
 	void findCardsReturnsMediaTypeAndOwningCardId() {
-		Lesson lesson = persistLesson("기본 훈련");
+		Lesson lesson = persistLesson("기본 교육");
 		Card card = persistCard(lesson, "지시문", 1);
 		persistCardMedia(card, MediaType.VIDEO, "https://cdn.example.com/1.mp4", 1);
 		flushAndClear();
@@ -119,7 +119,7 @@ class LessonQueryServiceTest {
 	@Test
 	@DisplayName("미디어가 없는 카드는 빈 미디어 목록을 갖는다")
 	void findCardsReturnsEmptyCardMediaWhenCardHasNoMedia() {
-		Lesson lesson = persistLesson("기본 훈련");
+		Lesson lesson = persistLesson("기본 교육");
 		persistCard(lesson, "미디어 없는 지시문", 1);
 		Card other = persistCard(lesson, "미디어 있는 지시문", 2);
 		persistCardMedia(other, MediaType.IMAGE, "https://cdn.example.com/1.png", 1);
@@ -134,8 +134,8 @@ class LessonQueryServiceTest {
 	@Test
 	@DisplayName("다른 레슨의 카드는 조회되지 않는다")
 	void findCardsExcludesCardsOfOtherLessons() {
-		Lesson lesson = persistLesson("기본 훈련");
-		Lesson other = persistLesson("심화 훈련");
+		Lesson lesson = persistLesson("기본 교육");
+		Lesson other = persistLesson("심화 교육");
 		persistCard(lesson, "대상 지시문", 1);
 		persistCard(other, "다른 레슨 지시문", 1);
 		flushAndClear();
@@ -148,7 +148,7 @@ class LessonQueryServiceTest {
 	@Test
 	@DisplayName("카드가 없는 레슨은 빈 목록을 반환한다")
 	void findCardsReturnsEmptyListWhenLessonHasNoCard() {
-		Lesson lesson = persistLesson("기본 훈련");
+		Lesson lesson = persistLesson("기본 교육");
 		flushAndClear();
 
 		List<CardView> cards = lessonFinder.findCards(lesson.getId());
@@ -168,7 +168,7 @@ class LessonQueryServiceTest {
 	@Test
 	@DisplayName("카드 수와 무관하게 세 번의 쿼리로 조회한다")
 	void findCardsExecutesThreeQueries() {
-		Lesson lesson = persistLesson("기본 훈련");
+		Lesson lesson = persistLesson("기본 교육");
 		Card first = persistCard(lesson, "첫째 지시문", 1);
 		Card second = persistCard(lesson, "둘째 지시문", 2);
 		persistCardMedia(first, MediaType.IMAGE, "https://cdn.example.com/1.png", 1);

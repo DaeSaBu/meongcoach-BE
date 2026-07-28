@@ -19,7 +19,7 @@ class TrainingErrorCodeTest {
 
 	@ParameterizedTest
 	@EnumSource(TrainingErrorCode.class)
-	@DisplayName("훈련 콘텐츠 조회 실패는 모두 404 상태와 한국어 메시지를 갖는다")
+	@DisplayName("교육 콘텐츠 조회 실패는 모두 404 상태와 한국어 메시지를 갖는다")
 	void allCodesAreNotFoundWithKoreanMessage(TrainingErrorCode errorCode) {
 		assertThat(errorCode.status()).isEqualTo(404);
 		assertThat(errorCode.message()).isNotBlank();

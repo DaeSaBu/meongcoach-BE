@@ -5,7 +5,7 @@ import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 /**
- * 훈련 카테고리 조회 리포지토리. Spring Data JPA가 런타임에 구현한다.
+ * 교육 카테고리 조회 리포지토리. Spring Data JPA가 런타임에 구현한다.
  */
 public interface TrainingCategoryRepository extends JpaRepository<TrainingCategory, Long> {
 

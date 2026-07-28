@@ -32,7 +32,7 @@ class LessonRepositoryTest {
 	@Test
 	@DisplayName("여러 커리큘럼의 레슨을 정렬 순서 오름차순으로 조회한다")
 	void findAllByCurriculumIdInOrdersBySortOrderAscending() {
-		Topic topic = persistTopic("기본 훈련");
+		Topic topic = persistTopic("기본 교육");
 		Curriculum first = persistCurriculum(topic, "첫째 커리큘럼", 1);
 		Curriculum second = persistCurriculum(topic, "둘째 커리큘럼", 2);
 		persistLesson(first, "셋째", 3);
@@ -50,7 +50,7 @@ class LessonRepositoryTest {
 	@Test
 	@DisplayName("정렬 순서가 같으면 id 오름차순으로 조회한다")
 	void findAllByCurriculumIdInOrdersByIdAscendingWhenSortOrderIsSame() {
-		Topic topic = persistTopic("기본 훈련");
+		Topic topic = persistTopic("기본 교육");
 		Curriculum curriculum = persistCurriculum(topic, "커리큘럼", 1);
 		Lesson first = persistLesson(curriculum, "먼저 등록", 1);
 		Lesson second = persistLesson(curriculum, "나중 등록", 1);
@@ -66,7 +66,7 @@ class LessonRepositoryTest {
 	@Test
 	@DisplayName("조회 대상에 없는 커리큘럼의 레슨은 조회되지 않는다")
 	void findAllByCurriculumIdInExcludesLessonsOfOtherCurriculums() {
-		Topic topic = persistTopic("기본 훈련");
+		Topic topic = persistTopic("기본 교육");
 		Curriculum target = persistCurriculum(topic, "대상 커리큘럼", 1);
 		Curriculum other = persistCurriculum(topic, "다른 커리큘럼", 2);
 		persistLesson(target, "대상 레슨", 1);
@@ -83,7 +83,7 @@ class LessonRepositoryTest {
 	@Test
 	@DisplayName("커리큘럼 id 목록이 비어 있으면 빈 목록을 반환한다")
 	void findAllByCurriculumIdInReturnsEmptyListWhenIdsAreEmpty() {
-		Topic topic = persistTopic("기본 훈련");
+		Topic topic = persistTopic("기본 교육");
 		Curriculum curriculum = persistCurriculum(topic, "커리큘럼", 1);
 		persistLesson(curriculum, "레슨", 1);
 		entityManager.flush();
@@ -96,7 +96,7 @@ class LessonRepositoryTest {
 	@Test
 	@DisplayName("단일 커리큘럼의 레슨을 정렬 순서 오름차순으로 조회한다")
 	void findAllByCurriculumIdOrdersBySortOrderAscending() {
-		Topic topic = persistTopic("기본 훈련");
+		Topic topic = persistTopic("기본 교육");
 		Curriculum curriculum = persistCurriculum(topic, "커리큘럼", 1);
 		persistLesson(curriculum, "셋째", 3);
 		persistLesson(curriculum, "첫째", 1);
@@ -112,7 +112,7 @@ class LessonRepositoryTest {
 	@Test
 	@DisplayName("다른 커리큘럼의 레슨은 조회되지 않는다")
 	void findAllByCurriculumIdExcludesOtherCurriculumLessons() {
-		Topic topic = persistTopic("기본 훈련");
+		Topic topic = persistTopic("기본 교육");
 		Curriculum target = persistCurriculum(topic, "대상 커리큘럼", 1);
 		Curriculum other = persistCurriculum(topic, "다른 커리큘럼", 2);
 		persistLesson(target, "대상 레슨", 1);
@@ -128,7 +128,7 @@ class LessonRepositoryTest {
 	@Test
 	@DisplayName("레슨이 없는 커리큘럼이면 빈 목록을 반환한다")
 	void findAllByCurriculumIdReturnsEmptyListWhenCurriculumHasNoLesson() {
-		Topic topic = persistTopic("기본 훈련");
+		Topic topic = persistTopic("기본 교육");
 		Curriculum curriculum = persistCurriculum(topic, "커리큘럼", 1);
 		entityManager.flush();
 

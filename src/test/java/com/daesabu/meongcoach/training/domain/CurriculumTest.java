@@ -9,10 +9,10 @@ import org.junit.jupiter.api.Test;
 class CurriculumTest {
 
 	private Curriculum createCurriculum() {
-		TrainingCategory category = TrainingCategory.create("기본 훈련", 1);
-		Topic topic = Topic.create(category, new TopicCreateCommand("산책 훈련", 1));
+		TrainingCategory category = TrainingCategory.create("기본 교육", 1);
+		Topic topic = Topic.create(category, new TopicCreateCommand("산책 교육", 1));
 		return Curriculum.create(topic, new CurriculumCreateCommand("리드줄 적응", 1,
-				"https://cdn.meongcoach.com/thumb.png", "리드줄에 익숙해지는 훈련"));
+				"https://cdn.meongcoach.com/thumb.png", "리드줄에 익숙해지는 교육"));
 	}
 
 	@Test
@@ -23,7 +23,7 @@ class CurriculumTest {
 		assertThat(curriculum.getTitle()).isEqualTo("리드줄 적응");
 		assertThat(curriculum.getSortOrder()).isEqualTo(1);
 		assertThat(curriculum.getThumbnailUrl()).isEqualTo("https://cdn.meongcoach.com/thumb.png");
-		assertThat(curriculum.getDescription()).isEqualTo("리드줄에 익숙해지는 훈련");
+		assertThat(curriculum.getDescription()).isEqualTo("리드줄에 익숙해지는 교육");
 	}
 
 	@Test
@@ -31,8 +31,8 @@ class CurriculumTest {
 	void createConnectsTopicAndCategory() {
 		Curriculum curriculum = createCurriculum();
 
-		assertThat(curriculum.getTopic().getTitle()).isEqualTo("산책 훈련");
-		assertThat(curriculum.getTopic().getTrainingCategory().getTitle()).isEqualTo("기본 훈련");
+		assertThat(curriculum.getTopic().getTitle()).isEqualTo("산책 교육");
+		assertThat(curriculum.getTopic().getTrainingCategory().getTitle()).isEqualTo("기본 교육");
 		assertThat(curriculum.getTopic().getSortOrder()).isEqualTo(1);
 		assertThat(curriculum.getTopic().getTrainingCategory().getSortOrder()).isEqualTo(1);
 	}

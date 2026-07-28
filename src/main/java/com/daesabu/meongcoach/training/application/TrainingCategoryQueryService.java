@@ -15,7 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 훈련 카테고리 조회 서비스. 카테고리·토픽을 각각 한 번씩만 조회하고 메모리에서 그룹핑한다.
+ * 교육 카테고리 조회 서비스. 카테고리·토픽을 각각 한 번씩만 조회하고 메모리에서 그룹핑한다.
  */
 @Service
 @RequiredArgsConstructor

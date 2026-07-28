@@ -30,7 +30,7 @@ class CurriculumRepositoryTest {
 	@Test
 	@DisplayName("토픽의 커리큘럼을 정렬 순서 오름차순으로 조회한다")
 	void findAllByTopicOrdersBySortOrderAscending() {
-		Topic topic = persistTopic("기본 훈련");
+		Topic topic = persistTopic("기본 교육");
 		persistCurriculum(topic, "셋째", 3);
 		persistCurriculum(topic, "첫째", 1);
 		persistCurriculum(topic, "둘째", 2);
@@ -45,7 +45,7 @@ class CurriculumRepositoryTest {
 	@Test
 	@DisplayName("정렬 순서가 같으면 id 오름차순으로 조회한다")
 	void findAllByTopicOrdersByIdAscendingWhenSortOrderIsSame() {
-		Topic topic = persistTopic("기본 훈련");
+		Topic topic = persistTopic("기본 교육");
 		Curriculum first = persistCurriculum(topic, "먼저 등록", 1);
 		Curriculum second = persistCurriculum(topic, "나중 등록", 1);
 		entityManager.flush();
@@ -59,7 +59,7 @@ class CurriculumRepositoryTest {
 	@Test
 	@DisplayName("다른 토픽의 커리큘럼은 조회되지 않는다")
 	void findAllByTopicExcludesOtherTopicCurriculums() {
-		Topic topic = persistTopic("기본 훈련");
+		Topic topic = persistTopic("기본 교육");
 		Topic otherTopic = persistTopic("문제 행동");
 		persistCurriculum(topic, "대상 커리큘럼", 1);
 		persistCurriculum(otherTopic, "다른 토픽 커리큘럼", 1);
@@ -74,7 +74,7 @@ class CurriculumRepositoryTest {
 	@Test
 	@DisplayName("커리큘럼이 없는 토픽이면 빈 목록을 반환한다")
 	void findAllByTopicReturnsEmptyListWhenTopicHasNoCurriculum() {
-		Topic topic = persistTopic("기본 훈련");
+		Topic topic = persistTopic("기본 교육");
 		entityManager.flush();
 
 		List<Curriculum> curriculums = curriculumRepository.findAllByTopic_IdOrderBySortOrderAscIdAsc(topic.getId());

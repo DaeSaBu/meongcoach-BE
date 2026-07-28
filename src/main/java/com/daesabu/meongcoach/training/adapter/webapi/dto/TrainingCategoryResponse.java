@@ -4,7 +4,7 @@ import com.daesabu.meongcoach.training.application.provided.TrainingCategoryView
 import java.util.List;
 
 /**
- * 훈련 카테고리 응답. 소속 토픽을 함께 담는다.
+ * 교육 카테고리 응답. 소속 토픽을 함께 담는다.
  */
 public record TrainingCategoryResponse(
 		Long trainingCategoryId,

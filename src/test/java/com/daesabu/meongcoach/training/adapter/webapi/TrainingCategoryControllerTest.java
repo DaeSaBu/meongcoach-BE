@@ -35,14 +35,14 @@ class TrainingCategoryControllerTest {
 	private TrainingCategoryFinder trainingCategoryFinder;
 
 	@Test
-	@DisplayName("훈련 카테고리와 소속 토픽 목록을 반환한다")
+	@DisplayName("교육 카테고리와 소속 토픽 목록을 반환한다")
 	void findAllReturnsCategoriesWithTopics() throws Exception {
 		given(trainingCategoryFinder.findAll()).willReturn(List.of(
-				new TrainingCategoryView(1L, "기본 훈련", 1, List.of(
+				new TrainingCategoryView(1L, "기본 교육", 1, List.of(
 						new TopicView(10L, "앉아", 1),
 						new TopicView(11L, "기다려", 2)
 				)),
-				new TrainingCategoryView(2L, "심화 훈련", 2, List.of(
+				new TrainingCategoryView(2L, "심화 교육", 2, List.of(
 						new TopicView(20L, "이리와", 1)
 				))
 		));
@@ -50,7 +50,7 @@ class TrainingCategoryControllerTest {
 		mockMvc.perform(get("/api/training/training-categories"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.trainingCategories[0].trainingCategoryId").value(1))
-				.andExpect(jsonPath("$.trainingCategories[0].trainingCategoryTitle").value("기본 훈련"))
+				.andExpect(jsonPath("$.trainingCategories[0].trainingCategoryTitle").value("기본 교육"))
 				.andExpect(jsonPath("$.trainingCategories[0].trainingCategorySortOrder").value(1))
 				.andExpect(jsonPath("$.trainingCategories[0].topics[0].topicId").value(10))
 				.andExpect(jsonPath("$.trainingCategories[0].topics[0].topicTitle").value("앉아"))
@@ -60,11 +60,11 @@ class TrainingCategoryControllerTest {
 				.andExpect(jsonPath("$.trainingCategories[1].topics[0].topicId").value(20))
 				.andDo(document("training/training-categories",
 						responseFields(
-								fieldWithPath("trainingCategories[]").description("훈련 카테고리 목록"),
-								fieldWithPath("trainingCategories[].trainingCategoryId").description("훈련 카테고리 ID"),
-								fieldWithPath("trainingCategories[].trainingCategoryTitle").description("훈련 카테고리 이름"),
+								fieldWithPath("trainingCategories[]").description("교육 카테고리 목록"),
+								fieldWithPath("trainingCategories[].trainingCategoryId").description("교육 카테고리 ID"),
+								fieldWithPath("trainingCategories[].trainingCategoryTitle").description("교육 카테고리 이름"),
 								fieldWithPath("trainingCategories[].trainingCategorySortOrder")
-										.description("훈련 카테고리 노출 순서. 오름차순 정렬"),
+										.description("교육 카테고리 노출 순서. 오름차순 정렬"),
 								fieldWithPath("trainingCategories[].topics[]").description("카테고리에 속한 토픽 목록. 없으면 빈 배열"),
 								fieldWithPath("trainingCategories[].topics[].topicId").description("토픽 ID"),
 								fieldWithPath("trainingCategories[].topics[].topicTitle").description("토픽 이름"),
@@ -78,7 +78,7 @@ class TrainingCategoryControllerTest {
 	@DisplayName("토픽이 없는 카테고리는 빈 배열을 반환한다")
 	void findAllReturnsEmptyTopicsWhenCategoryHasNoTopic() throws Exception {
 		given(trainingCategoryFinder.findAll()).willReturn(List.of(
-				new TrainingCategoryView(1L, "기본 훈련", 1, List.of())
+				new TrainingCategoryView(1L, "기본 교육", 1, List.of())
 		));
 
 		mockMvc.perform(get("/api/training/training-categories"))

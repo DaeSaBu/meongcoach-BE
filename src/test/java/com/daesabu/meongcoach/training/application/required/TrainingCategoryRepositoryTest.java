@@ -11,10 +11,10 @@ import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 
 /**
- * 훈련 카테고리 조회 리포지토리 검증.
+ * 교육 카테고리 조회 리포지토리 검증.
  */
 @DataJpaTest
-@DisplayName("훈련 카테고리 리포지토리")
+@DisplayName("교육 카테고리 리포지토리")
 class TrainingCategoryRepositoryTest {
 
 	@Autowired
@@ -27,14 +27,14 @@ class TrainingCategoryRepositoryTest {
 	@DisplayName("카테고리를 정렬 순서 오름차순으로 조회한다")
 	void findAllOrdersBySortOrderAscending() {
 		entityManager.persist(TrainingCategory.create("생활 습관", 3));
-		entityManager.persist(TrainingCategory.create("기본 훈련", 1));
+		entityManager.persist(TrainingCategory.create("기본 교육", 1));
 		entityManager.persist(TrainingCategory.create("문제 행동", 2));
 		entityManager.flush();
 
 		List<TrainingCategory> categories = trainingCategoryRepository.findAllByOrderBySortOrderAscIdAsc();
 
 		assertThat(categories).extracting(TrainingCategory::getTitle)
-				.containsExactly("기본 훈련", "문제 행동", "생활 습관");
+				.containsExactly("기본 교육", "문제 행동", "생활 습관");
 	}
 
 	@Test

@@ -45,7 +45,7 @@ class TopicRepositoryTest {
 	@Test
 	@DisplayName("카테고리와 정렬 순서가 같으면 id 오름차순으로 조회한다")
 	void findAllOrdersByIdAscendingWhenSortOrderIsSame() {
-		TrainingCategory category = persistCategory("기본 훈련", 1);
+		TrainingCategory category = persistCategory("기본 교육", 1);
 		Topic first = persistTopic(category, "먼저 등록", 1);
 		Topic second = persistTopic(category, "나중 등록", 1);
 		entityManager.flush();

@@ -63,7 +63,7 @@ operation::training/curriculum-detail-error[snippets='http-response,response-fie
 
 === 라이브러리 탭 진입
 
-전체 훈련 카테고리와 각 카테고리에 속한 토픽을 조회합니다.
+전체 교육 카테고리와 각 카테고리에 속한 토픽을 조회합니다.
 카테고리와 토픽 모두 노출 순서(`sortOrder`) 오름차순으로 정렬되며, 토픽이 없는 카테고리는 빈 배열로 내려갑니다.
 
 operation::training/training-categories[snippets='http-request,http-response,response-fields']

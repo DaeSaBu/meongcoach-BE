@@ -34,7 +34,7 @@ class CardRepositoryTest {
 	@Test
 	@DisplayName("레슨의 카드를 정렬 순서 오름차순으로 조회한다")
 	void findAllByLessonIdOrdersBySortOrderAscending() {
-		Lesson lesson = persistLesson("기본 훈련");
+		Lesson lesson = persistLesson("기본 교육");
 		persistCard(lesson, "셋째", 3);
 		persistCard(lesson, "첫째", 1);
 		persistCard(lesson, "둘째", 2);
@@ -49,7 +49,7 @@ class CardRepositoryTest {
 	@Test
 	@DisplayName("정렬 순서가 같으면 id 오름차순으로 조회한다")
 	void findAllByLessonIdOrdersByIdAscendingWhenSortOrderIsSame() {
-		Lesson lesson = persistLesson("기본 훈련");
+		Lesson lesson = persistLesson("기본 교육");
 		Card first = persistCard(lesson, "먼저 등록", 1);
 		Card second = persistCard(lesson, "나중 등록", 1);
 		entityManager.flush();
@@ -63,7 +63,7 @@ class CardRepositoryTest {
 	@Test
 	@DisplayName("다른 레슨의 카드는 조회되지 않는다")
 	void findAllByLessonIdExcludesOtherLessonCards() {
-		Lesson target = persistLesson("기본 훈련");
+		Lesson target = persistLesson("기본 교육");
 		Lesson other = persistLesson("문제 행동");
 		persistCard(target, "대상 카드", 1);
 		persistCard(other, "다른 카드", 1);
@@ -78,7 +78,7 @@ class CardRepositoryTest {
 	@Test
 	@DisplayName("카드가 없는 레슨이면 빈 목록을 반환한다")
 	void findAllByLessonIdReturnsEmptyListWhenLessonHasNoCard() {
-		Lesson lesson = persistLesson("기본 훈련");
+		Lesson lesson = persistLesson("기본 교육");
 		entityManager.flush();
 
 		List<Card> cards = cardRepository.findAllByLesson_IdOrderBySortOrderAscIdAsc(lesson.getId());

@@ -37,7 +37,7 @@ class CardMediaRepositoryTest {
 	@Test
 	@DisplayName("여러 카드의 미디어를 정렬 순서 오름차순으로 조회한다")
 	void findAllByCardIdInOrdersBySortOrderAscending() {
-		Lesson lesson = persistLesson("기본 훈련");
+		Lesson lesson = persistLesson("기본 교육");
 		Card first = persistCard(lesson, "첫째 카드", 1);
 		Card second = persistCard(lesson, "둘째 카드", 2);
 		persistCardMedia(first, "https://cdn.example.com/3.png", 3);
@@ -56,7 +56,7 @@ class CardMediaRepositoryTest {
 	@Test
 	@DisplayName("정렬 순서가 같으면 id 오름차순으로 조회한다")
 	void findAllByCardIdInOrdersByIdAscendingWhenSortOrderIsSame() {
-		Lesson lesson = persistLesson("기본 훈련");
+		Lesson lesson = persistLesson("기본 교육");
 		Card card = persistCard(lesson, "카드", 1);
 		CardMedia first = persistCardMedia(card, "https://cdn.example.com/first.png", 1);
 		CardMedia second = persistCardMedia(card, "https://cdn.example.com/second.png", 1);
@@ -72,7 +72,7 @@ class CardMediaRepositoryTest {
 	@Test
 	@DisplayName("조회 대상에 없는 카드의 미디어는 조회되지 않는다")
 	void findAllByCardIdInExcludesMediaOfOtherCards() {
-		Lesson lesson = persistLesson("기본 훈련");
+		Lesson lesson = persistLesson("기본 교육");
 		Card target = persistCard(lesson, "대상 카드", 1);
 		Card other = persistCard(lesson, "다른 카드", 2);
 		persistCardMedia(target, "https://cdn.example.com/target.png", 1);
@@ -89,7 +89,7 @@ class CardMediaRepositoryTest {
 	@Test
 	@DisplayName("카드 id 목록이 비어 있으면 빈 목록을 반환한다")
 	void findAllByCardIdInReturnsEmptyListWhenIdsAreEmpty() {
-		Lesson lesson = persistLesson("기본 훈련");
+		Lesson lesson = persistLesson("기본 교육");
 		Card card = persistCard(lesson, "카드", 1);
 		persistCardMedia(card, "https://cdn.example.com/1.png", 1);
 		entityManager.flush();

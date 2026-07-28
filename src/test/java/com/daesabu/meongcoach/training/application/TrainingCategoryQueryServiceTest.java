@@ -21,12 +21,12 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.TestPropertySource;
 
 /**
- * 훈련 카테고리 조회 서비스 검증.
+ * 교육 카테고리 조회 서비스 검증.
  */
 @DataJpaTest
 @Import(TrainingCategoryQueryService.class)
 @TestPropertySource(properties = "spring.jpa.properties.hibernate.generate_statistics=true")
-@DisplayName("훈련 카테고리 조회 서비스")
+@DisplayName("교육 카테고리 조회 서비스")
 class TrainingCategoryQueryServiceTest {
 
 	@Autowired
@@ -54,7 +54,7 @@ class TrainingCategoryQueryServiceTest {
 	@Test
 	@DisplayName("카테고리 안의 토픽을 정렬 순서 오름차순으로 반환한다")
 	void findAllOrdersTopicsBySortOrderWithinCategory() {
-		TrainingCategory category = persistCategory("기본 훈련", 1);
+		TrainingCategory category = persistCategory("기본 교육", 1);
 		persistTopic(category, "셋째 토픽", 3);
 		persistTopic(category, "첫째 토픽", 1);
 		persistTopic(category, "둘째 토픽", 2);
@@ -70,8 +70,8 @@ class TrainingCategoryQueryServiceTest {
 	@Test
 	@DisplayName("토픽을 소속 카테고리에 담아 반환한다")
 	void findAllGroupsTopicsIntoOwningCategory() {
-		TrainingCategory basic = persistCategory("기본 훈련", 1);
-		TrainingCategory advanced = persistCategory("심화 훈련", 2);
+		TrainingCategory basic = persistCategory("기본 교육", 1);
+		TrainingCategory advanced = persistCategory("심화 교육", 2);
 		persistTopic(basic, "앉아", 1);
 		persistTopic(advanced, "기다려", 1);
 		persistTopic(advanced, "이리와", 2);
@@ -80,7 +80,7 @@ class TrainingCategoryQueryServiceTest {
 		List<TrainingCategoryView> categories = trainingCategoryFinder.findAll();
 
 		assertThat(categories).extracting(TrainingCategoryView::title)
-				.containsExactly("기본 훈련", "심화 훈련");
+				.containsExactly("기본 교육", "심화 교육");
 		assertThat(categories.get(0).topics()).extracting(TopicView::title).containsExactly("앉아");
 		assertThat(categories.get(1).topics()).extracting(TopicView::title).containsExactly("기다려", "이리와");
 	}
@@ -110,8 +110,8 @@ class TrainingCategoryQueryServiceTest {
 	@Test
 	@DisplayName("카테고리 수와 무관하게 두 번의 쿼리로 조회한다")
 	void findAllExecutesTwoQueries() {
-		TrainingCategory basic = persistCategory("기본 훈련", 1);
-		TrainingCategory advanced = persistCategory("심화 훈련", 2);
+		TrainingCategory basic = persistCategory("기본 교육", 1);
+		TrainingCategory advanced = persistCategory("심화 교육", 2);
 		persistTopic(basic, "앉아", 1);
 		persistTopic(advanced, "기다려", 1);
 		flushAndClear();
