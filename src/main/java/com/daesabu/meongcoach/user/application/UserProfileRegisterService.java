@@ -9,8 +9,6 @@ import com.daesabu.meongcoach.user.domain.Mbti;
 import com.daesabu.meongcoach.user.domain.User;
 import com.daesabu.meongcoach.user.domain.UserProfile;
 import com.daesabu.meongcoach.user.domain.exception.AlreadyOnboardedException;
-import com.daesabu.meongcoach.user.domain.exception.InvalidGenderException;
-import com.daesabu.meongcoach.user.domain.exception.InvalidMbtiException;
 import com.daesabu.meongcoach.user.domain.exception.UserNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -38,28 +36,12 @@ public class UserProfileRegisterService implements UserProfileRegister {
 		UserProfile profile = UserProfile.create(user, info.nickname());
 		profile.changeBirthDate(info.birthDate());
 		if (info.mbti() != null) {
-			profile.changeMbti(parseMbti(info.mbti()));
+			profile.changeMbti(Mbti.from(info.mbti()));
 		}
 		if (info.gender() != null) {
-			profile.changeGender(parseGender(info.gender()));
+			profile.changeGender(Gender.from(info.gender()));
 		}
 		userProfileRepository.save(profile);
-	}
-
-	private Mbti parseMbti(String mbti) {
-		try {
-			return Mbti.valueOf(mbti);
-		} catch (IllegalArgumentException e) {
-			throw new InvalidMbtiException(mbti);
-		}
-	}
-
-	private Gender parseGender(String gender) {
-		try {
-			return Gender.valueOf(gender);
-		} catch (IllegalArgumentException e) {
-			throw new InvalidGenderException(gender);
-		}
 	}
 
 	private void validateUserProfileExisting(Long userId) {

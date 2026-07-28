@@ -7,8 +7,6 @@ import com.daesabu.meongcoach.dog.domain.Dog;
 import com.daesabu.meongcoach.dog.domain.DogRegisterCommand;
 import com.daesabu.meongcoach.dog.domain.DogSex;
 import com.daesabu.meongcoach.dog.domain.Personality;
-import com.daesabu.meongcoach.dog.domain.exception.InvalidDogSexException;
-import com.daesabu.meongcoach.dog.domain.exception.InvalidPersonalityException;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -29,36 +27,18 @@ public class DogRegisterService implements DogRegister {
 	@Transactional
 	public Long register(Long userId, DogRegisterInfo info) {
 		Dog dog = Dog.register(new DogRegisterCommand(userId, info.name(), info.breed(),
-				parseSex(info.sex()), info.birthDate(), info.weightKg()));
+				DogSex.from(info.sex()), info.birthDate(), info.weightKg()));
 		dog.changePersonalities(parsePersonalities(info.personalities()));
 		return dogRepository.save(dog).getId();
 	}
 
-	private DogSex parseSex(String sex) {
-		if (sex == null) {
-			throw new InvalidDogSexException(null);
-		}
-		try {
-			return DogSex.valueOf(sex);
-		} catch (IllegalArgumentException e) {
-			throw new InvalidDogSexException(sex);
-		}
-	}
-
+	// null은 '성격 미선택'이므로 빈 Set으로 취급한다
 	private Set<Personality> parsePersonalities(Set<String> personalities) {
 		if (personalities == null) {
 			return Set.of();
 		}
 		return personalities.stream()
-				.map(this::parsePersonality)
+				.map(Personality::from)
 				.collect(Collectors.toSet());
-	}
-
-	private Personality parsePersonality(String personality) {
-		try {
-			return Personality.valueOf(personality);
-		} catch (IllegalArgumentException | NullPointerException e) {
-			throw new InvalidPersonalityException(personality);
-		}
 	}
 }
