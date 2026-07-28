@@ -19,17 +19,17 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 @RequiredArgsConstructor
-@Transactional
+@Transactional(readOnly = true)
 public class UserProfileRegisterService implements UserProfileRegister {
 
 	private final UserRepository userRepository;
 	private final UserProfileRepository userProfileRepository;
 
 	@Override
+	@Transactional
 	public void register(Long userId, UserProfileCreateInfo info) {
-		if (userProfileRepository.existsById(userId)) {
-			throw new AlreadyOnboardedException();
-		}
+		validateUserProfileExisting(userId);
+
 		User user = userRepository.findById(userId)
 				.orElseThrow(() -> new UserNotFoundException(userId));
 
@@ -46,6 +46,12 @@ public class UserProfileRegisterService implements UserProfileRegister {
 			return Mbti.valueOf(mbti);
 		} catch (IllegalArgumentException e) {
 			throw new InvalidMbtiException(mbti);
+		}
+	}
+
+	private void validateUserProfileExisting(Long userId) {
+		if (userProfileRepository.existsById(userId)) {
+			throw new AlreadyOnboardedException();
 		}
 	}
 }

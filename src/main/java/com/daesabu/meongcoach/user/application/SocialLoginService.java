@@ -27,7 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
  * 제공자 구현체는 스프링이 주입하므로 제공자를 늘려도 이 클래스는 바뀌지 않는다.
  */
 @Service
-@Transactional
+@Transactional(readOnly = true)
 public class SocialLoginService implements SocialLogin {
 
 	private final Map<SocialProvider, SocialProfileReader> readers;
@@ -48,6 +48,7 @@ public class SocialLoginService implements SocialLogin {
 	}
 
 	@Override
+	@Transactional
 	public SocialLoginResult login(SocialProvider provider, String credential) {
 		SocialAccountLinkCommand command = reader(provider).read(credential);
 		User user = findOrRegister(command);

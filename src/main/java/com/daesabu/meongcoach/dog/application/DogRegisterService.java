@@ -20,12 +20,13 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 @RequiredArgsConstructor
-@Transactional
+@Transactional(readOnly = true)
 public class DogRegisterService implements DogRegister {
 
 	private final DogRepository dogRepository;
 
 	@Override
+	@Transactional
 	public Long register(Long userId, DogRegisterInfo info) {
 		Dog dog = Dog.register(new DogRegisterCommand(userId, info.name(), info.breed(),
 				parseSex(info.sex()), info.birthDate(), info.weightKg()));

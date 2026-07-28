@@ -16,13 +16,14 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 @RequiredArgsConstructor
-@Transactional
+@Transactional(readOnly = true)
 public class OnboardingCompleteService implements OnboardingCompleter {
 
 	private final UserProfileRegister userProfileRegister;
 	private final DogRegister dogRegister;
 
 	@Override
+	@Transactional
 	public List<Long> complete(Long userId, OnboardingCompleteInfo info) {
 		userProfileRegister.register(userId, new UserProfileCreateInfo(info.nickname(), info.birthDate(), info.mbti()));
 		return info.dogs().stream()
