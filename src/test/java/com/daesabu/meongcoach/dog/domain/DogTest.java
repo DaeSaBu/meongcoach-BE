@@ -17,7 +17,7 @@ class DogTest {
 
 	private Dog registerDog(LocalDate birthDate) {
 		return Dog.register(new DogRegisterCommand(1L, "초코", "푸들", DogSex.MALE, birthDate,
-				new BigDecimal("4.50"), DogSize.SMALL));
+				new BigDecimal("4.50")));
 	}
 
 	@Test
@@ -31,7 +31,6 @@ class DogTest {
 		assertThat(dog.getSex()).isEqualTo(DogSex.MALE);
 		assertThat(dog.getBirthDate()).isEqualTo(LocalDate.of(2024, 3, 1));
 		assertThat(dog.getWeightKg()).isEqualByComparingTo("4.50");
-		assertThat(dog.getSize()).isEqualTo(DogSize.SMALL);
 		assertThat(dog.getStatus()).isEqualTo(DogStatus.SELECTED);
 	}
 
