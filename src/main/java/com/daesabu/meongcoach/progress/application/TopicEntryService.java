@@ -30,7 +30,10 @@ public class TopicEntryService implements TopicEntryFinder, TopicEntryRecorder {
 	public void enterTopic(Long userId, Long topicId) {
 		userSelectedTopicRepository.findByUserId(userId)
 				.ifPresentOrElse(
-						selectedTopic -> selectedTopic.moveTo(topicId),
+						selectedTopic -> {
+							// 같은 topicId를 대입하면 JPA 더티 체킹에서 변경으로 판단하지 않아 UPDATE SQL이 실행되지 않는다.
+							selectedTopic.moveTo(topicId);
+						},
 						() -> userSelectedTopicRepository.save(UserSelectedTopic.enter(userId, topicId)));
 	}
 }
