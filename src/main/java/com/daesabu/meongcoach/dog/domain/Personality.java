@@ -4,7 +4,18 @@ package com.daesabu.meongcoach.dog.domain;
  * 강아지 성격 유형.
  */
 public enum Personality {
-	TIMID, // 소심함
-	LIVELY, // 활발함
-	FRIENDLY, // 친화적
+	TIMID("소심함"),
+	LIVELY("활발함"),
+	FRIENDLY("친화적"),
+	;
+
+	private final String label;
+
+	Personality(String label) {
+		this.label = label;
+	}
+
+	public String getLabel() {
+		return label;
+	}
 }

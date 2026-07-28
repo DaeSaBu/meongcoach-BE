@@ -1,0 +1,96 @@
+package com.daesabu.meongcoach.dog.application;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import com.daesabu.meongcoach.dog.application.provided.DogRegisterInfo;
+import com.daesabu.meongcoach.dog.application.required.DogRepository;
+import com.daesabu.meongcoach.dog.domain.Dog;
+import com.daesabu.meongcoach.dog.domain.DogSex;
+import com.daesabu.meongcoach.dog.domain.DogStatus;
+import com.daesabu.meongcoach.dog.domain.Personality;
+import com.daesabu.meongcoach.dog.domain.exception.InvalidDogSexException;
+import com.daesabu.meongcoach.dog.domain.exception.InvalidPersonalityException;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.Set;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+
+@DataJpaTest
+@DisplayName("강아지 등록 서비스")
+class DogRegisterServiceTest {
+
+	@Autowired
+	private DogRepository dogRepository;
+
+	private DogRegisterService service;
+
+	@BeforeEach
+	void setUp() {
+		service = new DogRegisterService(dogRepository);
+	}
+
+	private DogRegisterInfo registerInfo(String sex, Set<String> personalities) {
+		return new DogRegisterInfo("초코", "푸들", sex, LocalDate.of(2024, 3, 1),
+				new BigDecimal("4.50"), personalities);
+	}
+
+	@Test
+	@DisplayName("강아지를 등록하면 성격과 함께 저장된다")
+	void registerSavesDogWithPersonalities() {
+		Long dogId = service.register(1L, registerInfo("MALE", Set.of("TIMID", "LIVELY")));
+
+		Dog dog = dogRepository.findById(dogId).orElseThrow();
+		assertThat(dog.getUserId()).isEqualTo(1L);
+		assertThat(dog.getName()).isEqualTo("초코");
+		assertThat(dog.getSex()).isEqualTo(DogSex.MALE);
+		assertThat(dog.getStatus()).isEqualTo(DogStatus.SELECTED);
+		assertThat(dog.getPersonalities()).containsExactlyInAnyOrder(Personality.TIMID, Personality.LIVELY);
+	}
+
+	@Test
+	@DisplayName("성격이 없으면 빈 성격으로 등록된다")
+	void registerAllowsNullPersonalities() {
+		Long dogId = service.register(1L, registerInfo("FEMALE", null));
+
+		Dog dog = dogRepository.findById(dogId).orElseThrow();
+		assertThat(dog.getPersonalities()).isEmpty();
+	}
+
+	@Test
+	@DisplayName("생년월일이 없어도 등록할 수 있다")
+	void registerAllowsNullBirthDate() {
+		DogRegisterInfo info = new DogRegisterInfo("초코", "푸들", "MALE", null,
+				new BigDecimal("4.50"), Set.of());
+
+		Long dogId = service.register(1L, info);
+
+		Dog dog = dogRepository.findById(dogId).orElseThrow();
+		assertThat(dog.getBirthDate()).isNull();
+	}
+
+	@Test
+	@DisplayName("잘못된 성별 값이면 등록에 실패한다")
+	void registerFailsWhenSexIsInvalid() {
+		assertThatThrownBy(() -> service.register(1L, registerInfo("UNKNOWN", Set.of())))
+				.isInstanceOf(InvalidDogSexException.class);
+	}
+
+	@Test
+	@DisplayName("성별 값이 없으면 등록에 실패한다")
+	void registerFailsWhenSexIsNull() {
+		assertThatThrownBy(() -> service.register(1L, registerInfo(null, Set.of())))
+				.isInstanceOf(InvalidDogSexException.class);
+	}
+
+	@Test
+	@DisplayName("잘못된 성격 값이면 등록에 실패한다")
+	void registerFailsWhenPersonalityIsInvalid() {
+		assertThatThrownBy(() -> service.register(1L, registerInfo("MALE", Set.of("BRAVE"))))
+				.isInstanceOf(InvalidPersonalityException.class);
+	}
+}
