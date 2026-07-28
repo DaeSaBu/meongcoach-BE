@@ -25,7 +25,8 @@ public class OnboardingCompleteService implements OnboardingCompleter {
 	@Override
 	@Transactional
 	public List<Long> complete(Long userId, OnboardingCompleteInfo info) {
-		userProfileRegister.register(userId, new UserProfileCreateInfo(info.nickname(), info.birthDate(), info.mbti()));
+		userProfileRegister.register(userId,
+				new UserProfileCreateInfo(info.nickname(), info.birthDate(), info.mbti(), info.gender()));
 		return info.dogs().stream()
 				.map(dog -> dogRegister.register(userId, dog))
 				.toList();

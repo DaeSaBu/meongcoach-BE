@@ -4,10 +4,12 @@ import com.daesabu.meongcoach.user.application.provided.UserProfileCreateInfo;
 import com.daesabu.meongcoach.user.application.provided.UserProfileRegister;
 import com.daesabu.meongcoach.user.application.required.UserProfileRepository;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
+import com.daesabu.meongcoach.user.domain.Gender;
 import com.daesabu.meongcoach.user.domain.Mbti;
 import com.daesabu.meongcoach.user.domain.User;
 import com.daesabu.meongcoach.user.domain.UserProfile;
 import com.daesabu.meongcoach.user.domain.exception.AlreadyOnboardedException;
+import com.daesabu.meongcoach.user.domain.exception.InvalidGenderException;
 import com.daesabu.meongcoach.user.domain.exception.InvalidMbtiException;
 import com.daesabu.meongcoach.user.domain.exception.UserNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +40,9 @@ public class UserProfileRegisterService implements UserProfileRegister {
 		if (info.mbti() != null) {
 			profile.changeMbti(parseMbti(info.mbti()));
 		}
+		if (info.gender() != null) {
+			profile.changeGender(parseGender(info.gender()));
+		}
 		userProfileRepository.save(profile);
 	}
 
@@ -46,6 +51,14 @@ public class UserProfileRegisterService implements UserProfileRegister {
 			return Mbti.valueOf(mbti);
 		} catch (IllegalArgumentException e) {
 			throw new InvalidMbtiException(mbti);
+		}
+	}
+
+	private Gender parseGender(String gender) {
+		try {
+			return Gender.valueOf(gender);
+		} catch (IllegalArgumentException e) {
+			throw new InvalidGenderException(gender);
 		}
 	}
 

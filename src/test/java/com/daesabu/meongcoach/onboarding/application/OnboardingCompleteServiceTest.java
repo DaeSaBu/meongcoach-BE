@@ -51,7 +51,7 @@ class OnboardingCompleteServiceTest {
 	}
 
 	private OnboardingCompleteInfo completeInfo() {
-		return new OnboardingCompleteInfo("멍멍이집사", LocalDate.of(1998, 1, 1), "INTJ", List.of(
+		return new OnboardingCompleteInfo("멍멍이집사", LocalDate.of(1998, 1, 1), "INTJ", "FEMALE", List.of(
 				new DogRegisterInfo("초코", "푸들", "MALE", LocalDate.of(2024, 3, 1),
 						new BigDecimal("4.50"), Set.of("TIMID")),
 				new DogRegisterInfo("보리", "말티즈", "FEMALE", null,

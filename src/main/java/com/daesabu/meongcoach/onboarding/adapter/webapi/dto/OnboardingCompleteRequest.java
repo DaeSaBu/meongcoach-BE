@@ -18,10 +18,11 @@ public record OnboardingCompleteRequest(
 		@NotBlank @Size(max = 50) String nickname,
 		@Past LocalDate birthDate,
 		String mbti,
+		String gender,
 		@NotEmpty @Valid List<DogRequest> dogs) {
 
 	public OnboardingCompleteInfo toInfo() {
-		return new OnboardingCompleteInfo(nickname, birthDate, mbti,
+		return new OnboardingCompleteInfo(nickname, birthDate, mbti, gender,
 				dogs.stream().map(DogRequest::toInfo).toList());
 	}
 

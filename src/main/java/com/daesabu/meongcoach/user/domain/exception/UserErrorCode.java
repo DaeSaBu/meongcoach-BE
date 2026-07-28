@@ -6,6 +6,7 @@ public enum UserErrorCode implements ErrorCode {
 
 	USER_INVALID_EMAIL(400, "이메일 형식이 올바르지 않습니다."),
 	USER_INVALID_MBTI(400, "MBTI 값이 올바르지 않습니다."),
+	USER_INVALID_GENDER(400, "성별 값이 올바르지 않습니다."),
 	USER_NOT_FOUND(404, "회원을 찾을 수 없습니다."),
 	USER_ALREADY_ONBOARDED(409, "이미 온보딩을 완료한 회원입니다."),
 	USER_UNSUPPORTED_SOCIAL_PROVIDER(400, "지원하지 않는 소셜 로그인 제공자입니다."),

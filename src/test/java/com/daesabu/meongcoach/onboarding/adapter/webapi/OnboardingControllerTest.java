@@ -40,6 +40,7 @@ class OnboardingControllerTest {
 				"nickname": "멍멍이집사",
 				"birthDate": "1998-01-01",
 				"mbti": "INTJ",
+				"gender": "FEMALE",
 				"dogs": [
 					{
 						"name": "초코",
@@ -89,6 +90,8 @@ class OnboardingControllerTest {
 								fieldWithPath("nickname").description("사용자 닉네임 (최대 50자)"),
 								fieldWithPath("birthDate").description("사용자 생년월일. 선택 입력").optional(),
 								fieldWithPath("mbti").description("사용자 MBTI 코드. 선택 입력").optional(),
+								fieldWithPath("gender").description(
+										"사용자 성별. `MALE`/`FEMALE`/`NONE`(응답 안 함). 선택 입력").optional(),
 								fieldWithPath("dogs[].name").description("강아지 이름 (최대 50자)"),
 								fieldWithPath("dogs[].breed").description("강아지 견종 (최대 50자)"),
 								fieldWithPath("dogs[].sex").description("강아지 성별. `MALE` 또는 `FEMALE`"),
