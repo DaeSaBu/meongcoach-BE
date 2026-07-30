@@ -27,11 +27,18 @@ public class OnboardingCompleteService implements OnboardingCompleter {
 	@Override
 	@Transactional
 	public List<Long> complete(Long userId, OnboardingCompleteInfo info) {
+		validateImageUrls(info);
 		userProfileRegister.register(userId,
 				new UserProfileCreateInfo(info.nickname(), info.birthDate(), info.mbti(), info.gender(),
 						info.profileImageUrl()));
 		return info.dogs().stream()
 				.map(dog -> dogRegister.register(userId, dog))
 				.toList();
+	}
+
+	// 업로드 완료 알림 없이 클라이언트가 보낸 URL을 믿는 방식이라, 우리 스토리지 URL인지 저장 전에 검증한다
+	private void validateImageUrls(OnboardingCompleteInfo info) {
+		storedImageUrlValidator.validate(info.profileImageUrl());
+		info.dogs().forEach(dog -> storedImageUrlValidator.validate(dog.profileImageUrl()));
 	}
 }

@@ -29,6 +29,8 @@ public class DogRegisterService implements DogRegister {
 		Dog dog = Dog.register(new DogRegisterCommand(userId, info.name(), info.breed(),
 				DogSex.from(info.sex()), info.birthDate(), info.weightKg()));
 		dog.changePersonalities(parsePersonalities(info.personalities()));
+		// null은 changeProfileImage가 미설정(빈 문자열)으로 정규화한다
+		dog.changeProfileImage(info.profileImageUrl());
 		return dogRepository.save(dog).getId();
 	}
 
