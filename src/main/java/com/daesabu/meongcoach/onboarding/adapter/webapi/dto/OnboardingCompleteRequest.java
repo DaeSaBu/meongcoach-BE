@@ -19,10 +19,11 @@ public record OnboardingCompleteRequest(
 		@Past LocalDate birthDate,
 		String mbti,
 		String gender,
+		@Size(max = 512) String profileImageUrl,
 		@NotEmpty @Valid List<DogRequest> dogs) {
 
 	public OnboardingCompleteInfo toInfo() {
-		return new OnboardingCompleteInfo(nickname, birthDate, mbti, gender,
+		return new OnboardingCompleteInfo(nickname, birthDate, mbti, gender, profileImageUrl,
 				dogs.stream().map(DogRequest::toInfo).toList());
 	}
 
@@ -32,10 +33,11 @@ public record OnboardingCompleteRequest(
 			@NotBlank String sex,
 			@Past LocalDate birthDate,
 			@NotNull @Positive BigDecimal weightKg,
-			Set<String> personalities) {
+			Set<String> personalities,
+			@Size(max = 512) String profileImageUrl) {
 
 		public DogRegisterInfo toInfo() {
-			return new DogRegisterInfo(name, breed, sex, birthDate, weightKg, personalities);
+			return new DogRegisterInfo(name, breed, sex, birthDate, weightKg, personalities, profileImageUrl);
 		}
 	}
 }
