@@ -21,6 +21,6 @@ public class MediaController {
 	@PostMapping("/image-upload-urls")
 	public ImageUploadUrlResponse issueImageUploadUrl(@CurrentUserId Long userId,
 	                                                  @Valid @RequestBody ImageUploadUrlRequest request) {
-		throw new UnsupportedOperationException("아직 구현되지 않았다");
+		return ImageUploadUrlResponse.from(imageUploadUrlIssuer.issue(userId, request.target(), request.contentType()));
 	}
 }

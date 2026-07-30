@@ -2,6 +2,7 @@ package com.daesabu.meongcoach.media.application;
 
 import com.daesabu.meongcoach.media.application.provided.StoredImageUrlValidator;
 import com.daesabu.meongcoach.media.application.required.ImageStorage;
+import com.daesabu.meongcoach.media.domain.exception.InvalidImageUrlException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -16,6 +17,12 @@ public class StoredImageUrlValidateService implements StoredImageUrlValidator {
 
 	@Override
 	public void validate(String url) {
-		throw new UnsupportedOperationException("아직 구현되지 않았다");
+		// null·빈 문자열은 이미지 미설정이므로 검증하지 않는다
+		if (url == null || url.isBlank()) {
+			return;
+		}
+		if (!imageStorage.isPublicUrl(url)) {
+			throw new InvalidImageUrlException();
+		}
 	}
 }

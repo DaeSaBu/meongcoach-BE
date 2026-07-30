@@ -45,6 +45,15 @@ class R2ImageStorageTest {
 	}
 
 	@Test
+	@DisplayName("서명 대상 헤더는 Content-Type과 host뿐이다")
+	void uploadUrlSignsOnlyContentTypeAndHost() {
+		ImageUploadUrl url = storage.issueUploadUrl(KEY, "image/jpeg");
+
+		// 체크섬 등 다른 헤더가 서명에 끼면 클라이언트가 그 헤더 없이 PUT할 때 R2가 거부한다
+		assertThat(url.uploadUrl()).contains("X-Amz-SignedHeaders=content-type%3Bhost");
+	}
+
+	@Test
 	@DisplayName("공개 URL은 공개 도메인 아래의 키 경로다")
 	void publicUrlIsUnderPublicBaseUrl() {
 		ImageUploadUrl url = storage.issueUploadUrl(KEY, "image/jpeg");
