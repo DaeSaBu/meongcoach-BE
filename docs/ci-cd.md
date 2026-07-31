@@ -38,7 +38,39 @@ CI는 `workflow_call`을 지원하며 dev·prod CD가 같은 검증 절차를 �
 | ECS service | `meongcoach-dev-svc` | `meongcoach-prod-svc` |
 | AWS role secret | `AWS_DEV_DEPLOY_ROLE_ARN` | `AWS_PROD_DEPLOY_ROLE_ARN` |
 
-배포는 `linux/amd64` 이미지를 커밋 SHA 태그로 ECR에 올립니다. 환경별 task definition family의 최신 리비전에서 필수 애플리케이션 설정을 검증하고 환경변수와 Secrets Manager 참조를 보존하면서 `api` 이미지만 교체한 뒤, 서비스 안정화 후 환경별 health endpoint를 확인합니다.
+배포는 `linux/amd64` 이미지를 커밋 SHA 태그로 ECR에 올립니다. 환경별 task definition family의 최신 리비전에서 DB 설정·Secrets Manager 참조·Spring 프로파일을 보존하고, GitHub Secrets의 애플리케이션 설정과 `api` 이미지를 반영한 뒤 환경별 health endpoint를 확인합니다.
+
+## 환경 변수 관리
+
+다음 다이어그램은 환경 변수가 최초로 정의되는 위치를 소유자로 표시합니다. 전달되거나 사용되는 위치에는 중복해서 표시하지 않습니다.
+
+```mermaid
+flowchart LR
+    Local["로컬 실행 설정 · .env<br/>JWT_SECRET · KAKAO_AUDIENCES"]
+    GitHub["GitHub Secrets<br/>AWS_DEV_DEPLOY_ROLE_ARN · AWS_PROD_DEPLOY_ROLE_ARN<br/>JWT_SECRET · KAKAO_AUDIENCES<br/>R2_ENDPOINT · R2_ACCESS_KEY_ID · R2_SECRET_ACCESS_KEY<br/>R2_BUCKET · R2_PUBLIC_BASE_URL<br/>DEV_VIMEO_ACCESS_TOKEN · PROD_VIMEO_ACCESS_TOKEN<br/>prod는 PROD_ 접두사 사용"]
+    AWS["AWS<br/>DB_HOST · DB_NAME · SPRING_PROFILES_ACTIVE<br/>DB_USERNAME · DB_PASSWORD"]
+```
+
+CI 테스트는 `application-test.yml`의 테스트 전용 설정을 사용하므로 배포 환경 변수를 주입하지 않습니다. CD의 AWS 인증에는 GitHub repository secret인 `AWS_DEV_DEPLOY_ROLE_ARN` 또는 `AWS_PROD_DEPLOY_ROLE_ARN`을 사용합니다.
+
+DB 설정은 AWS가 소유합니다. `DB_HOST`·`DB_NAME`은 ECS task definition의 `environment`에 두고, `DB_USERNAME`·`DB_PASSWORD`는 RDS 관리형 secret을 `secrets`로 참조합니다. CD는 새 task definition을 등록할 때 이 설정을 보존하므로 GitHub Actions가 DB 자격증명 값을 직접 다루지 않습니다.
+
+Spring 프로파일은 환경별 Terraform task definition이 소유합니다. dev는 `SPRING_PROFILES_ACTIVE=dev`, prod는 `SPRING_PROFILES_ACTIVE=prod`로 고정하며 CD는 값을 변경하지 않습니다.
+
+DB 외 애플리케이션 설정은 GitHub Secrets가 소유하며 CD가 task definition의 `environment`에 주입합니다. dev·`temp-infra`는 다음 이름을 사용하고 prod는 각 이름에 `PROD_` 접두사를 붙입니다.
+
+- `JWT_SECRET`
+- `KAKAO_AUDIENCES`
+- `R2_ENDPOINT`
+- `R2_ACCESS_KEY_ID`
+- `R2_SECRET_ACCESS_KEY`
+- `R2_BUCKET`
+- `R2_PUBLIC_BASE_URL`
+- `DEV_VIMEO_ACCESS_TOKEN`
+
+`DEV_VIMEO_ACCESS_TOKEN`은 Vimeo 연동 전까지 선택값이며, secret이 등록된 경우에만 `VIMEO_ACCESS_TOKEN`으로 task definition에 주입합니다. prod는 `PROD_VIMEO_ACCESS_TOKEN`을 사용합니다.
+
+이 값들은 ECS task definition에 평문으로 저장되며 `ecs:DescribeTaskDefinition` 권한이 있는 주체가 읽을 수 있습니다. 로컬 `.env`는 `JWT_SECRET`과 `KAKAO_AUDIENCES`만 관리하며 저장소에 커밋하지 않습니다.
 
 ## 알림과 실패 확인
 

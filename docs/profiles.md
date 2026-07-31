@@ -19,7 +19,7 @@
 
 - **로컬**: 아무것도 지정하지 않으면 됩니다. `spring.profiles.default: local`이라
   `./gradlew bootRun`만으로 local로 기동합니다.
-- **배포**: 환경별 Terraform task definition이 `SPRING_PROFILES_ACTIVE=dev` 또는 `prod`를 고정합니다. CD는 환경변수와 Secrets Manager 참조를 유지하고 이미지만 교체합니다.
+- **배포**: 환경별 Terraform task definition이 `SPRING_PROFILES_ACTIVE=dev` 또는 `prod`를 고정합니다. CD는 이 값과 DB 설정을 보존하고 GitHub Secrets의 애플리케이션 설정과 이미지를 반영합니다.
 - **테스트**: `build.gradle.kts`의 `tasks.withType<Test>`가 `spring.profiles.active=test`를
   강제하므로 별도 설정이 필요 없습니다.
 
@@ -39,13 +39,7 @@ flowchart LR
     Spring --> Profile
 ```
 
-1. dev Terraform task definition은 `dev`, prod Terraform task definition은 `prod`를 `SPRING_PROFILES_ACTIVE`에 고정합니다.
-2. CD는 환경별 task definition family의 최신 리비전에서 환경변수를 보존하고 이미지 URI만 교체해 새 리비전을 등록합니다.
-3. ECS는 새 task를 시작할 때 task definition의 값을 컨테이너 환경변수로 주입합니다.
-4. Spring Boot는 `SPRING_PROFILES_ACTIVE`를 `spring.profiles.active`로 해석합니다.
-5. Spring Boot는 `application.yml`을 읽고 활성 프로파일에 맞는 `application-dev.yml` 또는 `application-prod.yml`을 추가로 읽습니다.
-
-렌더링 스크립트는 Spring 프로파일을 다루지 않습니다. 프로파일은 환경별 인프라에 고정되고 Spring Boot가 컨테이너 환경변수에서 읽습니다.
+CD는 환경별 task definition family의 최신 리비전에서 프로파일을 보존하고 이미지와 GitHub Secrets의 애플리케이션 설정만 반영합니다. Spring Boot는 `SPRING_PROFILES_ACTIVE`를 `spring.profiles.active`로 해석하고 `application.yml`과 환경별 프로파일 파일을 함께 읽습니다.
 
 > 트러블슈팅: 셸에 `SPRING_PROFILES_ACTIVE`가 남아 있으면 `profiles.default`가 무시됩니다.
 > 프로파일이 이상하게 잡히면 `echo $SPRING_PROFILES_ACTIVE`부터 확인하세요.

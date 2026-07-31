@@ -160,8 +160,16 @@ jobs:
       - name: 배포용 태스크 정의 생성
         env:
           IMAGE_URI: ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+          JWT_SECRET: ${{ secrets.PROD_JWT_SECRET }}
+          KAKAO_AUDIENCES: ${{ secrets.PROD_KAKAO_AUDIENCES }}
+          R2_ENDPOINT: ${{ secrets.PROD_R2_ENDPOINT }}
+          R2_ACCESS_KEY_ID: ${{ secrets.PROD_R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.PROD_R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ secrets.PROD_R2_BUCKET }}
+          R2_PUBLIC_BASE_URL: ${{ secrets.PROD_R2_PUBLIC_BASE_URL }}
+          VIMEO_ACCESS_TOKEN: ${{ secrets.PROD_VIMEO_ACCESS_TOKEN }}
         run: |
-          # 환경변수와 Secrets Manager 참조는 유지하고 이미지만 바꾼다.
+          # 최신 인프라 설정을 읽고 GitHub Secrets·이미지를 반영한 등록용 JSON을 만든다.
           aws ecs describe-task-definition \
             --task-definition "${ECS_TASK_DEFINITION}" \
             --query taskDefinition \
@@ -169,10 +177,10 @@ jobs:
 
           bash .github/scripts/render-task-definition.sh \
             current-task-definition.json \
-            task-definition.json \
             "${ECS_CONTAINER}" \
-            "${IMAGE_URI}"
+            "${IMAGE_URI}" > task-definition.json
 
+      # 위 script는 JSON만 만들며, 실제 AWS 변경은 여기서부터 시작한다.
       - name: 태스크 정의 리비전 등록
         id: task-definition
         run: |
