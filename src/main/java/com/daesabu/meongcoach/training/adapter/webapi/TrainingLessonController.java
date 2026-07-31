@@ -1,6 +1,6 @@
 package com.daesabu.meongcoach.training.adapter.webapi;
 
-import com.daesabu.meongcoach.shared.webapi.LoginUser;
+import com.daesabu.meongcoach.shared.security.CurrentUserId;
 import com.daesabu.meongcoach.training.adapter.webapi.dto.CardListResponse;
 import com.daesabu.meongcoach.training.adapter.webapi.dto.LessonCompleteResponse;
 import com.daesabu.meongcoach.training.application.provided.LessonCompleter;
@@ -27,7 +27,7 @@ public class TrainingLessonController {
 	}
 
 	@PostMapping("/{lessonId}")
-	public LessonCompleteResponse completeLesson(@LoginUser Long userId, @PathVariable Long lessonId) {
+	public LessonCompleteResponse completeLesson(@CurrentUserId Long userId, @PathVariable Long lessonId) {
 		return LessonCompleteResponse.from(lessonId, lessonCompleter.completeLesson(userId, lessonId));
 	}
 }

@@ -12,13 +12,13 @@ import static org.springframework.restdocs.request.RequestDocumentation.pathPara
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.daesabu.meongcoach.shared.webapi.WithLoginUser;
 import com.daesabu.meongcoach.training.application.provided.CardMediaView;
 import com.daesabu.meongcoach.training.application.provided.CardView;
 import com.daesabu.meongcoach.training.application.provided.LessonCompleter;
 import com.daesabu.meongcoach.training.application.provided.LessonFinder;
 import com.daesabu.meongcoach.training.domain.MediaType;
 import com.daesabu.meongcoach.training.domain.exception.LessonNotFoundException;
+import java.security.Principal;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -35,6 +35,9 @@ import org.springframework.test.web.servlet.MockMvc;
 @AutoConfigureRestDocs
 @DisplayName("레슨 API")
 class TrainingLessonControllerTest {
+
+	// 컨트롤러 슬라이스에는 필터 체인이 없으므로 인증 주체를 요청에 직접 실어 보낸다 (test-convention.md)
+	private static final Principal CURRENT_USER = () -> "42";
 
 	@Autowired
 	private MockMvc mockMvc;
@@ -141,12 +144,11 @@ class TrainingLessonControllerTest {
 	}
 
 	@Test
-	@WithLoginUser
 	@DisplayName("레슨을 완료하면 레슨 ID와 갱신된 완료 횟수를 반환한다")
 	void completeLessonReturnsUpdatedCompletedCount() throws Exception {
 		given(lessonCompleter.completeLesson(42L, 1L)).willReturn(3);
 
-		mockMvc.perform(post("/api/training/lessons/{lessonId}", 1L))
+		mockMvc.perform(post("/api/training/lessons/{lessonId}", 1L).principal(CURRENT_USER))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.lessonId").value(1))
 				.andExpect(jsonPath("$.completedCount").value(3))
@@ -162,22 +164,20 @@ class TrainingLessonControllerTest {
 	}
 
 	@Test
-	@WithLoginUser
-	@DisplayName("액세스 토큰에서 읽은 사용자로 레슨 완료를 위임한다")
-	void completeLessonDelegatesWithLoginUser() throws Exception {
-		mockMvc.perform(post("/api/training/lessons/{lessonId}", 7L))
+	@DisplayName("인증 주체에서 읽은 사용자로 레슨 완료를 위임한다")
+	void completeLessonDelegatesWithCurrentUserId() throws Exception {
+		mockMvc.perform(post("/api/training/lessons/{lessonId}", 7L).principal(CURRENT_USER))
 				.andExpect(status().isOk());
 
 		then(lessonCompleter).should().completeLesson(42L, 7L);
 	}
 
 	@Test
-	@WithLoginUser
 	@DisplayName("존재하지 않는 레슨을 완료하면 404와 에러 코드를 반환한다")
 	void completeLessonReturnsNotFoundWhenLessonDoesNotExist() throws Exception {
 		given(lessonCompleter.completeLesson(42L, 999L)).willThrow(new LessonNotFoundException(999L));
 
-		mockMvc.perform(post("/api/training/lessons/{lessonId}", 999L))
+		mockMvc.perform(post("/api/training/lessons/{lessonId}", 999L).principal(CURRENT_USER))
 				.andExpect(status().isNotFound())
 				.andExpect(jsonPath("$.status").value(404))
 				.andExpect(jsonPath("$.code").value("TRAINING_LESSON_NOT_FOUND"))

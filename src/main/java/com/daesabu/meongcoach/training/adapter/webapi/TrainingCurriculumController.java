@@ -1,6 +1,6 @@
 package com.daesabu.meongcoach.training.adapter.webapi;
 
-import com.daesabu.meongcoach.shared.webapi.LoginUser;
+import com.daesabu.meongcoach.shared.security.CurrentUserId;
 import com.daesabu.meongcoach.training.adapter.webapi.dto.CurriculumDetailResponse;
 import com.daesabu.meongcoach.training.adapter.webapi.dto.CurriculumListResponse;
 import com.daesabu.meongcoach.training.application.provided.CurriculumFinder;
@@ -18,12 +18,12 @@ public class TrainingCurriculumController {
 	private final CurriculumFinder curriculumFinder;
 
 	@GetMapping
-	public CurriculumListResponse findCurriculums(@LoginUser Long userId) {
+	public CurriculumListResponse findCurriculums(@CurrentUserId Long userId) {
 		return CurriculumListResponse.from(curriculumFinder.findCurriculums(userId));
 	}
 
 	@GetMapping("/{curriculumId}")
-	public CurriculumDetailResponse findCurriculum(@LoginUser Long userId, @PathVariable Long curriculumId) {
+	public CurriculumDetailResponse findCurriculum(@CurrentUserId Long userId, @PathVariable Long curriculumId) {
 		return CurriculumDetailResponse.from(curriculumFinder.findCurriculum(userId, curriculumId));
 	}
 }

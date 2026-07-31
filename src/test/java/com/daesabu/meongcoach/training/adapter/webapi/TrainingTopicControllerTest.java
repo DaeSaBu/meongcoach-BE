@@ -11,9 +11,9 @@ import static org.springframework.restdocs.request.RequestDocumentation.pathPara
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.daesabu.meongcoach.shared.webapi.WithLoginUser;
 import com.daesabu.meongcoach.training.application.provided.TopicSelector;
 import com.daesabu.meongcoach.training.domain.exception.TopicNotFoundException;
+import java.security.Principal;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +30,9 @@ import org.springframework.test.web.servlet.MockMvc;
 @DisplayName("커리큘럼 화면 변경 API")
 class TrainingTopicControllerTest {
 
+	// 컨트롤러 슬라이스에는 필터 체인이 없으므로 인증 주체를 요청에 직접 실어 보낸다 (test-convention.md)
+	private static final Principal CURRENT_USER = () -> "42";
+
 	@Autowired
 	private MockMvc mockMvc;
 
@@ -37,10 +40,9 @@ class TrainingTopicControllerTest {
 	private TopicSelector topicSelector;
 
 	@Test
-	@WithLoginUser
 	@DisplayName("선택한 토픽 ID를 반환한다")
 	void selectTopicReturnsSelectedTopicId() throws Exception {
-		mockMvc.perform(put("/api/training/topics/{topicId}", 1L))
+		mockMvc.perform(put("/api/training/topics/{topicId}", 1L).principal(CURRENT_USER))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.topicId").value(1))
 				.andDo(document("training/topic-select",
@@ -54,35 +56,32 @@ class TrainingTopicControllerTest {
 	}
 
 	@Test
-	@WithLoginUser
-	@DisplayName("액세스 토큰에서 읽은 사용자로 토픽 선택을 위임한다")
-	void selectTopicDelegatesWithLoginUser() throws Exception {
-		mockMvc.perform(put("/api/training/topics/{topicId}", 7L))
+	@DisplayName("인증 주체에서 읽은 사용자로 토픽 선택을 위임한다")
+	void selectTopicDelegatesWithCurrentUserId() throws Exception {
+		mockMvc.perform(put("/api/training/topics/{topicId}", 7L).principal(CURRENT_USER))
 				.andExpect(status().isOk());
 
 		then(topicSelector).should().selectTopic(42L, 7L);
 	}
 
 	@Test
-	@WithLoginUser
 	@DisplayName("같은 토픽을 연속으로 선택해도 200을 반환한다")
 	void selectTopicReturnsOkWhenSelectedRepeatedly() throws Exception {
-		mockMvc.perform(put("/api/training/topics/{topicId}", 1L))
+		mockMvc.perform(put("/api/training/topics/{topicId}", 1L).principal(CURRENT_USER))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.topicId").value(1));
 
-		mockMvc.perform(put("/api/training/topics/{topicId}", 1L))
+		mockMvc.perform(put("/api/training/topics/{topicId}", 1L).principal(CURRENT_USER))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.topicId").value(1));
 	}
 
 	@Test
-	@WithLoginUser
 	@DisplayName("존재하지 않는 토픽이면 404와 에러 코드를 반환한다")
 	void selectTopicReturnsNotFoundWhenTopicDoesNotExist() throws Exception {
 		willThrow(new TopicNotFoundException(999L)).given(topicSelector).selectTopic(42L, 999L);
 
-		mockMvc.perform(put("/api/training/topics/{topicId}", 999L))
+		mockMvc.perform(put("/api/training/topics/{topicId}", 999L).principal(CURRENT_USER))
 				.andExpect(status().isNotFound())
 				.andExpect(jsonPath("$.status").value(404))
 				.andExpect(jsonPath("$.code").value("TRAINING_TOPIC_NOT_FOUND"))

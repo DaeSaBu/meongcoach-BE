@@ -1,6 +1,6 @@
 package com.daesabu.meongcoach.training.adapter.webapi;
 
-import com.daesabu.meongcoach.shared.webapi.LoginUser;
+import com.daesabu.meongcoach.shared.security.CurrentUserId;
 import com.daesabu.meongcoach.training.adapter.webapi.dto.TopicSelectResponse;
 import com.daesabu.meongcoach.training.application.provided.TopicSelector;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +17,7 @@ public class TrainingTopicController {
 	private final TopicSelector topicSelector;
 
 	@PutMapping("/{topicId}")
-	public TopicSelectResponse selectTopic(@LoginUser Long userId, @PathVariable Long topicId) {
+	public TopicSelectResponse selectTopic(@CurrentUserId Long userId, @PathVariable Long topicId) {
 		topicSelector.selectTopic(userId, topicId);
 		return TopicSelectResponse.from(topicId);
 	}

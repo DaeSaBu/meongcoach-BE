@@ -11,7 +11,6 @@ import static org.springframework.restdocs.request.RequestDocumentation.pathPara
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.daesabu.meongcoach.shared.webapi.WithLoginUser;
 import com.daesabu.meongcoach.training.application.provided.CurriculumDetailView;
 import com.daesabu.meongcoach.training.application.provided.CurriculumFinder;
 import com.daesabu.meongcoach.training.application.provided.CurriculumListView;
@@ -20,6 +19,7 @@ import com.daesabu.meongcoach.training.application.provided.LessonView;
 import com.daesabu.meongcoach.training.domain.CurriculumStatus;
 import com.daesabu.meongcoach.training.domain.exception.CurriculumNotFoundException;
 import com.daesabu.meongcoach.training.domain.exception.TopicNotConfiguredException;
+import java.security.Principal;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -37,6 +37,9 @@ import org.springframework.test.web.servlet.MockMvc;
 @DisplayName("커리큘럼 조회 API")
 class TrainingCurriculumControllerTest {
 
+	// 컨트롤러 슬라이스에는 필터 체인이 없으므로 인증 주체를 요청에 직접 실어 보낸다 (test-convention.md)
+	private static final Principal CURRENT_USER = () -> "42";
+
 	@Autowired
 	private MockMvc mockMvc;
 
@@ -44,7 +47,6 @@ class TrainingCurriculumControllerTest {
 	private CurriculumFinder curriculumFinder;
 
 	@Test
-	@WithLoginUser
 	@DisplayName("선택된 토픽과 커리큘럼 목록을 반환한다")
 	void findCurriculumsReturnsTopicWithCurriculums() throws Exception {
 		given(curriculumFinder.findCurriculums(42L)).willReturn(new CurriculumListView(1L, "앉아", List.of(
@@ -52,7 +54,7 @@ class TrainingCurriculumControllerTest {
 				new CurriculumView(11L, "앉아 2단계", 4, 1, CurriculumStatus.IN_PROGRESS)
 		)));
 
-		mockMvc.perform(get("/api/training/curriculums"))
+		mockMvc.perform(get("/api/training/curriculums").principal(CURRENT_USER))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.topicId").value(1))
 				.andExpect(jsonPath("$.topicTitle").value("앉아"))
@@ -81,24 +83,22 @@ class TrainingCurriculumControllerTest {
 	}
 
 	@Test
-	@WithLoginUser
-	@DisplayName("액세스 토큰에서 읽은 사용자로 커리큘럼 조회를 위임한다")
-	void findCurriculumsDelegatesWithLoginUser() throws Exception {
+	@DisplayName("인증 주체에서 읽은 사용자로 커리큘럼 조회를 위임한다")
+	void findCurriculumsDelegatesWithCurrentUserId() throws Exception {
 		given(curriculumFinder.findCurriculums(42L)).willReturn(new CurriculumListView(1L, "앉아", List.of()));
 
-		mockMvc.perform(get("/api/training/curriculums"))
+		mockMvc.perform(get("/api/training/curriculums").principal(CURRENT_USER))
 				.andExpect(status().isOk());
 
 		then(curriculumFinder).should().findCurriculums(42L);
 	}
 
 	@Test
-	@WithLoginUser
 	@DisplayName("커리큘럼이 없는 토픽은 빈 배열과 200을 반환한다")
 	void findCurriculumsReturnsEmptyArrayWhenTopicHasNoCurriculum() throws Exception {
 		given(curriculumFinder.findCurriculums(42L)).willReturn(new CurriculumListView(1L, "앉아", List.of()));
 
-		mockMvc.perform(get("/api/training/curriculums"))
+		mockMvc.perform(get("/api/training/curriculums").principal(CURRENT_USER))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.topicId").value(1))
 				.andExpect(jsonPath("$.curriculums").isArray())
@@ -106,12 +106,11 @@ class TrainingCurriculumControllerTest {
 	}
 
 	@Test
-	@WithLoginUser
 	@DisplayName("등록된 토픽이 없으면 404와 에러 코드를 반환한다")
 	void findCurriculumsReturnsNotFoundWhenNoTopicIsConfigured() throws Exception {
 		given(curriculumFinder.findCurriculums(42L)).willThrow(new TopicNotConfiguredException());
 
-		mockMvc.perform(get("/api/training/curriculums"))
+		mockMvc.perform(get("/api/training/curriculums").principal(CURRENT_USER))
 				.andExpect(status().isNotFound())
 				.andExpect(jsonPath("$.status").value(404))
 				.andExpect(jsonPath("$.code").value("TRAINING_TOPIC_NOT_CONFIGURED"))
@@ -137,7 +136,6 @@ class TrainingCurriculumControllerTest {
 	}
 
 	@Test
-	@WithLoginUser
 	@DisplayName("커리큘럼과 레슨 목록을 반환한다")
 	void findCurriculumReturnsCurriculumWithLessons() throws Exception {
 		given(curriculumFinder.findCurriculum(42L, 10L)).willReturn(new CurriculumDetailView(10L, 1L, "앉아 1단계", 1,
@@ -146,7 +144,7 @@ class TrainingCurriculumControllerTest {
 						new LessonView(101L, "간식 없이 앉아", 2, 10, 0)
 				)));
 
-		mockMvc.perform(get("/api/training/curriculums/{curriculumId}", 10L))
+		mockMvc.perform(get("/api/training/curriculums/{curriculumId}", 10L).principal(CURRENT_USER))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.curriculumId").value(10))
 				.andExpect(jsonPath("$.topicId").value(1))
@@ -182,26 +180,24 @@ class TrainingCurriculumControllerTest {
 	}
 
 	@Test
-	@WithLoginUser
-	@DisplayName("액세스 토큰에서 읽은 사용자로 커리큘럼 세부 조회를 위임한다")
-	void findCurriculumDelegatesWithLoginUser() throws Exception {
+	@DisplayName("인증 주체에서 읽은 사용자로 커리큘럼 세부 조회를 위임한다")
+	void findCurriculumDelegatesWithCurrentUserId() throws Exception {
 		given(curriculumFinder.findCurriculum(42L, 10L))
 				.willReturn(new CurriculumDetailView(10L, 1L, "앉아 1단계", 1, List.of()));
 
-		mockMvc.perform(get("/api/training/curriculums/{curriculumId}", 10L))
+		mockMvc.perform(get("/api/training/curriculums/{curriculumId}", 10L).principal(CURRENT_USER))
 				.andExpect(status().isOk());
 
 		then(curriculumFinder).should().findCurriculum(42L, 10L);
 	}
 
 	@Test
-	@WithLoginUser
 	@DisplayName("레슨이 없는 커리큘럼은 빈 배열과 200을 반환한다")
 	void findCurriculumReturnsEmptyArrayWhenCurriculumHasNoLesson() throws Exception {
 		given(curriculumFinder.findCurriculum(42L, 10L))
 				.willReturn(new CurriculumDetailView(10L, 1L, "앉아 1단계", 1, List.of()));
 
-		mockMvc.perform(get("/api/training/curriculums/{curriculumId}", 10L))
+		mockMvc.perform(get("/api/training/curriculums/{curriculumId}", 10L).principal(CURRENT_USER))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.curriculumId").value(10))
 				.andExpect(jsonPath("$.lessons").isArray())
@@ -209,12 +205,11 @@ class TrainingCurriculumControllerTest {
 	}
 
 	@Test
-	@WithLoginUser
 	@DisplayName("존재하지 않는 커리큘럼이면 404와 에러 코드를 반환한다")
 	void findCurriculumReturnsNotFoundWhenCurriculumDoesNotExist() throws Exception {
 		given(curriculumFinder.findCurriculum(42L, 999L)).willThrow(new CurriculumNotFoundException(999L));
 
-		mockMvc.perform(get("/api/training/curriculums/{curriculumId}", 999L))
+		mockMvc.perform(get("/api/training/curriculums/{curriculumId}", 999L).principal(CURRENT_USER))
 				.andExpect(status().isNotFound())
 				.andExpect(jsonPath("$.status").value(404))
 				.andExpect(jsonPath("$.code").value("TRAINING_CURRICULUM_NOT_FOUND"))

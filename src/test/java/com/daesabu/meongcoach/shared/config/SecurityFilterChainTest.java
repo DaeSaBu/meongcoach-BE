@@ -29,8 +29,8 @@ class SecurityFilterChainTest {
 	// 매핑되지 않은 보호 경로. 인증 없으면 401, 인증되면 401이 아닌 응답이 나온다
 	private static final String PROTECTED_PATH = "/api/dogs";
 
-	// @LoginUser를 받는 보호 경로. 없는 토픽을 골라 두어 토픽 조회 단계에서 404로 끝난다
-	private static final String LOGIN_USER_PATH = "/api/training/topics/{topicId}";
+	// @CurrentUserId를 받는 보호 경로. 없는 토픽을 골라 두어 토픽 조회 단계에서 404로 끝난다
+	private static final String CURRENT_USER_PATH = "/api/training/topics/{topicId}";
 
 	@Autowired
 	private MockMvc mockMvc;
@@ -103,23 +103,23 @@ class SecurityFilterChainTest {
 				.andExpect(status().isNotFound());
 	}
 
-	// 컨트롤러 슬라이스에는 필터 체인이 없으므로, 필터 체인이 세운 인증 주체를 LoginUserArgumentResolver가
+	// 컨트롤러 슬라이스에는 필터 체인이 없으므로, 필터 체인이 세운 인증 주체를 CurrentUserIdArgumentResolver가
 	// 실제로 읽어내는지는 여기에서만 확인할 수 있다. 401이 아니라 404면 해석에 성공한 것이다
 	@Test
-	@DisplayName("필터 체인이 세운 인증 주체가 @LoginUser 파라미터로 해석된다")
-	void authenticatedRequestResolvesLoginUser() throws Exception {
+	@DisplayName("필터 체인이 세운 인증 주체가 @CurrentUserId 파라미터로 해석된다")
+	void authenticatedRequestResolvesCurrentUserId() throws Exception {
 		AuthToken token = tokenProvider.issue(1L);
 
-		mockMvc.perform(put(LOGIN_USER_PATH, 999L)
+		mockMvc.perform(put(CURRENT_USER_PATH, 999L)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))
 				.andExpect(status().isNotFound())
 				.andExpect(jsonPath("$.code").value("TRAINING_TOPIC_NOT_FOUND"));
 	}
 
 	@Test
-	@DisplayName("토큰 없이 @LoginUser 경로에 접근하면 401을 반환한다")
-	void loginUserPathWithoutTokenReturnsUnauthorized() throws Exception {
-		mockMvc.perform(put(LOGIN_USER_PATH, 999L))
+	@DisplayName("토큰 없이 @CurrentUserId 경로에 접근하면 401을 반환한다")
+	void currentUserIdPathWithoutTokenReturnsUnauthorized() throws Exception {
+		mockMvc.perform(put(CURRENT_USER_PATH, 999L))
 				.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
 	}

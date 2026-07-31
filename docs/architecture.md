@@ -82,15 +82,15 @@ HTTP 요청
 - 컨트롤러는 `provided` 인터페이스에만 의존하며, 웹 DTO ↔ 도메인 입력 모델 변환까지만 담당합니다.
 - 서비스는 도메인 객체를 조합해 유스케이스를 수행하고, 외부 자원은 `required` 인터페이스를 통해서만 접근합니다.
 
-## 로그인 사용자 식별 (@LoginUser)
+## 로그인 사용자 식별 (@CurrentUserId)
 
-컨트롤러는 `@LoginUser Long userId` 파라미터로 사용자를 받을 뿐이고, 인증 주체를 회원 ID로 해석하는 일은 `shared/webapi/LoginUserArgumentResolver`가 전담합니다(`shared/config/WebMvcConfig`에서 등록). 리졸버는 `SecurityContextHolder`의 `Authentication`에서 액세스 토큰(`Jwt`)을 꺼내 `sub` 클레임을 `Long`으로 변환합니다. 토큰의 유효성(서명·만료·발급자·용도) 검증은 시큐리티 필터 체인이 이미 끝냈으므로 리졸버는 다시 검증하지 않습니다. ([security.md](security.md) 참고)
+컨트롤러는 `@CurrentUserId Long userId` 파라미터로 사용자를 받을 뿐이고, 인증 주체를 회원 ID로 해석하는 일은 `shared/security/CurrentUserIdArgumentResolver`가 전담합니다(`shared/config/WebConfig`에서 등록). 리졸버는 요청의 `Principal`(시큐리티 필터 체인이 세운 `JwtAuthenticationToken`, 이름이 곧 액세스 토큰의 `sub` 클레임)을 꺼내 `Long`으로 변환합니다. 토큰의 유효성(서명·만료·발급자·용도) 검증은 시큐리티 필터 체인이 이미 끝냈으므로 리졸버는 다시 검증하지 않습니다. ([security.md](security.md) 참고)
 
-인증 정보가 없거나 `sub`가 회원 ID 형식이 아니면 `AuthenticationException` 계열 예외를 던지고, 전역 핸들러가 401 Problem Details로 변환합니다. 다만 보호된 경로는 필터 체인이 먼저 401로 막으므로, 이 분기는 방어적 장치입니다.
+인증 정보가 없거나 주체 이름이 회원 ID 형식이 아니면 `AuthenticationException` 계열 예외를 던지고, 전역 핸들러가 401 Problem Details로 변환합니다. 다만 보호된 경로는 필터 체인이 먼저 401로 막으므로, 이 분기는 방어적 장치입니다.
 
-컨트롤러가 인증 방식에 묶이지 않도록 `SecurityContextHolder`·`Jwt`를 참조하는 곳은 `LoginUserArgumentResolver` **한 곳**뿐입니다. 인증 방식이 다시 바뀌어도 `@LoginUser`를 쓰는 컨트롤러 시그니처는 그대로 둘 수 있습니다.
+리졸버가 보는 것은 서블릿 표준 `Principal`뿐이라 `SecurityContextHolder`·`Jwt` 같은 인증 구현 타입에 묶이지 않습니다. 인증 방식이 바뀌어도 필터 체인이 주체를 세우기만 하면 리졸버와 `@CurrentUserId`를 쓰는 컨트롤러 시그니처는 그대로 둘 수 있습니다.
 
-테스트에서는 컨트롤러 슬라이스에 필터 체인이 없어(`test-convention.md`) `jwt()` 요청 후처리기가 SecurityContext를 채우지 못하므로, 테스트용 `@WithLoginUser` 애노테이션으로 인증 주체를 세웁니다.
+테스트에서는 컨트롤러 슬라이스에 필터 체인이 없어(`test-convention.md`) 요청 빌더의 `.principal(...)`로 인증 주체를 직접 세웁니다. 필터 체인이 세운 주체를 리졸버가 실제로 읽어내는지는 `shared/config/SecurityFilterChainTest`가 확인합니다.
 
 ## 모듈 경계 검증
 
