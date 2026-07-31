@@ -35,6 +35,10 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-webmvc")
 	implementation("org.springframework.boot:spring-boot-starter-validation")
 	implementation("org.springframework.modulith:spring-modulith-starter-core")
+	implementation("org.springframework.boot:spring-boot-starter-security")
+	implementation("org.springframework.boot:spring-boot-starter-security-oauth2-resource-server")
+	implementation("org.springframework.boot:spring-boot-starter-restclient")
+	testImplementation("org.springframework.security:spring-security-test")
 	compileOnly("org.projectlombok:lombok")
 	runtimeOnly("com.h2database:h2")
 	runtimeOnly("org.postgresql:postgresql")
@@ -79,6 +83,8 @@ val snippetsDir = layout.buildDirectory.dir("generated-snippets")
 
 tasks.withType<Test> {
 	useJUnitPlatform()
+	// 실제 시크릿 없이도 컨텍스트가 뜨도록 테스트 전용 프로파일을 활성화한다
+	systemProperty("spring.profiles.active", "test")
 }
 
 // 테스트가 끝나면 커버리지 리포트와 RestDocs 문서(build/docs/asciidoc)를 로컬에 생성한다

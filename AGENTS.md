@@ -1,6 +1,7 @@
 # 멍코치 Back-End 규칙
 
-멍코치 백엔드 저장소입니다. Spring Boot 4.1 / Java 25 / Gradle(Kotlin DSL) / JPA + H2 기반이며, 팀원 3명이 협업합니다.
+멍코치 백엔드 저장소입니다. Spring Boot 4.1 / Java 25 / Gradle(Kotlin DSL) / JPA + H2(로컬)/PostgreSQL(배포) 기반이며, 팀원 3명이 협업합니다.
+대응되는 프론트엔드는 ReactNative 기반의 모바일 앱 서비스입니다.
 
 ## 핵심 규칙
 
@@ -10,6 +11,8 @@
 - `main` 브랜치에 직접 push하지 않습니다. 모든 변경은 작업 브랜치에서 PR을 통해 merge합니다.
 - 문서, 커밋 메시지, 코드 주석은 한국어로 작성합니다.
 - 예외는 각 모듈 `domain`에 `{모듈}ErrorCode` enum + `DomainException` 하위 클래스로 정의해 던지기만 하고, 에러 응답 변환은 전역 핸들러가 RFC 9457 Problem Details 형식으로 전담합니다. 컨트롤러/서비스에서 개별 처리하지 않습니다.
+- 인증은 소셜 제공자 토큰을 서버가 검증한 뒤 자체 JWT를 발급하는 무상태 방식이며, 리프레시 토큰은 저장하지 않고 서명으로만 검증합니다. 보안 빈 설정은 `shared/config`, 검증 로직은 `shared/security`에 둡니다.
+- API 경로는 `/api/{리소스}` 형태로 쓰고 버전을 붙이지 않습니다. (예: `/api/users`, `/api/dogs`, 헬스 체크는 `/api/health`)
 
 ## 상세 문서
 
@@ -22,7 +25,9 @@
 | [docs/conventions/archunit-convention.md](docs/conventions/archunit-convention.md) | ArchUnit 아키텍처 검증 규칙  |
 | [docs/conventions/exception-convention.md](docs/conventions/exception-convention.md) | 예외 정의 패턴, Problem Details 에러 응답 규칙 |
 | [docs/architecture.md](docs/architecture.md)                               | Spring Modulith 모듈 구조, 의존 규칙   |
-| [docs/ci.md](docs/ci.md)                                                   | CI 파이프라인, 커버리지 기준        |
+| [docs/security.md](docs/security.md)                                       | 인증 흐름, JWT 토큰 정책, 소셜 제공자 확장 방법 |
+| [docs/ci-cd.md](docs/ci-cd.md)                                             | CI/CD 파이프라인, 커버리지·배포 기준 |
+| [docs/profiles.md](docs/profiles.md)                                       | local/dev/prod 프로파일 구성, DB·ddl-auto 정책 |
 
 ## 문서 추가 방법
 

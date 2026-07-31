@@ -36,11 +36,20 @@ void registerFailsWhenEmailIsDuplicated() {
 - 하나의 테스트는 하나의 동작만 검증합니다.
 - 테스트 간 순서 의존성을 만들지 않습니다. 각 테스트는 독립적으로 실행 가능해야 합니다.
 - 슬라이스 테스트: 컨트롤러는 `@WebMvcTest`, 리포지토리(`application/required`의 Spring Data 인터페이스)는 `@DataJpaTest`를 사용합니다.
+- 외부 API 연동은 `MockRestServiceServer.bindTo(RestClient.Builder)`로 검증합니다. 어댑터가 `RestClient`가 아닌 `RestClient.Builder`를 주입받아야 이 방식이 가능하므로, 생성자 파라미터를 `Builder`로 둡니다.
+
+## 시큐리티와 테스트 슬라이스
+
+현재 `spring-boot-starter-security-test`를 **의존성에 넣지 않았습니다.** Spring Boot 4에서 `@WebMvcTest` 슬라이스에 시큐리티 자동설정을 넣는 것은 이 아티팩트뿐이라, 지금은 컨트롤러 슬라이스에 필터 체인이 적용되지 않습니다.
+
+**주의:** 첫 인증 필요 엔드포인트를 테스트하려고 이 의존성을 추가하는 순간(`@WithMockUser`, `SecurityMockMvcRequestPostProcessors.jwt()` 등), `WebMvcTypeExcludeFilter`가 우리 `SecurityConfig`를 슬라이스에 포함하지 **않기** 때문에 Boot의 기본 "전부 인증" 체인이 적용되어 **기존 `@WebMvcTest`가 모두 401이 됩니다.** 그때는 순수 MVC 슬라이스에 `@AutoConfigureMockMvc(addFilters = false)`를 붙이거나 permit-all `@TestConfiguration`을 함께 도입해야 합니다.
+
+필터 체인 자체의 동작(`SecurityConfig`는 커버리지 검증 제외 대상)은 `shared/config/SecurityFilterChainTest`가 `@SpringBootTest`로 실제 요청을 보내 검증합니다.
 - `@SpringBootTest` 전체 통합 테스트는 꼭 필요한 시나리오에만 최소한으로 사용합니다.
 
 ## 커버리지
 
-- JaCoCo 라인 커버리지 **70% 이상**을 CI에서 검증하며, 미달 시 빌드가 실패합니다. ([docs/ci.md](../ci.md))
+- JaCoCo 라인 커버리지 **70% 이상**을 CI에서 검증하며, 미달 시 빌드가 실패합니다. ([docs/ci-cd.md](../ci-cd.md))
 
 ## 아키텍처 검증
 

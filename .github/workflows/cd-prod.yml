@@ -38,7 +38,7 @@ jobs:
     needs: gate
     permissions:
       contents: read
-    uses: ./.github/workflows/ci-prod.yml
+    uses: ./.github/workflows/ci.yml
     secrets: inherit
 
   release-check:
@@ -180,7 +180,7 @@ jobs:
             --query 'services[0].taskDefinition' \
             --output text)
 
-          # DB 환경변수와 Secrets Manager 참조는 기존 태스크 정의에서 유지하고 이미지만 바꾼다.
+          # 환경변수와 Secrets Manager 참조는 유지하고 이미지와 prod 프로필만 바꾼다.
           aws ecs describe-task-definition \
             --task-definition "$current_task_definition" \
             --query taskDefinition \
@@ -190,7 +190,8 @@ jobs:
             current-task-definition.json \
             task-definition.json \
             "$ECS_CONTAINER" \
-            "$IMAGE_URI"
+            "$IMAGE_URI" \
+            prod
 
       - name: 태스크 정의 리비전 등록
         id: task-definition

@@ -1,0 +1,10 @@
+# 운영 — 스키마를 자동 변경하지 않는다. 엔티티와 스키마가 불일치하면 기동에 실패한다 (validate)
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST}:5432/${DB_NAME}
+    driver-class-name: org.postgresql.Driver
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: validate
