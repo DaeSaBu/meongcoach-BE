@@ -6,6 +6,7 @@ plugins {
 	id("org.asciidoctor.jvm.convert") version "4.0.4"
 	id("com.diffplug.spotless") version "8.8.0"
 }
+val springAiVersion by extra("2.0.0")
 
 group = "com.daesabu"
 version = "0.0.1-SNAPSHOT"
@@ -26,6 +27,7 @@ val asciidoctorExt: Configuration by configurations.creating
 dependencyManagement {
 	imports {
 		mavenBom("org.springframework.modulith:spring-modulith-bom:2.1.0")
+		mavenBom("org.springframework.ai:spring-ai-bom:$springAiVersion")
 	}
 }
 
@@ -38,6 +40,7 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-security")
 	implementation("org.springframework.boot:spring-boot-starter-security-oauth2-resource-server")
 	implementation("org.springframework.boot:spring-boot-starter-restclient")
+	implementation("org.springframework.ai:spring-ai-starter-model-openai")
 	testImplementation("org.springframework.security:spring-security-test")
 	compileOnly("org.projectlombok:lombok")
 	runtimeOnly("com.h2database:h2")
