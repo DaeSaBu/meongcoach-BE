@@ -38,6 +38,7 @@ jobs:
     needs: gate
     permissions:
       contents: read
+      pull-requests: write
     uses: ./.github/workflows/ci.yml
     secrets: inherit
 
