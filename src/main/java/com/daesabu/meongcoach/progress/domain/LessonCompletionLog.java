@@ -14,7 +14,10 @@ import lombok.NoArgsConstructor;
 
 /**
  * 레슨 완료 원장. 행 생성이 곧 완료 이벤트라 createdAt이 완료 시각이다.
+ *
+ * @deprecated {@link UserLessonProgress}와 {@code UserCurriculumProgress}로 대체할 수 있다.
  */
+@Deprecated
 @Getter
 @Entity
 @Table(name = "lesson_completion_logs")

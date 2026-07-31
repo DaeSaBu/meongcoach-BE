@@ -26,6 +26,7 @@
 | 역할 | 위치 | 규칙 | 예시 |
 | --- | --- | --- | --- |
 | 모듈 공개 API 인터페이스 | `application/provided` | 능력을 나타내는 이름, 접미사 없음 | `UserRegister`, `UserFinder` |
+| 애플리케이션 조회 결과 모델 | `application/provided` | `~View` (record) | `CurriculumView`, `LessonView` |
 | 필요 자원 인터페이스 | `application/required` | 자원 이름 그대로 | `UserRepository`, `EmailSender` |
 | 애플리케이션 서비스 | `application` | `~Service` | `UserQueryService`, `UserFinderService` |
 | 컨트롤러 | `adapter/webapi` | `~Controller` | `AuthController` |
@@ -37,6 +38,14 @@
 | 도메인 예외·에러코드 | `domain/exception` | `{모듈}ErrorCode`, `~Exception` | `UserErrorCode`, `InvalidEmailException` |
 
 - `domain` 루트에는 엔티티와 enum을 두고, 값 객체는 `domain/vo`, 예외·에러코드는 `domain/exception`으로 분리합니다.
+
+## 트랜잭션
+
+- `@Transactional`은 `application` 계층의 서비스 **구현 클래스**에만 붙입니다. `application/provided` 인터페이스에는 붙이지 않습니다. (트랜잭션 경계는 계약이 아니라 구현 관심사)
+- 서비스 클래스에 `@Transactional(readOnly = true)`를 붙여 기본값을 읽기 전용으로 두고, **쓰기 메서드에만** `@Transactional`로 오버라이드합니다. 쓰기 메서드만 있는 서비스도 동일하게 적용합니다.
+	- 어노테이션 순서는 `@Service` → `@RequiredArgsConstructor` → `@Transactional(readOnly = true)`.
+- 메서드 어노테이션은 클래스 설정과 **병합되지 않고 통째로 대체**합니다. `@Transactional(timeout = 5)`처럼 일부 속성만 쓰면 `readOnly`가 기본값 `false`로 리셋되므로, 조회 메서드에 다른 속성이 필요하면 `readOnly = true`를 함께 명시합니다.
+- 같은 클래스 내부 호출(`this.method()`)은 프록시를 거치지 않아 트랜잭션이 걸리지 않습니다. 별도 빈으로 분리해 해결하고, `AopContext.currentProxy()`나 자기 주입은 쓰지 않습니다.
 
 ## Lombok 사용 규칙
 
@@ -52,5 +61,6 @@
 - 도메인 입력 모델은 `~Command` 접미사의 record로 `domain`에 두며, 웹 DTO와 별개로 유지합니다. (예: `DogRegisterCommand`)
 	- 엔티티 정적 팩토리의 순수 값 파라미터가 3개 이상이면 Command로 묶고, 팩토리는 Command를 받아 생성자에 전달합니다.
 	- 연관 엔티티는 Command에 담지 않고 별도 인자로 전달합니다. (예: `Curriculum.create(Topic topic, CurriculumCreateCommand command)`)
+- 애플리케이션 조회 결과는 `application/provided`의 `~View` record로 반환합니다. 필드명은 도메인 기준(`id`, `title`, `sortOrder`)으로 두고, 웹 노출 이름(`topicId`, `topicTitle`)으로 바꾸는 일은 `~Response.from(~View)` 정적 팩토리에서만 합니다. `~View`에 웹 네이밍을 쓰면 `application`이 `adapter`의 관심사를 떠안게 됩니다.
 - DTO ↔ 도메인 변환은 DTO의 정적 팩토리 메서드(`from`, `of`) 또는 `toXxx` 메서드로 처리합니다.
 - 엔티티를 컨트롤러 응답으로 직접 노출하지 않습니다.
