@@ -27,8 +27,10 @@ public class LessonProgressService implements LessonProgressFinder, LessonProgre
 
 	@Override
 	public Set<Long> findCompletedLessonIds(Long userId, Collection<Long> lessonIds) {
-		return userLessonProgressRepository.findAllByUserIdAndLessonIdIn(userId, lessonIds).stream()
-				.filter(progress -> progress.getCompletedCount() >= COMPLETED_THRESHOLD)
+		return userLessonProgressRepository
+				.findAllByUserIdAndLessonIdInAndCompletedCountGreaterThanEqual(
+						userId, lessonIds, COMPLETED_THRESHOLD)
+				.stream()
 				.map(UserLessonProgress::getLessonId)
 				.collect(Collectors.toUnmodifiableSet());
 	}

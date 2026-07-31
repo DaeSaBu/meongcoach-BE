@@ -20,4 +20,10 @@ public interface UserLessonProgressRepository extends JpaRepository<UserLessonPr
 	 * 한 사용자의 특정 레슨 진행도를 조회한다. 기록이 없으면 빈 Optional을 반환한다.
 	 */
 	Optional<UserLessonProgress> findByUserIdAndLessonId(Long userId, Long lessonId);
+
+	/**
+	 * 한 사용자의 완료 횟수가 기준값 이상인 레슨 목록을 조회한다.
+	 */
+	List<UserLessonProgress> findAllByUserIdAndLessonIdInAndCompletedCountGreaterThanEqual(
+			Long userId, Collection<Long> lessonIds, int completedCount);
 }
