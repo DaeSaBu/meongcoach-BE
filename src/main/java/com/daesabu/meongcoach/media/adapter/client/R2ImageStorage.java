@@ -2,6 +2,7 @@ package com.daesabu.meongcoach.media.adapter.client;
 
 import com.daesabu.meongcoach.media.application.required.ImageStorage;
 import com.daesabu.meongcoach.media.application.required.ImageUploadUrl;
+import com.daesabu.meongcoach.media.domain.vo.ImageObjectKey;
 import java.net.URI;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -40,18 +41,18 @@ public class R2ImageStorage implements ImageStorage {
 	}
 
 	@Override
-	public ImageUploadUrl issueUploadUrl(String key, String contentType) {
+	public ImageUploadUrl issueUploadUrl(ImageObjectKey key, String contentType) {
 		// Content-Type을 서명에 포함해 발급 시 지정한 형식으로만 업로드되게 한다
 		PutObjectRequest putObjectRequest = PutObjectRequest.builder()
 				.bucket(properties.bucket())
-				.key(key)
+				.key(key.value())
 				.contentType(contentType)
 				.build();
 		PresignedPutObjectRequest presigned = presigner.presignPutObject(PutObjectPresignRequest.builder()
 				.signatureDuration(properties.uploadUrlValidity())
 				.putObjectRequest(putObjectRequest)
 				.build());
-		return new ImageUploadUrl(presigned.url().toString(), publicBaseUrl + "/" + key,
+		return new ImageUploadUrl(presigned.url().toString(), publicBaseUrl + "/" + key.value(),
 				properties.uploadUrlValidity().toSeconds());
 	}
 

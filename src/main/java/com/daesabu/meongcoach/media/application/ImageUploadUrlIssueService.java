@@ -25,7 +25,7 @@ public class ImageUploadUrlIssueService implements ImageUploadUrlIssuer {
 		ImageType imageType = ImageType.fromContentType(contentType);
 
 		ImageObjectKey key = ImageObjectKey.create(uploadTarget, userId, imageType);
-		ImageUploadUrl uploadUrl = imageStorage.issueUploadUrl(key.value(), imageType.getContentType());
+		ImageUploadUrl uploadUrl = imageStorage.issueUploadUrl(key, imageType.getContentType());
 		return new ImageUploadUrlResult(uploadUrl.uploadUrl(), uploadUrl.publicUrl(), uploadUrl.expiresInSeconds());
 	}
 }

@@ -3,6 +3,7 @@ package com.daesabu.meongcoach.media.adapter.client;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.daesabu.meongcoach.media.application.required.ImageUploadUrl;
+import com.daesabu.meongcoach.media.domain.vo.ImageObjectKey;
 import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -17,7 +18,8 @@ class R2ImageStorageTest {
 	private static final String ENDPOINT = "https://test-account.r2.cloudflarestorage.com";
 	private static final String BUCKET = "test-bucket";
 	private static final String PUBLIC_BASE_URL = "https://images.test.meongcoach.com";
-	private static final String KEY = "images/user-profile/1/550e8400-e29b-41d4-a716-446655440000.jpg";
+	private static final ImageObjectKey KEY =
+			new ImageObjectKey("images/user-profile/1/550e8400-e29b-41d4-a716-446655440000.jpg");
 
 	private R2ImageStorage storage;
 
@@ -32,7 +34,7 @@ class R2ImageStorageTest {
 	void uploadUrlPointsToBucketAndKey() {
 		ImageUploadUrl url = storage.issueUploadUrl(KEY, "image/jpeg");
 
-		assertThat(url.uploadUrl()).startsWith(ENDPOINT + "/" + BUCKET + "/" + KEY);
+		assertThat(url.uploadUrl()).startsWith(ENDPOINT + "/" + BUCKET + "/" + KEY.value());
 	}
 
 	@Test
@@ -58,7 +60,7 @@ class R2ImageStorageTest {
 	void publicUrlIsUnderPublicBaseUrl() {
 		ImageUploadUrl url = storage.issueUploadUrl(KEY, "image/jpeg");
 
-		assertThat(url.publicUrl()).isEqualTo(PUBLIC_BASE_URL + "/" + KEY);
+		assertThat(url.publicUrl()).isEqualTo(PUBLIC_BASE_URL + "/" + KEY.value());
 	}
 
 	@Test
@@ -72,8 +74,8 @@ class R2ImageStorageTest {
 	@Test
 	@DisplayName("공개 도메인 아래의 URL만 우리 공개 URL로 판별한다")
 	void isPublicUrlChecksPrefix() {
-		assertThat(storage.isPublicUrl(PUBLIC_BASE_URL + "/" + KEY)).isTrue();
-		assertThat(storage.isPublicUrl("https://evil.example.com/" + KEY)).isFalse();
+		assertThat(storage.isPublicUrl(PUBLIC_BASE_URL + "/" + KEY.value())).isTrue();
+		assertThat(storage.isPublicUrl("https://evil.example.com/" + KEY.value())).isFalse();
 		assertThat(storage.isPublicUrl(null)).isFalse();
 	}
 

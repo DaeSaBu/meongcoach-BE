@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.daesabu.meongcoach.media.application.required.ImageStorage;
 import com.daesabu.meongcoach.media.application.required.ImageUploadUrl;
 import com.daesabu.meongcoach.media.domain.exception.InvalidImageUrlException;
+import com.daesabu.meongcoach.media.domain.vo.ImageObjectKey;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -51,7 +52,7 @@ class StoredImageUrlValidateServiceTest {
 	private static class PrefixImageStorage implements ImageStorage {
 
 		@Override
-		public ImageUploadUrl issueUploadUrl(String key, String contentType) {
+		public ImageUploadUrl issueUploadUrl(ImageObjectKey key, String contentType) {
 			throw new UnsupportedOperationException("이 테스트에서 쓰지 않는다");
 		}
 

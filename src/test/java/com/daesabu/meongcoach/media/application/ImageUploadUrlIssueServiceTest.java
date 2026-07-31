@@ -10,6 +10,7 @@ import com.daesabu.meongcoach.media.domain.ImageType;
 import com.daesabu.meongcoach.media.domain.ImageUploadTarget;
 import com.daesabu.meongcoach.media.domain.exception.InvalidUploadTargetException;
 import com.daesabu.meongcoach.media.domain.exception.UnsupportedImageTypeException;
+import com.daesabu.meongcoach.media.domain.vo.ImageObjectKey;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,7 +35,7 @@ class ImageUploadUrlIssueServiceTest {
 		service.issue(7L, "DOG_PROFILE", "image/png");
 
 		// 키 포맷 자체는 ImageObjectKeyTest가 검증한다. 여기서는 변환한 값이 그대로 전달되는지만 본다
-		assertThat(imageStorage.lastKey())
+		assertThat(imageStorage.lastKey().value())
 				.startsWith("images/" + ImageUploadTarget.DOG_PROFILE.getPathSegment() + "/7/")
 				.endsWith("." + ImageType.PNG.getExtension());
 	}
@@ -75,11 +76,11 @@ class ImageUploadUrlIssueServiceTest {
 
 	private static class RecordingImageStorage implements ImageStorage {
 
-		private final List<String> keys = new ArrayList<>();
+		private final List<ImageObjectKey> keys = new ArrayList<>();
 		private final List<String> contentTypes = new ArrayList<>();
 
 		@Override
-		public ImageUploadUrl issueUploadUrl(String key, String contentType) {
+		public ImageUploadUrl issueUploadUrl(ImageObjectKey key, String contentType) {
 			keys.add(key);
 			contentTypes.add(contentType);
 			return new ImageUploadUrl("https://storage.test/upload", "https://images.test/public", 600L);
@@ -90,7 +91,7 @@ class ImageUploadUrlIssueServiceTest {
 			return true;
 		}
 
-		private String lastKey() {
+		private ImageObjectKey lastKey() {
 			return keys.getLast();
 		}
 
