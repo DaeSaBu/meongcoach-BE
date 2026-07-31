@@ -1,0 +1,183 @@
+package com.daesabu.meongcoach.onboarding.adapter.webapi;
+
+import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
+import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
+import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
+import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import com.daesabu.meongcoach.dog.application.provided.PersonalityInfo;
+import com.daesabu.meongcoach.onboarding.application.provided.OnboardingCompleter;
+import com.daesabu.meongcoach.onboarding.application.provided.OnboardingMetadataFinder;
+import com.daesabu.meongcoach.onboarding.application.provided.OnboardingMetadataResult;
+import com.daesabu.meongcoach.training.application.provided.TopicSummary;
+import com.daesabu.meongcoach.user.domain.exception.AlreadyOnboardedException;
+import java.util.List;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+
+@WebMvcTest(OnboardingController.class)
+@Import(OnboardingControllerTest.StubConfig.class)
+@AutoConfigureRestDocs
+@DisplayName("온보딩 API")
+class OnboardingControllerTest {
+
+	private static final long ONBOARDED_USER_ID = 99L;
+
+	private static final String COMPLETE_REQUEST = """
+			{
+				"nickname": "멍멍이집사",
+				"birthDate": "1998-01-01",
+				"mbti": "INTJ",
+				"gender": "FEMALE",
+				"dogs": [
+					{
+						"name": "초코",
+						"breed": "푸들",
+						"sex": "MALE",
+						"birthDate": "2024-03-01",
+						"weightKg": 4.50,
+						"personalities": ["TIMID", "LIVELY"]
+					}
+				]
+			}
+			""";
+
+	@Autowired
+	private MockMvc mockMvc;
+
+	@Test
+	@DisplayName("온보딩 메타데이터를 조회한다")
+	void metadataReturnsOnboardingLists() throws Exception {
+		mockMvc.perform(get("/api/onboarding/metadata").principal(() -> "1"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.topics[0].title").value("배변 훈련"))
+				.andExpect(jsonPath("$.personalities[0].code").value("TIMID"))
+				.andExpect(jsonPath("$.mbtis[0]").value("ISTJ"))
+				.andDo(document("onboarding/metadata",
+						responseFields(
+								fieldWithPath("topics[].id").description("토픽 ID"),
+								fieldWithPath("topics[].title").description("토픽 이름"),
+								fieldWithPath("personalities[].code").description("강아지 성격 코드"),
+								fieldWithPath("personalities[].label").description("강아지 성격 한글 라벨"),
+								fieldWithPath("mbtis[]").description("선택 가능한 사람 MBTI 코드 목록")
+						)
+				));
+	}
+
+	@Test
+	@DisplayName("온보딩을 완료하면 생성된 강아지 ID 목록을 반환한다")
+	void completeReturnsCreatedDogIds() throws Exception {
+		mockMvc.perform(post("/api/onboarding")
+						.principal(() -> "1")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(COMPLETE_REQUEST))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.dogIds[0]").value(1))
+				.andDo(document("onboarding/complete",
+						requestFields(
+								fieldWithPath("nickname").description("사용자 닉네임 (최대 50자)"),
+								fieldWithPath("birthDate").description("사용자 생년월일. 선택 입력").optional(),
+								fieldWithPath("mbti").description("사용자 MBTI 코드. 선택 입력").optional(),
+								fieldWithPath("gender").description(
+										"사용자 성별. `MALE`/`FEMALE`/`NONE`(응답 안 함). 선택 입력").optional(),
+								fieldWithPath("dogs[].name").description("강아지 이름 (최대 50자)"),
+								fieldWithPath("dogs[].breed").description("강아지 견종 (최대 50자)"),
+								fieldWithPath("dogs[].sex").description("강아지 성별. `MALE` 또는 `FEMALE`"),
+								fieldWithPath("dogs[].birthDate").description("강아지 생년월일. 선택 입력").optional(),
+								fieldWithPath("dogs[].weightKg").description("강아지 몸무게(kg)"),
+								fieldWithPath("dogs[].personalities").description("강아지 성격 코드 목록. 선택 입력").optional()
+						),
+						responseFields(
+								fieldWithPath("dogIds").description("생성된 강아지 ID 목록")
+						)
+				));
+	}
+
+	@Test
+	@DisplayName("이미 온보딩을 완료한 회원이면 409를 반환한다")
+	void completeFailsWhenAlreadyOnboarded() throws Exception {
+		mockMvc.perform(post("/api/onboarding")
+						.principal(() -> String.valueOf(ONBOARDED_USER_ID))
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(COMPLETE_REQUEST))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code").value("USER_ALREADY_ONBOARDED"))
+				.andDo(document("onboarding/complete-error",
+						responseFields(
+								fieldWithPath("title").description("HTTP 상태 이름"),
+								fieldWithPath("status").description("HTTP 상태 코드"),
+								fieldWithPath("detail").description("사람이 읽을 수 있는 에러 설명"),
+								fieldWithPath("instance").description("에러가 발생한 요청 경로"),
+								fieldWithPath("code").description("클라이언트 분기용 에러 코드"),
+								fieldWithPath("timestamp").description("에러 발생 시각(UTC)")
+						)
+				));
+	}
+
+	@Test
+	@DisplayName("닉네임이 비어 있으면 검증에 실패한다")
+	void completeFailsWhenNicknameIsBlank() throws Exception {
+		mockMvc.perform(post("/api/onboarding")
+						.principal(() -> "1")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(COMPLETE_REQUEST.replace("멍멍이집사", "")))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
+				.andExpect(jsonPath("$.errors[0].field").value("nickname"));
+	}
+
+	@Test
+	@DisplayName("강아지 없이 온보딩을 완료할 수 없다")
+	void completeFailsWhenDogsIsEmpty() throws Exception {
+		mockMvc.perform(post("/api/onboarding")
+						.principal(() -> "1")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"nickname\": \"멍멍이집사\", \"dogs\": []}"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.errors[0].field").value("dogs"));
+	}
+
+	@Test
+	@DisplayName("인증 정보가 없으면 401을 반환한다")
+	void completeFailsWithoutPrincipal() throws Exception {
+		mockMvc.perform(post("/api/onboarding")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(COMPLETE_REQUEST))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+	}
+
+	@TestConfiguration
+	static class StubConfig {
+
+		@Bean
+		OnboardingMetadataFinder onboardingMetadataFinder() {
+			return () -> new OnboardingMetadataResult(
+					List.of(new TopicSummary(1L, "배변 훈련"), new TopicSummary(2L, "산책 훈련")),
+					List.of(new PersonalityInfo("TIMID", "소심함"), new PersonalityInfo("LIVELY", "활발함")),
+					List.of("ISTJ", "INTJ"));
+		}
+
+		@Bean
+		OnboardingCompleter onboardingCompleter() {
+			return (userId, info) -> {
+				if (userId == ONBOARDED_USER_ID) {
+					throw new AlreadyOnboardedException();
+				}
+				return List.of(1L, 2L);
+			};
+		}
+	}
+}

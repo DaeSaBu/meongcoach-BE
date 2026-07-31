@@ -55,10 +55,6 @@ public class Dog extends BaseEntity {
 	private BigDecimal weightKg;
 
 	@Enumerated(EnumType.STRING)
-	@Column(nullable = false, length = 10)
-	private DogSize size;
-
-	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, length = 20)
 	private DogStatus status;
 
@@ -82,7 +78,6 @@ public class Dog extends BaseEntity {
 		this.sex = command.sex();
 		this.birthDate = command.birthDate();
 		this.weightKg = command.weightKg();
-		this.size = command.size();
 		this.status = DogStatus.SELECTED;
 	}
 

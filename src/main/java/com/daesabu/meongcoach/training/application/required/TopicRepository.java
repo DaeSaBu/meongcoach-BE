@@ -19,4 +19,6 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
 	 * 카테고리 정렬 순서, 토픽 정렬 순서, id 오름차순 기준 첫 토픽을 조회한다.
 	 */
 	Optional<Topic> findFirstByOrderByTrainingCategory_SortOrderAscSortOrderAscIdAsc();
+
+	List<Topic> findAllByOrderBySortOrderAsc();
 }

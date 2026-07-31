@@ -59,6 +59,16 @@ class UserProfileTest {
 	}
 
 	@Test
+	@DisplayName("성별을 변경하면 기존 성별이 교체된다")
+	void changeGenderReplacesGender() {
+		UserProfile profile = UserProfile.create(User.registerMember(), "멍멍이집사");
+
+		profile.changeGender(Gender.FEMALE);
+
+		assertThat(profile.getGender()).isEqualTo(Gender.FEMALE);
+	}
+
+	@Test
 	@DisplayName("생년월일로 나이를 계산한다")
 	void getAgeCalculatesFromBirthDate() {
 		UserProfile profile = UserProfile.create(User.registerMember(), "멍멍이집사");
