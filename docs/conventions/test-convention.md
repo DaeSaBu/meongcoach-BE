@@ -61,7 +61,7 @@ void findDelegatesWithCurrentUserId() throws Exception {
 
 ## 커버리지
 
-- JaCoCo 라인 커버리지 **70% 이상**을 CI에서 검증하며, 미달 시 빌드가 실패합니다. ([docs/ci.md](../ci.md))
+- JaCoCo 라인 커버리지 **70% 이상**을 CI에서 검증하며, 미달 시 빌드가 실패합니다. ([docs/ci-cd.md](../ci-cd.md))
 
 ## 아키텍처 검증
 

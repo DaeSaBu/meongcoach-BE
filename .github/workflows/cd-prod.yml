@@ -1,0 +1,259 @@
+name: CD - Prod
+
+on:
+  workflow_dispatch:
+    inputs:
+      dev_commit_sha:
+        description: health check까지 성공한 dev 배포의 commit SHA
+        required: true
+        type: string
+      release_version:
+        description: 운영 배포 버전(vMAJOR.MINOR.PATCH)
+        required: true
+        type: string
+      confirmation:
+        description: DEPLOY_PRODUCTION을 입력한다
+        required: true
+        type: string
+
+concurrency:
+  group: backend-cd-prod-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - name: 운영 CD 실행 조건 검증
+        env:
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          test "${GITHUB_WORKFLOW}" = "CD - Prod"
+          test "${GITHUB_EVENT_NAME}" = "workflow_dispatch"
+          test "${GITHUB_REF}" = "refs/heads/main"
+          test "${CONFIRMATION}" = "DEPLOY_PRODUCTION"
+
+  ci:
+    needs: gate
+    permissions:
+      contents: read
+    uses: ./.github/workflows/ci.yml
+    secrets: inherit
+
+  release-check:
+    needs: ci
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+
+      - name: 운영 배포 입력 및 dev 승격 검증
+        env:
+          DEV_COMMIT_SHA: ${{ inputs.dev_commit_sha }}
+          RELEASE_VERSION: ${{ inputs.release_version }}
+          CONFIRMATION: ${{ inputs.confirmation }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          test "${GITHUB_REF_NAME}" = "main"
+          test "${CONFIRMATION}" = "DEPLOY_PRODUCTION"
+          [[ "${DEV_COMMIT_SHA}" =~ ^[0-9a-fA-F]{40}$ ]]
+          [[ "${RELEASE_VERSION}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+
+          DEV_COMMIT_SHA=${DEV_COMMIT_SHA,,}
+          git cat-file -e "${DEV_COMMIT_SHA}^{commit}"
+
+          DEV_TREE=$(git rev-parse "${DEV_COMMIT_SHA}^{tree}")
+          PROD_TREE=$(git rev-parse "${GITHUB_SHA}^{tree}")
+          test "${DEV_TREE}" = "${PROD_TREE}"
+
+          WORKFLOW_RUNS=$(curl --silent --show-error --fail-with-body \
+            --header "Accept: application/vnd.github+json" \
+            --header "Authorization: Bearer ${GITHUB_TOKEN}" \
+            --header "X-GitHub-Api-Version: 2022-11-28" \
+            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/actions/workflows/cd-dev.yml/runs?event=push&status=success&head_sha=${DEV_COMMIT_SHA}&per_page=1")
+
+          DEV_RUN_ID=$(jq --raw-output --arg sha "${DEV_COMMIT_SHA}" '
+            [.workflow_runs[] |
+              select(.head_sha == $sha and .event == "push" and .conclusion == "success")] |
+            first | .id // empty
+          ' <<< "${WORKFLOW_RUNS}")
+          test -n "${DEV_RUN_ID}"
+
+          ARTIFACTS=$(curl --silent --show-error --fail-with-body \
+            --header "Accept: application/vnd.github+json" \
+            --header "Authorization: Bearer ${GITHUB_TOKEN}" \
+            --header "X-GitHub-Api-Version: 2022-11-28" \
+            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/actions/runs/${DEV_RUN_ID}/artifacts")
+
+          jq -e --arg name "dev-deployment-${DEV_COMMIT_SHA}" '
+            .artifacts | any(.name == $name and .expired == false)
+          ' <<< "${ARTIFACTS}" > /dev/null
+
+          set +e
+          git ls-remote --exit-code --tags origin "refs/tags/${RELEASE_VERSION}" > /dev/null
+          TAG_STATUS=$?
+          set -e
+
+          test "${TAG_STATUS}" -eq 2
+          ! git tag --points-at "${GITHUB_SHA}" |
+            grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'
+
+  deploy:
+    needs: release-check
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      github.ref == 'refs/heads/main' &&
+      inputs.confirmation == 'DEPLOY_PRODUCTION'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      id-token: write
+    env:
+      AWS_REGION: ap-northeast-2
+      ECR_REPOSITORY: meongcoach-prod-ecr
+      ECS_CLUSTER: meongcoach-prod-cluster
+      ECS_SERVICE: meongcoach-prod-svc
+      ECS_TASK_DEFINITION: meongcoach-prod-taskdef
+      ECS_CONTAINER: api
+      HEALTH_URL: https://api.meongcoach.com/api/health
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+
+      - name: AWS 자격 증명 설정
+        uses: aws-actions/configure-aws-credentials@451ce2a72e8d729a59ebeaacab82dbce58e7af4c # v6
+        with:
+          role-to-assume: ${{ secrets.AWS_PROD_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: ECR 로그인
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@d539f0932e70871a027e9d5a9d8fc38589180a64 # v2
+
+      - name: Buildx 설정
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4
+
+      - name: 이미지 빌드 및 푸시
+        env:
+          IMAGE_URI: ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+        run: |
+          set +e
+          docker buildx build --platform linux/amd64 --tag "${IMAGE_URI}" --push . 2>&1 | tee image-push.log
+          PUSH_STATUS=${PIPESTATUS[0]}
+          set -e
+
+          if [ "${PUSH_STATUS}" -ne 0 ] &&
+            grep -Eq "already exists.*immutable|cannot be overwritten because.*immutable" image-push.log; then
+            echo "이미 존재하는 커밋 SHA 이미지를 재사용합니다: ${IMAGE_URI}"
+          elif [ "${PUSH_STATUS}" -ne 0 ]; then
+            exit "${PUSH_STATUS}"
+          fi
+
+      - name: 배포용 태스크 정의 생성
+        env:
+          IMAGE_URI: ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+          JWT_SECRET: ${{ secrets.PROD_JWT_SECRET }}
+          KAKAO_AUDIENCES: ${{ secrets.PROD_KAKAO_AUDIENCES }}
+          R2_ENDPOINT: ${{ secrets.PROD_R2_ENDPOINT }}
+          R2_ACCESS_KEY_ID: ${{ secrets.PROD_R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.PROD_R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ secrets.PROD_R2_BUCKET }}
+          R2_PUBLIC_BASE_URL: ${{ secrets.PROD_R2_PUBLIC_BASE_URL }}
+          VIMEO_ACCESS_TOKEN: ${{ secrets.PROD_VIMEO_ACCESS_TOKEN }}
+        run: |
+          # 최신 인프라 설정을 읽고 GitHub Secrets·이미지를 반영한 등록용 JSON을 만든다.
+          aws ecs describe-task-definition \
+            --task-definition "${ECS_TASK_DEFINITION}" \
+            --query taskDefinition \
+            --output json > current-task-definition.json
+
+          bash .github/scripts/render-task-definition.sh \
+            current-task-definition.json \
+            "${ECS_CONTAINER}" \
+            "${IMAGE_URI}" > task-definition.json
+
+      # 위 script는 JSON만 만들며, 실제 AWS 변경은 여기서부터 시작한다.
+      - name: 태스크 정의 리비전 등록
+        id: task-definition
+        run: |
+          NEW_TASK_DEFINITION=$(aws ecs register-task-definition \
+            --cli-input-json file://task-definition.json \
+            --query 'taskDefinition.taskDefinitionArn' \
+            --output text)
+
+          echo "arn=${NEW_TASK_DEFINITION}" >> "${GITHUB_OUTPUT}"
+
+      - name: ECS 서비스 갱신
+        env:
+          TASK_DEFINITION_ARN: ${{ steps.task-definition.outputs.arn }}
+        run: |
+          aws ecs update-service \
+            --cluster "${ECS_CLUSTER}" \
+            --service "${ECS_SERVICE}" \
+            --task-definition "${TASK_DEFINITION_ARN}" \
+            --output json > /dev/null
+
+      - name: ECS 서비스 안정화 대기
+        env:
+          TASK_DEFINITION_ARN: ${{ steps.task-definition.outputs.arn }}
+        run: |
+          aws ecs wait services-stable \
+            --cluster "${ECS_CLUSTER}" \
+            --services "${ECS_SERVICE}"
+
+          DEPLOYMENT_STATE=$(aws ecs describe-services \
+            --cluster "${ECS_CLUSTER}" \
+            --services "${ECS_SERVICE}" \
+            --query 'services[0].[taskDefinition,desiredCount,runningCount]' \
+            --output text)
+
+          read -r DEPLOYED_TASK_DEFINITION DESIRED_COUNT RUNNING_COUNT <<< "${DEPLOYMENT_STATE}"
+          test "${DEPLOYED_TASK_DEFINITION}" = "${TASK_DEFINITION_ARN}"
+          test "${DESIRED_COUNT}" -ge 1
+          test "${RUNNING_COUNT}" -ge 1
+
+      - name: 운영 health check
+        run: |
+          for _ in {1..30}; do
+            if curl --silent --show-error --fail --max-time 10 "${HEALTH_URL}"; then
+              exit 0
+            fi
+            sleep 10
+          done
+          exit 1
+
+      - name: 운영 배포 tag 생성
+        env:
+          RELEASE_VERSION: ${{ inputs.release_version }}
+        run: |
+          PREVIOUS_RELEASE=$(git tag --list 'v*' --sort=-version:refname |
+            grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' |
+            head -n 1 || true)
+
+          if [ -n "${PREVIOUS_RELEASE}" ]; then
+            COMMIT_RANGE="${PREVIOUS_RELEASE}..${GITHUB_SHA}"
+          else
+            COMMIT_RANGE="${GITHUB_SHA}"
+          fi
+
+          {
+            echo "주요 작업"
+            git log "${COMMIT_RANGE}" --pretty='- %s'
+            echo
+            echo "변경 사항"
+            echo "- 운영 배포와 health check 성공"
+            echo "- 배포 원본 commit: ${GITHUB_SHA}"
+          } > tag-message.txt
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag --annotate "${RELEASE_VERSION}" --file tag-message.txt "${GITHUB_SHA}"
+          git push origin "refs/tags/${RELEASE_VERSION}"

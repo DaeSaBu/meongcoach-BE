@@ -1,7 +1,7 @@
 # 개발 서버 — PostgreSQL. 접속 정보는 배포 환경 변수로 주입하며 기본값이 없어 미주입 시 기동에 실패한다
 spring:
   datasource:
-    url: ${DB_URL}
+    url: jdbc:postgresql://${DB_HOST}:5432/${DB_NAME}
     driver-class-name: org.postgresql.Driver
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}

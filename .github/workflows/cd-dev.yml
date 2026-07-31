@@ -1,0 +1,162 @@
+name: CD - Dev
+
+on:
+  push:
+    branches: [develop]
+
+jobs:
+  ci:
+    permissions:
+      contents: read
+    uses: ./.github/workflows/ci.yml
+    secrets: inherit
+
+  deploy:
+    needs: ci
+    if: >-
+      github.workflow == 'CD - Dev' &&
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      actions: write
+      contents: read
+      id-token: write
+    env:
+      AWS_REGION: ap-northeast-2
+      ECR_REPOSITORY: meongcoach-dev-ecr
+      ECS_CLUSTER: meongcoach-dev-cluster
+      ECS_SERVICE: meongcoach-dev-svc
+      ECS_TASK_DEFINITION: meongcoach-dev-taskdef
+      ECS_CONTAINER: api
+      HEALTH_URL: https://api.dev.meongcoach.com/api/health
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: AWS 자격 증명 설정
+        uses: aws-actions/configure-aws-credentials@451ce2a72e8d729a59ebeaacab82dbce58e7af4c # v6
+        with:
+          role-to-assume: ${{ secrets.AWS_DEV_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: ECR 로그인
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@d539f0932e70871a027e9d5a9d8fc38589180a64 # v2
+
+      - name: Buildx 설정
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4
+
+      - name: 이미지 빌드 및 푸시
+        env:
+          IMAGE_URI: ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+        run: |
+          set +e
+          docker buildx build --platform linux/amd64 --tag "${IMAGE_URI}" --push . 2>&1 | tee image-push.log
+          PUSH_STATUS=${PIPESTATUS[0]}
+          set -e
+
+          if [ "${PUSH_STATUS}" -ne 0 ] &&
+            grep -Eq "already exists.*immutable|cannot be overwritten because.*immutable" image-push.log; then
+            echo "이미 존재하는 커밋 SHA 이미지를 재사용합니다: ${IMAGE_URI}"
+          elif [ "${PUSH_STATUS}" -ne 0 ]; then
+            exit "${PUSH_STATUS}"
+          fi
+
+      - name: 배포용 태스크 정의 생성
+        env:
+          IMAGE_URI: ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          KAKAO_AUDIENCES: ${{ secrets.KAKAO_AUDIENCES }}
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          R2_PUBLIC_BASE_URL: ${{ secrets.R2_PUBLIC_BASE_URL }}
+          VIMEO_ACCESS_TOKEN: ${{ secrets.DEV_VIMEO_ACCESS_TOKEN }}
+        run: |
+          # 최신 인프라 설정을 읽고 GitHub Secrets·이미지를 반영한 등록용 JSON을 만든다.
+          aws ecs describe-task-definition \
+            --task-definition "${ECS_TASK_DEFINITION}" \
+            --query taskDefinition \
+            --output json > current-task-definition.json
+
+          bash .github/scripts/render-task-definition.sh \
+            current-task-definition.json \
+            "${ECS_CONTAINER}" \
+            "${IMAGE_URI}" > task-definition.json
+
+      # 위 script는 JSON만 만들며, 실제 AWS 변경은 여기서부터 시작한다.
+      - name: 태스크 정의 리비전 등록
+        id: task-definition
+        run: |
+          NEW_TASK_DEFINITION=$(aws ecs register-task-definition \
+            --cli-input-json file://task-definition.json \
+            --query 'taskDefinition.taskDefinitionArn' \
+            --output text)
+
+          echo "arn=${NEW_TASK_DEFINITION}" >> "${GITHUB_OUTPUT}"
+
+      - name: ECS 서비스 갱신
+        env:
+          TASK_DEFINITION_ARN: ${{ steps.task-definition.outputs.arn }}
+        run: |
+          aws ecs update-service \
+            --cluster "${ECS_CLUSTER}" \
+            --service "${ECS_SERVICE}" \
+            --task-definition "${TASK_DEFINITION_ARN}" \
+            --output json > /dev/null
+
+      - name: ECS 서비스 안정화 대기
+        id: ecs-deploy
+        env:
+          TASK_DEFINITION_ARN: ${{ steps.task-definition.outputs.arn }}
+        run: |
+          aws ecs wait services-stable \
+            --cluster "${ECS_CLUSTER}" \
+            --services "${ECS_SERVICE}"
+
+          DEPLOYMENT_STATE=$(aws ecs describe-services \
+            --cluster "${ECS_CLUSTER}" \
+            --services "${ECS_SERVICE}" \
+            --query 'services[0].[taskDefinition,desiredCount,runningCount]' \
+            --output text)
+
+          read -r DEPLOYED_TASK_DEFINITION DESIRED_COUNT RUNNING_COUNT <<< "${DEPLOYMENT_STATE}"
+          test "${DEPLOYED_TASK_DEFINITION}" = "${TASK_DEFINITION_ARN}"
+
+          if [ "${DESIRED_COUNT}" -eq 0 ]; then
+            echo "health_check=false" >> "${GITHUB_OUTPUT}"
+            echo "::warning::bootstrap 배포입니다. ecs_min_capacity를 1로 적용한 뒤 다시 실행해야 합니다."
+            echo "### 개발 bootstrap 배포" >> "${GITHUB_STEP_SUMMARY}"
+            echo "task definition은 갱신됐지만 desired count가 0이라 health check를 보류했습니다." \
+              >> "${GITHUB_STEP_SUMMARY}"
+          else
+            test "${RUNNING_COUNT}" -ge 1
+            echo "health_check=true" >> "${GITHUB_OUTPUT}"
+          fi
+
+      - name: 개발 health check
+        if: steps.ecs-deploy.outputs.health_check == 'true'
+        run: |
+          for _ in {1..30}; do
+            if curl --silent --show-error --fail --max-time 10 "${HEALTH_URL}"; then
+              exit 0
+            fi
+            sleep 10
+          done
+          exit 1
+
+      - name: dev 배포 증명 생성
+        if: steps.ecs-deploy.outputs.health_check == 'true'
+        run: |
+          printf '{"commit_sha":"%s"}\n' "${GITHUB_SHA}" > dev-deployment-proof.json
+
+      - name: dev 배포 증명 업로드
+        if: steps.ecs-deploy.outputs.health_check == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: dev-deployment-${{ github.sha }}
+          path: dev-deployment-proof.json
+          retention-days: 90
+          overwrite: true

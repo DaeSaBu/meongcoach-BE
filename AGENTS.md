@@ -28,7 +28,7 @@
 | [docs/conventions/exception-convention.md](docs/conventions/exception-convention.md) | 예외 정의 패턴, Problem Details 에러 응답 규칙 |
 | [docs/architecture.md](docs/architecture.md)                               | Spring Modulith 모듈 구조, 의존 규칙   |
 | [docs/security.md](docs/security.md)                                       | 인증 흐름, JWT 토큰 정책, 소셜 제공자 확장 방법 |
-| [docs/ci.md](docs/ci.md)                                                   | CI 파이프라인, 커버리지 기준        |
+| [docs/ci-cd.md](docs/ci-cd.md)                                             | CI/CD 파이프라인, 커버리지·배포 기준 |
 | [docs/profiles.md](docs/profiles.md)                                       | local/dev/prod 프로파일 구성, DB·ddl-auto 정책 |
 
 ## 문서 추가 방법

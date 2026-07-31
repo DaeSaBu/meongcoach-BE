@@ -8,20 +8,38 @@
 | 프로파일 | DB | ddl-auto | 용도 | 필요 환경 변수 |
 |---|---|---|---|---|
 | `local` | H2 (인메모리) | `create-drop` | 로컬 개발. h2-console 사용 가능 | `JWT_SECRET`, `KAKAO_AUDIENCES` |
-| `dev` | PostgreSQL | `update` | 개발 서버 | `JWT_SECRET`, `KAKAO_AUDIENCES`, `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` |
-| `prod` | PostgreSQL | `validate` | 운영 | `JWT_SECRET`, `KAKAO_AUDIENCES`, `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` |
+| `dev` | PostgreSQL | `update` | 개발 서버 | `JWT_SECRET`, `KAKAO_AUDIENCES`, `DB_HOST`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD` |
+| `prod` | PostgreSQL | `validate` | 운영 | `JWT_SECRET`, `KAKAO_AUDIENCES`, `DB_HOST`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD` |
 | `test` | H2 (인메모리) | `create-drop` | 테스트. `build.gradle.kts`가 강제 활성화 | 없음 (더미 값 내장) |
 
-- `DB_URL`은 전체 JDBC URL입니다. (예: `jdbc:postgresql://host:5432/meongcoach`)
+- `DB_HOST`와 `DB_NAME`으로 `jdbc:postgresql://{host}:5432/{database}` URL을 구성합니다.
 - 모든 환경 변수는 기본값이 없어 **미주입 시 기동에 실패합니다.** 커밋된 값이 배포로 흘러가는 것을 막기 위함입니다.
 
 ## 활성화 방법
 
 - **로컬**: 아무것도 지정하지 않으면 됩니다. `spring.profiles.default: local`이라
   `./gradlew bootRun`만으로 local로 기동합니다.
-- **배포**: 배포 환경 변수로 `SPRING_PROFILES_ACTIVE=dev` 또는 `prod`를 주입합니다.
+- **배포**: 환경별 Terraform task definition이 `SPRING_PROFILES_ACTIVE=dev` 또는 `prod`를 고정합니다. CD는 이 값과 DB 설정을 보존하고 GitHub Secrets의 애플리케이션 설정과 이미지를 반영합니다.
 - **테스트**: `build.gradle.kts`의 `tasks.withType<Test>`가 `spring.profiles.active=test`를
   강제하므로 별도 설정이 필요 없습니다.
+
+### 배포 프로파일 전달 흐름
+
+```mermaid
+flowchart LR
+    Terraform["환경별 Terraform<br/>dev 또는 prod 고정"]
+    TaskDefinition["ECS task definition<br/>SPRING_PROFILES_ACTIVE 보관"]
+    ECS["ECS task 실행<br/>컨테이너 환경변수 주입"]
+    Spring["Spring Boot<br/>spring.profiles.active 해석"]
+    Common["application.yml"]
+    Profile["application-dev.yml<br/>또는 application-prod.yml"]
+
+    Terraform --> TaskDefinition --> ECS --> Spring
+    Spring --> Common
+    Spring --> Profile
+```
+
+CD는 환경별 task definition family의 최신 리비전에서 프로파일을 보존하고 이미지와 GitHub Secrets의 애플리케이션 설정만 반영합니다. Spring Boot는 `SPRING_PROFILES_ACTIVE`를 `spring.profiles.active`로 해석하고 `application.yml`과 환경별 프로파일 파일을 함께 읽습니다.
 
 > 트러블슈팅: 셸에 `SPRING_PROFILES_ACTIVE`가 남아 있으면 `profiles.default`가 무시됩니다.
 > 프로파일이 이상하게 잡히면 `echo $SPRING_PROFILES_ACTIVE`부터 확인하세요.
