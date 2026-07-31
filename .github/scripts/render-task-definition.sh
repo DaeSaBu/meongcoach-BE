@@ -2,25 +2,25 @@
 set -euo pipefail
 
 if [ "$#" -ne 5 ]; then
-	echo "사용법: $0 <input> <output> <container> <image-uri> <spring-profile>" >&2
+	echo "사용법: ${0} <input> <output> <container> <image-uri> <spring-profile>" >&2
 	exit 2
 fi
 
-input=$1
-output=$2
-container=$3
-image_uri=$4
-spring_profile=$5
+INPUT=${1}
+OUTPUT=${2}
+CONTAINER=${3}
+IMAGE_URI=${4}
+SPRING_PROFILE=${5}
 
-if [ "$spring_profile" != "dev" ] && [ "$spring_profile" != "prod" ]; then
+if [ "${SPRING_PROFILE}" != "dev" ] && [ "${SPRING_PROFILE}" != "prod" ]; then
 	echo "spring-profile은 dev 또는 prod여야 합니다." >&2
 	exit 2
 fi
 
 jq \
-	--arg container "$container" \
-	--arg image "$image_uri" \
-	--arg profile "$spring_profile" '
+	--arg container "${CONTAINER}" \
+	--arg image "${IMAGE_URI}" \
+	--arg profile "${SPRING_PROFILE}" '
 	if ([.containerDefinitions[] | select(.name == $container)] | length) != 1 then
 		error("배포 대상 컨테이너는 정확히 하나여야 합니다.")
 	else
@@ -54,4 +54,4 @@ jq \
 			)
 		  end
 	end
-	' "$input" > "$output"
+	' "${INPUT}" > "${OUTPUT}"

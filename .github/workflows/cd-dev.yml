@@ -51,58 +51,58 @@ jobs:
           IMAGE_URI: ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
         run: |
           set +e
-          docker buildx build --platform linux/amd64 --tag "$IMAGE_URI" --push . 2>&1 | tee image-push.log
-          push_status=${PIPESTATUS[0]}
+          docker buildx build --platform linux/amd64 --tag "${IMAGE_URI}" --push . 2>&1 | tee image-push.log
+          PUSH_STATUS=${PIPESTATUS[0]}
           set -e
 
-          if [ "$push_status" -ne 0 ] &&
+          if [ "${PUSH_STATUS}" -ne 0 ] &&
             grep -Eq "already exists.*immutable|cannot be overwritten because.*immutable" image-push.log; then
-            echo "이미 존재하는 커밋 SHA 이미지를 재사용합니다: $IMAGE_URI"
-          elif [ "$push_status" -ne 0 ]; then
-            exit "$push_status"
+            echo "이미 존재하는 커밋 SHA 이미지를 재사용합니다: ${IMAGE_URI}"
+          elif [ "${PUSH_STATUS}" -ne 0 ]; then
+            exit "${PUSH_STATUS}"
           fi
 
       - name: 배포용 태스크 정의 생성
         env:
           IMAGE_URI: ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
         run: |
-          current_task_definition=$(aws ecs describe-services \
-            --cluster "$ECS_CLUSTER" \
-            --services "$ECS_SERVICE" \
+          CURRENT_TASK_DEFINITION=$(aws ecs describe-services \
+            --cluster "${ECS_CLUSTER}" \
+            --services "${ECS_SERVICE}" \
             --query 'services[0].taskDefinition' \
             --output text)
 
           # 환경변수와 Secrets Manager 참조는 유지하고 이미지와 dev 프로필만 바꾼다.
           aws ecs describe-task-definition \
-            --task-definition "$current_task_definition" \
+            --task-definition "${CURRENT_TASK_DEFINITION}" \
             --query taskDefinition \
             --output json > current-task-definition.json
 
           bash .github/scripts/render-task-definition.sh \
             current-task-definition.json \
             task-definition.json \
-            "$ECS_CONTAINER" \
-            "$IMAGE_URI" \
+            "${ECS_CONTAINER}" \
+            "${IMAGE_URI}" \
             dev
 
       - name: 태스크 정의 리비전 등록
         id: task-definition
         run: |
-          new_task_definition=$(aws ecs register-task-definition \
+          NEW_TASK_DEFINITION=$(aws ecs register-task-definition \
             --cli-input-json file://task-definition.json \
             --query 'taskDefinition.taskDefinitionArn' \
             --output text)
 
-          echo "arn=$new_task_definition" >> "$GITHUB_OUTPUT"
+          echo "arn=${NEW_TASK_DEFINITION}" >> "${GITHUB_OUTPUT}"
 
       - name: ECS 서비스 갱신
         env:
           TASK_DEFINITION_ARN: ${{ steps.task-definition.outputs.arn }}
         run: |
           aws ecs update-service \
-            --cluster "$ECS_CLUSTER" \
-            --service "$ECS_SERVICE" \
-            --task-definition "$TASK_DEFINITION_ARN" \
+            --cluster "${ECS_CLUSTER}" \
+            --service "${ECS_SERVICE}" \
+            --task-definition "${TASK_DEFINITION_ARN}" \
             --output json > /dev/null
 
       - name: ECS 서비스 안정화 대기
@@ -111,34 +111,34 @@ jobs:
           TASK_DEFINITION_ARN: ${{ steps.task-definition.outputs.arn }}
         run: |
           aws ecs wait services-stable \
-            --cluster "$ECS_CLUSTER" \
-            --services "$ECS_SERVICE"
+            --cluster "${ECS_CLUSTER}" \
+            --services "${ECS_SERVICE}"
 
-          deployment_state=$(aws ecs describe-services \
-            --cluster "$ECS_CLUSTER" \
-            --services "$ECS_SERVICE" \
+          DEPLOYMENT_STATE=$(aws ecs describe-services \
+            --cluster "${ECS_CLUSTER}" \
+            --services "${ECS_SERVICE}" \
             --query 'services[0].[taskDefinition,desiredCount,runningCount]' \
             --output text)
 
-          read -r deployed_task_definition desired_count running_count <<< "$deployment_state"
-          test "$deployed_task_definition" = "$TASK_DEFINITION_ARN"
+          read -r DEPLOYED_TASK_DEFINITION DESIRED_COUNT RUNNING_COUNT <<< "${DEPLOYMENT_STATE}"
+          test "${DEPLOYED_TASK_DEFINITION}" = "${TASK_DEFINITION_ARN}"
 
-          if [ "$desired_count" -eq 0 ]; then
-            echo "health_check=false" >> "$GITHUB_OUTPUT"
+          if [ "${DESIRED_COUNT}" -eq 0 ]; then
+            echo "health_check=false" >> "${GITHUB_OUTPUT}"
             echo "::warning::bootstrap 배포입니다. ecs_min_capacity를 1로 적용한 뒤 다시 실행해야 합니다."
-            echo "### 개발 bootstrap 배포" >> "$GITHUB_STEP_SUMMARY"
+            echo "### 개발 bootstrap 배포" >> "${GITHUB_STEP_SUMMARY}"
             echo "task definition은 갱신됐지만 desired count가 0이라 health check를 보류했습니다." \
-              >> "$GITHUB_STEP_SUMMARY"
+              >> "${GITHUB_STEP_SUMMARY}"
           else
-            test "$running_count" -ge 1
-            echo "health_check=true" >> "$GITHUB_OUTPUT"
+            test "${RUNNING_COUNT}" -ge 1
+            echo "health_check=true" >> "${GITHUB_OUTPUT}"
           fi
 
       - name: 개발 health check
         if: steps.ecs-deploy.outputs.health_check == 'true'
         run: |
           for _ in {1..30}; do
-            if curl --silent --show-error --fail --max-time 10 "$HEALTH_URL"; then
+            if curl --silent --show-error --fail --max-time 10 "${HEALTH_URL}"; then
               exit 0
             fi
             sleep 10
@@ -148,7 +148,7 @@ jobs:
       - name: dev 배포 증명 생성
         if: steps.ecs-deploy.outputs.health_check == 'true'
         run: |
-          printf '{"commit_sha":"%s"}\n' "$GITHUB_SHA" > dev-deployment-proof.json
+          printf '{"commit_sha":"%s"}\n' "${GITHUB_SHA}" > dev-deployment-proof.json
 
       - name: dev 배포 증명 업로드
         if: steps.ecs-deploy.outputs.health_check == 'true'
