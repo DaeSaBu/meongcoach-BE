@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [ "$#" -ne 5 ]; then
-	echo "사용법: ${0} <input> <output> <container> <image-uri> <spring-profile>" >&2
+if [ "$#" -ne 4 ]; then
+	echo "사용법: ${0} <input> <output> <container> <image-uri>" >&2
 	exit 2
 fi
 
@@ -10,17 +10,10 @@ INPUT=${1}
 OUTPUT=${2}
 CONTAINER=${3}
 IMAGE_URI=${4}
-SPRING_PROFILE=${5}
-
-if [ "${SPRING_PROFILE}" != "dev" ] && [ "${SPRING_PROFILE}" != "prod" ]; then
-	echo "spring-profile은 dev 또는 prod여야 합니다." >&2
-	exit 2
-fi
 
 jq \
 	--arg container "${CONTAINER}" \
-	--arg image "${IMAGE_URI}" \
-	--arg profile "${SPRING_PROFILE}" '
+	--arg image "${IMAGE_URI}" '
 	if ([.containerDefinitions[] | select(.name == $container)] | length) != 1 then
 		error("배포 대상 컨테이너는 정확히 하나여야 합니다.")
 	else
@@ -44,10 +37,6 @@ jq \
 			| .containerDefinitions |= map(
 				if .name == $container then
 					.image = $image
-					| .environment = (
-						((.environment // []) | map(select(.name != "SPRING_PROFILES_ACTIVE"))) +
-						[{"name": "SPRING_PROFILES_ACTIVE", "value": $profile}]
-					)
 				else
 					.
 				end

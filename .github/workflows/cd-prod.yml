@@ -120,6 +120,7 @@ jobs:
       ECR_REPOSITORY: meongcoach-prod-ecr
       ECS_CLUSTER: meongcoach-prod-cluster
       ECS_SERVICE: meongcoach-prod-svc
+      ECS_TASK_DEFINITION: meongcoach-prod-taskdef
       ECS_CONTAINER: api
       HEALTH_URL: https://api.meongcoach.com/api/health
     steps:
@@ -160,15 +161,9 @@ jobs:
         env:
           IMAGE_URI: ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
         run: |
-          CURRENT_TASK_DEFINITION=$(aws ecs describe-services \
-            --cluster "${ECS_CLUSTER}" \
-            --services "${ECS_SERVICE}" \
-            --query 'services[0].taskDefinition' \
-            --output text)
-
-          # 환경변수와 Secrets Manager 참조는 유지하고 이미지와 prod 프로필만 바꾼다.
+          # 환경변수와 Secrets Manager 참조는 유지하고 이미지만 바꾼다.
           aws ecs describe-task-definition \
-            --task-definition "${CURRENT_TASK_DEFINITION}" \
+            --task-definition "${ECS_TASK_DEFINITION}" \
             --query taskDefinition \
             --output json > current-task-definition.json
 
@@ -176,8 +171,7 @@ jobs:
             current-task-definition.json \
             task-definition.json \
             "${ECS_CONTAINER}" \
-            "${IMAGE_URI}" \
-            prod
+            "${IMAGE_URI}"
 
       - name: 태스크 정의 리비전 등록
         id: task-definition
