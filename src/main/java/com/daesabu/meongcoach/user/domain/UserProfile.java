@@ -52,6 +52,11 @@ public class UserProfile extends BaseEntity {
 	@Column(length = 4)
 	private Mbti mbti;
 
+	// 미입력 상태를 null로 표현하므로 nullable — NONE(응답하지 않음)과 구분된다
+	@Enumerated(EnumType.STRING)
+	@Column(length = 10)
+	private Gender gender;
+
 	// 스킵해도 완료로 기록한다 (U-0104)
 	@Column(nullable = false)
 	private Boolean isCompletedTooltip;
@@ -78,6 +83,10 @@ public class UserProfile extends BaseEntity {
 
 	public void changeMbti(Mbti mbti) {
 		this.mbti = mbti;
+	}
+
+	public void changeGender(Gender gender) {
+		this.gender = gender;
 	}
 
 	public Integer getAge() {
