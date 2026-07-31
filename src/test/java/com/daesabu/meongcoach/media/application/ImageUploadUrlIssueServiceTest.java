@@ -6,6 +6,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.daesabu.meongcoach.media.application.provided.ImageUploadUrlResult;
 import com.daesabu.meongcoach.media.application.required.ImageStorage;
 import com.daesabu.meongcoach.media.application.required.ImageUploadUrl;
+import com.daesabu.meongcoach.media.domain.ImageType;
+import com.daesabu.meongcoach.media.domain.ImageUploadTarget;
 import com.daesabu.meongcoach.media.domain.exception.InvalidUploadTargetException;
 import com.daesabu.meongcoach.media.domain.exception.UnsupportedImageTypeException;
 import java.util.ArrayList;
@@ -27,28 +29,14 @@ class ImageUploadUrlIssueServiceTest {
 	}
 
 	@Test
-	@DisplayName("사용자 프로필 이미지의 객체 키는 대상·사용자 ID·확장자를 담는다")
-	void issueBuildsUserProfileKey() {
-		service.issue(7L, "USER_PROFILE", "image/jpeg");
-
-		assertThat(imageStorage.lastKey()).matches("images/user-profile/7/[0-9a-f-]{36}\\.jpg");
-	}
-
-	@Test
-	@DisplayName("강아지 프로필 이미지의 객체 키는 강아지 경로 구획을 쓴다")
-	void issueBuildsDogProfileKey() {
+	@DisplayName("업로드 대상·사용자·이미지 형식으로 만든 객체 키를 스토리지에 넘긴다")
+	void issuePassesGeneratedKeyToStorage() {
 		service.issue(7L, "DOG_PROFILE", "image/png");
 
-		assertThat(imageStorage.lastKey()).matches("images/dog-profile/7/[0-9a-f-]{36}\\.png");
-	}
-
-	@Test
-	@DisplayName("발급할 때마다 서로 다른 객체 키를 만든다")
-	void issueGeneratesUniqueKeys() {
-		service.issue(7L, "USER_PROFILE", "image/jpeg");
-		service.issue(7L, "USER_PROFILE", "image/jpeg");
-
-		assertThat(imageStorage.keys).doesNotHaveDuplicates();
+		// 키 포맷 자체는 ImageObjectKeyTest가 검증한다. 여기서는 변환한 값이 그대로 전달되는지만 본다
+		assertThat(imageStorage.lastKey())
+				.startsWith("images/" + ImageUploadTarget.DOG_PROFILE.getPathSegment() + "/7/")
+				.endsWith("." + ImageType.PNG.getExtension());
 	}
 
 	@Test
