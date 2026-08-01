@@ -26,7 +26,7 @@ class R2ImageStorageTest {
 	@BeforeEach
 	void setUp() {
 		storage = new R2ImageStorage(new R2Properties(ENDPOINT, "test-access-key", "test-secret-key",
-				BUCKET, PUBLIC_BASE_URL, Duration.ofMinutes(10)));
+				BUCKET, PUBLIC_BASE_URL, Duration.ofMinutes(10), Duration.ofMinutes(30)));
 	}
 
 	@Test

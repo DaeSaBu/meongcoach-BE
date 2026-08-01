@@ -26,3 +26,4 @@ meongcoach:
       bucket: test-bucket
       public-base-url: https://images.test.meongcoach.com
       upload-url-validity: PT10M
+      video-upload-url-validity: PT30M

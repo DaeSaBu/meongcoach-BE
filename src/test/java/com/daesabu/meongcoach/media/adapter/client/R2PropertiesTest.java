@@ -26,6 +26,7 @@ class R2PropertiesTest {
 	private static final String VALID_BUCKET = "test-bucket";
 	private static final String VALID_PUBLIC_BASE_URL = "https://images.test.meongcoach.com";
 	private static final Duration VALID_VALIDITY = Duration.ofMinutes(10);
+	private static final Duration VALID_VIDEO_VALIDITY = Duration.ofMinutes(30);
 
 	private static ValidatorFactory validatorFactory;
 	private static Validator validator;
@@ -52,7 +53,7 @@ class R2PropertiesTest {
 	@DisplayName("모든 값이 올바르면 위반이 없다")
 	void validPropertiesHaveNoViolation() {
 		R2Properties properties = new R2Properties(VALID_ENDPOINT, VALID_ACCESS_KEY_ID, VALID_SECRET_ACCESS_KEY,
-				VALID_BUCKET, VALID_PUBLIC_BASE_URL, VALID_VALIDITY);
+				VALID_BUCKET, VALID_PUBLIC_BASE_URL, VALID_VALIDITY, VALID_VIDEO_VALIDITY);
 
 		assertThat(violatedFields(properties)).isEmpty();
 	}
@@ -61,7 +62,7 @@ class R2PropertiesTest {
 	@DisplayName("엔드포인트가 비어 있으면 위반이다")
 	void blankEndpointIsRejected() {
 		R2Properties properties = new R2Properties(" ", VALID_ACCESS_KEY_ID, VALID_SECRET_ACCESS_KEY,
-				VALID_BUCKET, VALID_PUBLIC_BASE_URL, VALID_VALIDITY);
+				VALID_BUCKET, VALID_PUBLIC_BASE_URL, VALID_VALIDITY, VALID_VIDEO_VALIDITY);
 
 		assertThat(violatedFields(properties)).containsExactly("endpoint");
 	}
@@ -70,7 +71,7 @@ class R2PropertiesTest {
 	@DisplayName("액세스 키가 비어 있으면 위반이다")
 	void blankAccessKeyIdIsRejected() {
 		R2Properties properties = new R2Properties(VALID_ENDPOINT, " ", VALID_SECRET_ACCESS_KEY,
-				VALID_BUCKET, VALID_PUBLIC_BASE_URL, VALID_VALIDITY);
+				VALID_BUCKET, VALID_PUBLIC_BASE_URL, VALID_VALIDITY, VALID_VIDEO_VALIDITY);
 
 		assertThat(violatedFields(properties)).containsExactly("accessKeyId");
 	}
@@ -79,7 +80,7 @@ class R2PropertiesTest {
 	@DisplayName("시크릿 키가 비어 있으면 위반이다")
 	void blankSecretAccessKeyIsRejected() {
 		R2Properties properties = new R2Properties(VALID_ENDPOINT, VALID_ACCESS_KEY_ID, " ",
-				VALID_BUCKET, VALID_PUBLIC_BASE_URL, VALID_VALIDITY);
+				VALID_BUCKET, VALID_PUBLIC_BASE_URL, VALID_VALIDITY, VALID_VIDEO_VALIDITY);
 
 		assertThat(violatedFields(properties)).containsExactly("secretAccessKey");
 	}
@@ -88,7 +89,7 @@ class R2PropertiesTest {
 	@DisplayName("버킷이 비어 있으면 위반이다")
 	void blankBucketIsRejected() {
 		R2Properties properties = new R2Properties(VALID_ENDPOINT, VALID_ACCESS_KEY_ID, VALID_SECRET_ACCESS_KEY,
-				" ", VALID_PUBLIC_BASE_URL, VALID_VALIDITY);
+				" ", VALID_PUBLIC_BASE_URL, VALID_VALIDITY, VALID_VIDEO_VALIDITY);
 
 		assertThat(violatedFields(properties)).containsExactly("bucket");
 	}
@@ -97,17 +98,26 @@ class R2PropertiesTest {
 	@DisplayName("공개 도메인이 비어 있으면 위반이다")
 	void blankPublicBaseUrlIsRejected() {
 		R2Properties properties = new R2Properties(VALID_ENDPOINT, VALID_ACCESS_KEY_ID, VALID_SECRET_ACCESS_KEY,
-				VALID_BUCKET, " ", VALID_VALIDITY);
+				VALID_BUCKET, " ", VALID_VALIDITY, VALID_VIDEO_VALIDITY);
 
 		assertThat(violatedFields(properties)).containsExactly("publicBaseUrl");
 	}
 
 	@Test
-	@DisplayName("유효 시간이 없으면 위반이다")
+	@DisplayName("이미지 유효 시간이 없으면 위반이다")
 	void nullValidityIsRejected() {
 		R2Properties properties = new R2Properties(VALID_ENDPOINT, VALID_ACCESS_KEY_ID, VALID_SECRET_ACCESS_KEY,
-				VALID_BUCKET, VALID_PUBLIC_BASE_URL, null);
+				VALID_BUCKET, VALID_PUBLIC_BASE_URL, null, VALID_VIDEO_VALIDITY);
 
 		assertThat(violatedFields(properties)).containsExactly("uploadUrlValidity");
+	}
+
+	@Test
+	@DisplayName("영상 유효 시간이 없으면 위반이다")
+	void nullVideoValidityIsRejected() {
+		R2Properties properties = new R2Properties(VALID_ENDPOINT, VALID_ACCESS_KEY_ID, VALID_SECRET_ACCESS_KEY,
+				VALID_BUCKET, VALID_PUBLIC_BASE_URL, VALID_VALIDITY, null);
+
+		assertThat(violatedFields(properties)).containsExactly("videoUploadUrlValidity");
 	}
 }

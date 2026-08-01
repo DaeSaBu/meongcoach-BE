@@ -32,6 +32,8 @@ meongcoach:
       # 버킷에 연결된 공개 도메인(커스텀 도메인 또는 r2.dev). 클라이언트가 보낸 이미지 URL 검증 기준이 된다
       public-base-url: ${R2_PUBLIC_BASE_URL}
       upload-url-validity: PT10M
+      # 영상은 최대 100MB라 느린 회선에서 업로드가 길어진다. 전송 중 URL이 만료되지 않도록 이미지보다 길게 잡는다
+      video-upload-url-validity: PT30M
   social:
     kakao:
       issuer: https://kauth.kakao.com
