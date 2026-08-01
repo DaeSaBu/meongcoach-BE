@@ -26,9 +26,9 @@ class TrainingCategoryRepositoryTest {
 	@Test
 	@DisplayName("카테고리를 정렬 순서 오름차순으로 조회한다")
 	void findAllOrdersBySortOrderAscending() {
-		entityManager.persist(TrainingCategory.create("생활 습관", 3));
-		entityManager.persist(TrainingCategory.create("기본 교육", 1));
-		entityManager.persist(TrainingCategory.create("문제 행동", 2));
+		entityManager.persist(TrainingCategory.create("생활 습관", 3, null, null));
+		entityManager.persist(TrainingCategory.create("기본 교육", 1, null, null));
+		entityManager.persist(TrainingCategory.create("문제 행동", 2, null, null));
 		entityManager.flush();
 
 		List<TrainingCategory> categories = trainingCategoryRepository.findAllByOrderBySortOrderAscIdAsc();
@@ -40,8 +40,8 @@ class TrainingCategoryRepositoryTest {
 	@Test
 	@DisplayName("정렬 순서가 같으면 id 오름차순으로 조회한다")
 	void findAllOrdersByIdAscendingWhenSortOrderIsSame() {
-		TrainingCategory first = entityManager.persist(TrainingCategory.create("먼저 등록", 1));
-		TrainingCategory second = entityManager.persist(TrainingCategory.create("나중 등록", 1));
+		TrainingCategory first = entityManager.persist(TrainingCategory.create("먼저 등록", 1, null, null));
+		TrainingCategory second = entityManager.persist(TrainingCategory.create("나중 등록", 1, null, null));
 		entityManager.flush();
 
 		List<TrainingCategory> categories = trainingCategoryRepository.findAllByOrderBySortOrderAscIdAsc();

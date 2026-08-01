@@ -131,8 +131,8 @@ class LessonCompleteServiceTest {
 	}
 
 	private Lesson persistLesson(String title) {
-		TrainingCategory category = entityManager.persist(TrainingCategory.create(title + " 카테고리", 1));
-		Topic topic = entityManager.persist(Topic.create(category, new TopicCreateCommand(title, 1)));
+		TrainingCategory category = entityManager.persist(TrainingCategory.create(title + " 카테고리", 1, null, null));
+		Topic topic = entityManager.persist(Topic.create(category, new TopicCreateCommand(title, 1, null, null, null)));
 		CurriculumCreateCommand curriculumCommand = new CurriculumCreateCommand(title + " 커리큘럼", 1, null, null);
 		Curriculum curriculum = entityManager.persist(Curriculum.create(topic, curriculumCommand));
 		return entityManager.persist(Lesson.create(curriculum, new LessonCreateCommand(title + " 레슨", 1, 5)));

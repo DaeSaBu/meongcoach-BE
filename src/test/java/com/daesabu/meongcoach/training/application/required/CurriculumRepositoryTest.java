@@ -83,8 +83,8 @@ class CurriculumRepositoryTest {
 	}
 
 	private Topic persistTopic(String title) {
-		TrainingCategory category = entityManager.persist(TrainingCategory.create(title + " 카테고리", 1));
-		return entityManager.persist(Topic.create(category, new TopicCreateCommand(title, 1)));
+		TrainingCategory category = entityManager.persist(TrainingCategory.create(title + " 카테고리", 1, null, null));
+		return entityManager.persist(Topic.create(category, new TopicCreateCommand(title, 1, null, null, null)));
 	}
 
 	private Curriculum persistCurriculum(Topic topic, String title, int sortOrder) {

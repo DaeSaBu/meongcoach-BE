@@ -9,6 +9,8 @@ import java.util.List;
 public record TrainingCategoryResponse(
 		Long trainingCategoryId,
 		String trainingCategoryTitle,
+		String trainingCategoryDescription,
+		String trainingCategoryIconUrl,
 		int trainingCategorySortOrder,
 		List<TopicResponse> topics
 ) {
@@ -17,6 +19,13 @@ public record TrainingCategoryResponse(
 		List<TopicResponse> topics = view.topics().stream()
 				.map(TopicResponse::from)
 				.toList();
-		return new TrainingCategoryResponse(view.id(), view.title(), view.sortOrder(), topics);
+		return new TrainingCategoryResponse(
+				view.id(),
+				view.title(),
+				view.description(),
+				view.iconUrl(),
+				view.sortOrder(),
+				topics
+		);
 	}
 }

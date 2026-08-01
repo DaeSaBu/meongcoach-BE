@@ -86,6 +86,34 @@ class TrainingCategoryQueryServiceTest {
 	}
 
 	@Test
+	@DisplayName("카테고리와 토픽의 설명 및 아이콘 정보를 반환한다")
+	void findAllReturnsDescriptionsAndIconUrls() {
+		TrainingCategory category = entityManager.persist(TrainingCategory.create(
+				"기본 교육", 1, "기본기를 배우는 교육", "https://example.com/basic.png"
+		));
+		entityManager.persist(Topic.create(category, new TopicCreateCommand(
+				"앉아",
+				1,
+				"앉아 자세를 배우는 훈련",
+				"차분히 앉는 방법을 익혀요",
+				"https://example.com/sit.png"
+		)));
+		flushAndClear();
+
+		TrainingCategoryView categoryView = trainingCategoryFinder.findAll().getFirst();
+
+		assertThat(categoryView.description()).isEqualTo("기본기를 배우는 교육");
+		assertThat(categoryView.iconUrl()).isEqualTo("https://example.com/basic.png");
+		assertThat(categoryView.topics().getFirst())
+				.extracting(TopicView::description, TopicView::detail, TopicView::iconUrl)
+				.containsExactly(
+						"앉아 자세를 배우는 훈련",
+						"차분히 앉는 방법을 익혀요",
+						"https://example.com/sit.png"
+				);
+	}
+
+	@Test
 	@DisplayName("토픽이 없는 카테고리는 빈 토픽 목록을 갖는다")
 	void findAllReturnsEmptyTopicsWhenCategoryHasNoTopic() {
 		persistCategory("토픽 없는 카테고리", 1);
@@ -123,11 +151,11 @@ class TrainingCategoryQueryServiceTest {
 	}
 
 	private TrainingCategory persistCategory(String title, int sortOrder) {
-		return entityManager.persist(TrainingCategory.create(title, sortOrder));
+		return entityManager.persist(TrainingCategory.create(title, sortOrder, null, null));
 	}
 
 	private Topic persistTopic(TrainingCategory category, String title, int sortOrder) {
-		return entityManager.persist(Topic.create(category, new TopicCreateCommand(title, sortOrder)));
+		return entityManager.persist(Topic.create(category, new TopicCreateCommand(title, sortOrder, null, null, null)));
 	}
 
 	private void flushAndClear() {
