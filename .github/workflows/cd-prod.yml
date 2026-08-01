@@ -40,7 +40,6 @@ jobs:
       contents: read
       pull-requests: write
     uses: ./.github/workflows/ci.yml
-    secrets: inherit
 
   release-check:
     needs: ci
@@ -132,7 +131,7 @@ jobs:
       - name: AWS 자격 증명 설정
         uses: aws-actions/configure-aws-credentials@451ce2a72e8d729a59ebeaacab82dbce58e7af4c # v6
         with:
-          role-to-assume: ${{ secrets.AWS_PROD_DEPLOY_ROLE_ARN }}
+          role-to-assume: ${{ secrets.PROD_AWS_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: ECR 로그인
