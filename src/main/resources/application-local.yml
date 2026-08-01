@@ -12,3 +12,9 @@ spring:
     console:
       enabled: true
       path: /h2-console
+
+meongcoach:
+  cors:
+    allowed-origin-patterns:
+      - http://localhost:*
+      - http://127.0.0.1:*
