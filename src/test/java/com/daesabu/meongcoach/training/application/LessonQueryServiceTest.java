@@ -64,6 +64,18 @@ class LessonQueryServiceTest {
 	}
 
 	@Test
+	@DisplayName("카드 타이틀을 반환한다")
+	void findCardsReturnsCardTitle() {
+		Lesson lesson = persistLesson("기본 교육");
+		persistCard(lesson, "앉아 준비", "지시문", 1);
+		flushAndClear();
+
+		List<CardView> cards = lessonFinder.findCards(lesson.getId());
+
+		assertThat(cards).extracting(CardView::title).containsExactly("앉아 준비");
+	}
+
+	@Test
 	@DisplayName("카드 안의 미디어를 정렬 순서 오름차순으로 반환한다")
 	void findCardsOrdersCardMediaBySortOrderWithinCard() {
 		Lesson lesson = persistLesson("기본 교육");
@@ -190,7 +202,11 @@ class LessonQueryServiceTest {
 	}
 
 	private Card persistCard(Lesson lesson, String instruction, int sortOrder) {
-		CardCreateCommand command = new CardCreateCommand("카드", sortOrder, instruction);
+		return persistCard(lesson, "카드", instruction, sortOrder);
+	}
+
+	private Card persistCard(Lesson lesson, String title, String instruction, int sortOrder) {
+		CardCreateCommand command = new CardCreateCommand(title, sortOrder, instruction);
 		return entityManager.persist(Card.create(lesson, command));
 	}
 

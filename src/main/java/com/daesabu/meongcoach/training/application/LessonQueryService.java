@@ -56,6 +56,6 @@ public class LessonQueryService implements LessonFinder {
 				.map(media -> new CardMediaView(media.getId(), media.getCard().getId(), media.getMediaType(),
 						media.getUrl(), media.getSortOrder()))
 				.toList();
-		return new CardView(card.getId(), card.getSortOrder(), card.getInstruction(), cardMediaViews);
+		return new CardView(card.getId(), card.getTitle(), card.getSortOrder(), card.getInstruction(), cardMediaViews);
 	}
 }

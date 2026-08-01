@@ -52,11 +52,11 @@ class TrainingLessonControllerTest {
 	@DisplayName("레슨의 카드와 미디어 목록을 반환한다")
 	void findCardsReturnsCardsWithCardMedia() throws Exception {
 		given(lessonFinder.findCards(1L)).willReturn(List.of(
-				new CardView(10L, 1, "간식을 손에 쥐고 앉아를 말하세요", List.of(
+				new CardView(10L, "앉아 준비", 1, "간식을 손에 쥐고 앉아를 말하세요", List.of(
 						new CardMediaView(100L, 10L, MediaType.IMAGE, "https://cdn.example.com/1.png", 1),
 						new CardMediaView(101L, 10L, MediaType.VIDEO, "https://cdn.example.com/1.mp4", 2)
 				)),
-				new CardView(11L, 2, "앉으면 바로 간식을 주세요", List.of(
+				new CardView(11L, "앉아 보상", 2, "앉으면 바로 간식을 주세요", List.of(
 						new CardMediaView(102L, 11L, MediaType.IMAGE, "https://cdn.example.com/2.png", 1)
 				))
 		));
@@ -98,7 +98,7 @@ class TrainingLessonControllerTest {
 	@DisplayName("미디어가 없는 카드는 빈 배열을 반환한다")
 	void findCardsReturnsEmptyCardMediaWhenCardHasNoMedia() throws Exception {
 		given(lessonFinder.findCards(1L)).willReturn(List.of(
-				new CardView(10L, 1, "간식을 손에 쥐고 앉아를 말하세요", List.of())
+				new CardView(10L, "앉아 준비", 1, "간식을 손에 쥐고 앉아를 말하세요", List.of())
 		));
 
 		mockMvc.perform(get("/api/training/lessons/{lessonId}", 1L))
