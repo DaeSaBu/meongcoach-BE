@@ -26,6 +26,11 @@ IMAGE_URI=${3}
 : "${S3_SECRET_ACCESS_KEY:?S3_SECRET_ACCESS_KEY가 필요합니다.}"
 : "${S3_BUCKET:?S3_BUCKET이 필요합니다.}"
 : "${S3_PUBLIC_BASE_URL:?S3_PUBLIC_BASE_URL이 필요합니다.}"
+: "${GEMINI_API_KEY:?GEMINI_API_KEY가 필요합니다.}"
+: "${SQS_REGION:?SQS_REGION이 필요합니다.}"
+: "${SQS_ACCESS_KEY_ID:?SQS_ACCESS_KEY_ID가 필요합니다.}"
+: "${SQS_SECRET_ACCESS_KEY:?SQS_SECRET_ACCESS_KEY가 필요합니다.}"
+: "${AI_VIDEO_QUEUE:?AI_VIDEO_QUEUE가 필요합니다.}"
 
 # jq 결과는 stdout으로 나간다. workflow가 이를 register-task-definition 입력 파일로 저장한다.
 jq \
@@ -43,7 +48,12 @@ jq \
 	--arg s3_secret_access_key "${S3_SECRET_ACCESS_KEY:-}" \
 	--arg s3_bucket "${S3_BUCKET:-}" \
 	--arg s3_public_base_url "${S3_PUBLIC_BASE_URL:-}" \
-	--arg vimeo_access_token "${VIMEO_ACCESS_TOKEN:-}" '
+	--arg vimeo_access_token "${VIMEO_ACCESS_TOKEN:-}" \
+	--arg gemini_api_key "${GEMINI_API_KEY:-}" \
+	--arg sqs_region "${SQS_REGION:-}" \
+	--arg sqs_access_key_id "${SQS_ACCESS_KEY_ID:-}" \
+	--arg sqs_secret_access_key "${SQS_SECRET_ACCESS_KEY:-}" \
+	--arg ai_video_queue "${AI_VIDEO_QUEUE:-}" '
 	if ([.containerDefinitions[] | select(.name == $container)] | length) != 1 then
 		error("배포 대상 컨테이너는 정확히 하나여야 합니다.")
 	else
@@ -81,7 +91,10 @@ jq \
 							.name != "R2_SECRET_ACCESS_KEY" and
 							.name != "S3_ACCESS_KEY_ID" and
 							.name != "S3_SECRET_ACCESS_KEY" and
-							.name != "VIMEO_ACCESS_TOKEN"
+							.name != "VIMEO_ACCESS_TOKEN" and
+							.name != "GEMINI_API_KEY" and
+							.name != "SQS_ACCESS_KEY_ID" and
+							.name != "SQS_SECRET_ACCESS_KEY"
 						))
 					)
 					| .environment = (
@@ -99,7 +112,12 @@ jq \
 								.name != "S3_SECRET_ACCESS_KEY" and
 								.name != "S3_BUCKET" and
 								.name != "S3_PUBLIC_BASE_URL" and
-								.name != "VIMEO_ACCESS_TOKEN"
+								.name != "VIMEO_ACCESS_TOKEN" and
+								.name != "GEMINI_API_KEY" and
+								.name != "SQS_REGION" and
+								.name != "SQS_ACCESS_KEY_ID" and
+								.name != "SQS_SECRET_ACCESS_KEY" and
+								.name != "AI_VIDEO_QUEUE"
 							))) +
 						[
 							{"name": "JWT_SECRET", "value": $jwt_secret},
@@ -113,7 +131,12 @@ jq \
 							{"name": "S3_ACCESS_KEY_ID", "value": $s3_access_key_id},
 							{"name": "S3_SECRET_ACCESS_KEY", "value": $s3_secret_access_key},
 							{"name": "S3_BUCKET", "value": $s3_bucket},
-							{"name": "S3_PUBLIC_BASE_URL", "value": $s3_public_base_url}
+							{"name": "S3_PUBLIC_BASE_URL", "value": $s3_public_base_url},
+							{"name": "GEMINI_API_KEY", "value": $gemini_api_key},
+							{"name": "SQS_REGION", "value": $sqs_region},
+							{"name": "SQS_ACCESS_KEY_ID", "value": $sqs_access_key_id},
+							{"name": "SQS_SECRET_ACCESS_KEY", "value": $sqs_secret_access_key},
+							{"name": "AI_VIDEO_QUEUE", "value": $ai_video_queue}
 						] +
 						(if $vimeo_access_token == "" then
 							[]
