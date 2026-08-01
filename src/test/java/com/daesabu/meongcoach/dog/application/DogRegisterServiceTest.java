@@ -5,10 +5,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.daesabu.meongcoach.dog.application.provided.DogRegisterInfo;
 import com.daesabu.meongcoach.dog.application.required.DogRepository;
+import com.daesabu.meongcoach.dog.domain.Breed;
 import com.daesabu.meongcoach.dog.domain.Dog;
 import com.daesabu.meongcoach.dog.domain.DogSex;
 import com.daesabu.meongcoach.dog.domain.DogStatus;
 import com.daesabu.meongcoach.dog.domain.Personality;
+import com.daesabu.meongcoach.dog.domain.exception.InvalidBreedException;
 import com.daesabu.meongcoach.dog.domain.exception.InvalidDogSexException;
 import com.daesabu.meongcoach.dog.domain.exception.InvalidPersonalityException;
 import java.math.BigDecimal;
@@ -35,7 +37,7 @@ class DogRegisterServiceTest {
 	}
 
 	private DogRegisterInfo registerInfo(String sex, Set<String> personalities) {
-		return new DogRegisterInfo("초코", "푸들", sex, LocalDate.of(2024, 3, 1),
+		return new DogRegisterInfo("초코", "POODLE", sex, LocalDate.of(2024, 3, 1),
 				new BigDecimal("4.50"), personalities, null);
 	}
 
@@ -47,6 +49,7 @@ class DogRegisterServiceTest {
 		Dog dog = dogRepository.findById(dogId).orElseThrow();
 		assertThat(dog.getUserId()).isEqualTo(1L);
 		assertThat(dog.getName()).isEqualTo("초코");
+		assertThat(dog.getBreed()).isEqualTo(Breed.POODLE);
 		assertThat(dog.getSex()).isEqualTo(DogSex.MALE);
 		assertThat(dog.getStatus()).isEqualTo(DogStatus.SELECTED);
 		assertThat(dog.getPersonalities()).containsExactlyInAnyOrder(Personality.TIMID, Personality.LIVELY);
@@ -64,7 +67,7 @@ class DogRegisterServiceTest {
 	@Test
 	@DisplayName("생년월일이 없어도 등록할 수 있다")
 	void registerAllowsNullBirthDate() {
-		DogRegisterInfo info = new DogRegisterInfo("초코", "푸들", "MALE", null,
+		DogRegisterInfo info = new DogRegisterInfo("초코", "POODLE", "MALE", null,
 				new BigDecimal("4.50"), Set.of(), null);
 
 		Long dogId = service.register(1L, info);
@@ -77,7 +80,7 @@ class DogRegisterServiceTest {
 	@DisplayName("프로필 이미지 URL을 함께 저장한다")
 	void registerSavesProfileImage() {
 		String imageUrl = "https://images.test.meongcoach.com/images/dog-profile/1/a.jpg";
-		DogRegisterInfo info = new DogRegisterInfo("초코", "푸들", "MALE", null,
+		DogRegisterInfo info = new DogRegisterInfo("초코", "POODLE", "MALE", null,
 				new BigDecimal("4.50"), Set.of(), imageUrl);
 
 		Long dogId = service.register(1L, info);
@@ -93,6 +96,26 @@ class DogRegisterServiceTest {
 
 		Dog dog = dogRepository.findById(dogId).orElseThrow();
 		assertThat(dog.getProfileImageUrl()).isEmpty();
+	}
+
+	@Test
+	@DisplayName("잘못된 견종 값이면 등록에 실패한다")
+	void registerFailsWhenBreedIsInvalid() {
+		DogRegisterInfo info = new DogRegisterInfo("초코", "UNKNOWN", "MALE", null,
+				new BigDecimal("4.50"), Set.of(), null);
+
+		assertThatThrownBy(() -> service.register(1L, info))
+				.isInstanceOf(InvalidBreedException.class);
+	}
+
+	@Test
+	@DisplayName("견종 값이 없으면 등록에 실패한다")
+	void registerFailsWhenBreedIsNull() {
+		DogRegisterInfo info = new DogRegisterInfo("초코", null, "MALE", null,
+				new BigDecimal("4.50"), Set.of(), null);
+
+		assertThatThrownBy(() -> service.register(1L, info))
+				.isInstanceOf(InvalidBreedException.class);
 	}
 
 	@Test

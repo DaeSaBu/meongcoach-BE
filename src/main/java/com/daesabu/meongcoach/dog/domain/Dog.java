@@ -41,8 +41,9 @@ public class Dog extends BaseEntity {
 	@Column(nullable = false, length = 50)
 	private String name;
 
-	@Column(nullable = false, length = 50)
-	private String breed;
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false, length = 30)
+	private Breed breed;
 
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, length = 10)
