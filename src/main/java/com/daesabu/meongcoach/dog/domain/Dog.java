@@ -59,9 +59,13 @@ public class Dog extends BaseEntity {
 	@Column(nullable = false, length = 20)
 	private DogStatus status;
 
-	// 등록 후 별도 API로 채워지는 값 — 미설정은 빈 문자열로 저장한다
+	// 프로필 이미지를 등록하지 않아도 되므로 미설정은 빈 문자열로 저장한다
 	@Column(nullable = false, length = 512)
-	private String profileImageUrl = "";
+	private String profileImageUrl;
+
+	// 기대 사항을 입력하지 않아도 등록할 수 있으므로 미설정은 빈 문자열로 저장한다
+	@Column(nullable = false, columnDefinition = "TEXT")
+	private String expectation;
 
 	@ElementCollection(fetch = FetchType.LAZY)
 	@CollectionTable(
@@ -80,6 +84,8 @@ public class Dog extends BaseEntity {
 		this.birthDate = command.birthDate();
 		this.weightKg = command.weightKg();
 		this.status = DogStatus.SELECTED;
+		this.profileImageUrl = Objects.requireNonNullElse(command.profileImageUrl(), "");
+		this.expectation = Objects.requireNonNullElse(command.expectation(), "");
 	}
 
 	public static Dog register(DogRegisterCommand command) {
@@ -96,6 +102,10 @@ public class Dog extends BaseEntity {
 
 	public void changeProfileImage(String profileImageUrl) {
 		this.profileImageUrl = Objects.requireNonNullElse(profileImageUrl, "");
+	}
+
+	public void changeExpectation(String expectation) {
+		this.expectation = Objects.requireNonNullElse(expectation, "");
 	}
 
 	public void changePersonalities(Set<Personality> personalities) {

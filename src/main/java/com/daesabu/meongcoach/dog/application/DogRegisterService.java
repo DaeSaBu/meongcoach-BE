@@ -28,10 +28,8 @@ public class DogRegisterService implements DogRegister {
 	@Transactional
 	public Long register(Long userId, DogRegisterInfo info) {
 		Dog dog = Dog.register(new DogRegisterCommand(userId, info.name(), Breed.from(info.breed()),
-				DogSex.from(info.sex()), info.birthDate(), info.weightKg()));
+				DogSex.from(info.sex()), info.birthDate(), info.weightKg(), info.profileImageUrl(), info.expectation()));
 		dog.changePersonalities(parsePersonalities(info.personalities()));
-		// null은 changeProfileImage가 미설정(빈 문자열)으로 정규화한다
-		dog.changeProfileImage(info.profileImageUrl());
 		return dogRepository.save(dog).getId();
 	}
 

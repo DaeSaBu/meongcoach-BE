@@ -82,7 +82,8 @@ operation::onboarding/metadata[snippets='http-request,http-response,response-fie
 
 === 온보딩 완료
 
-사용자 프로필과 강아지들을 하나의 트랜잭션으로 생성합니다.
+사용자 프로필, 교육 이력·목표와 강아지들을 하나의 트랜잭션으로 생성합니다.
+교육 토픽 ID는 온보딩 메타데이터 조회 응답의 `topics[].id`를 사용합니다.
 이미 온보딩을 완료한 회원이 다시 호출하면 409를 반환합니다.
 
 operation::onboarding/complete[snippets='http-request,request-fields,http-response,response-fields']
