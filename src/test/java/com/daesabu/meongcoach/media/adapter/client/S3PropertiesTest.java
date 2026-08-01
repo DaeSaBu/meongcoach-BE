@@ -26,6 +26,7 @@ class S3PropertiesTest {
 	private static final String VALID_BUCKET = "test-video-bucket";
 	private static final String VALID_PUBLIC_BASE_URL = "https://videos.test.meongcoach.com";
 	private static final Duration VALID_VALIDITY = Duration.ofMinutes(15);
+	private static final Duration VALID_DOWNLOAD_VALIDITY = Duration.ofHours(1);
 
 	private static ValidatorFactory validatorFactory;
 	private static Validator validator;
@@ -52,7 +53,7 @@ class S3PropertiesTest {
 	@DisplayName("모든 값이 올바르면 위반이 없다")
 	void validPropertiesHaveNoViolation() {
 		S3Properties properties = new S3Properties(VALID_REGION, VALID_ACCESS_KEY_ID, VALID_SECRET_ACCESS_KEY,
-				VALID_BUCKET, VALID_PUBLIC_BASE_URL, VALID_VALIDITY);
+				VALID_BUCKET, VALID_PUBLIC_BASE_URL, VALID_VALIDITY, VALID_DOWNLOAD_VALIDITY);
 
 		assertThat(violatedFields(properties)).isEmpty();
 	}
@@ -61,7 +62,7 @@ class S3PropertiesTest {
 	@DisplayName("리전이 비어 있으면 위반이다")
 	void blankRegionIsRejected() {
 		S3Properties properties = new S3Properties(" ", VALID_ACCESS_KEY_ID, VALID_SECRET_ACCESS_KEY,
-				VALID_BUCKET, VALID_PUBLIC_BASE_URL, VALID_VALIDITY);
+				VALID_BUCKET, VALID_PUBLIC_BASE_URL, VALID_VALIDITY, VALID_DOWNLOAD_VALIDITY);
 
 		assertThat(violatedFields(properties)).containsExactly("region");
 	}
@@ -70,7 +71,7 @@ class S3PropertiesTest {
 	@DisplayName("액세스 키가 비어 있으면 위반이다")
 	void blankAccessKeyIdIsRejected() {
 		S3Properties properties = new S3Properties(VALID_REGION, " ", VALID_SECRET_ACCESS_KEY,
-				VALID_BUCKET, VALID_PUBLIC_BASE_URL, VALID_VALIDITY);
+				VALID_BUCKET, VALID_PUBLIC_BASE_URL, VALID_VALIDITY, VALID_DOWNLOAD_VALIDITY);
 
 		assertThat(violatedFields(properties)).containsExactly("accessKeyId");
 	}
@@ -79,7 +80,7 @@ class S3PropertiesTest {
 	@DisplayName("시크릿 키가 비어 있으면 위반이다")
 	void blankSecretAccessKeyIsRejected() {
 		S3Properties properties = new S3Properties(VALID_REGION, VALID_ACCESS_KEY_ID, " ",
-				VALID_BUCKET, VALID_PUBLIC_BASE_URL, VALID_VALIDITY);
+				VALID_BUCKET, VALID_PUBLIC_BASE_URL, VALID_VALIDITY, VALID_DOWNLOAD_VALIDITY);
 
 		assertThat(violatedFields(properties)).containsExactly("secretAccessKey");
 	}
@@ -88,7 +89,7 @@ class S3PropertiesTest {
 	@DisplayName("버킷이 비어 있으면 위반이다")
 	void blankBucketIsRejected() {
 		S3Properties properties = new S3Properties(VALID_REGION, VALID_ACCESS_KEY_ID, VALID_SECRET_ACCESS_KEY,
-				" ", VALID_PUBLIC_BASE_URL, VALID_VALIDITY);
+				" ", VALID_PUBLIC_BASE_URL, VALID_VALIDITY, VALID_DOWNLOAD_VALIDITY);
 
 		assertThat(violatedFields(properties)).containsExactly("bucket");
 	}
@@ -97,17 +98,26 @@ class S3PropertiesTest {
 	@DisplayName("공개 도메인이 비어 있으면 위반이다")
 	void blankPublicBaseUrlIsRejected() {
 		S3Properties properties = new S3Properties(VALID_REGION, VALID_ACCESS_KEY_ID, VALID_SECRET_ACCESS_KEY,
-				VALID_BUCKET, " ", VALID_VALIDITY);
+				VALID_BUCKET, " ", VALID_VALIDITY, VALID_DOWNLOAD_VALIDITY);
 
 		assertThat(violatedFields(properties)).containsExactly("publicBaseUrl");
 	}
 
 	@Test
-	@DisplayName("유효 시간이 없으면 위반이다")
+	@DisplayName("업로드 유효 시간이 없으면 위반이다")
 	void nullValidityIsRejected() {
 		S3Properties properties = new S3Properties(VALID_REGION, VALID_ACCESS_KEY_ID, VALID_SECRET_ACCESS_KEY,
-				VALID_BUCKET, VALID_PUBLIC_BASE_URL, null);
+				VALID_BUCKET, VALID_PUBLIC_BASE_URL, null, VALID_DOWNLOAD_VALIDITY);
 
 		assertThat(violatedFields(properties)).containsExactly("uploadUrlValidity");
+	}
+
+	@Test
+	@DisplayName("다운로드 유효 시간이 없으면 위반이다")
+	void nullDownloadValidityIsRejected() {
+		S3Properties properties = new S3Properties(VALID_REGION, VALID_ACCESS_KEY_ID, VALID_SECRET_ACCESS_KEY,
+				VALID_BUCKET, VALID_PUBLIC_BASE_URL, VALID_VALIDITY, null);
+
+		assertThat(violatedFields(properties)).containsExactly("downloadUrlValidity");
 	}
 }

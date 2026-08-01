@@ -38,3 +38,4 @@ meongcoach:
       bucket: test-video-bucket
       public-base-url: https://videos.test.meongcoach.com
       upload-url-validity: PT15M
+      download-url-validity: PT1H

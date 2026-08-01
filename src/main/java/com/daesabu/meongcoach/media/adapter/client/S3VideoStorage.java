@@ -1,5 +1,6 @@
 package com.daesabu.meongcoach.media.adapter.client;
 
+import com.daesabu.meongcoach.media.application.required.VideoDownloadUrl;
 import com.daesabu.meongcoach.media.application.required.VideoStorage;
 import com.daesabu.meongcoach.media.application.required.VideoUploadUrl;
 import com.daesabu.meongcoach.media.domain.vo.VideoObjectKey;
@@ -7,8 +8,11 @@ import org.springframework.stereotype.Component;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
@@ -51,6 +55,20 @@ public class S3VideoStorage implements VideoStorage {
 		// 버킷을 비공개로 운영할 수 있어 공개 URL과 함께 객체 키도 돌려준다. 후속 API는 객체 키를 기준으로 삼는다
 		return new VideoUploadUrl(presigned.url().toString(), publicBaseUrl + "/" + key.value(), key.value(),
 				properties.uploadUrlValidity().toSeconds());
+	}
+
+	@Override
+	public VideoDownloadUrl issueDownloadUrl(VideoObjectKey key) {
+		GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+				.bucket(properties.bucket())
+				.key(key.value())
+				.build();
+		PresignedGetObjectRequest presigned = presigner.presignGetObject(GetObjectPresignRequest.builder()
+				.signatureDuration(properties.downloadUrlValidity())
+				.getObjectRequest(getObjectRequest)
+				.build());
+		return new VideoDownloadUrl(presigned.url().toString(), publicBaseUrl + "/" + key.value(),
+				properties.downloadUrlValidity().toSeconds());
 	}
 
 	private static String trimTrailingSlash(String url) {

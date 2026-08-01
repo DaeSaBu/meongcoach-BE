@@ -11,6 +11,7 @@ public enum MediaErrorCode implements ErrorCode {
 	MEDIA_UNSUPPORTED_VIDEO_TYPE(400, "지원하지 않는 영상 형식입니다."),
 	MEDIA_INVALID_VIDEO_FILE_SIZE(400, "영상 파일 크기가 올바르지 않습니다."),
 	MEDIA_VIDEO_FILE_SIZE_EXCEEDED(400, "영상 파일 크기가 허용 범위를 초과했습니다."),
+	MEDIA_INVALID_VIDEO_OBJECT_KEY(400, "영상 객체 키가 올바르지 않습니다."),
 	;
 
 	private final int status;

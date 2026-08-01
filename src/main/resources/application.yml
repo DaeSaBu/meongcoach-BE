@@ -42,6 +42,8 @@ meongcoach:
       public-base-url: ${S3_PUBLIC_BASE_URL}
       # 영상은 파일 선택·압축 시간이 있어 이미지(PT10M)보다 여유를 둔다
       upload-url-validity: PT15M
+      # AI 분석기가 이 URL로 영상을 가져가므로 분석 대기·재시도 시간을 감안해 넉넉히 둔다
+      download-url-validity: PT1H
   social:
     kakao:
       issuer: https://kauth.kakao.com

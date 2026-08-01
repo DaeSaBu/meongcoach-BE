@@ -2,6 +2,7 @@ package com.daesabu.meongcoach.media.adapter.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.daesabu.meongcoach.media.application.required.VideoDownloadUrl;
 import com.daesabu.meongcoach.media.application.required.VideoUploadUrl;
 import com.daesabu.meongcoach.media.domain.vo.VideoObjectKey;
 import java.time.Duration;
@@ -27,7 +28,7 @@ class S3VideoStorageTest {
 	@BeforeEach
 	void setUp() {
 		storage = new S3VideoStorage(new S3Properties(REGION, "test-access-key", "test-secret-key",
-				BUCKET, PUBLIC_BASE_URL, Duration.ofMinutes(15)));
+				BUCKET, PUBLIC_BASE_URL, Duration.ofMinutes(15), Duration.ofHours(1)));
 	}
 
 	@Test
@@ -87,5 +88,39 @@ class S3VideoStorageTest {
 		VideoUploadUrl url = storage.issueUploadUrl(KEY, "video/mp4", CONTENT_LENGTH);
 
 		assertThat(url.expiresInSeconds()).isEqualTo(900L);
+	}
+
+	@Test
+	@DisplayName("다운로드 URL은 가상 호스팅 스타일의 버킷·키 경로를 가리킨다")
+	void downloadUrlPointsToVirtualHostedBucketAndKey() {
+		VideoDownloadUrl url = storage.issueDownloadUrl(KEY);
+
+		assertThat(url.downloadUrl())
+				.startsWith("https://" + BUCKET + ".s3." + REGION + ".amazonaws.com/" + KEY.value());
+	}
+
+	@Test
+	@DisplayName("다운로드 URL은 서명과 다운로드 전용 유효 시간을 담은 presigned URL이다")
+	void downloadUrlIsPresignedWithDownloadValidity() {
+		VideoDownloadUrl url = storage.issueDownloadUrl(KEY);
+
+		assertThat(url.downloadUrl()).contains("X-Amz-Signature=");
+		assertThat(url.downloadUrl()).contains("X-Amz-Expires=3600");
+	}
+
+	@Test
+	@DisplayName("다운로드 결과의 공개 URL은 공개 도메인 아래의 키 경로다")
+	void downloadPublicUrlIsUnderPublicBaseUrl() {
+		VideoDownloadUrl url = storage.issueDownloadUrl(KEY);
+
+		assertThat(url.publicUrl()).isEqualTo(PUBLIC_BASE_URL + "/" + KEY.value());
+	}
+
+	@Test
+	@DisplayName("다운로드 유효 시간을 초 단위로 알려준다")
+	void downloadExpiresInSecondsMatchesDownloadValidity() {
+		VideoDownloadUrl url = storage.issueDownloadUrl(KEY);
+
+		assertThat(url.expiresInSeconds()).isEqualTo(3600L);
 	}
 }

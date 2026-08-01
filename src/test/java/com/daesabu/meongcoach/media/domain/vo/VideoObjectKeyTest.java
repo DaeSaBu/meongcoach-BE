@@ -1,9 +1,11 @@
 package com.daesabu.meongcoach.media.domain.vo;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.daesabu.meongcoach.media.domain.VideoType;
 import com.daesabu.meongcoach.media.domain.VideoUploadTarget;
+import com.daesabu.meongcoach.media.domain.exception.InvalidVideoObjectKeyException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -40,5 +42,34 @@ class VideoObjectKeyTest {
 	void sameValuesAreEqual() {
 		assertThat(new VideoObjectKey("videos/training/7/key.mp4"))
 				.isEqualTo(new VideoObjectKey("videos/training/7/key.mp4"));
+	}
+
+	@Test
+	@DisplayName("규칙에 맞는 키 문자열을 값 객체로 만든다")
+	void parseAcceptsWellFormedKey() {
+		VideoObjectKey key = VideoObjectKey.parse("videos/training/7/550e8400-e29b-41d4-a716-446655440000.mp4");
+
+		assertThat(key.value()).isEqualTo("videos/training/7/550e8400-e29b-41d4-a716-446655440000.mp4");
+	}
+
+	@Test
+	@DisplayName("키 경로에서 소유자 사용자 ID를 추출한다")
+	void ownerUserIdComesFromKeyPath() {
+		VideoObjectKey key = VideoObjectKey.parse("videos/training/42/key.mp4");
+
+		assertThat(key.ownerUserId()).isEqualTo(42L);
+	}
+
+	@Test
+	@DisplayName("규칙에 어긋나는 키 문자열은 거부한다")
+	void parseRejectsMalformedKey() {
+		assertThatThrownBy(() -> VideoObjectKey.parse("images/profile/7/key.png"))
+				.isInstanceOf(InvalidVideoObjectKeyException.class);
+		assertThatThrownBy(() -> VideoObjectKey.parse("videos/training/not-a-number/key.mp4"))
+				.isInstanceOf(InvalidVideoObjectKeyException.class);
+		assertThatThrownBy(() -> VideoObjectKey.parse("videos/training/7/no-extension"))
+				.isInstanceOf(InvalidVideoObjectKeyException.class);
+		assertThatThrownBy(() -> VideoObjectKey.parse(null))
+				.isInstanceOf(InvalidVideoObjectKeyException.class);
 	}
 }
