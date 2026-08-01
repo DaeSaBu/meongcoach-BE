@@ -9,3 +9,8 @@ spring:
     hibernate:
       # 마이그레이션 도구 도입 전까지 엔티티 변경을 자동 반영한다. 컬럼 삭제·이름 변경은 반영되지 않는다
       ddl-auto: update
+
+meongcoach:
+  cors:
+    allowed-origin-patterns:
+      - https://app.dev.meongcoach.com

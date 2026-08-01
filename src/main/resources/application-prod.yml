@@ -8,3 +8,8 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
+
+meongcoach:
+  cors:
+    allowed-origin-patterns:
+      - https://app.meongcoach.com
