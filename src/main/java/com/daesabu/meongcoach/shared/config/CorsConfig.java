@@ -33,6 +33,11 @@ public class CorsConfig {
 		return registration;
 	}
 
+	/**
+	 * Spring Boot가 {@code meongcoach.cors} 아래의 설정값으로 이 레코드를 생성한다.
+	 * relaxed binding에 따라 YAML의 {@code allowed-origin-patterns}가 생성자 인자
+	 * {@code allowedOriginPatterns}에 바인딩되고, 아래 compact constructor가 값을 정규화한다.
+	 */
 	@ConfigurationProperties("meongcoach.cors")
 	public record CorsProperties(List<String> allowedOriginPatterns) {
 
