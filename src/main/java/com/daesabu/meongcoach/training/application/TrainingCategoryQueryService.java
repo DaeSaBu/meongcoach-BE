@@ -44,8 +44,22 @@ public class TrainingCategoryQueryService implements TrainingCategoryFinder {
 
 	private TrainingCategoryView toView(TrainingCategory category, List<Topic> topics) {
 		List<TopicView> topicViews = topics.stream()
-				.map(topic -> new TopicView(topic.getId(), topic.getTitle(), topic.getSortOrder()))
+				.map(topic -> new TopicView(
+						topic.getId(),
+						topic.getTitle(),
+						topic.getDescription(),
+						topic.getDetail(),
+						topic.getIconUrl(),
+						topic.getSortOrder()
+				))
 				.toList();
-		return new TrainingCategoryView(category.getId(), category.getTitle(), category.getSortOrder(), topicViews);
+		return new TrainingCategoryView(
+				category.getId(),
+				category.getTitle(),
+				category.getDescription(),
+				category.getIconUrl(),
+				category.getSortOrder(),
+				topicViews
+		);
 	}
 }

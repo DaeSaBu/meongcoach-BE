@@ -93,8 +93,8 @@ class TopicSelectServiceTest {
 	}
 
 	private Topic persistTopic(String title, int sortOrder) {
-		TrainingCategory category = entityManager.persist(TrainingCategory.create("기본 교육", 1));
-		return entityManager.persist(Topic.create(category, new TopicCreateCommand(title, sortOrder)));
+		TrainingCategory category = entityManager.persist(TrainingCategory.create("기본 교육", 1, null, null));
+		return entityManager.persist(Topic.create(category, new TopicCreateCommand(title, sortOrder, null, null, null)));
 	}
 
 	private long countEntries() {

@@ -11,6 +11,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import java.util.Objects;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -32,13 +33,15 @@ public class Topic extends BaseEntity {
 	@Column(nullable = false, length = 100)
 	private String title;
 
+	// 설명 없는 토픽 허용 — 미설정은 빈 문자열로 저장한다
 	@Column(nullable = false, columnDefinition = "TEXT")
 	private String description;
 
-	// 토픽 선택하여 커리큘럼으로 가져올 때의 추가 설명
+	// 추가 설명 없는 토픽 허용 — 미설정은 빈 문자열로 저장한다
 	@Column(nullable = false, columnDefinition = "TEXT")
 	private String detail;
 
+	// 아이콘 미등록 토픽 허용 — 미설정은 빈 문자열로 저장한다
 	@Column(nullable = false, length = 512)
 	private String iconUrl;
 
@@ -49,6 +52,9 @@ public class Topic extends BaseEntity {
 		this.trainingCategory = trainingCategory;
 		this.title = command.title();
 		this.sortOrder = command.sortOrder();
+		this.description = Objects.requireNonNullElse(command.description(), "");
+		this.detail = Objects.requireNonNullElse(command.detail(), "");
+		this.iconUrl = Objects.requireNonNullElse(command.iconUrl(), "");
 	}
 
 	public static Topic create(TrainingCategory trainingCategory, TopicCreateCommand command) {

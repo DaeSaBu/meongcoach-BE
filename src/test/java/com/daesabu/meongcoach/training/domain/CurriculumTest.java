@@ -9,8 +9,8 @@ import org.junit.jupiter.api.Test;
 class CurriculumTest {
 
 	private Curriculum createCurriculum() {
-		TrainingCategory category = TrainingCategory.create("기본 교육", 1);
-		Topic topic = Topic.create(category, new TopicCreateCommand("산책 교육", 1));
+		TrainingCategory category = TrainingCategory.create("기본 교육", 1, null, null);
+		Topic topic = Topic.create(category, new TopicCreateCommand("산책 교육", 1, null, null, null));
 		return Curriculum.create(topic, new CurriculumCreateCommand("리드줄 적응", 1,
 				"https://cdn.meongcoach.com/thumb.png", "리드줄에 익숙해지는 교육"));
 	}
