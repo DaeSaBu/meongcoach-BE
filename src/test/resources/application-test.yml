@@ -2,6 +2,11 @@
 # 반드시 프로파일 파일(application-{프로파일}.yml)로 두어 위에 얹히게 한다.
 # datasource는 베이스가 아니라 application-local.yml에 있으므로 테스트용 H2를 명시한다.
 spring:
+  ai:
+    google:
+      genai:
+        # 실제 호출 없이 컨텍스트 로드만 통과하면 되므로 더미 키를 둔다
+        api-key: test-gemini-api-key
   datasource:
     url: jdbc:h2:mem:meongcoach-test
     driver-class-name: org.h2.Driver
