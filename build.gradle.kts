@@ -43,6 +43,7 @@ dependencies {
 	implementation("org.springframework.ai:spring-ai-starter-model-openai")
 	// R2는 S3 호환 API라 presigned URL 발급에 AWS SDK의 S3Presigner를 그대로 쓴다
 	implementation("software.amazon.awssdk:s3:2.46.7")
+	implementation("org.springframework.ai:spring-ai-starter-model-google-genai")
 	testImplementation("org.springframework.security:spring-security-test")
 	compileOnly("org.projectlombok:lombok")
 	runtimeOnly("com.h2database:h2")
