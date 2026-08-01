@@ -17,3 +17,12 @@ meongcoach:
   social:
     kakao:
       audiences: test-kakao-native-app-key
+  storage:
+    r2:
+      # presign은 로컬 서명 연산이라 더미 자격 증명으로도 실제 URL 생성까지 동작한다
+      endpoint: https://test-account.r2.cloudflarestorage.com
+      access-key-id: test-access-key
+      secret-access-key: test-secret-key
+      bucket: test-bucket
+      public-base-url: https://images.test.meongcoach.com
+      upload-url-validity: PT10M

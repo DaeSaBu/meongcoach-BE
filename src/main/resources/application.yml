@@ -22,6 +22,16 @@ meongcoach:
     secret: ${JWT_SECRET}
     access-token-validity: PT1H
     refresh-token-validity: P14D
+  storage:
+    r2:
+      # R2는 S3 호환 API라 AWS SDK로 presigned URL을 발급한다. 값 미주입 시 기동에 실패한다
+      endpoint: ${R2_ENDPOINT}
+      access-key-id: ${R2_ACCESS_KEY_ID}
+      secret-access-key: ${R2_SECRET_ACCESS_KEY}
+      bucket: ${R2_BUCKET}
+      # 버킷에 연결된 공개 도메인(커스텀 도메인 또는 r2.dev). 클라이언트가 보낸 이미지 URL 검증 기준이 된다
+      public-base-url: ${R2_PUBLIC_BASE_URL}
+      upload-url-validity: PT10M
   social:
     kakao:
       issuer: https://kauth.kakao.com

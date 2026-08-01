@@ -44,7 +44,7 @@ class UserProfileRegisterServiceTest {
 	@Test
 	@DisplayName("닉네임만으로 프로필을 생성한다")
 	void registerCreatesProfileWithNicknameOnly() {
-		service.register(userId, new UserProfileCreateInfo("멍멍이집사", null, null, null));
+		service.register(userId, new UserProfileCreateInfo("멍멍이집사", null, null, null, null));
 
 		UserProfile profile = userProfileRepository.findById(userId).orElseThrow();
 		assertThat(profile.getNickname()).isEqualTo("멍멍이집사");
@@ -56,7 +56,7 @@ class UserProfileRegisterServiceTest {
 	@Test
 	@DisplayName("생년월일·MBTI·성별을 함께 저장한다")
 	void registerCreatesProfileWithOptionalFields() {
-		service.register(userId, new UserProfileCreateInfo("멍멍이집사", LocalDate.of(1998, 1, 1), "INTJ", "FEMALE"));
+		service.register(userId, new UserProfileCreateInfo("멍멍이집사", LocalDate.of(1998, 1, 1), "INTJ", "FEMALE", null));
 
 		UserProfile profile = userProfileRepository.findById(userId).orElseThrow();
 		assertThat(profile.getBirthDate()).isEqualTo(LocalDate.of(1998, 1, 1));
@@ -65,32 +65,52 @@ class UserProfileRegisterServiceTest {
 	}
 
 	@Test
+	@DisplayName("프로필 이미지 URL을 함께 저장한다")
+	void registerCreatesProfileWithProfileImage() {
+		String imageUrl = "https://images.test.meongcoach.com/images/user-profile/1/a.jpg";
+
+		service.register(userId, new UserProfileCreateInfo("멍멍이집사", null, null, null, imageUrl));
+
+		UserProfile profile = userProfileRepository.findById(userId).orElseThrow();
+		assertThat(profile.getProfileImageUrl()).isEqualTo(imageUrl);
+	}
+
+	@Test
+	@DisplayName("프로필 이미지가 없으면 빈 문자열로 저장한다")
+	void registerStoresEmptyProfileImageWhenAbsent() {
+		service.register(userId, new UserProfileCreateInfo("멍멍이집사", null, null, null, null));
+
+		UserProfile profile = userProfileRepository.findById(userId).orElseThrow();
+		assertThat(profile.getProfileImageUrl()).isEmpty();
+	}
+
+	@Test
 	@DisplayName("이미 프로필이 있으면 등록에 실패한다")
 	void registerFailsWhenProfileAlreadyExists() {
-		service.register(userId, new UserProfileCreateInfo("멍멍이집사", null, null, null));
+		service.register(userId, new UserProfileCreateInfo("멍멍이집사", null, null, null, null));
 
-		assertThatThrownBy(() -> service.register(userId, new UserProfileCreateInfo("다른닉네임", null, null, null)))
+		assertThatThrownBy(() -> service.register(userId, new UserProfileCreateInfo("다른닉네임", null, null, null, null)))
 				.isInstanceOf(AlreadyOnboardedException.class);
 	}
 
 	@Test
 	@DisplayName("회원이 없으면 등록에 실패한다")
 	void registerFailsWhenUserDoesNotExist() {
-		assertThatThrownBy(() -> service.register(999L, new UserProfileCreateInfo("멍멍이집사", null, null, null)))
+		assertThatThrownBy(() -> service.register(999L, new UserProfileCreateInfo("멍멍이집사", null, null, null, null)))
 				.isInstanceOf(UserNotFoundException.class);
 	}
 
 	@Test
 	@DisplayName("잘못된 MBTI 값이면 등록에 실패한다")
 	void registerFailsWhenMbtiIsInvalid() {
-		assertThatThrownBy(() -> service.register(userId, new UserProfileCreateInfo("멍멍이집사", null, "XXXX", null)))
+		assertThatThrownBy(() -> service.register(userId, new UserProfileCreateInfo("멍멍이집사", null, "XXXX", null, null)))
 				.isInstanceOf(InvalidMbtiException.class);
 	}
 
 	@Test
 	@DisplayName("잘못된 성별 값이면 등록에 실패한다")
 	void registerFailsWhenGenderIsInvalid() {
-		assertThatThrownBy(() -> service.register(userId, new UserProfileCreateInfo("멍멍이집사", null, null, "OTHER")))
+		assertThatThrownBy(() -> service.register(userId, new UserProfileCreateInfo("멍멍이집사", null, null, "OTHER", null)))
 				.isInstanceOf(InvalidGenderException.class);
 	}
 }

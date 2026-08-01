@@ -36,7 +36,7 @@ class DogRegisterServiceTest {
 
 	private DogRegisterInfo registerInfo(String sex, Set<String> personalities) {
 		return new DogRegisterInfo("초코", "푸들", sex, LocalDate.of(2024, 3, 1),
-				new BigDecimal("4.50"), personalities);
+				new BigDecimal("4.50"), personalities, null);
 	}
 
 	@Test
@@ -65,12 +65,34 @@ class DogRegisterServiceTest {
 	@DisplayName("생년월일이 없어도 등록할 수 있다")
 	void registerAllowsNullBirthDate() {
 		DogRegisterInfo info = new DogRegisterInfo("초코", "푸들", "MALE", null,
-				new BigDecimal("4.50"), Set.of());
+				new BigDecimal("4.50"), Set.of(), null);
 
 		Long dogId = service.register(1L, info);
 
 		Dog dog = dogRepository.findById(dogId).orElseThrow();
 		assertThat(dog.getBirthDate()).isNull();
+	}
+
+	@Test
+	@DisplayName("프로필 이미지 URL을 함께 저장한다")
+	void registerSavesProfileImage() {
+		String imageUrl = "https://images.test.meongcoach.com/images/dog-profile/1/a.jpg";
+		DogRegisterInfo info = new DogRegisterInfo("초코", "푸들", "MALE", null,
+				new BigDecimal("4.50"), Set.of(), imageUrl);
+
+		Long dogId = service.register(1L, info);
+
+		Dog dog = dogRepository.findById(dogId).orElseThrow();
+		assertThat(dog.getProfileImageUrl()).isEqualTo(imageUrl);
+	}
+
+	@Test
+	@DisplayName("프로필 이미지가 없으면 빈 문자열로 저장한다")
+	void registerStoresEmptyProfileImageWhenAbsent() {
+		Long dogId = service.register(1L, registerInfo("MALE", Set.of()));
+
+		Dog dog = dogRepository.findById(dogId).orElseThrow();
+		assertThat(dog.getProfileImageUrl()).isEmpty();
 	}
 
 	@Test
