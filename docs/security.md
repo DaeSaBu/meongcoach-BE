@@ -174,9 +174,9 @@ Google과 같은 구조(`iss=https://appleid.apple.com`, `jwk-set-uri=https://ap
 | `JWT_SECRET` | JWT 서명 키. **32바이트 이상** (미달 시 기동 실패) |
 | `KAKAO_AUDIENCES` | 허용할 id_token `aud` 목록(쉼표 구분). 네이티브 앱 키, 필요하면 REST API 키. 시크릿이 아닌 식별자. **빈 값이면 기동 실패** (비어 있으면 모든 로그인이 aud 불일치로 거부되므로) |
 
-로컬은 환경 변수로 export하고, CI/배포는 GitHub Actions secrets로 주입합니다.
+로컬은 환경 변수로 export하고, 배포는 ECS task definition의 환경변수와 Secrets Manager 참조로 주입합니다.
 테스트는 `src/test/resources/application-test.yml`의 더미 값을 쓰므로 환경 변수가 필요 없습니다.
-dev/prod의 DB 접속 변수(`DB_URL` 등)는 [profiles.md](profiles.md)를 참고하세요.
+dev/prod의 DB 접속 변수(`DB_HOST` 등)는 [profiles.md](profiles.md)를 참고하세요.
 
 ## 알려진 제약
 

@@ -17,7 +17,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
- * 레슨 내 훈련 카드. 레슨(L4)당 4~9개 SKILL 규칙이 있다 (U-0205).
+ * 레슨 내 교육 카드. 레슨(L4)당 4~9개 SKILL 규칙이 있다 (U-0205).
  */
 @Getter
 @Entity
