@@ -10,13 +10,18 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.daesabu.meongcoach.media.application.provided.ImageUploadUrlIssuer;
 import com.daesabu.meongcoach.media.application.provided.ImageUploadUrlResult;
+import com.daesabu.meongcoach.media.application.provided.VerifiedVideoResult;
 import com.daesabu.meongcoach.media.application.provided.VideoUploadUrlIssuer;
 import com.daesabu.meongcoach.media.application.provided.VideoUploadUrlResult;
+import com.daesabu.meongcoach.media.application.provided.VideoUploadVerifier;
 import com.daesabu.meongcoach.media.domain.ImageType;
 import com.daesabu.meongcoach.media.domain.ImageUploadTarget;
 import com.daesabu.meongcoach.media.domain.VideoType;
 import com.daesabu.meongcoach.media.domain.VideoUploadTarget;
+import com.daesabu.meongcoach.media.domain.exception.VideoAccessDeniedException;
+import com.daesabu.meongcoach.media.domain.exception.VideoNotUploadedException;
 import com.daesabu.meongcoach.media.domain.vo.VideoFileSize;
+import com.daesabu.meongcoach.media.domain.vo.VideoObjectKey;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,6 +62,15 @@ class MediaControllerTest {
 				"target": "AI_ANALYSIS",
 				"contentType": "video/mp4",
 				"fileSizeBytes": 52428800
+			}
+			""";
+
+	private static final String VIDEO_CONTENT_TYPE = "video/mp4";
+	private static final long VIDEO_SIZE_BYTES = 52_428_800L;
+
+	private static final String VIDEO_COMPLETION_REQUEST = """
+			{
+				"objectKey": "videos/ai-analysis/1/uuid.mp4"
 			}
 			""";
 
@@ -243,6 +257,87 @@ class MediaControllerTest {
 				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
 	}
 
+	@Test
+	@DisplayName("영상 업로드 완료를 확인한다")
+	void verifyVideoUploadReturnsStoredVideo() throws Exception {
+		mockMvc.perform(post("/api/media/video-upload-completions")
+						.principal(() -> "1")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(VIDEO_COMPLETION_REQUEST))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.objectKey").value(VIDEO_OBJECT_KEY))
+				.andExpect(jsonPath("$.publicUrl").value(VIDEO_PUBLIC_URL))
+				.andExpect(jsonPath("$.contentType").value(VIDEO_CONTENT_TYPE))
+				.andExpect(jsonPath("$.sizeBytes").value(VIDEO_SIZE_BYTES))
+				.andDo(document("media/video-upload-completion",
+						requestFields(
+								fieldWithPath("objectKey").description(
+										"업로드 URL 발급 응답으로 받은 객체 키. 자기 소유의 키만 확인할 수 있다")
+						),
+						responseFields(
+								fieldWithPath("objectKey").description("확인이 끝난 객체 키"),
+								fieldWithPath("publicUrl").description(
+										"영상이 공개되는 URL. AI 분석 요청 등 후속 API에는 이 값을 그대로 넘긴다"),
+								fieldWithPath("contentType").description("R2가 보관 중인 객체의 실제 Content-Type"),
+								fieldWithPath("sizeBytes").description(
+										"객체의 실제 크기(바이트). 클라이언트가 발급 요청에 신고한 값이 아니라 R2가 보고한 값이다")
+						)
+				));
+	}
+
+	@Test
+	@DisplayName("업로드되지 않은 영상 키면 404를 반환한다")
+	void verifyVideoUploadFailsWhenNotUploaded() throws Exception {
+		mockMvc.perform(post("/api/media/video-upload-completions")
+						.principal(() -> "1")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(VIDEO_COMPLETION_REQUEST.replace(VIDEO_OBJECT_KEY, "videos/ai-analysis/1/none.mp4")))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.code").value("MEDIA_VIDEO_NOT_UPLOADED"))
+				.andDo(document("media/video-upload-completion-error",
+						responseFields(
+								fieldWithPath("title").description("HTTP 상태 이름"),
+								fieldWithPath("status").description("HTTP 상태 코드"),
+								fieldWithPath("detail").description("사람이 읽을 수 있는 에러 설명"),
+								fieldWithPath("instance").description("에러가 발생한 요청 경로"),
+								fieldWithPath("code").description("클라이언트 분기용 에러 코드"),
+								fieldWithPath("timestamp").description("에러 발생 시각(UTC)")
+						)
+				));
+	}
+
+	@Test
+	@DisplayName("다른 사용자의 영상 키면 403을 반환한다")
+	void verifyVideoUploadFailsWhenKeyBelongsToAnotherUser() throws Exception {
+		mockMvc.perform(post("/api/media/video-upload-completions")
+						.principal(() -> "1")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(VIDEO_COMPLETION_REQUEST.replace(VIDEO_OBJECT_KEY, "videos/ai-analysis/2/uuid.mp4")))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.code").value("MEDIA_VIDEO_ACCESS_DENIED"));
+	}
+
+	@Test
+	@DisplayName("형식이 깨진 영상 키면 400을 반환한다")
+	void verifyVideoUploadFailsWhenObjectKeyIsMalformed() throws Exception {
+		mockMvc.perform(post("/api/media/video-upload-completions")
+						.principal(() -> "1")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(VIDEO_COMPLETION_REQUEST.replace(VIDEO_OBJECT_KEY, "videos/1/uuid.mp4")))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("MEDIA_INVALID_OBJECT_KEY"));
+	}
+
+	@Test
+	@DisplayName("영상 업로드 완료 확인 시 인증 정보가 없으면 401을 반환한다")
+	void verifyVideoUploadFailsWithoutPrincipal() throws Exception {
+		mockMvc.perform(post("/api/media/video-upload-completions")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(VIDEO_COMPLETION_REQUEST))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+	}
+
 	@TestConfiguration
 	static class StubConfig {
 
@@ -263,6 +358,21 @@ class MediaControllerTest {
 				VideoType.fromContentType(contentType);
 				VideoFileSize.of(fileSizeBytes);
 				return new VideoUploadUrlResult(VIDEO_UPLOAD_URL, VIDEO_PUBLIC_URL, VIDEO_OBJECT_KEY, 1_800L);
+			};
+		}
+
+		// 검증 순서 역시 VideoUploadVerifyService와 같게 둔다. 스토리지가 없으므로 VIDEO_OBJECT_KEY만 업로드된 것으로 취급한다
+		@Bean
+		VideoUploadVerifier videoUploadVerifier() {
+			return (userId, objectKey) -> {
+				VideoObjectKey key = VideoObjectKey.parse(objectKey);
+				if (!key.belongsTo(userId)) {
+					throw new VideoAccessDeniedException(key.value());
+				}
+				if (!VIDEO_OBJECT_KEY.equals(key.value())) {
+					throw new VideoNotUploadedException(key.value());
+				}
+				return new VerifiedVideoResult(key.value(), VIDEO_PUBLIC_URL, VIDEO_CONTENT_TYPE, VIDEO_SIZE_BYTES);
 			};
 		}
 	}
