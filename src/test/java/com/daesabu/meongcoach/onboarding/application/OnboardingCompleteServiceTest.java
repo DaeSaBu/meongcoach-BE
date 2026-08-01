@@ -12,12 +12,6 @@ import com.daesabu.meongcoach.dog.domain.Personality;
 import com.daesabu.meongcoach.media.application.provided.StoredImageUrlValidator;
 import com.daesabu.meongcoach.media.domain.exception.InvalidImageUrlException;
 import com.daesabu.meongcoach.onboarding.application.provided.OnboardingCompleteInfo;
-import com.daesabu.meongcoach.training.application.TopicFinderService;
-import com.daesabu.meongcoach.training.application.required.TopicRepository;
-import com.daesabu.meongcoach.training.domain.Topic;
-import com.daesabu.meongcoach.training.domain.TopicCreateCommand;
-import com.daesabu.meongcoach.training.domain.TrainingCategory;
-import com.daesabu.meongcoach.training.domain.exception.TopicNotFoundException;
 import com.daesabu.meongcoach.user.application.UserProfileRegisterService;
 import com.daesabu.meongcoach.user.application.required.UserProfileRepository;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
@@ -33,13 +27,14 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
-import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 
 @DataJpaTest
 @DisplayName("온보딩 완료 서비스")
 class OnboardingCompleteServiceTest {
 
 	private static final String STORAGE_BASE_URL = "https://images.test.meongcoach.com/";
+	private static final long PRIOR_TRAINING_TOPIC_ID = 1L;
+	private static final long TRAINING_GOAL_TOPIC_ID = 2L;
 
 	@Autowired
 	private UserRepository userRepository;
@@ -50,31 +45,16 @@ class OnboardingCompleteServiceTest {
 	@Autowired
 	private DogRepository dogRepository;
 
-	@Autowired
-	private TopicRepository topicRepository;
-
-	@Autowired
-	private TestEntityManager entityManager;
-
 	private OnboardingCompleteService service;
 
 	private Long userId;
-	private Long priorTrainingTopicId;
-	private Long trainingGoalTopicId;
 
 	@BeforeEach
 	void setUp() {
-		TrainingCategory category = entityManager.persist(
-				TrainingCategory.create("기본 교육", 1, null, null));
-		priorTrainingTopicId = entityManager.persist(
-				Topic.create(category, new TopicCreateCommand("배변 교육", 1, null, null, null))).getId();
-		trainingGoalTopicId = entityManager.persist(
-				Topic.create(category, new TopicCreateCommand("산책 교육", 2, null, null, null))).getId();
 		service = new OnboardingCompleteService(
 				new UserProfileRegisterService(userRepository, userProfileRepository),
 				new DogRegisterService(dogRepository),
-				prefixValidator(),
-				new TopicFinderService(topicRepository));
+				prefixValidator());
 		userId = userRepository.save(User.registerMember()).getId();
 	}
 
@@ -99,8 +79,8 @@ class OnboardingCompleteServiceTest {
 				"INTJ",
 				"FEMALE",
 				userImageUrl,
-				Set.of(priorTrainingTopicId),
-				Set.of(trainingGoalTopicId),
+				Set.of(PRIOR_TRAINING_TOPIC_ID),
+				Set.of(TRAINING_GOAL_TOPIC_ID),
 				List.of(
 						new DogRegisterInfo("초코", "POODLE", "MALE", LocalDate.of(2024, 3, 1),
 								new BigDecimal("4.50"), Set.of("TIMID"), dogImageUrl,
@@ -152,8 +132,8 @@ class OnboardingCompleteServiceTest {
 		service.complete(userId, completeInfo());
 
 		UserProfile profile = userProfileRepository.findById(userId).orElseThrow();
-		assertThat(profile.getPriorTrainingTopicIds()).containsExactly(priorTrainingTopicId);
-		assertThat(profile.getTrainingGoalTopicIds()).containsExactly(trainingGoalTopicId);
+		assertThat(profile.getPriorTrainingTopicIds()).containsExactly(PRIOR_TRAINING_TOPIC_ID);
+		assertThat(profile.getTrainingGoalTopicIds()).containsExactly(TRAINING_GOAL_TOPIC_ID);
 	}
 
 	@Test
@@ -195,25 +175,5 @@ class OnboardingCompleteServiceTest {
 
 		assertThatThrownBy(() -> service.complete(userId, completeInfo()))
 				.isInstanceOf(AlreadyOnboardedException.class);
-	}
-
-	@Test
-	@DisplayName("존재하지 않는 교육 토픽이 있으면 저장 전에 실패한다")
-	void completeFailsBeforeSavingWhenTopicDoesNotExist() {
-		OnboardingCompleteInfo validInfo = completeInfo();
-		OnboardingCompleteInfo invalidInfo = new OnboardingCompleteInfo(
-				validInfo.nickname(),
-				validInfo.birthDate(),
-				validInfo.mbti(),
-				validInfo.gender(),
-				validInfo.profileImageUrl(),
-				Set.of(Long.MAX_VALUE),
-				validInfo.trainingGoalTopicIds(),
-				validInfo.dogs());
-
-		assertThatThrownBy(() -> service.complete(userId, invalidInfo))
-				.isInstanceOf(TopicNotFoundException.class);
-		assertThat(userProfileRepository.findById(userId)).isEmpty();
-		assertThat(dogRepository.count()).isZero();
 	}
 }

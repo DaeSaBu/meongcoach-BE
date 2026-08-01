@@ -9,15 +9,14 @@
 
 | 필드 | JSON 타입 | null·빈 값 처리 | 검증 | 저장 위치 |
 |---|---|---|---|---|
-| `priorTrainingTopicIds` | 정수 배열 | 미전송·`null`·빈 배열은 선택 없음 | 최대 100개, 원소는 null이 아닌 양수이자 존재하는 토픽 ID | `user_profiles.prior_training_topic_ids` (`BIGINT[]`) |
-| `trainingGoalTopicIds` | 정수 배열 | 미전송·`null`·빈 배열은 선택 없음 | 최대 100개, 원소는 null이 아닌 양수이자 존재하는 토픽 ID | `user_profiles.training_goal_topic_ids` (`BIGINT[]`) |
+| `priorTrainingTopicIds` | 정수 배열 | 미전송·`null`·빈 배열은 선택 없음 | 최대 100개, 원소는 null이 아닌 양수 | `user_profiles.prior_training_topic_ids` (`BIGINT[]`) |
+| `trainingGoalTopicIds` | 정수 배열 | 미전송·`null`·빈 배열은 선택 없음 | 최대 100개, 원소는 null이 아닌 양수 | `user_profiles.training_goal_topic_ids` (`BIGINT[]`) |
 | `dogs[].expectation` | 문자열 | 미전송·`null`은 빈 문자열로 저장 | 최대 500자 | `dogs.expectation` |
 
 - 각 토픽 배열 안의 중복 ID는 한 번만 저장한다.
 - 같은 토픽이 교육 이력과 교육 목표에 동시에 포함되는 것은 허용한다. 이미 경험했지만 계속 교육하려는 경우를
   표현할 수 있고, 두 선택은 서로 독립된 배열 컬럼에 저장된다.
 - 배열의 원소가 `null` 또는 0 이하이면 Bean Validation에 따라 400 `BAD_REQUEST`를 반환한다.
-- 양수지만 존재하지 않는 토픽 ID가 하나라도 있으면 404 `TRAINING_TOPIC_NOT_FOUND`를 반환한다.
 
 ## 저장 구조
 
@@ -33,8 +32,7 @@ dogs
 
 교육 토픽은 요청 최상위 필드이므로 현재는 사용자 단위 선택으로 저장한다. `expectation`은 반려견마다 다른 값이므로
 `dogs` 행에 저장한다. 토픽 ID는 PostgreSQL `BIGINT[]`로 보관하며 배열 원소에는 데이터베이스 외래 키를 설정할 수 없다.
-따라서 user 모듈에서 토픽 엔티티를 직접 참조하지 않고, 저장 전 training 모듈의 `TopicValidator` 공개 인터페이스로
-존재 여부를 검증한다.
+현재 온보딩에서는 토픽 존재 여부를 조회하지 않고 요청 형식만 검증한 뒤 ID를 그대로 저장한다.
 
 운영 PostgreSQL에는 애플리케이션 배포 전에
 [`docs/database/dae-206-onboarding-training-settings.sql`](database/dae-206-onboarding-training-settings.sql)을 적용한다.
@@ -46,7 +44,6 @@ dogs
 OnboardingController
   → 요청 형식·길이·배열 원소 검증
   → StoredImageUrlValidator로 이미지 URL 검증
-  → TopicValidator로 교육 이력·목표 토픽 존재 검증
   → UserProfileRegister로 프로필·교육 선택 저장
   → DogRegister로 반려견별 기대 사항 저장
   → 생성된 dogIds 반환
