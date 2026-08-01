@@ -9,16 +9,13 @@ import org.junit.jupiter.api.Test;
 class AiReportTest {
 
 	@Test
-	@DisplayName("생성하면 분석과 리포트 내용이 설정된다")
-	void createSetsAnalysisAndContent() {
-		AiAnalysis analysis = AiAnalysis.upload(new AiAnalysisUploadCommand(1L, null,
-				"https://s3.meongcoach.com/video.mp4", 60, 10_000_000L));
+	@DisplayName("생성하면 사용자·영상 URL·리포트 내용이 설정된다")
+	void createSetsUserVideoUrlAndContent() {
+		AiReport report = AiReport.create(new AiReportCreateCommand(1L,
+				"https://s3.meongcoach.com/videos/training/1/video.mp4", "분리불안 징후가 관찰됩니다."));
 
-		AiReport report = AiReport.create(analysis,
-				new AiReportCreateCommand("분리불안 징후가 관찰됩니다.", AiReportStatus.PUBLISHED));
-
-		assertThat(report.getAnalysis()).isEqualTo(analysis);
+		assertThat(report.getUserId()).isEqualTo(1L);
+		assertThat(report.getVideoUrl()).isEqualTo("https://s3.meongcoach.com/videos/training/1/video.mp4");
 		assertThat(report.getContent()).isEqualTo("분리불안 징후가 관찰됩니다.");
-		assertThat(report.getStatus()).isEqualTo(AiReportStatus.PUBLISHED);
 	}
 }
