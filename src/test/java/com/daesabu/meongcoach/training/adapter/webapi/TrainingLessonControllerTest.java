@@ -64,6 +64,7 @@ class TrainingLessonControllerTest {
 		mockMvc.perform(get("/api/training/lessons/{lessonId}", 1L))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.cards[0].cardId").value(10))
+				.andExpect(jsonPath("$.cards[0].cardTitle").value("앉아 준비"))
 				.andExpect(jsonPath("$.cards[0].cardSortOrder").value(1))
 				.andExpect(jsonPath("$.cards[0].instruction").value("간식을 손에 쥐고 앉아를 말하세요"))
 				.andExpect(jsonPath("$.cards[0].cardMedia[0].cardMediaId").value(100))
@@ -82,6 +83,7 @@ class TrainingLessonControllerTest {
 						responseFields(
 								fieldWithPath("cards[]").description("레슨의 카드 목록. 페이지네이션 없이 전부 내려간다"),
 								fieldWithPath("cards[].cardId").description("카드 ID"),
+								fieldWithPath("cards[].cardTitle").description("카드 타이틀. 없으면 빈 문자열"),
 								fieldWithPath("cards[].cardSortOrder").description("카드 노출 순서. 오름차순 정렬"),
 								fieldWithPath("cards[].instruction").description("카드 지시문. 없으면 빈 문자열"),
 								fieldWithPath("cards[].cardMedia[]").description("카드에 속한 미디어 목록. 없으면 빈 배열"),
