@@ -65,6 +65,8 @@ class OnboardingControllerTest {
 	private static final String COMPLETE_REQUEST_WITH_NULL_ARRAYS = """
 			{
 				"nickname": "멍멍이집사",
+				"mbti": "INTJ",
+				"gender": "NONE",
 				"priorTrainingTopicIds": null,
 				"trainingGoalTopicIds": [],
 				"dogs": [
@@ -120,9 +122,9 @@ class OnboardingControllerTest {
 						requestFields(
 								fieldWithPath("nickname").description("사용자 닉네임 (최대 50자)"),
 								fieldWithPath("birthDate").description("사용자 생년월일. 선택 입력").optional(),
-								fieldWithPath("mbti").description("사용자 MBTI 코드. 선택 입력").optional(),
+								fieldWithPath("mbti").description("사용자 MBTI 코드. 필수 입력"),
 								fieldWithPath("gender").description(
-										"사용자 성별. `MALE`/`FEMALE`/`NONE`(응답 안 함). 선택 입력").optional(),
+										"사용자 성별. `MALE`/`FEMALE`/`NONE`(응답 안 함). 필수 입력"),
 								fieldWithPath("profileImageUrl").description(
 										"사용자 프로필 이미지 공개 URL. 이미지 업로드 URL 발급 API의 "
 												+ "publicUrl. 선택 입력").optional(),
@@ -250,12 +252,70 @@ class OnboardingControllerTest {
 	}
 
 	@Test
+	@DisplayName("MBTI가 null이면 검증에 실패한다")
+	void completeFailsWhenMbtiIsNull() throws Exception {
+		String request = COMPLETE_REQUEST.replace("\"mbti\": \"INTJ\"", "\"mbti\": null");
+
+		mockMvc.perform(post("/api/onboarding")
+						.principal(() -> "1")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(request))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
+				.andExpect(jsonPath("$.errors[0].field").value("mbti"));
+	}
+
+	@Test
+	@DisplayName("MBTI가 공백이면 검증에 실패한다")
+	void completeFailsWhenMbtiIsBlank() throws Exception {
+		String request = COMPLETE_REQUEST.replace("\"mbti\": \"INTJ\"", "\"mbti\": \"   \"");
+
+		mockMvc.perform(post("/api/onboarding")
+						.principal(() -> "1")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(request))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
+				.andExpect(jsonPath("$.errors[0].field").value("mbti"));
+	}
+
+	@Test
+	@DisplayName("성별이 null이면 검증에 실패한다")
+	void completeFailsWhenGenderIsNull() throws Exception {
+		String request = COMPLETE_REQUEST.replace("\"gender\": \"FEMALE\"", "\"gender\": null");
+
+		mockMvc.perform(post("/api/onboarding")
+						.principal(() -> "1")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(request))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
+				.andExpect(jsonPath("$.errors[0].field").value("gender"));
+	}
+
+	@Test
+	@DisplayName("성별이 공백이면 검증에 실패한다")
+	void completeFailsWhenGenderIsBlank() throws Exception {
+		String request = COMPLETE_REQUEST.replace("\"gender\": \"FEMALE\"", "\"gender\": \"   \"");
+
+		mockMvc.perform(post("/api/onboarding")
+						.principal(() -> "1")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(request))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
+				.andExpect(jsonPath("$.errors[0].field").value("gender"));
+	}
+
+	@Test
 	@DisplayName("강아지 없이 온보딩을 완료할 수 없다")
 	void completeFailsWhenDogsIsEmpty() throws Exception {
 		mockMvc.perform(post("/api/onboarding")
 						.principal(() -> "1")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"nickname\": \"멍멍이집사\", \"dogs\": []}"))
+						.content("""
+								{"nickname": "멍멍이집사", "mbti": "INTJ", "gender": "FEMALE", "dogs": []}
+								"""))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.errors[0].field").value("dogs"));
 	}

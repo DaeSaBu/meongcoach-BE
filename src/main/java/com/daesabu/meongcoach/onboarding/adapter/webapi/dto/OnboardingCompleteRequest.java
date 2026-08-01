@@ -17,8 +17,8 @@ import java.util.Set;
 public record OnboardingCompleteRequest(
 		@NotBlank @Size(max = 50) String nickname,
 		@Past LocalDate birthDate,
-		String mbti,
-		String gender,
+		@NotBlank String mbti,
+		@NotBlank String gender,
 		@Size(max = 512) String profileImageUrl,
 		@Size(max = 100) List<@NotNull @Positive Long> priorTrainingTopicIds,
 		@Size(max = 100) List<@NotNull @Positive Long> trainingGoalTopicIds,

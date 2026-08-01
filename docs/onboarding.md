@@ -5,6 +5,16 @@
 `POST /api/onboarding`은 사용자 프로필, 교육 선택과 반려견 프로필을 한 번에 받는다.
 인증된 회원 ID는 `@CurrentUserId`로만 식별하고 요청 본문에서 받지 않는다.
 
+### 사용자 프로필 필드
+
+| 필드 | JSON 타입 | null·빈 값 처리 | 검증 | 저장 위치 |
+|---|---|---|---|---|
+| `mbti` | 문자열 | 미전송·`null`·공백 문자열을 허용하지 않음 | 필수, 16가지 MBTI 코드 중 하나 | `user_profiles.mbti` |
+| `gender` | 문자열 | 미전송·`null`·공백 문자열을 허용하지 않음 | 필수, `MALE`·`FEMALE`·`NONE` 중 하나 | `user_profiles.gender` |
+
+- 성별에 응답하고 싶지 않은 사용자는 값을 생략하지 않고 `NONE`을 전송한다.
+- 두 필드는 요청 검증과 도메인 변환을 모두 통과해야 하며, 데이터베이스에도 `NOT NULL`로 저장한다.
+
 ### 교육·기대 사항 필드
 
 | 필드 | JSON 타입 | null·빈 값 처리 | 검증 | 저장 위치 |
@@ -23,6 +33,8 @@
 ```text
 user_profiles
 ├─ user_id (PK, FK -> users.id)
+├─ mbti VARCHAR(4) NOT NULL
+├─ gender VARCHAR(10) NOT NULL
 ├─ prior_training_topic_ids BIGINT[] NOT NULL DEFAULT '{}'
 └─ training_goal_topic_ids BIGINT[] NOT NULL DEFAULT '{}'
 

@@ -35,12 +35,8 @@ public class UserProfileRegisterService implements UserProfileRegister {
 
 		UserProfile profile = UserProfile.create(user, info.nickname(), info.profileImageUrl());
 		profile.changeBirthDate(info.birthDate());
-		if (info.mbti() != null) {
-			profile.changeMbti(Mbti.from(info.mbti()));
-		}
-		if (info.gender() != null) {
-			profile.changeGender(Gender.from(info.gender()));
-		}
+		profile.changeMbti(Mbti.from(info.mbti()));
+		profile.changeGender(Gender.from(info.gender()));
 		profile.changeTrainingTopics(info.priorTrainingTopicIds(), info.trainingGoalTopicIds());
 		userProfileRepository.save(profile);
 	}
