@@ -3,7 +3,8 @@ DaeSaBu's Back-End Repository
 
 ## 로컬 실행
 
-프로파일을 지정하지 않으면 `local`(인메모리 H2)로 기동합니다. dev/prod 프로파일은
+프로파일을 지정하지 않으면 `local`로 기동하며 PostgreSQL 18.3을 사용합니다. 로컬 DB는
+`docker compose -f compose.local.yml up -d`로 실행하며 컨테이너가 시작될 때마다 초기화됩니다. dev/prod 프로파일은
 [docs/profiles.md](docs/profiles.md)를 참고하세요.
 
 다음 환경 변수를 설정해야 애플리케이션이 기동합니다. 기본값이 없으므로 미설정 시 기동에 실패합니다.
@@ -16,7 +17,14 @@ DaeSaBu's Back-End Repository
 ```bash
 export JWT_SECRET=local-dev-secret-key-at-least-32-bytes-long
 export KAKAO_AUDIENCES=<카카오 콘솔의 네이티브 앱 키>
+docker compose -f compose.local.yml up -d
 ./gradlew bootRun
+```
+
+백엔드까지 컨테이너로 실행하려면 `.env.example`을 `.env`로 복사한 뒤 다음 명령을 사용합니다.
+
+```bash
+docker compose -f compose.local.yml --profile app up --build
 ```
 
 테스트는 `src/test/resources/application-test.yml`의 더미 값을 쓰므로 환경 변수 없이 실행됩니다.
