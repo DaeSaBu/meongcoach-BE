@@ -3,6 +3,7 @@ package com.daesabu.meongcoach.user.domain;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.LocalDate;
+import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -66,6 +67,39 @@ class UserProfileTest {
 		profile.changeGender(Gender.FEMALE);
 
 		assertThat(profile.getGender()).isEqualTo(Gender.FEMALE);
+	}
+
+	@Test
+	@DisplayName("교육 이력과 목표 토픽을 변경하면 중복 없이 교체된다")
+	void changeTrainingTopicsReplacesTopicsWithoutDuplicates() {
+		UserProfile profile = UserProfile.create(User.registerMember(), "멍멍이집사");
+
+		profile.changeTrainingTopics(Set.of(1L, 2L), Set.of(2L, 3L));
+
+		assertThat(profile.getPriorTrainingTopicIds()).containsExactlyInAnyOrder(1L, 2L);
+		assertThat(profile.getTrainingGoalTopicIds()).containsExactlyInAnyOrder(2L, 3L);
+	}
+
+	@Test
+	@DisplayName("산책 공개와 매칭 설정을 변경한다")
+	void changeWalkingSettingsReplacesSettings() {
+		UserProfile profile = UserProfile.create(User.registerMember(), "멍멍이집사");
+
+		profile.changeWalkingSettings(true, true);
+
+		assertThat(profile.isWalkPublic()).isTrue();
+		assertThat(profile.isMatchEnabled()).isTrue();
+	}
+
+	@Test
+	@DisplayName("프로필 생성 시 교육 토픽은 비어 있고 산책 설정은 비활성이다")
+	void createInitializesTrainingTopicsAndWalkingSettings() {
+		UserProfile profile = UserProfile.create(User.registerMember(), "멍멍이집사");
+
+		assertThat(profile.getPriorTrainingTopicIds()).isEmpty();
+		assertThat(profile.getTrainingGoalTopicIds()).isEmpty();
+		assertThat(profile.isWalkPublic()).isFalse();
+		assertThat(profile.isMatchEnabled()).isFalse();
 	}
 
 	@Test

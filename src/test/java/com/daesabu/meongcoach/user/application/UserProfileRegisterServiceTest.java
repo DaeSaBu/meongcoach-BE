@@ -15,6 +15,7 @@ import com.daesabu.meongcoach.user.domain.exception.InvalidGenderException;
 import com.daesabu.meongcoach.user.domain.exception.InvalidMbtiException;
 import com.daesabu.meongcoach.user.domain.exception.UserNotFoundException;
 import java.time.LocalDate;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -82,6 +83,21 @@ class UserProfileRegisterServiceTest {
 
 		UserProfile profile = userProfileRepository.findById(userId).orElseThrow();
 		assertThat(profile.getProfileImageUrl()).isEmpty();
+	}
+
+	@Test
+	@DisplayName("교육 이력·목표와 산책 공개·매칭 설정을 함께 저장한다")
+	void registerStoresTrainingTopicsAndWalkingSettings() {
+		UserProfileCreateInfo info = new UserProfileCreateInfo(
+				"멍멍이집사", null, null, null, null, Set.of(1L, 2L), Set.of(2L, 3L), true, true);
+
+		service.register(userId, info);
+
+		UserProfile profile = userProfileRepository.findById(userId).orElseThrow();
+		assertThat(profile.getPriorTrainingTopicIds()).containsExactlyInAnyOrder(1L, 2L);
+		assertThat(profile.getTrainingGoalTopicIds()).containsExactlyInAnyOrder(2L, 3L);
+		assertThat(profile.isWalkPublic()).isTrue();
+		assertThat(profile.isMatchEnabled()).isTrue();
 	}
 
 	@Test

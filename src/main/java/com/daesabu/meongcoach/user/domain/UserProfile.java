@@ -2,19 +2,25 @@ package com.daesabu.meongcoach.user.domain;
 
 import com.daesabu.meongcoach.shared.domain.BaseEntity;
 
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.MapsId;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import java.time.LocalDate;
 import java.time.Period;
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -57,6 +63,32 @@ public class UserProfile extends BaseEntity {
 	@Column(length = 10)
 	private Gender gender;
 
+	@ElementCollection(fetch = FetchType.LAZY)
+	@CollectionTable(
+			name = "user_prior_training_topics",
+			joinColumns = @JoinColumn(name = "user_id"),
+			uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "topic_id"}),
+			indexes = @Index(name = "idx_user_prior_training_topic_id", columnList = "topic_id"))
+	@Column(name = "topic_id", nullable = false)
+	private Set<Long> priorTrainingTopicIds = new HashSet<>();
+
+	@ElementCollection(fetch = FetchType.LAZY)
+	@CollectionTable(
+			name = "user_training_goal_topics",
+			joinColumns = @JoinColumn(name = "user_id"),
+			uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "topic_id"}),
+			indexes = @Index(name = "idx_user_training_goal_topic_id", columnList = "topic_id"))
+	@Column(name = "topic_id", nullable = false)
+	private Set<Long> trainingGoalTopicIds = new HashSet<>();
+
+	// 공개 설정을 명시하지 않은 기존 요청은 비공개로 유지한다
+	@Column(nullable = false)
+	private boolean walkPublic;
+
+	// 매칭 설정을 명시하지 않은 기존 요청은 비활성으로 유지한다
+	@Column(nullable = false)
+	private boolean matchEnabled;
+
 	// 스킵해도 완료로 기록한다 (U-0104)
 	@Column(nullable = false)
 	private Boolean isCompletedTooltip;
@@ -87,6 +119,16 @@ public class UserProfile extends BaseEntity {
 
 	public void changeGender(Gender gender) {
 		this.gender = gender;
+	}
+
+	public void changeTrainingTopics(Set<Long> priorTrainingTopicIds, Set<Long> trainingGoalTopicIds) {
+		this.priorTrainingTopicIds = new HashSet<>(priorTrainingTopicIds);
+		this.trainingGoalTopicIds = new HashSet<>(trainingGoalTopicIds);
+	}
+
+	public void changeWalkingSettings(boolean walkPublic, boolean matchEnabled) {
+		this.walkPublic = walkPublic;
+		this.matchEnabled = matchEnabled;
 	}
 
 	public Integer getAge() {

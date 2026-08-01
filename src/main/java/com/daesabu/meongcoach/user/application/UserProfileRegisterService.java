@@ -43,6 +43,8 @@ public class UserProfileRegisterService implements UserProfileRegister {
 		}
 		// null은 changeProfileImage가 미설정(빈 문자열)으로 정규화한다
 		profile.changeProfileImage(info.profileImageUrl());
+		profile.changeTrainingTopics(info.priorTrainingTopicIds(), info.trainingGoalTopicIds());
+		profile.changeWalkingSettings(info.walkPublic(), info.matchEnabled());
 		userProfileRepository.save(profile);
 	}
 
