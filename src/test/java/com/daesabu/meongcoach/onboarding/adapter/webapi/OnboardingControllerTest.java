@@ -41,6 +41,7 @@ class OnboardingControllerTest {
 				"birthDate": "1998-01-01",
 				"mbti": "INTJ",
 				"gender": "FEMALE",
+				"profileImageUrl": "https://images.test.meongcoach.com/images/user-profile/1/a.jpg",
 				"dogs": [
 					{
 						"name": "초코",
@@ -48,7 +49,8 @@ class OnboardingControllerTest {
 						"sex": "MALE",
 						"birthDate": "2024-03-01",
 						"weightKg": 4.50,
-						"personalities": ["TIMID", "LIVELY"]
+						"personalities": ["TIMID", "LIVELY"],
+						"profileImageUrl": "https://images.test.meongcoach.com/images/dog-profile/1/b.jpg"
 					}
 				]
 			}
@@ -92,12 +94,16 @@ class OnboardingControllerTest {
 								fieldWithPath("mbti").description("사용자 MBTI 코드. 선택 입력").optional(),
 								fieldWithPath("gender").description(
 										"사용자 성별. `MALE`/`FEMALE`/`NONE`(응답 안 함). 선택 입력").optional(),
+								fieldWithPath("profileImageUrl").description(
+										"사용자 프로필 이미지 공개 URL. 이미지 업로드 URL 발급 API의 publicUrl. 선택 입력").optional(),
 								fieldWithPath("dogs[].name").description("강아지 이름 (최대 50자)"),
 								fieldWithPath("dogs[].breed").description("강아지 견종 (최대 50자)"),
 								fieldWithPath("dogs[].sex").description("강아지 성별. `MALE` 또는 `FEMALE`"),
 								fieldWithPath("dogs[].birthDate").description("강아지 생년월일. 선택 입력").optional(),
 								fieldWithPath("dogs[].weightKg").description("강아지 몸무게(kg)"),
-								fieldWithPath("dogs[].personalities").description("강아지 성격 코드 목록. 선택 입력").optional()
+								fieldWithPath("dogs[].personalities").description("강아지 성격 코드 목록. 선택 입력").optional(),
+								fieldWithPath("dogs[].profileImageUrl").description(
+										"강아지 프로필 이미지 공개 URL. 이미지 업로드 URL 발급 API의 publicUrl. 선택 입력").optional()
 						),
 						responseFields(
 								fieldWithPath("dogIds").description("생성된 강아지 ID 목록")

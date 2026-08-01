@@ -8,6 +8,8 @@ import com.daesabu.meongcoach.dog.application.provided.DogRegisterInfo;
 import com.daesabu.meongcoach.dog.application.required.DogRepository;
 import com.daesabu.meongcoach.dog.domain.Dog;
 import com.daesabu.meongcoach.dog.domain.Personality;
+import com.daesabu.meongcoach.media.application.provided.StoredImageUrlValidator;
+import com.daesabu.meongcoach.media.domain.exception.InvalidImageUrlException;
 import com.daesabu.meongcoach.onboarding.application.provided.OnboardingCompleteInfo;
 import com.daesabu.meongcoach.user.application.UserProfileRegisterService;
 import com.daesabu.meongcoach.user.application.required.UserProfileRepository;
@@ -29,6 +31,8 @@ import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 @DisplayName("온보딩 완료 서비스")
 class OnboardingCompleteServiceTest {
 
+	private static final String STORAGE_BASE_URL = "https://images.test.meongcoach.com/";
+
 	@Autowired
 	private UserRepository userRepository;
 
@@ -46,16 +50,31 @@ class OnboardingCompleteServiceTest {
 	void setUp() {
 		service = new OnboardingCompleteService(
 				new UserProfileRegisterService(userRepository, userProfileRepository),
-				new DogRegisterService(dogRepository));
+				new DogRegisterService(dogRepository),
+				prefixValidator());
 		userId = userRepository.save(User.registerMember()).getId();
 	}
 
+	// 미설정(null·빈 문자열)은 통과, 우리 스토리지 밖 URL은 거부하는 media 모듈 검증기의 스텁
+	private StoredImageUrlValidator prefixValidator() {
+		return url -> {
+			if (url != null && !url.isBlank() && !url.startsWith(STORAGE_BASE_URL)) {
+				throw new InvalidImageUrlException();
+			}
+		};
+	}
+
 	private OnboardingCompleteInfo completeInfo() {
-		return new OnboardingCompleteInfo("멍멍이집사", LocalDate.of(1998, 1, 1), "INTJ", "FEMALE", List.of(
-				new DogRegisterInfo("초코", "푸들", "MALE", LocalDate.of(2024, 3, 1),
-						new BigDecimal("4.50"), Set.of("TIMID")),
-				new DogRegisterInfo("보리", "말티즈", "FEMALE", null,
-						new BigDecimal("3.20"), Set.of())));
+		return completeInfo(null, null);
+	}
+
+	private OnboardingCompleteInfo completeInfo(String userImageUrl, String dogImageUrl) {
+		return new OnboardingCompleteInfo("멍멍이집사", LocalDate.of(1998, 1, 1), "INTJ", "FEMALE", userImageUrl,
+				List.of(
+						new DogRegisterInfo("초코", "푸들", "MALE", LocalDate.of(2024, 3, 1),
+								new BigDecimal("4.50"), Set.of("TIMID"), dogImageUrl),
+						new DogRegisterInfo("보리", "말티즈", "FEMALE", null,
+								new BigDecimal("3.20"), Set.of(), null)));
 	}
 
 	@Test
@@ -80,6 +99,38 @@ class OnboardingCompleteServiceTest {
 		assertThat(dogs).filteredOn(dog -> dog.getName().equals("초코"))
 				.singleElement()
 				.satisfies(dog -> assertThat(dog.getPersonalities()).containsExactly(Personality.TIMID));
+	}
+
+	@Test
+	@DisplayName("사용자·강아지 프로필 이미지 URL이 함께 저장된다")
+	void completeSavesProfileImages() {
+		String userImageUrl = STORAGE_BASE_URL + "images/user-profile/1/a.jpg";
+		String dogImageUrl = STORAGE_BASE_URL + "images/dog-profile/1/b.jpg";
+
+		List<Long> dogIds = service.complete(userId, completeInfo(userImageUrl, dogImageUrl));
+
+		UserProfile profile = userProfileRepository.findById(userId).orElseThrow();
+		assertThat(profile.getProfileImageUrl()).isEqualTo(userImageUrl);
+		assertThat(dogRepository.findAllById(dogIds))
+				.filteredOn(dog -> dog.getName().equals("초코"))
+				.singleElement()
+				.satisfies(dog -> assertThat(dog.getProfileImageUrl()).isEqualTo(dogImageUrl));
+	}
+
+	@Test
+	@DisplayName("사용자 이미지가 우리 스토리지 URL이 아니면 실패한다")
+	void completeFailsWhenUserImageUrlIsExternal() {
+		assertThatThrownBy(() -> service.complete(userId,
+				completeInfo("https://evil.example.com/a.jpg", null)))
+				.isInstanceOf(InvalidImageUrlException.class);
+	}
+
+	@Test
+	@DisplayName("강아지 이미지가 우리 스토리지 URL이 아니면 실패한다")
+	void completeFailsWhenDogImageUrlIsExternal() {
+		assertThatThrownBy(() -> service.complete(userId,
+				completeInfo(null, "https://evil.example.com/b.jpg")))
+				.isInstanceOf(InvalidImageUrlException.class);
 	}
 
 	@Test

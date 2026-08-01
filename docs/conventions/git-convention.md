@@ -25,7 +25,7 @@
 - 여러 모듈에 걸친 변경이나 적절한 이름이 없는 변경은 scope를 생략한다.
 - 영문 소문자와 하이픈으로 작성한다.
 - 이 저장소의 scope 후보는 Spring Modulith 모듈 패키지명과 같다. `user`(회원 계정·인증), `dog`(반려견 프로필), `training`(훈련 콘텐츠 카탈로그),
-  `progress`(학습 진도), `ai`(AI 영상 분석), `onboarding`(온보딩 흐름 조합), `health`(서비스 상태 확인), `shared`(횡단 관심사).
+  `progress`(학습 진도), `ai`(AI 영상 분석), `onboarding`(온보딩 흐름 조합), `media`(이미지·영상 업로드), `health`(서비스 상태 확인), `shared`(횡단 관심사).
 - 새 모듈을 추가하면 이 목록도 함께 갱신한다.
 
 ### Subject

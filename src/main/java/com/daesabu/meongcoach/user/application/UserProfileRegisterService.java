@@ -41,6 +41,8 @@ public class UserProfileRegisterService implements UserProfileRegister {
 		if (info.gender() != null) {
 			profile.changeGender(Gender.from(info.gender()));
 		}
+		// null은 changeProfileImage가 미설정(빈 문자열)으로 정규화한다
+		profile.changeProfileImage(info.profileImageUrl());
 		userProfileRepository.save(profile);
 	}
 
