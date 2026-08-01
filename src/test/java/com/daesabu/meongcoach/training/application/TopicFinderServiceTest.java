@@ -35,9 +35,9 @@ class TopicFinderServiceTest {
 	@Test
 	@DisplayName("토픽을 정렬 순서대로 조회한다")
 	void findAllOrderedReturnsTopicsSortedBySortOrder() {
-		TrainingCategory category = entityManager.persist(TrainingCategory.create("기본 훈련", 1));
-		entityManager.persist(Topic.create(category, new TopicCreateCommand("산책 훈련", 2)));
-		entityManager.persist(Topic.create(category, new TopicCreateCommand("배변 훈련", 1)));
+		TrainingCategory category = entityManager.persist(TrainingCategory.create("기본 훈련", 1, null, null));
+		entityManager.persist(Topic.create(category, new TopicCreateCommand("산책 훈련", 2, null, null, null)));
+		entityManager.persist(Topic.create(category, new TopicCreateCommand("배변 훈련", 1, null, null, null)));
 
 		List<TopicSummary> topics = service.findAllOrdered();
 

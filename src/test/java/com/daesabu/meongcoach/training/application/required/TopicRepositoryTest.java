@@ -81,10 +81,10 @@ class TopicRepositoryTest {
 	}
 
 	private TrainingCategory persistCategory(String title, int sortOrder) {
-		return entityManager.persist(TrainingCategory.create(title, sortOrder));
+		return entityManager.persist(TrainingCategory.create(title, sortOrder, null, null));
 	}
 
 	private Topic persistTopic(TrainingCategory category, String title, int sortOrder) {
-		return entityManager.persist(Topic.create(category, new TopicCreateCommand(title, sortOrder)));
+		return entityManager.persist(Topic.create(category, new TopicCreateCommand(title, sortOrder, null, null, null)));
 	}
 }

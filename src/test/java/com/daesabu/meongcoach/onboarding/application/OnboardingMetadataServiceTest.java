@@ -42,9 +42,9 @@ class OnboardingMetadataServiceTest {
 	@Test
 	@DisplayName("토픽·성격·MBTI 목록을 한 번에 모아 반환한다")
 	void findCollectsTopicsPersonalitiesAndMbtis() {
-		TrainingCategory category = entityManager.persist(TrainingCategory.create("기본 훈련", 1));
-		entityManager.persist(Topic.create(category, new TopicCreateCommand("산책 훈련", 2)));
-		entityManager.persist(Topic.create(category, new TopicCreateCommand("배변 훈련", 1)));
+		TrainingCategory category = entityManager.persist(TrainingCategory.create("기본 훈련", 1, null, null));
+		entityManager.persist(Topic.create(category, new TopicCreateCommand("산책 훈련", 2, null, null, null)));
+		entityManager.persist(Topic.create(category, new TopicCreateCommand("배변 훈련", 1, null, null, null)));
 
 		OnboardingMetadataResult result = service.find();
 
