@@ -21,6 +21,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 
 @DataJpaTest
 @DisplayName("사용자 프로필 등록 서비스")
@@ -31,6 +32,9 @@ class UserProfileRegisterServiceTest {
 
 	@Autowired
 	private UserProfileRepository userProfileRepository;
+
+	@Autowired
+	private TestEntityManager entityManager;
 
 	private UserProfileRegisterService service;
 
@@ -47,11 +51,13 @@ class UserProfileRegisterServiceTest {
 	void registerCreatesProfileWithNicknameOnly() {
 		service.register(userId, new UserProfileCreateInfo("멍멍이집사", null, null, null, null));
 
-		UserProfile profile = userProfileRepository.findById(userId).orElseThrow();
+		UserProfile profile = findPersistedProfile();
 		assertThat(profile.getNickname()).isEqualTo("멍멍이집사");
 		assertThat(profile.getBirthDate()).isNull();
 		assertThat(profile.getMbti()).isNull();
 		assertThat(profile.getGender()).isNull();
+		assertThat(profile.getPriorTrainingTopicIds()).isEmpty();
+		assertThat(profile.getTrainingGoalTopicIds()).isEmpty();
 	}
 
 	@Test
@@ -93,7 +99,7 @@ class UserProfileRegisterServiceTest {
 
 		service.register(userId, info);
 
-		UserProfile profile = userProfileRepository.findById(userId).orElseThrow();
+		UserProfile profile = findPersistedProfile();
 		assertThat(profile.getPriorTrainingTopicIds()).containsExactlyInAnyOrder(1L, 2L);
 		assertThat(profile.getTrainingGoalTopicIds()).containsExactlyInAnyOrder(2L, 3L);
 		assertThat(profile.isWalkPublic()).isTrue();
@@ -128,5 +134,11 @@ class UserProfileRegisterServiceTest {
 	void registerFailsWhenGenderIsInvalid() {
 		assertThatThrownBy(() -> service.register(userId, new UserProfileCreateInfo("멍멍이집사", null, null, "OTHER", null)))
 				.isInstanceOf(InvalidGenderException.class);
+	}
+
+	private UserProfile findPersistedProfile() {
+		entityManager.flush();
+		entityManager.clear();
+		return userProfileRepository.findById(userId).orElseThrow();
 	}
 }
