@@ -10,6 +10,8 @@ import com.daesabu.meongcoach.user.application.required.SocialProfileReader;
 import com.daesabu.meongcoach.user.application.required.TokenProvider;
 import com.daesabu.meongcoach.user.application.required.UserProfileRepository;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
+import com.daesabu.meongcoach.user.domain.Gender;
+import com.daesabu.meongcoach.user.domain.Mbti;
 import com.daesabu.meongcoach.user.domain.SocialAccountLinkCommand;
 import com.daesabu.meongcoach.user.domain.SocialProvider;
 import com.daesabu.meongcoach.user.domain.User;
@@ -79,7 +81,10 @@ class SocialLoginServiceTest {
 	void loginReturnsOnboardingCompletedWhenProfileExists() {
 		service.login(SocialProvider.KAKAO, CREDENTIAL);
 		User user = userRepository.findAll().getFirst();
-		entityManager.persistAndFlush(UserProfile.create(user, "멍코치"));
+		UserProfile profile = UserProfile.create(user, "멍코치");
+		profile.changeMbti(Mbti.INTJ);
+		profile.changeGender(Gender.NONE);
+		entityManager.persistAndFlush(profile);
 		entityManager.clear();
 
 		SocialLoginResult result = service.login(SocialProvider.KAKAO, CREDENTIAL);

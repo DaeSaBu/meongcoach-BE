@@ -36,7 +36,7 @@ CI는 `workflow_call`을 지원하며 dev·prod CD가 같은 검증 절차를 �
 | ECR | `meongcoach-dev-ecr` | `meongcoach-prod-ecr` |
 | ECS cluster | `meongcoach-dev-cluster` | `meongcoach-prod-cluster` |
 | ECS service | `meongcoach-dev-svc` | `meongcoach-prod-svc` |
-| AWS role secret | `AWS_DEV_DEPLOY_ROLE_ARN` | `AWS_PROD_DEPLOY_ROLE_ARN` |
+| AWS role secret | `DEV_AWS_DEPLOY_ROLE_ARN` | `PROD_AWS_DEPLOY_ROLE_ARN` |
 
 배포는 `linux/amd64` 이미지를 커밋 SHA 태그로 ECR에 올립니다. 환경별 task definition family의 최신 리비전에서 DB 설정·Secrets Manager 참조·Spring 프로파일을 보존하고, GitHub Secrets의 애플리케이션 설정과 `api` 이미지를 반영한 뒤 환경별 health endpoint를 확인합니다.
 
@@ -47,28 +47,35 @@ CI는 `workflow_call`을 지원하며 dev·prod CD가 같은 검증 절차를 �
 ```mermaid
 flowchart LR
     Local["로컬 실행 설정 · .env<br/>JWT_SECRET · KAKAO_AUDIENCES"]
-    GitHub["GitHub Secrets<br/>AWS_DEV_DEPLOY_ROLE_ARN · AWS_PROD_DEPLOY_ROLE_ARN<br/>JWT_SECRET · KAKAO_AUDIENCES<br/>R2_ENDPOINT · R2_ACCESS_KEY_ID · R2_SECRET_ACCESS_KEY<br/>R2_BUCKET · R2_PUBLIC_BASE_URL<br/>DEV_VIMEO_ACCESS_TOKEN · PROD_VIMEO_ACCESS_TOKEN<br/>prod는 PROD_ 접두사 사용"]
+    GitHub["GitHub repository Secrets<br/>DEV_* · PROD_* 배포 Secret"]
     AWS["AWS<br/>DB_HOST · DB_NAME · SPRING_PROFILES_ACTIVE<br/>DB_USERNAME · DB_PASSWORD"]
 ```
 
-CI 테스트는 `application-test.yml`의 테스트 전용 설정을 사용하므로 배포 환경 변수를 주입하지 않습니다. CD의 AWS 인증에는 GitHub repository secret인 `AWS_DEV_DEPLOY_ROLE_ARN` 또는 `AWS_PROD_DEPLOY_ROLE_ARN`을 사용합니다.
+CI 테스트는 `application-test.yml`의 테스트 전용 설정을 사용하므로 배포 환경 변수를 주입하지 않습니다. CD의 AWS 인증에는 GitHub repository secret인 `DEV_AWS_DEPLOY_ROLE_ARN` 또는 `PROD_AWS_DEPLOY_ROLE_ARN`을 사용합니다.
 
 DB 설정은 AWS가 소유합니다. `DB_HOST`·`DB_NAME`은 ECS task definition의 `environment`에 두고, `DB_USERNAME`·`DB_PASSWORD`는 RDS 관리형 secret을 `secrets`로 참조합니다. CD는 새 task definition을 등록할 때 이 설정을 보존하므로 GitHub Actions가 DB 자격증명 값을 직접 다루지 않습니다.
 
 Spring 프로파일은 환경별 Terraform task definition이 소유합니다. dev는 `SPRING_PROFILES_ACTIVE=dev`, prod는 `SPRING_PROFILES_ACTIVE=prod`로 고정하며 CD는 값을 변경하지 않습니다.
 
-DB 외 애플리케이션 설정은 GitHub Secrets가 소유하며 CD가 task definition의 `environment`에 주입합니다. dev·`temp-infra`는 다음 이름을 사용하고 prod는 각 이름에 `PROD_` 접두사를 붙입니다.
+DB 외 애플리케이션 설정은 GitHub repository Secret이 소유하며 CD가 task definition의 `environment`에 주입합니다. dev와 prod는 다음 이름으로 서로 독립된 값을 관리합니다.
 
-- `JWT_SECRET`
-- `KAKAO_AUDIENCES`
-- `R2_ENDPOINT`
-- `R2_ACCESS_KEY_ID`
-- `R2_SECRET_ACCESS_KEY`
-- `R2_BUCKET`
-- `R2_PUBLIC_BASE_URL`
-- `DEV_VIMEO_ACCESS_TOKEN`
+- `DEV_JWT_SECRET` / `PROD_JWT_SECRET`
+- `DEV_KAKAO_AUDIENCES` / `PROD_KAKAO_AUDIENCES`
+- `DEV_R2_ENDPOINT` / `PROD_R2_ENDPOINT`
+- `DEV_R2_ACCESS_KEY_ID` / `PROD_R2_ACCESS_KEY_ID`
+- `DEV_R2_SECRET_ACCESS_KEY` / `PROD_R2_SECRET_ACCESS_KEY`
+- `DEV_R2_BUCKET` / `PROD_R2_BUCKET`
+- `DEV_R2_PUBLIC_BASE_URL` / `PROD_R2_PUBLIC_BASE_URL`
+- `DEV_S3_REGION` / `PROD_S3_REGION`
+- `DEV_S3_ACCESS_KEY_ID` / `PROD_S3_ACCESS_KEY_ID`
+- `DEV_S3_SECRET_ACCESS_KEY` / `PROD_S3_SECRET_ACCESS_KEY`
+- `DEV_S3_BUCKET` / `PROD_S3_BUCKET`
+- `DEV_S3_PUBLIC_BASE_URL` / `PROD_S3_PUBLIC_BASE_URL`
+- `DEV_VIMEO_ACCESS_TOKEN` / `PROD_VIMEO_ACCESS_TOKEN`
 
-`DEV_VIMEO_ACCESS_TOKEN`은 Vimeo 연동 전까지 선택값이며, secret이 등록된 경우에만 `VIMEO_ACCESS_TOKEN`으로 task definition에 주입합니다. prod는 `PROD_VIMEO_ACCESS_TOKEN`을 사용합니다.
+R2 Secret은 이미지, S3 Secret은 훈련 영상 업로드 URL 발급에 쓰입니다. 환경별 `S3_*` Secret은 필수값이라 등록하지 않은 상태로 CD가 실행되면 태스크 정의 생성 단계에서 배포가 중단됩니다.
+
+환경별 `VIMEO_ACCESS_TOKEN`은 Vimeo 연동 전까지 선택값이며, 대응하는 repository Secret이 등록된 경우에만 task definition에 주입합니다.
 
 이 값들은 ECS task definition에 평문으로 저장되며 `ecs:DescribeTaskDefinition` 권한이 있는 주체가 읽을 수 있습니다. 로컬 `.env`는 `JWT_SECRET`과 `KAKAO_AUDIENCES`만 관리하며 저장소에 커밋하지 않습니다.
 

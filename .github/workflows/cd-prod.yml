@@ -40,7 +40,6 @@ jobs:
       contents: read
       pull-requests: write
     uses: ./.github/workflows/ci.yml
-    secrets: inherit
 
   release-check:
     needs: ci
@@ -132,7 +131,7 @@ jobs:
       - name: AWS 자격 증명 설정
         uses: aws-actions/configure-aws-credentials@451ce2a72e8d729a59ebeaacab82dbce58e7af4c # v6
         with:
-          role-to-assume: ${{ secrets.AWS_PROD_DEPLOY_ROLE_ARN }}
+          role-to-assume: ${{ secrets.PROD_AWS_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: ECR 로그인
@@ -168,6 +167,11 @@ jobs:
           R2_SECRET_ACCESS_KEY: ${{ secrets.PROD_R2_SECRET_ACCESS_KEY }}
           R2_BUCKET: ${{ secrets.PROD_R2_BUCKET }}
           R2_PUBLIC_BASE_URL: ${{ secrets.PROD_R2_PUBLIC_BASE_URL }}
+          S3_REGION: ${{ secrets.PROD_S3_REGION }}
+          S3_ACCESS_KEY_ID: ${{ secrets.PROD_S3_ACCESS_KEY_ID }}
+          S3_SECRET_ACCESS_KEY: ${{ secrets.PROD_S3_SECRET_ACCESS_KEY }}
+          S3_BUCKET: ${{ secrets.PROD_S3_BUCKET }}
+          S3_PUBLIC_BASE_URL: ${{ secrets.PROD_S3_PUBLIC_BASE_URL }}
           VIMEO_ACCESS_TOKEN: ${{ secrets.PROD_VIMEO_ACCESS_TOKEN }}
         run: |
           # 최신 인프라 설정을 읽고 GitHub Secrets·이미지를 반영한 등록용 JSON을 만든다.

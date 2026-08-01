@@ -38,7 +38,7 @@ class DogRegisterServiceTest {
 
 	private DogRegisterInfo registerInfo(String sex, Set<String> personalities) {
 		return new DogRegisterInfo("초코", "POODLE", sex, LocalDate.of(2024, 3, 1),
-				new BigDecimal("4.50"), personalities, null);
+				new BigDecimal("4.50"), personalities, null, null);
 	}
 
 	@Test
@@ -68,7 +68,7 @@ class DogRegisterServiceTest {
 	@DisplayName("생년월일이 없어도 등록할 수 있다")
 	void registerAllowsNullBirthDate() {
 		DogRegisterInfo info = new DogRegisterInfo("초코", "POODLE", "MALE", null,
-				new BigDecimal("4.50"), Set.of(), null);
+				new BigDecimal("4.50"), Set.of(), null, null);
 
 		Long dogId = service.register(1L, info);
 
@@ -81,7 +81,7 @@ class DogRegisterServiceTest {
 	void registerSavesProfileImage() {
 		String imageUrl = "https://images.test.meongcoach.com/images/dog-profile/1/a.jpg";
 		DogRegisterInfo info = new DogRegisterInfo("초코", "POODLE", "MALE", null,
-				new BigDecimal("4.50"), Set.of(), imageUrl);
+				new BigDecimal("4.50"), Set.of(), imageUrl, null);
 
 		Long dogId = service.register(1L, info);
 
@@ -99,10 +99,31 @@ class DogRegisterServiceTest {
 	}
 
 	@Test
+	@DisplayName("기대 사항을 함께 저장한다")
+	void registerSavesExpectation() {
+		DogRegisterInfo info = new DogRegisterInfo("초코", "POODLE", "MALE", null,
+				new BigDecimal("4.50"), Set.of(), null, "보호자와 즐겁게 교육받고 싶어요.");
+
+		Long dogId = service.register(1L, info);
+
+		Dog dog = dogRepository.findById(dogId).orElseThrow();
+		assertThat(dog.getExpectation()).isEqualTo("보호자와 즐겁게 교육받고 싶어요.");
+	}
+
+	@Test
+	@DisplayName("기대 사항이 없으면 빈 문자열로 저장한다")
+	void registerStoresEmptyExpectationWhenAbsent() {
+		Long dogId = service.register(1L, registerInfo("MALE", Set.of()));
+
+		Dog dog = dogRepository.findById(dogId).orElseThrow();
+		assertThat(dog.getExpectation()).isEmpty();
+	}
+
+	@Test
 	@DisplayName("잘못된 견종 값이면 등록에 실패한다")
 	void registerFailsWhenBreedIsInvalid() {
 		DogRegisterInfo info = new DogRegisterInfo("초코", "UNKNOWN", "MALE", null,
-				new BigDecimal("4.50"), Set.of(), null);
+				new BigDecimal("4.50"), Set.of(), null, null);
 
 		assertThatThrownBy(() -> service.register(1L, info))
 				.isInstanceOf(InvalidBreedException.class);
@@ -112,7 +133,7 @@ class DogRegisterServiceTest {
 	@DisplayName("견종 값이 없으면 등록에 실패한다")
 	void registerFailsWhenBreedIsNull() {
 		DogRegisterInfo info = new DogRegisterInfo("초코", null, "MALE", null,
-				new BigDecimal("4.50"), Set.of(), null);
+				new BigDecimal("4.50"), Set.of(), null, null);
 
 		assertThatThrownBy(() -> service.register(1L, info))
 				.isInstanceOf(InvalidBreedException.class);

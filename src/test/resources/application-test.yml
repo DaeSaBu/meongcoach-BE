@@ -26,3 +26,10 @@ meongcoach:
       bucket: test-bucket
       public-base-url: https://images.test.meongcoach.com
       upload-url-validity: PT10M
+    s3:
+      region: ap-northeast-2
+      access-key-id: test-access-key
+      secret-access-key: test-secret-key
+      bucket: test-video-bucket
+      public-base-url: https://videos.test.meongcoach.com
+      upload-url-validity: PT15M

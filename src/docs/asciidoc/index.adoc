@@ -53,7 +53,8 @@ operation::user/token-refresh-error[snippets='http-response,response-fields']
 
 == Media API
 
-이미지를 서버를 거치지 않고 스토리지(Cloudflare R2)에 직접 업로드하기 위한 API입니다. 액세스 토큰 인증이 필요합니다.
+파일을 서버를 거치지 않고 스토리지에 직접 업로드하기 위한 API입니다. 이미지는 Cloudflare R2, 영상은 AWS S3에 올립니다.
+모두 액세스 토큰 인증이 필요합니다.
 
 이미지 업로드는 다음 순서로 진행합니다.
 
@@ -69,6 +70,41 @@ operation::media/image-upload-url[snippets='http-request,request-fields,http-res
 
 operation::media/image-upload-url-error[snippets='http-response,response-fields']
 
+=== 영상 업로드 URL 발급
+
+훈련 영상을 AWS S3에 직접 업로드하기 위한 API입니다.
+최대 100MB(104857600바이트)까지 단일 `PUT`으로 올리며, `video/mp4`(mp4)와 `video/quicktime`(mov) 두 형식만 허용합니다.
+
+이미지와 달리 응답에 `objectKey`가 함께 내려갑니다. 버킷을 비공개로 운영하면 `publicUrl` 직접 접근은 거부되므로,
+후속 API 요청에는 `objectKey`를 담아 보냅니다.
+
+[IMPORTANT]
+====
+`uploadUrl`의 서명에는 `Content-Type`뿐 아니라 **`Content-Length`도 포함**되어 있습니다.
+발급 요청의 `fileSizeBytes`와 정확히 같은 바이트 수로 `PUT`해야 하며,
+`Content-Length` 없이(chunked transfer encoding) 보내면 S3가 403 `SignatureDoesNotMatch`로 거부합니다.
+
+* React Native `fetch`에 `{uri, type, name}` 형태의 body를 넘기면 chunked로 전송되어 실패합니다.
+* `react-native-blob-util`의 `RNFetchBlob.wrap(path)` 또는 Expo의
+  `FileSystem.uploadAsync(url, uri, { httpMethod: 'PUT', uploadType: BINARY_CONTENT })`를 사용하세요.
+* `Content-Length` 헤더를 직접 지정해도 플랫폼이 body 기준으로 덮어씁니다. 길이를 알 수 있는 body를 넘겨야 합니다.
+* `fileSizeBytes`는 실제로 업로드할 파일을 stat해서 구합니다.
+  URL 발급 후 압축·트랜스코딩하면 크기가 달라져 실패하므로 "압축 -> stat -> 발급 -> 즉시 PUT" 순서를 지키세요.
+* `uploadUrl`이 만료되면 발급 API를 다시 호출해 새 URL을 받습니다.
+====
+
+operation::media/video-upload-url[snippets='http-request,request-fields,http-response,response-fields']
+
+==== 실패 응답
+
+파일 크기가 상한을 넘으면 `MEDIA_VIDEO_FILE_SIZE_EXCEEDED`, 0 이하면 `MEDIA_INVALID_VIDEO_FILE_SIZE`,
+지원하지 않는 형식이면 `MEDIA_UNSUPPORTED_VIDEO_TYPE`, 업로드 대상이 잘못되면 `MEDIA_INVALID_VIDEO_UPLOAD_TARGET`을 반환합니다.
+
+operation::media/video-upload-url-error[snippets='http-response,response-fields']
+
+NOTE: 업로드한 영상의 재생 URL 발급 API는 아직 없습니다. 비공개 버킷 운영을 확정하면 presigned GET 발급과
+`objectKey` 소유자 검증을 함께 추가해야 합니다.
+
 == Onboarding API
 
 로그인 후 온보딩이 필요한 사용자가 프로필과 강아지를 등록하는 API입니다.
@@ -82,7 +118,8 @@ operation::onboarding/metadata[snippets='http-request,http-response,response-fie
 
 === 온보딩 완료
 
-사용자 프로필과 강아지들을 하나의 트랜잭션으로 생성합니다.
+사용자 프로필, 교육 이력·목표와 강아지들을 하나의 트랜잭션으로 생성합니다.
+교육 토픽 ID는 온보딩 메타데이터 조회 응답의 `topics[].id`를 사용합니다.
 이미 온보딩을 완료한 회원이 다시 호출하면 409를 반환합니다.
 
 operation::onboarding/complete[snippets='http-request,request-fields,http-response,response-fields']

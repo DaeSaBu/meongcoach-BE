@@ -14,7 +14,9 @@ import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import java.time.LocalDate;
 import java.time.Period;
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -42,29 +44,40 @@ public class UserProfile extends BaseEntity {
 
 	// 온보딩 이후 선택 입력 — 미설정은 빈 문자열로 저장한다
 	@Column(nullable = false, length = 512)
-	private String profileImageUrl = "";
+	private String profileImageUrl;
 
 	// 미입력(나이 미상)을 허용하므로 nullable — getAge()가 null 반환. 타임존 무관 — LocalDate 유지
 	private LocalDate birthDate;
 
-	// 미입력 상태를 null로 표현하므로 nullable
+	// 온보딩 필수 입력이며 16가지 유형만 저장한다
 	@Enumerated(EnumType.STRING)
-	@Column(length = 4)
+	@Column(nullable = false, length = 4)
 	private Mbti mbti;
 
-	// 미입력 상태를 null로 표현하므로 nullable — NONE(응답하지 않음)과 구분된다
+	// 온보딩 필수 입력이며 응답하지 않음은 null 대신 NONE으로 저장한다
 	@Enumerated(EnumType.STRING)
-	@Column(length = 10)
+	@Column(nullable = false, length = 10)
 	private Gender gender;
+
+	@Column(name = "prior_training_topic_ids", nullable = false)
+	private Set<Long> priorTrainingTopicIds = new HashSet<>();
+
+	@Column(name = "training_goal_topic_ids", nullable = false)
+	private Set<Long> trainingGoalTopicIds = new HashSet<>();
 
 	// 스킵해도 완료로 기록한다 (U-0104)
 	@Column(nullable = false)
 	private Boolean isCompletedTooltip;
 
 	public static UserProfile create(User user, String nickname) {
+		return create(user, nickname, null);
+	}
+
+	public static UserProfile create(User user, String nickname, String profileImageUrl) {
 		UserProfile profile = new UserProfile();
 		profile.user = user;
 		profile.nickname = nickname;
+		profile.profileImageUrl = Objects.requireNonNullElse(profileImageUrl, "");
 		profile.isCompletedTooltip = false;
 		return profile;
 	}
@@ -87,6 +100,11 @@ public class UserProfile extends BaseEntity {
 
 	public void changeGender(Gender gender) {
 		this.gender = gender;
+	}
+
+	public void changeTrainingTopics(Set<Long> priorTrainingTopicIds, Set<Long> trainingGoalTopicIds) {
+		this.priorTrainingTopicIds = new HashSet<>(priorTrainingTopicIds);
+		this.trainingGoalTopicIds = new HashSet<>(trainingGoalTopicIds);
 	}
 
 	public Integer getAge() {
