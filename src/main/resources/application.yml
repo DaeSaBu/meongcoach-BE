@@ -1,6 +1,14 @@
 spring:
   application:
     name: meongcoach
+  ai:
+    google:
+      genai:
+        # 기본값을 두지 않아 미주입 시 기동에 실패한다
+        api-key: ${GEMINI_API_KEY}
+        chat:
+          # 모델은 프로퍼티로만 바꿔 끼울 수 있게 코드에 두지 않는다
+          model: gemini-2.5-flash
   profiles:
     # 프로파일 미지정 시 로컬 개발로 기동한다 — `./gradlew bootRun`만으로 실행 가능
     default: local
