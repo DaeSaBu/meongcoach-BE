@@ -72,10 +72,13 @@ DB 외 애플리케이션 설정은 GitHub Secrets가 소유하며 CD가 task de
 - `S3_BUCKET`
 - `S3_PUBLIC_BASE_URL`
 - `DEV_VIMEO_ACCESS_TOKEN`
+- `DEV_LOGIN_TOKEN` (dev 전용)
 
 R2 secret은 이미지, S3 secret은 훈련 영상 업로드 URL 발급에 쓰입니다. `S3_*`는 필수값이라 등록하지 않은 상태로 CD가 실행되면 태스크 정의 생성 단계에서 배포가 중단됩니다.
 
 `DEV_VIMEO_ACCESS_TOKEN`은 Vimeo 연동 전까지 선택값이며, secret이 등록된 경우에만 `VIMEO_ACCESS_TOKEN`으로 task definition에 주입합니다. prod는 `PROD_VIMEO_ACCESS_TOKEN`을 사용합니다.
+
+`DEV_LOGIN_TOKEN`은 dev CD에서만 주입하며 prod CD는 태스크 정의에서 제거합니다.
 
 이 값들은 ECS task definition에 평문으로 저장되며 `ecs:DescribeTaskDefinition` 권한이 있는 주체가 읽을 수 있습니다. 로컬 `.env`는 `JWT_SECRET`과 `KAKAO_AUDIENCES`만 관리하며 저장소에 커밋하지 않습니다.
 

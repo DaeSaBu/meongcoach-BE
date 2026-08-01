@@ -80,7 +80,10 @@ jobs:
           S3_BUCKET: ${{ secrets.S3_BUCKET }}
           S3_PUBLIC_BASE_URL: ${{ secrets.S3_PUBLIC_BASE_URL }}
           VIMEO_ACCESS_TOKEN: ${{ secrets.DEV_VIMEO_ACCESS_TOKEN }}
+          DEV_LOGIN_TOKEN: ${{ secrets.DEV_LOGIN_TOKEN }}
         run: |
+          test "${#DEV_LOGIN_TOKEN}" -ge 32
+
           # 최신 인프라 설정을 읽고 GitHub Secrets·이미지를 반영한 등록용 JSON을 만든다.
           aws ecs describe-task-definition \
             --task-definition "${ECS_TASK_DEFINITION}" \

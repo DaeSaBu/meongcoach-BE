@@ -43,7 +43,8 @@ jq \
 	--arg s3_secret_access_key "${S3_SECRET_ACCESS_KEY:-}" \
 	--arg s3_bucket "${S3_BUCKET:-}" \
 	--arg s3_public_base_url "${S3_PUBLIC_BASE_URL:-}" \
-	--arg vimeo_access_token "${VIMEO_ACCESS_TOKEN:-}" '
+	--arg vimeo_access_token "${VIMEO_ACCESS_TOKEN:-}" \
+	--arg dev_login_token "${DEV_LOGIN_TOKEN:-}" '
 	if ([.containerDefinitions[] | select(.name == $container)] | length) != 1 then
 		error("배포 대상 컨테이너는 정확히 하나여야 합니다.")
 	else
@@ -81,7 +82,8 @@ jq \
 							.name != "R2_SECRET_ACCESS_KEY" and
 							.name != "S3_ACCESS_KEY_ID" and
 							.name != "S3_SECRET_ACCESS_KEY" and
-							.name != "VIMEO_ACCESS_TOKEN"
+							.name != "VIMEO_ACCESS_TOKEN" and
+							.name != "DEV_LOGIN_TOKEN"
 						))
 					)
 					| .environment = (
@@ -99,7 +101,8 @@ jq \
 								.name != "S3_SECRET_ACCESS_KEY" and
 								.name != "S3_BUCKET" and
 								.name != "S3_PUBLIC_BASE_URL" and
-								.name != "VIMEO_ACCESS_TOKEN"
+								.name != "VIMEO_ACCESS_TOKEN" and
+								.name != "DEV_LOGIN_TOKEN"
 							))) +
 						[
 							{"name": "JWT_SECRET", "value": $jwt_secret},
@@ -119,6 +122,11 @@ jq \
 							[]
 						 else
 							[{"name": "VIMEO_ACCESS_TOKEN", "value": $vimeo_access_token}]
+						 end) +
+						(if $dev_login_token == "" then
+							[]
+						 else
+							[{"name": "DEV_LOGIN_TOKEN", "value": $dev_login_token}]
 						 end)
 					)
 					| .image = $image
