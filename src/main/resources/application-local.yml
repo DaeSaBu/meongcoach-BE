@@ -1,17 +1,13 @@
-# 로컬 개발 전용 — 인메모리 H2라 별도 DB 준비 없이 기동한다
+# 로컬 개발 전용 — PostgreSQL 스키마를 자동 갱신한다
 spring:
   datasource:
-    url: jdbc:h2:mem:meongcoach
-    driver-class-name: org.h2.Driver
-    username: sa
-    password: ""
+    url: jdbc:postgresql://${DB_HOST:localhost}:5432/${DB_NAME:meongcoach}
+    driver-class-name: org.postgresql.Driver
+    username: ${DB_USERNAME:meongcoach_local}
+    password: ${DB_PASSWORD:meongcoach-local}
   jpa:
     hibernate:
-      ddl-auto: create-drop
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
+      ddl-auto: update
 
 meongcoach:
   cors:
