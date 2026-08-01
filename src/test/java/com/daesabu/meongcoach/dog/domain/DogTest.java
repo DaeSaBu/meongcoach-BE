@@ -65,6 +65,26 @@ class DogTest {
 	}
 
 	@Test
+	@DisplayName("기대 사항을 변경하면 기존 내용이 교체된다")
+	void changeExpectationReplacesExpectation() {
+		Dog dog = registerDog();
+
+		dog.changeExpectation("다른 강아지와 편안하게 인사했으면 좋겠어요.");
+
+		assertThat(dog.getExpectation()).isEqualTo("다른 강아지와 편안하게 인사했으면 좋겠어요.");
+	}
+
+	@Test
+	@DisplayName("기대 사항이 없으면 빈 문자열로 변경된다")
+	void changeExpectationStoresEmptyStringWhenAbsent() {
+		Dog dog = registerDog();
+
+		dog.changeExpectation(null);
+
+		assertThat(dog.getExpectation()).isEmpty();
+	}
+
+	@Test
 	@DisplayName("생년월일로 나이를 계산한다")
 	void getAgeCalculatesFromBirthDate() {
 		Dog dog = registerDog(LocalDate.now().minusYears(3));

@@ -63,6 +63,10 @@ public class Dog extends BaseEntity {
 	@Column(nullable = false, length = 512)
 	private String profileImageUrl = "";
 
+	// 온보딩에서 기대 사항을 입력하지 않아도 등록할 수 있으므로 미설정은 빈 문자열로 저장한다
+	@Column(nullable = false, length = 500)
+	private String expectation = "";
+
 	@ElementCollection(fetch = FetchType.LAZY)
 	@CollectionTable(
 			name = "dog_personalities",
@@ -96,6 +100,10 @@ public class Dog extends BaseEntity {
 
 	public void changeProfileImage(String profileImageUrl) {
 		this.profileImageUrl = Objects.requireNonNullElse(profileImageUrl, "");
+	}
+
+	public void changeExpectation(String expectation) {
+		this.expectation = Objects.requireNonNullElse(expectation, "");
 	}
 
 	public void changePersonalities(Set<Personality> personalities) {

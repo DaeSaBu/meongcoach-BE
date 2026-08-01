@@ -37,7 +37,7 @@ public record OnboardingCompleteRequest(
 			@Size(max = 512) String profileImageUrl) {
 
 		public DogRegisterInfo toInfo() {
-			return new DogRegisterInfo(name, breed, sex, birthDate, weightKg, personalities, profileImageUrl);
+			return new DogRegisterInfo(name, breed, sex, birthDate, weightKg, personalities, profileImageUrl, null);
 		}
 	}
 }

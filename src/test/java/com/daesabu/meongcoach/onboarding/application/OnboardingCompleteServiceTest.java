@@ -73,9 +73,9 @@ class OnboardingCompleteServiceTest {
 		return new OnboardingCompleteInfo("멍멍이집사", LocalDate.of(1998, 1, 1), "INTJ", "FEMALE", userImageUrl,
 				List.of(
 						new DogRegisterInfo("초코", "POODLE", "MALE", LocalDate.of(2024, 3, 1),
-								new BigDecimal("4.50"), Set.of("TIMID"), dogImageUrl),
+								new BigDecimal("4.50"), Set.of("TIMID"), dogImageUrl, null),
 						new DogRegisterInfo("보리", "MALTESE", "FEMALE", null,
-								new BigDecimal("3.20"), Set.of(), null)));
+								new BigDecimal("3.20"), Set.of(), null, null)));
 	}
 
 	@Test

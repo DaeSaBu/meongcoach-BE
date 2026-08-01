@@ -32,6 +32,8 @@ public class DogRegisterService implements DogRegister {
 		dog.changePersonalities(parsePersonalities(info.personalities()));
 		// null은 changeProfileImage가 미설정(빈 문자열)으로 정규화한다
 		dog.changeProfileImage(info.profileImageUrl());
+		// null은 changeExpectation이 미설정(빈 문자열)으로 정규화한다
+		dog.changeExpectation(info.expectation());
 		return dogRepository.save(dog).getId();
 	}
 
