@@ -3,6 +3,7 @@ package com.daesabu.meongcoach.dog.application;
 import com.daesabu.meongcoach.dog.application.provided.DogRegister;
 import com.daesabu.meongcoach.dog.application.provided.DogRegisterInfo;
 import com.daesabu.meongcoach.dog.application.required.DogRepository;
+import com.daesabu.meongcoach.dog.domain.Breed;
 import com.daesabu.meongcoach.dog.domain.Dog;
 import com.daesabu.meongcoach.dog.domain.DogRegisterCommand;
 import com.daesabu.meongcoach.dog.domain.DogSex;
@@ -26,7 +27,7 @@ public class DogRegisterService implements DogRegister {
 	@Override
 	@Transactional
 	public Long register(Long userId, DogRegisterInfo info) {
-		Dog dog = Dog.register(new DogRegisterCommand(userId, info.name(), info.breed(),
+		Dog dog = Dog.register(new DogRegisterCommand(userId, info.name(), Breed.from(info.breed()),
 				DogSex.from(info.sex()), info.birthDate(), info.weightKg()));
 		dog.changePersonalities(parsePersonalities(info.personalities()));
 		// null은 changeProfileImage가 미설정(빈 문자열)으로 정규화한다

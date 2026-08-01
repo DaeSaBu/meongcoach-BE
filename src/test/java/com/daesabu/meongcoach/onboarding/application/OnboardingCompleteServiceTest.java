@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.daesabu.meongcoach.dog.application.DogRegisterService;
 import com.daesabu.meongcoach.dog.application.provided.DogRegisterInfo;
 import com.daesabu.meongcoach.dog.application.required.DogRepository;
+import com.daesabu.meongcoach.dog.domain.Breed;
 import com.daesabu.meongcoach.dog.domain.Dog;
 import com.daesabu.meongcoach.dog.domain.Personality;
 import com.daesabu.meongcoach.media.application.provided.StoredImageUrlValidator;
@@ -71,9 +72,9 @@ class OnboardingCompleteServiceTest {
 	private OnboardingCompleteInfo completeInfo(String userImageUrl, String dogImageUrl) {
 		return new OnboardingCompleteInfo("멍멍이집사", LocalDate.of(1998, 1, 1), "INTJ", "FEMALE", userImageUrl,
 				List.of(
-						new DogRegisterInfo("초코", "푸들", "MALE", LocalDate.of(2024, 3, 1),
+						new DogRegisterInfo("초코", "POODLE", "MALE", LocalDate.of(2024, 3, 1),
 								new BigDecimal("4.50"), Set.of("TIMID"), dogImageUrl),
-						new DogRegisterInfo("보리", "말티즈", "FEMALE", null,
+						new DogRegisterInfo("보리", "MALTESE", "FEMALE", null,
 								new BigDecimal("3.20"), Set.of(), null)));
 	}
 
@@ -88,6 +89,7 @@ class OnboardingCompleteServiceTest {
 		List<Dog> dogs = dogRepository.findAllById(dogIds);
 		assertThat(dogs).extracting(Dog::getUserId).containsOnly(userId);
 		assertThat(dogs).extracting(Dog::getName).containsExactlyInAnyOrder("초코", "보리");
+		assertThat(dogs).extracting(Dog::getBreed).containsExactlyInAnyOrder(Breed.POODLE, Breed.MALTESE);
 	}
 
 	@Test
