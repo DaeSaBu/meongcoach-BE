@@ -101,8 +101,6 @@ class OnboardingCompleteServiceTest {
 				userImageUrl,
 				Set.of(priorTrainingTopicId),
 				Set.of(trainingGoalTopicId),
-				true,
-				true,
 				List.of(
 						new DogRegisterInfo("초코", "POODLE", "MALE", LocalDate.of(2024, 3, 1),
 								new BigDecimal("4.50"), Set.of("TIMID"), dogImageUrl,
@@ -149,15 +147,13 @@ class OnboardingCompleteServiceTest {
 	}
 
 	@Test
-	@DisplayName("교육 이력·목표와 산책 공개·매칭 설정이 저장된다")
-	void completeSavesTrainingTopicsAndWalkingSettings() {
+	@DisplayName("교육 이력·목표가 저장된다")
+	void completeSavesTrainingTopics() {
 		service.complete(userId, completeInfo());
 
 		UserProfile profile = userProfileRepository.findById(userId).orElseThrow();
 		assertThat(profile.getPriorTrainingTopicIds()).containsExactly(priorTrainingTopicId);
 		assertThat(profile.getTrainingGoalTopicIds()).containsExactly(trainingGoalTopicId);
-		assertThat(profile.isWalkPublic()).isTrue();
-		assertThat(profile.isMatchEnabled()).isTrue();
 	}
 
 	@Test
@@ -213,8 +209,6 @@ class OnboardingCompleteServiceTest {
 				validInfo.profileImageUrl(),
 				Set.of(Long.MAX_VALUE),
 				validInfo.trainingGoalTopicIds(),
-				validInfo.walkPublic(),
-				validInfo.matchEnabled(),
 				validInfo.dogs());
 
 		assertThatThrownBy(() -> service.complete(userId, invalidInfo))

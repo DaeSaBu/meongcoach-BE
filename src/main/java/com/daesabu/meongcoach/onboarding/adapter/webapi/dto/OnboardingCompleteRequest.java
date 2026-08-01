@@ -22,8 +22,6 @@ public record OnboardingCompleteRequest(
 		@Size(max = 512) String profileImageUrl,
 		@Size(max = 100) List<@NotNull @Positive Long> priorTrainingTopicIds,
 		@Size(max = 100) List<@NotNull @Positive Long> trainingGoalTopicIds,
-		Boolean walkPublic,
-		Boolean matchEnabled,
 		@NotEmpty @Valid List<DogRequest> dogs) {
 
 	public OnboardingCompleteInfo toInfo() {
@@ -35,8 +33,6 @@ public record OnboardingCompleteRequest(
 				profileImageUrl,
 				Set.copyOf(emptyIfNull(priorTrainingTopicIds)),
 				Set.copyOf(emptyIfNull(trainingGoalTopicIds)),
-				Boolean.TRUE.equals(walkPublic),
-				Boolean.TRUE.equals(matchEnabled),
 				dogs.stream().map(DogRequest::toInfo).toList());
 	}
 

@@ -92,18 +92,16 @@ class UserProfileRegisterServiceTest {
 	}
 
 	@Test
-	@DisplayName("교육 이력·목표와 산책 공개·매칭 설정을 함께 저장한다")
-	void registerStoresTrainingTopicsAndWalkingSettings() {
+	@DisplayName("교육 이력·목표를 함께 저장한다")
+	void registerStoresTrainingTopics() {
 		UserProfileCreateInfo info = new UserProfileCreateInfo(
-				"멍멍이집사", null, null, null, null, Set.of(1L, 2L), Set.of(2L, 3L), true, true);
+				"멍멍이집사", null, null, null, null, Set.of(1L, 2L), Set.of(2L, 3L));
 
 		service.register(userId, info);
 
 		UserProfile profile = findPersistedProfile();
 		assertThat(profile.getPriorTrainingTopicIds()).containsExactlyInAnyOrder(1L, 2L);
 		assertThat(profile.getTrainingGoalTopicIds()).containsExactlyInAnyOrder(2L, 3L);
-		assertThat(profile.isWalkPublic()).isTrue();
-		assertThat(profile.isMatchEnabled()).isTrue();
 	}
 
 	@Test

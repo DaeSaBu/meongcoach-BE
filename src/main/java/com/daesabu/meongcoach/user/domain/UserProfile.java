@@ -65,14 +65,6 @@ public class UserProfile extends BaseEntity {
 	@Column(name = "training_goal_topic_ids", nullable = false)
 	private Set<Long> trainingGoalTopicIds = new HashSet<>();
 
-	// 공개 설정을 명시하지 않은 기존 요청은 비공개로 유지한다
-	@Column(nullable = false)
-	private boolean walkPublic;
-
-	// 매칭 설정을 명시하지 않은 기존 요청은 비활성으로 유지한다
-	@Column(nullable = false)
-	private boolean matchEnabled;
-
 	// 스킵해도 완료로 기록한다 (U-0104)
 	@Column(nullable = false)
 	private Boolean isCompletedTooltip;
@@ -113,11 +105,6 @@ public class UserProfile extends BaseEntity {
 	public void changeTrainingTopics(Set<Long> priorTrainingTopicIds, Set<Long> trainingGoalTopicIds) {
 		this.priorTrainingTopicIds = new HashSet<>(priorTrainingTopicIds);
 		this.trainingGoalTopicIds = new HashSet<>(trainingGoalTopicIds);
-	}
-
-	public void changeWalkingSettings(boolean walkPublic, boolean matchEnabled) {
-		this.walkPublic = walkPublic;
-		this.matchEnabled = matchEnabled;
 	}
 
 	public Integer getAge() {

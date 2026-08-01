@@ -47,8 +47,6 @@ class OnboardingControllerTest {
 				"profileImageUrl": "https://images.test.meongcoach.com/images/user-profile/1/a.jpg",
 				"priorTrainingTopicIds": [1, 2],
 				"trainingGoalTopicIds": [2, 3],
-				"walkPublic": true,
-				"matchEnabled": true,
 				"dogs": [
 					{
 						"name": "초코",
@@ -69,8 +67,6 @@ class OnboardingControllerTest {
 				"nickname": "멍멍이집사",
 				"priorTrainingTopicIds": null,
 				"trainingGoalTopicIds": [],
-				"walkPublic": null,
-				"matchEnabled": null,
 				"dogs": [
 					{
 						"name": "초코",
@@ -136,10 +132,6 @@ class OnboardingControllerTest {
 								fieldWithPath("trainingGoalTopicIds").description(
 										"앞으로 교육할 목표 토픽 ID 배열 (최대 100개). "
 												+ "미입력·null·빈 배열은 선택 없음").optional(),
-								fieldWithPath("walkPublic").description(
-										"산책 기록 공개 여부. 미입력 또는 null이면 false").optional(),
-								fieldWithPath("matchEnabled").description(
-										"산책 메이트 매칭 활성화 여부. 미입력 또는 null이면 false").optional(),
 								fieldWithPath("dogs[].name").description("강아지 이름 (최대 50자)"),
 								fieldWithPath("dogs[].breed").description(
 										"메타데이터 조회 응답에서 선택한 강아지 견종 코드"),
@@ -161,14 +153,12 @@ class OnboardingControllerTest {
 		OnboardingCompleteInfo info = onboardingCompleter.lastInfo;
 		assertThat(info.priorTrainingTopicIds()).containsExactlyInAnyOrder(1L, 2L);
 		assertThat(info.trainingGoalTopicIds()).containsExactlyInAnyOrder(2L, 3L);
-		assertThat(info.walkPublic()).isTrue();
-		assertThat(info.matchEnabled()).isTrue();
 		assertThat(info.dogs().getFirst().expectation())
 				.isEqualTo("산책할 때 보호자에게 집중하면 좋겠어요.");
 	}
 
 	@Test
-	@DisplayName("교육 토픽 배열과 산책 설정이 null이면 선택 없음과 false로 처리한다")
+	@DisplayName("교육 토픽 배열이 null 또는 빈 배열이면 선택 없음으로 처리한다")
 	void completeNormalizesNullableFields() throws Exception {
 		mockMvc.perform(post("/api/onboarding")
 						.principal(() -> "1")
@@ -179,8 +169,6 @@ class OnboardingControllerTest {
 		OnboardingCompleteInfo info = onboardingCompleter.lastInfo;
 		assertThat(info.priorTrainingTopicIds()).isEmpty();
 		assertThat(info.trainingGoalTopicIds()).isEmpty();
-		assertThat(info.walkPublic()).isFalse();
-		assertThat(info.matchEnabled()).isFalse();
 		assertThat(info.dogs().getFirst().expectation()).isNull();
 	}
 

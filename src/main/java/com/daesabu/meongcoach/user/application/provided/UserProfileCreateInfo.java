@@ -9,10 +9,10 @@ import java.util.Set;
  */
 public record UserProfileCreateInfo(String nickname, LocalDate birthDate, String mbti, String gender,
                                     String profileImageUrl, Set<Long> priorTrainingTopicIds,
-                                    Set<Long> trainingGoalTopicIds, boolean walkPublic, boolean matchEnabled) {
+                                    Set<Long> trainingGoalTopicIds) {
 
 	public UserProfileCreateInfo(String nickname, LocalDate birthDate, String mbti, String gender,
 	                             String profileImageUrl) {
-		this(nickname, birthDate, mbti, gender, profileImageUrl, Set.of(), Set.of(), false, false);
+		this(nickname, birthDate, mbti, gender, profileImageUrl, Set.of(), Set.of());
 	}
 }

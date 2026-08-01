@@ -81,25 +81,12 @@ class UserProfileTest {
 	}
 
 	@Test
-	@DisplayName("산책 공개와 매칭 설정을 변경한다")
-	void changeWalkingSettingsReplacesSettings() {
-		UserProfile profile = UserProfile.create(User.registerMember(), "멍멍이집사");
-
-		profile.changeWalkingSettings(true, true);
-
-		assertThat(profile.isWalkPublic()).isTrue();
-		assertThat(profile.isMatchEnabled()).isTrue();
-	}
-
-	@Test
-	@DisplayName("프로필 생성 시 교육 토픽은 비어 있고 산책 설정은 비활성이다")
-	void createInitializesTrainingTopicsAndWalkingSettings() {
+	@DisplayName("프로필 생성 시 교육 토픽은 비어 있다")
+	void createInitializesTrainingTopics() {
 		UserProfile profile = UserProfile.create(User.registerMember(), "멍멍이집사");
 
 		assertThat(profile.getPriorTrainingTopicIds()).isEmpty();
 		assertThat(profile.getTrainingGoalTopicIds()).isEmpty();
-		assertThat(profile.isWalkPublic()).isFalse();
-		assertThat(profile.isMatchEnabled()).isFalse();
 	}
 
 	@Test

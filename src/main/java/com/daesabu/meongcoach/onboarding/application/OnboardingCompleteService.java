@@ -35,8 +35,7 @@ public class OnboardingCompleteService implements OnboardingCompleter {
 		validateTopicIds(info);
 		userProfileRegister.register(userId,
 				new UserProfileCreateInfo(info.nickname(), info.birthDate(), info.mbti(), info.gender(),
-						info.profileImageUrl(), info.priorTrainingTopicIds(), info.trainingGoalTopicIds(),
-						info.walkPublic(), info.matchEnabled()));
+						info.profileImageUrl(), info.priorTrainingTopicIds(), info.trainingGoalTopicIds()));
 		return info.dogs().stream()
 				.map(dog -> dogRegister.register(userId, dog))
 				.toList();

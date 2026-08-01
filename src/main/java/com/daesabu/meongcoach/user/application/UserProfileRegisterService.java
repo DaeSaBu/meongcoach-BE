@@ -42,7 +42,6 @@ public class UserProfileRegisterService implements UserProfileRegister {
 			profile.changeGender(Gender.from(info.gender()));
 		}
 		profile.changeTrainingTopics(info.priorTrainingTopicIds(), info.trainingGoalTopicIds());
-		profile.changeWalkingSettings(info.walkPublic(), info.matchEnabled());
 		userProfileRepository.save(profile);
 	}
 
