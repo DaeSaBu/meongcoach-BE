@@ -30,6 +30,7 @@
 | [docs/security.md](docs/security.md)                                       | 인증 흐름, JWT 토큰 정책, 소셜 제공자 확장 방법 |
 | [docs/ci-cd.md](docs/ci-cd.md)                                             | CI/CD 파이프라인, 커버리지·배포 기준 |
 | [docs/profiles.md](docs/profiles.md)                                       | local/dev/prod 프로파일 구성, DB·ddl-auto 정책 |
+| [docs/onboarding.md](docs/onboarding.md)                                   | 온보딩 요청·저장·검증 규칙과 연동 영향 |
 
 ## 문서 추가 방법
 
