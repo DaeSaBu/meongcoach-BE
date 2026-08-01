@@ -13,7 +13,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
-@SpringBootTest
+@SpringBootTest(properties = "DEV_LOGIN_TOKEN=test-dev-login-token-at-least-32-characters")
 @AutoConfigureMockMvc
 @ActiveProfiles({"dev", "test"})
 @DisplayName("개발 환경 CORS 구성")

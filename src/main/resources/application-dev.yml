@@ -11,6 +11,7 @@ spring:
       ddl-auto: update
 
 meongcoach:
+  dev-login-token: ${DEV_LOGIN_TOKEN}
   cors:
     allowed-origin-patterns:
       - https://app.dev.meongcoach.com

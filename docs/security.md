@@ -47,6 +47,9 @@ Custom Tabs의 쿠키 저장소는 RN `fetch`의 네이티브 쿠키 저장소�
 카카오가 발급한 토큰은 **로그인 시점에만 쓰고 버립니다.** 이후 인가는 전적으로 우리 JWT로 합니다.
 제공자 토큰은 "제공자 API를 호출할 권한"이지 "우리 서비스를 쓸 권한"이 아니고, 우리 권한 정보를 담을 수도 없기 때문입니다.
 
+local·dev 프로파일에서는 `POST /api/users/social/kakao`에 `DEV_LOGIN_TOKEN`을 보내 고정 개발 계정의 JWT를
+발급받습니다. 두 프로파일에서는 실제 카카오 리더 대신 이 리더가 등록되며 test·prod에는 존재하지 않습니다.
+
 ## aud 검증 — 생략하면 안 되는 이유
 
 id_token의 서명이 유효하다는 것은 "카카오가 발급했다"만 증명하고,
@@ -173,6 +176,7 @@ Google과 같은 구조(`iss=https://appleid.apple.com`, `jwk-set-uri=https://ap
 |---|---|
 | `JWT_SECRET` | JWT 서명 키. **32바이트 이상** (미달 시 기동 실패) |
 | `KAKAO_AUDIENCES` | 허용할 id_token `aud` 목록(쉼표 구분). 네이티브 앱 키, 필요하면 REST API 키. 시크릿이 아닌 식별자. **빈 값이면 기동 실패** (비어 있으면 모든 로그인이 aud 불일치로 거부되므로) |
+| `DEV_LOGIN_TOKEN` | local·dev 로그인 토큰. 32자 이상이며 dev에만 주입(local은 기본값 제공) |
 
 로컬은 환경 변수로 export하고, 배포는 ECS task definition의 환경변수와 Secrets Manager 참조로 주입합니다.
 테스트는 `src/test/resources/application-test.yml`의 더미 값을 쓰므로 환경 변수가 필요 없습니다.

@@ -10,6 +10,7 @@ import java.util.Collections;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restclient.RestTemplateBuilder;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
 import org.springframework.security.oauth2.jwt.BadJwtException;
@@ -29,6 +30,7 @@ import org.springframework.web.client.RestOperations;
  * 토큰은 로그인 시점에만 쓰고 저장하지 않으며, 이후 인가는 우리 JWT로만 한다.
  */
 @Component
+@Profile("!local & !dev")
 public class KakaoSocialProfileReader implements SocialProfileReader {
 
 	private static final String EMAIL_CLAIM = "email";
