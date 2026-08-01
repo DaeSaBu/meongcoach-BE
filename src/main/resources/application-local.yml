@@ -12,6 +12,11 @@ spring:
     console:
       enabled: true
       path: /h2-console
+  cloud:
+    aws:
+      # 로컬은 실제 큐 없이 기동한다. 실 큐로 소비를 확인하려면 켜고 SQS_ 환경 변수에 실제 값을 넣는다
+      sqs:
+        enabled: false
 
 meongcoach:
   cors:

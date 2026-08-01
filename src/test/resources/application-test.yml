@@ -27,6 +27,8 @@ spring:
       ddl-auto: create-drop
 
 meongcoach:
+  ai:
+    video-queue: test-video-queue
   jwt:
     secret: meongcoach-test-only-jwt-secret-key-32b
   social:
