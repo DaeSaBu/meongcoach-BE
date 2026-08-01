@@ -30,7 +30,7 @@ import org.springframework.web.client.RestOperations;
  * 토큰은 로그인 시점에만 쓰고 저장하지 않으며, 이후 인가는 우리 JWT로만 한다.
  */
 @Component
-@Profile("!local & !dev")
+@Profile("prod")
 public class KakaoSocialProfileReader implements SocialProfileReader {
 
 	private static final String EMAIL_CLAIM = "email";
