@@ -25,6 +25,12 @@ public class TrainingCategory extends BaseEntity {
 	@Column(nullable = false, length = 100)
 	private String title;
 
+	@Column(nullable = false, columnDefinition = "TEXT")
+	private String description;
+
+	@Column(nullable = false, length = 512)
+	private String iconUrl;
+
 	@Column(nullable = false)
 	private int sortOrder;
 

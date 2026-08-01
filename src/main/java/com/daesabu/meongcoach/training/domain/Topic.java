@@ -32,6 +32,16 @@ public class Topic extends BaseEntity {
 	@Column(nullable = false, length = 100)
 	private String title;
 
+	@Column(nullable = false, columnDefinition = "TEXT")
+	private String description;
+
+	// 토픽 선택하여 커리큘럼으로 가져올 때의 추가 설명
+	@Column(nullable = false, columnDefinition = "TEXT")
+	private String detail;
+
+	@Column(nullable = false, length = 512)
+	private String iconUrl;
+
 	@Column(nullable = false)
 	private int sortOrder;
 
