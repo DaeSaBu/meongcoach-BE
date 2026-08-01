@@ -28,6 +28,8 @@ dependencyManagement {
 	imports {
 		mavenBom("org.springframework.modulith:spring-modulith-bom:2.1.0")
 		mavenBom("org.springframework.ai:spring-ai-bom:$springAiVersion")
+		// Spring Cloud AWS 4.x가 Spring Boot 4.x 지원 라인이다
+		mavenBom("io.awspring.cloud:spring-cloud-aws-dependencies:4.1.0")
 	}
 }
 
@@ -42,6 +44,8 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-restclient")
 	// R2는 S3 호환 API라 presigned URL 발급에 AWS SDK의 S3Presigner를 그대로 쓴다
 	implementation("software.amazon.awssdk:s3:2.46.7")
+	// S3 업로드 완료 이벤트를 SQS로 받아 AI 분석을 트리거한다
+	implementation("io.awspring.cloud:spring-cloud-aws-starter-sqs")
 	implementation("org.springframework.ai:spring-ai-starter-model-google-genai")
 	testImplementation("org.springframework.security:spring-security-test")
 	compileOnly("org.projectlombok:lombok")
