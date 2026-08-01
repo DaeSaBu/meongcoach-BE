@@ -47,7 +47,7 @@ CI는 `workflow_call`을 지원하며 dev·prod CD가 같은 검증 절차를 �
 ```mermaid
 flowchart LR
     Local["로컬 실행 설정 · .env<br/>JWT_SECRET · KAKAO_AUDIENCES"]
-    GitHub["GitHub Secrets<br/>AWS_DEV_DEPLOY_ROLE_ARN · AWS_PROD_DEPLOY_ROLE_ARN<br/>JWT_SECRET · KAKAO_AUDIENCES<br/>R2_ENDPOINT · R2_ACCESS_KEY_ID · R2_SECRET_ACCESS_KEY<br/>R2_BUCKET · R2_PUBLIC_BASE_URL<br/>DEV_VIMEO_ACCESS_TOKEN · PROD_VIMEO_ACCESS_TOKEN<br/>prod는 PROD_ 접두사 사용"]
+    GitHub["GitHub Secrets<br/>AWS_DEV_DEPLOY_ROLE_ARN · AWS_PROD_DEPLOY_ROLE_ARN<br/>JWT_SECRET · KAKAO_AUDIENCES<br/>R2_ENDPOINT · R2_ACCESS_KEY_ID · R2_SECRET_ACCESS_KEY<br/>R2_BUCKET · R2_PUBLIC_BASE_URL<br/>S3_REGION · S3_ACCESS_KEY_ID · S3_SECRET_ACCESS_KEY<br/>S3_BUCKET · S3_PUBLIC_BASE_URL<br/>DEV_VIMEO_ACCESS_TOKEN · PROD_VIMEO_ACCESS_TOKEN<br/>prod는 PROD_ 접두사 사용"]
     AWS["AWS<br/>DB_HOST · DB_NAME · SPRING_PROFILES_ACTIVE<br/>DB_USERNAME · DB_PASSWORD"]
 ```
 
@@ -66,7 +66,14 @@ DB 외 애플리케이션 설정은 GitHub Secrets가 소유하며 CD가 task de
 - `R2_SECRET_ACCESS_KEY`
 - `R2_BUCKET`
 - `R2_PUBLIC_BASE_URL`
+- `S3_REGION`
+- `S3_ACCESS_KEY_ID`
+- `S3_SECRET_ACCESS_KEY`
+- `S3_BUCKET`
+- `S3_PUBLIC_BASE_URL`
 - `DEV_VIMEO_ACCESS_TOKEN`
+
+R2 secret은 이미지, S3 secret은 훈련 영상 업로드 URL 발급에 쓰입니다. `S3_*`는 필수값이라 등록하지 않은 상태로 CD가 실행되면 태스크 정의 생성 단계에서 배포가 중단됩니다.
 
 `DEV_VIMEO_ACCESS_TOKEN`은 Vimeo 연동 전까지 선택값이며, secret이 등록된 경우에만 `VIMEO_ACCESS_TOKEN`으로 task definition에 주입합니다. prod는 `PROD_VIMEO_ACCESS_TOKEN`을 사용합니다.
 

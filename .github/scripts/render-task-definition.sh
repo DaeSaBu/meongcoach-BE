@@ -21,6 +21,11 @@ IMAGE_URI=${3}
 : "${R2_SECRET_ACCESS_KEY:?R2_SECRET_ACCESS_KEY가 필요합니다.}"
 : "${R2_BUCKET:?R2_BUCKET이 필요합니다.}"
 : "${R2_PUBLIC_BASE_URL:?R2_PUBLIC_BASE_URL이 필요합니다.}"
+: "${S3_REGION:?S3_REGION이 필요합니다.}"
+: "${S3_ACCESS_KEY_ID:?S3_ACCESS_KEY_ID가 필요합니다.}"
+: "${S3_SECRET_ACCESS_KEY:?S3_SECRET_ACCESS_KEY가 필요합니다.}"
+: "${S3_BUCKET:?S3_BUCKET이 필요합니다.}"
+: "${S3_PUBLIC_BASE_URL:?S3_PUBLIC_BASE_URL이 필요합니다.}"
 
 # jq 결과는 stdout으로 나간다. workflow가 이를 register-task-definition 입력 파일로 저장한다.
 jq \
@@ -33,6 +38,11 @@ jq \
 	--arg r2_secret_access_key "${R2_SECRET_ACCESS_KEY:-}" \
 	--arg r2_bucket "${R2_BUCKET:-}" \
 	--arg r2_public_base_url "${R2_PUBLIC_BASE_URL:-}" \
+	--arg s3_region "${S3_REGION:-}" \
+	--arg s3_access_key_id "${S3_ACCESS_KEY_ID:-}" \
+	--arg s3_secret_access_key "${S3_SECRET_ACCESS_KEY:-}" \
+	--arg s3_bucket "${S3_BUCKET:-}" \
+	--arg s3_public_base_url "${S3_PUBLIC_BASE_URL:-}" \
 	--arg vimeo_access_token "${VIMEO_ACCESS_TOKEN:-}" '
 	if ([.containerDefinitions[] | select(.name == $container)] | length) != 1 then
 		error("배포 대상 컨테이너는 정확히 하나여야 합니다.")
@@ -69,6 +79,8 @@ jq \
 						map(select(
 							.name != "R2_ACCESS_KEY_ID" and
 							.name != "R2_SECRET_ACCESS_KEY" and
+							.name != "S3_ACCESS_KEY_ID" and
+							.name != "S3_SECRET_ACCESS_KEY" and
 							.name != "VIMEO_ACCESS_TOKEN"
 						))
 					)
@@ -82,6 +94,11 @@ jq \
 								.name != "R2_SECRET_ACCESS_KEY" and
 								.name != "R2_BUCKET" and
 								.name != "R2_PUBLIC_BASE_URL" and
+								.name != "S3_REGION" and
+								.name != "S3_ACCESS_KEY_ID" and
+								.name != "S3_SECRET_ACCESS_KEY" and
+								.name != "S3_BUCKET" and
+								.name != "S3_PUBLIC_BASE_URL" and
 								.name != "VIMEO_ACCESS_TOKEN"
 							))) +
 						[
@@ -91,7 +108,12 @@ jq \
 							{"name": "R2_ACCESS_KEY_ID", "value": $r2_access_key_id},
 							{"name": "R2_SECRET_ACCESS_KEY", "value": $r2_secret_access_key},
 							{"name": "R2_BUCKET", "value": $r2_bucket},
-							{"name": "R2_PUBLIC_BASE_URL", "value": $r2_public_base_url}
+							{"name": "R2_PUBLIC_BASE_URL", "value": $r2_public_base_url},
+							{"name": "S3_REGION", "value": $s3_region},
+							{"name": "S3_ACCESS_KEY_ID", "value": $s3_access_key_id},
+							{"name": "S3_SECRET_ACCESS_KEY", "value": $s3_secret_access_key},
+							{"name": "S3_BUCKET", "value": $s3_bucket},
+							{"name": "S3_PUBLIC_BASE_URL", "value": $s3_public_base_url}
 						] +
 						(if $vimeo_access_token == "" then
 							[]
