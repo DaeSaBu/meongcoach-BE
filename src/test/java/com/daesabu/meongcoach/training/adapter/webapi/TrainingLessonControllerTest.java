@@ -52,11 +52,11 @@ class TrainingLessonControllerTest {
 	@DisplayName("레슨의 카드와 미디어 목록을 반환한다")
 	void findCardsReturnsCardsWithCardMedia() throws Exception {
 		given(lessonFinder.findCards(1L)).willReturn(List.of(
-				new CardView(10L, 1, "간식을 손에 쥐고 앉아를 말하세요", List.of(
+				new CardView(10L, "앉아 준비", 1, "간식을 손에 쥐고 앉아를 말하세요", List.of(
 						new CardMediaView(100L, 10L, MediaType.IMAGE, "https://cdn.example.com/1.png", 1),
 						new CardMediaView(101L, 10L, MediaType.VIDEO, "https://cdn.example.com/1.mp4", 2)
 				)),
-				new CardView(11L, 2, "앉으면 바로 간식을 주세요", List.of(
+				new CardView(11L, "앉아 보상", 2, "앉으면 바로 간식을 주세요", List.of(
 						new CardMediaView(102L, 11L, MediaType.IMAGE, "https://cdn.example.com/2.png", 1)
 				))
 		));
@@ -64,6 +64,7 @@ class TrainingLessonControllerTest {
 		mockMvc.perform(get("/api/training/lessons/{lessonId}", 1L))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.cards[0].cardId").value(10))
+				.andExpect(jsonPath("$.cards[0].cardTitle").value("앉아 준비"))
 				.andExpect(jsonPath("$.cards[0].cardSortOrder").value(1))
 				.andExpect(jsonPath("$.cards[0].instruction").value("간식을 손에 쥐고 앉아를 말하세요"))
 				.andExpect(jsonPath("$.cards[0].cardMedia[0].cardMediaId").value(100))
@@ -82,6 +83,7 @@ class TrainingLessonControllerTest {
 						responseFields(
 								fieldWithPath("cards[]").description("레슨의 카드 목록. 페이지네이션 없이 전부 내려간다"),
 								fieldWithPath("cards[].cardId").description("카드 ID"),
+								fieldWithPath("cards[].cardTitle").description("카드 타이틀. 없으면 빈 문자열"),
 								fieldWithPath("cards[].cardSortOrder").description("카드 노출 순서. 오름차순 정렬"),
 								fieldWithPath("cards[].instruction").description("카드 지시문. 없으면 빈 문자열"),
 								fieldWithPath("cards[].cardMedia[]").description("카드에 속한 미디어 목록. 없으면 빈 배열"),
@@ -98,7 +100,7 @@ class TrainingLessonControllerTest {
 	@DisplayName("미디어가 없는 카드는 빈 배열을 반환한다")
 	void findCardsReturnsEmptyCardMediaWhenCardHasNoMedia() throws Exception {
 		given(lessonFinder.findCards(1L)).willReturn(List.of(
-				new CardView(10L, 1, "간식을 손에 쥐고 앉아를 말하세요", List.of())
+				new CardView(10L, "앉아 준비", 1, "간식을 손에 쥐고 앉아를 말하세요", List.of())
 		));
 
 		mockMvc.perform(get("/api/training/lessons/{lessonId}", 1L))
