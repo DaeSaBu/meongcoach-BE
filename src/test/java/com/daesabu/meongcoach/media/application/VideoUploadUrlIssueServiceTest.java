@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.daesabu.meongcoach.media.application.provided.VideoUploadUrlResult;
+import com.daesabu.meongcoach.media.application.required.StoredVideo;
 import com.daesabu.meongcoach.media.application.required.VideoStorage;
 import com.daesabu.meongcoach.media.application.required.VideoUploadUrl;
 import com.daesabu.meongcoach.media.domain.VideoType;
@@ -15,6 +16,7 @@ import com.daesabu.meongcoach.media.domain.vo.VideoFileSize;
 import com.daesabu.meongcoach.media.domain.vo.VideoObjectKey;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -113,6 +115,12 @@ class VideoUploadUrlIssueServiceTest {
 			contentTypes.add(contentType);
 			contentLengths.add(contentLength);
 			return new VideoUploadUrl("https://storage.test/upload", "https://videos.test/public", 1_800L);
+		}
+
+		// 발급 유스케이스는 객체 조회를 쓰지 않는다. 완료 확인 쪽은 별도 테스트가 검증한다
+		@Override
+		public Optional<StoredVideo> findStoredVideo(VideoObjectKey key) {
+			return Optional.empty();
 		}
 
 		private VideoObjectKey lastKey() {

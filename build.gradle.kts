@@ -40,6 +40,8 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-restclient")
 	// R2는 S3 호환 API라 presigned URL 발급에 AWS SDK의 S3Presigner를 그대로 쓴다
 	implementation("software.amazon.awssdk:s3:2.46.7")
+	// s3가 런타임으로만 끌어오는 동기 HTTP 클라이언트다. 연결 타임아웃을 코드로 지정하려면 컴파일 시점에도 필요하다
+	implementation("software.amazon.awssdk:apache5-client:2.46.7")
 	testImplementation("org.springframework.security:spring-security-test")
 	compileOnly("org.projectlombok:lombok")
 	runtimeOnly("com.h2database:h2")
