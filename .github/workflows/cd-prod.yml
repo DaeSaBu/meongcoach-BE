@@ -168,6 +168,11 @@ jobs:
           R2_SECRET_ACCESS_KEY: ${{ secrets.PROD_R2_SECRET_ACCESS_KEY }}
           R2_BUCKET: ${{ secrets.PROD_R2_BUCKET }}
           R2_PUBLIC_BASE_URL: ${{ secrets.PROD_R2_PUBLIC_BASE_URL }}
+          S3_REGION: ${{ secrets.PROD_S3_REGION }}
+          S3_ACCESS_KEY_ID: ${{ secrets.PROD_S3_ACCESS_KEY_ID }}
+          S3_SECRET_ACCESS_KEY: ${{ secrets.PROD_S3_SECRET_ACCESS_KEY }}
+          S3_BUCKET: ${{ secrets.PROD_S3_BUCKET }}
+          S3_PUBLIC_BASE_URL: ${{ secrets.PROD_S3_PUBLIC_BASE_URL }}
           VIMEO_ACCESS_TOKEN: ${{ secrets.PROD_VIMEO_ACCESS_TOKEN }}
         run: |
           # 최신 인프라 설정을 읽고 GitHub Secrets·이미지를 반영한 등록용 JSON을 만든다.
