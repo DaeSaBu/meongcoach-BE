@@ -48,7 +48,7 @@ public class UserProfile extends BaseEntity {
 
 	// 온보딩 이후 선택 입력 — 미설정은 빈 문자열로 저장한다
 	@Column(nullable = false, length = 512)
-	private String profileImageUrl = "";
+	private String profileImageUrl;
 
 	// 미입력(나이 미상)을 허용하므로 nullable — getAge()가 null 반환. 타임존 무관 — LocalDate 유지
 	private LocalDate birthDate;
@@ -94,9 +94,14 @@ public class UserProfile extends BaseEntity {
 	private Boolean isCompletedTooltip;
 
 	public static UserProfile create(User user, String nickname) {
+		return create(user, nickname, null);
+	}
+
+	public static UserProfile create(User user, String nickname, String profileImageUrl) {
 		UserProfile profile = new UserProfile();
 		profile.user = user;
 		profile.nickname = nickname;
+		profile.profileImageUrl = Objects.requireNonNullElse(profileImageUrl, "");
 		profile.isCompletedTooltip = false;
 		return profile;
 	}

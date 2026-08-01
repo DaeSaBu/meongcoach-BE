@@ -33,7 +33,7 @@ public class UserProfileRegisterService implements UserProfileRegister {
 		User user = userRepository.findById(userId)
 				.orElseThrow(() -> new UserNotFoundException(userId));
 
-		UserProfile profile = UserProfile.create(user, info.nickname());
+		UserProfile profile = UserProfile.create(user, info.nickname(), info.profileImageUrl());
 		profile.changeBirthDate(info.birthDate());
 		if (info.mbti() != null) {
 			profile.changeMbti(Mbti.from(info.mbti()));
@@ -41,8 +41,6 @@ public class UserProfileRegisterService implements UserProfileRegister {
 		if (info.gender() != null) {
 			profile.changeGender(Gender.from(info.gender()));
 		}
-		// null은 changeProfileImage가 미설정(빈 문자열)으로 정규화한다
-		profile.changeProfileImage(info.profileImageUrl());
 		profile.changeTrainingTopics(info.priorTrainingTopicIds(), info.trainingGoalTopicIds());
 		profile.changeWalkingSettings(info.walkPublic(), info.matchEnabled());
 		userProfileRepository.save(profile);

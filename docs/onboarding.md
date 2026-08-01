@@ -39,7 +39,7 @@ user_training_goal_topics
 └─ topic_id (PK, FK -> topics.id, ON DELETE RESTRICT)
 
 dogs
-└─ expectation VARCHAR(500) NOT NULL DEFAULT ''
+└─ expectation TEXT NOT NULL DEFAULT ''
 ```
 
 교육 토픽은 요청 최상위 필드이므로 현재는 사용자 단위 선택으로 저장한다. `expectation`은 반려견마다 다른 값이므로
