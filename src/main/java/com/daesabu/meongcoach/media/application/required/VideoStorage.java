@@ -20,4 +20,9 @@ public interface VideoStorage {
 	 * 저장된 객체가 없으면 빈 값을 돌려준다.
 	 */
 	Optional<StoredVideo> findStoredVideo(VideoObjectKey key);
+
+	/**
+	 * 주어진 객체 키가 공개되는 URL을 돌려준다. 공개 도메인은 스토리지 설정이라 application 계층이 URL을 직접 조립하지 않는다.
+	 */
+	String publicUrlOf(VideoObjectKey key);
 }

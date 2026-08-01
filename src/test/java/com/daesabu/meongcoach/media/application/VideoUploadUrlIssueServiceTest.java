@@ -117,10 +117,15 @@ class VideoUploadUrlIssueServiceTest {
 			return new VideoUploadUrl("https://storage.test/upload", "https://videos.test/public", 1_800L);
 		}
 
-		// 발급 유스케이스는 객체 조회를 쓰지 않는다. 완료 확인 쪽은 별도 테스트가 검증한다
+		// 발급 유스케이스는 객체 조회와 공개 URL 조회를 쓰지 않는다. 완료 확인 쪽은 별도 테스트가 검증한다
 		@Override
 		public Optional<StoredVideo> findStoredVideo(VideoObjectKey key) {
 			return Optional.empty();
+		}
+
+		@Override
+		public String publicUrlOf(VideoObjectKey key) {
+			return "https://videos.test/" + key.value();
 		}
 
 		private VideoObjectKey lastKey() {

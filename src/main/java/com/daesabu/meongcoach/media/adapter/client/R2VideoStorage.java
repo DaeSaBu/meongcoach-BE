@@ -81,7 +81,7 @@ public class R2VideoStorage implements VideoStorage {
 				.signatureDuration(properties.videoUploadUrlValidity())
 				.putObjectRequest(putObjectRequest)
 				.build());
-		return new VideoUploadUrl(presigned.url().toString(), toPublicUrl(key),
+		return new VideoUploadUrl(presigned.url().toString(), publicUrlOf(key),
 				properties.videoUploadUrlValidity().toSeconds());
 	}
 
@@ -105,7 +105,8 @@ public class R2VideoStorage implements VideoStorage {
 		}
 	}
 
-	private String toPublicUrl(VideoObjectKey key) {
+	@Override
+	public String publicUrlOf(VideoObjectKey key) {
 		return publicBaseUrl + "/" + key.value();
 	}
 
