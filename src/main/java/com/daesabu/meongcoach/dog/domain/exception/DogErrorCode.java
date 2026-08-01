@@ -4,6 +4,7 @@ import com.daesabu.meongcoach.shared.exception.ErrorCode;
 
 public enum DogErrorCode implements ErrorCode {
 
+	DOG_INVALID_BREED(400, "강아지 견종이 올바르지 않습니다."),
 	DOG_INVALID_SEX(400, "강아지 성별이 올바르지 않습니다."),
 	DOG_INVALID_PERSONALITY(400, "강아지 성격이 올바르지 않습니다."),
 	;

@@ -2,7 +2,9 @@ package com.daesabu.meongcoach.onboarding.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.daesabu.meongcoach.dog.application.BreedFinderService;
 import com.daesabu.meongcoach.dog.application.PersonalityFinderService;
+import com.daesabu.meongcoach.dog.application.provided.BreedInfo;
 import com.daesabu.meongcoach.dog.application.provided.PersonalityInfo;
 import com.daesabu.meongcoach.onboarding.application.provided.OnboardingMetadataResult;
 import com.daesabu.meongcoach.training.application.TopicFinderService;
@@ -35,13 +37,14 @@ class OnboardingMetadataServiceTest {
 	void setUp() {
 		service = new OnboardingMetadataService(
 				new TopicFinderService(topicRepository),
+				new BreedFinderService(),
 				new PersonalityFinderService(),
 				new MbtiFinderService());
 	}
 
 	@Test
-	@DisplayName("토픽·성격·MBTI 목록을 한 번에 모아 반환한다")
-	void findCollectsTopicsPersonalitiesAndMbtis() {
+	@DisplayName("토픽·견종·성격·MBTI 목록을 한 번에 모아 반환한다")
+	void findCollectsTopicsBreedsPersonalitiesAndMbtis() {
 		TrainingCategory category = entityManager.persist(TrainingCategory.create("기본 훈련", 1, null, null));
 		entityManager.persist(Topic.create(category, new TopicCreateCommand("산책 훈련", 2, null, null, null)));
 		entityManager.persist(Topic.create(category, new TopicCreateCommand("배변 훈련", 1, null, null, null)));
@@ -50,17 +53,21 @@ class OnboardingMetadataServiceTest {
 
 		assertThat(result.topics()).extracting(TopicSummary::title)
 				.containsExactly("배변 훈련", "산책 훈련");
+		assertThat(result.breeds()).extracting(BreedInfo::code)
+				.containsExactly("POODLE", "MALTESE", "POMERANIAN", "SHIH_TZU", "JINDO",
+						"GOLDEN_RETRIEVER", "MIXED");
 		assertThat(result.personalities()).extracting(PersonalityInfo::code)
 				.containsExactly("TIMID", "LIVELY", "FRIENDLY");
 		assertThat(result.mbtis()).hasSize(16).contains("ISTJ", "ENFP");
 	}
 
 	@Test
-	@DisplayName("토픽이 없어도 성격·MBTI 목록은 그대로 반환한다")
+	@DisplayName("토픽이 없어도 견종·성격·MBTI 목록은 그대로 반환한다")
 	void findReturnsEnumListsWhenNoTopics() {
 		OnboardingMetadataResult result = service.find();
 
 		assertThat(result.topics()).isEmpty();
+		assertThat(result.breeds()).isNotEmpty();
 		assertThat(result.personalities()).isNotEmpty();
 		assertThat(result.mbtis()).isNotEmpty();
 	}
