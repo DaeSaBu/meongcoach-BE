@@ -76,7 +76,7 @@ operation::media/image-upload-url-error[snippets='http-response,response-fields'
 
 === 온보딩 메타데이터 조회
 
-온보딩 화면에 필요한 토픽·강아지 성격·MBTI 목록을 한 번에 반환합니다.
+온보딩 화면에 필요한 토픽·견종·강아지 성격·MBTI 목록을 한 번에 반환합니다.
 
 operation::onboarding/metadata[snippets='http-request,http-response,response-fields']
 

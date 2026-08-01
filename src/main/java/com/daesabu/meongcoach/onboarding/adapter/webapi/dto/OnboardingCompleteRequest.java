@@ -29,7 +29,7 @@ public record OnboardingCompleteRequest(
 
 	public record DogRequest(
 			@NotBlank @Size(max = 50) String name,
-			@NotBlank @Size(max = 50) String breed,
+			@NotBlank @Size(max = 30) String breed,
 			@NotBlank String sex,
 			@Past LocalDate birthDate,
 			@NotNull @Positive BigDecimal weightKg,
