@@ -20,11 +20,28 @@ public record OnboardingCompleteRequest(
 		String mbti,
 		String gender,
 		@Size(max = 512) String profileImageUrl,
+		@Size(max = 100) List<@NotNull @Positive Long> priorTrainingTopicIds,
+		@Size(max = 100) List<@NotNull @Positive Long> trainingGoalTopicIds,
+		Boolean walkPublic,
+		Boolean matchEnabled,
 		@NotEmpty @Valid List<DogRequest> dogs) {
 
 	public OnboardingCompleteInfo toInfo() {
-		return new OnboardingCompleteInfo(nickname, birthDate, mbti, gender, profileImageUrl,
+		return new OnboardingCompleteInfo(
+				nickname,
+				birthDate,
+				mbti,
+				gender,
+				profileImageUrl,
+				Set.copyOf(emptyIfNull(priorTrainingTopicIds)),
+				Set.copyOf(emptyIfNull(trainingGoalTopicIds)),
+				Boolean.TRUE.equals(walkPublic),
+				Boolean.TRUE.equals(matchEnabled),
 				dogs.stream().map(DogRequest::toInfo).toList());
+	}
+
+	private static <T> List<T> emptyIfNull(List<T> values) {
+		return values == null ? List.of() : values;
 	}
 
 	public record DogRequest(
@@ -34,10 +51,12 @@ public record OnboardingCompleteRequest(
 			@Past LocalDate birthDate,
 			@NotNull @Positive BigDecimal weightKg,
 			Set<String> personalities,
-			@Size(max = 512) String profileImageUrl) {
+			@Size(max = 512) String profileImageUrl,
+			@Size(max = 500) String expectation) {
 
 		public DogRegisterInfo toInfo() {
-			return new DogRegisterInfo(name, breed, sex, birthDate, weightKg, personalities, profileImageUrl, null);
+			return new DogRegisterInfo(name, breed, sex, birthDate, weightKg, personalities, profileImageUrl,
+					expectation);
 		}
 	}
 }

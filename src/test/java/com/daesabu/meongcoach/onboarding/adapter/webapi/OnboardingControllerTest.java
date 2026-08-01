@@ -1,5 +1,6 @@
 package com.daesabu.meongcoach.onboarding.adapter.webapi;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
@@ -11,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.daesabu.meongcoach.dog.application.provided.BreedInfo;
 import com.daesabu.meongcoach.dog.application.provided.PersonalityInfo;
+import com.daesabu.meongcoach.onboarding.application.provided.OnboardingCompleteInfo;
 import com.daesabu.meongcoach.onboarding.application.provided.OnboardingCompleter;
 import com.daesabu.meongcoach.onboarding.application.provided.OnboardingMetadataFinder;
 import com.daesabu.meongcoach.onboarding.application.provided.OnboardingMetadataResult;
@@ -43,6 +45,10 @@ class OnboardingControllerTest {
 				"mbti": "INTJ",
 				"gender": "FEMALE",
 				"profileImageUrl": "https://images.test.meongcoach.com/images/user-profile/1/a.jpg",
+				"priorTrainingTopicIds": [1, 2],
+				"trainingGoalTopicIds": [2, 3],
+				"walkPublic": true,
+				"matchEnabled": true,
 				"dogs": [
 					{
 						"name": "초코",
@@ -51,7 +57,26 @@ class OnboardingControllerTest {
 						"birthDate": "2024-03-01",
 						"weightKg": 4.50,
 						"personalities": ["TIMID", "LIVELY"],
-						"profileImageUrl": "https://images.test.meongcoach.com/images/dog-profile/1/b.jpg"
+						"profileImageUrl": "https://images.test.meongcoach.com/images/dog-profile/1/b.jpg",
+						"expectation": "산책할 때 보호자에게 집중하면 좋겠어요."
+					}
+				]
+			}
+			""";
+
+	private static final String COMPLETE_REQUEST_WITH_NULL_ARRAYS = """
+			{
+				"nickname": "멍멍이집사",
+				"priorTrainingTopicIds": null,
+				"trainingGoalTopicIds": [],
+				"walkPublic": null,
+				"matchEnabled": null,
+				"dogs": [
+					{
+						"name": "초코",
+						"breed": "POODLE",
+						"sex": "MALE",
+						"weightKg": 4.50
 					}
 				]
 			}
@@ -59,6 +84,9 @@ class OnboardingControllerTest {
 
 	@Autowired
 	private MockMvc mockMvc;
+
+	@Autowired
+	private RecordingOnboardingCompleter onboardingCompleter;
 
 	@Test
 	@DisplayName("온보딩 메타데이터를 조회한다")
@@ -100,7 +128,18 @@ class OnboardingControllerTest {
 								fieldWithPath("gender").description(
 										"사용자 성별. `MALE`/`FEMALE`/`NONE`(응답 안 함). 선택 입력").optional(),
 								fieldWithPath("profileImageUrl").description(
-										"사용자 프로필 이미지 공개 URL. 이미지 업로드 URL 발급 API의 publicUrl. 선택 입력").optional(),
+										"사용자 프로필 이미지 공개 URL. 이미지 업로드 URL 발급 API의 "
+												+ "publicUrl. 선택 입력").optional(),
+								fieldWithPath("priorTrainingTopicIds").description(
+										"이전에 교육한 토픽 ID 배열 (최대 100개). "
+												+ "미입력·null·빈 배열은 선택 없음").optional(),
+								fieldWithPath("trainingGoalTopicIds").description(
+										"앞으로 교육할 목표 토픽 ID 배열 (최대 100개). "
+												+ "미입력·null·빈 배열은 선택 없음").optional(),
+								fieldWithPath("walkPublic").description(
+										"산책 기록 공개 여부. 미입력 또는 null이면 false").optional(),
+								fieldWithPath("matchEnabled").description(
+										"산책 메이트 매칭 활성화 여부. 미입력 또는 null이면 false").optional(),
 								fieldWithPath("dogs[].name").description("강아지 이름 (최대 50자)"),
 								fieldWithPath("dogs[].breed").description(
 										"메타데이터 조회 응답에서 선택한 강아지 견종 코드"),
@@ -109,12 +148,84 @@ class OnboardingControllerTest {
 								fieldWithPath("dogs[].weightKg").description("강아지 몸무게(kg)"),
 								fieldWithPath("dogs[].personalities").description("강아지 성격 코드 목록. 선택 입력").optional(),
 								fieldWithPath("dogs[].profileImageUrl").description(
-										"강아지 프로필 이미지 공개 URL. 이미지 업로드 URL 발급 API의 publicUrl. 선택 입력").optional()
+										"강아지 프로필 이미지 공개 URL. 이미지 업로드 URL 발급 API의 "
+												+ "publicUrl. 선택 입력").optional(),
+								fieldWithPath("dogs[].expectation").description(
+										"강아지 교육 기대 사항 (최대 500자). 선택 입력").optional()
 						),
 						responseFields(
 								fieldWithPath("dogIds").description("생성된 강아지 ID 목록")
 						)
 				));
+
+		OnboardingCompleteInfo info = onboardingCompleter.lastInfo;
+		assertThat(info.priorTrainingTopicIds()).containsExactlyInAnyOrder(1L, 2L);
+		assertThat(info.trainingGoalTopicIds()).containsExactlyInAnyOrder(2L, 3L);
+		assertThat(info.walkPublic()).isTrue();
+		assertThat(info.matchEnabled()).isTrue();
+		assertThat(info.dogs().getFirst().expectation())
+				.isEqualTo("산책할 때 보호자에게 집중하면 좋겠어요.");
+	}
+
+	@Test
+	@DisplayName("교육 토픽 배열과 산책 설정이 null이면 선택 없음과 false로 처리한다")
+	void completeNormalizesNullableFields() throws Exception {
+		mockMvc.perform(post("/api/onboarding")
+						.principal(() -> "1")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(COMPLETE_REQUEST_WITH_NULL_ARRAYS))
+				.andExpect(status().isCreated());
+
+		OnboardingCompleteInfo info = onboardingCompleter.lastInfo;
+		assertThat(info.priorTrainingTopicIds()).isEmpty();
+		assertThat(info.trainingGoalTopicIds()).isEmpty();
+		assertThat(info.walkPublic()).isFalse();
+		assertThat(info.matchEnabled()).isFalse();
+		assertThat(info.dogs().getFirst().expectation()).isNull();
+	}
+
+	@Test
+	@DisplayName("중복된 교육 토픽 ID는 한 번만 전달한다")
+	void completeDeduplicatesTopicIds() throws Exception {
+		String request = COMPLETE_REQUEST.replace("\"priorTrainingTopicIds\": [1, 2]",
+				"\"priorTrainingTopicIds\": [1, 1, 2]");
+
+		mockMvc.perform(post("/api/onboarding")
+						.principal(() -> "1")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(request))
+				.andExpect(status().isCreated());
+
+		assertThat(onboardingCompleter.lastInfo.priorTrainingTopicIds())
+				.containsExactlyInAnyOrder(1L, 2L);
+	}
+
+	@Test
+	@DisplayName("교육 토픽 ID가 양수가 아니면 검증에 실패한다")
+	void completeFailsWhenTopicIdIsNotPositive() throws Exception {
+		String request = COMPLETE_REQUEST.replace("\"priorTrainingTopicIds\": [1, 2]",
+				"\"priorTrainingTopicIds\": [0]");
+
+		mockMvc.perform(post("/api/onboarding")
+						.principal(() -> "1")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(request))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.errors[0].field").value("priorTrainingTopicIds[0]"));
+	}
+
+	@Test
+	@DisplayName("강아지 기대 사항이 500자를 넘으면 검증에 실패한다")
+	void completeFailsWhenDogExpectationIsTooLong() throws Exception {
+		String request = COMPLETE_REQUEST.replace(
+				"산책할 때 보호자에게 집중하면 좋겠어요.", "가".repeat(501));
+
+		mockMvc.perform(post("/api/onboarding")
+						.principal(() -> "1")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(request))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.errors[0].field").value("dogs[0].expectation"));
 	}
 
 	@Test
@@ -184,13 +295,22 @@ class OnboardingControllerTest {
 		}
 
 		@Bean
-		OnboardingCompleter onboardingCompleter() {
-			return (userId, info) -> {
-				if (userId == ONBOARDED_USER_ID) {
-					throw new AlreadyOnboardedException();
-				}
-				return List.of(1L, 2L);
-			};
+		RecordingOnboardingCompleter onboardingCompleter() {
+			return new RecordingOnboardingCompleter();
+		}
+	}
+
+	static class RecordingOnboardingCompleter implements OnboardingCompleter {
+
+		private OnboardingCompleteInfo lastInfo;
+
+		@Override
+		public List<Long> complete(Long userId, OnboardingCompleteInfo info) {
+			if (userId == ONBOARDED_USER_ID) {
+				throw new AlreadyOnboardedException();
+			}
+			lastInfo = info;
+			return List.of(1L, 2L);
 		}
 	}
 }
