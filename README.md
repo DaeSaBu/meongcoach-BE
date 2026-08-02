@@ -12,11 +12,13 @@ DaeSaBu's Back-End Repository
 | 변수 | 설명 |
 |---|---|
 | `JWT_SECRET` | JWT 서명 키. **32바이트 이상** |
-| `KAKAO_AUDIENCES` | 허용할 카카오 id_token `aud` 목록(쉼표 구분). 네이티브 앱 키, 필요하면 REST API 키 |
+| `KAKAO_NATIVE_APP_KEY` | 네이티브 SDK가 발급한 id_token의 `aud` |
+| `KAKAO_REST_API_KEY` | 웹 로그인이 발급한 id_token의 `aud` |
 
 ```bash
 export JWT_SECRET=local-dev-secret-key-at-least-32-bytes-long
-export KAKAO_AUDIENCES=<카카오 콘솔의 네이티브 앱 키>
+export KAKAO_NATIVE_APP_KEY=<카카오 콘솔의 네이티브 앱 키>
+export KAKAO_REST_API_KEY=<카카오 콘솔의 REST API 키>
 docker compose -f compose.local.yml up -d
 ./gradlew bootRun
 ```

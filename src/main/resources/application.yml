@@ -69,4 +69,4 @@ meongcoach:
       jwk-set-uri: https://kauth.kakao.com/.well-known/jwks.json
       # id_token의 aud 후보. 네이티브 앱은 네이티브 앱 키, 웹은 REST API 키라 쉼표로 나열한다.
       # 다른 앱에서 발급된 토큰을 걸러내는 값이므로 반드시 우리 앱의 키만 넣는다
-      audiences: ${KAKAO_AUDIENCES}
+      audiences: ${KAKAO_NATIVE_APP_KEY},${KAKAO_REST_API_KEY}
