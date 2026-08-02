@@ -46,7 +46,7 @@ CI는 `workflow_call`을 지원하며 dev·prod CD가 같은 검증 절차를 �
 
 ```mermaid
 flowchart LR
-    Local["로컬 실행 설정 · .env<br/>JWT_SECRET · KAKAO_AUDIENCES"]
+    Local["로컬 실행 설정 · .env<br/>JWT_SECRET · KAKAO_NATIVE_APP_KEY · KAKAO_REST_API_KEY"]
     GitHub["GitHub repository Secrets<br/>DEV_* · PROD_* 배포 Secret"]
     AWS["AWS<br/>DB_HOST · DB_NAME · SPRING_PROFILES_ACTIVE<br/>DB_USERNAME · DB_PASSWORD"]
 ```
@@ -60,7 +60,8 @@ Spring 프로파일은 환경별 Terraform task definition이 소유합니다. d
 DB 외 애플리케이션 설정은 GitHub repository Secret이 소유하며 CD가 task definition의 `environment`에 주입합니다. dev와 prod는 다음 이름으로 서로 독립된 값을 관리합니다.
 
 - `DEV_JWT_SECRET` / `PROD_JWT_SECRET`
-- `DEV_KAKAO_AUDIENCES` / `PROD_KAKAO_AUDIENCES`
+- `DEV_KAKAO_NATIVE_APP_KEY` / `PROD_KAKAO_NATIVE_APP_KEY`
+- `DEV_KAKAO_REST_API_KEY` / `PROD_KAKAO_REST_API_KEY`
 - `DEV_R2_ENDPOINT` / `PROD_R2_ENDPOINT`
 - `DEV_R2_ACCESS_KEY_ID` / `PROD_R2_ACCESS_KEY_ID`
 - `DEV_R2_SECRET_ACCESS_KEY` / `PROD_R2_SECRET_ACCESS_KEY`
@@ -77,7 +78,7 @@ R2 Secret은 이미지, S3 Secret은 훈련 영상 업로드 URL 발급에 쓰�
 
 환경별 `VIMEO_ACCESS_TOKEN`은 Vimeo 연동 전까지 선택값이며, 대응하는 repository Secret이 등록된 경우에만 task definition에 주입합니다.
 
-이 값들은 ECS task definition에 평문으로 저장되며 `ecs:DescribeTaskDefinition` 권한이 있는 주체가 읽을 수 있습니다. 로컬 `.env`는 `JWT_SECRET`과 `KAKAO_AUDIENCES`만 관리하며 저장소에 커밋하지 않습니다.
+이 값들은 ECS task definition에 평문으로 저장되며 `ecs:DescribeTaskDefinition` 권한이 있는 주체가 읽을 수 있습니다. 로컬 `.env`는 `JWT_SECRET`, `KAKAO_NATIVE_APP_KEY`, `KAKAO_REST_API_KEY`를 관리하며 저장소에 커밋하지 않습니다.
 
 ## 알림과 실패 확인
 

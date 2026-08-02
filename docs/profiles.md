@@ -7,9 +7,9 @@
 
 | 프로파일 | DB | ddl-auto | 용도 | 필요 환경 변수 |
 |---|---|---|---|---|
-| `local` | PostgreSQL 18.3 | `update` | 로컬 개발. 교육 초기 데이터 자동 적재 | `JWT_SECRET`, `KAKAO_AUDIENCES` |
-| `dev` | PostgreSQL | `update` | 개발 서버 | `JWT_SECRET`, `KAKAO_AUDIENCES`, `DB_HOST`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD` |
-| `prod` | PostgreSQL | `validate` | 운영 | `JWT_SECRET`, `KAKAO_AUDIENCES`, `DB_HOST`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD` |
+| `local` | PostgreSQL 18.3 | `update` | 로컬 개발. 교육 초기 데이터 자동 적재 | `JWT_SECRET`, `KAKAO_NATIVE_APP_KEY`, `KAKAO_REST_API_KEY` |
+| `dev` | PostgreSQL | `update` | 개발 서버 | `JWT_SECRET`, `KAKAO_NATIVE_APP_KEY`, `KAKAO_REST_API_KEY`, `DB_HOST`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD` |
+| `prod` | PostgreSQL | `validate` | 운영 | `JWT_SECRET`, `KAKAO_NATIVE_APP_KEY`, `KAKAO_REST_API_KEY`, `DB_HOST`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD` |
 | `test` | H2 (인메모리) | `create-drop` | 테스트. `build.gradle.kts`가 강제 활성화 | 없음 (더미 값 내장) |
 
 - `DB_HOST`와 `DB_NAME`으로 `jdbc:postgresql://{host}:5432/{database}` URL을 구성합니다.
