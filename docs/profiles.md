@@ -7,7 +7,7 @@
 
 | 프로파일 | DB | ddl-auto | 용도 | 필요 환경 변수 |
 |---|---|---|---|---|
-| `local` | PostgreSQL 18.3 | `update` | 로컬 개발. 교육 초기 데이터 자동 적재 | `JWT_SECRET`, `KAKAO_NATIVE_APP_KEY`, `KAKAO_REST_API_KEY` |
+| `local` | PostgreSQL 18.3 | `create-drop` | 로컬 개발. 스키마와 교육 초기 데이터 재생성 | `JWT_SECRET`, `KAKAO_NATIVE_APP_KEY`, `KAKAO_REST_API_KEY` |
 | `dev` | PostgreSQL | `update` | 개발 서버 | `JWT_SECRET`, `KAKAO_NATIVE_APP_KEY`, `KAKAO_REST_API_KEY`, `DB_HOST`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD` |
 | `prod` | PostgreSQL | `validate` | 운영 | `JWT_SECRET`, `KAKAO_NATIVE_APP_KEY`, `KAKAO_REST_API_KEY`, `DB_HOST`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD` |
 | `test` | H2 (인메모리) | `create-drop` | 테스트. `build.gradle.kts`가 강제 활성화 | 없음 (더미 값 내장) |
@@ -19,8 +19,9 @@
 
 - **로컬**: `docker compose -f compose.local.yml up -d`로 PostgreSQL을 실행한 뒤
   `./gradlew bootRun`을 실행합니다. 교육 초기 데이터는
-  `src/main/resources/db/local/training-initial-data.sql`에서 자동으로 적재됩니다. PostgreSQL 데이터는
-  `tmpfs`에 저장되어 컨테이너를 중지하거나 재시작하면 초기화됩니다.
+  `src/main/resources/db/local/training-initial-data.sql`에서 자동으로 적재됩니다.
+  애플리케이션을 기동할 때마다 스키마를 재생성합니다. PostgreSQL 데이터는 `tmpfs`에 저장되어
+  컨테이너를 중지하거나 재시작하면 초기화됩니다.
   백엔드까지 컨테이너로 실행할 때는 `.env`를 준비하고
   `docker compose -f compose.local.yml --profile app up --build`를 사용합니다.
 - **배포**: 환경별 Terraform task definition이 `SPRING_PROFILES_ACTIVE=dev` 또는 `prod`를 고정합니다. CD는 이 값과 DB 설정을 보존하고 GitHub Secrets의 애플리케이션 설정과 이미지를 반영합니다.
@@ -52,7 +53,7 @@ CD는 환경별 task definition family의 최신 리비전에서 프로파일을
 
 | 프로파일 | 값 | 함의 |
 |---|---|---|
-| `local` | `update` | 빈 PostgreSQL에 엔티티 스키마와 교육 초기 데이터를 반영 |
+| `local` | `create-drop` | 애플리케이션 기동 시 엔티티 스키마와 교육 초기 데이터를 재생성 |
 | `test` | `create-drop` | H2 인메모리 스키마를 테스트마다 재생성 |
 | `dev` | `update` | 엔티티 변경을 자동 반영. **컬럼 삭제·이름 변경·타입 축소는 반영되지 않아** 드리프트가 쌓일 수 있음 — dev DB는 언제든 재생성 가능하다는 전제로 운용 |
 | `prod` | `validate` | 스키마를 자동 변경하지 않음. 엔티티와 불일치하면 기동 실패 |

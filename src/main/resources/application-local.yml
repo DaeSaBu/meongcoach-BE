@@ -1,4 +1,4 @@
-# 로컬 개발 전용 — PostgreSQL 스키마를 갱신한 뒤 정적 교육 초기 데이터를 반영한다
+# 로컬 개발 전용 — PostgreSQL 스키마를 재생성한 뒤 정적 교육 초기 데이터를 반영한다
 spring:
   datasource:
     url: jdbc:postgresql://${DB_HOST:localhost}:5432/${DB_NAME:meongcoach}
@@ -8,7 +8,7 @@ spring:
   jpa:
     defer-datasource-initialization: true
     hibernate:
-      ddl-auto: update
+      ddl-auto: create-drop
   sql:
     init:
       data-locations: classpath:db/local/training-initial-data.sql
