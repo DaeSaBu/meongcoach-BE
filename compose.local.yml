@@ -1,0 +1,33 @@
+services:
+  backend:
+    profiles: ["app"]
+    build:
+      context: .
+    env_file:
+      - .env
+    environment:
+      DB_HOST: postgres
+      DB_NAME: meongcoach
+      DB_PASSWORD: meongcoach-local
+      DB_USERNAME: meongcoach_local
+      SPRING_PROFILES_ACTIVE: local
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+  postgres:
+    image: postgres:18.3
+    environment:
+      POSTGRES_DB: meongcoach
+      POSTGRES_PASSWORD: meongcoach-local
+      POSTGRES_USER: meongcoach_local
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U meongcoach_local -d meongcoach"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    ports:
+      - "5432:5432"
+    tmpfs:
+      - /var/lib/postgresql

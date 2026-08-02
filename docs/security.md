@@ -108,15 +108,6 @@ Google·Apple도 동일하게 ID 토큰의 `aud` 클레임 확인입니다.
 - `oauth2ResourceServer.jwt()` — Bearer 토큰 파싱·검증은 프레임워크가 담당하므로 커스텀 필터가 없습니다
 - 헤더는 기본값 유지 — `X-Frame-Options: DENY`
 
-### h2-console 전용 체인 (local 프로파일 전용)
-
-h2-console 경로는 `@Profile("local")` + `@Order(0)`이 붙은 별도 체인이 담당합니다.
-이 체인에서만 permitAll과 `frameOptions sameOrigin`(콘솔이 프레임을 쓰기 때문)을 허용합니다.
-local 외 프로파일에서는 이 빈 자체가 등록되지 않아 콘솔 경로도 메인 체인의
-`anyRequest().authenticated()`에 걸려 401이며, 콘솔 서블릿도 등록되지 않습니다
-(`spring.h2.console.enabled`는 `application-local.yml`에만 있습니다).
-프로파일 구성은 [profiles.md](profiles.md)를 참고하세요.
-
 ### 인증 실패 응답
 
 `AuthenticationException`·`AccessDeniedException`은 `DispatcherServlet` 밖(필터 체인)에서 던져져
