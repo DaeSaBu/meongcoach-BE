@@ -16,7 +16,6 @@ IMAGE_URI=${3}
 # DB 외 애플리케이션 설정은 GitHub Secrets가 소유한다.
 : "${JWT_SECRET:?JWT_SECRET이 필요합니다.}"
 : "${KAKAO_NATIVE_APP_KEY:?KAKAO_NATIVE_APP_KEY가 필요합니다.}"
-# : "${KAKAO_REST_API_KEY:?KAKAO_REST_API_KEY가 필요합니다.}"
 : "${R2_ENDPOINT:?R2_ENDPOINT가 필요합니다.}"
 : "${R2_ACCESS_KEY_ID:?R2_ACCESS_KEY_ID가 필요합니다.}"
 : "${R2_SECRET_ACCESS_KEY:?R2_SECRET_ACCESS_KEY가 필요합니다.}"
