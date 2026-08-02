@@ -25,15 +25,15 @@ public class AiReportGenerateService implements AiReportGenerator {
 
 	@Override
 	public void generate(String objectKey) {
-		VideoDownloadUrlResult downloadUrl = videoDownloadUrlIssuer.issue(objectKey);
-		// SQS는 at-least-once라 같은 영상이 다시 전달될 수 있다. 만료 없는 썸네일 공개 URL을 기준으로 중복을 거른다
-		if (aiReportRepository.existsByThumbnailUrl(downloadUrl.thumbnailUrl())) {
+		// SQS는 at-least-once라 같은 영상이 다시 전달될 수 있다. 객체 키를 기준으로 먼저 걸러 불필요한 URL 발급을 막는다
+		if (aiReportRepository.existsByVideoObjectKey(objectKey)) {
 			return;
 		}
 
+		VideoDownloadUrlResult downloadUrl = videoDownloadUrlIssuer.issue(objectKey);
 		String content = videoAnalyzer.analyze(downloadUrl.downloadUrl());
 
 		aiReportRepository.save(AiReport.create(
-				new AiReportCreateCommand(downloadUrl.ownerUserId(), downloadUrl.thumbnailUrl(), content)));
+				new AiReportCreateCommand(downloadUrl.ownerUserId(), objectKey, content)));
 	}
 }

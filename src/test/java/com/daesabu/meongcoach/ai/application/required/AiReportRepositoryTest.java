@@ -17,7 +17,7 @@ import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 @DisplayName("AI 리포트 리포지토리")
 class AiReportRepositoryTest {
 
-	private static final String THUMBNAIL_URL = "https://videos.test.meongcoach.com/thumbnails/training/7/key.jpg";
+	private static final String VIDEO_OBJECT_KEY = "videos/training/7/key.mp4";
 
 	@Autowired
 	private AiReportRepository aiReportRepository;
@@ -29,28 +29,28 @@ class AiReportRepositoryTest {
 	@DisplayName("리포트를 저장하고 다시 조회할 수 있다")
 	void saveAndFindRoundTrips() {
 		AiReport saved = aiReportRepository.saveAndFlush(
-				AiReport.create(new AiReportCreateCommand(7L, THUMBNAIL_URL, "분리불안 징후가 관찰됩니다.")));
+				AiReport.create(new AiReportCreateCommand(7L, VIDEO_OBJECT_KEY, "분리불안 징후가 관찰됩니다.")));
 		entityManager.clear();
 
 		AiReport found = aiReportRepository.findById(saved.getId()).orElseThrow();
 
 		assertThat(found.getUserId()).isEqualTo(7L);
-		assertThat(found.getThumbnailUrl()).isEqualTo(THUMBNAIL_URL);
+		assertThat(found.getVideoObjectKey()).isEqualTo(VIDEO_OBJECT_KEY);
 		assertThat(found.getContent()).isEqualTo("분리불안 징후가 관찰됩니다.");
 	}
 
 	@Test
-	@DisplayName("같은 썸네일 URL의 리포트가 있으면 존재한다고 알려준다")
-	void existsByThumbnailUrlReturnsTrueWhenReportExists() {
+	@DisplayName("같은 영상 객체 키의 리포트가 있으면 존재한다고 알려준다")
+	void existsByVideoObjectKeyReturnsTrueWhenReportExists() {
 		aiReportRepository.saveAndFlush(
-				AiReport.create(new AiReportCreateCommand(7L, THUMBNAIL_URL, "분리불안 징후가 관찰됩니다.")));
+				AiReport.create(new AiReportCreateCommand(7L, VIDEO_OBJECT_KEY, "분리불안 징후가 관찰됩니다.")));
 
-		assertThat(aiReportRepository.existsByThumbnailUrl(THUMBNAIL_URL)).isTrue();
+		assertThat(aiReportRepository.existsByVideoObjectKey(VIDEO_OBJECT_KEY)).isTrue();
 	}
 
 	@Test
-	@DisplayName("리포트가 없는 썸네일 URL이면 존재하지 않는다고 알려준다")
-	void existsByThumbnailUrlReturnsFalseWhenReportIsAbsent() {
-		assertThat(aiReportRepository.existsByThumbnailUrl(THUMBNAIL_URL)).isFalse();
+	@DisplayName("리포트가 없는 영상 객체 키면 존재하지 않는다고 알려준다")
+	void existsByVideoObjectKeyReturnsFalseWhenReportIsAbsent() {
+		assertThat(aiReportRepository.existsByVideoObjectKey(VIDEO_OBJECT_KEY)).isFalse();
 	}
 }

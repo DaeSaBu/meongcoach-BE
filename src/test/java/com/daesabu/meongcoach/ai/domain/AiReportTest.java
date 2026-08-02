@@ -9,13 +9,13 @@ import org.junit.jupiter.api.Test;
 class AiReportTest {
 
 	@Test
-	@DisplayName("생성하면 사용자·썸네일 URL·리포트 내용이 설정된다")
-	void createSetsUserThumbnailUrlAndContent() {
+	@DisplayName("생성하면 사용자·영상 객체 키·리포트 내용이 설정된다")
+	void createSetsUserVideoObjectKeyAndContent() {
 		AiReport report = AiReport.create(new AiReportCreateCommand(1L,
-				"https://s3.meongcoach.com/thumbnails/training/1/video.jpg", "분리불안 징후가 관찰됩니다."));
+				"videos/training/1/video.mp4", "분리불안 징후가 관찰됩니다."));
 
 		assertThat(report.getUserId()).isEqualTo(1L);
-		assertThat(report.getThumbnailUrl()).isEqualTo("https://s3.meongcoach.com/thumbnails/training/1/video.jpg");
+		assertThat(report.getVideoObjectKey()).isEqualTo("videos/training/1/video.mp4");
 		assertThat(report.getContent()).isEqualTo("분리불안 징후가 관찰됩니다.");
 	}
 }

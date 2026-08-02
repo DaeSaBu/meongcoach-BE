@@ -9,7 +9,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface AiReportRepository extends JpaRepository<AiReport, Long> {
 
 	/**
-	 * 같은 영상(썸네일 URL 기준)에 대한 리포트가 이미 있는지 확인한다. SQS 중복 전달로 인한 이중 생성을 막는 멱등 가드다.
+	 * 같은 영상(S3 객체 키 기준)에 대한 리포트가 이미 있는지 확인한다. SQS 중복 전달로 인한 이중 생성을 막는 멱등 가드다.
 	 */
-	boolean existsByThumbnailUrl(String thumbnailUrl);
+	boolean existsByVideoObjectKey(String videoObjectKey);
 }
