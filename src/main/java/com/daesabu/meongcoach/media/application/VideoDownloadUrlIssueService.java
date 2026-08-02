@@ -23,6 +23,6 @@ public class VideoDownloadUrlIssueService implements VideoDownloadUrlIssuer {
 
 		VideoDownloadUrl downloadUrl = videoStorage.issueDownloadUrl(key);
 		return new VideoDownloadUrlResult(downloadUrl.downloadUrl(), downloadUrl.publicUrl(),
-				downloadUrl.thumbnailUrl(), key.ownerUserId(), downloadUrl.expiresInSeconds());
+				key.ownerUserId(), downloadUrl.expiresInSeconds());
 	}
 }

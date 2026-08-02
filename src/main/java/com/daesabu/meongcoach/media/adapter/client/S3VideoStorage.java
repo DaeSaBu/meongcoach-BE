@@ -68,7 +68,7 @@ public class S3VideoStorage implements VideoStorage {
 				.getObjectRequest(getObjectRequest)
 				.build());
 		return new VideoDownloadUrl(presigned.url().toString(), publicBaseUrl + "/" + key.value(),
-				publicBaseUrl + "/" + key.thumbnailKey(), properties.downloadUrlValidity().toSeconds());
+				properties.downloadUrlValidity().toSeconds());
 	}
 
 	private static String trimTrailingSlash(String url) {

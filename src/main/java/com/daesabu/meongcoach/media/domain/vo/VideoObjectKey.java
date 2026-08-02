@@ -41,13 +41,4 @@ public record VideoObjectKey(String value) {
 	public Long ownerUserId() {
 		return Long.parseLong(value.split("/")[2]);
 	}
-
-	/**
-	 * 이 영상에 대응하는 썸네일 객체 키를 유도한다. 썸네일 파일 생성은 별도 시스템이 담당하고 여기서는 키 규칙만 소유한다.
-	 * videos/{대상}/{사용자}/{UUID}.{확장자} → thumbnails/{대상}/{사용자}/{UUID}.jpg
-	 */
-	public String thumbnailKey() {
-		String withoutExtension = value.substring(0, value.lastIndexOf('.'));
-		return "thumbnails/" + withoutExtension.substring("videos/".length()) + ".jpg";
-	}
 }

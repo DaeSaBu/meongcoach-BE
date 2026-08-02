@@ -117,14 +117,6 @@ class S3VideoStorageTest {
 	}
 
 	@Test
-	@DisplayName("다운로드 결과의 썸네일 URL은 공개 도메인 아래의 썸네일 키 경로다")
-	void downloadThumbnailUrlIsUnderPublicBaseUrl() {
-		VideoDownloadUrl url = storage.issueDownloadUrl(KEY);
-
-		assertThat(url.thumbnailUrl()).isEqualTo(PUBLIC_BASE_URL + "/" + KEY.thumbnailKey());
-	}
-
-	@Test
 	@DisplayName("다운로드 유효 시간을 초 단위로 알려준다")
 	void downloadExpiresInSecondsMatchesDownloadValidity() {
 		VideoDownloadUrl url = storage.issueDownloadUrl(KEY);
