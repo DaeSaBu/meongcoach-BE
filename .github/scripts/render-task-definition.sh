@@ -15,7 +15,8 @@ IMAGE_URI=${3}
 
 # DB 외 애플리케이션 설정은 GitHub Secrets가 소유한다.
 : "${JWT_SECRET:?JWT_SECRET이 필요합니다.}"
-: "${KAKAO_AUDIENCES:?KAKAO_AUDIENCES가 필요합니다.}"
+: "${KAKAO_NATIVE_APP_KEY:?KAKAO_NATIVE_APP_KEY가 필요합니다.}"
+: "${KAKAO_REST_API_KEY:?KAKAO_REST_API_KEY가 필요합니다.}"
 : "${R2_ENDPOINT:?R2_ENDPOINT가 필요합니다.}"
 : "${R2_ACCESS_KEY_ID:?R2_ACCESS_KEY_ID가 필요합니다.}"
 : "${R2_SECRET_ACCESS_KEY:?R2_SECRET_ACCESS_KEY가 필요합니다.}"
@@ -32,7 +33,8 @@ jq \
 	--arg container "${CONTAINER}" \
 	--arg image "${IMAGE_URI}" \
 	--arg jwt_secret "${JWT_SECRET:-}" \
-	--arg kakao_audiences "${KAKAO_AUDIENCES:-}" \
+	--arg kakao_native_app_key "${KAKAO_NATIVE_APP_KEY:-}" \
+	--arg kakao_rest_api_key "${KAKAO_REST_API_KEY:-}" \
 	--arg r2_endpoint "${R2_ENDPOINT:-}" \
 	--arg r2_access_key_id "${R2_ACCESS_KEY_ID:-}" \
 	--arg r2_secret_access_key "${R2_SECRET_ACCESS_KEY:-}" \
@@ -56,7 +58,8 @@ jq \
 				"DB_PASSWORD",
 				"SPRING_PROFILES_ACTIVE"
 				# "JWT_SECRET",
-				# "KAKAO_AUDIENCES"
+				# "KAKAO_NATIVE_APP_KEY",
+				# "KAKAO_REST_API_KEY"
 			] -
 			([(($target.environment // []) + ($target.secrets // []))[] | .name] | unique)
 		) as $missing
@@ -89,6 +92,8 @@ jq \
 							map(select(
 								.name != "JWT_SECRET" and
 								.name != "KAKAO_AUDIENCES" and
+								.name != "KAKAO_NATIVE_APP_KEY" and
+								.name != "KAKAO_REST_API_KEY" and
 								.name != "R2_ENDPOINT" and
 								.name != "R2_ACCESS_KEY_ID" and
 								.name != "R2_SECRET_ACCESS_KEY" and
@@ -103,7 +108,8 @@ jq \
 							))) +
 						[
 							{"name": "JWT_SECRET", "value": $jwt_secret},
-							{"name": "KAKAO_AUDIENCES", "value": $kakao_audiences},
+							{"name": "KAKAO_NATIVE_APP_KEY", "value": $kakao_native_app_key},
+							{"name": "KAKAO_REST_API_KEY", "value": $kakao_rest_api_key},
 							{"name": "R2_ENDPOINT", "value": $r2_endpoint},
 							{"name": "R2_ACCESS_KEY_ID", "value": $r2_access_key_id},
 							{"name": "R2_SECRET_ACCESS_KEY", "value": $r2_secret_access_key},
