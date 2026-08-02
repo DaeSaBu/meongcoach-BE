@@ -25,6 +25,9 @@ spring:
   jpa:
     hibernate:
       ddl-auto: create-drop
+  sql:
+    init:
+      mode: never
 
 meongcoach:
   ai:
