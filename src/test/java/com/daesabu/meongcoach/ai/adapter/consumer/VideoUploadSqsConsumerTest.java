@@ -51,6 +51,45 @@ class VideoUploadSqsConsumerTest {
 	}
 
 	@Test
+	@DisplayName("실제 S3 이벤트 2.5 형식의 업로드 완료 메시지를 처리한다")
+	void consumeSupportsActualS3EventVersion25() {
+		consumer.consume("""
+				{
+					"Records": [
+						{
+							"eventVersion": "2.5",
+							"eventSource": "aws:s3",
+							"awsRegion": "ap-northeast-2",
+							"eventTime": "2026-08-02T07:51:20.063Z",
+							"eventName": "ObjectCreated:Put",
+							"userIdentity": { "principalId": "AWS:test-uploader" },
+							"requestParameters": { "sourceIPAddress": "127.0.0.1" },
+							"responseElements": { "x-amz-request-id": "test-request-id" },
+							"s3": {
+								"s3SchemaVersion": "1.0",
+								"configurationId": "meongcoach-dev-video-upload",
+								"bucket": {
+									"name": "meongcoach-dev-s3-files",
+									"ownerIdentity": { "principalId": "test-owner" },
+									"arn": "arn:aws:s3:::meongcoach-dev-s3-files"
+								},
+								"object": {
+									"key": "videos/training/1/771b2834-6213-41ba-a3f0-dde9dcceefd0.mp4",
+									"size": 7217500,
+									"eTag": "test-etag",
+									"sequencer": "006A6EF6F74389E232"
+								}
+							}
+						}
+					]
+				}
+				""");
+
+		assertThat(aiReportGenerator.objectKeys)
+				.containsExactly("videos/training/1/771b2834-6213-41ba-a3f0-dde9dcceefd0.mp4");
+	}
+
+	@Test
 	@DisplayName("URL 인코딩된 객체 키는 디코딩해 위임한다")
 	void consumeDecodesUrlEncodedKey() throws Exception {
 		consumer.consume(s3Event("ObjectCreated:Put", "videos/training/7/my+video%3D1.mp4"));
