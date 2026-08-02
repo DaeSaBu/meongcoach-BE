@@ -28,16 +28,16 @@ public class AiReport extends BaseTimeEntity {
 	@Column(nullable = false)
 	private Long userId;
 
-	// presigned URL은 만료되므로 만료 없는 공개 URL을 안정적 식별자로 저장한다
+	// presigned URL은 만료되므로 만료 없는 썸네일 공개 URL을 안정적 식별자로 저장한다
 	@Column(nullable = false, length = 512)
-	private String videoUrl;
+	private String thumbnailUrl;
 
 	@Column(nullable = false, columnDefinition = "TEXT")
 	private String content;
 
 	private AiReport(AiReportCreateCommand command) {
 		this.userId = command.userId();
-		this.videoUrl = command.videoUrl();
+		this.thumbnailUrl = command.thumbnailUrl();
 		this.content = command.content();
 	}
 

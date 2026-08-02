@@ -44,6 +44,7 @@ class VideoDownloadUrlIssueServiceTest {
 
 		assertThat(result.downloadUrl()).isEqualTo("https://storage.test/download");
 		assertThat(result.publicUrl()).isEqualTo("https://videos.test/public");
+		assertThat(result.thumbnailUrl()).isEqualTo("https://videos.test/thumbnail");
 		assertThat(result.ownerUserId()).isEqualTo(7L);
 		assertThat(result.expiresInSeconds()).isEqualTo(3600L);
 	}
@@ -68,7 +69,8 @@ class VideoDownloadUrlIssueServiceTest {
 		@Override
 		public VideoDownloadUrl issueDownloadUrl(VideoObjectKey key) {
 			keys.add(key);
-			return new VideoDownloadUrl("https://storage.test/download", "https://videos.test/public", 3600L);
+			return new VideoDownloadUrl("https://storage.test/download", "https://videos.test/public",
+					"https://videos.test/thumbnail", 3600L);
 		}
 
 		private VideoObjectKey lastKey() {

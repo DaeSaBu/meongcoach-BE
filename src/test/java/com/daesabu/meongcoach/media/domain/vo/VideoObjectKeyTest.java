@@ -61,6 +61,22 @@ class VideoObjectKeyTest {
 	}
 
 	@Test
+	@DisplayName("영상 키에서 썸네일 키를 유도한다")
+	void thumbnailKeyIsDerivedFromVideoKey() {
+		VideoObjectKey key = VideoObjectKey.parse("videos/training/7/550e8400-e29b-41d4-a716-446655440000.mp4");
+
+		assertThat(key.thumbnailKey()).isEqualTo("thumbnails/training/7/550e8400-e29b-41d4-a716-446655440000.jpg");
+	}
+
+	@Test
+	@DisplayName("mov 영상도 jpg 썸네일 키를 유도한다")
+	void thumbnailKeyUsesJpgExtensionForMov() {
+		VideoObjectKey key = VideoObjectKey.parse("videos/training/7/key.mov");
+
+		assertThat(key.thumbnailKey()).isEqualTo("thumbnails/training/7/key.jpg");
+	}
+
+	@Test
 	@DisplayName("규칙에 어긋나는 키 문자열은 거부한다")
 	void parseRejectsMalformedKey() {
 		assertThatThrownBy(() -> VideoObjectKey.parse("images/profile/7/key.png"))
