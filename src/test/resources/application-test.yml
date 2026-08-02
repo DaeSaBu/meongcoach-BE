@@ -2,6 +2,21 @@
 # 반드시 프로파일 파일(application-{프로파일}.yml)로 두어 위에 얹히게 한다.
 # datasource는 베이스가 아니라 application-local.yml에 있으므로 테스트용 H2를 명시한다.
 spring:
+  cloud:
+    aws:
+      # 테스트에서는 실제 큐 연결 없이 컨텍스트만 떠야 하므로 SQS를 끈다
+      sqs:
+        enabled: false
+      region:
+        static: ap-northeast-2
+      credentials:
+        access-key: test-access-key
+        secret-key: test-secret-key
+  ai:
+    google:
+      genai:
+        # 실제 호출 없이 컨텍스트 로드만 통과하면 되므로 더미 키를 둔다
+        api-key: test-gemini-api-key
   datasource:
     url: jdbc:h2:mem:meongcoach-test
     driver-class-name: org.h2.Driver
@@ -15,6 +30,8 @@ spring:
       mode: never
 
 meongcoach:
+  ai:
+    video-queue: test-video-queue
   jwt:
     secret: meongcoach-test-only-jwt-secret-key-32b
   social:
@@ -36,3 +53,4 @@ meongcoach:
       bucket: test-video-bucket
       public-base-url: https://videos.test.meongcoach.com
       upload-url-validity: PT15M
+      download-url-validity: PT1H

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.daesabu.meongcoach.media.application.provided.VideoUploadUrlResult;
+import com.daesabu.meongcoach.media.application.required.VideoDownloadUrl;
 import com.daesabu.meongcoach.media.application.required.VideoStorage;
 import com.daesabu.meongcoach.media.application.required.VideoUploadUrl;
 import com.daesabu.meongcoach.media.domain.VideoType;
@@ -117,6 +118,11 @@ class VideoUploadUrlIssueServiceTest {
 			contentLengths.add(contentLength);
 			return new VideoUploadUrl("https://storage.test/upload", "https://videos.test/public",
 					"videos/training/7/key.mp4", 900L);
+		}
+
+		@Override
+		public VideoDownloadUrl issueDownloadUrl(VideoObjectKey key) {
+			throw new UnsupportedOperationException("업로드 URL 발급 테스트에서는 쓰지 않는다");
 		}
 
 		private VideoObjectKey lastKey() {

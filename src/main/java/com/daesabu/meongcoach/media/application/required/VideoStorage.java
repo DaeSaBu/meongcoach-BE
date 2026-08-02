@@ -12,4 +12,9 @@ public interface VideoStorage {
 	 * Content-Length까지 서명에 포함하므로 클라이언트는 정확히 이 바이트 수로 업로드해야 한다.
 	 */
 	VideoUploadUrl issueUploadUrl(VideoObjectKey key, String contentType, long contentLength);
+
+	/**
+	 * 주어진 객체 키의 영상을 GET할 수 있는 다운로드 URL을 발급한다.
+	 */
+	VideoDownloadUrl issueDownloadUrl(VideoObjectKey key);
 }

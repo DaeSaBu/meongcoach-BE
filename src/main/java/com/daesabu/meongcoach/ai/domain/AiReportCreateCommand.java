@@ -1,4 +1,4 @@
 package com.daesabu.meongcoach.ai.domain;
 
-public record AiReportCreateCommand(String content, AiReportStatus status) {
+public record AiReportCreateCommand(Long userId, String videoObjectKey, String content) {
 }

@@ -4,14 +4,9 @@ import com.daesabu.meongcoach.shared.domain.BaseTimeEntity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -30,24 +25,23 @@ public class AiReport extends BaseTimeEntity {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "analysis_id", nullable = false)
-	private AiAnalysis analysis;
+	@Column(nullable = false)
+	private Long userId;
+
+	// presigned URL은 만료되고 공개 URL은 도메인 변경에 흔들리므로, 불변인 S3 객체 키를 안정적 식별자로 저장한다
+	@Column(nullable = false, length = 512)
+	private String videoObjectKey;
 
 	@Column(nullable = false, columnDefinition = "TEXT")
 	private String content;
 
-	@Enumerated(EnumType.STRING)
-	@Column(nullable = false, length = 20)
-	private AiReportStatus status;
-
-	private AiReport(AiAnalysis analysis, AiReportCreateCommand command) {
-		this.analysis = analysis;
+	private AiReport(AiReportCreateCommand command) {
+		this.userId = command.userId();
+		this.videoObjectKey = command.videoObjectKey();
 		this.content = command.content();
-		this.status = command.status();
 	}
 
-	public static AiReport create(AiAnalysis analysis, AiReportCreateCommand command) {
-		return new AiReport(analysis, command);
+	public static AiReport create(AiReportCreateCommand command) {
+		return new AiReport(command);
 	}
 }
