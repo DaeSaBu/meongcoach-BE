@@ -45,7 +45,7 @@ CI는 `workflow_call`을 지원하며 dev·prod CD가 같은 검증 절차를 �
 `CD - Dev`가 성공하면 `cd-docs.yml`이 `workflow_run`으로 이어서 실행되어 [GitHub Pages](https://daesabu.github.io/meongcoach-BE/)에 API 문서 사이트를 배포합니다. CI는 `CD - Dev`가 이미 통과시켰으므로 다시 호출하지 않습니다.
 
 1. `CD - Dev`가 배포한 develop 커밋(`workflow_run.head_sha`)을 체크아웃하고, `./gradlew openapi3 asciidoctor`로 OpenAPI 3 스펙(`build/api-spec/openapi3.json`)과 REST Docs HTML(`build/docs/asciidoc`)을 생성합니다.
-2. [.github/scripts/assemble-docs-site.sh](../.github/scripts/assemble-docs-site.sh)가 랜딩 페이지([src/docs/site/index.html](../src/docs/site/index.html)), REST Docs(`/restdocs/`), Swagger UI(`/swagger-ui/`)를 한 사이트로 조립합니다. Swagger UI는 릴리스 태그로 고정한 swagger-ui dist 정적 파일에 저장소 스펙을 연결한 것입니다.
+2. [.github/scripts/assemble-docs-site.sh](../.github/scripts/assemble-docs-site.sh)가 분할 화면 랜딩([src/docs/site/index.html](../src/docs/site/index.html) — REST Docs와 Swagger UI를 iframe으로 한 화면에 표시), REST Docs(`/restdocs/`), Swagger UI(`/swagger-ui/`)를 한 사이트로 조립합니다. `/restdocs/`·`/swagger-ui/` 단독 접근도 유지됩니다. Swagger UI는 릴리스 태그로 고정한 swagger-ui dist 정적 파일에 저장소 스펙을 연결한 것입니다.
 3. 배포본 스펙의 `servers`는 dev API(`https://api.dev.meongcoach.com`)로 교체합니다. 로컬 Swagger UI가 쓰는 스펙(`build.gradle.kts`의 `openapi3`)은 localhost를 유지합니다.
 4. `actions/upload-pages-artifact`와 `actions/deploy-pages`로 배포합니다. 저장소 Pages 설정이 꺼져 있어도 `actions/configure-pages`의 `enablement`가 GitHub Actions 소스로 자동 활성화합니다.
 

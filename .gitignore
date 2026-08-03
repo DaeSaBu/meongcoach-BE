@@ -46,3 +46,6 @@ out/
 .env
 .env.*
 !.env.example
+
+### 로컬에서 조립한 문서 사이트 (assemble-docs-site.sh) ###
+/site/
