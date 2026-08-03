@@ -23,9 +23,14 @@ public class ApiDocsConfig {
 
 	@Bean
 	RouterFunction<ServerResponse> openApiSpecRoute() {
+		return openApiSpecRoute(SPEC_FILE);
+	}
+
+	// 테스트가 스펙 파일 위치를 주입할 수 있도록 경로를 파라미터로 받는다
+	RouterFunction<ServerResponse> openApiSpecRoute(String specFile) {
 		return RouterFunctions.route()
 				.GET("/openapi3.json", request -> {
-					FileSystemResource spec = new FileSystemResource(SPEC_FILE);
+					FileSystemResource spec = new FileSystemResource(specFile);
 					if (!spec.exists()) {
 						return ServerResponse.notFound().build();
 					}
