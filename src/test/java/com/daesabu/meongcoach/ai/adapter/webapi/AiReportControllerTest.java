@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -52,7 +53,9 @@ class AiReportControllerTest {
 				new AiReportView(10L, "videos/training/42/first.mp4", LocalDateTime.of(2026, 8, 1, 9, 0, 0))
 		));
 
-		mockMvc.perform(get("/api/ai/reports").principal(CURRENT_USER))
+		mockMvc.perform(get("/api/ai/reports")
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.reports[0].reportId").value(11))
 				.andExpect(jsonPath("$.reports[0].videoObjectKey").value("videos/training/42/second.mp4"))
@@ -106,7 +109,9 @@ class AiReportControllerTest {
 		given(aiReportFinder.findReport(42L, 10L)).willReturn(new AiReportDetailView(10L,
 				"videos/training/42/first.mp4", "분리불안 징후가 관찰됩니다.", LocalDateTime.of(2026, 8, 1, 9, 0, 0)));
 
-		mockMvc.perform(get("/api/ai/reports/{reportId}", 10L).principal(CURRENT_USER))
+		mockMvc.perform(get("/api/ai/reports/{reportId}", 10L)
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.reportId").value(10))
 				.andExpect(jsonPath("$.videoObjectKey").value("videos/training/42/first.mp4"))
@@ -142,7 +147,9 @@ class AiReportControllerTest {
 	void findReportReturnsNotFoundWhenReportDoesNotExistOrIsNotOwned() throws Exception {
 		given(aiReportFinder.findReport(42L, 999L)).willThrow(new AiReportNotFoundException(999L));
 
-		mockMvc.perform(get("/api/ai/reports/{reportId}", 999L).principal(CURRENT_USER))
+		mockMvc.perform(get("/api/ai/reports/{reportId}", 999L)
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isNotFound())
 				.andExpect(jsonPath("$.status").value(404))
 				.andExpect(jsonPath("$.code").value("AI_REPORT_NOT_FOUND"))

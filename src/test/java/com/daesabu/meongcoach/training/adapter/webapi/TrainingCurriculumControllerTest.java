@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -54,7 +55,9 @@ class TrainingCurriculumControllerTest {
 				new CurriculumView(11L, "앉아 2단계", 4, 1, CurriculumStatus.IN_PROGRESS)
 		)));
 
-		mockMvc.perform(get("/api/training/curriculums").principal(CURRENT_USER))
+		mockMvc.perform(get("/api/training/curriculums")
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.topicId").value(1))
 				.andExpect(jsonPath("$.topicTitle").value("앉아"))
@@ -110,7 +113,9 @@ class TrainingCurriculumControllerTest {
 	void findCurriculumsReturnsNotFoundWhenNoTopicIsConfigured() throws Exception {
 		given(curriculumFinder.findCurriculums(42L)).willThrow(new TopicNotConfiguredException());
 
-		mockMvc.perform(get("/api/training/curriculums").principal(CURRENT_USER))
+		mockMvc.perform(get("/api/training/curriculums")
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isNotFound())
 				.andExpect(jsonPath("$.status").value(404))
 				.andExpect(jsonPath("$.code").value("TRAINING_TOPIC_NOT_CONFIGURED"))
@@ -144,7 +149,9 @@ class TrainingCurriculumControllerTest {
 						new LessonView(101L, "간식 없이 앉아", 2, 10, 0)
 				)));
 
-		mockMvc.perform(get("/api/training/curriculums/{curriculumId}", 10L).principal(CURRENT_USER))
+		mockMvc.perform(get("/api/training/curriculums/{curriculumId}", 10L)
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.curriculumId").value(10))
 				.andExpect(jsonPath("$.topicId").value(1))
@@ -209,7 +216,9 @@ class TrainingCurriculumControllerTest {
 	void findCurriculumReturnsNotFoundWhenCurriculumDoesNotExist() throws Exception {
 		given(curriculumFinder.findCurriculum(42L, 999L)).willThrow(new CurriculumNotFoundException(999L));
 
-		mockMvc.perform(get("/api/training/curriculums/{curriculumId}", 999L).principal(CURRENT_USER))
+		mockMvc.perform(get("/api/training/curriculums/{curriculumId}", 999L)
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isNotFound())
 				.andExpect(jsonPath("$.status").value(404))
 				.andExpect(jsonPath("$.code").value("TRAINING_CURRICULUM_NOT_FOUND"))

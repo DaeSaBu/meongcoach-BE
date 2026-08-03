@@ -55,6 +55,16 @@ class SecurityFilterChainTest {
 	}
 
 	@Test
+	@DisplayName("소셜 로그인은 인증 없이 호출할 수 있다")
+	void socialLoginIsPermitted() throws Exception {
+		mockMvc.perform(post("/api/users/social/kakao")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"token\": \"\"}"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("BAD_REQUEST"));
+	}
+
+	@Test
 	@DisplayName("인증 엔드포인트가 아닌 회원 경로는 인증이 필요하다")
 	void otherUserPathsAreProtected() throws Exception {
 		mockMvc.perform(get("/api/users/me"))

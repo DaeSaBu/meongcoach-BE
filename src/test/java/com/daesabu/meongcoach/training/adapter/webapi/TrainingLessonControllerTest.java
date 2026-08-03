@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -61,7 +62,8 @@ class TrainingLessonControllerTest {
 				))
 		));
 
-		mockMvc.perform(get("/api/training/lessons/{lessonId}", 1L))
+		mockMvc.perform(get("/api/training/lessons/{lessonId}", 1L)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.cards[0].cardId").value(10))
 				.andExpect(jsonPath("$.cards[0].cardTitle").value("앉아 준비"))
@@ -125,7 +127,8 @@ class TrainingLessonControllerTest {
 	void findCardsReturnsNotFoundWhenLessonDoesNotExist() throws Exception {
 		given(lessonFinder.findCards(999L)).willThrow(new LessonNotFoundException(999L));
 
-		mockMvc.perform(get("/api/training/lessons/{lessonId}", 999L))
+		mockMvc.perform(get("/api/training/lessons/{lessonId}", 999L)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isNotFound())
 				.andExpect(jsonPath("$.status").value(404))
 				.andExpect(jsonPath("$.code").value("TRAINING_LESSON_NOT_FOUND"))
@@ -150,7 +153,9 @@ class TrainingLessonControllerTest {
 	void completeLessonReturnsUpdatedCompletedCount() throws Exception {
 		given(lessonCompleter.completeLesson(42L, 1L)).willReturn(3);
 
-		mockMvc.perform(post("/api/training/lessons/{lessonId}", 1L).principal(CURRENT_USER))
+		mockMvc.perform(post("/api/training/lessons/{lessonId}", 1L)
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.lessonId").value(1))
 				.andExpect(jsonPath("$.completedCount").value(3))
@@ -179,7 +184,9 @@ class TrainingLessonControllerTest {
 	void completeLessonReturnsNotFoundWhenLessonDoesNotExist() throws Exception {
 		given(lessonCompleter.completeLesson(42L, 999L)).willThrow(new LessonNotFoundException(999L));
 
-		mockMvc.perform(post("/api/training/lessons/{lessonId}", 999L).principal(CURRENT_USER))
+		mockMvc.perform(post("/api/training/lessons/{lessonId}", 999L)
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isNotFound())
 				.andExpect(jsonPath("$.status").value(404))
 				.andExpect(jsonPath("$.code").value("TRAINING_LESSON_NOT_FOUND"))

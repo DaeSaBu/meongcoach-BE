@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -42,7 +43,9 @@ class TrainingTopicControllerTest {
 	@Test
 	@DisplayName("선택한 토픽 ID를 반환한다")
 	void selectTopicReturnsSelectedTopicId() throws Exception {
-		mockMvc.perform(put("/api/training/topics/{topicId}", 1L).principal(CURRENT_USER))
+		mockMvc.perform(put("/api/training/topics/{topicId}", 1L)
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.topicId").value(1))
 				.andDo(document("training/topic-select",
@@ -81,7 +84,9 @@ class TrainingTopicControllerTest {
 	void selectTopicReturnsNotFoundWhenTopicDoesNotExist() throws Exception {
 		willThrow(new TopicNotFoundException(999L)).given(topicSelector).selectTopic(42L, 999L);
 
-		mockMvc.perform(put("/api/training/topics/{topicId}", 999L).principal(CURRENT_USER))
+		mockMvc.perform(put("/api/training/topics/{topicId}", 999L)
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isNotFound())
 				.andExpect(jsonPath("$.status").value(404))
 				.andExpect(jsonPath("$.code").value("TRAINING_TOPIC_NOT_FOUND"))

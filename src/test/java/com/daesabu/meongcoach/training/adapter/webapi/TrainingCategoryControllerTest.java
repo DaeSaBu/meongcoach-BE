@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -56,7 +57,8 @@ class TrainingCategoryControllerTest {
 				)
 		));
 
-		mockMvc.perform(get("/api/training/training-categories"))
+		mockMvc.perform(get("/api/training/training-categories")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.trainingCategories[0].trainingCategoryId").value(1))
 				.andExpect(jsonPath("$.trainingCategories[0].trainingCategoryTitle").value("기본 교육"))
