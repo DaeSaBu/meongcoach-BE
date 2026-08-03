@@ -17,13 +17,17 @@
 
 ## 활성화 방법
 
-- **로컬**: `docker compose -f compose.local.yml up -d`로 PostgreSQL을 실행한 뒤
-  `./gradlew bootRun`을 실행합니다. 교육 초기 데이터는
+- **로컬**: `./gradlew bootRun`(또는 IDE Run)만 실행하면 됩니다. `spring-boot-docker-compose`
+  의존성(`developmentOnly` — 배포 jar에는 포함되지 않음)이 `compose.yml`의 postgres를 자동으로
+  기동하고 접속 정보를 주입하며, 애플리케이션을 종료하면 컨테이너도 함께 정지합니다. 교육 초기 데이터는
   `src/main/resources/db/local/training-initial-data.sql`에서 자동으로 적재됩니다.
   애플리케이션을 기동할 때마다 스키마를 재생성합니다. PostgreSQL 데이터는 `tmpfs`에 저장되어
   컨테이너를 중지하거나 재시작하면 초기화됩니다.
   백엔드까지 컨테이너로 실행할 때는 `.env`를 준비하고
-  `docker compose -f compose.local.yml --profile app up --build`를 사용합니다.
+  `docker compose --profile app up --build`를 사용합니다. 이 모드에서는 compose 지원이 없으므로
+  `compose.yml`이 주입하는 `DB_HOST` 환경 변수로 접속합니다.
+  compose 자동 기동은 local 전용입니다 — dev/prod 프로파일은 `spring.docker.compose.enabled: false`로
+  꺼 두어, 로컬에서 dev/prod 프로파일로 실행해도 로컬 postgres가 접속 정보를 덮어쓰지 않습니다.
 - **배포**: 환경별 Terraform task definition이 `SPRING_PROFILES_ACTIVE=dev` 또는 `prod`를 고정합니다. CD는 이 값과 DB 설정을 보존하고 GitHub Secrets의 애플리케이션 설정과 이미지를 반영합니다.
 - **테스트**: `build.gradle.kts`의 `tasks.withType<Test>`가 `spring.profiles.active=test`를
   강제하므로 별도 설정이 필요 없습니다.

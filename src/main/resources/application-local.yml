@@ -1,5 +1,9 @@
 # 로컬 개발 전용 — PostgreSQL 스키마를 재생성한 뒤 정적 교육 초기 데이터를 반영한다
 spring:
+  # IDE/bootRun 실행 시에는 spring-boot-docker-compose가 compose.yml의 postgres를 자동 기동하고
+  # ConnectionDetails로 접속 정보를 주입해 아래 datasource 값을 덮어쓴다.
+  # 플레이스홀더는 compose 지원이 없는 풀 컨테이너 모드(--profile app)에서 compose.yml이 주입하는
+  # DB_HOST=postgres 등을 받기 위한 것으로, 기본값은 로컬 직접 접속용이다.
   datasource:
     url: jdbc:postgresql://${DB_HOST:localhost}:5432/${DB_NAME:meongcoach}
     driver-class-name: org.postgresql.Driver
