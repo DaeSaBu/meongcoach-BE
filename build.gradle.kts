@@ -52,6 +52,8 @@ dependencies {
 	// S3 업로드 완료 이벤트를 SQS로 받아 AI 분석을 트리거한다
 	implementation("io.awspring.cloud:spring-cloud-aws-starter-sqs")
 	implementation("org.springframework.ai:spring-ai-starter-model-google-genai")
+	// 로컬 bootRun에서만 Swagger UI를 서빙한다. developmentOnly라 배포 jar에는 포함되지 않는다
+	developmentOnly("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.1.0")
 	testImplementation("org.springframework.security:spring-security-test")
 	compileOnly("org.projectlombok:lombok")
 	runtimeOnly("com.h2database:h2")

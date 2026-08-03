@@ -38,6 +38,15 @@ public class SecurityConfig {
 			"/api/users/token/refresh"
 	};
 
+	// 로컬 Swagger UI 경로. dev/prod에는 springdoc이 developmentOnly라 존재하지 않아 404가 된다.
+	// /v3/api-docs 자체는 열지 않아 springdoc 자동 스캔 스펙은 로컬에서도 노출되지 않는다
+	private static final String[] API_DOCS_PATHS = {
+			"/swagger-ui.html",
+			"/swagger-ui/**",
+			"/v3/api-docs/swagger-config",
+			"/openapi3.json"
+	};
+
 	@Bean
 	SecurityFilterChain securityFilterChain(HttpSecurity http, JwtDecoder accessTokenDecoder,
 	                                        AuthenticationEntryPoint authenticationEntryPoint,
@@ -52,6 +61,7 @@ public class SecurityConfig {
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authorizeHttpRequests(auth -> auth
 						.requestMatchers(PERMIT_ALL_PATHS).permitAll()
+						.requestMatchers(API_DOCS_PATHS).permitAll()
 						.anyRequest().authenticated())
 				.oauth2ResourceServer(oauth2 -> oauth2
 						.jwt(jwt -> jwt.decoder(accessTokenDecoder))
