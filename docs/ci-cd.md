@@ -1,11 +1,11 @@
 # 백엔드 CI/CD
 
-[.github/workflows/ci.yml](../.github/workflows/ci.yml)이 코드 검증을 담당합니다. [.github/workflows/cd-dev.yml](../.github/workflows/cd-dev.yml)과 [.github/workflows/cd-prod.yml](../.github/workflows/cd-prod.yml)이 환경별 배포를 담당합니다.
+[.github/workflows/ci.yml](../.github/workflows/ci.yml)이 코드 검증을 담당합니다. [.github/workflows/cd-dev.yml](../.github/workflows/cd-dev.yml)과 [.github/workflows/cd-prod.yml](../.github/workflows/cd-prod.yml)이 환경별 배포를, [.github/workflows/cd-docs.yml](../.github/workflows/cd-docs.yml)이 API 문서 사이트 배포를 담당합니다.
 
 ## 실행 조건
 
 - `main`, `develop` 대상 PR: CI만 실행
-- `develop` push: CI 통과 후 dev 자동 배포
+- `develop` push: CI 통과 후 dev 자동 배포와 API 문서 사이트 배포
 - `main` push: CI 실행
 - `main`에서 수동 실행: CI 통과와 입력 검증 후 prod 배포
 - draft PR: 실행하지 않고 draft를 해제하면 실행
@@ -39,6 +39,16 @@ CI는 `workflow_call`을 지원하며 dev·prod CD가 같은 검증 절차를 �
 | AWS role secret | `DEV_AWS_DEPLOY_ROLE_ARN` | `PROD_AWS_DEPLOY_ROLE_ARN` |
 
 배포는 `linux/amd64` 이미지를 커밋 SHA 태그로 ECR에 올립니다. 환경별 task definition family의 최신 리비전에서 DB 설정·Secrets Manager 참조·Spring 프로파일을 보존하고, GitHub Secrets의 애플리케이션 설정과 `api` 이미지를 반영한 뒤 환경별 health endpoint를 확인합니다.
+
+## API 문서 사이트 배포
+
+`develop` push마다 `cd-docs.yml`이 CI를 `workflow_call`로 통과시킨 뒤 [GitHub Pages](https://daesabu.github.io/meongcoach-BE/)에 API 문서 사이트를 배포합니다.
+
+1. `./gradlew openapi3 asciidoctor`로 OpenAPI 3 스펙(`build/api-spec/openapi3.json`)과 REST Docs HTML(`build/docs/asciidoc`)을 생성합니다.
+2. [.github/scripts/assemble-docs-site.sh](../.github/scripts/assemble-docs-site.sh)가 랜딩 페이지([src/docs/site/index.html](../src/docs/site/index.html)), REST Docs(`/restdocs/`), Swagger UI(`/swagger-ui/`)를 한 사이트로 조립합니다. Swagger UI는 릴리스 태그로 고정한 swagger-ui dist 정적 파일에 저장소 스펙을 연결한 것입니다.
+3. `actions/upload-pages-artifact`와 `actions/deploy-pages`로 배포합니다. 저장소 Pages 설정이 꺼져 있어도 `actions/configure-pages`의 `enablement`가 GitHub Actions 소스로 자동 활성화합니다.
+
+문서 사이트는 개발 문서이므로 dev 배포와 같은 시점(develop merge)에 갱신되며, AWS 자격 증명 없이 `GITHUB_TOKEN`의 `pages: write`·`id-token: write` 권한만 사용합니다.
 
 ## 환경 변수 관리
 

@@ -52,6 +52,8 @@ class UserControllerTest {
 
 - 문서는 **로컬 빌드 산출물로만 생성**되며, 배포 산출물(jar)에는 포함되지 않습니다.
 - 테스트 실행 후 `build/docs/asciidoc/index.html`을 브라우저로 열어 확인합니다.
+- `develop`에 merge되면 REST Docs와 Swagger UI가 [GitHub Pages 문서 사이트](https://daesabu.github.io/meongcoach-BE/)에
+  자동 배포됩니다. ([docs/ci-cd.md](../ci-cd.md) 참고)
 
 ## OpenAPI 3 / Swagger UI
 
