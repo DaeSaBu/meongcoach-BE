@@ -132,14 +132,25 @@ openapi3 {
 }
 
 // 문서화 테스트는 principal()로 인증을 우회해 생성된 스펙에 보안 정보가 없으므로,
-// bearerAuth 스킴과 전역 security를 주입하고 공개 API만 오퍼레이션 단위로 해제한다
-val injectOpenApiSecurityScheme = tasks.register("injectOpenApiSecurityScheme") {
+// bearerAuth 스킴과 전역 security를 주입하고 공개 API만 오퍼레이션 단위로 해제한다.
+// 또한 Swagger UI 딥링크가 해시를 '/'로 분해해 operationId의 '/'를 해석하지 못하므로 '-'로 정규화하고,
+// 전부 'api' 하나로 묶이는 태그를 REST Docs 목차와 같은 모듈 단위로 재배정한다
+val postProcessOpenApiSpec = tasks.register("postProcessOpenApiSpec") {
 	dependsOn("openapi3")
 	group = "documentation"
-	description = "openapi3.json에 bearerAuth 보안 스킴을 주입한다"
+	description = "openapi3.json에 보안 스킴과 모듈 태그를 주입하고 operationId를 정규화한다"
 	val specFile = layout.buildDirectory.file("api-spec/openapi3.json")
 	val publicPaths = listOf("/api/health", "/api/users/social/{provider}", "/api/users/token/refresh")
 	val httpMethods = setOf("get", "post", "put", "patch", "delete", "head", "options")
+	// REST Docs 스니펫 식별자의 모듈 접두어 → Swagger UI 그룹 태그. 선언 순서가 화면 표시 순서다
+	val moduleTags = linkedMapOf(
+		"user" to "Auth",
+		"media" to "Media",
+		"onboarding" to "Onboarding",
+		"health" to "Health",
+		"training" to "Training",
+		"ai" to "AI",
+	)
 	doLast {
 		val file = specFile.get().asFile
 		require(file.exists()) { "openapi3.json이 없습니다. ./gradlew openapi3 를 먼저 실행하세요." }
@@ -165,13 +176,28 @@ val injectOpenApiSecurityScheme = tasks.register("injectOpenApiSecurityScheme") 
 				}
 			}
 		}
+
+		paths.values.forEach { pathItem ->
+			@Suppress("UNCHECKED_CAST")
+			(pathItem as? MutableMap<String, Any?>)?.forEach { (method, op) ->
+				if (method in httpMethods) {
+					@Suppress("UNCHECKED_CAST")
+					val operation = op as MutableMap<String, Any?>
+					val operationId = operation["operationId"] as? String ?: return@forEach
+					operation["tags"] = listOf(moduleTags[operationId.substringBefore('/')] ?: "api")
+					operation["operationId"] = operationId.replace('/', '-')
+				}
+			}
+		}
+		spec["tags"] = moduleTags.values.map { mapOf("name" to it) }
+
 		file.writeText(JsonOutput.prettyPrint(JsonOutput.toJson(spec)))
 	}
 }
 
 // openapi3 태스크는 플러그인이 afterEvaluate에서 등록하므로 여기서도 afterEvaluate로 참조한다
 afterEvaluate {
-	tasks.named("openapi3") { finalizedBy(injectOpenApiSecurityScheme) }
+	tasks.named("openapi3") { finalizedBy(postProcessOpenApiSpec) }
 }
 
 tasks.jacocoTestReport {

@@ -5,6 +5,10 @@
 :toc: left
 :toclevels: 2
 :sectlinks:
+// 배포된 문서 사이트에서 restdocs/ 기준 Swagger UI 상대 경로. 로컬 단독 빌드에서는 링크가 연결되지 않는다
+// window=swagger는 사이트 랜딩(src/docs/site/index.html)의 iframe name="swagger"와 짝이다.
+// 랜딩에 임베드되면 옆 Swagger 패널을 갱신하고, restdocs를 단독으로 열면 같은 이름의 탭을 재사용한다
+:swagger-ui: ../swagger-ui/index.html
 
 API 문서는 테스트를 통과한 스니펫으로부터 생성됩니다.
 모듈별로 `== {모듈} API` 섹션을 추가하고, `operation::` 매크로로 스니펫을 포함합니다.
@@ -35,6 +39,8 @@ operation::shared/error-unauthorized[snippets='http-response,response-fields']
 
 === 소셜 로그인
 
+link:{swagger-ui}#/Auth/user-social-login[▶ Swagger에서 Try it out,window=swagger]
+
 operation::user/social-login[snippets='http-request,path-parameters,request-fields,http-response,response-fields']
 
 ==== 실패 응답
@@ -42,6 +48,8 @@ operation::user/social-login[snippets='http-request,path-parameters,request-fiel
 operation::user/social-login-error[snippets='http-response,response-fields']
 
 === 토큰 재발급
+
+link:{swagger-ui}#/Auth/user-token-refresh[▶ Swagger에서 Try it out,window=swagger]
 
 액세스 토큰이 만료되면 리프레시 토큰으로 새 토큰 쌍을 발급받습니다.
 
@@ -64,6 +72,8 @@ operation::user/token-refresh-error[snippets='http-response,response-fields']
 
 === 이미지 업로드 URL 발급
 
+link:{swagger-ui}#/Media/media-image-upload-url[▶ Swagger에서 Try it out,window=swagger]
+
 operation::media/image-upload-url[snippets='http-request,request-fields,http-response,response-fields']
 
 ==== 실패 응답
@@ -71,6 +81,8 @@ operation::media/image-upload-url[snippets='http-request,request-fields,http-res
 operation::media/image-upload-url-error[snippets='http-response,response-fields']
 
 === 영상 업로드 URL 발급
+
+link:{swagger-ui}#/Media/media-video-upload-url[▶ Swagger에서 Try it out,window=swagger]
 
 훈련 영상을 AWS S3에 직접 업로드하기 위한 API입니다.
 최대 100MB(104857600바이트)까지 단일 `PUT`으로 올리며, `video/mp4`(mp4)와 `video/quicktime`(mov) 두 형식만 허용합니다.
@@ -112,11 +124,15 @@ NOTE: 업로드한 영상의 재생 URL 발급 API는 아직 없습니다. 비�
 
 === 온보딩 메타데이터 조회
 
+link:{swagger-ui}#/Onboarding/onboarding-metadata[▶ Swagger에서 Try it out,window=swagger]
+
 온보딩 화면에 필요한 토픽·견종·강아지 성격·MBTI 목록을 한 번에 반환합니다.
 
 operation::onboarding/metadata[snippets='http-request,http-response,response-fields']
 
 === 온보딩 완료
+
+link:{swagger-ui}#/Onboarding/onboarding-complete[▶ Swagger에서 Try it out,window=swagger]
 
 사용자 프로필, 교육 이력·목표와 강아지들을 하나의 트랜잭션으로 생성합니다.
 교육 토픽 ID는 온보딩 메타데이터 조회 응답의 `topics[].id`를 사용합니다.
@@ -132,11 +148,15 @@ operation::onboarding/complete-error[snippets='http-response,response-fields']
 
 === 헬스체크
 
+link:{swagger-ui}#/Health/health-check[▶ Swagger에서 Try it out,window=swagger]
+
 operation::health/check[snippets='http-request,http-response,response-fields']
 
 == Training API
 
 === 커리큘럼 리스트 조회
+
+link:{swagger-ui}#/Training/training-curriculum-list[▶ Swagger에서 Try it out,window=swagger]
 
 커리큘럼 탭에 표시할 토픽과 그 토픽의 커리큘럼 목록을 진행 상태와 함께 조회합니다.
 대상 토픽은 액세스 토큰으로 식별한 사용자가 마지막으로 진입한 토픽이며,
@@ -151,6 +171,8 @@ operation::training/curriculum-list-error[snippets='http-response,response-field
 
 === 커리큘럼 세부 조회
 
+link:{swagger-ui}#/Training/training-curriculum-detail[▶ Swagger에서 Try it out,window=swagger]
+
 커리큘럼 하나와 그 커리큘럼에 속한 레슨 목록을 조회합니다.
 레슨은 노출 순서(`sortOrder`) 오름차순으로 정렬되며, 각 레슨에는 액세스 토큰으로 식별한 사용자의
 반복 완료 횟수(`userLessonProgress.completedCount`)가 함께 내려갑니다.
@@ -164,12 +186,16 @@ operation::training/curriculum-detail-error[snippets='http-response,response-fie
 
 === 라이브러리 탭 진입
 
+link:{swagger-ui}#/Training/training-training-categories[▶ Swagger에서 Try it out,window=swagger]
+
 전체 교육 카테고리와 각 카테고리에 속한 토픽을 조회합니다.
 카테고리와 토픽 모두 노출 순서(`sortOrder`) 오름차순으로 정렬되며, 토픽이 없는 카테고리는 빈 배열로 내려갑니다.
 
 operation::training/training-categories[snippets='http-request,http-response,response-fields']
 
 === 레슨 시작 카드 조회
+
+link:{swagger-ui}#/Training/training-lesson-cards[▶ Swagger에서 Try it out,window=swagger]
 
 레슨에 속한 카드 전체를 페이지네이션 없이 조회합니다.
 카드와 각 카드의 미디어 모두 노출 순서(`sortOrder`) 오름차순으로 정렬되며, 미디어가 없는 카드는 빈 배열로 내려갑니다.
@@ -183,6 +209,8 @@ operation::training/lesson-cards-error[snippets='http-response,response-fields']
 
 === 레슨 완료
 
+link:{swagger-ui}#/Training/training-lesson-complete[▶ Swagger에서 Try it out,window=swagger]
+
 레슨을 끝냈을 때 반복 완료 횟수를 1 올리고 갱신된 횟수를 반환합니다.
 액세스 토큰으로 사용자를 식별하며 요청 바디는 받지 않습니다.
 첫 완료 시 진행도가 생성되어 완료 횟수가 1이 되고, 이후 호출할 때마다 1씩 증가합니다.
@@ -194,6 +222,8 @@ operation::training/lesson-complete[snippets='http-request,path-parameters,http-
 operation::training/lesson-complete-error[snippets='http-response,response-fields']
 
 === 커리큘럼 화면 변경
+
+link:{swagger-ui}#/Training/training-topic-select[▶ Swagger에서 Try it out,window=swagger]
 
 커리큘럼 탭에 표시할 토픽을 변경합니다.
 액세스 토큰으로 사용자를 식별하며, 같은 토픽을 연속으로 선택해도 진입 기록은 한 건만 유지되는 멱등 요청입니다.
@@ -215,12 +245,16 @@ operation::training/topic-select-error[snippets='http-response,response-fields']
 
 === AI 리포트 목록 조회
 
+link:{swagger-ui}#/AI/ai-report-list[▶ Swagger에서 Try it out,window=swagger]
+
 액세스 토큰으로 식별한 사용자의 리포트 목록을 생성 시각 내림차순으로 조회합니다.
 리포트 본문은 상세 조회에서만 내려가며, 리포트가 없으면 빈 배열로 내려갑니다.
 
 operation::ai/report-list[snippets='http-request,http-response,response-fields']
 
 === AI 리포트 상세 조회
+
+link:{swagger-ui}#/AI/ai-report-detail[▶ Swagger에서 Try it out,window=swagger]
 
 리포트 하나를 본문(`content`)과 함께 조회합니다.
 
