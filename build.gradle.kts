@@ -1,9 +1,14 @@
+import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
+
 plugins {
 	java
 	jacoco
 	id("org.springframework.boot") version "4.1.0"
 	id("io.spring.dependency-management") version "1.1.7"
 	id("org.asciidoctor.jvm.convert") version "4.0.4"
+	// 0.20.x가 Spring Boot 4.x / REST Docs 4.x 지원 라인이다
+	id("com.epages.restdocs-api-spec") version "0.20.1"
 	id("com.diffplug.spotless") version "8.8.0"
 }
 val springAiVersion by extra("2.0.0")
@@ -57,6 +62,7 @@ dependencies {
 	testImplementation("org.springframework.boot:spring-boot-starter-data-jpa-test")
 	testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
 	testImplementation("org.springframework.restdocs:spring-restdocs-mockmvc")
+	testImplementation("com.epages:restdocs-api-spec-mockmvc:0.20.1")
 	testImplementation("com.tngtech.archunit:archunit-junit5:1.4.2")
 	testImplementation("org.springframework.modulith:spring-modulith-starter-test")
 	testCompileOnly("org.projectlombok:lombok")
@@ -111,6 +117,59 @@ tasks.asciidoctor {
 	inputs.dir(snippetsDir)
 	configurations("asciidoctorExt")
 	dependsOn(tasks.test)
+}
+
+// 테스트가 만든 resource.json 스니펫을 OpenAPI 3 스펙(build/api-spec/openapi3.json)으로 합친다
+// outputDirectory·outputFileNamePrefix·snippetsDirectory는 기본값이 저장소 구조와 일치해 생략한다
+openapi3 {
+	title = "멍코치 API"
+	description = "멍코치 백엔드 REST API 명세"
+	version = project.version.toString()
+	format = "json"
+	setServer("http://localhost:8080")
+}
+
+// 문서화 테스트는 principal()로 인증을 우회해 생성된 스펙에 보안 정보가 없으므로,
+// bearerAuth 스킴과 전역 security를 주입하고 공개 API만 오퍼레이션 단위로 해제한다
+val injectOpenApiSecurityScheme = tasks.register("injectOpenApiSecurityScheme") {
+	dependsOn("openapi3")
+	group = "documentation"
+	description = "openapi3.json에 bearerAuth 보안 스킴을 주입한다"
+	val specFile = layout.buildDirectory.file("api-spec/openapi3.json")
+	val publicPaths = listOf("/api/health", "/api/users/social/{provider}", "/api/users/token/refresh")
+	val httpMethods = setOf("get", "post", "put", "patch", "delete", "head", "options")
+	doLast {
+		val file = specFile.get().asFile
+		require(file.exists()) { "openapi3.json이 없습니다. ./gradlew openapi3 를 먼저 실행하세요." }
+
+		@Suppress("UNCHECKED_CAST")
+		val spec = JsonSlurper().parse(file) as MutableMap<String, Any?>
+
+		@Suppress("UNCHECKED_CAST")
+		val components = spec.getOrPut("components") { mutableMapOf<String, Any?>() } as MutableMap<String, Any?>
+		components["securitySchemes"] = mapOf(
+			"bearerAuth" to mapOf("type" to "http", "scheme" to "bearer", "bearerFormat" to "JWT")
+		)
+		spec["security"] = listOf(mapOf("bearerAuth" to emptyList<String>()))
+
+		@Suppress("UNCHECKED_CAST")
+		val paths = spec["paths"] as? MutableMap<String, Any?> ?: mutableMapOf()
+		publicPaths.forEach { path ->
+			@Suppress("UNCHECKED_CAST")
+			(paths[path] as? MutableMap<String, Any?>)?.forEach { (method, operation) ->
+				if (method in httpMethods) {
+					@Suppress("UNCHECKED_CAST")
+					(operation as MutableMap<String, Any?>)["security"] = emptyList<Any>()
+				}
+			}
+		}
+		file.writeText(JsonOutput.prettyPrint(JsonOutput.toJson(spec)))
+	}
+}
+
+// openapi3 태스크는 플러그인이 afterEvaluate에서 등록하므로 여기서도 afterEvaluate로 참조한다
+afterEvaluate {
+	tasks.named("openapi3") { finalizedBy(injectOpenApiSecurityScheme) }
 }
 
 tasks.jacocoTestReport {
