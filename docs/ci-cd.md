@@ -5,7 +5,7 @@
 ## 실행 조건
 
 - `main`, `develop` 대상 PR: CI만 실행
-- `develop` push: CI 통과 후 dev 자동 배포와 API 문서 사이트 배포
+- `develop` push: CI 통과 후 dev 자동 배포, dev 배포 성공 시 API 문서 사이트 배포
 - `main` push: CI 실행
 - `main`에서 수동 실행: CI 통과와 입력 검증 후 prod 배포
 - draft PR: 실행하지 않고 draft를 해제하면 실행
@@ -42,13 +42,14 @@ CI는 `workflow_call`을 지원하며 dev·prod CD가 같은 검증 절차를 �
 
 ## API 문서 사이트 배포
 
-`develop` push마다 `cd-docs.yml`이 CI를 `workflow_call`로 통과시킨 뒤 [GitHub Pages](https://daesabu.github.io/meongcoach-BE/)에 API 문서 사이트를 배포합니다.
+`CD - Dev`가 성공하면 `cd-docs.yml`이 `workflow_run`으로 이어서 실행되어 [GitHub Pages](https://daesabu.github.io/meongcoach-BE/)에 API 문서 사이트를 배포합니다. CI는 `CD - Dev`가 이미 통과시켰으므로 다시 호출하지 않습니다.
 
-1. `./gradlew openapi3 asciidoctor`로 OpenAPI 3 스펙(`build/api-spec/openapi3.json`)과 REST Docs HTML(`build/docs/asciidoc`)을 생성합니다.
+1. `CD - Dev`가 배포한 develop 커밋(`workflow_run.head_sha`)을 체크아웃하고, `./gradlew openapi3 asciidoctor`로 OpenAPI 3 스펙(`build/api-spec/openapi3.json`)과 REST Docs HTML(`build/docs/asciidoc`)을 생성합니다.
 2. [.github/scripts/assemble-docs-site.sh](../.github/scripts/assemble-docs-site.sh)가 랜딩 페이지([src/docs/site/index.html](../src/docs/site/index.html)), REST Docs(`/restdocs/`), Swagger UI(`/swagger-ui/`)를 한 사이트로 조립합니다. Swagger UI는 릴리스 태그로 고정한 swagger-ui dist 정적 파일에 저장소 스펙을 연결한 것입니다.
-3. `actions/upload-pages-artifact`와 `actions/deploy-pages`로 배포합니다. 저장소 Pages 설정이 꺼져 있어도 `actions/configure-pages`의 `enablement`가 GitHub Actions 소스로 자동 활성화합니다.
+3. 배포본 스펙의 `servers`는 dev API(`https://api.dev.meongcoach.com`)로 교체합니다. 로컬 Swagger UI가 쓰는 스펙(`build.gradle.kts`의 `openapi3`)은 localhost를 유지합니다.
+4. `actions/upload-pages-artifact`와 `actions/deploy-pages`로 배포합니다. 저장소 Pages 설정이 꺼져 있어도 `actions/configure-pages`의 `enablement`가 GitHub Actions 소스로 자동 활성화합니다.
 
-문서 사이트는 개발 문서이므로 dev 배포와 같은 시점(develop merge)에 갱신되며, AWS 자격 증명 없이 `GITHUB_TOKEN`의 `pages: write`·`id-token: write` 권한만 사용합니다.
+`workflow_run` 트리거는 워크플로 파일이 기본 브랜치(`main`)에 있어야 동작하므로, `cd-docs.yml`이 `main`에 merge되기 전까지는 문서 배포가 실행되지 않습니다. 배포는 AWS 자격 증명 없이 `GITHUB_TOKEN`의 `pages: write`·`id-token: write` 권한만 사용합니다.
 
 ## 환경 변수 관리
 
