@@ -1,5 +1,10 @@
 # 운영 — 스키마를 자동 변경하지 않는다. 엔티티와 스키마가 불일치하면 기동에 실패한다 (validate)
 spring:
+  # 로컬에서 prod 프로파일로 실행할 때 compose 지원이 로컬 postgres를 띄워 운영 DB 접속 정보를 덮어쓰는 것을 막는다.
+  # 배포 환경에서는 compose 모듈 자체가 jar에 없어(developmentOnly) 이 설정은 무시된다.
+  docker:
+    compose:
+      enabled: false
   datasource:
     url: jdbc:postgresql://${DB_HOST}:5432/${DB_NAME}
     driver-class-name: org.postgresql.Driver
