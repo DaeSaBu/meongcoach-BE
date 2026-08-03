@@ -45,6 +45,16 @@ class UserControllerTest {
 
 - 스니펫 생성 위치: `build/generated-snippets/{모듈}/{행위}/`
 - `src/docs/asciidoc/index.adoc`에 모듈별 섹션(`== User API`)을 만들고 `operation::` 매크로로 스니펫을 포함합니다.
+- 각 API 섹션의 `operation::` 위에는 Swagger 딥링크 한 줄을 추가합니다. 경로는 `#/{모듈 태그}/{operationId}`이며,
+  모듈 태그는 `build.gradle.kts`의 `moduleTags` 값, operationId는 snippet identifier의 `/`를 `-`로 바꾼 값입니다.
+
+  ```adoc
+  === 소셜 로그인
+
+  link:{swagger-ui}#/Auth/user-social-login[▶ Swagger에서 Try it out,window=swagger]
+
+  operation::user/social-login[snippets='http-request,request-fields,http-response,response-fields']
+  ```
 - `./gradlew test` 실행 시 테스트 종료 후 asciidoctor가 자동 실행되어 `build/docs/asciidoc/index.html`이 생성됩니다.
 - 새 API를 추가한 PR에는 해당 API의 `index.adoc` 섹션 추가를 포함합니다.
 
@@ -79,4 +89,5 @@ asciidoc 문서와 별개로, 같은 테스트에서 OpenAPI 3 스펙을 생성�
     `src/docs/site/index.html`)을 갱신합니다. 새 링크를 추가할 때도 같은 window 이름을 사용합니다.
 - Swagger UI: springdoc은 `developmentOnly` 스코프라 로컬 bootRun에서만 서빙되고 배포 jar에는
   포함되지 않습니다. 스펙 파일도 로컬 빌드 산출물(`build/api-spec/`)에서 직접 읽습니다(`ApiDocsConfig`).
+  프로파일별 springdoc 설정은 [docs/profiles.md](../profiles.md)를 참고하세요.
 - Swagger UI의 Authorize 버튼에 액세스 토큰을 넣으면 인증이 필요한 API도 Try it out으로 호출할 수 있습니다.
