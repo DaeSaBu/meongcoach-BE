@@ -37,5 +37,6 @@ docker compose -f compose.local.yml --profile app up --build
 
 - 커버리지 리포트: `build/reports/jacoco/test/html/index.html`
 - API 문서: `build/docs/asciidoc/index.html`
+- Swagger UI: `./gradlew openapi3` 후 `./gradlew bootRun` → http://localhost:8080/swagger-ui.html
 
 자세한 규칙은 [AGENTS.md](AGENTS.md)와 [docs/](docs/)를 참고하세요.
