@@ -7,6 +7,9 @@ set -euo pipefail
 OUTPUT_DIR="${1:?출력 디렉터리를 지정하세요}"
 SWAGGER_UI_VERSION="${SWAGGER_UI_VERSION:?SWAGGER_UI_VERSION 환경 변수를 지정하세요}"
 
+# 배포 사이트의 Try it out 대상 서버. 로컬 스펙(build.gradle.kts)은 localhost를 유지한다
+DEV_API_URL="https://api.dev.meongcoach.com"
+
 RESTDOCS_HTML_DIR="build/docs/asciidoc"
 OPENAPI_SPEC="build/api-spec/openapi3.json"
 test -f "${RESTDOCS_HTML_DIR}/index.html" || { echo "REST Docs HTML이 없습니다. ./gradlew asciidoctor 를 먼저 실행하세요." >&2; exit 1; }
@@ -26,7 +29,9 @@ curl --silent --show-error --fail --location \
   | tar -xz -C "${DOWNLOAD_DIR}"
 cp -R "${DOWNLOAD_DIR}/swagger-ui-${SWAGGER_UI_VERSION}/dist" "${OUTPUT_DIR}/swagger-ui"
 
-cp "${OPENAPI_SPEC}" "${OUTPUT_DIR}/swagger-ui/openapi3.json"
+# 배포본 스펙은 로컬 서버가 아니라 dev API를 가리키도록 servers를 교체한다
+jq --arg url "${DEV_API_URL}" '.servers = [{"url": $url}]' \
+  "${OPENAPI_SPEC}" > "${OUTPUT_DIR}/swagger-ui/openapi3.json"
 
 # 기본 initializer는 petstore 예시 스펙을 가리키므로 저장소 스펙을 로드하도록 교체한다
 cat > "${OUTPUT_DIR}/swagger-ui/swagger-initializer.js" <<'EOF'
