@@ -125,12 +125,12 @@ tasks.asciidoctor {
 
 // 테스트가 만든 resource.json 스니펫을 OpenAPI 3 스펙(build/api-spec/openapi3.json)으로 합친다
 // outputDirectory·outputFileNamePrefix·snippetsDirectory는 기본값이 저장소 구조와 일치해 생략한다
+// server는 후처리에서 상대 경로("/")로 덮어쓰므로 여기서 지정하지 않는다
 openapi3 {
 	title = "멍코치 API"
 	description = "멍코치 백엔드 REST API 명세"
 	version = project.version.toString()
 	format = "json"
-	setServer("http://localhost:8080")
 }
 
 // 문서화 테스트는 principal()로 인증을 우회해 생성된 스펙에 보안 정보가 없으므로,
@@ -159,6 +159,9 @@ val postProcessOpenApiSpec = tasks.register("postProcessOpenApiSpec") {
 
 		@Suppress("UNCHECKED_CAST")
 		val spec = JsonSlurper().parse(file) as MutableMap<String, Any?>
+
+		// UI가 API 서버 자신에게서 서빙되므로 상대 서버로 두면 Try it out이 현재 오리진을 향한다
+		spec["servers"] = listOf(mapOf("url" to "/"))
 
 		@Suppress("UNCHECKED_CAST")
 		val components = spec.getOrPut("components") { mutableMapOf<String, Any?>() } as MutableMap<String, Any?>
@@ -200,6 +203,13 @@ val postProcessOpenApiSpec = tasks.register("postProcessOpenApiSpec") {
 // openapi3 태스크는 플러그인이 afterEvaluate에서 등록하므로 여기서도 afterEvaluate로 참조한다
 afterEvaluate {
 	tasks.named("openapi3") { finalizedBy(postProcessOpenApiSpec) }
+}
+
+// 배포 jar에는 스펙이 반드시 포함되어야 하므로 bootJar가 스펙 생성 체인(test → openapi3 → 후처리)을 강제한다.
+// 로컬 실행(IDE Run·bootRun)은 jar를 거치지 않고 WebConfig가 build/api-spec/의 파일을 직접 서빙한다
+tasks.bootJar {
+	dependsOn(postProcessOpenApiSpec)
+	from(layout.buildDirectory.file("api-spec/openapi3.json")) { into("BOOT-INF/classes/static/swagger-ui") }
 }
 
 tasks.jacocoTestReport {
