@@ -55,13 +55,16 @@ class SecurityFilterChainTest {
 	}
 
 	@Test
-	@DisplayName("소셜 로그인은 인증 없이 호출할 수 있다")
-	void socialLoginIsPermitted() throws Exception {
+	@DisplayName("잘못된 소셜 토큰을 제출하면 401을 반환한다")
+	void authenticatedSocialLoginWithInvalidCredentialReturnsUnauthorized() throws Exception {
+		AuthToken token = tokenProvider.issue(1L);
+
 		mockMvc.perform(post("/api/users/social/kakao")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken())
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"token\": \"\"}"))
-				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.code").value("BAD_REQUEST"));
+						.content("{\"token\": \"invalid\"}"))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.code").value("USER_INVALID_SOCIAL_TOKEN"));
 	}
 
 	@Test
