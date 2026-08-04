@@ -5,7 +5,7 @@
 
 ## 핵심 규칙
 
-- 코드 스타일은 `.editorconfig`(Wooteco 스타일)를 따릅니다 — 탭 들여쓰기, 한 줄 120자 제한, 중괄호 항상 사용.
+- 코드 스타일은 `.editorconfig`(Wooteco 스타일)를 따릅니다 — 탭 들여쓰기, 한 줄 120자 제한, 중괄호 항상 사용, 삼항 연산자·else·switch 금지.
 - 커밋 메시지는 `type: 한글 설명` 형식을 사용합니다. (예: `feature(user): 회원 가입 API 추가` — 허용 타입은 git-convention.md 참고, `feat`이 아니라 `feature`)
 - 아키텍처는 Spring Modulith 기반 모듈 구조를 따릅니다. 모듈 내부 의존 방향은 항상 `adapter → application → domain`이며, 모듈 간 접근은 `application/provided` 인터페이스로만 합니다.
 - 로그인 사용자 식별은 컨트롤러의 `@CurrentUserId Long userId` 파라미터로 받습니다. 인증 주체를 회원 ID로 해석하는 곳은 `shared/security/CurrentUserIdArgumentResolver` 한 곳뿐이며, 컨트롤러는 인증 주체를 직접 다루지 않습니다. (architecture.md 참고)
