@@ -106,6 +106,9 @@ Google·Apple도 동일하게 ID 토큰의 `aud` 클레임 확인입니다.
   (인증 엔드포인트만 열고 `/api/users/**`로 넓히지 않습니다. 이후 추가되는 회원 API가 자동으로 공개되는 것을 막기 위함입니다)
 - 그 외 모든 요청은 인증 필요
 - `oauth2ResourceServer.jwt()` — Bearer 토큰 파싱·검증은 프레임워크가 담당하므로 커스텀 필터가 없습니다
+- `cors` — 프로파일별 `meongcoach.cors.allowed-origin-patterns`의 origin만 허용합니다 (허용 메서드: GET, POST, PUT, PATCH, DELETE, OPTIONS).
+  CORS 필터가 체인 앞단에서 동작하므로 preflight는 인가 전에 처리되고, 401 응답에도 CORS 헤더가 실립니다.
+  허용 목록 바인딩은 `shared/security/CorsProperties`, 빈 정의는 `SecurityConfig`에 둡니다.
 - 헤더는 기본값 유지 — `X-Frame-Options: DENY`
 
 ### 인증 실패 응답
