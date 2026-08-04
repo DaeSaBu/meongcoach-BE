@@ -24,6 +24,9 @@ spring:
         enabled: false
 
 meongcoach:
+  # 로컬에서는 /swagger-ui/** 문서 페이지를 인증 없이 연다
+  api-docs:
+    enabled: true
   cors:
     allowed-origin-patterns:
       - http://localhost:*

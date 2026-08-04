@@ -6,11 +6,13 @@ import com.daesabu.meongcoach.shared.security.TokenType;
 import com.daesabu.meongcoach.shared.security.TokenTypeValidator;
 import java.util.List;
 import javax.crypto.SecretKey;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
@@ -44,20 +46,15 @@ public class SecurityConfig {
 			"/api/users/token/refresh"
 	};
 
-	// 로컬 Swagger UI 경로. dev/prod에는 springdoc이 developmentOnly라 존재하지 않아 404가 된다.
-	// /v3/api-docs 자체는 열지 않아 springdoc 자동 스캔 스펙은 로컬에서도 노출되지 않는다
-	private static final String[] API_DOCS_PATHS = {
-			"/swagger-ui.html",
-			"/swagger-ui/**",
-			"/v3/api-docs/swagger-config",
-			"/openapi3.json"
-	};
+	// Swagger UI 정적 파일과 그 안의 openapi3.json이 모두 이 경로 아래에 있다
+	private static final String[] API_DOCS_PATHS = {"/swagger-ui/**"};
 
 	@Bean
 	SecurityFilterChain securityFilterChain(HttpSecurity http, JwtDecoder accessTokenDecoder,
 	                                        AuthenticationEntryPoint authenticationEntryPoint,
 	                                        AccessDeniedHandler accessDeniedHandler,
-	                                        CorsConfigurationSource corsConfigurationSource) {
+	                                        CorsConfigurationSource corsConfigurationSource,
+	                                        @Value("${meongcoach.api-docs.enabled:false}") boolean apiDocsEnabled) {
 		return http
 				.cors(cors -> cors.configurationSource(corsConfigurationSource))
 				.csrf(AbstractHttpConfigurer::disable)
@@ -67,10 +64,11 @@ public class SecurityConfig {
 				.anonymous(AbstractHttpConfigurer::disable)
 				.logout(AbstractHttpConfigurer::disable)
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-				.authorizeHttpRequests(auth -> auth
-						.requestMatchers(PERMIT_ALL_PATHS).permitAll()
-						.requestMatchers(API_DOCS_PATHS).permitAll()
-						.anyRequest().authenticated())
+				.authorizeHttpRequests(auth -> {
+					auth.requestMatchers(PERMIT_ALL_PATHS).permitAll();
+					configureApiDocsAccess(auth, apiDocsEnabled);
+					auth.anyRequest().authenticated();
+				})
 				.oauth2ResourceServer(oauth2 -> oauth2
 						.jwt(jwt -> jwt.decoder(accessTokenDecoder))
 						.authenticationEntryPoint(authenticationEntryPoint))
@@ -78,6 +76,18 @@ public class SecurityConfig {
 						.authenticationEntryPoint(authenticationEntryPoint)
 						.accessDeniedHandler(accessDeniedHandler))
 				.build();
+	}
+
+	// 문서 페이지는 local·dev만 연다. authenticated로 흘리면 유효 토큰 소지자가 운영에서
+	// 문서를 볼 수 있어 비활성 환경에서는 denyAll로 완전히 막는다
+	private void configureApiDocsAccess(
+			AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry auth,
+			boolean apiDocsEnabled) {
+		if (apiDocsEnabled) {
+			auth.requestMatchers(API_DOCS_PATHS).permitAll();
+			return;
+		}
+		auth.requestMatchers(API_DOCS_PATHS).denyAll();
 	}
 
 	// CORS가 시큐리티 체인 안에서 동작하므로, 필터 체인을 추가하면 그 체인에도 .cors(...)를 걸어야 한다

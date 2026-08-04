@@ -78,16 +78,6 @@ class SecurityFilterChainTest {
 				.andExpect(status().isUnauthorized());
 	}
 
-	// 테스트 프로파일에는 springdoc과 로컬 스펙 라우트가 없으므로, permitAll이 적용되면 401이 아닌 404가 나온다
-	@Test
-	@DisplayName("문서 경로는 인증 없이 접근할 수 있다")
-	void apiDocsPathsArePermitted() throws Exception {
-		mockMvc.perform(get("/swagger-ui.html"))
-				.andExpect(status().isNotFound());
-		mockMvc.perform(get("/openapi3.json"))
-				.andExpect(status().isNotFound());
-	}
-
 	@Test
 	@DisplayName("위조된 토큰은 거부된다")
 	void forgedTokenIsRejected() throws Exception {
@@ -132,5 +122,25 @@ class SecurityFilterChainTest {
 		mockMvc.perform(put(CURRENT_USER_PATH, 999L))
 				.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+	}
+
+	// test 프로파일은 meongcoach.api-docs.enabled를 두지 않아 기본값(false) 경로가 검증된다.
+	// denyAll은 인증 여부와 무관하게 AccessDeniedException으로 끝나므로 미인증도 401이 아닌 403이다
+	@Test
+	@DisplayName("문서 비활성 환경에서는 토큰 없이 Swagger UI에 접근하면 403을 반환한다")
+	void apiDocsDisabledWithoutTokenReturnsForbidden() throws Exception {
+		mockMvc.perform(get("/swagger-ui/index.html"))
+				.andExpect(status().isForbidden());
+	}
+
+	// denyAll이 authenticated보다 우선함을 증명한다. 유효 토큰 소지자도 문서를 볼 수 없어야 한다
+	@Test
+	@DisplayName("문서 비활성 환경에서는 유효한 토큰으로도 Swagger UI에 접근할 수 없다")
+	void apiDocsDisabledWithValidTokenReturnsForbidden() throws Exception {
+		AuthToken token = tokenProvider.issue(1L);
+
+		mockMvc.perform(get("/swagger-ui/index.html")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))
+				.andExpect(status().isForbidden());
 	}
 }

@@ -16,6 +16,9 @@ spring:
       ddl-auto: update
 
 meongcoach:
+  # 개발 서버에서는 /swagger-ui/** 문서 페이지를 인증 없이 연다
+  api-docs:
+    enabled: true
   cors:
     allowed-origin-patterns:
       - https://app.dev.meongcoach.com
