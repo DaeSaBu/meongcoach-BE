@@ -52,6 +52,8 @@ dependencies {
 	// S3 업로드 완료 이벤트를 SQS로 받아 AI 분석을 트리거한다
 	implementation("io.awspring.cloud:spring-cloud-aws-starter-sqs")
 	implementation("org.springframework.ai:spring-ai-starter-model-google-genai")
+	// ERROR 로그를 Sentry 이벤트로 전송한다(Logback 연동 내장). Spring Boot 4.x 지원 라인은 -4-starter다
+	implementation("io.sentry:sentry-spring-boot-4-starter:8.51.0")
 	testImplementation("org.springframework.security:spring-security-test")
 	compileOnly("org.projectlombok:lombok")
 	runtimeOnly("com.h2database:h2")

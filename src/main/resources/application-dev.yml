@@ -15,6 +15,10 @@ spring:
       # 마이그레이션 도구 도입 전까지 엔티티 변경을 자동 반영한다. 컬럼 삭제·이름 변경은 반영되지 않는다
       ddl-auto: update
 
+# Sentry 대시보드에서 dev 이벤트를 구분하는 환경 태그
+sentry:
+  environment: dev
+
 meongcoach:
   # 개발 서버에서는 /swagger-ui/** 문서 페이지를 인증 없이 연다
   api-docs:

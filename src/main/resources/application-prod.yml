@@ -14,6 +14,10 @@ spring:
     hibernate:
       ddl-auto: validate
 
+# Sentry 대시보드에서 prod 이벤트를 구분하는 환경 태그
+sentry:
+  environment: prod
+
 meongcoach:
   # 기본값이 이미 false지만 운영에서 문서를 차단한다는 의도를 명시한다
   api-docs:
