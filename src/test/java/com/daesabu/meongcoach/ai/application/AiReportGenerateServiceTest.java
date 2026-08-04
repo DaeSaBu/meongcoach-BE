@@ -70,6 +70,18 @@ class AiReportGenerateServiceTest {
 	}
 
 	@Test
+	@DisplayName("영상 소유자가 체험 횟수를 소진했으면 분석 없이 건너뛴다")
+	void generateSkipsWhenOwnerTrialExhausted() {
+		when(aiReportRepository.existsByVideoObjectKey(OBJECT_KEY)).thenReturn(false);
+		when(aiReportRepository.countByUserId(7L)).thenReturn(3L);
+
+		service.generate(OBJECT_KEY);
+
+		assertThat(videoAnalyzer.videoUrls).isEmpty();
+		verify(aiReportRepository, never()).save(any());
+	}
+
+	@Test
 	@DisplayName("분석이 실패하면 예외를 전파하고 저장하지 않는다")
 	void generatePropagatesAnalysisFailureWithoutSaving() {
 		when(aiReportRepository.existsByVideoObjectKey(OBJECT_KEY)).thenReturn(false);

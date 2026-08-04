@@ -4,7 +4,9 @@ import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.docume
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.get;
+import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.post;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
+import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
 import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
@@ -13,8 +15,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.daesabu.meongcoach.ai.application.provided.AiReportDetailView;
 import com.daesabu.meongcoach.ai.application.provided.AiReportFinder;
+import com.daesabu.meongcoach.ai.application.provided.AiReportTrialFinder;
+import com.daesabu.meongcoach.ai.application.provided.AiReportTrialView;
+import com.daesabu.meongcoach.ai.application.provided.AiReportVideoUploadUrlIssuer;
+import com.daesabu.meongcoach.ai.application.provided.AiReportVideoUploadUrlView;
 import com.daesabu.meongcoach.ai.application.provided.AiReportView;
 import com.daesabu.meongcoach.ai.domain.exception.AiReportNotFoundException;
+import com.daesabu.meongcoach.ai.domain.exception.AiReportTrialExceededException;
 import java.security.Principal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -24,26 +31,46 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 /**
- * AI 리포트 목록·상세 조회 API 검증.
+ * AI 리포트 목록·상세 조회와 영상 업로드 URL 발급·체험 횟수 조회 API 검증.
  */
 @WebMvcTest(AiReportController.class)
 @AutoConfigureRestDocs
-@DisplayName("AI 리포트 조회 API")
+@DisplayName("AI 리포트 API")
 class AiReportControllerTest {
 
 	// 컨트롤러 슬라이스에는 필터 체인이 없으므로 인증 주체를 요청에 직접 실어 보낸다
 	// (test-convention.md)
 	private static final Principal CURRENT_USER = () -> "42";
 
+	private static final String VIDEO_OBJECT_KEY = "videos/training/42/uuid.mp4";
+	private static final String VIDEO_UPLOAD_URL =
+			"https://test-video-bucket.s3.ap-northeast-2.amazonaws.com/" + VIDEO_OBJECT_KEY
+					+ "?X-Amz-Expires=900&X-Amz-Signature=example";
+	private static final String VIDEO_PUBLIC_URL = "https://videos.test.meongcoach.com/" + VIDEO_OBJECT_KEY;
+
+	private static final String VIDEO_ISSUE_REQUEST = """
+			{
+				"contentType": "video/mp4",
+				"fileSizeBytes": 10485760
+			}
+			""";
+
 	@Autowired
 	private MockMvc mockMvc;
 
 	@MockitoBean
 	private AiReportFinder aiReportFinder;
+
+	@MockitoBean
+	private AiReportVideoUploadUrlIssuer aiReportVideoUploadUrlIssuer;
+
+	@MockitoBean
+	private AiReportTrialFinder aiReportTrialFinder;
 
 	@Test
 	@DisplayName("리포트 목록을 최신순으로 반환한다")
@@ -166,5 +193,159 @@ class AiReportControllerTest {
 								fieldWithPath("timestamp").description("에러 발생 시각(UTC)")
 						)
 				));
+	}
+
+	@Test
+	@DisplayName("체험 횟수가 남아 있으면 영상 업로드 URL을 발급한다")
+	void issueVideoUploadUrlReturnsUploadUrl() throws Exception {
+		given(aiReportVideoUploadUrlIssuer.issue(42L, "video/mp4", 10485760L)).willReturn(
+				new AiReportVideoUploadUrlView(VIDEO_UPLOAD_URL, VIDEO_PUBLIC_URL, VIDEO_OBJECT_KEY, 900L));
+
+		mockMvc.perform(post("/api/ai/reports/video-upload-urls")
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(VIDEO_ISSUE_REQUEST))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.uploadUrl").value(VIDEO_UPLOAD_URL))
+				.andExpect(jsonPath("$.publicUrl").value(VIDEO_PUBLIC_URL))
+				.andExpect(jsonPath("$.objectKey").value(VIDEO_OBJECT_KEY))
+				.andExpect(jsonPath("$.expiresInSeconds").value(900))
+				.andDo(document("ai/video-upload-url",
+						requestFields(
+								fieldWithPath("contentType").description(
+										"필수 입력. 업로드할 영상의 Content-Type. `video/mp4`, `video/quicktime`만 지원"),
+								fieldWithPath("fileSizeBytes").description(
+										"필수 입력. 업로드할 영상의 바이트 수. 1 이상 104857600(100MB) 이하여야 하며, "
+												+ "이 값이 그대로 presigned URL의 Content-Length 서명에 들어간다")
+						),
+						responseFields(
+								fieldWithPath("uploadUrl").description(
+										"영상을 PUT할 presigned URL. `Content-Type`은 요청한 값과, "
+												+ "`Content-Length`는 요청한 `fileSizeBytes`와 정확히 같아야 한다"),
+								fieldWithPath("publicUrl").description(
+										"공개 도메인 기준의 영상 URL. 버킷을 비공개로 운영하면 직접 접근은 거부된다"),
+								fieldWithPath("objectKey").description(
+										"업로드된 객체의 키. 이후 API 요청에는 이 값을 담아 등록한다"),
+								fieldWithPath("expiresInSeconds").description("uploadUrl의 유효 시간(초)")
+						)
+				));
+	}
+
+	@Test
+	@DisplayName("인증 주체에서 읽은 사용자로 영상 업로드 URL 발급을 위임한다")
+	void issueVideoUploadUrlDelegatesWithCurrentUserId() throws Exception {
+		given(aiReportVideoUploadUrlIssuer.issue(42L, "video/mp4", 10485760L)).willReturn(
+				new AiReportVideoUploadUrlView(VIDEO_UPLOAD_URL, VIDEO_PUBLIC_URL, VIDEO_OBJECT_KEY, 900L));
+
+		mockMvc.perform(post("/api/ai/reports/video-upload-urls")
+						.principal(CURRENT_USER)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(VIDEO_ISSUE_REQUEST))
+				.andExpect(status().isOk());
+
+		then(aiReportVideoUploadUrlIssuer).should().issue(42L, "video/mp4", 10485760L);
+	}
+
+	@Test
+	@DisplayName("체험 횟수를 소진했으면 403과 에러 코드를 반환한다")
+	void issueVideoUploadUrlReturnsForbiddenWhenTrialExhausted() throws Exception {
+		given(aiReportVideoUploadUrlIssuer.issue(42L, "video/mp4", 10485760L))
+				.willThrow(new AiReportTrialExceededException());
+
+		mockMvc.perform(post("/api/ai/reports/video-upload-urls")
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(VIDEO_ISSUE_REQUEST))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.status").value(403))
+				.andExpect(jsonPath("$.code").value("AI_REPORT_TRIAL_EXCEEDED"))
+				.andDo(document("ai/video-upload-url-error",
+						responseFields(
+								fieldWithPath("title").description("HTTP 상태 이름"),
+								fieldWithPath("status").description("HTTP 상태 코드"),
+								fieldWithPath("detail").description("사람이 읽을 수 있는 에러 설명"),
+								fieldWithPath("instance").description("에러가 발생한 요청 경로"),
+								fieldWithPath("code").description("클라이언트 분기용 에러 코드"),
+								fieldWithPath("timestamp").description("에러 발생 시각(UTC)")
+						)
+				));
+	}
+
+	@Test
+	@DisplayName("영상 Content-Type이 비어 있으면 검증에 실패한다")
+	void issueVideoUploadUrlFailsWhenContentTypeIsBlank() throws Exception {
+		mockMvc.perform(post("/api/ai/reports/video-upload-urls")
+						.principal(CURRENT_USER)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(VIDEO_ISSUE_REQUEST.replace("video/mp4", "")))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
+				.andExpect(jsonPath("$.errors[0].field").value("contentType"));
+	}
+
+	@Test
+	@DisplayName("영상 파일 크기가 없으면 검증에 실패한다")
+	void issueVideoUploadUrlFailsWhenFileSizeIsMissing() throws Exception {
+		mockMvc.perform(post("/api/ai/reports/video-upload-urls")
+						.principal(CURRENT_USER)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"contentType\": \"video/mp4\"}"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
+				.andExpect(jsonPath("$.errors[0].field").value("fileSizeBytes"));
+	}
+
+	@Test
+	@DisplayName("인증 정보가 없으면 영상 업로드 URL 발급도 401을 반환한다")
+	void issueVideoUploadUrlReturnsUnauthorizedWhenNotAuthenticated() throws Exception {
+		mockMvc.perform(post("/api/ai/reports/video-upload-urls")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(VIDEO_ISSUE_REQUEST))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+	}
+
+	@Test
+	@DisplayName("체험 횟수 사용 현황을 반환한다")
+	void findTrialReturnsTrialUsage() throws Exception {
+		given(aiReportTrialFinder.findTrial(42L)).willReturn(new AiReportTrialView(1, 3, 2));
+
+		mockMvc.perform(get("/api/ai/reports/trials")
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.usedCount").value(1))
+				.andExpect(jsonPath("$.maxCount").value(3))
+				.andExpect(jsonPath("$.remainingCount").value(2))
+				.andDo(document("ai/trial",
+						responseFields(
+								fieldWithPath("usedCount").description("지금까지 생성한 AI 리포트 수"),
+								fieldWithPath("maxCount").description("무료 체험 최대 횟수"),
+								fieldWithPath("remainingCount").description("남은 횟수. 소진했으면 0")
+						)
+				));
+	}
+
+	@Test
+	@DisplayName("인증 주체에서 읽은 사용자로 체험 횟수 조회를 위임한다")
+	void findTrialDelegatesWithCurrentUserId() throws Exception {
+		given(aiReportTrialFinder.findTrial(42L)).willReturn(new AiReportTrialView(0, 3, 3));
+
+		mockMvc.perform(get("/api/ai/reports/trials").principal(CURRENT_USER))
+				.andExpect(status().isOk());
+
+		// 리터럴 /trials가 /{reportId} 패턴보다 우선 매핑되는지 함께 확인한다
+		then(aiReportTrialFinder).should().findTrial(42L);
+		then(aiReportFinder).shouldHaveNoInteractions();
+	}
+
+	@Test
+	@DisplayName("인증 정보가 없으면 체험 횟수 조회도 401을 반환한다")
+	void findTrialReturnsUnauthorizedWhenNotAuthenticated() throws Exception {
+		mockMvc.perform(get("/api/ai/reports/trials"))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
 	}
 }
