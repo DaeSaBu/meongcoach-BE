@@ -15,7 +15,8 @@
 - `DB_HOST`와 `DB_NAME`으로 `jdbc:postgresql://{host}:5432/{database}` URL을 구성합니다.
 - local DB 설정에는 로컬 전용 기본값이 있고, dev/prod 환경 변수에는 기본값이 없습니다.
 - `SENTRY_DSN`은 선택 사항입니다. 주입하면 ERROR 로그가 Sentry 이벤트로 전송되고,
-  미주입 시 Sentry가 비활성화됩니다. dev/prod는 주입을 전제로 하며 환경 태그(`sentry.environment`)로 구분합니다.
+  미주입 시 Sentry가 비활성화됩니다. dev/prod는 환경별로 분리된 Sentry 프로젝트의 DSN을
+  GitHub Secrets `DEV_SENTRY_DSN`/`PROD_SENTRY_DSN`으로 주입합니다.
 
 ## 활성화 방법
 
