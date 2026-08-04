@@ -61,8 +61,10 @@ operation::user/token-refresh-error[snippets='http-response,response-fields']
 
 == Media API
 
-파일을 서버를 거치지 않고 스토리지에 직접 업로드하기 위한 API입니다. 이미지는 Cloudflare R2, 영상은 AWS S3에 올립니다.
-모두 액세스 토큰 인증이 필요합니다.
+파일을 서버를 거치지 않고 스토리지에 직접 업로드하기 위한 API입니다. 이미지는 Cloudflare R2에 올립니다.
+액세스 토큰 인증이 필요합니다.
+
+AI 리포트용 영상 업로드 URL 발급은 무료 체험 횟수 검증과 함께 <<_ai_api,AI API>>에서 제공합니다.
 
 이미지 업로드는 다음 순서로 진행합니다.
 
@@ -79,43 +81,6 @@ operation::media/image-upload-url[snippets='http-request,request-fields,http-res
 ==== 실패 응답
 
 operation::media/image-upload-url-error[snippets='http-response,response-fields']
-
-=== 영상 업로드 URL 발급
-
-link:{swagger-ui}#/Media/media-video-upload-url[▶ Swagger에서 Try it out,window=swagger]
-
-훈련 영상을 AWS S3에 직접 업로드하기 위한 API입니다.
-최대 100MB(104857600바이트)까지 단일 `PUT`으로 올리며, `video/mp4`(mp4)와 `video/quicktime`(mov) 두 형식만 허용합니다.
-
-이미지와 달리 응답에 `objectKey`가 함께 내려갑니다. 버킷을 비공개로 운영하면 `publicUrl` 직접 접근은 거부되므로,
-후속 API 요청에는 `objectKey`를 담아 보냅니다.
-
-[IMPORTANT]
-====
-`uploadUrl`의 서명에는 `Content-Type`뿐 아니라 **`Content-Length`도 포함**되어 있습니다.
-발급 요청의 `fileSizeBytes`와 정확히 같은 바이트 수로 `PUT`해야 하며,
-`Content-Length` 없이(chunked transfer encoding) 보내면 S3가 403 `SignatureDoesNotMatch`로 거부합니다.
-
-* React Native `fetch`에 `{uri, type, name}` 형태의 body를 넘기면 chunked로 전송되어 실패합니다.
-* `react-native-blob-util`의 `RNFetchBlob.wrap(path)` 또는 Expo의
-  `FileSystem.uploadAsync(url, uri, { httpMethod: 'PUT', uploadType: BINARY_CONTENT })`를 사용하세요.
-* `Content-Length` 헤더를 직접 지정해도 플랫폼이 body 기준으로 덮어씁니다. 길이를 알 수 있는 body를 넘겨야 합니다.
-* `fileSizeBytes`는 실제로 업로드할 파일을 stat해서 구합니다.
-  URL 발급 후 압축·트랜스코딩하면 크기가 달라져 실패하므로 "압축 -> stat -> 발급 -> 즉시 PUT" 순서를 지키세요.
-* `uploadUrl`이 만료되면 발급 API를 다시 호출해 새 URL을 받습니다.
-====
-
-operation::media/video-upload-url[snippets='http-request,request-fields,http-response,response-fields']
-
-==== 실패 응답
-
-파일 크기가 상한을 넘으면 `MEDIA_VIDEO_FILE_SIZE_EXCEEDED`, 0 이하면 `MEDIA_INVALID_VIDEO_FILE_SIZE`,
-지원하지 않는 형식이면 `MEDIA_UNSUPPORTED_VIDEO_TYPE`, 업로드 대상이 잘못되면 `MEDIA_INVALID_VIDEO_UPLOAD_TARGET`을 반환합니다.
-
-operation::media/video-upload-url-error[snippets='http-response,response-fields']
-
-NOTE: 업로드한 영상의 재생 URL 발급 API는 아직 없습니다. 비공개 버킷 운영을 확정하면 presigned GET 발급과
-`objectKey` 소유자 검증을 함께 추가해야 합니다.
 
 == Onboarding API
 
@@ -238,12 +203,62 @@ operation::training/topic-select-error[snippets='http-response,response-fields']
 
 == AI API
 
-업로드한 훈련 영상을 AI가 분석해 만든 리포트를 조회하는 API입니다.
-두 엔드포인트 모두 액세스 토큰 인증이 필요합니다.
+훈련 영상 업로드 URL 발급과, 업로드한 영상을 AI가 분석해 만든 리포트를 조회하는 API입니다.
+모든 엔드포인트에 액세스 토큰 인증이 필요합니다.
 리포트는 영상 업로드 후 서버가 분석을 마친 시점에 생성되며,
 별도의 "생성 중" 상태 없이 완성된 리포트만 조회됩니다.
 `videoObjectKey`는 분석한 영상을 가리키는 S3 객체 키이며,
 영상 재생 URL은 내려가지 않습니다.
+
+AI 리포트 생성은 무료 체험으로 사용자당 총 3회까지 가능합니다.
+횟수를 소진하면 영상 업로드 URL 발급이 403으로 거부됩니다.
+
+=== AI 리포트 영상 업로드 URL 발급
+
+link:{swagger-ui}#/AI/ai-video-upload-url[▶ Swagger에서 Try it out,window=swagger]
+
+훈련 영상을 AWS S3에 직접 업로드하기 위한 API입니다. 무료 체험 횟수를 검증한 뒤 URL을 발급합니다.
+최대 100MB(104857600바이트)까지 단일 `PUT`으로 올리며, `video/mp4`(mp4)와 `video/quicktime`(mov) 두 형식만 허용합니다.
+
+이미지와 달리 응답에 `objectKey`가 함께 내려갑니다. 버킷을 비공개로 운영하면 `publicUrl` 직접 접근은 거부되므로,
+후속 API 요청에는 `objectKey`를 담아 보냅니다.
+
+[IMPORTANT]
+====
+`uploadUrl`의 서명에는 `Content-Type`뿐 아니라 **`Content-Length`도 포함**되어 있습니다.
+발급 요청의 `fileSizeBytes`와 정확히 같은 바이트 수로 `PUT`해야 하며,
+`Content-Length` 없이(chunked transfer encoding) 보내면 S3가 403 `SignatureDoesNotMatch`로 거부합니다.
+
+* React Native `fetch`에 `{uri, type, name}` 형태의 body를 넘기면 chunked로 전송되어 실패합니다.
+* `react-native-blob-util`의 `RNFetchBlob.wrap(path)` 또는 Expo의
+  `FileSystem.uploadAsync(url, uri, { httpMethod: 'PUT', uploadType: BINARY_CONTENT })`를 사용하세요.
+* `Content-Length` 헤더를 직접 지정해도 플랫폼이 body 기준으로 덮어씁니다. 길이를 알 수 있는 body를 넘겨야 합니다.
+* `fileSizeBytes`는 실제로 업로드할 파일을 stat해서 구합니다.
+  URL 발급 후 압축·트랜스코딩하면 크기가 달라져 실패하므로 "압축 -> stat -> 발급 -> 즉시 PUT" 순서를 지키세요.
+* `uploadUrl`이 만료되면 발급 API를 다시 호출해 새 URL을 받습니다.
+====
+
+operation::ai/video-upload-url[snippets='http-request,request-fields,http-response,response-fields']
+
+==== 실패 응답
+
+무료 체험 횟수(3회)를 소진하면 403(`AI_REPORT_TRIAL_EXCEEDED`)을 반환합니다.
+파일 크기가 상한을 넘으면 `MEDIA_VIDEO_FILE_SIZE_EXCEEDED`, 0 이하면 `MEDIA_INVALID_VIDEO_FILE_SIZE`,
+지원하지 않는 형식이면 `MEDIA_UNSUPPORTED_VIDEO_TYPE`을 400으로 반환합니다.
+
+operation::ai/video-upload-url-error[snippets='http-response,response-fields']
+
+NOTE: 업로드한 영상의 재생 URL 발급 API는 아직 없습니다. 비공개 버킷 운영을 확정하면 presigned GET 발급과
+`objectKey` 소유자 검증을 함께 추가해야 합니다.
+
+=== AI 리포트 체험 횟수 조회
+
+link:{swagger-ui}#/AI/ai-trial[▶ Swagger에서 Try it out,window=swagger]
+
+액세스 토큰으로 식별한 사용자의 무료 체험 사용 현황을 조회합니다.
+리포트를 생성한 적이 없으면 사용 0회로 내려갑니다.
+
+operation::ai/trial[snippets='http-request,http-response,response-fields']
 
 === AI 리포트 목록 조회
 
