@@ -85,6 +85,7 @@ jobs:
           SQS_ACCESS_KEY_ID: ${{ secrets.DEV_SQS_ACCESS_KEY_ID }}
           SQS_SECRET_ACCESS_KEY: ${{ secrets.DEV_SQS_SECRET_ACCESS_KEY }}
           AI_VIDEO_QUEUE: ${{ secrets.DEV_AI_VIDEO_QUEUE }}
+          SENTRY_DSN: ${{ secrets.DEV_SENTRY_DSN }}
         run: |
           # 최신 인프라 설정을 읽고 GitHub Secrets·이미지를 반영한 등록용 JSON을 만든다.
           aws ecs describe-task-definition \

@@ -54,7 +54,8 @@ jq \
 	--arg sqs_region "${SQS_REGION:-}" \
 	--arg sqs_access_key_id "${SQS_ACCESS_KEY_ID:-}" \
 	--arg sqs_secret_access_key "${SQS_SECRET_ACCESS_KEY:-}" \
-	--arg ai_video_queue "${AI_VIDEO_QUEUE:-}" '
+	--arg ai_video_queue "${AI_VIDEO_QUEUE:-}" \
+	--arg sentry_dsn "${SENTRY_DSN:-}" '
 	if ([.containerDefinitions[] | select(.name == $container)] | length) != 1 then
 		error("배포 대상 컨테이너는 정확히 하나여야 합니다.")
 	else
@@ -121,7 +122,8 @@ jq \
 								.name != "SQS_REGION" and
 								.name != "SQS_ACCESS_KEY_ID" and
 								.name != "SQS_SECRET_ACCESS_KEY" and
-								.name != "AI_VIDEO_QUEUE"
+								.name != "AI_VIDEO_QUEUE" and
+								.name != "SENTRY_DSN"
 							))) +
 						[
 							{"name": "JWT_SECRET", "value": $jwt_secret},
@@ -147,6 +149,11 @@ jq \
 							[]
 						 else
 							[{"name": "VIMEO_ACCESS_TOKEN", "value": $vimeo_access_token}]
+						 end) +
+						(if $sentry_dsn == "" then
+							[]
+						 else
+							[{"name": "SENTRY_DSN", "value": $sentry_dsn}]
 						 end)
 					)
 					| .image = $image
