@@ -171,3 +171,11 @@ jobs:
           path: dev-deployment-proof.json
           retention-days: 90
           overwrite: true
+
+  docs:
+    needs: deploy
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/cd-docs.yml

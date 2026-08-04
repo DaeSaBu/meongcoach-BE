@@ -42,14 +42,14 @@ CI는 `workflow_call`을 지원하며 dev·prod CD가 같은 검증 절차를 �
 
 ## API 문서 사이트 배포
 
-`CD - Dev`가 성공하면 `cd-docs.yml`이 `workflow_run`으로 이어서 실행되어 [GitHub Pages](https://daesabu.github.io/meongcoach-BE/)에 API 문서 사이트를 배포합니다. CI는 `CD - Dev`가 이미 통과시켰으므로 다시 호출하지 않습니다.
+`CD - Dev`의 `deploy`가 성공하면 `docs` job이 `cd-docs.yml`을 재사용 워크플로로 호출하여 [GitHub Pages](https://daesabu.github.io/meongcoach-BE/)에 API 문서 사이트를 배포합니다. CI는 `CD - Dev`가 이미 통과시켰으므로 다시 호출하지 않습니다.
 
-1. `CD - Dev`가 배포한 develop 커밋(`workflow_run.head_sha`)을 체크아웃하고, `./gradlew openapi3 asciidoctor`로 OpenAPI 3 스펙(`build/api-spec/openapi3.json`)과 REST Docs HTML(`build/docs/asciidoc`)을 생성합니다.
+1. `CD - Dev`가 배포한 develop 커밋을 체크아웃하고, `./gradlew openapi3 asciidoctor`로 OpenAPI 3 스펙(`build/api-spec/openapi3.json`)과 REST Docs HTML(`build/docs/asciidoc`)을 생성합니다.
 2. [.github/scripts/assemble-docs-site.sh](../.github/scripts/assemble-docs-site.sh)가 분할 화면 랜딩([src/docs/site/index.html](../src/docs/site/index.html) — REST Docs와 Swagger UI를 iframe으로 한 화면에 표시), REST Docs(`/restdocs/`), Swagger UI(`/swagger-ui/`)를 한 사이트로 조립합니다. `/restdocs/`·`/swagger-ui/` 단독 접근도 유지됩니다. Swagger UI는 릴리스 태그로 고정한 swagger-ui dist 정적 파일에 저장소 스펙을 연결한 것입니다.
 3. 배포본 스펙의 `servers`는 dev API(`https://api.dev.meongcoach.com`)로 교체합니다. 로컬 Swagger UI가 쓰는 스펙(`build.gradle.kts`의 `openapi3`)은 localhost를 유지합니다.
 4. `actions/upload-pages-artifact`와 `actions/deploy-pages`로 배포합니다. 저장소 Pages 설정이 꺼져 있어도 `actions/configure-pages`의 `enablement`가 GitHub Actions 소스로 자동 활성화합니다.
 
-`workflow_run` 트리거는 워크플로 파일이 기본 브랜치(`main`)에 있어야 동작하므로, `cd-docs.yml`이 `main`에 merge되기 전까지는 문서 배포가 실행되지 않습니다. 배포는 AWS 자격 증명 없이 `GITHUB_TOKEN`의 `pages: write`·`id-token: write` 권한만 사용합니다.
+`cd-docs.yml`은 `workflow_call`로만 실행되며, `CD - Dev`의 `docs` job은 `needs: deploy`로 개발 배포가 성공한 경우에만 호출합니다. 문서 배포는 AWS 자격 증명 없이 `GITHUB_TOKEN`의 `pages: write`·`id-token: write` 권한만 사용합니다.
 
 ## 환경 변수 관리
 

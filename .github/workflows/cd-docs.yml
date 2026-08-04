@@ -1,11 +1,8 @@
 name: CD - Docs
 
-# CI를 중복 실행하지 않도록 CD - Dev(CI 포함)가 성공한 뒤에만 이어서 실행한다.
-# workflow_run은 이 파일이 기본 브랜치(main)에 있어야 트리거된다.
+# CD - Dev의 deploy가 성공한 뒤 호출하는 재사용 워크플로다.
 on:
-  workflow_run:
-    workflows: [CD - Dev]
-    types: [completed]
+  workflow_call:
 
 # Pages 배포는 저장소당 사이트가 하나라 동시에 하나만 실행하고, 진행 중인 배포는 취소하지 않는다
 concurrency:
@@ -14,10 +11,6 @@ concurrency:
 
 jobs:
   deploy:
-    if: >-
-      github.workflow == 'CD - Docs' &&
-      github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.head_branch == 'develop'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -31,9 +24,6 @@ jobs:
       SWAGGER_UI_VERSION: 5.32.11
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-        with:
-          # workflow_run은 기본 브랜치 컨텍스트로 실행되므로 CD - Dev가 배포한 develop 커밋을 명시한다
-          ref: ${{ github.event.workflow_run.head_sha }}
 
       - uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4.8.0
         with:
