@@ -11,6 +11,9 @@
 - 한 줄 최대 120자
 - `if` / `for` / `while` 등에 중괄호 항상 사용
 - 와일드카드 import 금지
+- 삼항 연산자(`조건 ? A : B`) 금지 — 가독성을 해치므로 `Objects.requireNonNullElse`, if + early return, 의도가 드러나는 메서드 추출로 대체합니다. (도구로 강제되지 않으므로 리뷰에서 확인)
+- `else`(`else if` 포함) 금지 — guard clause와 early return으로 분기를 평탄화합니다. (도구로 강제되지 않으므로 리뷰에서 확인)
+- `switch` 금지 — if + early return, Map 조회, 또는 enum 메서드/다형성으로 대체합니다. (도구로 강제되지 않으므로 리뷰에서 확인)
 
 ## 네이밍
 

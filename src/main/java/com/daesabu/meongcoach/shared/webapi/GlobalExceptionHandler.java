@@ -38,12 +38,16 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 	@ExceptionHandler(DomainException.class)
 	ProblemDetail handleDomainException(DomainException e) {
 		HttpStatus status = HttpStatus.valueOf(e.getErrorCode().status());
+		logDomainException(e, status);
+		return problemDetail(status, e.getErrorCode().code(), e.getMessage());
+	}
+
+	private void logDomainException(DomainException e, HttpStatus status) {
 		if (status.is5xxServerError()) {
 			log.error("도메인 예외(5xx): code={}", e.getErrorCode().code(), e);
-		} else {
-			log.warn("도메인 예외(4xx): code={}, message={}", e.getErrorCode().code(), e.getMessage());
+			return;
 		}
-		return problemDetail(status, e.getErrorCode().code(), e.getMessage());
+		log.warn("도메인 예외(4xx): code={}, message={}", e.getErrorCode().code(), e.getMessage());
 	}
 
 	// 시큐리티 필터 체인에서 던져진 예외가 SecurityExceptionTranslator를 거쳐 여기로 들어온다
