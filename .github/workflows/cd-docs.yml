@@ -4,13 +4,13 @@ name: CD - Docs
 on:
   workflow_call:
 
-# Pages 배포는 저장소당 사이트가 하나라 동시에 하나만 실행하고, 진행 중인 배포는 취소하지 않는다
-concurrency:
-  group: github-pages
-  cancel-in-progress: false
-
 jobs:
   deploy:
+    # Pages 배포는 저장소당 사이트가 하나라 동시에 하나만 실행하고, 진행 중인 배포는 취소하지 않는다.
+    # workflow_call로 호출되면 최상위 concurrency는 적용이 보장되지 않아 job 레벨에 둔다.
+    concurrency:
+      group: github-pages
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
