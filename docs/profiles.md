@@ -17,6 +17,7 @@
 - `SENTRY_DSN`은 선택 사항입니다. 주입하면 ERROR 로그가 Sentry 이벤트로 전송되고,
   미주입 시 Sentry가 비활성화됩니다. dev/prod는 환경별로 분리된 Sentry 프로젝트의 DSN을
   GitHub Secrets `DEV_SENTRY_DSN`/`PROD_SENTRY_DSN`으로 주입합니다.
+- `SENTRY_RELEASE`도 선택 사항입니다. CD가 배포 커밋 SHA를 주입해 에러가 발생한 배포를 식별합니다.
 
 ## 활성화 방법
 

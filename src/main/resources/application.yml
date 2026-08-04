@@ -34,6 +34,8 @@ spring:
 # 애플리케이션 에러 모니터링. DSN 미주입 시 Sentry가 스스로 비활성화되므로 로컬·테스트는 값을 넣지 않는다
 sentry:
   dsn: ${SENTRY_DSN:}
+  # 에러가 발생한 배포를 식별한다. CD가 배포 커밋 SHA를 주입한다
+  release: ${SENTRY_RELEASE:}
   # 요청 본문·사용자 정보 같은 개인정보를 이벤트에 싣지 않는다
   send-default-pii: false
   logging:
