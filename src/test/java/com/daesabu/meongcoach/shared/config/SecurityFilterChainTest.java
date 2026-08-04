@@ -78,6 +78,16 @@ class SecurityFilterChainTest {
 				.andExpect(status().isUnauthorized());
 	}
 
+	// 테스트 프로파일에는 springdoc과 로컬 스펙 라우트가 없으므로, permitAll이 적용되면 401이 아닌 404가 나온다
+	@Test
+	@DisplayName("문서 경로는 인증 없이 접근할 수 있다")
+	void apiDocsPathsArePermitted() throws Exception {
+		mockMvc.perform(get("/swagger-ui.html"))
+				.andExpect(status().isNotFound());
+		mockMvc.perform(get("/openapi3.json"))
+				.andExpect(status().isNotFound());
+	}
+
 	@Test
 	@DisplayName("위조된 토큰은 거부된다")
 	void forgedTokenIsRejected() throws Exception {

@@ -38,5 +38,12 @@ docker compose --profile app up --build
 
 - 커버리지 리포트: `build/reports/jacoco/test/html/index.html`
 - API 문서: `build/docs/asciidoc/index.html`
+- Swagger UI: `./gradlew openapi3` 후 `./gradlew bootRun` → http://localhost:8080/swagger-ui.html
+
+## API 문서 사이트
+
+`develop`에 merge되어 dev 배포가 성공하면 [문서 사이트](https://daesabu.github.io/meongcoach-BE/)가 자동 갱신됩니다.
+REST Docs와 Swagger UI를 한 화면에 나란히 보여주며, 문서 작성 규칙은
+[docs/conventions/restdocs-convention.md](docs/conventions/restdocs-convention.md), 배포 흐름은 [docs/ci-cd.md](docs/ci-cd.md)를 참고하세요.
 
 자세한 규칙은 [AGENTS.md](AGENTS.md)와 [docs/](docs/)를 참고하세요.

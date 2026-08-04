@@ -53,6 +53,19 @@ CD는 환경별 task definition family의 최신 리비전에서 프로파일을
 > 트러블슈팅: 셸에 `SPRING_PROFILES_ACTIVE`가 남아 있으면 `profiles.default`가 무시됩니다.
 > 프로파일이 이상하게 잡히면 `echo $SPRING_PROFILES_ACTIVE`부터 확인하세요.
 
+## Swagger UI (springdoc) 설정
+
+springdoc은 로컬 전용 도구(`developmentOnly` 의존성)이며, 노출 범위를 프로파일별로 통제합니다.
+([restdocs 컨벤션](conventions/restdocs-convention.md) 참고)
+
+| 프로파일 | 설정 | 이유 |
+|---|---|---|
+| `local` | `springdoc.swagger-ui.url: /openapi3.json` | 자동 스캔 스펙 대신 빌드 산출물(`build/api-spec/openapi3.json`)을 서빙 (`ApiDocsConfig`) |
+| `dev`, `prod` | `springdoc.api-docs.enabled: false`<br>`springdoc.swagger-ui.enabled: false` | 배포 jar에는 springdoc이 없지만, 의존성 스코프가 바뀌어도 노출되지 않도록 방어적으로 차단 |
+
+- local에서 `api-docs.enabled=false`로 두면 springdoc 3.x는 Swagger UI 빈까지 함께 꺼지므로 기본값을
+  유지하고, 대신 자동 스캔 엔드포인트(`/v3/api-docs`)를 시큐리티 `permitAll`에서 제외해 가립니다(`SecurityConfig`).
+
 ## ddl-auto 정책과 마이그레이션
 
 | 프로파일 | 값 | 함의 |
