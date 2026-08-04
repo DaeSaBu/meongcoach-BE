@@ -12,6 +12,7 @@ import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 public record OnboardingCompleteRequest(
@@ -37,7 +38,7 @@ public record OnboardingCompleteRequest(
 	}
 
 	private static <T> List<T> emptyIfNull(List<T> values) {
-		return values == null ? List.of() : values;
+		return Objects.requireNonNullElse(values, List.of());
 	}
 
 	public record DogRequest(
