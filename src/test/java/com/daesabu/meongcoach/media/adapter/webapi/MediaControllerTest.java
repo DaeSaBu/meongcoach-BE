@@ -25,6 +25,7 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -68,6 +69,7 @@ class MediaControllerTest {
 	void issueReturnsUploadUrl() throws Exception {
 		mockMvc.perform(post("/api/media/image-upload-urls")
 						.principal(() -> "1")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(ISSUE_REQUEST))
 				.andExpect(status().isOk())
@@ -77,9 +79,10 @@ class MediaControllerTest {
 				.andDo(document("media/image-upload-url",
 						requestFields(
 								fieldWithPath("target").description(
-										"업로드 대상. `USER_PROFILE`(사용자 프로필) 또는 `DOG_PROFILE`(강아지 프로필)"),
+										"필수 입력. 업로드 대상. `USER_PROFILE`(사용자 프로필) 또는 "
+												+ "`DOG_PROFILE`(강아지 프로필)"),
 								fieldWithPath("contentType").description(
-										"업로드할 이미지의 Content-Type. `image/jpeg`, `image/png`, `image/webp`만 지원")
+										"필수 입력. 업로드할 이미지의 Content-Type. `image/jpeg`, `image/png`, `image/webp`만 지원")
 						),
 						responseFields(
 								fieldWithPath("uploadUrl").description(
@@ -96,6 +99,7 @@ class MediaControllerTest {
 	void issueFailsWhenContentTypeIsUnsupported() throws Exception {
 		mockMvc.perform(post("/api/media/image-upload-urls")
 						.principal(() -> "1")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(ISSUE_REQUEST.replace("image/jpeg", "image/gif")))
 				.andExpect(status().isBadRequest())
@@ -136,6 +140,18 @@ class MediaControllerTest {
 	}
 
 	@Test
+	@DisplayName("이미지 Content-Type이 비어 있으면 검증에 실패한다")
+	void issueFailsWhenContentTypeIsBlank() throws Exception {
+		mockMvc.perform(post("/api/media/image-upload-urls")
+						.principal(() -> "1")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(ISSUE_REQUEST.replace("image/jpeg", "")))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
+				.andExpect(jsonPath("$.errors[0].field").value("contentType"));
+	}
+
+	@Test
 	@DisplayName("인증 정보가 없으면 401을 반환한다")
 	void issueFailsWithoutPrincipal() throws Exception {
 		mockMvc.perform(post("/api/media/image-upload-urls")
@@ -150,6 +166,7 @@ class MediaControllerTest {
 	void issueVideoReturnsUploadUrl() throws Exception {
 		mockMvc.perform(post("/api/media/video-upload-urls")
 						.principal(() -> "1")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(VIDEO_ISSUE_REQUEST))
 				.andExpect(status().isOk())
@@ -159,11 +176,12 @@ class MediaControllerTest {
 				.andExpect(jsonPath("$.expiresInSeconds").value(900))
 				.andDo(document("media/video-upload-url",
 						requestFields(
-								fieldWithPath("target").description("업로드 대상. 현재는 `TRAINING_VIDEO`(훈련 영상)만 지원"),
+								fieldWithPath("target").description(
+										"필수 입력. 업로드 대상. 현재는 `TRAINING_VIDEO`(훈련 영상)만 지원"),
 								fieldWithPath("contentType").description(
-										"업로드할 영상의 Content-Type. `video/mp4`, `video/quicktime`만 지원"),
+										"필수 입력. 업로드할 영상의 Content-Type. `video/mp4`, `video/quicktime`만 지원"),
 								fieldWithPath("fileSizeBytes").description(
-										"업로드할 영상의 바이트 수. 1 이상 104857600(100MB) 이하여야 하며, "
+										"필수 입력. 업로드할 영상의 바이트 수. 1 이상 104857600(100MB) 이하여야 하며, "
 												+ "이 값이 그대로 presigned URL의 Content-Length 서명에 들어간다")
 						),
 						responseFields(
@@ -184,6 +202,7 @@ class MediaControllerTest {
 	void issueVideoFailsWhenFileSizeExceedsMax() throws Exception {
 		mockMvc.perform(post("/api/media/video-upload-urls")
 						.principal(() -> "1")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(VIDEO_ISSUE_REQUEST.replace("10485760", "104857601")))
 				.andExpect(status().isBadRequest())
@@ -243,6 +262,30 @@ class MediaControllerTest {
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
 				.andExpect(jsonPath("$.errors[0].field").value("fileSizeBytes"));
+	}
+
+	@Test
+	@DisplayName("영상 업로드 대상이 비어 있으면 검증에 실패한다")
+	void issueVideoFailsWhenTargetIsBlank() throws Exception {
+		mockMvc.perform(post("/api/media/video-upload-urls")
+						.principal(() -> "1")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(VIDEO_ISSUE_REQUEST.replace("TRAINING_VIDEO", "")))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
+				.andExpect(jsonPath("$.errors[0].field").value("target"));
+	}
+
+	@Test
+	@DisplayName("영상 Content-Type이 비어 있으면 검증에 실패한다")
+	void issueVideoFailsWhenContentTypeIsBlank() throws Exception {
+		mockMvc.perform(post("/api/media/video-upload-urls")
+						.principal(() -> "1")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(VIDEO_ISSUE_REQUEST.replace("video/mp4", "")))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
+				.andExpect(jsonPath("$.errors[0].field").value("contentType"));
 	}
 
 	@Test

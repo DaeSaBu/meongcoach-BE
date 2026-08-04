@@ -54,7 +54,8 @@ class AuthControllerTest {
 								parameterWithName("provider").description("소셜 로그인 제공자. 현재 `kakao`만 지원")
 						),
 						requestFields(
-								fieldWithPath("token").description("앱이 제공자 SDK로 받은 자격증명. 카카오는 OIDC ID 토큰")
+								fieldWithPath("token").description(
+										"필수 입력. 앱이 제공자 SDK로 받은 자격증명. 카카오는 OIDC ID 토큰")
 						),
 						responseFields(
 								fieldWithPath("accessToken").description("API 호출에 사용할 액세스 토큰"),
@@ -116,7 +117,7 @@ class AuthControllerTest {
 				.andExpect(jsonPath("$.refreshToken").value("refresh-token"))
 				.andDo(document("user/token-refresh",
 						requestFields(
-								fieldWithPath("refreshToken").description("로그인 시 발급받은 리프레시 토큰")
+								fieldWithPath("refreshToken").description("필수 입력. 로그인 시 발급받은 리프레시 토큰")
 						),
 						responseFields(
 								fieldWithPath("accessToken").description("새로 발급된 액세스 토큰"),
@@ -143,6 +144,17 @@ class AuthControllerTest {
 								fieldWithPath("timestamp").description("에러 발생 시각(UTC)")
 						)
 				));
+	}
+
+	@Test
+	@DisplayName("리프레시 토큰이 비어 있으면 검증에 실패한다")
+	void refreshFailsWhenTokenIsBlank() throws Exception {
+		mockMvc.perform(post("/api/users/token/refresh")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"refreshToken\": \"\"}"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
+				.andExpect(jsonPath("$.errors[0].field").value("refreshToken"));
 	}
 
 	@TestConfiguration

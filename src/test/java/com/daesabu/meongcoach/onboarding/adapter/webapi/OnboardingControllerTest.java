@@ -27,6 +27,7 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -89,7 +90,9 @@ class OnboardingControllerTest {
 	@Test
 	@DisplayName("온보딩 메타데이터를 조회한다")
 	void metadataReturnsOnboardingLists() throws Exception {
-		mockMvc.perform(get("/api/onboarding/metadata").principal(() -> "1"))
+		mockMvc.perform(get("/api/onboarding/metadata")
+						.principal(() -> "1")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.topics[0].title").value("배변 훈련"))
 				.andExpect(jsonPath("$.breeds[0].code").value("POODLE"))
@@ -114,36 +117,39 @@ class OnboardingControllerTest {
 	void completeReturnsCreatedDogIds() throws Exception {
 		mockMvc.perform(post("/api/onboarding")
 						.principal(() -> "1")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(COMPLETE_REQUEST))
 				.andExpect(status().isCreated())
 				.andExpect(jsonPath("$.dogIds[0]").value(1))
 				.andDo(document("onboarding/complete",
 						requestFields(
-								fieldWithPath("nickname").description("사용자 닉네임 (최대 50자)"),
-								fieldWithPath("birthDate").description("사용자 생년월일. 선택 입력").optional(),
+								fieldWithPath("nickname").description("사용자 닉네임. 필수 입력, 최대 50자"),
+								fieldWithPath("birthDate").description("사용자 생년월일. 과거 날짜, 선택 입력").optional(),
 								fieldWithPath("mbti").description("사용자 MBTI 코드. 필수 입력"),
 								fieldWithPath("gender").description(
 										"사용자 성별. `MALE`/`FEMALE`/`NONE`(응답 안 함). 필수 입력"),
 								fieldWithPath("profileImageUrl").description(
 										"사용자 프로필 이미지 공개 URL. 이미지 업로드 URL 발급 API의 "
-												+ "publicUrl. 선택 입력").optional(),
+												+ "publicUrl. 최대 512자, 선택 입력").optional(),
 								fieldWithPath("priorTrainingTopicIds").description(
-										"이전에 교육한 토픽 ID 배열 (최대 100개). "
+										"이전에 교육한 양수 토픽 ID 배열 (최대 100개). "
 												+ "미입력·null·빈 배열은 선택 없음").optional(),
 								fieldWithPath("trainingGoalTopicIds").description(
-										"앞으로 교육할 목표 토픽 ID 배열 (최대 100개). "
+										"앞으로 교육할 양수 목표 토픽 ID 배열 (최대 100개). "
 												+ "미입력·null·빈 배열은 선택 없음").optional(),
-								fieldWithPath("dogs[].name").description("강아지 이름 (최대 50자)"),
+								fieldWithPath("dogs[]").description("등록할 강아지 목록. 1마리 이상"),
+								fieldWithPath("dogs[].name").description("강아지 이름. 필수 입력, 최대 50자"),
 								fieldWithPath("dogs[].breed").description(
-										"메타데이터 조회 응답에서 선택한 강아지 견종 코드"),
+										"메타데이터 조회 응답에서 선택한 강아지 견종 코드. 최대 30자"),
 								fieldWithPath("dogs[].sex").description("강아지 성별. `MALE` 또는 `FEMALE`"),
-								fieldWithPath("dogs[].birthDate").description("강아지 생년월일. 선택 입력").optional(),
-								fieldWithPath("dogs[].weightKg").description("강아지 몸무게(kg)"),
+								fieldWithPath("dogs[].birthDate")
+										.description("강아지 생년월일. 과거 날짜, 선택 입력").optional(),
+								fieldWithPath("dogs[].weightKg").description("0보다 큰 강아지 몸무게(kg)"),
 								fieldWithPath("dogs[].personalities").description("강아지 성격 코드 목록. 선택 입력").optional(),
 								fieldWithPath("dogs[].profileImageUrl").description(
 										"강아지 프로필 이미지 공개 URL. 이미지 업로드 URL 발급 API의 "
-												+ "publicUrl. 선택 입력").optional(),
+												+ "publicUrl. 최대 512자, 선택 입력").optional(),
 								fieldWithPath("dogs[].expectation").description(
 										"강아지 교육 기대 사항 (최대 500자). 선택 입력").optional()
 						),
@@ -223,6 +229,7 @@ class OnboardingControllerTest {
 	void completeFailsWhenAlreadyOnboarded() throws Exception {
 		mockMvc.perform(post("/api/onboarding")
 						.principal(() -> String.valueOf(ONBOARDED_USER_ID))
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(COMPLETE_REQUEST))
 				.andExpect(status().isConflict())
@@ -249,6 +256,50 @@ class OnboardingControllerTest {
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
 				.andExpect(jsonPath("$.errors[0].field").value("nickname"));
+	}
+
+	@Test
+	@DisplayName("닉네임이 50자를 넘으면 검증에 실패한다")
+	void completeFailsWhenNicknameIsTooLong() throws Exception {
+		String request = COMPLETE_REQUEST.replace("멍멍이집사", "가".repeat(51));
+
+		assertValidationFails(request, "nickname");
+	}
+
+	@Test
+	@DisplayName("사용자 생년월일이 과거가 아니면 검증에 실패한다")
+	void completeFailsWhenUserBirthDateIsNotPast() throws Exception {
+		String request = COMPLETE_REQUEST.replace("1998-01-01", "2999-01-01");
+
+		assertValidationFails(request, "birthDate");
+	}
+
+	@Test
+	@DisplayName("사용자 프로필 이미지 URL이 512자를 넘으면 검증에 실패한다")
+	void completeFailsWhenUserProfileImageUrlIsTooLong() throws Exception {
+		String request = COMPLETE_REQUEST.replace(
+				"https://images.test.meongcoach.com/images/user-profile/1/a.jpg",
+				"https://example.com/" + "a".repeat(500));
+
+		assertValidationFails(request, "profileImageUrl");
+	}
+
+	@Test
+	@DisplayName("교육 토픽 ID가 100개를 넘으면 검증에 실패한다")
+	void completeFailsWhenPriorTrainingTopicIdsExceedMaxSize() throws Exception {
+		String request = COMPLETE_REQUEST.replace("\"priorTrainingTopicIds\": [1, 2]",
+				"\"priorTrainingTopicIds\": [" + "1, ".repeat(100) + "1]");
+
+		assertValidationFails(request, "priorTrainingTopicIds");
+	}
+
+	@Test
+	@DisplayName("목표 토픽 ID가 양수가 아니면 검증에 실패한다")
+	void completeFailsWhenTrainingGoalTopicIdIsNotPositive() throws Exception {
+		String request = COMPLETE_REQUEST.replace("\"trainingGoalTopicIds\": [2, 3]",
+				"\"trainingGoalTopicIds\": [0]");
+
+		assertValidationFails(request, "trainingGoalTopicIds[0]");
 	}
 
 	@Test
@@ -308,6 +359,82 @@ class OnboardingControllerTest {
 	}
 
 	@Test
+	@DisplayName("강아지 이름이 50자를 넘으면 검증에 실패한다")
+	void completeFailsWhenDogNameIsTooLong() throws Exception {
+		String request = COMPLETE_REQUEST.replace("\"name\": \"초코\"",
+				"\"name\": \"" + "가".repeat(51) + "\"");
+
+		assertValidationFails(request, "dogs[0].name");
+	}
+
+	@Test
+	@DisplayName("강아지 이름이 비어 있으면 검증에 실패한다")
+	void completeFailsWhenDogNameIsBlank() throws Exception {
+		String request = COMPLETE_REQUEST.replace("\"name\": \"초코\"", "\"name\": \"\"");
+
+		assertValidationFails(request, "dogs[0].name");
+	}
+
+	@Test
+	@DisplayName("강아지 견종 코드가 30자를 넘으면 검증에 실패한다")
+	void completeFailsWhenDogBreedIsTooLong() throws Exception {
+		String request = COMPLETE_REQUEST.replace("\"breed\": \"POODLE\"",
+				"\"breed\": \"" + "A".repeat(31) + "\"");
+
+		assertValidationFails(request, "dogs[0].breed");
+	}
+
+	@Test
+	@DisplayName("강아지 견종 코드가 비어 있으면 검증에 실패한다")
+	void completeFailsWhenDogBreedIsBlank() throws Exception {
+		String request = COMPLETE_REQUEST.replace("\"breed\": \"POODLE\"", "\"breed\": \"\"");
+
+		assertValidationFails(request, "dogs[0].breed");
+	}
+
+	@Test
+	@DisplayName("강아지 성별이 비어 있으면 검증에 실패한다")
+	void completeFailsWhenDogSexIsBlank() throws Exception {
+		String request = COMPLETE_REQUEST.replace("\"sex\": \"MALE\"", "\"sex\": \"\"");
+
+		assertValidationFails(request, "dogs[0].sex");
+	}
+
+	@Test
+	@DisplayName("강아지 생년월일이 과거가 아니면 검증에 실패한다")
+	void completeFailsWhenDogBirthDateIsNotPast() throws Exception {
+		String request = COMPLETE_REQUEST.replace("2024-03-01", "2999-01-01");
+
+		assertValidationFails(request, "dogs[0].birthDate");
+	}
+
+	@Test
+	@DisplayName("강아지 몸무게가 양수가 아니면 검증에 실패한다")
+	void completeFailsWhenDogWeightIsNotPositive() throws Exception {
+		String request = COMPLETE_REQUEST.replace("\"weightKg\": 4.50", "\"weightKg\": 0");
+
+		assertValidationFails(request, "dogs[0].weightKg");
+	}
+
+	@Test
+	@DisplayName("강아지 몸무게가 없으면 검증에 실패한다")
+	void completeFailsWhenDogWeightIsMissing() throws Exception {
+		String request = COMPLETE_REQUEST.replace("\"weightKg\": 4.50,", "");
+
+		assertValidationFails(request, "dogs[0].weightKg");
+	}
+
+	@Test
+	@DisplayName("강아지 프로필 이미지 URL이 512자를 넘으면 검증에 실패한다")
+	void completeFailsWhenDogProfileImageUrlIsTooLong() throws Exception {
+		String request = COMPLETE_REQUEST.replace(
+				"https://images.test.meongcoach.com/images/dog-profile/1/b.jpg",
+				"https://example.com/" + "a".repeat(500));
+
+		assertValidationFails(request, "dogs[0].profileImageUrl");
+	}
+
+	@Test
 	@DisplayName("강아지 없이 온보딩을 완료할 수 없다")
 	void completeFailsWhenDogsIsEmpty() throws Exception {
 		mockMvc.perform(post("/api/onboarding")
@@ -328,6 +455,16 @@ class OnboardingControllerTest {
 						.content(COMPLETE_REQUEST))
 				.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+	}
+
+	private void assertValidationFails(String request, String field) throws Exception {
+		mockMvc.perform(post("/api/onboarding")
+						.principal(() -> "1")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(request))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
+				.andExpect(jsonPath("$.errors[0].field").value(field));
 	}
 
 	@TestConfiguration

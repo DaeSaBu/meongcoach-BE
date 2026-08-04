@@ -55,6 +55,19 @@ class SecurityFilterChainTest {
 	}
 
 	@Test
+	@DisplayName("잘못된 소셜 토큰을 제출하면 401을 반환한다")
+	void authenticatedSocialLoginWithInvalidCredentialReturnsUnauthorized() throws Exception {
+		AuthToken token = tokenProvider.issue(1L);
+
+		mockMvc.perform(post("/api/users/social/kakao")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"token\": \"invalid\"}"))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.code").value("USER_INVALID_SOCIAL_TOKEN"));
+	}
+
+	@Test
 	@DisplayName("인증 엔드포인트가 아닌 회원 경로는 인증이 필요하다")
 	void otherUserPathsAreProtected() throws Exception {
 		mockMvc.perform(get("/api/users/me"))

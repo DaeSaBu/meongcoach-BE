@@ -38,8 +38,12 @@ class UserControllerTest {
 ## 문서화 필수 항목
 
 - 요청: path parameters / query parameters / request fields (해당하는 것 모두)
+- 인증이 필요한 API의 요청 예시: `Authorization: Bearer access-token` 헤더
 - 응답: response fields
 - 실패 응답: 대표 에러 케이스 1개 이상 (Problem Details 형식)
+
+`@WebMvcTest`에서 `.principal(...)`은 인증 주체만 주입하고 HTTP 헤더를 만들지 않습니다. 문서 스니펫을 생성하는
+요청에는 `.principal(...)`과 별도로 위 인증 헤더를 추가합니다.
 
 ## 문서 빌드
 

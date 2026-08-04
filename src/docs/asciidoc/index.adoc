@@ -34,7 +34,7 @@ operation::shared/error-unauthorized[snippets='http-response,response-fields']
 == Auth API
 
 앱이 소셜 제공자 SDK로 로그인해 받은 자격증명을 서버가 검증하고, 우리 서비스의 JWT를 발급합니다.
-이후 모든 API는 발급받은 액세스 토큰을 `Authorization: Bearer {accessToken}` 헤더로 전달해 호출합니다.
+인증이 필요한 API는 발급받은 액세스 토큰을 `Authorization: Bearer {accessToken}` 헤더로 전달해 호출합니다.
 인증이 필요한 API에서 사용자를 식별하는 값은 액세스 토큰의 `sub` 클레임(회원 ID)이며, 별도 요청 헤더나 파라미터로 받지 않습니다.
 
 === 소셜 로그인
@@ -153,6 +153,8 @@ link:{swagger-ui}#/Health/health-check[▶ Swagger에서 Try it out,window=swagg
 operation::health/check[snippets='http-request,http-response,response-fields']
 
 == Training API
+
+모든 엔드포인트는 액세스 토큰 인증이 필요합니다.
 
 === 커리큘럼 리스트 조회
 
