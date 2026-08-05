@@ -23,14 +23,10 @@ spring:
       sqs:
         enabled: false
 
-# 로컬 Swagger UI — 스펙은 springdoc 자동 스캔이 아니라 빌드 산출물(build/api-spec/openapi3.json)을 쓴다.
-# api-docs.enabled=false로 두면 springdoc 3.x에서는 UI 빈 전체가 함께 꺼지므로 기본값을 유지하고,
-# 자동 스캔 엔드포인트(/v3/api-docs)는 시큐리티 permitAll에서 제외해 가린다
-springdoc:
-  swagger-ui:
-    url: /openapi3.json
-
 meongcoach:
+  # 로컬에서는 /swagger-ui/** 문서 페이지를 인증 없이 연다
+  api-docs:
+    enabled: true
   cors:
     allowed-origin-patterns:
       - http://localhost:*

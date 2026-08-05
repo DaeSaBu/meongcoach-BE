@@ -14,14 +14,10 @@ spring:
     hibernate:
       ddl-auto: validate
 
-# springdoc은 developmentOnly 의존성이라 배포 환경에 없지만, 스코프가 바뀌어도 노출되지 않도록 방어적으로 끈다
-springdoc:
+meongcoach:
+  # 기본값이 이미 false지만 운영에서 문서를 차단한다는 의도를 명시한다
   api-docs:
     enabled: false
-  swagger-ui:
-    enabled: false
-
-meongcoach:
   cors:
     allowed-origin-patterns:
       - https://app.meongcoach.com

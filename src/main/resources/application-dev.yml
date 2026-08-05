@@ -15,14 +15,10 @@ spring:
       # 마이그레이션 도구 도입 전까지 엔티티 변경을 자동 반영한다. 컬럼 삭제·이름 변경은 반영되지 않는다
       ddl-auto: update
 
-# springdoc은 developmentOnly 의존성이라 배포 환경에 없지만, 스코프가 바뀌어도 노출되지 않도록 방어적으로 끈다
-springdoc:
-  api-docs:
-    enabled: false
-  swagger-ui:
-    enabled: false
-
 meongcoach:
+  # 개발 서버에서는 /swagger-ui/** 문서 페이지를 인증 없이 연다
+  api-docs:
+    enabled: true
   cors:
     allowed-origin-patterns:
       - https://app.dev.meongcoach.com

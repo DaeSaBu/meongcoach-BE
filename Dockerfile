@@ -7,7 +7,8 @@ COPY gradle ./gradle
 RUN chmod +x gradlew
 
 COPY src ./src
-RUN ./gradlew bootJar --no-daemon
+# bootJar가 OpenAPI 스펙 생성 체인(test → openapi3)을 강제하므로 이미지에 불필요한 finalizer만 스킵한다
+RUN ./gradlew bootJar -x jacocoTestReport -x asciidoctor --no-daemon
 
 FROM eclipse-temurin:25-jre
 

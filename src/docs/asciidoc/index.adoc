@@ -5,10 +5,9 @@
 :toc: left
 :toclevels: 2
 :sectlinks:
-// 배포된 문서 사이트에서 restdocs/ 기준 Swagger UI 상대 경로. 로컬 단독 빌드에서는 링크가 연결되지 않는다
-// window=swagger는 사이트 랜딩(src/docs/site/index.html)의 iframe name="swagger"와 짝이다.
-// 랜딩에 임베드되면 옆 Swagger 패널을 갱신하고, restdocs를 단독으로 열면 같은 이름의 탭을 재사용한다
-:swagger-ui: ../swagger-ui/index.html
+// 로컬 API 서버가 서빙하는 Swagger UI 주소. 앱이 떠 있지 않으면 링크가 연결되지 않는다
+// window=swagger는 같은 이름의 브라우저 탭을 재사용해 딥링크마다 새 탭이 열리지 않게 한다
+:swagger-ui: http://localhost:8080/swagger-ui/index.html
 
 API 문서는 테스트를 통과한 스니펫으로부터 생성됩니다.
 모듈별로 `== {모듈} API` 섹션을 추가하고, `operation::` 매크로로 스니펫을 포함합니다.
