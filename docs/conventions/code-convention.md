@@ -29,7 +29,7 @@
 | 역할 | 위치 | 규칙 | 예시 |
 | --- | --- | --- | --- |
 | 모듈 공개 API 인터페이스 | `application/provided` | 능력을 나타내는 이름, 접미사 없음 | `UserRegister`, `UserFinder` |
-| 애플리케이션 조회 결과 모델 | `application/provided` | `~View` (record) | `CurriculumView`, `LessonView` |
+| 애플리케이션 조회 결과 래퍼 | `application/provided` | `~View` (record) — 도메인 타입만으로 부족할 때만 | `CurriculumListView`, `LessonView` |
 | 필요 자원 인터페이스 | `application/required` | 자원 이름 그대로 | `UserRepository`, `EmailSender` |
 | 애플리케이션 서비스 | `application` | `~Service` | `UserQueryService`, `UserFinderService` |
 | 컨트롤러 | `adapter/webapi` | `~Controller` | `AuthController` |
@@ -64,6 +64,11 @@
 - 도메인 입력 모델은 `~Command` 접미사의 record로 `domain`에 두며, 웹 DTO와 별개로 유지합니다. (예: `DogRegisterCommand`)
 	- 엔티티 정적 팩토리의 순수 값 파라미터가 3개 이상이면 Command로 묶고, 팩토리는 Command를 받아 생성자에 전달합니다.
 	- 연관 엔티티는 Command에 담지 않고 별도 인자로 전달합니다. (예: `Curriculum.create(Topic topic, CurriculumCreateCommand command)`)
-- 애플리케이션 조회 결과는 `application/provided`의 `~View` record로 반환합니다. 필드명은 도메인 기준(`id`, `title`, `sortOrder`)으로 두고, 웹 노출 이름(`topicId`, `topicTitle`)으로 바꾸는 일은 `~Response.from(~View)` 정적 팩토리에서만 합니다. `~View`에 웹 네이밍을 쓰면 `application`이 `adapter`의 관심사를 떠안게 됩니다.
+- 애플리케이션 조회 결과는 **도메인 타입(엔티티·값 객체)을 그대로 반환하는 것이 기본**입니다. 값을 그대로 옮겨 담기만 하는 `~View`는 만들지 않습니다.
+	- 다음 중 하나에 해당할 때만 `application/provided`에 `~View` record를 두고 감쌉니다.
+		- **도메인 타입 하나로 표현할 수 없을 때** — 여러 애그리거트 조합, 일부 필드만 내리는 projection, 집계값
+		- **모듈 경계를 넘는 반환일 때** — `@NamedInterface("provided")`는 provided 패키지에 물리적으로 존재하는 타입만 노출로 인정합니다. 인터페이스 시그니처에 등장하는 도메인 타입은 전파되지 않으므로, 도메인 타입을 반환하면 호출하는 모듈이 `ApplicationModules.verify()`에서 실패합니다
+		- **엔티티에 지연 로딩 연관이 있을 때** — `open-in-view: false`(`application.yml`)라 서비스 트랜잭션이 끝나면 준영속이 됩니다. `adapter`에서 연관을 건드리면 `LazyInitializationException`이 납니다
+	- `~View`를 둘 때 필드명은 도메인 기준(`id`, `title`, `sortOrder`)으로 두고, 웹 노출 이름(`topicId`, `topicTitle`)으로 바꾸는 일은 `~Response.from(...)` 정적 팩토리에서만 합니다. `~View`에 웹 네이밍을 쓰면 `application`이 `adapter`의 관심사를 떠안게 됩니다.
 - DTO ↔ 도메인 변환은 DTO의 정적 팩토리 메서드(`from`, `of`) 또는 `toXxx` 메서드로 처리합니다.
-- 엔티티를 컨트롤러 응답으로 직접 노출하지 않습니다.
+- 엔티티를 컨트롤러 **응답 본문**으로 직접 노출하지 않습니다. `application`이 엔티티를 반환하더라도 컨트롤러는 `~Response.from(엔티티)`로 감싸 내려보냅니다.
