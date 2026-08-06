@@ -1,7 +1,6 @@
 package com.daesabu.meongcoach.ai.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -70,13 +69,13 @@ class AiReportGenerateServiceTest {
 	}
 
 	@Test
-	@DisplayName("분석이 실패하면 예외를 전파하고 저장하지 않는다")
-	void generatePropagatesAnalysisFailureWithoutSaving() {
+	@DisplayName("분석이 실패하면 예외 전파 없이 저장하지 않고 끝낸다")
+	void generateFinishesWithoutSavingWhenAnalysisFails() {
 		when(aiReportRepository.existsByVideoObjectKey(OBJECT_KEY)).thenReturn(false);
 		videoAnalyzer.failure = new IllegalStateException("분석 실패");
 
-		assertThatThrownBy(() -> service.generate(OBJECT_KEY))
-				.isInstanceOf(IllegalStateException.class);
+		service.generate(OBJECT_KEY);
+
 		verify(aiReportRepository, never()).save(any());
 	}
 
