@@ -9,7 +9,7 @@ import org.springframework.util.MimeType;
 
 /**
  * Gemini로 영상을 분석하는 어댑터. 영상은 바이트로 내려받지 않고 presigned URL을 fileUri로 전달해
- * Gemini가 직접 가져가게 한다. 실패 시 예외를 전파해 SQS 재전달로 재시도되게 한다.
+ * Gemini가 직접 가져가게 한다. 실패는 그대로 전파하며, SQS 경계에서 삼킬지는 VideoUploadSqsConsumer가 정한다.
  */
 @Component
 public class GeminiVideoAnalyzer implements VideoAnalyzer {
