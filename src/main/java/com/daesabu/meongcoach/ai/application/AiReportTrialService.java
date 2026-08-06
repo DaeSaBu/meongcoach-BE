@@ -5,7 +5,8 @@ import com.daesabu.meongcoach.ai.application.provided.AiTrialView;
 import com.daesabu.meongcoach.ai.application.provided.AiVideoUploadUrlIssuer;
 import com.daesabu.meongcoach.ai.application.provided.AiVideoUploadUrlView;
 import com.daesabu.meongcoach.ai.application.required.AiReportRepository;
-import com.daesabu.meongcoach.ai.domain.AiReport;
+import com.daesabu.meongcoach.ai.domain.exception.AiReportTrialExceededException;
+import com.daesabu.meongcoach.ai.domain.vo.AiTrial;
 import com.daesabu.meongcoach.media.application.provided.VideoUploadUrlIssuer;
 import com.daesabu.meongcoach.media.application.provided.VideoUploadUrlResult;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +30,10 @@ public class AiReportTrialService implements AiVideoUploadUrlIssuer, AiTrialFind
 
 	@Override
 	public AiVideoUploadUrlView issue(Long userId, String contentType, long fileSizeBytes) {
-		AiReport.validateTrialAvailable(aiReportRepository.countByUserId(userId));
+		AiTrial trial = AiTrial.of(aiReportRepository.countByUserId(userId));
+		if (!trial.isAvailable()) {
+			throw new AiReportTrialExceededException();
+		}
 
 		VideoUploadUrlResult result = videoUploadUrlIssuer.issue(userId, UPLOAD_TARGET, contentType, fileSizeBytes);
 		return new AiVideoUploadUrlView(result.uploadUrl(), result.publicUrl(), result.objectKey(),
@@ -38,9 +42,7 @@ public class AiReportTrialService implements AiVideoUploadUrlIssuer, AiTrialFind
 
 	@Override
 	public AiTrialView findTrial(Long userId) {
-		int usedCount = Math.toIntExact(aiReportRepository.countByUserId(userId));
-		// 발급~생성이 비동기라 한도를 넘겨 저장됐을 수 있으므로 남은 횟수는 음수가 되지 않게 막는다
-		int remainingCount = Math.max(0, AiReport.MAX_TRIAL_COUNT - usedCount);
-		return new AiTrialView(usedCount, AiReport.MAX_TRIAL_COUNT, remainingCount);
+		AiTrial trial = AiTrial.of(aiReportRepository.countByUserId(userId));
+		return new AiTrialView(trial.usedCount(), trial.maxCount(), trial.remainingCount());
 	}
 }
