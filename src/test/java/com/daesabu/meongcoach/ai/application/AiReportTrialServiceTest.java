@@ -5,8 +5,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.daesabu.meongcoach.ai.application.provided.AiReportTrialView;
-import com.daesabu.meongcoach.ai.application.provided.AiReportVideoUploadUrlView;
+import com.daesabu.meongcoach.ai.application.provided.AiTrialView;
+import com.daesabu.meongcoach.ai.application.provided.AiVideoUploadUrlView;
 import com.daesabu.meongcoach.ai.application.required.AiReportRepository;
 import com.daesabu.meongcoach.ai.domain.exception.AiReportTrialExceededException;
 import com.daesabu.meongcoach.media.application.provided.VideoUploadUrlIssuer;
@@ -43,7 +43,7 @@ class AiReportTrialServiceTest {
 	void issueDelegatesToMediaWhenTrialRemains(long generatedCount) {
 		when(aiReportRepository.countByUserId(7L)).thenReturn(generatedCount);
 
-		AiReportVideoUploadUrlView view = service.issue(7L, "video/mp4", 10485760L);
+		AiVideoUploadUrlView view = service.issue(7L, "video/mp4", 10485760L);
 
 		assertThat(videoUploadUrlIssuer.issuedRequests).containsExactly("7:TRAINING_VIDEO:video/mp4:10485760");
 		assertThat(view.uploadUrl()).isEqualTo(UPLOAD_URL);
@@ -67,9 +67,9 @@ class AiReportTrialServiceTest {
 	void findTrialReturnsFullRemainingWhenNoReportExists() {
 		when(aiReportRepository.countByUserId(7L)).thenReturn(0L);
 
-		AiReportTrialView view = service.findTrial(7L);
+		AiTrialView view = service.findTrial(7L);
 
-		assertThat(view).isEqualTo(new AiReportTrialView(0, 3, 3));
+		assertThat(view).isEqualTo(new AiTrialView(0, 3, 3));
 	}
 
 	@Test
@@ -77,9 +77,9 @@ class AiReportTrialServiceTest {
 	void findTrialReturnsRemainingCountAfterUse() {
 		when(aiReportRepository.countByUserId(7L)).thenReturn(2L);
 
-		AiReportTrialView view = service.findTrial(7L);
+		AiTrialView view = service.findTrial(7L);
 
-		assertThat(view).isEqualTo(new AiReportTrialView(2, 3, 1));
+		assertThat(view).isEqualTo(new AiTrialView(2, 3, 1));
 	}
 
 	@Test
@@ -87,9 +87,9 @@ class AiReportTrialServiceTest {
 	void findTrialClampsRemainingCountToZero() {
 		when(aiReportRepository.countByUserId(7L)).thenReturn(4L);
 
-		AiReportTrialView view = service.findTrial(7L);
+		AiTrialView view = service.findTrial(7L);
 
-		assertThat(view).isEqualTo(new AiReportTrialView(4, 3, 0));
+		assertThat(view).isEqualTo(new AiTrialView(4, 3, 0));
 	}
 
 	private static class RecordingVideoUploadUrlIssuer implements VideoUploadUrlIssuer {

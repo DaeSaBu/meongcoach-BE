@@ -1,9 +1,9 @@
 package com.daesabu.meongcoach.ai.application;
 
-import com.daesabu.meongcoach.ai.application.provided.AiReportTrialFinder;
-import com.daesabu.meongcoach.ai.application.provided.AiReportTrialView;
-import com.daesabu.meongcoach.ai.application.provided.AiReportVideoUploadUrlIssuer;
-import com.daesabu.meongcoach.ai.application.provided.AiReportVideoUploadUrlView;
+import com.daesabu.meongcoach.ai.application.provided.AiTrialFinder;
+import com.daesabu.meongcoach.ai.application.provided.AiTrialView;
+import com.daesabu.meongcoach.ai.application.provided.AiVideoUploadUrlIssuer;
+import com.daesabu.meongcoach.ai.application.provided.AiVideoUploadUrlView;
 import com.daesabu.meongcoach.ai.application.required.AiReportRepository;
 import com.daesabu.meongcoach.ai.domain.AiReport;
 import com.daesabu.meongcoach.media.application.provided.VideoUploadUrlIssuer;
@@ -19,7 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class AiReportTrialService implements AiReportVideoUploadUrlIssuer, AiReportTrialFinder {
+public class AiReportTrialService implements AiVideoUploadUrlIssuer, AiTrialFinder {
 
 	// 모듈 경계를 넘는 값이라 media의 enum 대신 문자열을 쓴다. AI 리포트 영상은 훈련 영상으로 고정한다
 	private static final String UPLOAD_TARGET = "TRAINING_VIDEO";
@@ -28,19 +28,19 @@ public class AiReportTrialService implements AiReportVideoUploadUrlIssuer, AiRep
 	private final VideoUploadUrlIssuer videoUploadUrlIssuer;
 
 	@Override
-	public AiReportVideoUploadUrlView issue(Long userId, String contentType, long fileSizeBytes) {
+	public AiVideoUploadUrlView issue(Long userId, String contentType, long fileSizeBytes) {
 		AiReport.validateTrialAvailable(aiReportRepository.countByUserId(userId));
 
 		VideoUploadUrlResult result = videoUploadUrlIssuer.issue(userId, UPLOAD_TARGET, contentType, fileSizeBytes);
-		return new AiReportVideoUploadUrlView(result.uploadUrl(), result.publicUrl(), result.objectKey(),
+		return new AiVideoUploadUrlView(result.uploadUrl(), result.publicUrl(), result.objectKey(),
 				result.expiresInSeconds());
 	}
 
 	@Override
-	public AiReportTrialView findTrial(Long userId) {
+	public AiTrialView findTrial(Long userId) {
 		int usedCount = Math.toIntExact(aiReportRepository.countByUserId(userId));
 		// 발급~생성이 비동기라 한도를 넘겨 저장됐을 수 있으므로 남은 횟수는 음수가 되지 않게 막는다
 		int remainingCount = Math.max(0, AiReport.MAX_TRIAL_COUNT - usedCount);
-		return new AiReportTrialView(usedCount, AiReport.MAX_TRIAL_COUNT, remainingCount);
+		return new AiTrialView(usedCount, AiReport.MAX_TRIAL_COUNT, remainingCount);
 	}
 }

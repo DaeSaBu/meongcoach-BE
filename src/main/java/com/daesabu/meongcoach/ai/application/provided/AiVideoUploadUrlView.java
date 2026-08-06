@@ -8,5 +8,5 @@ package com.daesabu.meongcoach.ai.application.provided;
  * @param objectKey        업로드된 객체의 키. 이후 API 요청에는 이 값을 담아 등록한다
  * @param expiresInSeconds uploadUrl의 유효 시간(초)
  */
-public record AiReportVideoUploadUrlView(String uploadUrl, String publicUrl, String objectKey, long expiresInSeconds) {
+public record AiVideoUploadUrlView(String uploadUrl, String publicUrl, String objectKey, long expiresInSeconds) {
 }

@@ -2,12 +2,12 @@ package com.daesabu.meongcoach.ai.adapter.webapi;
 
 import com.daesabu.meongcoach.ai.adapter.webapi.dto.AiReportDetailResponse;
 import com.daesabu.meongcoach.ai.adapter.webapi.dto.AiReportListResponse;
-import com.daesabu.meongcoach.ai.adapter.webapi.dto.AiReportTrialResponse;
-import com.daesabu.meongcoach.ai.adapter.webapi.dto.AiReportVideoUploadUrlRequest;
-import com.daesabu.meongcoach.ai.adapter.webapi.dto.AiReportVideoUploadUrlResponse;
+import com.daesabu.meongcoach.ai.adapter.webapi.dto.AiTrialResponse;
+import com.daesabu.meongcoach.ai.adapter.webapi.dto.AiVideoUploadUrlRequest;
+import com.daesabu.meongcoach.ai.adapter.webapi.dto.AiVideoUploadUrlResponse;
 import com.daesabu.meongcoach.ai.application.provided.AiReportFinder;
-import com.daesabu.meongcoach.ai.application.provided.AiReportTrialFinder;
-import com.daesabu.meongcoach.ai.application.provided.AiReportVideoUploadUrlIssuer;
+import com.daesabu.meongcoach.ai.application.provided.AiTrialFinder;
+import com.daesabu.meongcoach.ai.application.provided.AiVideoUploadUrlIssuer;
 import com.daesabu.meongcoach.shared.security.CurrentUserId;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -19,33 +19,33 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/ai/reports")
+@RequestMapping("/api/ai")
 @RequiredArgsConstructor
-public class AiReportController {
+public class AiController {
 
 	private final AiReportFinder aiReportFinder;
-	private final AiReportVideoUploadUrlIssuer aiReportVideoUploadUrlIssuer;
-	private final AiReportTrialFinder aiReportTrialFinder;
+	private final AiVideoUploadUrlIssuer aiVideoUploadUrlIssuer;
+	private final AiTrialFinder aiTrialFinder;
 
-	@GetMapping
+	@GetMapping("/reports")
 	public AiReportListResponse findReports(@CurrentUserId Long userId) {
 		return AiReportListResponse.from(aiReportFinder.findReports(userId));
 	}
 
-	@GetMapping("/{reportId}")
+	@GetMapping("/reports/{reportId}")
 	public AiReportDetailResponse findReport(@CurrentUserId Long userId, @PathVariable Long reportId) {
 		return AiReportDetailResponse.from(aiReportFinder.findReport(userId, reportId));
 	}
 
 	@PostMapping("/video-upload-urls")
-	public AiReportVideoUploadUrlResponse issueVideoUploadUrl(@CurrentUserId Long userId,
-	                                                          @Valid @RequestBody AiReportVideoUploadUrlRequest request) {
-		return AiReportVideoUploadUrlResponse.from(
-				aiReportVideoUploadUrlIssuer.issue(userId, request.contentType(), request.fileSizeBytes()));
+	public AiVideoUploadUrlResponse issueVideoUploadUrl(@CurrentUserId Long userId,
+	                                                    @Valid @RequestBody AiVideoUploadUrlRequest request) {
+		return AiVideoUploadUrlResponse.from(
+				aiVideoUploadUrlIssuer.issue(userId, request.contentType(), request.fileSizeBytes()));
 	}
 
 	@GetMapping("/trials")
-	public AiReportTrialResponse findTrial(@CurrentUserId Long userId) {
-		return AiReportTrialResponse.from(aiReportTrialFinder.findTrial(userId));
+	public AiTrialResponse findTrial(@CurrentUserId Long userId) {
+		return AiTrialResponse.from(aiTrialFinder.findTrial(userId));
 	}
 }

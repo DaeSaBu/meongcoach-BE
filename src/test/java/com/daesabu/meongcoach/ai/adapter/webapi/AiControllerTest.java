@@ -15,11 +15,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.daesabu.meongcoach.ai.application.provided.AiReportDetailView;
 import com.daesabu.meongcoach.ai.application.provided.AiReportFinder;
-import com.daesabu.meongcoach.ai.application.provided.AiReportTrialFinder;
-import com.daesabu.meongcoach.ai.application.provided.AiReportTrialView;
-import com.daesabu.meongcoach.ai.application.provided.AiReportVideoUploadUrlIssuer;
-import com.daesabu.meongcoach.ai.application.provided.AiReportVideoUploadUrlView;
 import com.daesabu.meongcoach.ai.application.provided.AiReportView;
+import com.daesabu.meongcoach.ai.application.provided.AiTrialFinder;
+import com.daesabu.meongcoach.ai.application.provided.AiTrialView;
+import com.daesabu.meongcoach.ai.application.provided.AiVideoUploadUrlIssuer;
+import com.daesabu.meongcoach.ai.application.provided.AiVideoUploadUrlView;
 import com.daesabu.meongcoach.ai.domain.exception.AiReportNotFoundException;
 import com.daesabu.meongcoach.ai.domain.exception.AiReportTrialExceededException;
 import java.security.Principal;
@@ -38,10 +38,10 @@ import org.springframework.test.web.servlet.MockMvc;
 /**
  * AI 리포트 목록·상세 조회와 영상 업로드 URL 발급·체험 횟수 조회 API 검증.
  */
-@WebMvcTest(AiReportController.class)
+@WebMvcTest(AiController.class)
 @AutoConfigureRestDocs
-@DisplayName("AI 리포트 API")
-class AiReportControllerTest {
+@DisplayName("AI API")
+class AiControllerTest {
 
 	// 컨트롤러 슬라이스에는 필터 체인이 없으므로 인증 주체를 요청에 직접 실어 보낸다
 	// (test-convention.md)
@@ -67,10 +67,10 @@ class AiReportControllerTest {
 	private AiReportFinder aiReportFinder;
 
 	@MockitoBean
-	private AiReportVideoUploadUrlIssuer aiReportVideoUploadUrlIssuer;
+	private AiVideoUploadUrlIssuer aiVideoUploadUrlIssuer;
 
 	@MockitoBean
-	private AiReportTrialFinder aiReportTrialFinder;
+	private AiTrialFinder aiTrialFinder;
 
 	@Test
 	@DisplayName("리포트 목록을 최신순으로 반환한다")
@@ -198,10 +198,10 @@ class AiReportControllerTest {
 	@Test
 	@DisplayName("체험 횟수가 남아 있으면 영상 업로드 URL을 발급한다")
 	void issueVideoUploadUrlReturnsUploadUrl() throws Exception {
-		given(aiReportVideoUploadUrlIssuer.issue(42L, "video/mp4", 10485760L)).willReturn(
-				new AiReportVideoUploadUrlView(VIDEO_UPLOAD_URL, VIDEO_PUBLIC_URL, VIDEO_OBJECT_KEY, 900L));
+		given(aiVideoUploadUrlIssuer.issue(42L, "video/mp4", 10485760L)).willReturn(
+				new AiVideoUploadUrlView(VIDEO_UPLOAD_URL, VIDEO_PUBLIC_URL, VIDEO_OBJECT_KEY, 900L));
 
-		mockMvc.perform(post("/api/ai/reports/video-upload-urls")
+		mockMvc.perform(post("/api/ai/video-upload-urls")
 						.principal(CURRENT_USER)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
 						.contentType(MediaType.APPLICATION_JSON)
@@ -235,25 +235,25 @@ class AiReportControllerTest {
 	@Test
 	@DisplayName("인증 주체에서 읽은 사용자로 영상 업로드 URL 발급을 위임한다")
 	void issueVideoUploadUrlDelegatesWithCurrentUserId() throws Exception {
-		given(aiReportVideoUploadUrlIssuer.issue(42L, "video/mp4", 10485760L)).willReturn(
-				new AiReportVideoUploadUrlView(VIDEO_UPLOAD_URL, VIDEO_PUBLIC_URL, VIDEO_OBJECT_KEY, 900L));
+		given(aiVideoUploadUrlIssuer.issue(42L, "video/mp4", 10485760L)).willReturn(
+				new AiVideoUploadUrlView(VIDEO_UPLOAD_URL, VIDEO_PUBLIC_URL, VIDEO_OBJECT_KEY, 900L));
 
-		mockMvc.perform(post("/api/ai/reports/video-upload-urls")
+		mockMvc.perform(post("/api/ai/video-upload-urls")
 						.principal(CURRENT_USER)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(VIDEO_ISSUE_REQUEST))
 				.andExpect(status().isOk());
 
-		then(aiReportVideoUploadUrlIssuer).should().issue(42L, "video/mp4", 10485760L);
+		then(aiVideoUploadUrlIssuer).should().issue(42L, "video/mp4", 10485760L);
 	}
 
 	@Test
 	@DisplayName("체험 횟수를 소진했으면 403과 에러 코드를 반환한다")
 	void issueVideoUploadUrlReturnsForbiddenWhenTrialExhausted() throws Exception {
-		given(aiReportVideoUploadUrlIssuer.issue(42L, "video/mp4", 10485760L))
+		given(aiVideoUploadUrlIssuer.issue(42L, "video/mp4", 10485760L))
 				.willThrow(new AiReportTrialExceededException());
 
-		mockMvc.perform(post("/api/ai/reports/video-upload-urls")
+		mockMvc.perform(post("/api/ai/video-upload-urls")
 						.principal(CURRENT_USER)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
 						.contentType(MediaType.APPLICATION_JSON)
@@ -276,7 +276,7 @@ class AiReportControllerTest {
 	@Test
 	@DisplayName("영상 Content-Type이 비어 있으면 검증에 실패한다")
 	void issueVideoUploadUrlFailsWhenContentTypeIsBlank() throws Exception {
-		mockMvc.perform(post("/api/ai/reports/video-upload-urls")
+		mockMvc.perform(post("/api/ai/video-upload-urls")
 						.principal(CURRENT_USER)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(VIDEO_ISSUE_REQUEST.replace("video/mp4", "")))
@@ -288,7 +288,7 @@ class AiReportControllerTest {
 	@Test
 	@DisplayName("영상 파일 크기가 없으면 검증에 실패한다")
 	void issueVideoUploadUrlFailsWhenFileSizeIsMissing() throws Exception {
-		mockMvc.perform(post("/api/ai/reports/video-upload-urls")
+		mockMvc.perform(post("/api/ai/video-upload-urls")
 						.principal(CURRENT_USER)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"contentType\": \"video/mp4\"}"))
@@ -300,7 +300,7 @@ class AiReportControllerTest {
 	@Test
 	@DisplayName("인증 정보가 없으면 영상 업로드 URL 발급도 401을 반환한다")
 	void issueVideoUploadUrlReturnsUnauthorizedWhenNotAuthenticated() throws Exception {
-		mockMvc.perform(post("/api/ai/reports/video-upload-urls")
+		mockMvc.perform(post("/api/ai/video-upload-urls")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(VIDEO_ISSUE_REQUEST))
 				.andExpect(status().isUnauthorized())
@@ -310,9 +310,9 @@ class AiReportControllerTest {
 	@Test
 	@DisplayName("체험 횟수 사용 현황을 반환한다")
 	void findTrialReturnsTrialUsage() throws Exception {
-		given(aiReportTrialFinder.findTrial(42L)).willReturn(new AiReportTrialView(1, 3, 2));
+		given(aiTrialFinder.findTrial(42L)).willReturn(new AiTrialView(1, 3, 2));
 
-		mockMvc.perform(get("/api/ai/reports/trials")
+		mockMvc.perform(get("/api/ai/trials")
 						.principal(CURRENT_USER)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isOk())
@@ -331,20 +331,18 @@ class AiReportControllerTest {
 	@Test
 	@DisplayName("인증 주체에서 읽은 사용자로 체험 횟수 조회를 위임한다")
 	void findTrialDelegatesWithCurrentUserId() throws Exception {
-		given(aiReportTrialFinder.findTrial(42L)).willReturn(new AiReportTrialView(0, 3, 3));
+		given(aiTrialFinder.findTrial(42L)).willReturn(new AiTrialView(0, 3, 3));
 
-		mockMvc.perform(get("/api/ai/reports/trials").principal(CURRENT_USER))
+		mockMvc.perform(get("/api/ai/trials").principal(CURRENT_USER))
 				.andExpect(status().isOk());
 
-		// 리터럴 /trials가 /{reportId} 패턴보다 우선 매핑되는지 함께 확인한다
-		then(aiReportTrialFinder).should().findTrial(42L);
-		then(aiReportFinder).shouldHaveNoInteractions();
+		then(aiTrialFinder).should().findTrial(42L);
 	}
 
 	@Test
 	@DisplayName("인증 정보가 없으면 체험 횟수 조회도 401을 반환한다")
 	void findTrialReturnsUnauthorizedWhenNotAuthenticated() throws Exception {
-		mockMvc.perform(get("/api/ai/reports/trials"))
+		mockMvc.perform(get("/api/ai/trials"))
 				.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
 	}
