@@ -2,13 +2,11 @@ package com.daesabu.meongcoach.ai.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
-import com.daesabu.meongcoach.ai.application.provided.AiTrialView;
+import com.daesabu.meongcoach.ai.application.provided.AiTrialFinder;
 import com.daesabu.meongcoach.ai.application.provided.AiVideoUploadUrlView;
-import com.daesabu.meongcoach.ai.application.required.AiReportRepository;
 import com.daesabu.meongcoach.ai.domain.exception.AiReportTrialExceededException;
+import com.daesabu.meongcoach.ai.domain.vo.AiTrial;
 import com.daesabu.meongcoach.media.application.provided.VideoUploadUrlIssuer;
 import com.daesabu.meongcoach.media.application.provided.VideoUploadUrlResult;
 import java.util.ArrayList;
@@ -19,29 +17,29 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-@DisplayName("AI 리포트 체험 서비스")
-class AiReportTrialServiceTest {
+@DisplayName("AI 영상 업로드 URL 발급 서비스")
+class AiVideoUploadUrlServiceTest {
 
 	private static final String UPLOAD_URL = "https://storage.test/upload?X-Amz-Signature=abc";
 	private static final String PUBLIC_URL = "https://videos.test/videos/training/7/key.mp4";
 	private static final String OBJECT_KEY = "videos/training/7/key.mp4";
 
-	private AiReportRepository aiReportRepository;
+	private StubAiTrialFinder aiTrialFinder;
 	private RecordingVideoUploadUrlIssuer videoUploadUrlIssuer;
-	private AiReportTrialService service;
+	private AiVideoUploadUrlService service;
 
 	@BeforeEach
 	void setUp() {
-		aiReportRepository = mock(AiReportRepository.class);
+		aiTrialFinder = new StubAiTrialFinder();
 		videoUploadUrlIssuer = new RecordingVideoUploadUrlIssuer();
-		service = new AiReportTrialService(aiReportRepository, videoUploadUrlIssuer);
+		service = new AiVideoUploadUrlService(videoUploadUrlIssuer, aiTrialFinder);
 	}
 
 	@ParameterizedTest
-	@ValueSource(longs = {0, 1, 2})
-	@DisplayName("생성된 리포트가 한도 미만이면 훈련 영상 대상으로 업로드 URL 발급을 위임한다")
-	void issueDelegatesToMediaWhenTrialRemains(long generatedCount) {
-		when(aiReportRepository.countByUserId(7L)).thenReturn(generatedCount);
+	@ValueSource(ints = {0, 1, 2})
+	@DisplayName("체험 횟수가 남아 있으면 훈련 영상 대상으로 업로드 URL 발급을 위임한다")
+	void issueDelegatesToMediaWhenTrialRemains(int usedCount) {
+		aiTrialFinder.usedCount = usedCount;
 
 		AiVideoUploadUrlView view = service.issue(7L, "video/mp4", 10485760L);
 
@@ -55,7 +53,7 @@ class AiReportTrialServiceTest {
 	@Test
 	@DisplayName("체험 횟수를 소진했으면 URL 발급 없이 예외를 던진다")
 	void issueThrowsWithoutDelegationWhenTrialExhausted() {
-		when(aiReportRepository.countByUserId(7L)).thenReturn(3L);
+		aiTrialFinder.usedCount = 3;
 
 		assertThatThrownBy(() -> service.issue(7L, "video/mp4", 10485760L))
 				.isInstanceOf(AiReportTrialExceededException.class);
@@ -63,33 +61,23 @@ class AiReportTrialServiceTest {
 	}
 
 	@Test
-	@DisplayName("리포트가 없으면 사용 0회·잔여 3회로 조회된다")
-	void findTrialReturnsFullRemainingWhenNoReportExists() {
-		when(aiReportRepository.countByUserId(7L)).thenReturn(0L);
+	@DisplayName("체험 현황은 요청한 사용자 기준으로 조회한다")
+	void issueLooksUpTrialForRequestedUser() {
+		service.issue(7L, "video/mp4", 10485760L);
 
-		AiTrialView view = service.findTrial(7L);
-
-		assertThat(view).isEqualTo(new AiTrialView(0, 3, 3));
+		assertThat(aiTrialFinder.requestedUserIds).containsExactly(7L);
 	}
 
-	@Test
-	@DisplayName("생성한 리포트 수만큼 잔여 횟수가 줄어든다")
-	void findTrialReturnsRemainingCountAfterUse() {
-		when(aiReportRepository.countByUserId(7L)).thenReturn(2L);
+	private static class StubAiTrialFinder implements AiTrialFinder {
 
-		AiTrialView view = service.findTrial(7L);
+		private final List<Long> requestedUserIds = new ArrayList<>();
+		private int usedCount;
 
-		assertThat(view).isEqualTo(new AiTrialView(2, 3, 1));
-	}
-
-	@Test
-	@DisplayName("한도를 넘겨 저장된 경우에도 잔여 횟수는 0으로 내려간다")
-	void findTrialClampsRemainingCountToZero() {
-		when(aiReportRepository.countByUserId(7L)).thenReturn(4L);
-
-		AiTrialView view = service.findTrial(7L);
-
-		assertThat(view).isEqualTo(new AiTrialView(4, 3, 0));
+		@Override
+		public AiTrial findTrial(Long userId) {
+			requestedUserIds.add(userId);
+			return new AiTrial(usedCount);
+		}
 	}
 
 	private static class RecordingVideoUploadUrlIssuer implements VideoUploadUrlIssuer {

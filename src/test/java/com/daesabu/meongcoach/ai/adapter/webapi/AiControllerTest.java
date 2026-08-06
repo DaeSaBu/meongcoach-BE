@@ -17,11 +17,11 @@ import com.daesabu.meongcoach.ai.application.provided.AiReportDetailView;
 import com.daesabu.meongcoach.ai.application.provided.AiReportFinder;
 import com.daesabu.meongcoach.ai.application.provided.AiReportView;
 import com.daesabu.meongcoach.ai.application.provided.AiTrialFinder;
-import com.daesabu.meongcoach.ai.application.provided.AiTrialView;
 import com.daesabu.meongcoach.ai.application.provided.AiVideoUploadUrlIssuer;
 import com.daesabu.meongcoach.ai.application.provided.AiVideoUploadUrlView;
 import com.daesabu.meongcoach.ai.domain.exception.AiReportNotFoundException;
 import com.daesabu.meongcoach.ai.domain.exception.AiReportTrialExceededException;
+import com.daesabu.meongcoach.ai.domain.vo.AiTrial;
 import java.security.Principal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -310,7 +310,7 @@ class AiControllerTest {
 	@Test
 	@DisplayName("체험 횟수 사용 현황을 반환한다")
 	void findTrialReturnsTrialUsage() throws Exception {
-		given(aiTrialFinder.findTrial(42L)).willReturn(new AiTrialView(1, 3, 2));
+		given(aiTrialFinder.findTrial(42L)).willReturn(new AiTrial(1));
 
 		mockMvc.perform(get("/api/ai/trials")
 						.principal(CURRENT_USER)
@@ -331,7 +331,7 @@ class AiControllerTest {
 	@Test
 	@DisplayName("인증 주체에서 읽은 사용자로 체험 횟수 조회를 위임한다")
 	void findTrialDelegatesWithCurrentUserId() throws Exception {
-		given(aiTrialFinder.findTrial(42L)).willReturn(new AiTrialView(0, 3, 3));
+		given(aiTrialFinder.findTrial(42L)).willReturn(new AiTrial(0));
 
 		mockMvc.perform(get("/api/ai/trials").principal(CURRENT_USER))
 				.andExpect(status().isOk());

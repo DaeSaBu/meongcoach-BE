@@ -1,6 +1,7 @@
 package com.daesabu.meongcoach.ai.application;
 
 import com.daesabu.meongcoach.ai.application.provided.AiReportGenerator;
+import com.daesabu.meongcoach.ai.application.provided.AiTrialFinder;
 import com.daesabu.meongcoach.ai.application.required.AiReportRepository;
 import com.daesabu.meongcoach.ai.application.required.VideoAnalyzer;
 import com.daesabu.meongcoach.ai.domain.AiReport;
@@ -25,6 +26,7 @@ public class AiReportGenerateService implements AiReportGenerator {
 	private final VideoDownloadUrlIssuer videoDownloadUrlIssuer;
 	private final VideoAnalyzer videoAnalyzer;
 	private final AiReportRepository aiReportRepository;
+	private final AiTrialFinder aiTrialFinder;
 
 	@Override
 	public void generate(String objectKey) {
@@ -36,7 +38,7 @@ public class AiReportGenerateService implements AiReportGenerator {
 		VideoDownloadUrlResult downloadUrl = videoDownloadUrlIssuer.issue(objectKey);
 		// 발급 시점의 한도 검증은 비동기 특성상 URL 연속 발급으로 우회될 수 있어, 생성 직전에 한 번 더 막는다.
 		// 예외를 던지면 SQS가 재전달하므로 로그만 남기고 정상 반환한다
-		AiTrial trial = AiTrial.of(aiReportRepository.countByUserId(downloadUrl.ownerUserId()));
+		AiTrial trial = aiTrialFinder.findTrial(downloadUrl.ownerUserId());
 		if (!trial.isAvailable()) {
 			log.warn("무료 체험 횟수를 초과한 영상이라 리포트 생성을 건너뛴다: {}", objectKey);
 			return;
