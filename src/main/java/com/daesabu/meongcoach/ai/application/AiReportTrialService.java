@@ -30,7 +30,7 @@ public class AiReportTrialService implements AiVideoUploadUrlIssuer, AiTrialFind
 
 	@Override
 	public AiVideoUploadUrlView issue(Long userId, String contentType, long fileSizeBytes) {
-		AiTrial trial = AiTrial.of(aiReportRepository.countByUserId(userId));
+		AiTrial trial = getUserAiTrial(userId);
 		if (!trial.isAvailable()) {
 			throw new AiReportTrialExceededException();
 		}
@@ -42,7 +42,11 @@ public class AiReportTrialService implements AiVideoUploadUrlIssuer, AiTrialFind
 
 	@Override
 	public AiTrialView findTrial(Long userId) {
-		AiTrial trial = AiTrial.of(aiReportRepository.countByUserId(userId));
+		AiTrial trial = getUserAiTrial(userId);
 		return new AiTrialView(trial.usedCount(), trial.maxCount(), trial.remainingCount());
+	}
+
+	private AiTrial getUserAiTrial(Long userId) {
+		return AiTrial.of(aiReportRepository.countByUserId(userId));
 	}
 }
