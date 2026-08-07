@@ -9,6 +9,7 @@
 - 커밋 메시지는 `type: 한글 설명` 형식을 사용합니다. (예: `feature(user): 회원 가입 API 추가` — 허용 타입은 git-convention.md 참고, `feat`이 아니라 `feature`)
 - 아키텍처는 Spring Modulith 기반 모듈 구조를 따릅니다. 모듈 내부 의존 방향은 항상 `adapter → application → domain`이며, 모듈 간 접근은 `application/provided` 인터페이스로만 합니다.
 - 로그인 사용자 식별은 컨트롤러의 `@CurrentUserId Long userId` 파라미터로 받습니다. 인증 주체를 회원 ID로 해석하는 곳은 `shared/security/CurrentUserIdArgumentResolver` 한 곳뿐이며, 컨트롤러는 인증 주체를 직접 다루지 않습니다. (architecture.md 참고)
+- 애플리케이션 조회 결과는 도메인 타입(엔티티·값 객체) 반환이 기본이며, 값을 그대로 옮겨 담기만 하는 `~View` 래핑은 만들지 않습니다. 도메인 타입 하나로 표현할 수 없거나, 모듈 경계를 넘거나, 지연 로딩 연관이 있을 때만 `application/provided`의 `~View` record로 감쌉니다. (code-convention.md 참고)
 - 트랜잭션은 서비스 구현 클래스에 `@Transactional(readOnly = true)`를 붙여 기본값을 읽기 전용으로 두고, 쓰기 메서드에만 `@Transactional`로 오버라이드합니다. 메서드 어노테이션은 클래스 설정을 병합하지 않고 통째로 대체합니다. (code-convention.md 참고)
 - `main` 브랜치에 직접 push하지 않습니다. 모든 변경은 작업 브랜치에서 PR을 통해 merge합니다.
 - 문서, 커밋 메시지, 코드 주석은 한국어로 작성합니다.

@@ -1,7 +1,7 @@
 package com.daesabu.meongcoach.ai.adapter.consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 import com.daesabu.meongcoach.ai.application.provided.AiReportGenerator;
 import com.daesabu.meongcoach.media.domain.exception.InvalidVideoObjectKeyException;
@@ -149,21 +149,70 @@ class VideoUploadSqsConsumerTest {
 	}
 
 	@Test
-	@DisplayName("리포트 생성이 실패하면 예외를 전파해 재전달되게 한다")
-	void consumePropagatesGenerationFailure() {
+	@DisplayName("리포트 생성이 실패해도 예외를 삼키고 정상 반환한다")
+	void consumeSwallowsGenerationFailure() {
+		// MVP라 재시도를 두지 않는다. 예외가 나가면 SQS가 메시지를 삭제하지 않고 무한 재전달한다
 		aiReportGenerator.failure = new IllegalStateException("Gemini 호출 실패");
 
-		assertThatThrownBy(() -> consumer.consume(s3Event("ObjectCreated:Put", "videos/training/7/key.mp4")))
-				.isInstanceOf(IllegalStateException.class);
+		assertThatCode(() -> consumer.consume(s3Event("ObjectCreated:Put", "videos/training/7/key.mp4")))
+				.doesNotThrowAnyException();
+	}
+
+	@Test
+	@DisplayName("한 레코드가 실패해도 같은 메시지의 나머지 레코드는 처리한다")
+	void consumeKeepsProcessingRecordsAfterFailure() {
+		aiReportGenerator.failUntilFirstAttempt = true;
+
+		consumer.consume("""
+				{
+					"Records": [
+						{ "eventName": "ObjectCreated:Put", "s3": { "object": { "key": "videos/training/1/a.mp4" } } },
+						{ "eventName": "ObjectCreated:Put", "s3": { "object": { "key": "videos/training/2/b.mp4" } } }
+					]
+				}
+				""");
+
+		assertThat(aiReportGenerator.objectKeys).containsExactly("videos/training/2/b.mp4");
+	}
+
+	@Test
+	@DisplayName("객체 키가 없는 레코드는 버리고 정상 반환한다")
+	void consumeDropsRecordWithoutObjectKey() {
+		// 알 수 없는 필드를 무시하는 설정이라 s3·object·key가 빠진 메시지도 그대로 도달한다
+		assertThatCode(() -> consumer.consume("""
+				{
+					"Records": [
+						{ "eventName": "ObjectCreated:Put" },
+						{ "eventName": "ObjectCreated:Put", "s3": {} },
+						{ "eventName": "ObjectCreated:Put", "s3": { "object": {} } }
+					]
+				}
+				""")).doesNotThrowAnyException();
+
+		assertThat(aiReportGenerator.objectKeys).isEmpty();
+	}
+
+	@Test
+	@DisplayName("URL 디코딩할 수 없는 객체 키는 버리고 정상 반환한다")
+	void consumeDropsUndecodableObjectKey() {
+		assertThatCode(() -> consumer.consume(s3Event("ObjectCreated:Put", "videos/training/7/key%ZZ.mp4")))
+				.doesNotThrowAnyException();
+
+		assertThat(aiReportGenerator.objectKeys).isEmpty();
 	}
 
 	private static class RecordingAiReportGenerator implements AiReportGenerator {
 
 		private final List<String> objectKeys = new ArrayList<>();
 		private RuntimeException failure;
+		private boolean failUntilFirstAttempt;
 
 		@Override
 		public void generate(String objectKey) {
+			if (failUntilFirstAttempt) {
+				failUntilFirstAttempt = false;
+				throw new IllegalStateException("첫 레코드 처리 실패");
+			}
 			if (failure != null) {
 				throw failure;
 			}

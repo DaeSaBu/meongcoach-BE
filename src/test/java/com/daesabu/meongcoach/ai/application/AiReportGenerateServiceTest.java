@@ -8,9 +8,11 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.daesabu.meongcoach.ai.application.provided.AiTrialFinder;
 import com.daesabu.meongcoach.ai.application.required.AiReportRepository;
 import com.daesabu.meongcoach.ai.application.required.VideoAnalyzer;
 import com.daesabu.meongcoach.ai.domain.AiReport;
+import com.daesabu.meongcoach.ai.domain.vo.AiTrial;
 import com.daesabu.meongcoach.media.application.provided.VideoDownloadUrlIssuer;
 import com.daesabu.meongcoach.media.application.provided.VideoDownloadUrlResult;
 import java.util.ArrayList;
@@ -30,6 +32,7 @@ class AiReportGenerateServiceTest {
 	private RecordingVideoDownloadUrlIssuer downloadUrlIssuer;
 	private RecordingVideoAnalyzer videoAnalyzer;
 	private AiReportRepository aiReportRepository;
+	private StubAiTrialFinder aiTrialFinder;
 	private AiReportGenerateService service;
 
 	@BeforeEach
@@ -37,7 +40,8 @@ class AiReportGenerateServiceTest {
 		downloadUrlIssuer = new RecordingVideoDownloadUrlIssuer();
 		videoAnalyzer = new RecordingVideoAnalyzer();
 		aiReportRepository = mock(AiReportRepository.class);
-		service = new AiReportGenerateService(downloadUrlIssuer, videoAnalyzer, aiReportRepository);
+		aiTrialFinder = new StubAiTrialFinder();
+		service = new AiReportGenerateService(downloadUrlIssuer, videoAnalyzer, aiReportRepository, aiTrialFinder);
 	}
 
 	@Test
@@ -70,6 +74,19 @@ class AiReportGenerateServiceTest {
 	}
 
 	@Test
+	@DisplayName("영상 소유자가 체험 횟수를 소진했으면 분석 없이 건너뛴다")
+	void generateSkipsWhenOwnerTrialExhausted() {
+		when(aiReportRepository.existsByVideoObjectKey(OBJECT_KEY)).thenReturn(false);
+		aiTrialFinder.usedCount = 3;
+
+		service.generate(OBJECT_KEY);
+
+		assertThat(aiTrialFinder.requestedUserIds).containsExactly(7L);
+		assertThat(videoAnalyzer.videoUrls).isEmpty();
+		verify(aiReportRepository, never()).save(any());
+	}
+
+	@Test
 	@DisplayName("분석이 실패하면 예외를 전파하고 저장하지 않는다")
 	void generatePropagatesAnalysisFailureWithoutSaving() {
 		when(aiReportRepository.existsByVideoObjectKey(OBJECT_KEY)).thenReturn(false);
@@ -78,6 +95,18 @@ class AiReportGenerateServiceTest {
 		assertThatThrownBy(() -> service.generate(OBJECT_KEY))
 				.isInstanceOf(IllegalStateException.class);
 		verify(aiReportRepository, never()).save(any());
+	}
+
+	private static class StubAiTrialFinder implements AiTrialFinder {
+
+		private final List<Long> requestedUserIds = new ArrayList<>();
+		private int usedCount;
+
+		@Override
+		public AiTrial findTrial(Long userId) {
+			requestedUserIds.add(userId);
+			return new AiTrial(usedCount);
+		}
 	}
 
 	private static class RecordingVideoDownloadUrlIssuer implements VideoDownloadUrlIssuer {

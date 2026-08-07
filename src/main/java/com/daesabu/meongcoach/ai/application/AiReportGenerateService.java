@@ -1,13 +1,16 @@
 package com.daesabu.meongcoach.ai.application;
 
 import com.daesabu.meongcoach.ai.application.provided.AiReportGenerator;
+import com.daesabu.meongcoach.ai.application.provided.AiTrialFinder;
 import com.daesabu.meongcoach.ai.application.required.AiReportRepository;
 import com.daesabu.meongcoach.ai.application.required.VideoAnalyzer;
 import com.daesabu.meongcoach.ai.domain.AiReport;
 import com.daesabu.meongcoach.ai.domain.AiReportCreateCommand;
+import com.daesabu.meongcoach.ai.domain.vo.AiTrial;
 import com.daesabu.meongcoach.media.application.provided.VideoDownloadUrlIssuer;
 import com.daesabu.meongcoach.media.application.provided.VideoDownloadUrlResult;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 /**
@@ -15,6 +18,7 @@ import org.springframework.stereotype.Service;
  * 영상 분석이 수십 초 이상 걸려 클래스 기본 @Transactional(readOnly = true)를 두면 분석 내내
  * DB 커넥션을 점유하므로 트랜잭션 없이 두고, 저장은 리포지토리의 자체 트랜잭션에 맡긴다.
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AiReportGenerateService implements AiReportGenerator {
@@ -22,6 +26,7 @@ public class AiReportGenerateService implements AiReportGenerator {
 	private final VideoDownloadUrlIssuer videoDownloadUrlIssuer;
 	private final VideoAnalyzer videoAnalyzer;
 	private final AiReportRepository aiReportRepository;
+	private final AiTrialFinder aiTrialFinder;
 
 	@Override
 	public void generate(String objectKey) {
@@ -31,6 +36,13 @@ public class AiReportGenerateService implements AiReportGenerator {
 		}
 
 		VideoDownloadUrlResult downloadUrl = videoDownloadUrlIssuer.issue(objectKey);
+		// 발급 시점의 한도 검증은 비동기 특성상 URL 연속 발급으로 우회될 수 있어, 생성 직전에 한 번 더 막는다.
+		// 예외를 던지면 SQS가 재전달하므로 로그만 남기고 정상 반환한다
+		AiTrial trial = aiTrialFinder.findTrial(downloadUrl.ownerUserId());
+		if (!trial.isAvailable()) {
+			log.warn("무료 체험 횟수를 초과한 영상이라 리포트 생성을 건너뛴다: {}", objectKey);
+			return;
+		}
 		String content = videoAnalyzer.analyze(downloadUrl.downloadUrl());
 
 		aiReportRepository.save(AiReport.create(

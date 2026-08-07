@@ -41,7 +41,7 @@ com.daesabu.meongcoach
 
 - **최상위 패키지 1개 = 모듈 1개 = MSA 분리 단위.** 새 기능 영역은 새 최상위 패키지(모듈)로 추가합니다.
 - 각 모듈 루트에 `package-info.java`를 두고 `@ApplicationModule`을 선언합니다.
-- **모듈 간 접근은 `application/provided`의 인터페이스로만 합니다.** 다른 모듈의 서비스 구현체, `required` 인터페이스, 도메인 내부에 직접 접근하지 않습니다. (provided 인터페이스 시그니처에 노출된 도메인 타입은 참조 가능)
+- **모듈 간 접근은 `application/provided`의 인터페이스로만 합니다.** 다른 모듈의 서비스 구현체, `required` 인터페이스, 도메인 내부에 직접 접근하지 않습니다. `verify()`는 provided 패키지에 **물리적으로 존재하는 타입만** 노출로 인정하며, 인터페이스 시그니처에 등장하는 도메인 타입은 전파되지 않습니다. 따라서 모듈 경계를 넘나드는 값은 provided 패키지의 record로 정의해야 합니다. (선례: `DogRegisterInfo`, `TopicSummary`, `VideoUploadUrlResult`)
 - **`application/provided`에는 `package-info.java`로 `@NamedInterface("provided")`를 선언합니다.** 선언하지 않으면 Modulith가 이 패키지를 모듈 내부로 취급해 다른 모듈에서의 호출이 `verify()`에서 실패합니다.
 - `shared`는 보안·설정 등 횡단 관심사만 담습니다. 모든 모듈이 `shared`를 참조할 수 있지만, `shared`는 어떤 모듈도 참조하지 않습니다.
 

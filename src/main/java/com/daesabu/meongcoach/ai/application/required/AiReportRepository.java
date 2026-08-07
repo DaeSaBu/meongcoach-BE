@@ -27,4 +27,9 @@ public interface AiReportRepository extends JpaRepository<AiReport, Long> {
 	 * 남의 리포트는 결과 없음으로 처리해 존재 여부를 숨긴다.
 	 */
 	Optional<AiReport> findByIdAndUserId(Long id, Long userId);
+
+	/**
+	 * 사용자가 지금까지 생성한 리포트 수를 센다. 무료 체험 한도 검증에 쓴다.
+	 */
+	long countByUserId(Long userId);
 }

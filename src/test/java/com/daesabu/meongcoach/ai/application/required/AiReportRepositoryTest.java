@@ -72,6 +72,25 @@ class AiReportRepositoryTest {
 	}
 
 	@Test
+	@DisplayName("리포트가 없는 사용자의 리포트 수는 0이다")
+	void countByUserIdReturnsZeroWhenNoReportExists() {
+		assertThat(aiReportRepository.countByUserId(7L)).isZero();
+	}
+
+	@Test
+	@DisplayName("사용자의 리포트 수만 센다")
+	void countByUserIdCountsOnlyOwnReports() {
+		aiReportRepository.saveAndFlush(
+				AiReport.create(new AiReportCreateCommand(7L, "videos/training/7/first.mp4", "첫 리포트")));
+		aiReportRepository.saveAndFlush(
+				AiReport.create(new AiReportCreateCommand(7L, "videos/training/7/second.mp4", "둘째 리포트")));
+		aiReportRepository.saveAndFlush(
+				AiReport.create(new AiReportCreateCommand(8L, "videos/training/8/other.mp4", "남의 리포트")));
+
+		assertThat(aiReportRepository.countByUserId(7L)).isEqualTo(2);
+	}
+
+	@Test
 	@DisplayName("리포트 ID와 소유자가 모두 일치할 때만 조회된다")
 	void findByIdAndUserIdReturnsEmptyForOtherUsersReport() {
 		AiReport saved = aiReportRepository.saveAndFlush(
