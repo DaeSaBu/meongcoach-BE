@@ -1,13 +1,11 @@
 package com.daesabu.meongcoach.user.application;
 
-import com.daesabu.meongcoach.user.application.provided.UserProfileCreateInfo;
 import com.daesabu.meongcoach.user.application.provided.UserProfileRegister;
 import com.daesabu.meongcoach.user.application.required.UserProfileRepository;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
-import com.daesabu.meongcoach.user.domain.Gender;
-import com.daesabu.meongcoach.user.domain.Mbti;
 import com.daesabu.meongcoach.user.domain.User;
 import com.daesabu.meongcoach.user.domain.UserProfile;
+import com.daesabu.meongcoach.user.domain.command.UserProfileCreateCommand;
 import com.daesabu.meongcoach.user.domain.exception.AlreadyOnboardedException;
 import com.daesabu.meongcoach.user.domain.exception.UserNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -27,18 +25,13 @@ public class UserProfileRegisterService implements UserProfileRegister {
 
 	@Override
 	@Transactional
-	public void register(Long userId, UserProfileCreateInfo info) {
+	public void register(Long userId, UserProfileCreateCommand command) {
 		validateUserProfileExisting(userId);
 
 		User user = userRepository.findById(userId)
 				.orElseThrow(() -> new UserNotFoundException(userId));
 
-		UserProfile profile = UserProfile.create(user, info.nickname(), info.profileImageUrl());
-		profile.changeBirthDate(info.birthDate());
-		profile.changeMbti(Mbti.from(info.mbti()));
-		profile.changeGender(Gender.from(info.gender()));
-		profile.changeTrainingTopics(info.priorTrainingTopicIds(), info.trainingGoalTopicIds());
-		userProfileRepository.save(profile);
+		userProfileRepository.save(UserProfile.create(user, command));
 	}
 
 	private void validateUserProfileExisting(Long userId) {

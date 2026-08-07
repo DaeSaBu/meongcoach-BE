@@ -1,7 +1,11 @@
 package com.daesabu.meongcoach.user.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.daesabu.meongcoach.user.domain.command.UserProfileCreateCommand;
+import com.daesabu.meongcoach.user.domain.exception.InvalidGenderException;
+import com.daesabu.meongcoach.user.domain.exception.InvalidMbtiException;
 import java.time.LocalDate;
 import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
@@ -11,89 +15,68 @@ import org.junit.jupiter.api.Test;
 class UserProfileTest {
 
 	@Test
-	@DisplayName("생성하면 툴팁 완료 여부가 false로 초기화된다")
-	void createInitializesTooltipFlagToFalse() {
-		UserProfile profile = UserProfile.create(User.registerMember(), "멍멍이집사");
+	@DisplayName("생성하면 Command의 값이 한 번에 채워지고 툴팁 완료 여부는 false로 초기화된다")
+	void createAssignsAllValuesFromCommand() {
+		UserProfile profile = UserProfile.create(User.registerMember(),
+				command(LocalDate.of(2000, 1, 1), Set.of(), Set.of()));
 
 		assertThat(profile.getNickname()).isEqualTo("멍멍이집사");
+		assertThat(profile.getProfileImageUrl()).isEqualTo("https://cdn.meongcoach.com/profile.png");
+		assertThat(profile.getBirthDate()).isEqualTo(LocalDate.of(2000, 1, 1));
+		assertThat(profile.getMbti()).isEqualTo(Mbti.INFP);
+		assertThat(profile.getGender()).isEqualTo(Gender.FEMALE);
 		assertThat(profile.getIsCompletedTooltip()).isFalse();
 	}
 
 	@Test
-	@DisplayName("닉네임을 변경하면 기존 닉네임이 교체된다")
-	void changeNicknameReplacesNickname() {
-		UserProfile profile = UserProfile.create(User.registerMember(), "멍멍이집사");
-
-		profile.changeNickname("새집사");
-
-		assertThat(profile.getNickname()).isEqualTo("새집사");
-	}
-
-	@Test
-	@DisplayName("프로필 이미지를 변경하면 이미지 URL이 교체된다")
-	void changeProfileImageReplacesImageUrl() {
-		UserProfile profile = UserProfile.create(User.registerMember(), "멍멍이집사");
-
-		profile.changeProfileImage("https://cdn.meongcoach.com/profile.png");
-
-		assertThat(profile.getProfileImageUrl()).isEqualTo("https://cdn.meongcoach.com/profile.png");
-	}
-
-	@Test
-	@DisplayName("생년월일을 변경하면 기존 생년월일이 교체된다")
-	void changeBirthDateReplacesBirthDate() {
-		UserProfile profile = UserProfile.create(User.registerMember(), "멍멍이집사");
-
-		profile.changeBirthDate(LocalDate.of(2000, 1, 1));
-
-		assertThat(profile.getBirthDate()).isEqualTo(LocalDate.of(2000, 1, 1));
-	}
-
-	@Test
-	@DisplayName("MBTI를 변경하면 기존 MBTI가 교체된다")
-	void changeMbtiReplacesMbti() {
-		UserProfile profile = UserProfile.create(User.registerMember(), "멍멍이집사");
-
-		profile.changeMbti(Mbti.INFP);
-
-		assertThat(profile.getMbti()).isEqualTo(Mbti.INFP);
-	}
-
-	@Test
-	@DisplayName("성별을 변경하면 기존 성별이 교체된다")
-	void changeGenderReplacesGender() {
-		UserProfile profile = UserProfile.create(User.registerMember(), "멍멍이집사");
-
-		profile.changeGender(Gender.FEMALE);
-
-		assertThat(profile.getGender()).isEqualTo(Gender.FEMALE);
-	}
-
-	@Test
-	@DisplayName("교육 이력과 목표 토픽을 변경하면 중복 없이 교체된다")
-	void changeTrainingTopicsReplacesTopicsWithoutDuplicates() {
-		UserProfile profile = UserProfile.create(User.registerMember(), "멍멍이집사");
-
-		profile.changeTrainingTopics(Set.of(1L, 2L), Set.of(2L, 3L));
+	@DisplayName("생성하면 교육 이력과 목표 토픽이 중복 없이 저장된다")
+	void createStoresTrainingTopicsWithoutDuplicates() {
+		UserProfile profile = UserProfile.create(User.registerMember(),
+				command(null, Set.of(1L, 2L), Set.of(2L, 3L)));
 
 		assertThat(profile.getPriorTrainingTopicIds()).containsExactlyInAnyOrder(1L, 2L);
 		assertThat(profile.getTrainingGoalTopicIds()).containsExactlyInAnyOrder(2L, 3L);
 	}
 
 	@Test
-	@DisplayName("프로필 생성 시 교육 토픽은 비어 있다")
-	void createInitializesTrainingTopics() {
-		UserProfile profile = UserProfile.create(User.registerMember(), "멍멍이집사");
+	@DisplayName("교육 토픽이 null이면 빈 집합으로 저장된다")
+	void createTreatsNullTrainingTopicsAsEmpty() {
+		UserProfile profile = UserProfile.create(User.registerMember(), command(null, null, null));
 
 		assertThat(profile.getPriorTrainingTopicIds()).isEmpty();
 		assertThat(profile.getTrainingGoalTopicIds()).isEmpty();
 	}
 
 	@Test
+	@DisplayName("프로필 이미지가 null이면 빈 문자열로 저장된다")
+	void createDefaultsProfileImageUrlToEmptyWhenNull() {
+		UserProfile profile = UserProfile.create(User.registerMember(),
+				new UserProfileCreateCommand("멍멍이집사", null, null, "INFP", "FEMALE", Set.of(), Set.of()));
+
+		assertThat(profile.getProfileImageUrl()).isEmpty();
+	}
+
+	@Test
+	@DisplayName("유효하지 않은 MBTI 문자열로는 생성할 수 없다")
+	void createFailsWhenMbtiIsInvalid() {
+		assertThatThrownBy(() -> UserProfile.create(User.registerMember(),
+				new UserProfileCreateCommand("멍멍이집사", null, null, "XXXX", "FEMALE", Set.of(), Set.of())))
+				.isInstanceOf(InvalidMbtiException.class);
+	}
+
+	@Test
+	@DisplayName("유효하지 않은 성별 문자열로는 생성할 수 없다")
+	void createFailsWhenGenderIsInvalid() {
+		assertThatThrownBy(() -> UserProfile.create(User.registerMember(),
+				new UserProfileCreateCommand("멍멍이집사", null, null, "INFP", "OTHER", Set.of(), Set.of())))
+				.isInstanceOf(InvalidGenderException.class);
+	}
+
+	@Test
 	@DisplayName("생년월일로 나이를 계산한다")
 	void getAgeCalculatesFromBirthDate() {
-		UserProfile profile = UserProfile.create(User.registerMember(), "멍멍이집사");
-		profile.changeBirthDate(LocalDate.now().minusYears(20));
+		UserProfile profile = UserProfile.create(User.registerMember(),
+				command(LocalDate.now().minusYears(20), Set.of(), Set.of()));
 
 		assertThat(profile.getAge()).isEqualTo(20);
 	}
@@ -101,7 +84,7 @@ class UserProfileTest {
 	@Test
 	@DisplayName("생년월일이 없으면 나이는 null을 반환한다")
 	void getAgeReturnsNullWhenBirthDateIsNull() {
-		UserProfile profile = UserProfile.create(User.registerMember(), "멍멍이집사");
+		UserProfile profile = UserProfile.create(User.registerMember(), command(null, Set.of(), Set.of()));
 
 		assertThat(profile.getAge()).isNull();
 	}
@@ -109,10 +92,16 @@ class UserProfileTest {
 	@Test
 	@DisplayName("툴팁을 완료하면 완료 상태로 표시된다")
 	void completeTooltipMarksTooltipCompleted() {
-		UserProfile profile = UserProfile.create(User.registerMember(), "멍멍이집사");
+		UserProfile profile = UserProfile.create(User.registerMember(), command(null, Set.of(), Set.of()));
 
 		profile.completeTooltip();
 
 		assertThat(profile.getIsCompletedTooltip()).isTrue();
+	}
+
+	private static UserProfileCreateCommand command(LocalDate birthDate, Set<Long> priorTrainingTopicIds,
+			Set<Long> trainingGoalTopicIds) {
+		return new UserProfileCreateCommand("멍멍이집사", "https://cdn.meongcoach.com/profile.png", birthDate,
+				"INFP", "FEMALE", priorTrainingTopicIds, trainingGoalTopicIds);
 	}
 }
