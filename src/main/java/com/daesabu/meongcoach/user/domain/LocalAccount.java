@@ -1,6 +1,7 @@
 package com.daesabu.meongcoach.user.domain;
 
 import com.daesabu.meongcoach.shared.domain.BaseEntity;
+import com.daesabu.meongcoach.user.domain.command.LocalAccountCreateCommand;
 import com.daesabu.meongcoach.user.domain.vo.Email;
 
 import jakarta.persistence.AttributeOverride;

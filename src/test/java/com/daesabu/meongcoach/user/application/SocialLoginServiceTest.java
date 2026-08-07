@@ -10,16 +10,16 @@ import com.daesabu.meongcoach.user.application.required.SocialProfileReader;
 import com.daesabu.meongcoach.user.application.required.TokenProvider;
 import com.daesabu.meongcoach.user.application.required.UserProfileRepository;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
-import com.daesabu.meongcoach.user.domain.Gender;
-import com.daesabu.meongcoach.user.domain.Mbti;
-import com.daesabu.meongcoach.user.domain.SocialAccountLinkCommand;
 import com.daesabu.meongcoach.user.domain.SocialProvider;
 import com.daesabu.meongcoach.user.domain.User;
 import com.daesabu.meongcoach.user.domain.UserProfile;
 import com.daesabu.meongcoach.user.domain.UserStatus;
+import com.daesabu.meongcoach.user.domain.command.SocialAccountLinkCommand;
+import com.daesabu.meongcoach.user.domain.command.UserProfileCreateCommand;
 import com.daesabu.meongcoach.user.domain.exception.UnsupportedSocialProviderException;
 import com.daesabu.meongcoach.user.domain.exception.WithdrawnUserException;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -81,9 +81,8 @@ class SocialLoginServiceTest {
 	void loginReturnsOnboardingCompletedWhenProfileExists() {
 		service.login(SocialProvider.KAKAO, CREDENTIAL);
 		User user = userRepository.findAll().getFirst();
-		UserProfile profile = UserProfile.create(user, "멍코치");
-		profile.changeMbti(Mbti.INTJ);
-		profile.changeGender(Gender.NONE);
+		UserProfile profile = UserProfile.create(user,
+				new UserProfileCreateCommand("멍코치", null, null, "INTJ", "NONE", Set.of(), Set.of()));
 		entityManager.persistAndFlush(profile);
 		entityManager.clear();
 

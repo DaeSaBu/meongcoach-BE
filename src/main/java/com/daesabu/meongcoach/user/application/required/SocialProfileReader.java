@@ -1,7 +1,7 @@
 package com.daesabu.meongcoach.user.application.required;
 
-import com.daesabu.meongcoach.user.domain.SocialAccountLinkCommand;
 import com.daesabu.meongcoach.user.domain.SocialProvider;
+import com.daesabu.meongcoach.user.domain.command.SocialAccountLinkCommand;
 
 /**
  * 소셜 제공자가 발급한 자격증명을 검증하고 연동에 필요한 계정 정보를 읽어오는 외부 자원.

@@ -2,6 +2,7 @@ package com.daesabu.meongcoach.user.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.daesabu.meongcoach.user.domain.command.LocalAccountCreateCommand;
 import com.daesabu.meongcoach.user.domain.vo.Email;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
