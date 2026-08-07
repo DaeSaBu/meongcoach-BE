@@ -1,7 +1,7 @@
 package com.daesabu.meongcoach.user.adapter.client;
 
 import com.daesabu.meongcoach.user.application.required.SocialProfileReader;
-import com.daesabu.meongcoach.user.domain.SocialAccountLinkCommand;
+import com.daesabu.meongcoach.user.domain.command.SocialAccountLinkCommand;
 import com.daesabu.meongcoach.user.domain.SocialProvider;
 import com.daesabu.meongcoach.user.domain.exception.InvalidSocialTokenException;
 import com.daesabu.meongcoach.user.domain.exception.SocialProviderUnavailableException;

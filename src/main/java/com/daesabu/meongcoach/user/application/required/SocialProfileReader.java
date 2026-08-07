@@ -1,6 +1,6 @@
 package com.daesabu.meongcoach.user.application.required;
 
-import com.daesabu.meongcoach.user.domain.SocialAccountLinkCommand;
+import com.daesabu.meongcoach.user.domain.command.SocialAccountLinkCommand;
 import com.daesabu.meongcoach.user.domain.SocialProvider;
 
 /**

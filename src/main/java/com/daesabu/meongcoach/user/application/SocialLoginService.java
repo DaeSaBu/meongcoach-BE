@@ -5,7 +5,7 @@ import com.daesabu.meongcoach.user.application.provided.SocialLogin;
 import com.daesabu.meongcoach.user.application.provided.SocialLoginResult;
 import com.daesabu.meongcoach.user.application.required.SocialProfileReader;
 import com.daesabu.meongcoach.user.application.required.TokenProvider;
-import com.daesabu.meongcoach.user.domain.SocialAccountLinkCommand;
+import com.daesabu.meongcoach.user.domain.command.SocialAccountLinkCommand;
 import com.daesabu.meongcoach.user.domain.SocialProvider;
 import com.daesabu.meongcoach.user.domain.exception.UnsupportedSocialProviderException;
 import java.util.List;
