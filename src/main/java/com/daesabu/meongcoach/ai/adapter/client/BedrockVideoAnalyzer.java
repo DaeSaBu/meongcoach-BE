@@ -3,16 +3,18 @@ package com.daesabu.meongcoach.ai.adapter.client;
 import com.daesabu.meongcoach.ai.application.required.VideoAnalyzer;
 import java.net.URI;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.content.Media;
 import org.springframework.stereotype.Component;
 import org.springframework.util.MimeType;
 
 /**
- * Gemini로 영상을 분석하는 어댑터. 영상은 바이트로 내려받지 않고 presigned URL을 fileUri로 전달해
- * Gemini가 직접 가져가게 한다. 실패는 그대로 전파하며, SQS 경계에서 삼킬지는 VideoUploadSqsConsumer가 정한다.
+ * AWS Bedrock Converse로 영상을 분석하는 어댑터. 영상은 바이트로 내려받지 않고 s3://버킷/키 URI를 넘겨
+ * Bedrock이 버킷에서 직접 읽게 하며, 그래서 호출 자격 증명에 영상 버킷의 s3:GetObject 권한이 필요하다.
+ * 실패는 그대로 전파하고, 삼킬지는 호출부인 AiReportGenerateService가 정한다.
  */
 @Component
-public class GeminiVideoAnalyzer implements VideoAnalyzer {
+public class BedrockVideoAnalyzer implements VideoAnalyzer {
 
 	private static final MimeType VIDEO_MP4 = MimeType.valueOf("video/mp4");
 	private static final MimeType VIDEO_QUICKTIME = MimeType.valueOf("video/quicktime");
@@ -31,27 +33,27 @@ public class GeminiVideoAnalyzer implements VideoAnalyzer {
 
 	private final ChatClient chatClient;
 
-	public GeminiVideoAnalyzer(ChatClient.Builder chatClientBuilder) {
-		this.chatClient = chatClientBuilder.build();
+	// ChatClient 자동 설정을 쓰지 않으므로 모델을 받아 직접 감싼다
+	public BedrockVideoAnalyzer(ChatModel chatModel) {
+		this.chatClient = ChatClient.create(chatModel);
 	}
 
 	@Override
-	public String analyze(String videoUrl) {
-		Media video = new Media(mimeTypeOf(videoUrl), URI.create(videoUrl));
+	public String analyze(String videoS3Uri) {
+		Media video = new Media(mimeTypeOf(videoS3Uri), URI.create(videoS3Uri));
 
 		String content = chatClient.prompt()
 				.user(user -> user.text(ANALYSIS_PROMPT).media(video))
 				.call()
 				.content();
 		if (content == null || content.isBlank()) {
-			throw new IllegalStateException("Gemini 영상 분석 결과가 비어 있습니다: " + videoUrl);
+			throw new IllegalStateException("영상 분석 결과가 비어 있습니다: " + videoS3Uri);
 		}
 		return content;
 	}
 
-	// presigned URL은 쿼리 파라미터가 붙어 있어 경로의 확장자로만 판단한다
-	private static MimeType mimeTypeOf(String videoUrl) {
-		String path = URI.create(videoUrl).getPath();
+	private static MimeType mimeTypeOf(String videoUri) {
+		String path = URI.create(videoUri).getPath();
 		if (path != null && path.endsWith(".mov")) {
 			return VIDEO_QUICKTIME;
 		}

@@ -152,7 +152,7 @@ class VideoUploadSqsConsumerTest {
 	@DisplayName("리포트 생성이 실패해도 예외를 삼키고 정상 반환한다")
 	void consumeSwallowsGenerationFailure() {
 		// MVP라 재시도를 두지 않는다. 예외가 나가면 SQS가 메시지를 삭제하지 않고 무한 재전달한다
-		aiReportGenerator.failure = new IllegalStateException("Gemini 호출 실패");
+		aiReportGenerator.failure = new IllegalStateException("모델 호출 실패");
 
 		assertThatCode(() -> consumer.consume(s3Event("ObjectCreated:Put", "videos/training/7/key.mp4")))
 				.doesNotThrowAnyException();

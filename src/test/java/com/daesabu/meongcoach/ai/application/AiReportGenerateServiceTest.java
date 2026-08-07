@@ -46,14 +46,15 @@ class AiReportGenerateServiceTest {
 	}
 
 	@Test
-	@DisplayName("발급받은 다운로드 URL로 분석한 결과를 리포트로 저장한다")
+	@DisplayName("발급받은 영상 위치로 분석한 결과를 리포트로 저장한다")
 	void generateSavesReportWithAnalyzedContent() {
 		when(aiReportRepository.existsByVideoObjectKey(OBJECT_KEY)).thenReturn(false);
 
 		service.generate(OBJECT_KEY);
 
 		assertThat(downloadUrlIssuer.objectKeys).containsExactly(OBJECT_KEY);
-		assertThat(videoAnalyzer.videoUrls).containsExactly(DOWNLOAD_URL);
+		// Bedrock이 버킷에서 영상을 직접 읽으므로 presigned URL이 아니라 s3 URI를 넘긴다
+		assertThat(videoAnalyzer.videoS3Uris).containsExactly(S3_URI);
 		ArgumentCaptor<AiReport> captor = ArgumentCaptor.forClass(AiReport.class);
 		verify(aiReportRepository).save(captor.capture());
 		AiReport saved = captor.getValue();
@@ -70,7 +71,7 @@ class AiReportGenerateServiceTest {
 		service.generate(OBJECT_KEY);
 
 		assertThat(downloadUrlIssuer.objectKeys).isEmpty();
-		assertThat(videoAnalyzer.videoUrls).isEmpty();
+		assertThat(videoAnalyzer.videoS3Uris).isEmpty();
 		verify(aiReportRepository, never()).save(any());
 	}
 
@@ -83,7 +84,7 @@ class AiReportGenerateServiceTest {
 		service.generate(OBJECT_KEY);
 
 		assertThat(aiTrialFinder.requestedUserIds).containsExactly(7L);
-		assertThat(videoAnalyzer.videoUrls).isEmpty();
+		assertThat(videoAnalyzer.videoS3Uris).isEmpty();
 		verify(aiReportRepository, never()).save(any());
 	}
 
@@ -123,15 +124,15 @@ class AiReportGenerateServiceTest {
 
 	private static class RecordingVideoAnalyzer implements VideoAnalyzer {
 
-		private final List<String> videoUrls = new ArrayList<>();
+		private final List<String> videoS3Uris = new ArrayList<>();
 		private RuntimeException failure;
 
 		@Override
-		public String analyze(String videoUrl) {
+		public String analyze(String videoS3Uri) {
 			if (failure != null) {
 				throw failure;
 			}
-			videoUrls.add(videoUrl);
+			videoS3Uris.add(videoS3Uri);
 			return "분리불안 징후가 관찰됩니다.";
 		}
 	}

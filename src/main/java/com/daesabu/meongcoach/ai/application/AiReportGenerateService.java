@@ -43,7 +43,7 @@ public class AiReportGenerateService implements AiReportGenerator {
 			log.warn("무료 체험 횟수를 초과한 영상이라 리포트 생성을 건너뛴다: {}", objectKey);
 			return;
 		}
-		String content = videoAnalyzer.analyze(downloadUrl.downloadUrl());
+		String content = videoAnalyzer.analyze(downloadUrl.s3Uri());
 
 		aiReportRepository.save(AiReport.create(
 				new AiReportCreateCommand(downloadUrl.ownerUserId(), objectKey, content)));

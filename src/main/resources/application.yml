@@ -1,14 +1,6 @@
 spring:
   application:
     name: meongcoach
-  ai:
-    google:
-      genai:
-        # 기본값을 두지 않아 미주입 시 기동에 실패한다
-        api-key: ${GEMINI_API_KEY}
-        chat:
-          # 모델은 프로퍼티로만 바꿔 끼울 수 있게 코드에 두지 않는다
-          model: gemini-3.5-flash
   profiles:
     # 프로파일 미지정 시 로컬 개발로 기동한다 — `./gradlew bootRun`만으로 실행 가능
     default: local
@@ -63,6 +55,17 @@ meongcoach:
   ai:
     # S3 영상 업로드 완료 이벤트가 들어오는 SQS 큐 이름
     video-queue: ${AI_VIDEO_QUEUE}
+    # 영상 분석에 쓰는 Bedrock Converse 연동 설정.
+    # spring.ai.bedrock.aws.* 를 쓰지 않는 이유는 그 설정을 읽는 자격 증명 빈이
+    # spring-cloud-aws(SQS)의 동일 타입 빈과 경쟁해 어느 쪽이 이길지 보장되지 않기 때문이다
+    bedrock:
+      region: ${BEDROCK_REGION}
+      access-key-id: ${BEDROCK_ACCESS_KEY_ID}
+      secret-access-key: ${BEDROCK_SECRET_ACCESS_KEY}
+      # Converse의 영상 입력은 Nova 계열만 지원한다. 리전에 따라 인퍼런스 프로파일 ID가 필요할 수 있다
+      model: ${BEDROCK_MODEL:amazon.nova-2-lite-v1:0}
+      # 영상 분석은 수십 초가 걸려 SDK 기본 소켓 타임아웃(30초)으로는 응답 전에 끊긴다
+      response-timeout: PT5M
   social:
     kakao:
       issuer: https://kauth.kakao.com

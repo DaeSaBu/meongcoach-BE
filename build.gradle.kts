@@ -51,7 +51,11 @@ dependencies {
 	implementation("software.amazon.awssdk:s3:2.46.7")
 	// S3 업로드 완료 이벤트를 SQS로 받아 AI 분석을 트리거한다
 	implementation("io.awspring.cloud:spring-cloud-aws-starter-sqs")
-	implementation("org.springframework.ai:spring-ai-starter-model-google-genai")
+	// 스타터가 아니라 코어 모듈만 쓴다. 스타터가 등록하는 AwsCredentialsProvider·AwsRegionProvider 빈이
+	// spring-cloud-aws(SQS)의 동일 타입 빈과 경쟁해 서로의 자격 증명을 가져갈 수 있기 때문이다
+	implementation("org.springframework.ai:spring-ai-bedrock-converse")
+	// 스타터를 쓰지 않으므로 ChatClient를 담은 모듈을 직접 선언한다
+	implementation("org.springframework.ai:spring-ai-client-chat")
 	testImplementation("org.springframework.security:spring-security-test")
 	compileOnly("org.projectlombok:lombok")
 	runtimeOnly("com.h2database:h2")

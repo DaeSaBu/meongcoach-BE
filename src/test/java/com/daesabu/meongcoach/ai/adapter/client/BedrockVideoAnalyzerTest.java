@@ -7,13 +7,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.net.URI;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
@@ -26,21 +24,20 @@ import org.springframework.ai.content.Media;
 /**
  * 모델 호출은 mock ChatModel로 가로채고, 프롬프트에 실리는 영상 미디어와 응답 처리를 검증한다.
  */
-@DisplayName("Gemini 영상 분석 어댑터")
-class GeminiVideoAnalyzerTest {
+@DisplayName("Bedrock 영상 분석 어댑터")
+class BedrockVideoAnalyzerTest {
 
-	private static final String VIDEO_URL =
-			"https://test-video-bucket.s3.ap-northeast-2.amazonaws.com/videos/training/7/key.mp4?X-Amz-Signature=abc";
+	private static final String S3_URI = "s3://test-video-bucket/videos/training/7/key.mp4";
 
 	private ChatModel chatModel;
-	private GeminiVideoAnalyzer analyzer;
+	private BedrockVideoAnalyzer analyzer;
 
 	@BeforeEach
 	void setUp() {
 		chatModel = mock(ChatModel.class);
 		// ChatClient가 요청 조립 시 모델 기본 옵션을 병합하므로 빈 옵션을 돌려준다
 		when(chatModel.getOptions()).thenReturn(ChatOptions.builder().build());
-		analyzer = new GeminiVideoAnalyzer(ChatClient.builder(chatModel));
+		analyzer = new BedrockVideoAnalyzer(chatModel);
 	}
 
 	private void givenModelResponds(String content) {
@@ -63,20 +60,20 @@ class GeminiVideoAnalyzerTest {
 	void analyzeReturnsModelResponse() {
 		givenModelResponds("분리불안 징후가 관찰됩니다.");
 
-		String content = analyzer.analyze(VIDEO_URL);
+		String content = analyzer.analyze(S3_URI);
 
 		assertThat(content).isEqualTo("분리불안 징후가 관찰됩니다.");
 	}
 
 	@Test
-	@DisplayName("영상 URL을 미디어 URI로 실어 보낸다")
-	void analyzeAttachesVideoUrlAsMediaUri() {
+	@DisplayName("s3 URI를 미디어로 실어 보낸다")
+	void analyzeAttachesS3UriAsMedia() {
 		givenModelResponds("결과");
 
-		analyzer.analyze(VIDEO_URL);
+		analyzer.analyze(S3_URI);
 
-		Media media = capturedUserMessage().getMedia().getFirst();
-		assertThat(media.getData()).isEqualTo(URI.create(VIDEO_URL).toString());
+		// presigned URL을 보내면 Bedrock이 s3 위치로 해석해 거부한다
+		assertThat(capturedUserMessage().getMedia().getFirst().getData()).isEqualTo(S3_URI);
 	}
 
 	@Test
@@ -84,9 +81,10 @@ class GeminiVideoAnalyzerTest {
 	void analyzeUsesMp4MimeTypeForMp4() {
 		givenModelResponds("결과");
 
-		analyzer.analyze(VIDEO_URL);
+		analyzer.analyze(S3_URI);
 
-		assertThat(capturedUserMessage().getMedia().getFirst().getMimeType().toString()).isEqualTo("video/mp4");
+		Media media = capturedUserMessage().getMedia().getFirst();
+		assertThat(media.getMimeType().toString()).isEqualTo("video/mp4");
 	}
 
 	@Test
@@ -94,10 +92,10 @@ class GeminiVideoAnalyzerTest {
 	void analyzeUsesQuickTimeMimeTypeForMov() {
 		givenModelResponds("결과");
 
-		analyzer.analyze("https://bucket.s3.amazonaws.com/videos/training/7/key.mov?X-Amz-Signature=abc");
+		analyzer.analyze("s3://test-video-bucket/videos/training/7/key.mov");
 
-		assertThat(capturedUserMessage().getMedia().getFirst().getMimeType().toString())
-				.isEqualTo("video/quicktime");
+		Media media = capturedUserMessage().getMedia().getFirst();
+		assertThat(media.getMimeType().toString()).isEqualTo("video/quicktime");
 	}
 
 	@Test
@@ -105,7 +103,7 @@ class GeminiVideoAnalyzerTest {
 	void analyzeSendsAnalysisPrompt() {
 		givenModelResponds("결과");
 
-		analyzer.analyze(VIDEO_URL);
+		analyzer.analyze(S3_URI);
 
 		assertThat(capturedUserMessage().getText()).contains("반려견");
 	}
@@ -115,7 +113,7 @@ class GeminiVideoAnalyzerTest {
 	void analyzeFailsWhenResponseIsBlank() {
 		givenModelResponds(" ");
 
-		assertThatThrownBy(() -> analyzer.analyze(VIDEO_URL))
+		assertThatThrownBy(() -> analyzer.analyze(S3_URI))
 				.isInstanceOf(IllegalStateException.class);
 	}
 }

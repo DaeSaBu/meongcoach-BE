@@ -16,7 +16,7 @@ import tools.jackson.databind.ObjectMapper;
  * S3 영상 업로드 완료 이벤트를 SQS로 받아 AI 리포트 생성을 트리거한다.
  * 리스너가 정상 반환하면 메시지가 삭제되고, 예외가 나가면 visibility timeout 후 재전달된다.
  * MVP라 재시도 로직을 두지 않으므로 <b>어떤 예외도 리스너 밖으로 내보내지 않는다.</b>
- * 재전달로 풀릴 수 있는 실패(Gemini 장애, DB 장애)까지 삼키는 대신, 그 경우는 error 로그를 남겨 추적할 수 있게 한다.
+ * 재전달로 풀릴 수 있는 실패(모델 장애, DB 장애)까지 삼키는 대신, 그 경우는 error 로그를 남겨 추적할 수 있게 한다.
  */
 @Slf4j
 @Component
@@ -73,7 +73,7 @@ public class VideoUploadSqsConsumer {
 			// 키 형식 위반 등 도메인 검증 실패는 재시도해도 같은 결과라 버린다
 			log.warn("처리할 수 없는 S3 객체 키라 리포트 생성을 건너뛴다: {}", objectKey, e);
 		} catch (Exception e) {
-			// Gemini·DB 장애처럼 재전달로 풀릴 수 있는 실패지만, MVP라 재시도를 두지 않고 버린다
+			// 모델·DB 장애처럼 재전달로 풀릴 수 있는 실패지만, MVP라 재시도를 두지 않고 버린다
 			log.error("리포트 생성에 실패했지만 SQS 무한 재전달을 막기 위해 메시지를 버린다: {}", objectKey, e);
 		}
 	}
