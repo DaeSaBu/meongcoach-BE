@@ -76,7 +76,21 @@ Google·Apple도 동일하게 ID 토큰의 `aud` 클레임 확인입니다.
 | 액세스 토큰 | 1시간 |
 | 리프레시 토큰 | 14일 |
 | 클레임 | `iss`, `sub`(회원 ID), `iat`, `exp`, `jti`, `token_type` |
-| 저장 | **하지 않음.** 서명·만료·용도 검증만 |
+| 저장 | **하지 않음.** 토큰 자체는 서명·만료·용도로만 검증하고, `sub`가 등록된 회원인지만 DB로 확인 |
+
+### 액세스 토큰 검증 순서
+
+1. 서명(HS256) — 우리 비밀키로 서명되었는가
+2. `exp` (`JwtTimestampValidator`) — 만료되지 않았는가
+3. `iss` (`JwtIssuerValidator`) — 우리가 발급했는가
+4. `token_type` (`TokenTypeValidator`) — 액세스 토큰 자리에 맞는 용도인가
+5. `sub` (`RegisteredUserValidator`) — 등록된 회원인가
+
+5번이 없으면 회원 행이 사라진 뒤에도(예: DB 초기화) 남아 있는 토큰이 만료 전까지 그대로 통과하고,
+각 모듈이 존재하지 않는 `userId`로 조회·저장을 시도하게 됩니다. 회원 조회가 필요해 이 검증기만
+`shared`가 아니라 `user` 모듈(`user/adapter/security/RegisteredUserValidator`)에 둡니다 —
+`shared`가 `user`를 참조하면 순환 의존이 되므로 `SecurityConfig`는 `OAuth2TokenValidator<Jwt>` 타입으로만 받습니다.
+비용은 인증 요청당 PK 조회 한 번입니다.
 
 ### 액세스/리프레시 디코더 분리
 
@@ -84,10 +98,17 @@ Google·Apple도 동일하게 ID 토큰의 `aud` 클레임 확인입니다.
 `TokenTypeValidator`가 붙어 `token_type` 클레임을 강제하므로, **리프레시 토큰을 `Authorization: Bearer`로
 제출하면 401**입니다. 이 검증이 없으면 리프레시 토큰이 사실상 14일짜리 액세스 토큰이 됩니다.
 
+회원 존재 검증은 액세스 디코더에만 붙습니다. 재발급 경로는 `TokenRefreshService`가 같은 확인을 하고
+`USER_INVALID_REFRESH_TOKEN`(401)으로 응답해, 클라이언트가 재로그인 분기를 그대로 쓸 수 있게 합니다.
+
 ### 무상태 정책의 트레이드오프
 
 리프레시 토큰을 저장하지 않으므로 **강제 로그아웃·토큰 무효화가 불가능합니다.**
 탈취된 리프레시 토큰은 만료(14일)까지 유효합니다.
+
+회원 존재 검증이 막아주는 것은 **회원 행이 사라진 경우뿐**입니다. 탈퇴(`WITHDRAWN`)는 상태만 바뀌고 행이 남으므로
+여전히 만료까지 토큰이 유효합니다. 탈퇴 즉시 차단이 필요해지면 `RegisteredUserValidator`와
+`TokenRefreshService`에서 상태까지 확인하도록 넓히면 됩니다.
 
 완화 장치:
 - 액세스 토큰 수명을 1시간으로 짧게 유지
@@ -105,7 +126,8 @@ Google·Apple도 동일하게 ID 토큰의 `aud` 클레임 확인입니다.
 - permitAll: `/api/health`, `/api/users/social/**`, `/api/users/token/refresh`
   (인증 엔드포인트만 열고 `/api/users/**`로 넓히지 않습니다. 이후 추가되는 회원 API가 자동으로 공개되는 것을 막기 위함입니다)
 - 그 외 모든 요청은 인증 필요
-- `oauth2ResourceServer.jwt()` — Bearer 토큰 파싱·검증은 프레임워크가 담당하므로 커스텀 필터가 없습니다
+- `oauth2ResourceServer.jwt()` — Bearer 토큰 파싱·검증은 프레임워크가 담당하므로 커스텀 필터가 없습니다.
+  회원 존재 확인도 커스텀 필터가 아니라 디코더의 검증기 체인에 얹습니다 (위 "액세스 토큰 검증 순서" 참고)
 - `cors` — 프로파일별 `meongcoach.cors.allowed-origin-patterns`의 origin만 허용합니다 (허용 메서드: GET, POST, PUT, PATCH, DELETE, OPTIONS).
   CORS 필터가 체인 앞단에서 동작하므로 preflight는 인가 전에 처리되고, 401 응답에도 CORS 헤더가 실립니다.
   허용 목록 바인딩은 `shared/security/CorsProperties`, 빈 정의는 `SecurityConfig`에 둡니다.
