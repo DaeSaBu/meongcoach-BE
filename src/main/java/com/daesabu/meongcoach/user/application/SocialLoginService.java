@@ -37,7 +37,7 @@ public class SocialLoginService implements SocialLogin {
 
 	@Override
 	public SocialLoginResult login(SocialProvider provider, String credential) {
-		SocialAccountLinkCommand command = reader(provider).read(credential);
+		SocialAccountLinkCommand command = getSocialAccountLinkCommand(provider,credential);
 		SocialUserRegisterService.LoginUser loginUser = socialUserRegisterService.findOrRegister(command);
 
 		AuthToken token = tokenProvider.issue(loginUser.userId());
@@ -45,11 +45,11 @@ public class SocialLoginService implements SocialLogin {
 		return new SocialLoginResult(token, loginUser.needsOnboarding());
 	}
 
-	private SocialProfileReader reader(SocialProvider provider) {
+	private SocialAccountLinkCommand getSocialAccountLinkCommand(SocialProvider provider, String credential){
 		SocialProfileReader reader = readers.get(provider);
 		if (reader == null) {
 			throw new UnsupportedSocialProviderException(provider.name());
 		}
-		return reader;
+		return reader.read(credential);
 	}
 }
