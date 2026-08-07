@@ -5,8 +5,9 @@ import com.daesabu.meongcoach.user.application.provided.SocialLogin;
 import com.daesabu.meongcoach.user.application.provided.SocialLoginResult;
 import com.daesabu.meongcoach.user.application.required.SocialProfileReader;
 import com.daesabu.meongcoach.user.application.required.TokenProvider;
-import com.daesabu.meongcoach.user.domain.command.SocialAccountLinkCommand;
 import com.daesabu.meongcoach.user.domain.SocialProvider;
+import com.daesabu.meongcoach.user.domain.User;
+import com.daesabu.meongcoach.user.domain.command.SocialAccountLinkCommand;
 import com.daesabu.meongcoach.user.domain.exception.UnsupportedSocialProviderException;
 import java.util.List;
 import java.util.Map;
@@ -37,12 +38,13 @@ public class SocialLoginService implements SocialLogin {
 
 	@Override
 	public SocialLoginResult login(SocialProvider provider, String credential) {
-		SocialAccountLinkCommand command = getSocialAccountLinkCommand(provider,credential);
-		SocialUserRegisterService.LoginUser loginUser = socialUserRegisterService.findOrRegister(command);
+		SocialAccountLinkCommand command = getSocialAccountLinkCommand(provider, credential);
+		User user = socialUserRegisterService.findOrRegister(command);
 
-		AuthToken token = tokenProvider.issue(loginUser.userId());
+		AuthToken token = tokenProvider.issue(user.getId());
+		boolean needsOnboarding = socialUserRegisterService.needsOnboarding(user.getId());
 
-		return new SocialLoginResult(token, loginUser.needsOnboarding());
+		return new SocialLoginResult(token, needsOnboarding);
 	}
 
 	private SocialAccountLinkCommand getSocialAccountLinkCommand(SocialProvider provider, String credential){

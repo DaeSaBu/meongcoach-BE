@@ -4,9 +4,9 @@ import com.daesabu.meongcoach.user.application.required.SocialAccountRepository;
 import com.daesabu.meongcoach.user.application.required.UserProfileRepository;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.SocialAccount;
-import com.daesabu.meongcoach.user.domain.command.SocialAccountLinkCommand;
 import com.daesabu.meongcoach.user.domain.User;
 import com.daesabu.meongcoach.user.domain.UserStatus;
+import com.daesabu.meongcoach.user.domain.command.SocialAccountLinkCommand;
 import com.daesabu.meongcoach.user.domain.exception.WithdrawnUserException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,14 +26,20 @@ public class SocialUserRegisterService {
 	private final UserProfileRepository userProfileRepository;
 
 	/**
-	 * 지연 로딩 프록시가 트랜잭션 밖으로 새지 않도록 엔티티 대신 필요한 값만 반환한다.
+	 * User는 연관관계가 없는 엔티티라 트랜잭션 밖에서 읽어도 지연 로딩이 일어나지 않는다.
 	 */
-	public LoginUser findOrRegister(SocialAccountLinkCommand command) {
+	public User findOrRegister(SocialAccountLinkCommand command) {
 		User user = findOrRegisterUser(command);
 		if (user.getStatus() == UserStatus.WITHDRAWN) {
 			throw new WithdrawnUserException();
 		}
-		return new LoginUser(user.getId(), !userProfileRepository.existsById(user.getId()));
+		return user;
+	}
+
+	// 온보딩 완료 여부는 별도 플래그 없이 프로필 행 존재 여부로 판단한다
+	@Transactional(readOnly = true)
+	public boolean needsOnboarding(Long userId) {
+		return !userProfileRepository.existsById(userId);
 	}
 
 	// 회원 생성과 소셜 계정 연동은 같은 트랜잭션에서 일어나야 한다
@@ -47,8 +53,5 @@ public class SocialUserRegisterService {
 		User user = userRepository.save(User.registerMember());
 		socialAccountRepository.save(SocialAccount.link(user, command));
 		return user;
-	}
-
-	public record LoginUser(Long userId, boolean needsOnboarding) {
 	}
 }
