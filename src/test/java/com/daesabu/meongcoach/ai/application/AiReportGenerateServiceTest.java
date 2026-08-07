@@ -28,6 +28,7 @@ class AiReportGenerateServiceTest {
 	private static final String OBJECT_KEY = "videos/training/7/key.mp4";
 	private static final String DOWNLOAD_URL = "https://storage.test/download?X-Amz-Signature=abc";
 	private static final String PUBLIC_URL = "https://videos.test/videos/training/7/key.mp4";
+	private static final String S3_URI = "s3://test-video-bucket/videos/training/7/key.mp4";
 
 	private RecordingVideoDownloadUrlIssuer downloadUrlIssuer;
 	private RecordingVideoAnalyzer videoAnalyzer;
@@ -116,7 +117,7 @@ class AiReportGenerateServiceTest {
 		@Override
 		public VideoDownloadUrlResult issue(String objectKey) {
 			objectKeys.add(objectKey);
-			return new VideoDownloadUrlResult(DOWNLOAD_URL, PUBLIC_URL, 7L, 3600L);
+			return new VideoDownloadUrlResult(DOWNLOAD_URL, PUBLIC_URL, S3_URI, 7L, 3600L);
 		}
 	}
 

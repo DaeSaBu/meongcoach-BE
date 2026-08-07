@@ -67,8 +67,9 @@ public class S3VideoStorage implements VideoStorage {
 				.signatureDuration(properties.downloadUrlValidity())
 				.getObjectRequest(getObjectRequest)
 				.build());
+		// 버킷 이름은 이 어댑터만 알고 있으므로 s3 URI 조립도 여기서 한다
 		return new VideoDownloadUrl(presigned.url().toString(), publicBaseUrl + "/" + key.value(),
-				properties.downloadUrlValidity().toSeconds());
+				"s3://" + properties.bucket() + "/" + key.value(), properties.downloadUrlValidity().toSeconds());
 	}
 
 	private static String trimTrailingSlash(String url) {
