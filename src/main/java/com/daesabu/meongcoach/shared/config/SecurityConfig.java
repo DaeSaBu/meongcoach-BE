@@ -4,6 +4,7 @@ import com.daesabu.meongcoach.shared.security.CorsProperties;
 import com.daesabu.meongcoach.shared.security.JwtProperties;
 import com.daesabu.meongcoach.shared.security.TokenType;
 import com.daesabu.meongcoach.shared.security.TokenTypeValidator;
+import java.util.ArrayList;
 import java.util.List;
 import javax.crypto.SecretKey;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,7 +16,9 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
+import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtIssuerValidator;
@@ -108,27 +111,32 @@ public class SecurityConfig {
 		return NimbusJwtEncoder.withSecretKey(properties.secretKey()).build();
 	}
 
-	// 액세스·리프레시 디코더를 분리해 각자 용도를 강제한다. @Primary를 두지 않고 주입 지점마다 명시한다
+	// 액세스·리프레시 디코더를 분리해 각자 용도를 강제한다. @Primary를 두지 않고 주입 지점마다 명시한다.
+	// 회원 존재 검증기는 user 모듈이 구현한다. shared가 user를 참조하면 순환 의존이 되므로 스프링 타입으로만 받는다
 	@Bean
-	JwtDecoder accessTokenDecoder(JwtProperties properties) {
-		return tokenDecoder(properties, TokenType.ACCESS);
+	JwtDecoder accessTokenDecoder(JwtProperties properties, OAuth2TokenValidator<Jwt> registeredUserValidator) {
+		return tokenDecoder(properties, TokenType.ACCESS, List.of(registeredUserValidator));
 	}
 
+	// 재발급 경로는 회원 확인을 TokenRefreshService가 맡아 별도 에러 코드를 유지하므로 여기서는 붙이지 않는다
 	@Bean
 	JwtDecoder refreshTokenDecoder(JwtProperties properties) {
-		return tokenDecoder(properties, TokenType.REFRESH);
+		return tokenDecoder(properties, TokenType.REFRESH, List.of());
 	}
 
-	private JwtDecoder tokenDecoder(JwtProperties properties, TokenType tokenType) {
+	private JwtDecoder tokenDecoder(JwtProperties properties, TokenType tokenType,
+	                                List<OAuth2TokenValidator<Jwt>> additionalValidators) {
 		SecretKey secretKey = properties.secretKey();
 		NimbusJwtDecoder decoder = NimbusJwtDecoder.withSecretKey(secretKey)
 				.macAlgorithm(MacAlgorithm.HS256)
 				.build();
-		decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(
+		List<OAuth2TokenValidator<Jwt>> validators = new ArrayList<>(List.of(
 				new JwtTimestampValidator(),
 				new JwtIssuerValidator(properties.issuer()),
 				new TokenTypeValidator(tokenType)
 		));
+		validators.addAll(additionalValidators);
+		decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(validators));
 		return decoder;
 	}
 }
