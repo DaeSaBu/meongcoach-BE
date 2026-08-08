@@ -1,6 +1,7 @@
 package com.daesabu.meongcoach.user.domain;
 
 import com.daesabu.meongcoach.shared.domain.BaseEntity;
+import com.daesabu.meongcoach.user.domain.command.UserProfileCreateCommand;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -69,42 +70,28 @@ public class UserProfile extends BaseEntity {
 	@Column(nullable = false)
 	private Boolean isCompletedTooltip;
 
-	public static UserProfile create(User user, String nickname) {
-		return create(user, nickname, null);
+	private UserProfile(User user, UserProfileCreateCommand command) {
+		this.user = user;
+		this.nickname = command.nickname();
+		this.profileImageUrl = Objects.requireNonNullElse(command.profileImageUrl(), "");
+		this.birthDate = command.birthDate();
+		this.mbti = Mbti.from(command.mbti());
+		this.gender = Gender.from(command.gender());
+		this.priorTrainingTopicIds = copyOrEmpty(command.priorTrainingTopicIds());
+		this.trainingGoalTopicIds = copyOrEmpty(command.trainingGoalTopicIds());
+		this.isCompletedTooltip = false;
 	}
 
-	public static UserProfile create(User user, String nickname, String profileImageUrl) {
-		UserProfile profile = new UserProfile();
-		profile.user = user;
-		profile.nickname = nickname;
-		profile.profileImageUrl = Objects.requireNonNullElse(profileImageUrl, "");
-		profile.isCompletedTooltip = false;
-		return profile;
+	public static UserProfile create(User user, UserProfileCreateCommand command) {
+		return new UserProfile(user, command);
 	}
 
-	public void changeNickname(String nickname) {
-		this.nickname = nickname;
-	}
-
-	public void changeProfileImage(String profileImageUrl) {
-		this.profileImageUrl = Objects.requireNonNullElse(profileImageUrl, "");
-	}
-
-	public void changeBirthDate(LocalDate birthDate) {
-		this.birthDate = birthDate;
-	}
-
-	public void changeMbti(Mbti mbti) {
-		this.mbti = mbti;
-	}
-
-	public void changeGender(Gender gender) {
-		this.gender = gender;
-	}
-
-	public void changeTrainingTopics(Set<Long> priorTrainingTopicIds, Set<Long> trainingGoalTopicIds) {
-		this.priorTrainingTopicIds = new HashSet<>(priorTrainingTopicIds);
-		this.trainingGoalTopicIds = new HashSet<>(trainingGoalTopicIds);
+	// 토픽 미선택은 null로 들어올 수 있으므로 빈 집합으로 취급한다
+	private static Set<Long> copyOrEmpty(Set<Long> topicIds) {
+		if (topicIds == null) {
+			return new HashSet<>();
+		}
+		return new HashSet<>(topicIds);
 	}
 
 	public Integer getAge() {

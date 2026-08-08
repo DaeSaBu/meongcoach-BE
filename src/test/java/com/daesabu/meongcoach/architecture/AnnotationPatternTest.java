@@ -31,11 +31,13 @@ class AnnotationPatternTest {
 				.check(CLASSES);
 	}
 
+	// package-info는 모듈 경계 메타데이터(@NamedInterface)만 담으므로 예외로 둔다
 	@Test
 	@DisplayName("domain은 스프링에 의존하지 않는다")
 	void domainDoesNotDependOnSpring() {
 		noClasses()
 				.that().resideInAPackage("..domain..")
+				.and().doNotHaveSimpleName("package-info")
 				.should().dependOnClassesThat().resideInAPackage("org.springframework..")
 				.check(CLASSES);
 	}

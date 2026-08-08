@@ -8,8 +8,8 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withServerError;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
-import com.daesabu.meongcoach.user.domain.SocialAccountLinkCommand;
 import com.daesabu.meongcoach.user.domain.SocialProvider;
+import com.daesabu.meongcoach.user.domain.command.SocialAccountLinkCommand;
 import com.daesabu.meongcoach.user.domain.exception.InvalidSocialTokenException;
 import com.daesabu.meongcoach.user.domain.exception.SocialProviderUnavailableException;
 import com.daesabu.meongcoach.user.domain.exception.SocialTokenAppMismatchException;
