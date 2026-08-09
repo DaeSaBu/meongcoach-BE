@@ -7,52 +7,53 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.model.Generation;
-import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.content.Media;
+import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
+import software.amazon.awssdk.services.bedrockruntime.model.ContentBlock;
+import software.amazon.awssdk.services.bedrockruntime.model.ConversationRole;
+import software.amazon.awssdk.services.bedrockruntime.model.ConverseOutput;
+import software.amazon.awssdk.services.bedrockruntime.model.ConverseRequest;
+import software.amazon.awssdk.services.bedrockruntime.model.ConverseResponse;
+import software.amazon.awssdk.services.bedrockruntime.model.Message;
+import software.amazon.awssdk.services.bedrockruntime.model.VideoFormat;
 
 /**
- * 모델 호출은 mock ChatModel로 가로채고, 프롬프트에 실리는 영상 미디어와 응답 처리를 검증한다.
+ * 모델 호출은 mock 클라이언트로 가로채고, Converse 요청 구성과 응답 처리를 검증한다.
  */
 @DisplayName("Bedrock 영상 분석 어댑터")
 class BedrockVideoAnalyzerTest {
 
 	private static final String S3_URI = "s3://test-video-bucket/videos/training/7/key.mp4";
+	private static final String MODEL_ID = "test.nova-video-v1:0";
 
-	private ChatModel chatModel;
+	private BedrockRuntimeClient client;
 	private BedrockVideoAnalyzer analyzer;
 
 	@BeforeEach
 	void setUp() {
-		chatModel = mock(ChatModel.class);
-		// ChatClient가 요청 조립 시 모델 기본 옵션을 병합하므로 빈 옵션을 돌려준다
-		when(chatModel.getOptions()).thenReturn(ChatOptions.builder().build());
-		analyzer = new BedrockVideoAnalyzer(chatModel);
+		client = mock(BedrockRuntimeClient.class);
+		analyzer = new BedrockVideoAnalyzer(client, new BedrockProperties(
+				"ap-northeast-2", "test-access-key", "test-secret-key", MODEL_ID, Duration.ofMinutes(5)));
 	}
 
 	private void givenModelResponds(String content) {
-		when(chatModel.call(any(Prompt.class)))
-				.thenReturn(new ChatResponse(List.of(new Generation(new AssistantMessage(content)))));
+		when(client.converse(any(ConverseRequest.class))).thenReturn(ConverseResponse.builder()
+				.output(ConverseOutput.fromMessage(Message.builder()
+						.role(ConversationRole.ASSISTANT)
+						.content(ContentBlock.fromText(content))
+						.build()))
+				.build());
 	}
 
-	private UserMessage capturedUserMessage() {
-		ArgumentCaptor<Prompt> captor = ArgumentCaptor.forClass(Prompt.class);
-		verify(chatModel).call(captor.capture());
-		return captor.getValue().getInstructions().stream()
-				.filter(UserMessage.class::isInstance)
-				.map(UserMessage.class::cast)
-				.findFirst()
-				.orElseThrow();
+	private ConverseRequest capturedRequest() {
+		ArgumentCaptor<ConverseRequest> captor = ArgumentCaptor.forClass(ConverseRequest.class);
+		verify(client).converse(captor.capture());
+		return captor.getValue();
 	}
 
 	@Test
@@ -66,46 +67,70 @@ class BedrockVideoAnalyzerTest {
 	}
 
 	@Test
-	@DisplayName("s3 URI를 미디어로 실어 보낸다")
-	void analyzeAttachesS3UriAsMedia() {
+	@DisplayName("설정된 모델 ID로 요청한다")
+	void analyzeUsesConfiguredModelId() {
+		givenModelResponds("결과");
+
+		analyzer.analyze(S3_URI);
+
+		assertThat(capturedRequest().modelId()).isEqualTo(MODEL_ID);
+	}
+
+	@Test
+	@DisplayName("비디오 블록을 텍스트보다 먼저 보낸다")
+	void analyzeSendsVideoBeforeText() {
+		givenModelResponds("결과");
+
+		analyzer.analyze(S3_URI);
+
+		// 순서가 뒤집히면 Nova가 지시를 무시하고 영어 장면 묘사로 빠진다
+		List<ContentBlock> contents = capturedRequest().messages().getFirst().content();
+		assertThat(contents.getFirst().video()).isNotNull();
+		assertThat(contents.get(1).text()).isNotNull();
+	}
+
+	@Test
+	@DisplayName("s3 URI를 비디오 s3Location으로 실어 보낸다")
+	void analyzeAttachesS3UriAsS3Location() {
 		givenModelResponds("결과");
 
 		analyzer.analyze(S3_URI);
 
 		// presigned URL을 보내면 Bedrock이 s3 위치로 해석해 거부한다
-		assertThat(capturedUserMessage().getMedia().getFirst().getData()).isEqualTo(S3_URI);
+		ContentBlock video = capturedRequest().messages().getFirst().content().getFirst();
+		assertThat(video.video().source().s3Location().uri()).isEqualTo(S3_URI);
 	}
 
 	@Test
-	@DisplayName("mp4 영상은 video/mp4 형식으로 보낸다")
-	void analyzeUsesMp4MimeTypeForMp4() {
+	@DisplayName("mp4 영상은 mp4 형식으로 보낸다")
+	void analyzeUsesMp4FormatForMp4() {
 		givenModelResponds("결과");
 
 		analyzer.analyze(S3_URI);
 
-		Media media = capturedUserMessage().getMedia().getFirst();
-		assertThat(media.getMimeType().toString()).isEqualTo("video/mp4");
+		ContentBlock video = capturedRequest().messages().getFirst().content().getFirst();
+		assertThat(video.video().format()).isEqualTo(VideoFormat.MP4);
 	}
 
 	@Test
-	@DisplayName("mov 영상은 video/quicktime 형식으로 보낸다")
-	void analyzeUsesQuickTimeMimeTypeForMov() {
+	@DisplayName("mov 영상은 mov 형식으로 보낸다")
+	void analyzeUsesMovFormatForMov() {
 		givenModelResponds("결과");
 
 		analyzer.analyze("s3://test-video-bucket/videos/training/7/key.mov");
 
-		Media media = capturedUserMessage().getMedia().getFirst();
-		assertThat(media.getMimeType().toString()).isEqualTo("video/quicktime");
+		ContentBlock video = capturedRequest().messages().getFirst().content().getFirst();
+		assertThat(video.video().format()).isEqualTo(VideoFormat.MOV);
 	}
 
 	@Test
-	@DisplayName("분석 지시 프롬프트를 함께 보낸다")
-	void analyzeSendsAnalysisPrompt() {
+	@DisplayName("분석 지시를 system 메시지로 보낸다")
+	void analyzeSendsAnalysisInstructionAsSystemMessage() {
 		givenModelResponds("결과");
 
 		analyzer.analyze(S3_URI);
 
-		assertThat(capturedUserMessage().getText()).contains("반려견");
+		assertThat(capturedRequest().system().getFirst().text()).contains("반려견");
 	}
 
 	@Test

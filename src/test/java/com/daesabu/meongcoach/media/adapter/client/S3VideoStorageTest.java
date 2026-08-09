@@ -117,15 +117,6 @@ class S3VideoStorageTest {
 	}
 
 	@Test
-	@DisplayName("다운로드 결과의 s3 URI는 버킷과 키로 조립된다")
-	void downloadS3UriIsBuiltFromBucketAndKey() {
-		VideoDownloadUrl url = storage.issueDownloadUrl(KEY);
-
-		// AI 분석기가 이 주소로 버킷에서 영상을 직접 읽으므로 만료·서명이 없어야 한다
-		assertThat(url.s3Uri()).isEqualTo("s3://" + BUCKET + "/" + KEY.value());
-	}
-
-	@Test
 	@DisplayName("다운로드 유효 시간을 초 단위로 알려준다")
 	void downloadExpiresInSecondsMatchesDownloadValidity() {
 		VideoDownloadUrl url = storage.issueDownloadUrl(KEY);

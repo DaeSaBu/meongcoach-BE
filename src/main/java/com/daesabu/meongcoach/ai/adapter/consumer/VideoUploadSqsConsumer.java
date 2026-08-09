@@ -67,8 +67,12 @@ public class VideoUploadSqsConsumer {
 		if (objectKey == null) {
 			return;
 		}
+		String bucketName = bucketNameOf(record);
+		if (bucketName == null) {
+			return;
+		}
 		try {
-			aiReportGenerator.generate(objectKey);
+			aiReportGenerator.generate(objectKey, "s3://" + bucketName + "/" + objectKey);
 		} catch (DomainException e) {
 			// 키 형식 위반 등 도메인 검증 실패는 재시도해도 같은 결과라 버린다
 			log.warn("처리할 수 없는 S3 객체 키라 리포트 생성을 건너뛴다: {}", objectKey, e);
@@ -82,6 +86,18 @@ public class VideoUploadSqsConsumer {
 	 * 이벤트에서 객체 키를 꺼내 디코딩한다. 키가 없거나 디코딩할 수 없으면 로그를 남기고 null을 반환한다.
 	 * 두 경우 모두 재시도해도 같은 결과라 버리는 쪽이 맞다.
 	 */
+	/**
+	 * 이벤트에서 버킷 이름을 꺼낸다. 버킷 이름은 URL 인코딩되지 않으므로 디코딩하지 않는다.
+	 * 없으면 로그를 남기고 null을 반환한다. 재시도해도 같은 결과라 버리는 쪽이 맞다.
+	 */
+	private String bucketNameOf(S3EventMessage.EventRecord record) {
+		if (record.s3() == null || record.s3().bucket() == null || record.s3().bucket().name() == null) {
+			log.warn("버킷 이름이 없는 S3 이벤트를 버린다: {}", record.eventName());
+			return null;
+		}
+		return record.s3().bucket().name();
+	}
+
 	private String objectKeyOf(S3EventMessage.EventRecord record) {
 		// 알 수 없는 필드를 무시하는 설정이라 s3·object·key가 통째로 빠진 메시지도 그대로 통과한다
 		if (record.s3() == null || record.s3().object() == null || record.s3().object().key() == null) {

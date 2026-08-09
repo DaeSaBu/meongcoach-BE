@@ -50,10 +50,10 @@ class AiReportGenerateServiceTest {
 	void generateSavesReportWithAnalyzedContent() {
 		when(aiReportRepository.existsByVideoObjectKey(OBJECT_KEY)).thenReturn(false);
 
-		service.generate(OBJECT_KEY);
+		service.generate(OBJECT_KEY, S3_URI);
 
 		assertThat(downloadUrlIssuer.objectKeys).containsExactly(OBJECT_KEY);
-		// Bedrock이 버킷에서 영상을 직접 읽으므로 presigned URL이 아니라 s3 URI를 넘긴다
+		// Bedrock이 버킷에서 영상을 직접 읽으므로 업로드 이벤트에서 온 s3 URI를 그대로 넘긴다
 		assertThat(videoAnalyzer.videoS3Uris).containsExactly(S3_URI);
 		ArgumentCaptor<AiReport> captor = ArgumentCaptor.forClass(AiReport.class);
 		verify(aiReportRepository).save(captor.capture());
@@ -68,7 +68,7 @@ class AiReportGenerateServiceTest {
 	void generateSkipsWhenReportAlreadyExists() {
 		when(aiReportRepository.existsByVideoObjectKey(OBJECT_KEY)).thenReturn(true);
 
-		service.generate(OBJECT_KEY);
+		service.generate(OBJECT_KEY, S3_URI);
 
 		assertThat(downloadUrlIssuer.objectKeys).isEmpty();
 		assertThat(videoAnalyzer.videoS3Uris).isEmpty();
@@ -81,7 +81,7 @@ class AiReportGenerateServiceTest {
 		when(aiReportRepository.existsByVideoObjectKey(OBJECT_KEY)).thenReturn(false);
 		aiTrialFinder.usedCount = 3;
 
-		service.generate(OBJECT_KEY);
+		service.generate(OBJECT_KEY, S3_URI);
 
 		assertThat(aiTrialFinder.requestedUserIds).containsExactly(7L);
 		assertThat(videoAnalyzer.videoS3Uris).isEmpty();
@@ -95,7 +95,7 @@ class AiReportGenerateServiceTest {
 		videoAnalyzer.failure = new IllegalStateException("분석 실패");
 
 		// 예외를 던지면 SQS가 같은 메시지를 무한히 재전달한다
-		assertThatCode(() -> service.generate(OBJECT_KEY)).doesNotThrowAnyException();
+		assertThatCode(() -> service.generate(OBJECT_KEY, S3_URI)).doesNotThrowAnyException();
 		verify(aiReportRepository, never()).save(any());
 	}
 
@@ -118,7 +118,7 @@ class AiReportGenerateServiceTest {
 		@Override
 		public VideoDownloadUrlResult issue(String objectKey) {
 			objectKeys.add(objectKey);
-			return new VideoDownloadUrlResult(DOWNLOAD_URL, PUBLIC_URL, S3_URI, 7L, 3600L);
+			return new VideoDownloadUrlResult(DOWNLOAD_URL, PUBLIC_URL, 7L, 3600L);
 		}
 	}
 

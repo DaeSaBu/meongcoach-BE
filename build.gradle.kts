@@ -11,7 +11,6 @@ plugins {
 	id("com.epages.restdocs-api-spec") version "0.20.1"
 	id("com.diffplug.spotless") version "8.8.0"
 }
-val springAiVersion by extra("2.0.0")
 
 group = "com.daesabu"
 version = "0.0.1-SNAPSHOT"
@@ -32,7 +31,6 @@ val asciidoctorExt: Configuration by configurations.creating
 dependencyManagement {
 	imports {
 		mavenBom("org.springframework.modulith:spring-modulith-bom:2.1.0")
-		mavenBom("org.springframework.ai:spring-ai-bom:$springAiVersion")
 		// Spring Cloud AWS 4.x가 Spring Boot 4.x 지원 라인이다
 		mavenBom("io.awspring.cloud:spring-cloud-aws-dependencies:4.1.0")
 	}
@@ -51,11 +49,9 @@ dependencies {
 	implementation("software.amazon.awssdk:s3:2.46.7")
 	// S3 업로드 완료 이벤트를 SQS로 받아 AI 분석을 트리거한다
 	implementation("io.awspring.cloud:spring-cloud-aws-starter-sqs")
-	// 스타터가 아니라 코어 모듈만 쓴다. 스타터가 등록하는 AwsCredentialsProvider·AwsRegionProvider 빈이
-	// spring-cloud-aws(SQS)의 동일 타입 빈과 경쟁해 서로의 자격 증명을 가져갈 수 있기 때문이다
-	implementation("org.springframework.ai:spring-ai-bedrock-converse")
-	// 스타터를 쓰지 않으므로 ChatClient를 담은 모듈을 직접 선언한다
-	implementation("org.springframework.ai:spring-ai-client-chat")
+	// Spring AI를 쓰지 않고 SDK로 직접 Converse를 호출한다. Spring AI는 사용자 메시지를 [텍스트, 비디오]
+	// 순서로 고정 전송하는데, Nova 영상 이해는 비디오를 텍스트보다 먼저 둬야 지시(언어·출력 형식)를 따른다
+	implementation("software.amazon.awssdk:bedrockruntime:2.46.7")
 	testImplementation("org.springframework.security:spring-security-test")
 	compileOnly("org.projectlombok:lombok")
 	runtimeOnly("com.h2database:h2")
