@@ -37,6 +37,7 @@ meongcoach:
       service-tier: flex
       max-tokens: 4096
       temperature: 0.2
+      prompt-version: v1
   jwt:
     secret: meongcoach-test-only-jwt-secret-key-32b
   social:

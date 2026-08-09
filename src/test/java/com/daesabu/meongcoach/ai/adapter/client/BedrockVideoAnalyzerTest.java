@@ -38,9 +38,13 @@ class BedrockVideoAnalyzerTest {
 	@BeforeEach
 	void setUp() {
 		client = mock(BedrockRuntimeClient.class);
-		analyzer = new BedrockVideoAnalyzer(client, new BedrockProperties(
+		analyzer = new BedrockVideoAnalyzer(client, propertiesWithPromptVersion("v1"));
+	}
+
+	private BedrockProperties propertiesWithPromptVersion(String promptVersion) {
+		return new BedrockProperties(
 				"ap-northeast-2", "test-access-key", "test-secret-key", MODEL_ID, Duration.ofMinutes(5),
-				ServiceTierType.FLEX, 4096, 0.2f));
+				ServiceTierType.FLEX, 4096, 0.2f, promptVersion);
 	}
 
 	private void givenModelResponds(String content) {
@@ -154,6 +158,13 @@ class BedrockVideoAnalyzerTest {
 		analyzer.analyze(S3_URI);
 
 		assertThat(capturedRequest().system().getFirst().text()).contains("반려견");
+	}
+
+	@Test
+	@DisplayName("없는 프롬프트 버전이면 생성에 실패한다")
+	void constructorFailsWhenPromptVersionIsUnknown() {
+		assertThatThrownBy(() -> new BedrockVideoAnalyzer(client, propertiesWithPromptVersion("v999")))
+				.isInstanceOf(IllegalStateException.class);
 	}
 
 	@Test

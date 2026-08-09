@@ -34,7 +34,8 @@ class BedrockVideoAnalyzerManualTest {
 				Duration.ofMinutes(5),
 				ServiceTierType.fromValue(env.getOrDefault("BEDROCK_SERVICE_TIER", "flex")),
 				Integer.parseInt(env.getOrDefault("BEDROCK_MAX_TOKENS", "4096")),
-				Float.parseFloat(env.getOrDefault("BEDROCK_TEMPERATURE", "0.2")));
+				Float.parseFloat(env.getOrDefault("BEDROCK_TEMPERATURE", "0.2")),
+				env.getOrDefault("BEDROCK_PROMPT_VERSION", "v1"));
 
 		try (BedrockRuntimeClient client = BedrockRuntimeClient.builder()
 				.credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create(

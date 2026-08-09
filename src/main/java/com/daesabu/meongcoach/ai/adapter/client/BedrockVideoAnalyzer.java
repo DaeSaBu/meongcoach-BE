@@ -29,37 +29,16 @@ import software.amazon.awssdk.services.bedrockruntime.model.VideoSource;
 @Component
 public class BedrockVideoAnalyzer implements VideoAnalyzer {
 
-	// 영상 입력 시 모델이 지시를 무시하고 영어 장면 묘사로 빠지는 경향이 있어, 지시는 system 메시지로 분리해
-	// 한국어와 4개 항목 구조를 규칙과 출력 형식으로 강제한다
-	private static final String SYSTEM_PROMPT = """
-			당신은 반려견 행동 전문가입니다. 사용자가 첨부한 반려견 영상을 분석해 보호자에게 전달할 행동 분석 리포트를 작성합니다.
-
-			반드시 아래 규칙을 지키세요.
-			- 모든 문장을 한국어로만 작성합니다. 영어 문장을 섞지 않습니다.
-			- 장면을 시간 순으로 나열하는 묘사문이 아니라, 아래 4개 항목으로 종합한 리포트를 작성합니다.
-			- 아래 출력 형식의 제목 4개를 순서와 문구 그대로 사용하고, 다른 항목을 추가하지 않습니다.
-			- 보호자가 이해하기 쉬운 표현을 쓰고, 영상에서 확인되지 않는 내용은 추측하지 않습니다.
-
-			출력 형식:
-			## 1. 주요 행동 관찰
-			(영상 속 반려견의 주요 행동 관찰 내용)
-
-			## 2. 감정 상태와 신호
-			(행동에서 읽을 수 있는 감정 상태와 신호)
-
-			## 3. 문제 행동 징후
-			(주의가 필요한 문제 행동 징후. 없으면 "특이 징후 없음"이라고 명시)
-
-			## 4. 훈련·개선 제안
-			(보호자가 실천할 수 있는 훈련·개선 제안)
-			""";
-
-	private static final String USER_PROMPT = "첨부한 반려견 영상을 규칙에 따라 분석해 한국어 리포트를 작성하세요.";
+	private static final String PROMPT_BASE = "prompts/video-analysis/";
 
 	private final BedrockRuntimeClient bedrockRuntimeClient;
 	private final String modelId;
 	private final ServiceTier serviceTier;
 	private final InferenceConfiguration inferenceConfig;
+	// 영상 입력 시 모델이 지시를 무시하고 영어 장면 묘사로 빠지는 경향이 있어, 지시는 system 메시지로 분리해
+	// 한국어와 4개 항목 구조를 규칙과 출력 형식으로 강제한다. 내용은 resources/prompts/video-analysis 참고
+	private final String systemPrompt;
+	private final String userPrompt;
 
 	public BedrockVideoAnalyzer(BedrockRuntimeClient bedrockRuntimeClient, BedrockProperties properties) {
 		this.bedrockRuntimeClient = bedrockRuntimeClient;
@@ -69,6 +48,9 @@ public class BedrockVideoAnalyzer implements VideoAnalyzer {
 				.maxTokens(properties.maxTokens())
 				.temperature(properties.temperature())
 				.build();
+		String promptDir = PROMPT_BASE + properties.promptVersion() + "/";
+		this.systemPrompt = PromptLoader.load(promptDir + "system.md");
+		this.userPrompt = PromptLoader.load(promptDir + "user.md");
 	}
 
 	@Override
@@ -77,7 +59,7 @@ public class BedrockVideoAnalyzer implements VideoAnalyzer {
 				.modelId(modelId)
 				.serviceTier(serviceTier)
 				.inferenceConfig(inferenceConfig)
-				.system(SystemContentBlock.fromText(SYSTEM_PROMPT))
+				.system(SystemContentBlock.fromText(systemPrompt))
 				.messages(Message.builder()
 						.role(ConversationRole.USER)
 						.content(
@@ -86,7 +68,7 @@ public class BedrockVideoAnalyzer implements VideoAnalyzer {
 										.source(VideoSource.fromS3Location(
 												S3Location.builder().uri(videoS3Uri).build()))
 										.build()),
-								ContentBlock.fromText(USER_PROMPT))
+								ContentBlock.fromText(userPrompt))
 						.build())
 				.build();
 

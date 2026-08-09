@@ -75,6 +75,8 @@ meongcoach:
       max-tokens: 4096
       # 분석 리포트는 창의성보다 실행할 때마다 비슷한 품질이 나오는 일관성이 중요해 낮게 둔다
       temperature: 0.2
+      # 영상 분석 프롬프트 버전. resources/prompts/video-analysis/{버전}/ 디렉터리를 가리킨다
+      prompt-version: ${BEDROCK_PROMPT_VERSION:v1}
   social:
     kakao:
       issuer: https://kauth.kakao.com

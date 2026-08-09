@@ -21,6 +21,7 @@ import software.amazon.awssdk.services.bedrockruntime.model.ServiceTierType;
  * @param serviceTier     Bedrock 호출 서비스 등급. 모델·리전에 따라 지원 등급이 달라 미지원 조합이면 호출이 거부된다
  * @param maxTokens       응답 최대 토큰 수. 상한에 닿으면 리포트가 문장 중간에서 잘리므로 리포트 분량보다 넉넉히 둔다
  * @param temperature     응답 샘플링 온도. 분석 리포트는 창의성보다 일관성이 중요해 낮게 둔다
+ * @param promptVersion   적용할 프롬프트 버전. resources/prompts/video-analysis/{promptVersion}/의 파일을 읽는다
  */
 @Validated
 @ConfigurationProperties("meongcoach.ai.bedrock")
@@ -32,6 +33,7 @@ public record BedrockProperties(
 		@NotNull Duration responseTimeout,
 		@NotNull ServiceTierType serviceTier,
 		@NotNull @Positive Integer maxTokens,
-		@NotNull @PositiveOrZero Float temperature
+		@NotNull @PositiveOrZero Float temperature,
+		@NotBlank String promptVersion
 ) {
 }
