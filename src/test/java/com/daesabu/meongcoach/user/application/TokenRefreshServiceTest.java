@@ -15,7 +15,7 @@ class TokenRefreshServiceTest {
 	@Test
 	@DisplayName("리프레시 토큰의 회원으로 새 토큰을 발급한다")
 	void refreshIssuesNewTokenForTokenOwner() {
-		TokenRefreshService service = new TokenRefreshService(new StubTokenProvider(7L));
+		TokenRefreshService service = new TokenRefreshService(new StubTokenProvider(7L), userId -> true);
 
 		AuthToken token = service.refresh("refresh-token");
 
@@ -26,9 +26,18 @@ class TokenRefreshServiceTest {
 	@Test
 	@DisplayName("유효하지 않은 리프레시 토큰이면 예외를 그대로 전파한다")
 	void refreshPropagatesInvalidTokenException() {
-		TokenRefreshService service = new TokenRefreshService(new StubTokenProvider(null));
+		TokenRefreshService service = new TokenRefreshService(new StubTokenProvider(null), userId -> true);
 
 		assertThatThrownBy(() -> service.refresh("invalid"))
+				.isInstanceOf(InvalidRefreshTokenException.class);
+	}
+
+	@Test
+	@DisplayName("등록되지 않은 회원이면 재발급하지 않는다")
+	void refreshRejectsUnregisteredUser() {
+		TokenRefreshService service = new TokenRefreshService(new StubTokenProvider(7L), userId -> false);
+
+		assertThatThrownBy(() -> service.refresh("refresh-token"))
 				.isInstanceOf(InvalidRefreshTokenException.class);
 	}
 
