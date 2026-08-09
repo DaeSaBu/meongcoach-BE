@@ -28,7 +28,7 @@ public class RegisteredUserValidator implements OAuth2TokenValidator<Jwt> {
 
 	@Override
 	public OAuth2TokenValidatorResult validate(Jwt token) {
-		Long userId = userId(token);
+		Long userId = extractUserId(token);
 		if (userId != null && registeredUserChecker.isRegistered(userId)) {
 			return OAuth2TokenValidatorResult.success();
 		}
@@ -36,7 +36,7 @@ public class RegisteredUserValidator implements OAuth2TokenValidator<Jwt> {
 	}
 
 	// 검증기에서 던진 예외는 인증 예외로 변환되지 않아 500이 되므로, 형식 위반도 검증 실패로 돌린다
-	private Long userId(Jwt token) {
+	private Long extractUserId(Jwt token) {
 		try {
 			return Long.valueOf(token.getSubject());
 		} catch (NumberFormatException e) {
