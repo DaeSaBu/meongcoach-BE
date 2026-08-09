@@ -20,6 +20,7 @@ import software.amazon.awssdk.services.bedrockruntime.model.ConverseOutput;
 import software.amazon.awssdk.services.bedrockruntime.model.ConverseRequest;
 import software.amazon.awssdk.services.bedrockruntime.model.ConverseResponse;
 import software.amazon.awssdk.services.bedrockruntime.model.Message;
+import software.amazon.awssdk.services.bedrockruntime.model.ServiceTierType;
 import software.amazon.awssdk.services.bedrockruntime.model.VideoFormat;
 
 /**
@@ -38,7 +39,8 @@ class BedrockVideoAnalyzerTest {
 	void setUp() {
 		client = mock(BedrockRuntimeClient.class);
 		analyzer = new BedrockVideoAnalyzer(client, new BedrockProperties(
-				"ap-northeast-2", "test-access-key", "test-secret-key", MODEL_ID, Duration.ofMinutes(5)));
+				"ap-northeast-2", "test-access-key", "test-secret-key", MODEL_ID, Duration.ofMinutes(5),
+				ServiceTierType.FLEX, 4096, 0.2f));
 	}
 
 	private void givenModelResponds(String content) {
@@ -74,6 +76,27 @@ class BedrockVideoAnalyzerTest {
 		analyzer.analyze(S3_URI);
 
 		assertThat(capturedRequest().modelId()).isEqualTo(MODEL_ID);
+	}
+
+	@Test
+	@DisplayName("설정된 서비스 등급으로 요청한다")
+	void analyzeUsesConfiguredServiceTier() {
+		givenModelResponds("결과");
+
+		analyzer.analyze(S3_URI);
+
+		assertThat(capturedRequest().serviceTier().type()).isEqualTo(ServiceTierType.FLEX);
+	}
+
+	@Test
+	@DisplayName("설정된 최대 토큰·온도로 요청한다")
+	void analyzeUsesConfiguredInferenceConfig() {
+		givenModelResponds("결과");
+
+		analyzer.analyze(S3_URI);
+
+		assertThat(capturedRequest().inferenceConfig().maxTokens()).isEqualTo(4096);
+		assertThat(capturedRequest().inferenceConfig().temperature()).isEqualTo(0.2f);
 	}
 
 	@Test

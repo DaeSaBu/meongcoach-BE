@@ -11,6 +11,7 @@ import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
+import software.amazon.awssdk.services.bedrockruntime.model.ServiceTierType;
 
 /**
  * 프롬프트·영상 분석 고도화를 위한 임시 수동 테스트. 실제 Bedrock을 호출하므로 확인이 끝나면 삭제한다.
@@ -30,7 +31,10 @@ class BedrockVideoAnalyzerManualTest {
 				env.get("BEDROCK_ACCESS_KEY_ID"),
 				env.get("BEDROCK_SECRET_ACCESS_KEY"),
 				env.getOrDefault("BEDROCK_MODEL", "global.amazon.nova-2-lite-v1:0"),
-				Duration.ofMinutes(5));
+				Duration.ofMinutes(5),
+				ServiceTierType.fromValue(env.getOrDefault("BEDROCK_SERVICE_TIER", "flex")),
+				Integer.parseInt(env.getOrDefault("BEDROCK_MAX_TOKENS", "4096")),
+				Float.parseFloat(env.getOrDefault("BEDROCK_TEMPERATURE", "0.2")));
 
 		try (BedrockRuntimeClient client = BedrockRuntimeClient.builder()
 				.credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create(

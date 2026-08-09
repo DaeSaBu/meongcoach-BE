@@ -69,6 +69,12 @@ meongcoach:
       model: ${BEDROCK_MODEL:global.amazon.nova-2-lite-v1:0}
       # 영상 분석은 수십 초가 걸려 SDK 기본 소켓 타임아웃(30초)으로는 응답 전에 끊긴다
       response-timeout: PT5M
+      # SQS 비동기 처리라 지연에 둔감하므로 표준(default)보다 저렴한 flex 등급으로 호출한다
+      service-tier: ${BEDROCK_SERVICE_TIER:flex}
+      # 상한에 닿으면 리포트가 문장 중간에서 잘린다. 리포트는 2천 토큰 안팎이지만 추론 토큰 몫까지 넉넉히 둔다
+      max-tokens: 4096
+      # 분석 리포트는 창의성보다 실행할 때마다 비슷한 품질이 나오는 일관성이 중요해 낮게 둔다
+      temperature: 0.2
   social:
     kakao:
       issuer: https://kauth.kakao.com

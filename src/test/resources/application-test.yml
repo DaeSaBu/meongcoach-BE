@@ -34,6 +34,9 @@ meongcoach:
       secret-access-key: test-secret-key
       model: amazon.nova-2-lite-v1:0
       response-timeout: PT5M
+      service-tier: flex
+      max-tokens: 4096
+      temperature: 0.2
   jwt:
     secret: meongcoach-test-only-jwt-secret-key-32b
   social:

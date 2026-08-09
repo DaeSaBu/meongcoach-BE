@@ -10,8 +10,10 @@ import software.amazon.awssdk.services.bedrockruntime.model.ContentBlock;
 import software.amazon.awssdk.services.bedrockruntime.model.ConversationRole;
 import software.amazon.awssdk.services.bedrockruntime.model.ConverseRequest;
 import software.amazon.awssdk.services.bedrockruntime.model.ConverseResponse;
+import software.amazon.awssdk.services.bedrockruntime.model.InferenceConfiguration;
 import software.amazon.awssdk.services.bedrockruntime.model.Message;
 import software.amazon.awssdk.services.bedrockruntime.model.S3Location;
+import software.amazon.awssdk.services.bedrockruntime.model.ServiceTier;
 import software.amazon.awssdk.services.bedrockruntime.model.SystemContentBlock;
 import software.amazon.awssdk.services.bedrockruntime.model.VideoBlock;
 import software.amazon.awssdk.services.bedrockruntime.model.VideoFormat;
@@ -56,16 +58,25 @@ public class BedrockVideoAnalyzer implements VideoAnalyzer {
 
 	private final BedrockRuntimeClient bedrockRuntimeClient;
 	private final String modelId;
+	private final ServiceTier serviceTier;
+	private final InferenceConfiguration inferenceConfig;
 
 	public BedrockVideoAnalyzer(BedrockRuntimeClient bedrockRuntimeClient, BedrockProperties properties) {
 		this.bedrockRuntimeClient = bedrockRuntimeClient;
 		this.modelId = properties.model();
+		this.serviceTier = ServiceTier.builder().type(properties.serviceTier()).build();
+		this.inferenceConfig = InferenceConfiguration.builder()
+				.maxTokens(properties.maxTokens())
+				.temperature(properties.temperature())
+				.build();
 	}
 
 	@Override
 	public String analyze(String videoS3Uri) {
 		ConverseRequest request = ConverseRequest.builder()
 				.modelId(modelId)
+				.serviceTier(serviceTier)
+				.inferenceConfig(inferenceConfig)
 				.system(SystemContentBlock.fromText(SYSTEM_PROMPT))
 				.messages(Message.builder()
 						.role(ConversationRole.USER)
