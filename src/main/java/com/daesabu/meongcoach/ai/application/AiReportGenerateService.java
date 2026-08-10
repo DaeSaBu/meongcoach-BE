@@ -30,15 +30,13 @@ public class AiReportGenerateService implements AiReportGenerator {
 
 	@Override
 	public void generate(String objectKey, String videoS3Uri) {
-		// SQS는 at-least-once라 같은 영상이 다시 전달될 수 있다. 객체 키를 기준으로 먼저 걸러 불필요한 URL 발급을 막는다
 		if (aiReportRepository.existsByVideoObjectKey(objectKey)) {
+			log.warn("이미 처리한 영상은 스킵한다: {}", objectKey);
 			return;
 		}
 
-		// 분석에 쓰는 s3 URI는 이벤트에서 오고, 발급은 소유자 식별(ownerUserId)을 위해 유지한다
 		VideoDownloadUrlResult downloadUrl = videoDownloadUrlIssuer.issue(objectKey);
-		// 발급 시점의 한도 검증은 비동기 특성상 URL 연속 발급으로 우회될 수 있어, 생성 직전에 한 번 더 막는다.
-		// 예외를 던지면 SQS가 재전달하므로 로그만 남기고 정상 반환한다
+
 		AiTrial trial = aiTrialFinder.findTrial(downloadUrl.ownerUserId());
 		if (!trial.isAvailable()) {
 			log.warn("무료 체험 횟수를 초과한 영상이라 리포트 생성을 건너뛴다: {}", objectKey);
