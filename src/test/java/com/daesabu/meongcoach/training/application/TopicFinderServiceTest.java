@@ -36,13 +36,15 @@ class TopicFinderServiceTest {
 	@DisplayName("토픽을 정렬 순서대로 조회한다")
 	void findAllOrderedReturnsTopicsSortedBySortOrder() {
 		TrainingCategory category = entityManager.persist(TrainingCategory.create("기본 훈련", 1, null, null));
-		entityManager.persist(Topic.create(category, new TopicCreateCommand("산책 훈련", 2, null, null, null)));
-		entityManager.persist(Topic.create(category, new TopicCreateCommand("배변 훈련", 1, null, null, null)));
+		entityManager.persist(Topic.create(category, new TopicCreateCommand("산책 훈련", 2, "즐겁고 안전한 첫 산책", null, null)));
+		entityManager.persist(Topic.create(category, new TopicCreateCommand("배변 훈련", 1, "편안한 배변 습관 만들기", null, null)));
 
 		List<TopicSummary> topics = service.findAllOrdered();
 
 		assertThat(topics).extracting(TopicSummary::title)
 				.containsExactly("배변 훈련", "산책 훈련");
+		assertThat(topics).extracting(TopicSummary::description)
+				.containsExactly("편안한 배변 습관 만들기", "즐겁고 안전한 첫 산책");
 	}
 
 	@Test

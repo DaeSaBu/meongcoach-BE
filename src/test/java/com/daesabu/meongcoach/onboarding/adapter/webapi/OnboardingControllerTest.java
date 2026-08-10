@@ -473,7 +473,8 @@ class OnboardingControllerTest {
 		@Bean
 		OnboardingMetadataFinder onboardingMetadataFinder() {
 			return () -> new OnboardingMetadataResult(
-					List.of(new TopicSummary(1L, "배변 훈련"), new TopicSummary(2L, "산책 훈련")),
+					List.of(new TopicSummary(1L, "배변 훈련", "편안한 배변 습관 만들기"),
+								new TopicSummary(2L, "산책 훈련", "즐겁고 안전한 첫 산책")),
 					List.of(new BreedInfo("POODLE", "푸들"), new BreedInfo("MALTESE", "말티즈")),
 					List.of(new PersonalityInfo("TIMID", "소심함"), new PersonalityInfo("LIVELY", "활발함")),
 					List.of("ISTJ", "INTJ"));
