@@ -16,6 +16,7 @@ import com.daesabu.meongcoach.training.domain.Lesson;
 import com.daesabu.meongcoach.training.domain.Topic;
 import com.daesabu.meongcoach.training.domain.exception.CurriculumNotFoundException;
 import com.daesabu.meongcoach.training.domain.exception.TopicNotConfiguredException;
+import com.daesabu.meongcoach.user.application.provided.UserProfileFinder;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -42,6 +43,8 @@ public class CurriculumQueryService implements CurriculumFinder {
 
 	private final LessonProgressFinder lessonProgressFinder;
 
+	private final UserProfileFinder userProfileFinder;
+
 	@Override
 	public CurriculumListView findCurriculums(Long userId) {
 		Topic topic = resolveTopic(userId);
@@ -54,7 +57,8 @@ public class CurriculumQueryService implements CurriculumFinder {
 				.map(curriculum -> toView(curriculum,
 						lessonsByCurriculumId.getOrDefault(curriculum.getId(), List.of()), completedLessonIds))
 				.toList();
-		return new CurriculumListView(topic.getId(), topic.getTitle(), curriculumViews);
+		String profileImageUrl = userProfileFinder.findProfileImageUrl(userId);
+		return new CurriculumListView(topic.getId(), topic.getTitle(), profileImageUrl, curriculumViews);
 	}
 
 	@Override

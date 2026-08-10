@@ -22,7 +22,12 @@ import com.daesabu.meongcoach.training.domain.TopicCreateCommand;
 import com.daesabu.meongcoach.training.domain.TrainingCategory;
 import com.daesabu.meongcoach.training.domain.exception.CurriculumNotFoundException;
 import com.daesabu.meongcoach.training.domain.exception.TopicNotConfiguredException;
+import com.daesabu.meongcoach.user.application.UserProfileFinderService;
+import com.daesabu.meongcoach.user.domain.User;
+import com.daesabu.meongcoach.user.domain.UserProfile;
+import com.daesabu.meongcoach.user.domain.command.UserProfileCreateCommand;
 import jakarta.persistence.EntityManagerFactory;
+import java.util.Set;
 import org.hibernate.SessionFactory;
 import org.hibernate.stat.Statistics;
 import org.junit.jupiter.api.DisplayName;
@@ -37,7 +42,8 @@ import org.springframework.test.context.TestPropertySource;
  * 커리큘럼 리스트·세부 조회 서비스 검증.
  */
 @DataJpaTest
-@Import({CurriculumQueryService.class, TopicEntryService.class, LessonProgressService.class})
+@Import({CurriculumQueryService.class, TopicEntryService.class, LessonProgressService.class,
+		UserProfileFinderService.class})
 @TestPropertySource(properties = "spring.jpa.properties.hibernate.generate_statistics=true")
 @DisplayName("커리큘럼 조회 서비스")
 class CurriculumQueryServiceTest {
@@ -215,7 +221,7 @@ class CurriculumQueryServiceTest {
 	}
 
 	@Test
-	@DisplayName("커리큘럼 수와 무관하게 다섯 번의 쿼리로 조회한다")
+	@DisplayName("커리큘럼 수와 무관하게 여섯 번의 쿼리로 조회한다")
 	void findCurriculumsExecutesConstantQueryCount() {
 		Topic topic = persistTopicWithCategory();
 		Curriculum first = persistCurriculum(topic, "1단계", 1);
@@ -231,7 +237,7 @@ class CurriculumQueryServiceTest {
 
 		curriculumFinder.findCurriculums(USER_ID);
 
-		assertThat(statistics.getPrepareStatementCount()).isEqualTo(5);
+		assertThat(statistics.getPrepareStatementCount()).isEqualTo(6);
 	}
 
 	@Test
@@ -245,6 +251,45 @@ class CurriculumQueryServiceTest {
 		flushAndClear();
 
 		assertThat(countTopicEntries()).isZero();
+	}
+
+	@Test
+	@DisplayName("요청 사용자의 프로필 이미지 URL을 함께 반환한다")
+	void findCurriculumsReturnsProfileImageUrlOfRequestUser() {
+		Topic topic = persistTopicWithCategory();
+		persistCurriculum(topic, "앉아 1단계", 1);
+		Long userId = persistUserWithProfile("https://images.test.meongcoach.com/images/user-profile/1/a.jpg");
+		flushAndClear();
+
+		CurriculumListView curriculumList = curriculumFinder.findCurriculums(userId);
+
+		assertThat(curriculumList.profileImageUrl())
+				.isEqualTo("https://images.test.meongcoach.com/images/user-profile/1/a.jpg");
+	}
+
+	@Test
+	@DisplayName("프로필이 없으면 프로필 이미지 URL을 빈 문자열로 반환한다")
+	void findCurriculumsReturnsEmptyProfileImageUrlWhenProfileDoesNotExist() {
+		Topic topic = persistTopicWithCategory();
+		persistCurriculum(topic, "앉아 1단계", 1);
+		flushAndClear();
+
+		CurriculumListView curriculumList = curriculumFinder.findCurriculums(USER_ID);
+
+		assertThat(curriculumList.profileImageUrl()).isEmpty();
+	}
+
+	@Test
+	@DisplayName("프로필 이미지가 미설정이면 프로필 이미지 URL을 빈 문자열로 반환한다")
+	void findCurriculumsReturnsEmptyProfileImageUrlWhenImageIsNotSet() {
+		Topic topic = persistTopicWithCategory();
+		persistCurriculum(topic, "앉아 1단계", 1);
+		Long userId = persistUserWithProfile(null);
+		flushAndClear();
+
+		CurriculumListView curriculumList = curriculumFinder.findCurriculums(userId);
+
+		assertThat(curriculumList.profileImageUrl()).isEmpty();
 	}
 
 	@Test
@@ -383,6 +428,15 @@ class CurriculumQueryServiceTest {
 	private Lesson persistLesson(Curriculum curriculum, String title, int sortOrder, int estimatedMinutes) {
 		LessonCreateCommand command = new LessonCreateCommand(title, sortOrder, estimatedMinutes);
 		return entityManager.persist(Lesson.create(curriculum, command));
+	}
+
+	// UserProfile은 @MapsId로 User의 id를 공유하므로 User를 먼저 persist해야 한다
+	private Long persistUserWithProfile(String profileImageUrl) {
+		User user = entityManager.persist(User.registerMember());
+		UserProfileCreateCommand command = new UserProfileCreateCommand(
+				"멍멍이집사", profileImageUrl, null, "INTJ", "FEMALE", Set.of(), Set.of());
+		entityManager.persist(UserProfile.create(user, command));
+		return user.getId();
 	}
 
 	private long countTopicEntries() {

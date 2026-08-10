@@ -50,10 +50,12 @@ class TrainingCurriculumControllerTest {
 	@Test
 	@DisplayName("선택된 토픽과 커리큘럼 목록을 반환한다")
 	void findCurriculumsReturnsTopicWithCurriculums() throws Exception {
-		given(curriculumFinder.findCurriculums(42L)).willReturn(new CurriculumListView(1L, "앉아", List.of(
-				new CurriculumView(10L, "앉아 1단계", 3, 3, CurriculumStatus.COMPLETED),
-				new CurriculumView(11L, "앉아 2단계", 4, 1, CurriculumStatus.IN_PROGRESS)
-		)));
+		String profileImageUrl = "https://images.test.meongcoach.com/images/user-profile/42/a.jpg";
+		given(curriculumFinder.findCurriculums(42L)).willReturn(new CurriculumListView(1L, "앉아", profileImageUrl,
+				List.of(
+						new CurriculumView(10L, "앉아 1단계", 3, 3, CurriculumStatus.COMPLETED),
+						new CurriculumView(11L, "앉아 2단계", 4, 1, CurriculumStatus.IN_PROGRESS)
+				)));
 
 		mockMvc.perform(get("/api/training/curriculums")
 						.principal(CURRENT_USER)
@@ -61,6 +63,7 @@ class TrainingCurriculumControllerTest {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.topicId").value(1))
 				.andExpect(jsonPath("$.topicTitle").value("앉아"))
+				.andExpect(jsonPath("$.profileImageUrl").value(profileImageUrl))
 				.andExpect(jsonPath("$.curriculums[0].curriculumId").value(10))
 				.andExpect(jsonPath("$.curriculums[0].curriculumTitle").value("앉아 1단계"))
 				.andExpect(jsonPath("$.curriculums[0].totalLessons").value(3))
@@ -74,6 +77,8 @@ class TrainingCurriculumControllerTest {
 						responseFields(
 								fieldWithPath("topicId").description("커리큘럼 화면에 표시 중인 토픽 ID"),
 								fieldWithPath("topicTitle").description("토픽 이름"),
+								fieldWithPath("profileImageUrl")
+										.description("요청 사용자의 프로필 이미지 URL. 미설정이거나 온보딩 미완료면 빈 문자열"),
 								fieldWithPath("curriculums[]").description("토픽의 커리큘럼 목록. 노출 순서 오름차순"),
 								fieldWithPath("curriculums[].curriculumId").description("커리큘럼 ID"),
 								fieldWithPath("curriculums[].curriculumTitle").description("커리큘럼 이름"),
@@ -88,7 +93,7 @@ class TrainingCurriculumControllerTest {
 	@Test
 	@DisplayName("인증 주체에서 읽은 사용자로 커리큘럼 조회를 위임한다")
 	void findCurriculumsDelegatesWithCurrentUserId() throws Exception {
-		given(curriculumFinder.findCurriculums(42L)).willReturn(new CurriculumListView(1L, "앉아", List.of()));
+		given(curriculumFinder.findCurriculums(42L)).willReturn(new CurriculumListView(1L, "앉아", "", List.of()));
 
 		mockMvc.perform(get("/api/training/curriculums").principal(CURRENT_USER))
 				.andExpect(status().isOk());
@@ -99,11 +104,12 @@ class TrainingCurriculumControllerTest {
 	@Test
 	@DisplayName("커리큘럼이 없는 토픽은 빈 배열과 200을 반환한다")
 	void findCurriculumsReturnsEmptyArrayWhenTopicHasNoCurriculum() throws Exception {
-		given(curriculumFinder.findCurriculums(42L)).willReturn(new CurriculumListView(1L, "앉아", List.of()));
+		given(curriculumFinder.findCurriculums(42L)).willReturn(new CurriculumListView(1L, "앉아", "", List.of()));
 
 		mockMvc.perform(get("/api/training/curriculums").principal(CURRENT_USER))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.topicId").value(1))
+				.andExpect(jsonPath("$.profileImageUrl").value(""))
 				.andExpect(jsonPath("$.curriculums").isArray())
 				.andExpect(jsonPath("$.curriculums").isEmpty());
 	}
