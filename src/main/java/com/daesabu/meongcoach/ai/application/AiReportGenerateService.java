@@ -55,8 +55,6 @@ public class AiReportGenerateService implements AiReportGenerator {
 			return;
 		}
 
-		log.info("test : {}", content);
-
 		aiReportRepository.save(AiReport.create(
 				new AiReportCreateCommand(downloadUrl.ownerUserId(), objectKey, content)));
 	}
