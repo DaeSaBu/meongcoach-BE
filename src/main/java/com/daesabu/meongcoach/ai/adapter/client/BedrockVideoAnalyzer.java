@@ -5,6 +5,7 @@ import com.daesabu.meongcoach.training.application.provided.TopicFinder;
 import java.net.URI;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
 import software.amazon.awssdk.services.bedrockruntime.model.ContentBlock;
@@ -64,7 +65,26 @@ public class BedrockVideoAnalyzer implements VideoAnalyzer {
 
 	@Override
 	public String analyze(String videoS3Uri) {
-		ConverseRequest request = ConverseRequest.builder()
+		ConverseRequest request = buildConverseRequest(videoS3Uri);
+
+		ConverseResponse response = bedrockRuntimeClient.converse(request);
+
+		String content = extractContent(response);
+		if (content.isBlank()) {
+			throw new IllegalStateException("영상 분석 결과가 비어 있습니다: " + videoS3Uri);
+		}
+		return content;
+	}
+
+	private static @NonNull String extractContent(ConverseResponse response) {
+		return response.output().message().content().stream()
+				.map(ContentBlock::text)
+				.filter(Objects::nonNull)
+				.collect(Collectors.joining());
+	}
+
+	private ConverseRequest buildConverseRequest(String videoS3Uri) {
+		return ConverseRequest.builder()
 				.modelId(modelId)
 				.serviceTier(serviceTier)
 				.inferenceConfig(inferenceConfig)
@@ -80,17 +100,6 @@ public class BedrockVideoAnalyzer implements VideoAnalyzer {
 								ContentBlock.fromText(renderUserPrompt()))
 						.build())
 				.build();
-
-		ConverseResponse response = bedrockRuntimeClient.converse(request);
-
-		String content = response.output().message().content().stream()
-				.map(ContentBlock::text)
-				.filter(Objects::nonNull)
-				.collect(Collectors.joining());
-		if (content.isBlank()) {
-			throw new IllegalStateException("영상 분석 결과가 비어 있습니다: " + videoS3Uri);
-		}
-		return content;
 	}
 
 	// 교육 목록은 기동 시점이 아니라 호출마다 조회한다. 영상 분석은 저빈도 작업이라 쿼리 비용이 무시 가능하고,
