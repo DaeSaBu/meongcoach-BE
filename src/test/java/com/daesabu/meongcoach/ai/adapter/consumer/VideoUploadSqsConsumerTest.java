@@ -43,11 +43,13 @@ class VideoUploadSqsConsumerTest {
 	}
 
 	@Test
-	@DisplayName("업로드 완료 이벤트의 객체 키로 리포트 생성을 위임한다")
+	@DisplayName("업로드 완료 이벤트의 객체 키와 버킷 기준 s3 URI로 리포트 생성을 위임한다")
 	void consumeDelegatesObjectKeyToGenerator() throws Exception {
 		consumer.consume(s3Event("ObjectCreated:Put", "videos/training/7/key.mp4"));
 
 		assertThat(aiReportGenerator.objectKeys).containsExactly("videos/training/7/key.mp4");
+		assertThat(aiReportGenerator.videoS3Uris)
+				.containsExactly("s3://test-video-bucket/videos/training/7/key.mp4");
 	}
 
 	@Test
@@ -87,6 +89,8 @@ class VideoUploadSqsConsumerTest {
 
 		assertThat(aiReportGenerator.objectKeys)
 				.containsExactly("videos/training/1/771b2834-6213-41ba-a3f0-dde9dcceefd0.mp4");
+		assertThat(aiReportGenerator.videoS3Uris)
+				.containsExactly("s3://meongcoach-dev-s3-files/videos/training/1/771b2834-6213-41ba-a3f0-dde9dcceefd0.mp4");
 	}
 
 	@Test
@@ -95,6 +99,9 @@ class VideoUploadSqsConsumerTest {
 		consumer.consume(s3Event("ObjectCreated:Put", "videos/training/7/my+video%3D1.mp4"));
 
 		assertThat(aiReportGenerator.objectKeys).containsExactly("videos/training/7/my video=1.mp4");
+		// s3 URI에도 디코딩된 키가 들어가야 Bedrock이 실제 객체를 찾는다
+		assertThat(aiReportGenerator.videoS3Uris)
+				.containsExactly("s3://test-video-bucket/videos/training/7/my video=1.mp4");
 	}
 
 	@Test
@@ -103,14 +110,22 @@ class VideoUploadSqsConsumerTest {
 		consumer.consume("""
 				{
 					"Records": [
-						{ "eventName": "ObjectCreated:Put", "s3": { "object": { "key": "videos/training/1/a.mp4" } } },
-						{ "eventName": "ObjectCreated:Put", "s3": { "object": { "key": "videos/training/2/b.mp4" } } }
+						{
+							"eventName": "ObjectCreated:Put",
+							"s3": { "bucket": { "name": "bucket-a" }, "object": { "key": "videos/training/1/a.mp4" } }
+						},
+						{
+							"eventName": "ObjectCreated:Put",
+							"s3": { "bucket": { "name": "bucket-b" }, "object": { "key": "videos/training/2/b.mp4" } }
+						}
 					]
 				}
 				""");
 
 		assertThat(aiReportGenerator.objectKeys)
 				.containsExactly("videos/training/1/a.mp4", "videos/training/2/b.mp4");
+		assertThat(aiReportGenerator.videoS3Uris)
+				.containsExactly("s3://bucket-a/videos/training/1/a.mp4", "s3://bucket-b/videos/training/2/b.mp4");
 	}
 
 	@Test
@@ -152,7 +167,7 @@ class VideoUploadSqsConsumerTest {
 	@DisplayName("리포트 생성이 실패해도 예외를 삼키고 정상 반환한다")
 	void consumeSwallowsGenerationFailure() {
 		// MVP라 재시도를 두지 않는다. 예외가 나가면 SQS가 메시지를 삭제하지 않고 무한 재전달한다
-		aiReportGenerator.failure = new IllegalStateException("Gemini 호출 실패");
+		aiReportGenerator.failure = new IllegalStateException("모델 호출 실패");
 
 		assertThatCode(() -> consumer.consume(s3Event("ObjectCreated:Put", "videos/training/7/key.mp4")))
 				.doesNotThrowAnyException();
@@ -166,8 +181,14 @@ class VideoUploadSqsConsumerTest {
 		consumer.consume("""
 				{
 					"Records": [
-						{ "eventName": "ObjectCreated:Put", "s3": { "object": { "key": "videos/training/1/a.mp4" } } },
-						{ "eventName": "ObjectCreated:Put", "s3": { "object": { "key": "videos/training/2/b.mp4" } } }
+						{
+							"eventName": "ObjectCreated:Put",
+							"s3": { "bucket": { "name": "test-video-bucket" }, "object": { "key": "videos/training/1/a.mp4" } }
+						},
+						{
+							"eventName": "ObjectCreated:Put",
+							"s3": { "bucket": { "name": "test-video-bucket" }, "object": { "key": "videos/training/2/b.mp4" } }
+						}
 					]
 				}
 				""");
@@ -193,6 +214,24 @@ class VideoUploadSqsConsumerTest {
 	}
 
 	@Test
+	@DisplayName("버킷 이름이 없는 레코드는 버리고 정상 반환한다")
+	void consumeDropsRecordWithoutBucketName() {
+		assertThatCode(() -> consumer.consume("""
+				{
+					"Records": [
+						{ "eventName": "ObjectCreated:Put", "s3": { "object": { "key": "videos/training/7/key.mp4" } } },
+						{
+							"eventName": "ObjectCreated:Put",
+							"s3": { "bucket": {}, "object": { "key": "videos/training/7/key.mp4" } }
+						}
+					]
+				}
+				""")).doesNotThrowAnyException();
+
+		assertThat(aiReportGenerator.objectKeys).isEmpty();
+	}
+
+	@Test
 	@DisplayName("URL 디코딩할 수 없는 객체 키는 버리고 정상 반환한다")
 	void consumeDropsUndecodableObjectKey() {
 		assertThatCode(() -> consumer.consume(s3Event("ObjectCreated:Put", "videos/training/7/key%ZZ.mp4")))
@@ -204,11 +243,12 @@ class VideoUploadSqsConsumerTest {
 	private static class RecordingAiReportGenerator implements AiReportGenerator {
 
 		private final List<String> objectKeys = new ArrayList<>();
+		private final List<String> videoS3Uris = new ArrayList<>();
 		private RuntimeException failure;
 		private boolean failUntilFirstAttempt;
 
 		@Override
-		public void generate(String objectKey) {
+		public void generate(String objectKey, String videoS3Uri) {
 			if (failUntilFirstAttempt) {
 				failUntilFirstAttempt = false;
 				throw new IllegalStateException("첫 레코드 처리 실패");
@@ -217,6 +257,7 @@ class VideoUploadSqsConsumerTest {
 				throw failure;
 			}
 			objectKeys.add(objectKey);
+			videoS3Uris.add(videoS3Uri);
 		}
 	}
 }

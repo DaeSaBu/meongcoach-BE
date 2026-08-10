@@ -1,7 +1,7 @@
 package com.daesabu.meongcoach.ai.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -28,6 +28,7 @@ class AiReportGenerateServiceTest {
 	private static final String OBJECT_KEY = "videos/training/7/key.mp4";
 	private static final String DOWNLOAD_URL = "https://storage.test/download?X-Amz-Signature=abc";
 	private static final String PUBLIC_URL = "https://videos.test/videos/training/7/key.mp4";
+	private static final String S3_URI = "s3://test-video-bucket/videos/training/7/key.mp4";
 
 	private RecordingVideoDownloadUrlIssuer downloadUrlIssuer;
 	private RecordingVideoAnalyzer videoAnalyzer;
@@ -45,14 +46,15 @@ class AiReportGenerateServiceTest {
 	}
 
 	@Test
-	@DisplayName("발급받은 다운로드 URL로 분석한 결과를 리포트로 저장한다")
+	@DisplayName("발급받은 영상 위치로 분석한 결과를 리포트로 저장한다")
 	void generateSavesReportWithAnalyzedContent() {
 		when(aiReportRepository.existsByVideoObjectKey(OBJECT_KEY)).thenReturn(false);
 
-		service.generate(OBJECT_KEY);
+		service.generate(OBJECT_KEY, S3_URI);
 
 		assertThat(downloadUrlIssuer.objectKeys).containsExactly(OBJECT_KEY);
-		assertThat(videoAnalyzer.videoUrls).containsExactly(DOWNLOAD_URL);
+		// Bedrock이 버킷에서 영상을 직접 읽으므로 업로드 이벤트에서 온 s3 URI를 그대로 넘긴다
+		assertThat(videoAnalyzer.videoS3Uris).containsExactly(S3_URI);
 		ArgumentCaptor<AiReport> captor = ArgumentCaptor.forClass(AiReport.class);
 		verify(aiReportRepository).save(captor.capture());
 		AiReport saved = captor.getValue();
@@ -66,10 +68,10 @@ class AiReportGenerateServiceTest {
 	void generateSkipsWhenReportAlreadyExists() {
 		when(aiReportRepository.existsByVideoObjectKey(OBJECT_KEY)).thenReturn(true);
 
-		service.generate(OBJECT_KEY);
+		service.generate(OBJECT_KEY, S3_URI);
 
 		assertThat(downloadUrlIssuer.objectKeys).isEmpty();
-		assertThat(videoAnalyzer.videoUrls).isEmpty();
+		assertThat(videoAnalyzer.videoS3Uris).isEmpty();
 		verify(aiReportRepository, never()).save(any());
 	}
 
@@ -79,21 +81,21 @@ class AiReportGenerateServiceTest {
 		when(aiReportRepository.existsByVideoObjectKey(OBJECT_KEY)).thenReturn(false);
 		aiTrialFinder.usedCount = 3;
 
-		service.generate(OBJECT_KEY);
+		service.generate(OBJECT_KEY, S3_URI);
 
 		assertThat(aiTrialFinder.requestedUserIds).containsExactly(7L);
-		assertThat(videoAnalyzer.videoUrls).isEmpty();
+		assertThat(videoAnalyzer.videoS3Uris).isEmpty();
 		verify(aiReportRepository, never()).save(any());
 	}
 
 	@Test
-	@DisplayName("분석이 실패하면 예외를 전파하고 저장하지 않는다")
-	void generatePropagatesAnalysisFailureWithoutSaving() {
+	@DisplayName("분석이 실패해도 예외를 던지지 않고 저장만 건너뛴다")
+	void generateSwallowsAnalysisFailureWithoutSaving() {
 		when(aiReportRepository.existsByVideoObjectKey(OBJECT_KEY)).thenReturn(false);
 		videoAnalyzer.failure = new IllegalStateException("분석 실패");
 
-		assertThatThrownBy(() -> service.generate(OBJECT_KEY))
-				.isInstanceOf(IllegalStateException.class);
+		// 예외를 던지면 SQS가 같은 메시지를 무한히 재전달한다
+		assertThatCode(() -> service.generate(OBJECT_KEY, S3_URI)).doesNotThrowAnyException();
 		verify(aiReportRepository, never()).save(any());
 	}
 
@@ -122,15 +124,15 @@ class AiReportGenerateServiceTest {
 
 	private static class RecordingVideoAnalyzer implements VideoAnalyzer {
 
-		private final List<String> videoUrls = new ArrayList<>();
+		private final List<String> videoS3Uris = new ArrayList<>();
 		private RuntimeException failure;
 
 		@Override
-		public String analyze(String videoUrl) {
+		public String analyze(String videoS3Uri) {
 			if (failure != null) {
 				throw failure;
 			}
-			videoUrls.add(videoUrl);
+			videoS3Uris.add(videoS3Uri);
 			return "분리불안 징후가 관찰됩니다.";
 		}
 	}

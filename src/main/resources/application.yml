@@ -1,14 +1,6 @@
 spring:
   application:
     name: meongcoach
-  ai:
-    google:
-      genai:
-        # 기본값을 두지 않아 미주입 시 기동에 실패한다
-        api-key: ${GEMINI_API_KEY}
-        chat:
-          # 모델은 프로퍼티로만 바꿔 끼울 수 있게 코드에 두지 않는다
-          model: gemini-3.5-flash
   profiles:
     # 프로파일 미지정 시 로컬 개발로 기동한다 — `./gradlew bootRun`만으로 실행 가능
     default: local
@@ -30,6 +22,10 @@ spring:
       credentials:
         access-key: ${SQS_ACCESS_KEY_ID}
         secret-key: ${SQS_SECRET_ACCESS_KEY}
+      sqs:
+        # 기본 전략(CREATE)은 큐가 있어도 sqs:CreateQueue를 호출해 권한 403으로 기동이 죽는다.
+        # 앱이 큐를 만들 이유가 없으므로 GetQueueUrl 조회만 하고, 큐가 없으면 명확히 실패하게 한다
+        queue-not-found-strategy: fail
 
 meongcoach:
   jwt:
@@ -63,6 +59,22 @@ meongcoach:
   ai:
     # S3 영상 업로드 완료 이벤트가 들어오는 SQS 큐 이름
     video-queue: ${AI_VIDEO_QUEUE}
+    # 영상 분석에 쓰는 Bedrock Converse 연동 설정. Spring AI 없이 AWS SDK로 직접 호출한다
+    # (Spring AI는 사용자 메시지의 콘텐츠 순서를 강제할 수 없어 제거했다. BedrockVideoAnalyzer 참고)
+    bedrock:
+      region: ${BEDROCK_REGION}
+      access-key-id: ${BEDROCK_ACCESS_KEY_ID}
+      secret-access-key: ${BEDROCK_SECRET_ACCESS_KEY}
+      # Converse의 영상 입력은 Nova 계열만 지원한다. 리전에 따라 인퍼런스 프로파일 ID가 필요할 수 있다
+      model: ${BEDROCK_MODEL:global.amazon.nova-2-lite-v1:0}
+      # 영상 분석은 수십 초가 걸려 SDK 기본 소켓 타임아웃(30초)으로는 응답 전에 끊긴다
+      response-timeout: PT5M
+      # SQS 비동기 처리라 지연에 둔감하므로 표준(default)보다 저렴한 flex 등급으로 호출한다
+      service-tier: ${BEDROCK_SERVICE_TIER:flex}
+      # 상한에 닿으면 리포트가 문장 중간에서 잘린다. 리포트는 2천 토큰 안팎이지만 추론 토큰 몫까지 넉넉히 둔다
+      max-tokens: 4096
+      # 영상 분석·유형 분류는 창의성보다 일관성이 중요해 AWS 가이드 권장값인 0으로 고정한다
+      temperature: 0
   social:
     kakao:
       issuer: https://kauth.kakao.com

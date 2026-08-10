@@ -12,11 +12,6 @@ spring:
       credentials:
         access-key: test-access-key
         secret-key: test-secret-key
-  ai:
-    google:
-      genai:
-        # 실제 호출 없이 컨텍스트 로드만 통과하면 되므로 더미 키를 둔다
-        api-key: test-gemini-api-key
   datasource:
     url: jdbc:h2:mem:meongcoach-test
     driver-class-name: org.h2.Driver
@@ -32,6 +27,16 @@ spring:
 meongcoach:
   ai:
     video-queue: test-video-queue
+    bedrock:
+      # Bedrock 클라이언트 생성에는 네트워크 호출이 없어 더미 자격 증명으로도 컨텍스트가 뜬다
+      region: ap-northeast-2
+      access-key-id: test-access-key
+      secret-access-key: test-secret-key
+      model: amazon.nova-2-lite-v1:0
+      response-timeout: PT5M
+      service-tier: flex
+      max-tokens: 4096
+      temperature: 0
   jwt:
     secret: meongcoach-test-only-jwt-secret-key-32b
   social:
