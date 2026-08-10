@@ -1,9 +1,12 @@
 package com.daesabu.meongcoach.ai.adapter.client;
 
+import com.daesabu.meongcoach.training.application.provided.TopicFinder;
+import com.daesabu.meongcoach.training.application.provided.TopicSummary;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
@@ -34,8 +37,7 @@ class BedrockVideoAnalyzerManualTest {
 				Duration.ofMinutes(5),
 				ServiceTierType.fromValue(env.getOrDefault("BEDROCK_SERVICE_TIER", "flex")),
 				Integer.parseInt(env.getOrDefault("BEDROCK_MAX_TOKENS", "4096")),
-				Float.parseFloat(env.getOrDefault("BEDROCK_TEMPERATURE", "0.2")),
-				env.getOrDefault("BEDROCK_PROMPT_VERSION", "v1"));
+				Float.parseFloat(env.getOrDefault("BEDROCK_TEMPERATURE", "0")));
 
 		try (BedrockRuntimeClient client = BedrockRuntimeClient.builder()
 				.credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create(
@@ -46,11 +48,25 @@ class BedrockVideoAnalyzerManualTest {
 						.apiCallAttemptTimeout(properties.responseTimeout()))
 				.build()) {
 
-			String content = new BedrockVideoAnalyzer(client, properties).analyze(VIDEO_S3_URI);
+			String content = new BedrockVideoAnalyzer(client, properties, stubTopicFinder()).analyze(VIDEO_S3_URI);
 
 			System.out.println("===== 영상 분석 결과 =====");
 			System.out.println(content);
 		}
+	}
+
+	// DB 없이 실행하는 수동 테스트라 운영 초기 데이터(training-initial-data.sql)의 토픽을 그대로 stub으로 쓴다
+	private static TopicFinder stubTopicFinder() {
+		return () -> List.of(
+				new TopicSummary(101L, "앉아", "기본 자세부터 차근차근"),
+				new TopicSummary(102L, "기다려", "차분하게 기다리는 연습"),
+				new TopicSummary(103L, "배변", "편안한 배변 습관 만들기"),
+				new TopicSummary(104L, "입질", "무는 습관 교정하기"),
+				new TopicSummary(105L, "사회화", "다른 개·사람과 인사"),
+				new TopicSummary(106L, "분리불안", "혼자서도 편안하게"),
+				new TopicSummary(107L, "산책", "즐겁고 안전한 첫 산책"),
+				new TopicSummary(108L, "켄넬", "켄넬을 편안한 공간으로"),
+				new TopicSummary(109L, "개인기", "신호로 즐기는 재미있는 개인기"));
 	}
 
 	private static Map<String, String> loadDotEnv() throws Exception {

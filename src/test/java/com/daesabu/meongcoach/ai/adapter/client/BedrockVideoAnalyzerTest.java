@@ -7,6 +7,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.daesabu.meongcoach.training.application.provided.TopicFinder;
+import com.daesabu.meongcoach.training.application.provided.TopicSummary;
 import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,18 +35,20 @@ class BedrockVideoAnalyzerTest {
 	private static final String MODEL_ID = "test.nova-video-v1:0";
 
 	private BedrockRuntimeClient client;
+	private TopicFinder topicFinder;
 	private BedrockVideoAnalyzer analyzer;
 
 	@BeforeEach
 	void setUp() {
 		client = mock(BedrockRuntimeClient.class);
-		analyzer = new BedrockVideoAnalyzer(client, propertiesWithPromptVersion("v1"));
+		topicFinder = mock(TopicFinder.class);
+		analyzer = new BedrockVideoAnalyzer(client, properties(), topicFinder);
 	}
 
-	private BedrockProperties propertiesWithPromptVersion(String promptVersion) {
+	private BedrockProperties properties() {
 		return new BedrockProperties(
 				"ap-northeast-2", "test-access-key", "test-secret-key", MODEL_ID, Duration.ofMinutes(5),
-				ServiceTierType.FLEX, 4096, 0.2f, promptVersion);
+				ServiceTierType.FLEX, 4096, 0.2f);
 	}
 
 	private void givenModelResponds(String content) {
@@ -161,10 +165,20 @@ class BedrockVideoAnalyzerTest {
 	}
 
 	@Test
-	@DisplayName("없는 프롬프트 버전이면 생성에 실패한다")
-	void constructorFailsWhenPromptVersionIsUnknown() {
-		assertThatThrownBy(() -> new BedrockVideoAnalyzer(client, propertiesWithPromptVersion("v999")))
-				.isInstanceOf(IllegalStateException.class);
+	@DisplayName("사용자 프롬프트에 교육 목록을 치환해 보낸다")
+	void analyzeInjectsTopicsIntoUserPrompt() {
+		when(topicFinder.findAllOrdered()).thenReturn(List.of(
+				new TopicSummary(1L, "배변", "편안한 배변 습관 만들기"),
+				new TopicSummary(2L, "분리불안", "혼자서도 편안하게")));
+		givenModelResponds("결과");
+
+		analyzer.analyze(S3_URI);
+
+		String userText = capturedRequest().messages().getFirst().content().get(1).text();
+		assertThat(userText)
+				.contains("배변: 편안한 배변 습관 만들기")
+				.contains("분리불안: 혼자서도 편안하게")
+				.doesNotContain("{{topics}}");
 	}
 
 	@Test

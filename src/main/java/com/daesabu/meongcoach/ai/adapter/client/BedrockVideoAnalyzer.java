@@ -1,6 +1,7 @@
 package com.daesabu.meongcoach.ai.adapter.client;
 
 import com.daesabu.meongcoach.ai.application.required.VideoAnalyzer;
+import com.daesabu.meongcoach.training.application.provided.TopicFinder;
 import java.net.URI;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -29,28 +30,36 @@ import software.amazon.awssdk.services.bedrockruntime.model.VideoSource;
 @Component
 public class BedrockVideoAnalyzer implements VideoAnalyzer {
 
-	private static final String PROMPT_BASE = "prompts/video-analysis/";
+	private static final String SYSTEM_PROMPT_PATH = "prompts/video-analysis/system.md";
+	private static final String USER_PROMPT_PATH = "prompts/video-analysis/user.md";
+	private static final String TOPICS_PLACEHOLDER = "{{topics}}";
 
 	private final BedrockRuntimeClient bedrockRuntimeClient;
+	private final TopicFinder topicFinder;
 	private final String modelId;
 	private final ServiceTier serviceTier;
 	private final InferenceConfiguration inferenceConfig;
 	// 영상 입력 시 모델이 지시를 무시하고 영어 장면 묘사로 빠지는 경향이 있어, 지시는 system 메시지로 분리해
-	// 한국어와 4개 항목 구조를 규칙과 출력 형식으로 강제한다. 내용은 resources/prompts/video-analysis 참고
+	// 한국어와 항목 구조를 규칙과 출력 형식으로 강제한다. 내용은 resources/prompts/video-analysis 참고
 	private final String systemPrompt;
 	private final String userPrompt;
 
-	public BedrockVideoAnalyzer(BedrockRuntimeClient bedrockRuntimeClient, BedrockProperties properties) {
+	public BedrockVideoAnalyzer(BedrockRuntimeClient bedrockRuntimeClient, BedrockProperties properties,
+	                            TopicFinder topicFinder) {
 		this.bedrockRuntimeClient = bedrockRuntimeClient;
+		this.topicFinder = topicFinder;
 		this.modelId = properties.model();
 		this.serviceTier = ServiceTier.builder().type(properties.serviceTier()).build();
 		this.inferenceConfig = InferenceConfiguration.builder()
 				.maxTokens(properties.maxTokens())
 				.temperature(properties.temperature())
 				.build();
-		String promptDir = PROMPT_BASE + properties.promptVersion() + "/";
-		this.systemPrompt = PromptLoader.load(promptDir + "system.md");
-		this.userPrompt = PromptLoader.load(promptDir + "user.md");
+		this.systemPrompt = PromptLoader.load(SYSTEM_PROMPT_PATH);
+		this.userPrompt = PromptLoader.load(USER_PROMPT_PATH);
+		if (!userPrompt.contains(TOPICS_PLACEHOLDER)) {
+			throw new IllegalStateException(
+					"사용자 프롬프트에 " + TOPICS_PLACEHOLDER + " 자리가 없습니다: " + USER_PROMPT_PATH);
+		}
 	}
 
 	@Override
@@ -68,7 +77,7 @@ public class BedrockVideoAnalyzer implements VideoAnalyzer {
 										.source(VideoSource.fromS3Location(
 												S3Location.builder().uri(videoS3Uri).build()))
 										.build()),
-								ContentBlock.fromText(userPrompt))
+								ContentBlock.fromText(renderUserPrompt()))
 						.build())
 				.build();
 
@@ -82,6 +91,15 @@ public class BedrockVideoAnalyzer implements VideoAnalyzer {
 			throw new IllegalStateException("영상 분석 결과가 비어 있습니다: " + videoS3Uri);
 		}
 		return content;
+	}
+
+	// 교육 목록은 기동 시점이 아니라 호출마다 조회한다. 영상 분석은 저빈도 작업이라 쿼리 비용이 무시 가능하고,
+	// 토픽이 바뀌어도 재기동 없이 반영된다.
+	private String renderUserPrompt() {
+		String topics = topicFinder.findAllOrdered().stream()
+				.map(topic -> topic.title() + ": " + topic.description())
+				.collect(Collectors.joining("\n"));
+		return userPrompt.replace(TOPICS_PLACEHOLDER, topics);
 	}
 
 	private static VideoFormat videoFormatOf(String videoUri) {

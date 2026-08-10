@@ -36,8 +36,7 @@ meongcoach:
       response-timeout: PT5M
       service-tier: flex
       max-tokens: 4096
-      temperature: 0.2
-      prompt-version: v1
+      temperature: 0
   jwt:
     secret: meongcoach-test-only-jwt-secret-key-32b
   social:
