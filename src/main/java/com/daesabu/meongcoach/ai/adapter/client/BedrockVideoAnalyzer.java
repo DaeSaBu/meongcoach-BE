@@ -1,11 +1,11 @@
 package com.daesabu.meongcoach.ai.adapter.client;
 
+import com.daesabu.meongcoach.ai.application.provided.AiReportContent;
 import com.daesabu.meongcoach.ai.application.required.VideoAnalyzer;
 import com.daesabu.meongcoach.training.application.provided.TopicFinder;
 import java.net.URI;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
 import software.amazon.awssdk.services.bedrockruntime.model.ContentBlock;
@@ -20,6 +20,8 @@ import software.amazon.awssdk.services.bedrockruntime.model.SystemContentBlock;
 import software.amazon.awssdk.services.bedrockruntime.model.VideoBlock;
 import software.amazon.awssdk.services.bedrockruntime.model.VideoFormat;
 import software.amazon.awssdk.services.bedrockruntime.model.VideoSource;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * AWS Bedrock Converse로 영상을 분석하는 어댑터. 영상은 바이트로 내려받지 않고 s3://버킷/키 URI를 넘겨
@@ -37,6 +39,7 @@ public class BedrockVideoAnalyzer implements VideoAnalyzer {
 
 	private final BedrockRuntimeClient bedrockRuntimeClient;
 	private final TopicFinder topicFinder;
+	private final ObjectMapper objectMapper;
 	private final String modelId;
 	private final ServiceTier serviceTier;
 	private final InferenceConfiguration inferenceConfig;
@@ -46,9 +49,10 @@ public class BedrockVideoAnalyzer implements VideoAnalyzer {
 	private final String userPrompt;
 
 	public BedrockVideoAnalyzer(BedrockRuntimeClient bedrockRuntimeClient, BedrockProperties properties,
-	                            TopicFinder topicFinder) {
+	                            TopicFinder topicFinder, ObjectMapper objectMapper) {
 		this.bedrockRuntimeClient = bedrockRuntimeClient;
 		this.topicFinder = topicFinder;
+		this.objectMapper = objectMapper;
 		this.modelId = properties.model();
 		this.serviceTier = ServiceTier.builder().type(properties.serviceTier()).build();
 		this.inferenceConfig = InferenceConfiguration.builder()
@@ -73,10 +77,36 @@ public class BedrockVideoAnalyzer implements VideoAnalyzer {
 		if (content.isBlank()) {
 			throw new IllegalStateException("영상 분석 결과가 비어 있습니다: " + videoS3Uri);
 		}
+		AiReportContent reportContent = parseContent(content, videoS3Uri);
+		return objectMapper.writeValueAsString(reportContent);
+	}
+
+	// 모델이 지시를 어기고 코드 펜스나 설명을 붙이는 경우가 있어 첫 '{'부터 마지막 '}'까지만 잘라 파싱한다
+	private AiReportContent parseContent(String rawText, String videoS3Uri) {
+		String json = extractJsonObject(rawText, videoS3Uri);
+		AiReportContent content;
+		try {
+			content = objectMapper.readValue(json, AiReportContent.class);
+		}
+		catch (JacksonException e) {
+			throw new IllegalStateException("영상 분석 응답이 JSON 형식이 아닙니다: " + videoS3Uri, e);
+		}
+		if (content.report().isEmpty()) {
+			throw new IllegalStateException("영상 분석 응답에 report 항목이 없습니다: " + videoS3Uri);
+		}
 		return content;
 	}
 
-	private static @NonNull String extractContent(ConverseResponse response) {
+	private static String extractJsonObject(String rawText, String videoS3Uri) {
+		int start = rawText.indexOf('{');
+		int end = rawText.lastIndexOf('}');
+		if (start < 0 || end < start) {
+			throw new IllegalStateException("영상 분석 응답에서 JSON을 찾지 못했습니다: " + videoS3Uri);
+		}
+		return rawText.substring(start, end + 1);
+	}
+
+	private static String extractContent(ConverseResponse response) {
 		return response.output().message().content().stream()
 				.map(ContentBlock::text)
 				.filter(Objects::nonNull)

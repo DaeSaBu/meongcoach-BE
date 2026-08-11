@@ -24,6 +24,7 @@ import software.amazon.awssdk.services.bedrockruntime.model.ConverseResponse;
 import software.amazon.awssdk.services.bedrockruntime.model.Message;
 import software.amazon.awssdk.services.bedrockruntime.model.ServiceTierType;
 import software.amazon.awssdk.services.bedrockruntime.model.VideoFormat;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * 모델 호출은 mock 클라이언트로 가로채고, Converse 요청 구성과 응답 처리를 검증한다.
@@ -33,6 +34,10 @@ class BedrockVideoAnalyzerTest {
 
 	private static final String S3_URI = "s3://test-video-bucket/videos/training/7/key.mp4";
 	private static final String MODEL_ID = "test.nova-video-v1:0";
+	// 정규화 재직렬화 결과와 비교할 수 있도록 record 컴포넌트 순서(recommend, report, solution)와 맞춘 JSON
+	private static final String VALID_CONTENT_JSON = "{\"recommend\":[{\"title\":\"입질 교정\"}],"
+			+ "\"report\":[{\"subTitle\":\"영상에서 이런 행동이 보여요\",\"description\":\"슬리퍼를 물고 달려요.\"}],"
+			+ "\"solution\":[{\"order\":1,\"title\":\"교환 놀이 연습하기\",\"description\":\"간식과 바꿔 주세요.\"}]}";
 
 	private BedrockRuntimeClient client;
 	private TopicFinder topicFinder;
@@ -42,7 +47,7 @@ class BedrockVideoAnalyzerTest {
 	void setUp() {
 		client = mock(BedrockRuntimeClient.class);
 		topicFinder = mock(TopicFinder.class);
-		analyzer = new BedrockVideoAnalyzer(client, properties(), topicFinder);
+		analyzer = new BedrockVideoAnalyzer(client, properties(), topicFinder, new ObjectMapper());
 	}
 
 	private BedrockProperties properties() {
@@ -67,19 +72,68 @@ class BedrockVideoAnalyzerTest {
 	}
 
 	@Test
-	@DisplayName("모델 응답을 분석 결과로 반환한다")
-	void analyzeReturnsModelResponse() {
-		givenModelResponds("분리불안 징후가 관찰됩니다.");
+	@DisplayName("모델이 반환한 JSON을 정규화해 반환한다")
+	void analyzeReturnsNormalizedJson() {
+		givenModelResponds(VALID_CONTENT_JSON);
 
 		String content = analyzer.analyze(S3_URI);
 
-		assertThat(content).isEqualTo("분리불안 징후가 관찰됩니다.");
+		assertThat(content).isEqualTo(VALID_CONTENT_JSON);
+	}
+
+	@Test
+	@DisplayName("코드 펜스와 앞뒤 설명을 제거하고 JSON만 파싱한다")
+	void analyzeStripsFencesAndSurroundingText() {
+		givenModelResponds("리포트를 작성했어요.\n```json\n" + VALID_CONTENT_JSON + "\n```\n확인해 주세요.");
+
+		String content = analyzer.analyze(S3_URI);
+
+		assertThat(content).isEqualTo(VALID_CONTENT_JSON);
+	}
+
+	@Test
+	@DisplayName("recommend와 solution이 없으면 빈 배열로 정규화한다")
+	void analyzeNormalizesMissingListsToEmptyArrays() {
+		givenModelResponds("{\"report\":[{\"subTitle\":\"영상에서 이런 행동이 보여요\",\"description\":\"산책 중이에요.\"}]}");
+
+		String content = analyzer.analyze(S3_URI);
+
+		assertThat(content)
+				.contains("\"recommend\":[]")
+				.contains("\"solution\":[]");
+	}
+
+	@Test
+	@DisplayName("응답에서 JSON 객체를 찾지 못하면 분석에 실패한다")
+	void analyzeFailsWhenResponseHasNoJsonObject() {
+		givenModelResponds("분리불안 징후가 관찰됩니다.");
+
+		assertThatThrownBy(() -> analyzer.analyze(S3_URI))
+				.isInstanceOf(IllegalStateException.class);
+	}
+
+	@Test
+	@DisplayName("응답이 JSON 형식이 아니면 분석에 실패한다")
+	void analyzeFailsWhenResponseIsMalformedJson() {
+		givenModelResponds("{\"recommend\": [잘못된 형식}");
+
+		assertThatThrownBy(() -> analyzer.analyze(S3_URI))
+				.isInstanceOf(IllegalStateException.class);
+	}
+
+	@Test
+	@DisplayName("report 항목이 비어 있으면 분석에 실패한다")
+	void analyzeFailsWhenReportIsEmpty() {
+		givenModelResponds("{\"recommend\":[],\"report\":[],\"solution\":[]}");
+
+		assertThatThrownBy(() -> analyzer.analyze(S3_URI))
+				.isInstanceOf(IllegalStateException.class);
 	}
 
 	@Test
 	@DisplayName("설정된 모델 ID로 요청한다")
 	void analyzeUsesConfiguredModelId() {
-		givenModelResponds("결과");
+		givenModelResponds(VALID_CONTENT_JSON);
 
 		analyzer.analyze(S3_URI);
 
@@ -89,7 +143,7 @@ class BedrockVideoAnalyzerTest {
 	@Test
 	@DisplayName("설정된 서비스 등급으로 요청한다")
 	void analyzeUsesConfiguredServiceTier() {
-		givenModelResponds("결과");
+		givenModelResponds(VALID_CONTENT_JSON);
 
 		analyzer.analyze(S3_URI);
 
@@ -99,7 +153,7 @@ class BedrockVideoAnalyzerTest {
 	@Test
 	@DisplayName("설정된 최대 토큰·온도로 요청한다")
 	void analyzeUsesConfiguredInferenceConfig() {
-		givenModelResponds("결과");
+		givenModelResponds(VALID_CONTENT_JSON);
 
 		analyzer.analyze(S3_URI);
 
@@ -110,7 +164,7 @@ class BedrockVideoAnalyzerTest {
 	@Test
 	@DisplayName("비디오 블록을 텍스트보다 먼저 보낸다")
 	void analyzeSendsVideoBeforeText() {
-		givenModelResponds("결과");
+		givenModelResponds(VALID_CONTENT_JSON);
 
 		analyzer.analyze(S3_URI);
 
@@ -123,7 +177,7 @@ class BedrockVideoAnalyzerTest {
 	@Test
 	@DisplayName("s3 URI를 비디오 s3Location으로 실어 보낸다")
 	void analyzeAttachesS3UriAsS3Location() {
-		givenModelResponds("결과");
+		givenModelResponds(VALID_CONTENT_JSON);
 
 		analyzer.analyze(S3_URI);
 
@@ -135,7 +189,7 @@ class BedrockVideoAnalyzerTest {
 	@Test
 	@DisplayName("mp4 영상은 mp4 형식으로 보낸다")
 	void analyzeUsesMp4FormatForMp4() {
-		givenModelResponds("결과");
+		givenModelResponds(VALID_CONTENT_JSON);
 
 		analyzer.analyze(S3_URI);
 
@@ -146,7 +200,7 @@ class BedrockVideoAnalyzerTest {
 	@Test
 	@DisplayName("mov 영상은 mov 형식으로 보낸다")
 	void analyzeUsesMovFormatForMov() {
-		givenModelResponds("결과");
+		givenModelResponds(VALID_CONTENT_JSON);
 
 		analyzer.analyze("s3://test-video-bucket/videos/training/7/key.mov");
 
@@ -157,7 +211,7 @@ class BedrockVideoAnalyzerTest {
 	@Test
 	@DisplayName("분석 지시를 system 메시지로 보낸다")
 	void analyzeSendsAnalysisInstructionAsSystemMessage() {
-		givenModelResponds("결과");
+		givenModelResponds(VALID_CONTENT_JSON);
 
 		analyzer.analyze(S3_URI);
 
@@ -170,7 +224,7 @@ class BedrockVideoAnalyzerTest {
 		when(topicFinder.findAllOrdered()).thenReturn(List.of(
 				new TopicSummary(1L, "배변", "편안한 배변 습관 만들기"),
 				new TopicSummary(2L, "분리불안", "혼자서도 편안하게")));
-		givenModelResponds("결과");
+		givenModelResponds(VALID_CONTENT_JSON);
 
 		analyzer.analyze(S3_URI);
 

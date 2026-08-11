@@ -15,6 +15,7 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
 import software.amazon.awssdk.services.bedrockruntime.model.ServiceTierType;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * 프롬프트·영상 분석 고도화를 위한 임시 수동 테스트. 실제 Bedrock을 호출하므로 확인이 끝나면 삭제한다.
@@ -22,7 +23,7 @@ import software.amazon.awssdk.services.bedrockruntime.model.ServiceTierType;
  */
 class BedrockVideoAnalyzerManualTest {
 
-	private static final String VIDEO_S3_URI = "s3://local-test-limj/videos/training/7/video2.mp4";
+	private static final String VIDEO_S3_URI = "s3://local-test-limj/videos/training/11/video2.mp4";
 
 	@Test
 	void analyzeRealVideo() throws Exception {
@@ -48,7 +49,8 @@ class BedrockVideoAnalyzerManualTest {
 						.apiCallAttemptTimeout(properties.responseTimeout()))
 				.build()) {
 
-			String content = new BedrockVideoAnalyzer(client, properties, stubTopicFinder()).analyze(VIDEO_S3_URI);
+			String content = new BedrockVideoAnalyzer(client, properties, stubTopicFinder(), new ObjectMapper())
+					.analyze(VIDEO_S3_URI);
 
 			System.out.println("===== 영상 분석 결과 =====");
 			System.out.println(content);
