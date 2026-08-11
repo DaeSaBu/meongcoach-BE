@@ -13,6 +13,7 @@ import static org.springframework.restdocs.request.RequestDocumentation.pathPara
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.daesabu.meongcoach.ai.application.provided.AiReportContent;
 import com.daesabu.meongcoach.ai.application.provided.AiReportDetailView;
 import com.daesabu.meongcoach.ai.application.provided.AiReportFinder;
 import com.daesabu.meongcoach.ai.application.provided.AiReportView;
@@ -60,6 +61,13 @@ class AiControllerTest {
 			}
 			""";
 
+	private static final AiReportContent REPORT_CONTENT = new AiReportContent(
+			List.of(new AiReportContent.Recommend("분리불안 교육")),
+			List.of(
+					new AiReportContent.ReportSection("영상에서 이런 행동이 보여요", "현관 앞을 서성여요."),
+					new AiReportContent.ReportSection("이런 이유로 문제 행동으로 볼 수 있어요", "분리불안 징후일 수 있어요.")),
+			List.of(new AiReportContent.Solution(1, "혼자 있는 연습", "짧게 자리를 비워 보세요.")));
+
 	@Autowired
 	private MockMvc mockMvc;
 
@@ -76,8 +84,10 @@ class AiControllerTest {
 	@DisplayName("리포트 목록을 최신순으로 반환한다")
 	void findReportsReturnsReportsLatestFirst() throws Exception {
 		given(aiReportFinder.findReports(42L)).willReturn(List.of(
-				new AiReportView(11L, "videos/training/42/second.mp4", LocalDateTime.of(2026, 8, 2, 10, 30, 0)),
-				new AiReportView(10L, "videos/training/42/first.mp4", LocalDateTime.of(2026, 8, 1, 9, 0, 0))
+				new AiReportView(11L, "videos/training/42/second.mp4", "물체를 물고 달리는 행동 분석",
+						LocalDateTime.of(2026, 8, 2, 10, 30, 0)),
+				new AiReportView(10L, "videos/training/42/first.mp4", "분리불안 징후 행동 분석",
+						LocalDateTime.of(2026, 8, 1, 9, 0, 0))
 		));
 
 		mockMvc.perform(get("/api/ai/reports")
@@ -86,15 +96,19 @@ class AiControllerTest {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.reports[0].reportId").value(11))
 				.andExpect(jsonPath("$.reports[0].videoObjectKey").value("videos/training/42/second.mp4"))
+				.andExpect(jsonPath("$.reports[0].title").value("물체를 물고 달리는 행동 분석"))
 				.andExpect(jsonPath("$.reports[0].createdAt").value("2026-08-02T10:30:00"))
 				.andExpect(jsonPath("$.reports[1].reportId").value(10))
 				.andExpect(jsonPath("$.reports[1].videoObjectKey").value("videos/training/42/first.mp4"))
+				.andExpect(jsonPath("$.reports[1].title").value("분리불안 징후 행동 분석"))
 				.andExpect(jsonPath("$.reports[1].createdAt").value("2026-08-01T09:00:00"))
 				.andDo(document("ai/report-list",
 						responseFields(
 								fieldWithPath("reports[]").description("사용자의 AI 리포트 목록. 생성 시각 내림차순"),
 								fieldWithPath("reports[].reportId").description("리포트 ID"),
 								fieldWithPath("reports[].videoObjectKey").description("분석한 영상의 S3 객체 키"),
+								fieldWithPath("reports[].title").optional()
+										.description("AI가 요약한 리포트 제목. 생성에 실패한 리포트는 null"),
 								fieldWithPath("reports[].createdAt").description("리포트 생성 시각(ISO-8601, 초 단위)")
 						)
 				));
@@ -134,7 +148,8 @@ class AiControllerTest {
 	@DisplayName("리포트 하나를 본문과 함께 반환한다")
 	void findReportReturnsReportWithContent() throws Exception {
 		given(aiReportFinder.findReport(42L, 10L)).willReturn(new AiReportDetailView(10L,
-				"videos/training/42/first.mp4", "분리불안 징후가 관찰됩니다.", LocalDateTime.of(2026, 8, 1, 9, 0, 0)));
+				"videos/training/42/first.mp4", "분리불안 징후 행동 분석", REPORT_CONTENT,
+				LocalDateTime.of(2026, 8, 1, 9, 0, 0)));
 
 		mockMvc.perform(get("/api/ai/reports/{reportId}", 10L)
 						.principal(CURRENT_USER)
@@ -142,7 +157,12 @@ class AiControllerTest {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.reportId").value(10))
 				.andExpect(jsonPath("$.videoObjectKey").value("videos/training/42/first.mp4"))
-				.andExpect(jsonPath("$.content").value("분리불안 징후가 관찰됩니다."))
+				.andExpect(jsonPath("$.title").value("분리불안 징후 행동 분석"))
+				.andExpect(jsonPath("$.content.recommend[0].title").value("분리불안 교육"))
+				.andExpect(jsonPath("$.content.report[0].subTitle").value("영상에서 이런 행동이 보여요"))
+				.andExpect(jsonPath("$.content.report[0].description").value("현관 앞을 서성여요."))
+				.andExpect(jsonPath("$.content.solution[0].order").value(1))
+				.andExpect(jsonPath("$.content.solution[0].title").value("혼자 있는 연습"))
 				.andExpect(jsonPath("$.createdAt").value("2026-08-01T09:00:00"))
 				.andDo(document("ai/report-detail",
 						pathParameters(
@@ -151,7 +171,20 @@ class AiControllerTest {
 						responseFields(
 								fieldWithPath("reportId").description("리포트 ID"),
 								fieldWithPath("videoObjectKey").description("분석한 영상의 S3 객체 키"),
+								fieldWithPath("title").optional()
+										.description("AI가 요약한 리포트 제목. 생성에 실패한 리포트는 null"),
 								fieldWithPath("content").description("AI 분석 리포트 본문"),
+								fieldWithPath("content.recommend[]").description(
+										"추천 교육 목록. 문제 행동이 아닌 영상은 빈 배열"),
+								fieldWithPath("content.recommend[].title").description("추천 교육 이름"),
+								fieldWithPath("content.report[]").description("리포트 문단 목록. 항상 1개 이상"),
+								fieldWithPath("content.report[].subTitle").description("문단 소제목"),
+								fieldWithPath("content.report[].description").description("문단 내용"),
+								fieldWithPath("content.solution[]").description(
+										"교정 단계 목록. 문제 행동이 아닌 영상은 빈 배열"),
+								fieldWithPath("content.solution[].order").description("단계 순서. 1부터 시작"),
+								fieldWithPath("content.solution[].title").description("단계 제목"),
+								fieldWithPath("content.solution[].description").description("단계 설명"),
 								fieldWithPath("createdAt").description("리포트 생성 시각(ISO-8601, 초 단위)")
 						)
 				));
@@ -161,7 +194,8 @@ class AiControllerTest {
 	@DisplayName("인증 주체에서 읽은 사용자로 리포트 상세 조회를 위임한다")
 	void findReportDelegatesWithCurrentUserId() throws Exception {
 		given(aiReportFinder.findReport(42L, 10L)).willReturn(new AiReportDetailView(10L,
-				"videos/training/42/first.mp4", "분리불안 징후가 관찰됩니다.", LocalDateTime.of(2026, 8, 1, 9, 0, 0)));
+				"videos/training/42/first.mp4", "분리불안 징후 행동 분석", REPORT_CONTENT,
+				LocalDateTime.of(2026, 8, 1, 9, 0, 0)));
 
 		mockMvc.perform(get("/api/ai/reports/{reportId}", 10L).principal(CURRENT_USER))
 				.andExpect(status().isOk());
