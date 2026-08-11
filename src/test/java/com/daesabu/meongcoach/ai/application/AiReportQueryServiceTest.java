@@ -98,6 +98,7 @@ class AiReportQueryServiceTest {
 	}
 
 	private AiReport persistReport(Long userId, String videoObjectKey, String content) {
-		return aiReportRepository.saveAndFlush(AiReport.create(new AiReportCreateCommand(userId, videoObjectKey, content)));
+		return aiReportRepository.saveAndFlush(
+				AiReport.create(new AiReportCreateCommand(userId, videoObjectKey, null, content)));
 	}
 }

@@ -57,6 +57,7 @@ class AiReportTrialFinderServiceTest {
 
 	private void persistReport(Long userId, String videoObjectKey) {
 		aiReportRepository.saveAndFlush(
-				AiReport.create(new AiReportCreateCommand(userId, videoObjectKey, "분리불안 징후가 관찰됩니다.")));
+				AiReport.create(new AiReportCreateCommand(userId, videoObjectKey, "분리불안 징후 행동 분석",
+						"분리불안 징후가 관찰됩니다.")));
 	}
 }

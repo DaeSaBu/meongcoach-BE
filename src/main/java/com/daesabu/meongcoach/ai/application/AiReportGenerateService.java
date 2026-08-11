@@ -3,6 +3,7 @@ package com.daesabu.meongcoach.ai.application;
 import com.daesabu.meongcoach.ai.application.provided.AiReportGenerator;
 import com.daesabu.meongcoach.ai.application.provided.AiTrialFinder;
 import com.daesabu.meongcoach.ai.application.required.AiReportRepository;
+import com.daesabu.meongcoach.ai.application.required.ReportTitleGenerator;
 import com.daesabu.meongcoach.ai.application.required.VideoAnalyzer;
 import com.daesabu.meongcoach.ai.domain.AiReport;
 import com.daesabu.meongcoach.ai.domain.AiReportCreateCommand;
@@ -25,6 +26,7 @@ public class AiReportGenerateService implements AiReportGenerator {
 
 	private final VideoDownloadUrlIssuer videoDownloadUrlIssuer;
 	private final VideoAnalyzer videoAnalyzer;
+	private final ReportTitleGenerator reportTitleGenerator;
 	private final AiReportRepository aiReportRepository;
 	private final AiTrialFinder aiTrialFinder;
 
@@ -53,7 +55,20 @@ public class AiReportGenerateService implements AiReportGenerator {
 			return;
 		}
 
+		String title = generateTitleOrNull(objectKey, content);
+
 		aiReportRepository.save(AiReport.create(
-				new AiReportCreateCommand(downloadUrl.ownerUserId(), objectKey, content)));
+				new AiReportCreateCommand(downloadUrl.ownerUserId(), objectKey, title, content)));
+	}
+
+	// 제목은 부가 정보라 생성에 실패해도 리포트 저장은 계속한다
+	private String generateTitleOrNull(String objectKey, String content) {
+		try {
+			return reportTitleGenerator.generateTitle(content);
+		}
+		catch (Exception e) {
+			log.warn("리포트 제목 생성에 실패해 제목 없이 저장한다: {}", objectKey, e);
+			return null;
+		}
 	}
 }

@@ -54,6 +54,11 @@ class BedrockVideoAnalyzerManualTest {
 
 			System.out.println("===== 영상 분석 결과 =====");
 			System.out.println(content);
+
+			String title = new BedrockReportTitleGenerator(client, properties).generateTitle(content);
+
+			System.out.println("===== 리포트 제목 =====");
+			System.out.println(title);
 		}
 	}
 

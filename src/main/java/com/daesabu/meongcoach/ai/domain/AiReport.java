@@ -32,12 +32,17 @@ public class AiReport extends BaseTimeEntity {
 	@Column(nullable = false, length = 512)
 	private String videoObjectKey;
 
+	// 제목 생성은 부가 기능이라 실패해도 리포트는 저장해야 하므로 null을 허용한다
+	@Column(length = 200)
+	private String title;
+
 	@Column(nullable = false, columnDefinition = "TEXT")
 	private String content;
 
 	private AiReport(AiReportCreateCommand command) {
 		this.userId = command.userId();
 		this.videoObjectKey = command.videoObjectKey();
+		this.title = command.title();
 		this.content = command.content();
 	}
 
