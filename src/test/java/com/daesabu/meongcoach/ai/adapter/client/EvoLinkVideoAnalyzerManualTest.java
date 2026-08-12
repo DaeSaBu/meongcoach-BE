@@ -13,9 +13,9 @@ import tools.jackson.databind.ObjectMapper;
 /**
  * 프롬프트·영상 분석 고도화를 위한 임시 수동 테스트. 실제 EvoLink를 호출하므로 확인이 끝나면
  * VideoPresignManualTest와 함께 삭제한다.
- * .env의 EVOLINK_API_KEY와 영상 위치를 읽어 실행하고, 없으면 건너뛴다. 영상 위치는 둘 중 하나면 된다:
- * EVOLINK_TEST_VIDEO_URL(presigned GET URL을 직접 지정) 또는
- * EVOLINK_TEST_VIDEO_KEY(영상 객체 키 — S3_* 값으로 presigned URL을 즉석 발급).
+ * .env의 EVOLINK_API_KEY와 S3_* 자격 증명만 있으면 실행되고, 없으면 건너뛴다. 영상은 기본으로
+ * 테스트 버킷(local-test-limj)의 예시 영상을 즉석 presign해 쓰며, EVOLINK_TEST_VIDEO_URL(직접 지정)
+ * 또는 EVOLINK_TEST_VIDEO_KEY(다른 객체 키)로 바꿀 수 있다.
  */
 class EvoLinkVideoAnalyzerManualTest {
 
@@ -25,7 +25,7 @@ class EvoLinkVideoAnalyzerManualTest {
 		Assumptions.assumeTrue(env.containsKey("EVOLINK_API_KEY"), ".env의 EVOLINK_API_KEY가 없어 건너뛴다");
 		String videoUrl = resolveVideoUrl(env);
 		Assumptions.assumeTrue(videoUrl != null,
-				".env의 EVOLINK_TEST_VIDEO_URL 또는 (S3_* + EVOLINK_TEST_VIDEO_KEY)가 없어 건너뛴다");
+				".env의 EVOLINK_TEST_VIDEO_URL도 S3_* 자격 증명도 없어 건너뛴다");
 
 		EvoLinkProperties properties = new EvoLinkProperties(
 				env.getOrDefault("EVOLINK_BASE_URL", "https://api.evolink.ai"),
@@ -51,13 +51,14 @@ class EvoLinkVideoAnalyzerManualTest {
 		System.out.println(title);
 	}
 
-	// URL을 직접 지정했으면 그대로 쓰고, 아니면 객체 키로 presigned URL을 즉석 발급한다 (만료 걱정이 없어 편하다)
+	// URL을 직접 지정했으면 그대로 쓰고, 아니면 테스트 버킷의 영상으로 presigned URL을 즉석 발급한다 (만료 걱정이 없어 편하다)
 	private static String resolveVideoUrl(Map<String, String> env) {
 		if (env.containsKey("EVOLINK_TEST_VIDEO_URL")) {
 			return env.get("EVOLINK_TEST_VIDEO_URL");
 		}
-		if (env.containsKey("EVOLINK_TEST_VIDEO_KEY") && VideoPresignManualTest.hasS3Credentials(env)) {
-			return VideoPresignManualTest.presignDownloadUrl(env, env.get("EVOLINK_TEST_VIDEO_KEY"));
+		if (VideoPresignManualTest.hasS3Credentials(env)) {
+			return VideoPresignManualTest.presignDownloadUrl(env,
+					env.getOrDefault("EVOLINK_TEST_VIDEO_KEY", VideoPresignManualTest.TEST_VIDEO_KEY));
 		}
 		return null;
 	}
