@@ -2,6 +2,7 @@ package com.daesabu.meongcoach.ai.adapter.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.mockito.Mockito.mock;
@@ -85,13 +86,12 @@ class EvoLinkVideoAnalyzerTest {
 	}
 
 	@Test
-	@DisplayName("코드 펜스와 앞뒤 설명을 제거하고 JSON만 파싱한다")
-	void analyzeStripsFencesAndSurroundingText() {
-		givenModelResponds("리포트를 작성했어요.\n```json\n" + VALID_CONTENT_JSON + "\n```\n확인해 주세요.");
+	@DisplayName("json_schema strict를 어긴 코드 펜스 응답이면 분석에 실패한다")
+	void analyzeFailsWhenResponseWrappedInFences() {
+		givenModelResponds("```json\n" + VALID_CONTENT_JSON + "\n```");
 
-		String content = analyzer.analyze(VIDEO_URL);
-
-		assertThat(content).isEqualTo(VALID_CONTENT_JSON);
+		assertThatThrownBy(() -> analyzer.analyze(VIDEO_URL))
+				.isInstanceOf(IllegalStateException.class);
 	}
 
 	@Test
@@ -158,10 +158,15 @@ class EvoLinkVideoAnalyzerTest {
 	}
 
 	@Test
-	@DisplayName("응답 형식을 json_object로 지정한다")
-	void analyzeRequestsJsonObjectResponseFormat() {
+	@DisplayName("리포트 구조의 json_schema를 strict로 지정한다")
+	void analyzeRequestsStrictJsonSchemaResponseFormat() {
 		expectChatRequest()
-				.andExpect(jsonPath("$.response_format.type").value("json_object"))
+				.andExpect(jsonPath("$.response_format.type").value("json_schema"))
+				.andExpect(jsonPath("$.response_format.json_schema.name").value("ai_report"))
+				.andExpect(jsonPath("$.response_format.json_schema.strict").value(true))
+				.andExpect(jsonPath("$.response_format.json_schema.schema.type").value("object"))
+				.andExpect(jsonPath("$.response_format.json_schema.schema.required",
+						contains("recommend", "report", "solution")))
 				.andRespond(withSuccess(chatResponseJson(VALID_CONTENT_JSON), MediaType.APPLICATION_JSON));
 
 		analyzer.analyze(VIDEO_URL);

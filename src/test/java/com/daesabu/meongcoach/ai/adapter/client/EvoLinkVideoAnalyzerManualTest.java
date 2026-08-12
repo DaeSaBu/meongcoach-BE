@@ -45,7 +45,8 @@ class EvoLinkVideoAnalyzerManualTest {
 		System.out.println("===== 영상 분석 결과 =====");
 		System.out.println(content);
 
-		String title = new EvoLinkReportTitleGenerator(chatClient, properties).generateTitle(content);
+		String title = new EvoLinkReportTitleGenerator(chatClient, properties, new ObjectMapper())
+				.generateTitle(content);
 
 		System.out.println("===== 리포트 제목 =====");
 		System.out.println(title);

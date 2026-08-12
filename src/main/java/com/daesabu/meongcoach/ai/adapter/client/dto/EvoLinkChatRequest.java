@@ -50,11 +50,15 @@ public record EvoLinkChatRequest(
 	public record VideoUrl(String url, Double fps) {
 	}
 
-	public record ResponseFormat(String type) {
+	public record ResponseFormat(String type, @JsonProperty("json_schema") JsonSchema jsonSchema) {
 
-		public static ResponseFormat jsonObject() {
-			return new ResponseFormat("json_object");
+		// strict를 항상 켠다. 모델이 스키마를 "가능한 한"이 아니라 엄격히 준수해야 어댑터 정제 로직을 줄일 수 있다
+		public static ResponseFormat jsonSchema(String name, Object schema) {
+			return new ResponseFormat("json_schema", new JsonSchema(name, schema, true));
 		}
+	}
+
+	public record JsonSchema(String name, Object schema, Boolean strict) {
 	}
 
 	public record Thinking(String type) {

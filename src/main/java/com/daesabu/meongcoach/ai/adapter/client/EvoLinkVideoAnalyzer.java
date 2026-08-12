@@ -9,6 +9,7 @@ import com.daesabu.meongcoach.ai.application.provided.AiReportContent;
 import com.daesabu.meongcoach.ai.application.required.VideoAnalyzer;
 import com.daesabu.meongcoach.training.application.provided.TopicFinder;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 import tools.jackson.core.JacksonException;
@@ -26,6 +27,7 @@ public class EvoLinkVideoAnalyzer implements VideoAnalyzer {
 
 	private static final String SYSTEM_PROMPT_PATH = "prompts/video-analysis/system.md";
 	private static final String USER_PROMPT_PATH = "prompts/video-analysis/user.md";
+	private static final String SCHEMA_PATH = "prompts/video-analysis/schema.json";
 	private static final String TOPICS_PLACEHOLDER = "{{topics}}";
 
 	private final EvoLinkChatClient chatClient;
@@ -36,6 +38,8 @@ public class EvoLinkVideoAnalyzer implements VideoAnalyzer {
 	// 한국어와 항목 구조를 규칙과 출력 형식으로 강제한다. 내용은 resources/prompts/video-analysis 참고
 	private final String systemPrompt;
 	private final String userPrompt;
+	// AiReportContent 구조의 JSON Schema를 strict로 강제해, 응답이 항상 스키마에 맞는 순수 JSON임을 API가 보장한다
+	private final ResponseFormat responseFormat;
 
 	public EvoLinkVideoAnalyzer(EvoLinkChatClient chatClient, EvoLinkProperties properties,
 			TopicFinder topicFinder, ObjectMapper objectMapper) {
@@ -45,6 +49,8 @@ public class EvoLinkVideoAnalyzer implements VideoAnalyzer {
 		this.objectMapper = objectMapper;
 		this.systemPrompt = PromptLoader.load(SYSTEM_PROMPT_PATH);
 		this.userPrompt = PromptLoader.load(USER_PROMPT_PATH);
+		this.responseFormat = ResponseFormat.jsonSchema("ai_report",
+				objectMapper.readValue(PromptLoader.load(SCHEMA_PATH), Map.class));
 		if (!userPrompt.contains(TOPICS_PLACEHOLDER)) {
 			throw new IllegalStateException(
 					"사용자 프롬프트에 " + TOPICS_PLACEHOLDER + " 자리가 없습니다: " + USER_PROMPT_PATH);
@@ -67,36 +73,26 @@ public class EvoLinkVideoAnalyzer implements VideoAnalyzer {
 						ChatMessage.user(List.of(
 								ContentPart.videoUrl(videoUrl, properties.videoFps()),
 								ContentPart.text(renderUserPrompt())))),
-				ResponseFormat.jsonObject(),
+				responseFormat,
 				properties.maxTokens(),
 				properties.temperature(),
 				new Thinking(properties.thinking()));
 	}
 
-	// json_object 형식을 지정해도 모델이 지시를 어기고 코드 펜스나 설명을 붙일 수 있어
-	// 첫 '{'부터 마지막 '}'까지만 잘라 파싱한다
+	// json_schema strict가 순수 JSON을 보장하므로 응답을 바로 파싱한다. 어긋나면 예외로 드러낸다
 	private AiReportContent parseContent(String rawText, String videoUrl) {
-		String json = extractJsonObject(rawText, videoUrl);
 		AiReportContent content;
 		try {
-			content = objectMapper.readValue(json, AiReportContent.class);
+			content = objectMapper.readValue(rawText, AiReportContent.class);
 		}
 		catch (JacksonException e) {
 			throw new IllegalStateException("영상 분석 응답이 JSON 형식이 아닙니다: " + withoutQuery(videoUrl), e);
 		}
+		// 스키마는 필드 구조만 강제하고 빈 배열은 막지 못하므로 핵심 항목 유무는 여기서 검증한다
 		if (content.report().isEmpty()) {
 			throw new IllegalStateException("영상 분석 응답에 report 항목이 없습니다: " + withoutQuery(videoUrl));
 		}
 		return content;
-	}
-
-	private static String extractJsonObject(String rawText, String videoUrl) {
-		int start = rawText.indexOf('{');
-		int end = rawText.lastIndexOf('}');
-		if (start < 0 || end < start) {
-			throw new IllegalStateException("영상 분석 응답에서 JSON을 찾지 못했습니다: " + withoutQuery(videoUrl));
-		}
-		return rawText.substring(start, end + 1);
 	}
 
 	// presigned URL의 쿼리에는 서명이 들어 있어 예외 메시지(로그)에 남기지 않는다
