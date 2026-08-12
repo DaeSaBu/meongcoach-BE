@@ -64,8 +64,8 @@ class DogControllerTest {
 	}
 
 	@Test
-	@DisplayName("인증 주체에서 읽은 사용자로 프로필 이미지 조회를 위임한다")
-	void findProfileImageDelegatesWithCurrentUserId() throws Exception {
+	@DisplayName("로그인한 사용자 ID로 강아지 프로필 이미지를 조회한다")
+	void findProfileImageWithCurrentUserId() throws Exception {
 		given(dogProfileImageFinder.findProfileImageUrl(42L, 10L)).willReturn(IMAGE_URL);
 
 		mockMvc.perform(get("/api/dogs/{dogId}/profile-image", 10L).principal(CURRENT_USER))
