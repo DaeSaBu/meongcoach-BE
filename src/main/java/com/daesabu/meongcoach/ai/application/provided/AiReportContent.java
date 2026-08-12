@@ -25,9 +25,10 @@ public record AiReportContent(
 	}
 
 	/**
-	 * 추천 교육. title은 교육 목록에 있는 교육 이름 그대로다.
+	 * 추천 교육. title은 교육 목록에 있는 교육 이름 그대로고, description은 이 교육을 추천하는 이유를
+	 * 보호자에게 설명하는 문구다. description 도입 전에 저장된 리포트는 null일 수 있다.
 	 */
-	public record Recommend(String title) {
+	public record Recommend(String title, String description) {
 	}
 
 	/**

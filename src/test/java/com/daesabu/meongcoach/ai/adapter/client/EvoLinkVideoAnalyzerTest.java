@@ -40,7 +40,8 @@ class EvoLinkVideoAnalyzerTest {
 	private static final String VIDEO_URL =
 			"https://test-video-bucket.s3.amazonaws.com/videos/training/7/key.mp4?X-Amz-Signature=abc";
 	// 정규화 재직렬화 결과와 비교할 수 있도록 record 컴포넌트 순서(recommend, report, solution)와 맞춘 JSON
-	private static final String VALID_CONTENT_JSON = "{\"recommend\":[{\"title\":\"입질 교정\"}],"
+	private static final String VALID_CONTENT_JSON = "{\"recommend\":[{\"title\":\"입질 교정\","
+			+ "\"description\":\"물건을 무는 습관을 줄이는 교육이라 도움이 돼요.\"}],"
 			+ "\"report\":[{\"subTitle\":\"영상에서 이런 행동이 보여요\",\"description\":\"슬리퍼를 물고 달려요.\"}],"
 			+ "\"solution\":[{\"order\":1,\"title\":\"교환 놀이 연습하기\",\"description\":\"간식과 바꿔 주세요.\"}]}";
 

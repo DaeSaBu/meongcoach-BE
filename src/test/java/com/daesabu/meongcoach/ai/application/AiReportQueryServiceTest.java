@@ -33,7 +33,8 @@ class AiReportQueryServiceTest {
 
 	private static final Long OTHER_USER_ID = 99L;
 
-	private static final String CONTENT_JSON = "{\"recommend\":[{\"title\":\"분리불안 교육\"}],"
+	private static final String CONTENT_JSON = "{\"recommend\":[{\"title\":\"분리불안 교육\","
+			+ "\"description\":\"혼자 있는 시간을 편안하게 만드는 교육이라 도움이 돼요.\"}],"
 			+ "\"report\":[{\"subTitle\":\"영상에서 이런 행동이 보여요\",\"description\":\"현관 앞을 서성여요.\"}],"
 			+ "\"solution\":[{\"order\":1,\"title\":\"혼자 있는 연습\",\"description\":\"짧게 자리를 비워 보세요.\"}]}";
 
@@ -109,7 +110,8 @@ class AiReportQueryServiceTest {
 		assertThat(detail.title()).isEqualTo("분리불안 징후 행동 분석");
 		assertThat(detail.createdAt()).isNotNull();
 		AiReportContent content = detail.content();
-		assertThat(content.recommend()).containsExactly(new AiReportContent.Recommend("분리불안 교육"));
+		assertThat(content.recommend()).containsExactly(new AiReportContent.Recommend(
+				"분리불안 교육", "혼자 있는 시간을 편안하게 만드는 교육이라 도움이 돼요."));
 		assertThat(content.report()).containsExactly(
 				new AiReportContent.ReportSection("영상에서 이런 행동이 보여요", "현관 앞을 서성여요."));
 		assertThat(content.solution()).containsExactly(

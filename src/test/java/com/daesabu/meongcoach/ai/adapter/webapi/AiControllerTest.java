@@ -62,7 +62,7 @@ class AiControllerTest {
 			""";
 
 	private static final AiReportContent REPORT_CONTENT = new AiReportContent(
-			List.of(new AiReportContent.Recommend("분리불안 교육")),
+			List.of(new AiReportContent.Recommend("분리불안 교육", "혼자 있는 시간을 편안하게 만드는 교육이라 도움이 돼요.")),
 			List.of(
 					new AiReportContent.ReportSection("영상에서 이런 행동이 보여요", "현관 앞을 서성여요."),
 					new AiReportContent.ReportSection("이런 이유로 문제 행동으로 볼 수 있어요", "분리불안 징후일 수 있어요.")),
@@ -159,6 +159,8 @@ class AiControllerTest {
 				.andExpect(jsonPath("$.videoObjectKey").value("videos/training/42/first.mp4"))
 				.andExpect(jsonPath("$.title").value("분리불안 징후 행동 분석"))
 				.andExpect(jsonPath("$.content.recommend[0].title").value("분리불안 교육"))
+				.andExpect(jsonPath("$.content.recommend[0].description")
+						.value("혼자 있는 시간을 편안하게 만드는 교육이라 도움이 돼요."))
 				.andExpect(jsonPath("$.content.report[0].subTitle").value("영상에서 이런 행동이 보여요"))
 				.andExpect(jsonPath("$.content.report[0].description").value("현관 앞을 서성여요."))
 				.andExpect(jsonPath("$.content.solution[0].order").value(1))
@@ -177,6 +179,8 @@ class AiControllerTest {
 								fieldWithPath("content.recommend[]").description(
 										"추천 교육 목록. 문제 행동이 아닌 영상은 빈 배열"),
 								fieldWithPath("content.recommend[].title").description("추천 교육 이름"),
+								fieldWithPath("content.recommend[].description").optional()
+										.description("이 교육을 추천하는 이유. 도입 전에 생성된 리포트는 null"),
 								fieldWithPath("content.report[]").description("리포트 문단 목록. 항상 1개 이상"),
 								fieldWithPath("content.report[].subTitle").description("문단 소제목"),
 								fieldWithPath("content.report[].description").description("문단 내용"),
