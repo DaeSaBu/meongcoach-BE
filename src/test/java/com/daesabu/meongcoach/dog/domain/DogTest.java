@@ -21,8 +21,8 @@ class DogTest {
 	}
 
 	@Test
-	@DisplayName("등록하면 SELECTED 상태의 강아지가 생성된다")
-	void registerCreatesSelectedDog() {
+	@DisplayName("등록하면 미선택 상태의 강아지가 생성된다")
+	void registerCreatesUnselectedDog() {
 		Dog dog = registerDog();
 
 		assertThat(dog.getUserId()).isEqualTo(1L);
@@ -31,7 +31,7 @@ class DogTest {
 		assertThat(dog.getSex()).isEqualTo(DogSex.MALE);
 		assertThat(dog.getBirthDate()).isEqualTo(LocalDate.of(2024, 3, 1));
 		assertThat(dog.getWeightKg()).isEqualByComparingTo("4.50");
-		assertThat(dog.getStatus()).isEqualTo(DogStatus.SELECTED);
+		assertThat(dog.getStatus()).isEqualTo(DogStatus.UNSELECTED);
 		assertThat(dog.getProfileImageUrl()).isEmpty();
 		assertThat(dog.getExpectation()).isEmpty();
 	}

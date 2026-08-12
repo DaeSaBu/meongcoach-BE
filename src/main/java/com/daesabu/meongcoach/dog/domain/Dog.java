@@ -83,7 +83,8 @@ public class Dog extends BaseEntity {
 		this.sex = command.sex();
 		this.birthDate = command.birthDate();
 		this.weightKg = command.weightKg();
-		this.status = DogStatus.SELECTED;
+		// 선택 여부는 다른 강아지가 있는지 봐야 정해지므로, 등록 시점에는 미선택으로 두고 application이 select()로 정한다
+		this.status = DogStatus.UNSELECTED;
 		this.profileImageUrl = Objects.requireNonNullElse(command.profileImageUrl(), "");
 		this.expectation = Objects.requireNonNullElse(command.expectation(), "");
 	}
