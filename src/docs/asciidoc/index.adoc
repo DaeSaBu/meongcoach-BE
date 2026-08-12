@@ -279,3 +279,18 @@ operation::ai/report-detail[snippets='http-request,path-parameters,http-response
 존재하지 않거나 본인 소유가 아닌 리포트를 요청하면 404(`AI_REPORT_NOT_FOUND`)를 반환합니다.
 
 operation::ai/report-detail-error[snippets='http-response,response-fields']
+
+== Dog API
+
+=== 강아지 프로필 이미지 조회
+
+link:{swagger-ui}#/Dog/dog-profile-image[▶ Swagger에서 Try it out,window=swagger]
+
+강아지 한 마리의 프로필 이미지 URL을 조회합니다.
+프로필 이미지를 등록하지 않은 강아지는 빈 문자열(`""`)로 내려가므로, 클라이언트가 기본 이미지를 표시합니다.
+
+operation::dog/profile-image[snippets='http-request,path-parameters,http-response,response-fields']
+
+존재하지 않거나 본인 소유가 아닌 강아지를 요청하면 404(`DOG_NOT_FOUND`)를 반환합니다.
+
+operation::dog/profile-image-error[snippets='http-response,response-fields']
