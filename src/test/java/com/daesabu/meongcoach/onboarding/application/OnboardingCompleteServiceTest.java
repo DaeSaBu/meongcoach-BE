@@ -8,6 +8,7 @@ import com.daesabu.meongcoach.dog.application.provided.DogRegisterInfo;
 import com.daesabu.meongcoach.dog.application.required.DogRepository;
 import com.daesabu.meongcoach.dog.domain.Breed;
 import com.daesabu.meongcoach.dog.domain.Dog;
+import com.daesabu.meongcoach.dog.domain.DogStatus;
 import com.daesabu.meongcoach.dog.domain.Personality;
 import com.daesabu.meongcoach.media.application.provided.StoredImageUrlValidator;
 import com.daesabu.meongcoach.media.domain.exception.InvalidImageUrlException;
@@ -101,6 +102,18 @@ class OnboardingCompleteServiceTest {
 		assertThat(dogs).extracting(Dog::getUserId).containsOnly(userId);
 		assertThat(dogs).extracting(Dog::getName).containsExactlyInAnyOrder("초코", "보리");
 		assertThat(dogs).extracting(Dog::getBreed).containsExactlyInAnyOrder(Breed.POODLE, Breed.MALTESE);
+	}
+
+	@Test
+	@DisplayName("여러 마리를 등록하면 첫 번째 강아지만 선택 상태가 된다")
+	void completeSelectsOnlyFirstDog() {
+		List<Long> dogIds = service.complete(userId, completeInfo());
+
+		List<Dog> dogs = dogRepository.findAllById(dogIds);
+
+		assertThat(dogs).filteredOn(dog -> dog.getStatus() == DogStatus.SELECTED)
+				.extracting(Dog::getName)
+				.containsExactly("초코");
 	}
 
 	@Test

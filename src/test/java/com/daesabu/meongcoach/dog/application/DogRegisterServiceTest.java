@@ -56,6 +56,30 @@ class DogRegisterServiceTest {
 	}
 
 	@Test
+	@DisplayName("두 번째로 등록한 강아지는 미선택 상태가 된다")
+	void registerLeavesSecondDogUnselected() {
+		Long firstDogId = service.register(1L, registerInfo("MALE", Set.of()));
+
+		Long secondDogId = service.register(1L, registerInfo("FEMALE", Set.of()));
+
+		Dog firstDog = dogRepository.findById(firstDogId).orElseThrow();
+		Dog secondDog = dogRepository.findById(secondDogId).orElseThrow();
+		assertThat(firstDog.getStatus()).isEqualTo(DogStatus.SELECTED);
+		assertThat(secondDog.getStatus()).isEqualTo(DogStatus.UNSELECTED);
+	}
+
+	@Test
+	@DisplayName("다른 사용자의 선택된 강아지는 선택 여부에 영향을 주지 않는다")
+	void registerSelectsFirstDogOfEachUser() {
+		service.register(1L, registerInfo("MALE", Set.of()));
+
+		Long otherUserDogId = service.register(2L, registerInfo("MALE", Set.of()));
+
+		Dog otherUserDog = dogRepository.findById(otherUserDogId).orElseThrow();
+		assertThat(otherUserDog.getStatus()).isEqualTo(DogStatus.SELECTED);
+	}
+
+	@Test
 	@DisplayName("성격이 없으면 빈 성격으로 등록된다")
 	void registerAllowsNullPersonalities() {
 		Long dogId = service.register(1L, registerInfo("FEMALE", null));
