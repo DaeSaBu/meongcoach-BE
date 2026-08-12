@@ -27,16 +27,16 @@ spring:
 meongcoach:
   ai:
     video-queue: test-video-queue
-    bedrock:
-      # Bedrock 클라이언트 생성에는 네트워크 호출이 없어 더미 자격 증명으로도 컨텍스트가 뜬다
-      region: ap-northeast-2
-      access-key-id: test-access-key
-      secret-access-key: test-secret-key
-      model: amazon.nova-2-lite-v1:0
+    evolink:
+      # 클라이언트 생성에는 네트워크 호출이 없어 더미 값으로도 컨텍스트가 뜬다
+      base-url: https://api.evolink.test
+      api-key: test-evolink-api-key
+      model: doubao-seed-2.0-pro
       response-timeout: PT5M
-      service-tier: flex
       max-tokens: 4096
       temperature: 0
+      thinking: disabled
+      video-fps: 1
   jwt:
     secret: meongcoach-test-only-jwt-secret-key-32b
   social:

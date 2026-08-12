@@ -49,9 +49,6 @@ dependencies {
 	implementation("software.amazon.awssdk:s3:2.46.7")
 	// S3 업로드 완료 이벤트를 SQS로 받아 AI 분석을 트리거한다
 	implementation("io.awspring.cloud:spring-cloud-aws-starter-sqs")
-	// Spring AI를 쓰지 않고 SDK로 직접 Converse를 호출한다. Spring AI는 사용자 메시지를 [텍스트, 비디오]
-	// 순서로 고정 전송하는데, Nova 영상 이해는 비디오를 텍스트보다 먼저 둬야 지시(언어·출력 형식)를 따른다
-	implementation("software.amazon.awssdk:bedrockruntime:2.46.7")
 	testImplementation("org.springframework.security:spring-security-test")
 	compileOnly("org.projectlombok:lombok")
 	runtimeOnly("com.h2database:h2")
