@@ -16,11 +16,7 @@ public record S3EventMessage(@JsonProperty("Records") List<EventRecord> records)
 	}
 
 	@JsonIgnoreProperties(ignoreUnknown = true)
-	public record S3(Bucket bucket, S3Object object) {
-	}
-
-	@JsonIgnoreProperties(ignoreUnknown = true)
-	public record Bucket(String name) {
+	public record S3(S3Object object) {
 	}
 
 	@JsonIgnoreProperties(ignoreUnknown = true)

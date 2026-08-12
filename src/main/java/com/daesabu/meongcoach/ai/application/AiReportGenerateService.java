@@ -15,7 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 /**
- * 업로드 이벤트에서 받은 영상 s3 URI를 분석기에 넘기고, 결과를 리포트로 저장한다.
+ * 업로드 이벤트에서 받은 객체 키로 presigned 다운로드 URL을 발급해 분석기에 넘기고, 결과를 리포트로 저장한다.
  * 영상 분석이 수십 초 이상 걸려 클래스 기본 @Transactional(readOnly = true)를 두면 분석 내내
  * DB 커넥션을 점유하므로 트랜잭션 없이 두고, 저장은 리포지토리의 자체 트랜잭션에 맡긴다.
  */
@@ -31,12 +31,13 @@ public class AiReportGenerateService implements AiReportGenerator {
 	private final AiTrialFinder aiTrialFinder;
 
 	@Override
-	public void generate(String objectKey, String videoS3Uri) {
+	public void generate(String objectKey) {
 		if (aiReportRepository.existsByVideoObjectKey(objectKey)) {
 			log.warn("이미 처리한 영상은 스킵한다: {}", objectKey);
 			return;
 		}
 
+		// 분석기가 이 presigned URL로 영상을 직접 읽는다. 소유자 ID도 같은 결과에서 얻는다
 		VideoDownloadUrlResult downloadUrl = videoDownloadUrlIssuer.issue(objectKey);
 
 		AiTrial trial = aiTrialFinder.findTrial(downloadUrl.ownerUserId());
@@ -47,7 +48,7 @@ public class AiReportGenerateService implements AiReportGenerator {
 
 		String content;
 		try {
-			content = videoAnalyzer.analyze(videoS3Uri);
+			content = videoAnalyzer.analyze(downloadUrl.downloadUrl());
 		}
 		catch (Exception e) {
 			// 예외를 던지면 SQS가 같은 메시지를 계속 재전달하므로, 로그만 남기고 정상 반환한다

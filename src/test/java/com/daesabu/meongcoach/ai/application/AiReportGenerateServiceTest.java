@@ -29,7 +29,6 @@ class AiReportGenerateServiceTest {
 	private static final String OBJECT_KEY = "videos/training/7/key.mp4";
 	private static final String DOWNLOAD_URL = "https://storage.test/download?X-Amz-Signature=abc";
 	private static final String PUBLIC_URL = "https://videos.test/videos/training/7/key.mp4";
-	private static final String S3_URI = "s3://test-video-bucket/videos/training/7/key.mp4";
 	private static final String ANALYZED_CONTENT = "{\"recommend\":[],\"report\":[{\"subTitle\":\"영상에서 이런 행동이 보여요\","
 			+ "\"description\":\"분리불안 징후가 관찰됩니다.\"}],\"solution\":[]}";
 	private static final String GENERATED_TITLE = "분리불안 징후 행동 분석";
@@ -53,15 +52,15 @@ class AiReportGenerateServiceTest {
 	}
 
 	@Test
-	@DisplayName("발급받은 영상 위치로 분석한 결과를 제목과 함께 리포트로 저장한다")
+	@DisplayName("발급받은 presigned URL로 분석한 결과를 제목과 함께 리포트로 저장한다")
 	void generateSavesReportWithAnalyzedContent() {
 		when(aiReportRepository.existsByVideoObjectKey(OBJECT_KEY)).thenReturn(false);
 
-		service.generate(OBJECT_KEY, S3_URI);
+		service.generate(OBJECT_KEY);
 
 		assertThat(downloadUrlIssuer.objectKeys).containsExactly(OBJECT_KEY);
-		// Bedrock이 버킷에서 영상을 직접 읽으므로 업로드 이벤트에서 온 s3 URI를 그대로 넘긴다
-		assertThat(videoAnalyzer.videoS3Uris).containsExactly(S3_URI);
+		// 분석기가 이 presigned URL로 영상을 직접 읽는다
+		assertThat(videoAnalyzer.videoUrls).containsExactly(DOWNLOAD_URL);
 		ArgumentCaptor<AiReport> captor = ArgumentCaptor.forClass(AiReport.class);
 		verify(aiReportRepository).save(captor.capture());
 		AiReport saved = captor.getValue();
@@ -76,7 +75,7 @@ class AiReportGenerateServiceTest {
 	void generatePassesAnalyzedContentToTitleGenerator() {
 		when(aiReportRepository.existsByVideoObjectKey(OBJECT_KEY)).thenReturn(false);
 
-		service.generate(OBJECT_KEY, S3_URI);
+		service.generate(OBJECT_KEY);
 
 		assertThat(reportTitleGenerator.reportContents).containsExactly(ANALYZED_CONTENT);
 	}
@@ -86,10 +85,10 @@ class AiReportGenerateServiceTest {
 	void generateSkipsWhenReportAlreadyExists() {
 		when(aiReportRepository.existsByVideoObjectKey(OBJECT_KEY)).thenReturn(true);
 
-		service.generate(OBJECT_KEY, S3_URI);
+		service.generate(OBJECT_KEY);
 
 		assertThat(downloadUrlIssuer.objectKeys).isEmpty();
-		assertThat(videoAnalyzer.videoS3Uris).isEmpty();
+		assertThat(videoAnalyzer.videoUrls).isEmpty();
 		verify(aiReportRepository, never()).save(any());
 	}
 
@@ -99,10 +98,10 @@ class AiReportGenerateServiceTest {
 		when(aiReportRepository.existsByVideoObjectKey(OBJECT_KEY)).thenReturn(false);
 		aiTrialFinder.usedCount = 3;
 
-		service.generate(OBJECT_KEY, S3_URI);
+		service.generate(OBJECT_KEY);
 
 		assertThat(aiTrialFinder.requestedUserIds).containsExactly(7L);
-		assertThat(videoAnalyzer.videoS3Uris).isEmpty();
+		assertThat(videoAnalyzer.videoUrls).isEmpty();
 		verify(aiReportRepository, never()).save(any());
 	}
 
@@ -113,7 +112,7 @@ class AiReportGenerateServiceTest {
 		videoAnalyzer.failure = new IllegalStateException("분석 실패");
 
 		// 예외를 던지면 SQS가 같은 메시지를 무한히 재전달한다
-		assertThatCode(() -> service.generate(OBJECT_KEY, S3_URI)).doesNotThrowAnyException();
+		assertThatCode(() -> service.generate(OBJECT_KEY)).doesNotThrowAnyException();
 		verify(aiReportRepository, never()).save(any());
 	}
 
@@ -123,7 +122,7 @@ class AiReportGenerateServiceTest {
 		when(aiReportRepository.existsByVideoObjectKey(OBJECT_KEY)).thenReturn(false);
 		videoAnalyzer.failure = new IllegalStateException("분석 실패");
 
-		service.generate(OBJECT_KEY, S3_URI);
+		service.generate(OBJECT_KEY);
 
 		assertThat(reportTitleGenerator.reportContents).isEmpty();
 	}
@@ -134,7 +133,7 @@ class AiReportGenerateServiceTest {
 		when(aiReportRepository.existsByVideoObjectKey(OBJECT_KEY)).thenReturn(false);
 		reportTitleGenerator.failure = new IllegalStateException("제목 생성 실패");
 
-		assertThatCode(() -> service.generate(OBJECT_KEY, S3_URI)).doesNotThrowAnyException();
+		assertThatCode(() -> service.generate(OBJECT_KEY)).doesNotThrowAnyException();
 
 		ArgumentCaptor<AiReport> captor = ArgumentCaptor.forClass(AiReport.class);
 		verify(aiReportRepository).save(captor.capture());
@@ -168,15 +167,15 @@ class AiReportGenerateServiceTest {
 
 	private static class RecordingVideoAnalyzer implements VideoAnalyzer {
 
-		private final List<String> videoS3Uris = new ArrayList<>();
+		private final List<String> videoUrls = new ArrayList<>();
 		private RuntimeException failure;
 
 		@Override
-		public String analyze(String videoS3Uri) {
+		public String analyze(String videoUrl) {
 			if (failure != null) {
 				throw failure;
 			}
-			videoS3Uris.add(videoS3Uri);
+			videoUrls.add(videoUrl);
 			return ANALYZED_CONTENT;
 		}
 	}
