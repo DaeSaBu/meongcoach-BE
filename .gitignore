@@ -47,5 +47,8 @@ out/
 .env.*
 !.env.example
 
+### 개인 수동 테스트 (실제 외부 호출·개인 .env 의존, 로컬 전용) ###
+**/*ManualTest.java
+
 ### 로컬에서 조립한 문서 사이트 (assemble-docs-site.sh) ###
 /site/
