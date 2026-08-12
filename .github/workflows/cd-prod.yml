@@ -177,10 +177,9 @@ jobs:
           SQS_ACCESS_KEY_ID: ${{ secrets.PROD_SQS_ACCESS_KEY_ID }}
           SQS_SECRET_ACCESS_KEY: ${{ secrets.PROD_SQS_SECRET_ACCESS_KEY }}
           AI_VIDEO_QUEUE: ${{ secrets.PROD_AI_VIDEO_QUEUE }}
-          BEDROCK_REGION: ${{ secrets.PROD_BEDROCK_REGION }}
-          BEDROCK_ACCESS_KEY_ID: ${{ secrets.PROD_BEDROCK_ACCESS_KEY_ID }}
-          BEDROCK_SECRET_ACCESS_KEY: ${{ secrets.PROD_BEDROCK_SECRET_ACCESS_KEY }}
-          BEDROCK_MODEL: ${{ secrets.PROD_BEDROCK_MODEL }}
+          EVOLINK_API_KEY: ${{ secrets.PROD_EVOLINK_API_KEY }}
+          EVOLINK_BASE_URL: ${{ secrets.PROD_EVOLINK_BASE_URL }}
+          EVOLINK_MODEL: ${{ secrets.PROD_EVOLINK_MODEL }}
         run: |
           # 최신 인프라 설정을 읽고 GitHub Secrets·이미지를 반영한 등록용 JSON을 만든다.
           aws ecs describe-task-definition \
