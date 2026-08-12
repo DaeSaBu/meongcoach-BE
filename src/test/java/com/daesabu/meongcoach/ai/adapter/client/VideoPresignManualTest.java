@@ -24,9 +24,8 @@ import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignReques
 class VideoPresignManualTest {
 
 	private static final Duration DOWNLOAD_URL_VALIDITY = Duration.ofHours(1);
-	// 기존 Bedrock 수동 테스트가 쓰던 s3://local-test-limj/videos/training/11/video2.mp4와 같은 영상이다
 	static final String TEST_BUCKET = "local-test-limj";
-	static final String TEST_VIDEO_KEY = "videos/training/11/video2.mp4";
+	static final String TEST_VIDEO_KEY = "videos/training/7/video2.mp4";
 
 	@Test
 	void issueDownloadUrl() throws Exception {
