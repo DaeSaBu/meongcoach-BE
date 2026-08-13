@@ -59,22 +59,23 @@ meongcoach:
   ai:
     # S3 영상 업로드 완료 이벤트가 들어오는 SQS 큐 이름
     video-queue: ${AI_VIDEO_QUEUE}
-    # 영상 분석에 쓰는 Bedrock Converse 연동 설정. Spring AI 없이 AWS SDK로 직접 호출한다
-    # (Spring AI는 사용자 메시지의 콘텐츠 순서를 강제할 수 없어 제거했다. BedrockVideoAnalyzer 참고)
-    bedrock:
-      region: ${BEDROCK_REGION}
-      access-key-id: ${BEDROCK_ACCESS_KEY_ID}
-      secret-access-key: ${BEDROCK_SECRET_ACCESS_KEY}
-      # Converse의 영상 입력은 Nova 계열만 지원한다. 리전에 따라 인퍼런스 프로파일 ID가 필요할 수 있다
-      model: ${BEDROCK_MODEL:global.amazon.nova-2-lite-v1:0}
-      # 영상 분석은 수십 초가 걸려 SDK 기본 소켓 타임아웃(30초)으로는 응답 전에 끊긴다
+    # 영상 분석에 쓰는 EvoLink 채팅 API(OpenAI 호환) 연동 설정. 영상은 S3 presigned GET URL로 전달한다
+    evolink:
+      # 멀티모달(영상) 호출의 주력 엔드포인트. 텍스트 위주로 바꾸려면 direct.evolink.ai로 교체한다
+      base-url: ${EVOLINK_BASE_URL:https://api.evolink.ai}
+      # 기본값을 두지 않아 미주입 시 기동에 실패한다 — 커밋된 키가 배포로 흘러가는 것을 막는다
+      api-key: ${EVOLINK_API_KEY}
+      model: ${EVOLINK_MODEL:doubao-seed-2.0-pro}
+      # 영상 분석은 수십 초가 걸려 전역 read-timeout(3초)으로는 응답 전에 끊긴다
       response-timeout: PT5M
-      # SQS 비동기 처리라 지연에 둔감하므로 표준(default)보다 저렴한 flex 등급으로 호출한다
-      service-tier: ${BEDROCK_SERVICE_TIER:flex}
-      # 상한에 닿으면 리포트가 문장 중간에서 잘린다. 리포트는 2천 토큰 안팎이지만 추론 토큰 몫까지 넉넉히 둔다
+      # 상한에 닿으면 리포트가 문장 중간에서 잘린다. 리포트는 2천 토큰 안팎이지만 여유를 둔다
       max-tokens: 4096
-      # 영상 분석·유형 분류는 창의성보다 일관성이 중요해 AWS 가이드 권장값인 0으로 고정한다
+      # 영상 분석·유형 분류는 창의성보다 일관성이 중요해 0으로 고정한다
       temperature: 0
+      # 심층 사고 모드(enabled·disabled·auto). 비용·지연 예측을 위해 끈다
+      thinking: ${EVOLINK_THINKING:disabled}
+      # 영상 프레임 추출 빈도(0.2~5). 높일수록 화면 변화에 민감하지만 토큰 소비가 늘어난다
+      video-fps: 1
   social:
     kakao:
       issuer: https://kauth.kakao.com
