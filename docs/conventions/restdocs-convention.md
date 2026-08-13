@@ -66,9 +66,7 @@ class UserControllerTest {
 
 - REST Docs HTML은 **로컬 빌드 산출물로만 생성**되며, 배포 산출물(jar)에는 포함되지 않습니다.
   테스트 실행 후 `build/docs/asciidoc/index.html`을 브라우저로 열어 확인합니다.
-- Swagger UI는 API 서버가 직접 서빙합니다. `develop`에 merge되어 dev 배포가 성공하면
-  https://api.dev.meongcoach.com/swagger-ui/index.html 이 자동 갱신됩니다.
-  `meongcoach.api-docs.enabled=true`인 환경(local·dev)에서만 열립니다. ([docs/profiles.md](../profiles.md) 참고)
+- Swagger UI는 API 서버가 직접 서빙합니다. 접근 주소와 프로파일별 노출 범위는 [docs/profiles.md](../profiles.md)를 참고하세요.
 
 ## OpenAPI 3 / Swagger UI
 

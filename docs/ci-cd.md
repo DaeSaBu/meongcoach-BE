@@ -41,7 +41,7 @@ CI는 `workflow_call`을 지원하며 dev·prod CD가 같은 검증 절차를 �
 
 ## API 문서 배포
 
-별도 문서 배포 파이프라인은 없습니다. 이미지 빌드의 `bootJar`가 OpenAPI 스펙 생성 체인(test → openapi3 → 후처리)을 강제해 스펙을 jar에 포함하므로, dev 배포가 성공하면 dev 서버가 https://api.dev.meongcoach.com/swagger-ui/index.html 에서 Swagger UI를 직접 서빙합니다. 테스트가 CI와 이미지 빌드에서 각각 실행되는 비용은 스펙이 테스트 산출물이라 감수합니다. 노출 범위는 `meongcoach.api-docs.enabled`로 통제합니다([docs/profiles.md](profiles.md) 참고).
+별도 문서 배포 파이프라인은 없습니다. 이미지 빌드의 `bootJar`가 OpenAPI 스펙 생성 체인(test → openapi3 → 후처리)을 강제해 스펙을 jar에 포함하므로, dev 배포가 성공하면 dev 서버가 Swagger UI를 직접 서빙합니다. 테스트가 CI와 이미지 빌드에서 각각 실행되는 비용은 스펙이 테스트 산출물이라 감수합니다. 접근 주소와 노출 범위는 [docs/profiles.md](profiles.md)를 참고하세요.
 
 ## 환경 변수 관리
 

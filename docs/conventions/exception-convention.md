@@ -46,12 +46,12 @@ Content-Type은 항상 `application/problem+json`입니다.
 
 user 모듈에서 이메일 중복 예외를 추가한다고 가정한 예시입니다.
 
-### ① `domain`에 `{모듈}ErrorCode` enum을 정의합니다
+### ① `domain/exception`에 `{모듈}ErrorCode` enum을 정의합니다
 
 모듈당 1개, `ErrorCode`를 구현합니다. `code()`는 `name()`을 반환하므로 enum 상수 이름이 곧 에러 코드입니다. 상수 이름은 `{모듈}_{원인}` 형식의 UPPER_SNAKE_CASE로 지어 전역에서 유일하게 만듭니다.
 
 ```java
-package com.daesabu.meongcoach.user.domain;
+package com.daesabu.meongcoach.user.domain.exception;
 
 import com.daesabu.meongcoach.shared.exception.ErrorCode;
 
@@ -85,12 +85,12 @@ public enum UserErrorCode implements ErrorCode {
 }
 ```
 
-### ② `domain`에 케이스별 구체 예외 클래스를 정의합니다
+### ② `domain/exception`에 케이스별 구체 예외 클래스를 정의합니다
 
 `DomainException`을 상속하고 이름은 `~Exception`으로 끝냅니다. 구체 타입이 있어야 테스트에서 `isInstanceOf`로 검증할 수 있습니다.
 
 ```java
-package com.daesabu.meongcoach.user.domain;
+package com.daesabu.meongcoach.user.domain.exception;
 
 import com.daesabu.meongcoach.shared.exception.DomainException;
 

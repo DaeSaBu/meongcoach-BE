@@ -9,13 +9,8 @@ DaeSaBu's Back-End Repository
 애플리케이션을 종료하면 postgres 컨테이너도 함께 정지됩니다. dev/prod 프로파일은
 [docs/profiles.md](docs/profiles.md)를 참고하세요.
 
-다음 환경 변수를 설정해야 애플리케이션이 기동합니다. 기본값이 없으므로 미설정 시 기동에 실패합니다.
-
-| 변수 | 설명 |
-|---|---|
-| `JWT_SECRET` | JWT 서명 키. **32바이트 이상** |
-| `KAKAO_NATIVE_APP_KEY` | 네이티브 SDK가 발급한 id_token의 `aud` |
-| `KAKAO_REST_API_KEY` | 웹 로그인이 발급한 id_token의 `aud` |
+다음 환경 변수를 설정해야 애플리케이션이 기동합니다. 각 변수의 의미와 제약은
+[docs/security.md](docs/security.md#환경-변수)를 참고하세요.
 
 ```bash
 export JWT_SECRET=local-dev-secret-key-at-least-32-bytes-long
@@ -42,8 +37,7 @@ docker compose --profile app up --build
 
 ## API 문서
 
-Swagger UI는 API 서버가 직접 서빙하며 local·dev에서만 열립니다.
-`develop`에 merge되어 dev 배포가 성공하면 https://api.dev.meongcoach.com/swagger-ui/index.html 이 자동 갱신됩니다.
+Swagger UI 접근 주소와 프로파일별 노출 범위는 [docs/profiles.md](docs/profiles.md)를,
 문서 작성 규칙은 [docs/conventions/restdocs-convention.md](docs/conventions/restdocs-convention.md)를 참고하세요.
 
 자세한 규칙은 [AGENTS.md](AGENTS.md)와 [docs/](docs/)를 참고하세요.
