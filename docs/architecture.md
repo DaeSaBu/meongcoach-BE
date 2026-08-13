@@ -10,32 +10,31 @@
 
 ```
 com.daesabu.meongcoach
-├── user                              ← Spring Modulith 모듈 (MSA 분리 단위)
-│   ├── package-info.java             // @ApplicationModule 선언
-│   ├── adapter
-│   │   ├── webapi/                   // AuthController, dto/ — 인바운드 HTTP
-│   │   ├── client/                   // KakaoSocialProfileReader, dto/ — 아웃바운드 외부 API
-│   │   └── security/                 // JwtTokenProvider — Spring Security 연동 지점
-│   ├── application
-│   │   ├── provided/                 // SocialLogin — named interface (모듈 공개 API)
-│   │   ├── required/                 // SocialProfileReader, UserRepository — 모듈이 필요로 하는 외부 자원
-│   │   ├── SocialLoginService
-│   │   └── TokenRefreshService
-│   └── domain
-│       ├── User
-│       └── UserRegisterCommand
-├── dog                               ← 모듈 (동일 구조)
-├── training                          ← 모듈 (동일 구조)
-├── progress                          ← 모듈 (동일 구조)
-├── ai                                ← 모듈 (동일 구조)
-├── health                            ← 모듈 (동일 구조)
-└── shared                            ← 횡단 관심사
-    ├── config/                       // SecurityConfig — 빈 정의만
-    ├── security/                     // JwtProperties, TokenType, SecurityExceptionTranslator
-    ├── webapi/                       // GlobalExceptionHandler
-    ├── exception/                    // ErrorCode, DomainException
-    └── domain/                       // BaseEntity, BaseTimeEntity
+├── user         ← 회원 계정·소셜 로그인·프로필
+├── dog          ← 반려견 프로필
+├── training     ← 훈련 콘텐츠 카탈로그
+├── progress     ← 학습 진도
+├── ai           ← AI 영상 분석 리포트 (SQS 컨슈머, EvoLink 연동)
+├── media        ← 이미지·영상 업로드 URL 발급 (R2/S3)
+├── onboarding   ← 온보딩 흐름 조합
+├── health       ← 서비스 상태 확인
+└── shared       ← 횡단 관심사 (config / security / webapi / exception / domain)
 ```
+
+각 모듈의 공통 골격은 다음과 같습니다. 클래스 단위의 실제 구성은 코드가 원천이므로 여기 나열하지 않습니다 — 각 모듈의 `package-info.java`와 `application/provided` 패키지를 보세요.
+
+```
+{모듈}
+├── package-info.java        // @ApplicationModule 선언
+├── adapter                  // 외부 연결 — webapi/ client/ security/ consumer/
+├── application
+│   ├── provided/            // 모듈 공개 API (@NamedInterface("provided"))
+│   ├── required/            // 모듈이 필요로 하는 자원 인터페이스
+│   └── ~Service             // 유스케이스 구현
+└── domain                   // 엔티티, vo/, exception/, 입력 모델(~Command)
+```
+
+모듈은 필요한 계층만 갖습니다. `dog`·`progress`는 자체 API 없이 `provided` 인터페이스로만 노출되어 `adapter`가 없고, `onboarding`은 다른 모듈을 조합만 하므로 `domain`이 없습니다. 문서나 코드를 생성할 때 없는 계층을 만들어 채우지 않습니다.
 
 ## 모듈 규칙
 
@@ -49,9 +48,9 @@ com.daesabu.meongcoach
 
 | 계층 | 책임 | 내용 |
 |---|---|---|
-| `adapter` | 외부 세계와의 연결 | `webapi/` — 컨트롤러, 웹 요청/응답 DTO. `client/` — 외부 API 호출 구현과 응답 DTO. `security/` — Spring Security 연동 지점. 기술 의존은 여기에만 둔다 |
+| `adapter` | 외부 세계와의 연결 | `webapi/` — 컨트롤러, 웹 요청/응답 DTO. `client/` — 외부 API 호출 구현과 응답 DTO. `security/` — Spring Security 연동 지점. `consumer/` — 메시지 큐 컨슈머(예: `ai/adapter/consumer/VideoUploadSqsConsumer`). 기술 의존은 여기에만 둔다 |
 | `application` | 유스케이스 | `provided/` — 모듈이 외부에 공개하는 인터페이스, `required/` — 모듈이 필요로 하는 자원 인터페이스(리포지토리, 메일 등), 그리고 이를 구현·사용하는 서비스 |
-| `domain` | 도메인 모델·로직 | 엔티티(`User`), 도메인 입력 모델(`UserRegisterCommand`) |
+| `domain` | 도메인 모델·로직 | 엔티티(`User`), 값 객체(`vo/`), 예외(`exception/`), 도메인 입력 모델(`~Command`) |
 
 ### 계층 의존 방향
 
@@ -71,10 +70,10 @@ com.daesabu.meongcoach
 
 ```
 HTTP 요청
-  → UserController          (adapter/webapi)
-  → UserRegister            (application/provided, 인터페이스)
-  → UserRegisterService     (application, 구현체)
-  → User                    (domain, 비즈니스 로직 수행)
+  → AuthController          (adapter/webapi)
+  → SocialLogin             (application/provided, 인터페이스)
+  → SocialLoginService      (application, 구현체)
+  → User, SocialAccount     (domain, 비즈니스 로직 수행)
   → UserRepository          (application/required → Spring Data JPA가 구현)
   → DB
 ```

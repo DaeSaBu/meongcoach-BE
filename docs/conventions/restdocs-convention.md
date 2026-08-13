@@ -11,24 +11,30 @@ API 문서는 Spring REST Docs로 작성합니다. 문서 스니펫은 `adapter/
   (예외: `GlobalExceptionHandlerTest`는 테스트 전용 `/test/**` 경로가 스펙에 섞이지 않도록
   기존 `MockMvcRestDocumentation.document`를 유지합니다.)
 
+살아있는 예시는 `user/adapter/webapi/AuthControllerTest`를 보세요. 형태만 요약하면:
+
 ```java
-@WebMvcTest(UserController.class)
+@WebMvcTest(AuthController.class)
 @AutoConfigureRestDocs
-class UserControllerTest {
+class AuthControllerTest {
 
 	@Test
-	void register() throws Exception {
-		mockMvc.perform(post("/api/users")
+	void socialLoginReturnsTokens() throws Exception {
+		mockMvc.perform(post("/api/users/social/{provider}", "kakao")
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(requestBody))
-			.andExpect(status().isCreated())
-			.andDo(document("user/register",
+			.andExpect(status().isOk())
+			.andDo(document("user/social-login",
+				pathParameters(
+					parameterWithName("provider").description("소셜 로그인 제공자")
+				),
 				requestFields(
-					fieldWithPath("email").description("이메일"),
-					fieldWithPath("nickname").description("닉네임")
+					fieldWithPath("token").description("제공자 SDK로 받은 자격증명")
 				),
 				responseFields(
-					fieldWithPath("id").description("회원 ID")
+					fieldWithPath("accessToken").description("API 호출에 사용할 액세스 토큰"),
+					fieldWithPath("refreshToken").description("액세스 토큰 재발급용 리프레시 토큰"),
+					fieldWithPath("needsOnboarding").description("온보딩 화면으로 보내야 하는지 여부")
 				)
 			));
 	}

@@ -13,7 +13,7 @@ MVP 개발 기간을 고려하여 아래 순서로 우선순위를 정해 작성
 ## 위치와 구조
 
 - 테스트 클래스는 프로덕션 코드와 동일한 패키지 구조를 `src/test/java`에 미러링해 배치합니다.
-- 테스트 클래스명은 `대상클래스명 + Test`로 짓습니다. (예: `UserRegisterTest`)
+- 테스트 클래스명은 `대상클래스명 + Test`로 짓습니다. (예: `DogRegisterServiceTest`)
 
 ## 스타일
 
@@ -22,12 +22,12 @@ MVP 개발 기간을 고려하여 아래 순서로 우선순위를 정해 작성
 
 ```java
 @Test
-@DisplayName("이메일이 중복되면 가입에 실패한다")
-void registerFailsWhenEmailIsDuplicated() {
-	when(userRepository.existsByEmail(any())).thenReturn(true);
+@DisplayName("등록되지 않은 회원이면 프로필 등록에 실패한다")
+void registerFailsWhenUserNotFound() {
+	when(userRepository.findById(any())).thenReturn(Optional.empty());
 
-	assertThatThrownBy(() -> userRegisterService.register(request))
-		.isInstanceOf(DuplicateEmailException.class);
+	assertThatThrownBy(() -> userProfileRegisterService.register(userId, command))
+		.isInstanceOf(UserNotFoundException.class);
 }
 ```
 
