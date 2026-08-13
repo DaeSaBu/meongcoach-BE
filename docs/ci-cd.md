@@ -15,7 +15,6 @@ prod 배포는 health check까지 성공한 dev 배포의 `dev_commit_sha`, `rel
 ## CI
 
 CI는 `workflow_call`을 지원하며 dev·prod CD가 같은 검증 절차를 호출합니다.
-`uses: owner/repository@ref`의 `@` 뒤에는 [브랜치·태그·commit SHA](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idstepsuses)를 쓸 수 있습니다. `@v4`는 같은 major 버전의 다른 commit을 가리키도록 이동할 수 있는 태그이고, 40자리 full commit SHA는 특정 commit을 고정하는 유일한 불변 표기입니다.
 외부 Action은 [GitHub 보안 권장사항](https://docs.github.com/en/actions/reference/security/secure-use)에 따라 full commit SHA로 고정하고, 사람이 버전을 알아볼 수 있도록 같은 줄의 주석에 release version을 기록합니다.
 
 1. JDK 25와 Gradle 캐시 설정

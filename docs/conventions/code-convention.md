@@ -5,16 +5,12 @@
 스타일의 원천은 저장소 루트의 `.editorconfig`와 `.idea/codeStyles/`입니다. (Wooteco 코드 스타일 기반)
 이 문서에 스타일 규칙을 중복 기술하지 않으며, IDE가 자동 적용하는 설정을 그대로 따릅니다.
 
-핵심만 요약하면:
+도구로 강제되지 않아 리뷰에서 확인하는 규칙만 아래에 둡니다.
 
-- 들여쓰기: 탭 (크기 4)
-- 한 줄 최대 120자
-- `if` / `for` / `while` 등에 중괄호 항상 사용
-- 와일드카드 import 금지
-- 삼항 연산자(`조건 ? A : B`) 금지 — 가독성을 해치므로 `Objects.requireNonNullElse`, if + early return, 의도가 드러나는 메서드 추출로 대체합니다. (도구로 강제되지 않으므로 리뷰에서 확인)
-- `else`(`else if` 포함) 금지 — guard clause와 early return으로 분기를 평탄화합니다. (도구로 강제되지 않으므로 리뷰에서 확인)
-- `switch` 금지 — if + early return, Map 조회, 또는 enum 메서드/다형성으로 대체합니다. (도구로 강제되지 않으므로 리뷰에서 확인)
-- return 문 **인자에 호출 중첩 금지** — 결과 객체를 `return new ~(...)`로 바로 반환하는 것은 허용하되, 그 인자 자리에 서비스 호출 등 다른 메서드 호출을 넣지 않습니다. 필요한 값은 지역 변수로 먼저 준비해 전달합니다. 단, DTO·View 정적 팩토리(`from`, `of`)의 단순 필드 매핑은 허용합니다. (도구로 강제되지 않으므로 리뷰에서 확인)
+- 삼항 연산자(`조건 ? A : B`) 금지 — `Objects.requireNonNullElse`, if + early return, 의도가 드러나는 메서드 추출로 대체합니다.
+- `else`(`else if` 포함) 금지 — guard clause와 early return으로 분기를 평탄화합니다.
+- `switch` 금지 — if + early return, Map 조회, 또는 enum 메서드/다형성으로 대체합니다.
+- return 문 **인자에 호출 중첩 금지** — 결과 객체를 `return new ~(...)`로 바로 반환하는 것은 허용하되, 그 인자 자리에 서비스 호출 등 다른 메서드 호출을 넣지 않습니다. 필요한 값은 지역 변수로 먼저 준비해 전달합니다. 단, DTO·View 정적 팩토리(`from`, `of`)의 단순 필드 매핑은 허용합니다.
 
 ## 네이밍
 

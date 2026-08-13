@@ -96,13 +96,6 @@ HTTP 요청
 
 모듈 경계 위반은 테스트로 검증합니다.
 
-```java
-@Test
-void verifyModularity() {
-	ApplicationModules.of(MeongcoachApplication.class).verify();
-}
-```
-
-> 참고: Spring Modulith 의존성(`spring-modulith-starter-core`, 테스트용 `spring-modulith-starter-test`)이 `build.gradle.kts`에 추가되어야 합니다.
+`architecture/ModularityTest`가 `ApplicationModules.verify()`로 모듈 경계 위반을 검증합니다.
 
 클래스 네이밍 규칙은 [docs/conventions/code-convention.md](conventions/code-convention.md)를 따릅니다.

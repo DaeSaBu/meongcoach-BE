@@ -66,4 +66,4 @@ void findDelegatesWithCurrentUserId() throws Exception {
 ## 아키텍처 검증
 
 - ArchUnit 기반으로 아키텍처를 검증하는 단위 테스트를 작성합니다. ([archunit-convention.md](archunit-convention.md))
-- Spring Modulith 의존성 도입 후에는 `ApplicationModules.verify()` 모듈 경계 검증 테스트를 추가합니다. (`docs/architecture.md` 참고)
+- 모듈 경계는 `architecture/ModularityTest`의 `ApplicationModules.verify()`가 검증합니다. (`docs/architecture.md` 참고)
