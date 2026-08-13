@@ -60,24 +60,9 @@ DB 설정은 AWS가 소유합니다. `DB_HOST`·`DB_NAME`은 ECS task definition
 
 Spring 프로파일은 환경별 Terraform task definition이 소유합니다. dev는 `SPRING_PROFILES_ACTIVE=dev`, prod는 `SPRING_PROFILES_ACTIVE=prod`로 고정하며 CD는 값을 변경하지 않습니다.
 
-DB 외 애플리케이션 설정은 GitHub repository Secret이 소유하며 CD가 task definition의 `environment`에 주입합니다. dev와 prod는 다음 이름으로 서로 독립된 값을 관리합니다.
+DB 외 애플리케이션 설정은 GitHub repository Secret이 소유하며 CD가 task definition의 `environment`에 주입합니다. dev와 prod는 `DEV_*` / `PROD_*` 접두사로 서로 독립된 값을 관리하며, **전체 목록은 [cd-dev.yml](../.github/workflows/cd-dev.yml)·[cd-prod.yml](../.github/workflows/cd-prod.yml)이 원천입니다.** 문서에 목록을 중복 관리하지 않습니다.
 
-- `DEV_JWT_SECRET` / `PROD_JWT_SECRET`
-- `DEV_KAKAO_NATIVE_APP_KEY` / `PROD_KAKAO_NATIVE_APP_KEY`
-- `DEV_KAKAO_REST_API_KEY` / `PROD_KAKAO_REST_API_KEY`
-- `DEV_R2_ENDPOINT` / `PROD_R2_ENDPOINT`
-- `DEV_R2_ACCESS_KEY_ID` / `PROD_R2_ACCESS_KEY_ID`
-- `DEV_R2_SECRET_ACCESS_KEY` / `PROD_R2_SECRET_ACCESS_KEY`
-- `DEV_R2_BUCKET` / `PROD_R2_BUCKET`
-- `DEV_R2_PUBLIC_BASE_URL` / `PROD_R2_PUBLIC_BASE_URL`
-- `DEV_S3_REGION` / `PROD_S3_REGION`
-- `DEV_S3_ACCESS_KEY_ID` / `PROD_S3_ACCESS_KEY_ID`
-- `DEV_S3_SECRET_ACCESS_KEY` / `PROD_S3_SECRET_ACCESS_KEY`
-- `DEV_S3_BUCKET` / `PROD_S3_BUCKET`
-- `DEV_S3_PUBLIC_BASE_URL` / `PROD_S3_PUBLIC_BASE_URL`
-- `DEV_VIMEO_ACCESS_TOKEN` / `PROD_VIMEO_ACCESS_TOKEN`
-
-R2 Secret은 이미지, S3 Secret은 훈련 영상 업로드 URL 발급에 쓰입니다. 환경별 `S3_*` Secret은 필수값이라 등록하지 않은 상태로 CD가 실행되면 태스크 정의 생성 단계에서 배포가 중단됩니다.
+용도별로는 R2 Secret이 이미지, S3 Secret이 영상 업로드 URL 발급, SQS·`AI_VIDEO_QUEUE`·EVOLINK Secret이 AI 리포트 파이프라인([docs/ai-pipeline.md](ai-pipeline.md))에 쓰입니다. 필수값 Secret을 등록하지 않은 상태로 CD가 실행되면 태스크 정의 생성 단계에서 배포가 중단됩니다.
 
 환경별 `VIMEO_ACCESS_TOKEN`은 Vimeo 연동 전까지 선택값이며, 대응하는 repository Secret이 등록된 경우에만 task definition에 주입합니다.
 
