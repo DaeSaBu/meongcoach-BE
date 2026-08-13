@@ -25,8 +25,6 @@ public class EvoLinkReportTitleGenerator implements ReportTitleGenerator {
 	private static final String USER_PROMPT_PATH = "prompts/report-title/user.md";
 	private static final String SCHEMA_PATH = "prompts/report-title/schema.json";
 	private static final String REPORT_PLACEHOLDER = "{{report}}";
-	// ai_reports.title 컬럼 길이와 맞춘 상한. 모델이 규칙을 어기고 길게 쓰면 잘라서 저장 실패를 막는다
-	private static final int MAX_TITLE_LENGTH = 200;
 
 	private final EvoLinkChatClient chatClient;
 	private final EvoLinkProperties properties;
@@ -73,6 +71,7 @@ public class EvoLinkReportTitleGenerator implements ReportTitleGenerator {
 				new Thinking(properties.thinking()));
 	}
 
+	// 길이 등 저장 규칙의 정규화는 도메인(AiReport)이 담당하고, 여기서는 생성 성공 여부만 판정한다
 	private String parseTitle(String content) {
 		TitleContent titleContent;
 		try {
@@ -84,14 +83,7 @@ public class EvoLinkReportTitleGenerator implements ReportTitleGenerator {
 		if (titleContent.title() == null) {
 			throw new IllegalStateException("리포트 제목 응답에 title 항목이 없습니다");
 		}
-		return truncate(titleContent.title().strip());
-	}
-
-	private static String truncate(String title) {
-		if (title.length() > MAX_TITLE_LENGTH) {
-			return title.substring(0, MAX_TITLE_LENGTH);
-		}
-		return title;
+		return titleContent.title().strip();
 	}
 
 	@JsonIgnoreProperties(ignoreUnknown = true)

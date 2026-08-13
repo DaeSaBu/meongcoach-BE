@@ -161,16 +161,6 @@ class EvoLinkReportTitleGeneratorTest {
 	}
 
 	@Test
-	@DisplayName("200자를 넘는 제목은 200자로 자른다")
-	void generateTitleTruncatesTitleOverMaxLength() {
-		givenModelRespondsTitle("가".repeat(250));
-
-		String title = generator.generateTitle(REPORT_JSON);
-
-		assertThat(title).hasSize(200);
-	}
-
-	@Test
 	@DisplayName("json_schema strict를 어긴 평문 응답이면 제목 생성에 실패한다")
 	void generateTitleFailsWhenResponseIsNotJson() {
 		givenModelRespondsRaw("물체를 물고 달리는 행동 분석");
