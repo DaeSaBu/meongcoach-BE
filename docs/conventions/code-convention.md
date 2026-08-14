@@ -31,13 +31,14 @@
 | 애플리케이션 서비스 | `application` | `~Service` | `SocialLoginService`, `CurriculumQueryService` |
 | 컨트롤러 | `adapter/webapi` | `~Controller` | `AuthController` |
 | 외부 API 연동 포트 | `application/required` | 자원 이름 그대로 | `SocialProfileReader` |
-| 외부 API 연동 구현 | `adapter/client` | `{제공자}~` | `KakaoSocialProfileReader` |
+| 외부 API 연동 구현 | `adapter/integration` | `{제공자}~` | `KakaoSocialProfileReader` |
 | 도메인 모델 | `domain` | 개념 이름 그대로 | `User` |
 | 도메인 입력 모델 | `domain` | `~Command` (record) | `DogRegisterCommand` |
 | 값 객체 | `domain/vo` | 개념 이름 그대로 | `Email` |
 | 도메인 예외·에러코드 | `domain/exception` | `{모듈}ErrorCode`, `~Exception` | `UserErrorCode`, `InvalidEmailException` |
 
 - `domain` 루트에는 엔티티와 enum을 두고, 값 객체는 `domain/vo`, 예외·에러코드는 `domain/exception`으로 분리합니다.
+- 기존 코드의 `~View` record와 `adapter/client` 패키지는 점진적으로 `~Result`·`adapter/integration`으로 전환합니다. 새 코드는 새 이름만 사용합니다.
 
 ## 트랜잭션
 
@@ -57,7 +58,7 @@
 
 - 요청/응답 DTO는 Java `record`로 작성합니다.
 - 웹 요청/응답 DTO는 `adapter/webapi/dto`에 두고, 접미사는 요청 `~Request`, 응답 `~Response`를 사용합니다. (예: `SocialLoginRequest`, `SocialLoginResponse`)
-- 외부 API 응답 DTO는 `adapter/client/dto`에 `~Response` record로 두고, 필드 매핑은 `@JsonProperty`로 지정합니다. 전역 네이밍 전략(`spring.jackson.property-naming-strategy`)을 바꾸면 우리 API 응답까지 영향을 받으므로 쓰지 않습니다.
+- 외부 API 응답 DTO는 `adapter/integration/dto`에 `~Response` record로 두고, 필드 매핑은 `@JsonProperty`로 지정합니다. 전역 네이밍 전략(`spring.jackson.property-naming-strategy`)을 바꾸면 우리 API 응답까지 영향을 받으므로 쓰지 않습니다.
 - 도메인 입력 모델은 `~Command` 접미사의 record로 `domain`에 두며, 웹 DTO와 별개로 유지합니다. (예: `DogRegisterCommand`)
 	- 엔티티 정적 팩토리의 순수 값 파라미터가 3개 이상이면 Command로 묶고, 팩토리는 Command를 받아 생성자에 전달합니다.
 	- 연관 엔티티는 Command에 담지 않고 별도 인자로 전달합니다. (예: `Curriculum.create(Topic topic, CurriculumCreateCommand command)`)

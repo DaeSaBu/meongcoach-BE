@@ -12,7 +12,7 @@ VideoUploadSqsConsumer                      (ai/adapter/consumer)
   → AiReportGenerator.generate(objectKey)   (AiReportGenerateService)
      → VideoDownloadUrlIssuer               (media — presigned 다운로드 URL + 소유자 ID)
      → AiTrialFinder                        (무료 체험 횟수 확인, 초과 시 스킵)
-     → VideoAnalyzer → EvoLink 영상 분석     (ai/adapter/client)
+     → VideoAnalyzer → EvoLink 영상 분석     (ai/adapter/integration)
      → ReportTitleGenerator → 제목 생성
      → AiReport 저장
 ```
@@ -26,7 +26,7 @@ VideoUploadSqsConsumer                      (ai/adapter/consumer)
 - **중복 분석은 `existsByVideoObjectKey`로 막습니다.** SQS는 at-least-once 전달이라 같은 이벤트가 두 번 올 수 있습니다.
 - **제목 200자 규칙은 `AiReport` 도메인이 단일 소유합니다** (`TITLE_MAX_LENGTH`). 프롬프트나 어댑터에서 길이를 중복 강제하지 않습니다. 제목 생성 실패는 부가 정보 실패라 리포트 저장을 막지 않습니다.
 
-## EvoLink 연동 (ai/adapter/client)
+## EvoLink 연동 (ai/adapter/integration)
 
 - OpenAI 호환 chat API를 씁니다. 멀티모달(영상) 호출은 `api.evolink.ai`가 주력 엔드포인트입니다.
 - **응답은 `json_schema` + `strict`로 강제합니다.** 모델이 스키마를 엄격 준수해야 어댑터의 정제 로직을 줄일 수 있습니다. (`EvoLinkChatRequest.ResponseFormat`)

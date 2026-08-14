@@ -26,7 +26,7 @@ com.daesabu.meongcoach
 ```
 {모듈}
 ├── package-info.java        // @ApplicationModule 선언
-├── adapter                  // 외부 연결 — webapi/ client/ security/ consumer/
+├── adapter                  // 외부 연결 — webapi/ integration/ security/ consumer/
 ├── application
 │   ├── provided/            // 모듈 공개 API (@NamedInterface("provided"))
 │   ├── required/            // 모듈이 필요로 하는 자원 인터페이스
@@ -48,7 +48,7 @@ com.daesabu.meongcoach
 
 | 계층 | 책임 | 내용 |
 |---|---|---|
-| `adapter` | 외부 세계와의 연결 | `webapi/` — 컨트롤러, 웹 요청/응답 DTO. `client/` — 외부 API 호출 구현과 응답 DTO. `security/` — Spring Security 연동 지점. `consumer/` — 메시지 큐 컨슈머(예: `ai/adapter/consumer/VideoUploadSqsConsumer`). 기술 의존은 여기에만 둔다 |
+| `adapter` | 외부 세계와의 연결 | `webapi/` — 컨트롤러, 웹 요청/응답 DTO. `integration/` — 외부 API 호출 구현과 응답 DTO. `security/` — Spring Security 연동 지점. `consumer/` — 메시지 큐 컨슈머(예: `ai/adapter/consumer/VideoUploadSqsConsumer`). 기술 의존은 여기에만 둔다 |
 | `application` | 유스케이스 | `provided/` — 모듈이 외부에 공개하는 인터페이스, `required/` — 모듈이 필요로 하는 자원 인터페이스(리포지토리, 메일 등), 그리고 이를 구현·사용하는 서비스 |
 | `domain` | 도메인 모델·로직 | 엔티티(`User`), 값 객체(`vo/`), 예외(`exception/`), 도메인 입력 모델(`~Command`) |
 
@@ -63,7 +63,7 @@ com.daesabu.meongcoach
 | `adapter` | `application`(주로 `provided`), `domain` | 웹 등 기술 의존은 여기에만 |
 
 - `required/`의 리포지토리 인터페이스(예: `UserRepository`)는 Spring Data JPA가 런타임에 구현합니다. 별도 영속성 어댑터 클래스를 만들지 않습니다.
-- 외부 시스템 연동이 필요하면 `required/`에 인터페이스(예: `SocialProfileReader`)를 정의하고, **구현은 해당 모듈의 `adapter/client`에 둡니다.** `shared`에 두면 `shared`가 모듈의 인터페이스를 참조하게 되어 순환이 생기고 `ApplicationModules.verify()`가 실패합니다.
+- 외부 시스템 연동이 필요하면 `required/`에 인터페이스(예: `SocialProfileReader`)를 정의하고, **구현은 해당 모듈의 `adapter/integration`에 둡니다.** `shared`에 두면 `shared`가 모듈의 인터페이스를 참조하게 되어 순환이 생기고 `ApplicationModules.verify()`가 실패합니다.
 - `shared`가 모듈의 구현체를 써야 한다면 **프레임워크 인터페이스 타입으로만** 주입받습니다. (예: `AuthenticationEntryPoint`)
 
 ## 요청 처리 흐름 (user 모듈 예시)
