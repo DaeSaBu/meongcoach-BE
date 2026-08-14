@@ -5,6 +5,7 @@
 ## 로그인 흐름 — 네이티브 SDK + 서버 검증
 
 클라이언트가 React Native 앱이므로, 서버가 리다이렉트를 주고받는 OAuth2 인가 코드 흐름을 쓰지 않습니다.
+**서버가 카카오 REST 키·시크릿을 보관하지 않습니다.** 서버가 아는 카카오 값은 공개 식별자인 네이티브 앱 키(`aud`)뿐입니다.
 
 ```
 [앱] 카카오 SDK 네이티브 로그인 (네이티브 앱 키, 앱-투-앱, OIDC)
@@ -15,34 +16,6 @@
               → 우리 JWT 발급
         ← { accessToken, refreshToken, needsOnboarding }
 ```
-
-**이 방식을 택한 이유**
-
-- 딥링크는 쿠키를 앱에 전달하지 못해, 서버 리다이렉트 방식이었다면 토큰을 URL에 실어야 합니다.
-  URL은 브라우저 기록·`Referer` 헤더·서버 액세스 로그에 남고, 이는 TLS가 막아주지 못합니다.
-  응답 본문으로 주면 이 문제가 아예 발생하지 않습니다.
-- 카카오톡 앱-투-앱 간편로그인을 쓸 수 있어 UX가 낫습니다.
-- **서버가 카카오 REST 키·시크릿을 보관하지 않습니다.** 앱이 네이티브 앱 키를 쓰고,
-  서버가 아는 카카오 값은 공개 식별자인 네이티브 앱 키(`aud`)뿐입니다.
-- 나중에 Apple을 붙일 때 ES256 `client_secret` JWT 생성과 `.p8` 키 관리가 필요 없습니다
-  (서버가 인가 코드 교환을 하지 않으므로).
-
-**BFF 패턴을 쓰지 않는 이유**
-
-BFF 토큰 핸들링 패턴이 사는 이익은 "토큰을 JS가 못 읽는 httpOnly 쿠키에 두어 XSS를 막는다" 하나입니다.
-React Native는 DOM이 없어 XSS 공격면이 없고 Keychain/Keystore라는 OS 보안 저장소가 있으므로,
-**비용만 내고 이익은 얻지 못합니다.** 또 로그인 리다이렉트가 일어나는 `ASWebAuthenticationSession`/
-Custom Tabs의 쿠키 저장소는 RN `fetch`의 네이티브 쿠키 저장소와 분리되어 있어, 세션 쿠키를 내려도
-앱의 API 호출에 실리지 않습니다. 결국 딥링크로 일회용 코드를 넘겨 재교환하는 핸드오프를 다시 만들어야 합니다.
-
-전환을 재검토할 조건은 셋입니다.
-
-1. 서버가 사용자 대신 제공자 API를 호출해야 함 (예: 카카오톡으로 리포트 발송) — 제공자 리프레시 토큰 보관 필요
-2. 웹 클라이언트를 함께 서비스 — 이때는 BFF의 XSS 방어가 실제 이익이 됨
-3. 네이티브 SDK 유지보수 부담이 감당 불가 수준이 됨
-
-리프레시 토큰 저장·강제 로그아웃은 이 목록에 없습니다. 무효화 대상은 **우리가 발급한** 리프레시 토큰이고,
-저장 여부는 로그인 방식과 무관하게 언제든 바꿀 수 있습니다 (아래 "무상태 정책의 트레이드오프" 참고).
 
 카카오가 발급한 토큰은 **로그인 시점에만 쓰고 버립니다.** 이후 인가는 전적으로 우리 JWT로 합니다.
 제공자 토큰은 "제공자 API를 호출할 권한"이지 "우리 서비스를 쓸 권한"이 아니고, 우리 권한 정보를 담을 수도 없기 때문입니다.
@@ -65,8 +38,6 @@ id_token의 서명이 유효하다는 것은 "카카오가 발급했다"만 증�
 `aud` 검증만 디코더의 `OAuth2TokenValidator` 체인이 아니라 `read()`에서 직접 합니다.
 검증기에 넣으면 서명 실패와 같은 `JwtValidationException`으로 뭉개져
 `USER_INVALID_SOCIAL_TOKEN`과 구분할 수 없기 때문입니다. 이 검증은 별도 에러 코드를 유지할 값어치가 있습니다.
-
-Google·Apple도 동일하게 ID 토큰의 `aud` 클레임 확인입니다.
 
 ## 토큰 정책
 
@@ -159,27 +130,7 @@ public interface SocialProfileReader {
 
 `SocialLoginService`가 `List<SocialProfileReader>`를 주입받아 `provider()` 기준 맵으로 만듭니다.
 **제공자 추가 = `@Component` 1개 + 설정 블록. 기존 클래스 수정은 없습니다.**
-
-카카오가 OIDC로 전환된 뒤로 Kakao·Google·Apple이 **모두 "JWKS 디코더 + `iss` + `exp` + `aud`" 동일 형태**입니다.
-`KakaoSocialProfileReader`를 그대로 베끼고 설정값만 바꾸면 됩니다.
-
-### Google (예정)
-
-- `NimbusJwtDecoder.withJwkSetUri("https://www.googleapis.com/oauth2/v3/certs")`
-- `JwtIssuerValidator("https://accounts.google.com")` + `aud`가 우리 클라이언트 ID를 포함하는지 검증
-- `sub` → `providerId`, `email` → `email`
-
-`spring-security-oauth2-jose`가 이미 클래스패스에 있어 의존성 추가가 없습니다.
-
-### Apple (예정)
-
-Google과 같은 구조(`iss=https://appleid.apple.com`, `jwk-set-uri=https://appleid.apple.com/auth/keys`).
-다만 Apple 고유의 함정이 있습니다.
-
-- `email`은 **최초 인증에서만** 내려옵니다. 이후 로그인에서 null로 덮어쓰지 않도록 해야 합니다.
-- iOS 번들 ID와 웹 서비스 ID의 `aud`가 달라 후보를 목록으로 받아야 합니다.
-- 회원 탈퇴 시 Apple `revoke` 호출이 App Store 심사 요구사항이며, **이때는 ES256 `.p8` 클라이언트 시크릿이 필요합니다.**
-  로그인에는 필요 없지만 탈퇴 기능에서 다시 등장합니다.
+OIDC 제공자는 모두 "JWKS 디코더 + `iss` + `exp` + `aud`" 동일 형태라 `KakaoSocialProfileReader`를 그대로 베끼고 설정값만 바꾸면 됩니다.
 
 ## 환경 변수
 

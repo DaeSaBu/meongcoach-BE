@@ -28,7 +28,7 @@
 | [docs/conventions/archunit-convention.md](docs/conventions/archunit-convention.md) | ArchUnit 아키텍처 검증 규칙  |
 | [docs/conventions/exception-convention.md](docs/conventions/exception-convention.md) | 예외 정의 패턴, Problem Details 에러 응답 규칙 |
 | [docs/architecture.md](docs/architecture.md)                               | Spring Modulith 모듈 구조, 의존 규칙   |
-| [docs/security.md](docs/security.md)                                       | 인증 흐름, JWT 토큰 정책, 소셜 제공자 확장 방법 |
+| [docs/security.md](docs/security.md)                                       | JWT 토큰 정책·검증 체인, 필터 체인 제약, 인증 환경 변수 |
 | [docs/ai-pipeline.md](docs/ai-pipeline.md)                                 | 영상 업로드→SQS→EvoLink 분석→리포트 저장 비동기 흐름 |
 | [docs/media.md](docs/media.md)                                             | R2/S3 presigned URL 발급, 객체 키 소유권 규칙 |
 | [docs/ci-cd.md](docs/ci-cd.md)                                             | CI/CD 파이프라인, 커버리지·배포 기준 |
