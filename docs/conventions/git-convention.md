@@ -92,3 +92,7 @@
 
 - 리뷰 승인 조건: CI 통과 + 최소 1인 승인 + 미해결 코멘트 없음, 모두 적용.
 - 리뷰 코멘트에는 구체적인 개선 방향을 적는다.
+
+## GitHub Actions 워크플로
+
+- 외부 Action은 [GitHub 보안 권장사항](https://docs.github.com/en/actions/reference/security/secure-use)에 따라 full commit SHA로 고정하고, 사람이 버전을 알아볼 수 있도록 같은 줄의 주석에 release version을 기록한다.

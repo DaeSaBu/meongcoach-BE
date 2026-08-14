@@ -42,4 +42,4 @@ VideoUploadSqsConsumer                      (ai/adapter/consumer)
 
 ## 필요 설정
 
-`application.yml`의 `spring.cloud.aws`(SQS 자격 증명)와 `meongcoach.ai` 블록이 원천이며, 각 항목의 이유는 해당 yml 주석에 있습니다. 배포 Secrets 주입은 [ci-cd.md](ci-cd.md)를 참고하세요.
+`application.yml`의 `spring.cloud.aws`(SQS 자격 증명)와 `meongcoach.ai` 블록이 원천이며, 각 항목의 이유는 해당 yml 주석에 있습니다. 배포 Secrets 주입은 [cd-dev.yml](../.github/workflows/cd-dev.yml)·[cd-prod.yml](../.github/workflows/cd-prod.yml)이 원천입니다.

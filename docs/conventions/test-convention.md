@@ -61,7 +61,8 @@ void findDelegatesWithCurrentUserId() throws Exception {
 
 ## 커버리지
 
-- JaCoCo 라인 커버리지를 CI에서 검증하며, 미달 시 빌드가 실패합니다. 기준 수치와 제외 대상은 [docs/ci-cd.md](../ci-cd.md)를 따릅니다.
+- JaCoCo 라인 커버리지를 CI에서 검증하며, 70% 미만이면 빌드가 실패합니다.
+- `MeongcoachApplication`과 `shared/config`는 검증에서 제외합니다. `shared/config`에는 설정만 두고 검증 로직은 커버리지 대상 패키지에 둡니다.
 
 ## 아키텍처 검증
 
