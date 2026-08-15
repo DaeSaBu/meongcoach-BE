@@ -42,10 +42,10 @@ class VideoFileSizeTest {
 	}
 
 	@Test
-	@DisplayName("상한은 100MB다")
-	void maxBytesIs100Megabytes() {
+	@DisplayName("상한은 50MB다")
+	void maxBytesIs50Megabytes() {
 		// 상한이 조용히 바뀌면 API 계약과 클라이언트 안내 문구가 어긋나므로 값 자체를 고정한다
-		assertThat(VideoFileSize.MAX_BYTES).isEqualTo(104_857_600L);
+		assertThat(VideoFileSize.MAX_BYTES).isEqualTo(52_428_800L);
 	}
 
 	@Test

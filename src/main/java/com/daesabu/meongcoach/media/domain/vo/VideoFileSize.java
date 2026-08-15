@@ -10,7 +10,7 @@ import com.daesabu.meongcoach.media.domain.exception.VideoFileSizeExceededExcept
 public record VideoFileSize(long bytes) {
 
 	// 멀티파트 없이 단일 PUT으로 올리는 상한. 환경이 아니라 제품 규칙이라 설정이 아닌 도메인 상수로 둔다
-	public static final long MAX_BYTES = 100L * 1024 * 1024;
+	public static final long MAX_BYTES = 50L * 1024 * 1024;
 
 	public VideoFileSize {
 		if (bytes <= 0) {

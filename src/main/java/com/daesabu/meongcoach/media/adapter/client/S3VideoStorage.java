@@ -18,7 +18,7 @@ import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignReques
 
 /**
  * AWS S3에 대한 영상 스토리지 어댑터. presign은 로컬 서명 연산이라 네트워크 호출이 없다.
- * 영상은 최대 100MB라 멀티파트 없이 단일 PUT presigned URL을 발급한다.
+ * 영상은 최대 50MB라 멀티파트 없이 단일 PUT presigned URL을 발급한다.
  */
 @Component
 public class S3VideoStorage implements VideoStorage {

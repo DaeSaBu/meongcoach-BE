@@ -254,7 +254,7 @@ class AiControllerTest {
 								fieldWithPath("contentType").description(
 										"필수 입력. 업로드할 영상의 Content-Type. `video/mp4`, `video/quicktime`만 지원"),
 								fieldWithPath("fileSizeBytes").description(
-										"필수 입력. 업로드할 영상의 바이트 수. 1 이상 104857600(100MB) 이하여야 하며, "
+										"필수 입력. 업로드할 영상의 바이트 수. 1 이상 52428800(50MB) 이하여야 하며, "
 												+ "이 값이 그대로 presigned URL의 Content-Length 서명에 들어간다")
 						),
 						responseFields(
