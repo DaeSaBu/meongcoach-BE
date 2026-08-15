@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.User;
+import com.daesabu.meongcoach.user.domain.UserRole;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,5 +36,19 @@ class RegisteredUserCheckServiceTest {
 	@DisplayName("저장되지 않은 회원 ID면 거짓을 반환한다")
 	void isRegisteredReturnsFalseForUnknownId() {
 		assertThat(registeredUserCheckService.isRegistered(UNREGISTERED_USER_ID)).isFalse();
+	}
+
+	@Test
+	@DisplayName("저장된 회원이면 역할을 반환한다")
+	void findRoleReturnsRoleForSavedUser() {
+		Long userId = userRepository.save(User.registerOnboardingMember()).getId();
+
+		assertThat(registeredUserCheckService.findRole(userId)).contains(UserRole.ONBOARDING_MEMBER);
+	}
+
+	@Test
+	@DisplayName("저장되지 않은 회원 ID면 빈 역할을 반환한다")
+	void findRoleReturnsEmptyForUnknownId() {
+		assertThat(registeredUserCheckService.findRole(UNREGISTERED_USER_ID)).isEmpty();
 	}
 }

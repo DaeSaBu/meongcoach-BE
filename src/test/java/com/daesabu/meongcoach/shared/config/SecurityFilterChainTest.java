@@ -47,12 +47,16 @@ class SecurityFilterChainTest {
 	@Autowired
 	private UserRepository userRepository;
 
-	// 액세스 토큰 검증이 회원 존재를 확인하므로 실제 회원 행이 있어야 인증을 통과한다
+	// 액세스 토큰 검증이 회원 존재·역할을 확인하므로 실제 회원 행이 있어야 인증을 통과한다
 	private Long userId;
+
+	// 온보딩 미완료 회원은 허용 경로 밖에서 403을 받아야 하므로 별도로 만든다
+	private Long onboardingUserId;
 
 	@BeforeEach
 	void setUp() {
 		userId = userRepository.save(promotedMember()).getId();
+		onboardingUserId = userRepository.save(User.registerOnboardingMember()).getId();
 	}
 
 	// 정회원은 프로덕션과 동일하게 온보딩 회원 승격 경로로 만든다
@@ -170,6 +174,51 @@ class SecurityFilterChainTest {
 		mockMvc.perform(put(CURRENT_USER_PATH, 999L))
 				.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+	}
+
+	@Test
+	@DisplayName("온보딩 미완료 회원이 정회원 전용 경로에 접근하면 ONBOARDING_NOT_COMPLETED 403을 반환한다")
+	void onboardingMemberOnMemberOnlyPathReturnsOnboardingNotCompleted() throws Exception {
+		AuthToken token = tokenProvider.issue(onboardingUserId);
+
+		mockMvc.perform(get("/api/training/curriculums")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))
+				.andExpect(status().isForbidden())
+				.andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+				.andExpect(jsonPath("$.code").value("ONBOARDING_NOT_COMPLETED"));
+	}
+
+	@Test
+	@DisplayName("온보딩 미완료 회원도 온보딩 메타데이터를 조회할 수 있다")
+	void onboardingMemberCanAccessOnboardingMetadata() throws Exception {
+		AuthToken token = tokenProvider.issue(onboardingUserId);
+
+		mockMvc.perform(get("/api/onboarding/metadata")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))
+				.andExpect(status().isOk());
+	}
+
+	// 온보딩 화면이 쓰는 프로필 이미지 조회가 인가에서 걸리지 않는지 확인한다.
+	// 강아지가 없는 회원이라 404로 끝나면 403 없이 컨트롤러까지 도달한 것이다
+	@Test
+	@DisplayName("온보딩 미완료 회원도 강아지 프로필 이미지 경로에 접근할 수 있다")
+	void onboardingMemberCanAccessDogProfileImages() throws Exception {
+		AuthToken token = tokenProvider.issue(onboardingUserId);
+
+		mockMvc.perform(get("/api/dogs/profile-image")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))
+				.andExpect(status().isNotFound());
+	}
+
+	// 온보딩 허용 경로가 hasAnyRole로 정회원까지 포함하는지 확인한다
+	@Test
+	@DisplayName("정회원도 온보딩 메타데이터를 조회할 수 있다")
+	void memberCanAccessOnboardingMetadata() throws Exception {
+		AuthToken token = tokenProvider.issue(userId);
+
+		mockMvc.perform(get("/api/onboarding/metadata")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))
+				.andExpect(status().isOk());
 	}
 
 	// test 프로파일은 meongcoach.api-docs.enabled를 두지 않아 기본값(false) 경로가 검증된다.
