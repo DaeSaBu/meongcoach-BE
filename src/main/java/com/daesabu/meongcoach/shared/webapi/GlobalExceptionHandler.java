@@ -1,6 +1,7 @@
 package com.daesabu.meongcoach.shared.webapi;
 
 import com.daesabu.meongcoach.shared.exception.DomainException;
+import com.daesabu.meongcoach.shared.security.AuthorityRole;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -36,8 +37,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 	// 인증 실패 원인을 그대로 노출하면 공격자에게 힌트가 되므로 일반화된 문구만 응답한다
 	private static final String UNAUTHORIZED_MESSAGE = "인증이 필요합니다.";
 	private static final String FORBIDDEN_MESSAGE = "접근 권한이 없습니다.";
-	// user 모듈 UserRole·SecurityConfig의 role 문자열과 일치해야 한다. 불일치는 SecurityFilterChainTest가 잡는다
-	private static final String ROLE_ONBOARDING_MEMBER = "ROLE_ONBOARDING_MEMBER";
+	// 역할 어휘는 AuthorityRole이 단일 원천이다 (user 모듈 UserRole·SecurityConfig가 같은 어휘를 쓴다)
+	private static final String ROLE_ONBOARDING_MEMBER = AuthorityRole.ONBOARDING_MEMBER.authority();
 	private static final String ONBOARDING_NOT_COMPLETED_CODE = "ONBOARDING_NOT_COMPLETED";
 	private static final String ONBOARDING_NOT_COMPLETED_MESSAGE = "온보딩을 완료해야 이용할 수 있는 기능입니다.";
 

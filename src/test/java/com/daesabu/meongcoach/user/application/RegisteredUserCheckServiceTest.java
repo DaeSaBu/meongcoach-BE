@@ -2,9 +2,9 @@ package com.daesabu.meongcoach.user.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.daesabu.meongcoach.shared.security.AuthorityRole;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.User;
-import com.daesabu.meongcoach.user.domain.UserRole;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,11 +39,11 @@ class RegisteredUserCheckServiceTest {
 	}
 
 	@Test
-	@DisplayName("저장된 회원이면 역할을 반환한다")
+	@DisplayName("저장된 회원이면 인가 어휘를 반환한다")
 	void findRoleReturnsRoleForSavedUser() {
 		Long userId = userRepository.save(User.registerOnboardingMember()).getId();
 
-		assertThat(registeredUserCheckService.findRole(userId)).contains(UserRole.ONBOARDING_MEMBER);
+		assertThat(registeredUserCheckService.findRole(userId)).contains(AuthorityRole.ONBOARDING_MEMBER);
 	}
 
 	@Test

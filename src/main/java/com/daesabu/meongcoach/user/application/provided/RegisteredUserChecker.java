@@ -1,6 +1,6 @@
 package com.daesabu.meongcoach.user.application.provided;
 
-import com.daesabu.meongcoach.user.domain.UserRole;
+import com.daesabu.meongcoach.shared.security.AuthorityRole;
 import java.util.Optional;
 
 public interface RegisteredUserChecker {
@@ -11,8 +11,8 @@ public interface RegisteredUserChecker {
 	boolean isRegistered(Long userId);
 
 	/**
-	 * 등록된 회원의 역할을 조회한다. 미등록이면 empty라 존재 확인을 겸한다. (액세스 토큰 인증 경로용)
-	 * 시그니처의 UserRole은 user 모듈 내부 소비자만 있어 허용된다 — 타 모듈에 열 때는 provided 패키지 record로 변환할 것.
+	 * 등록된 회원의 인가 어휘를 조회한다. 미등록이면 empty라 존재 확인을 겸한다. (액세스 토큰 인증 경로용)
+	 * 도메인 상태(UserRole)가 아닌 shared 어휘로 반환하므로 모듈 경계를 넘어도 안전하다.
 	 */
-	Optional<UserRole> findRole(Long userId);
+	Optional<AuthorityRole> findRole(Long userId);
 }

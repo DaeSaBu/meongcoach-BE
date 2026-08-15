@@ -1,5 +1,6 @@
 package com.daesabu.meongcoach.user.application;
 
+import com.daesabu.meongcoach.shared.security.AuthorityRole;
 import com.daesabu.meongcoach.user.application.provided.RegisteredUserChecker;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.UserRole;
@@ -25,7 +26,8 @@ public class RegisteredUserCheckService implements RegisteredUserChecker {
 	}
 
 	@Override
-	public Optional<UserRole> findRole(Long userId) {
-		return userRepository.findRoleById(userId);
+	public Optional<AuthorityRole> findRole(Long userId) {
+		return userRepository.findRoleById(userId)
+				.map(UserRole::authorityRole);
 	}
 }

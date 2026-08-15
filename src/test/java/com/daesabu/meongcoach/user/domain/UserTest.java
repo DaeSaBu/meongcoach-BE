@@ -47,6 +47,15 @@ class UserTest {
 		assertThat(user.getRole()).isEqualTo(UserRole.MEMBER);
 	}
 
+	// 인가 어휘 매핑이 잘못되면(예: MEMBER에 GUEST 어휘) 인가 규칙 전체가 어긋나므로 선언부를 검증한다
+	@Test
+	@DisplayName("모든 역할은 같은 이름의 인가 어휘로 매핑된다")
+	void everyRoleMapsToAuthorityRoleOfSameName() {
+		for (UserRole role : UserRole.values()) {
+			assertThat(role.authorityRole().name()).isEqualTo(role.name());
+		}
+	}
+
 	@Test
 	@DisplayName("탈퇴하면 상태가 WITHDRAWN으로 변경된다")
 	void withdrawChangesStatusToWithdrawn() {

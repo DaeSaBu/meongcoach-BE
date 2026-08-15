@@ -3,8 +3,8 @@ package com.daesabu.meongcoach.user.adapter.security;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.daesabu.meongcoach.shared.security.AuthorityRole;
 import com.daesabu.meongcoach.user.application.provided.RegisteredUserChecker;
-import com.daesabu.meongcoach.user.domain.UserRole;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
@@ -24,7 +24,7 @@ class UserRoleAuthenticationConverterTest {
 	@Test
 	@DisplayName("정회원 토큰에는 ROLE_MEMBER 권한을 부여한다")
 	void grantsMemberRoleAuthority() {
-		AbstractAuthenticationToken authentication = convert(UserRole.MEMBER, String.valueOf(USER_ID));
+		AbstractAuthenticationToken authentication = convert(AuthorityRole.MEMBER, String.valueOf(USER_ID));
 
 		assertThat(authentication.getAuthorities())
 				.extracting(GrantedAuthority::getAuthority)
@@ -34,7 +34,7 @@ class UserRoleAuthenticationConverterTest {
 	@Test
 	@DisplayName("온보딩 회원 토큰에는 ROLE_ONBOARDING_MEMBER 권한을 부여한다")
 	void grantsOnboardingMemberRoleAuthority() {
-		AbstractAuthenticationToken authentication = convert(UserRole.ONBOARDING_MEMBER, String.valueOf(USER_ID));
+		AbstractAuthenticationToken authentication = convert(AuthorityRole.ONBOARDING_MEMBER, String.valueOf(USER_ID));
 
 		assertThat(authentication.getAuthorities())
 				.extracting(GrantedAuthority::getAuthority)
@@ -45,7 +45,7 @@ class UserRoleAuthenticationConverterTest {
 	@Test
 	@DisplayName("인증 주체 이름은 토큰의 sub를 그대로 쓴다")
 	void keepsSubjectAsAuthenticationName() {
-		AbstractAuthenticationToken authentication = convert(UserRole.MEMBER, String.valueOf(USER_ID));
+		AbstractAuthenticationToken authentication = convert(AuthorityRole.MEMBER, String.valueOf(USER_ID));
 
 		assertThat(authentication.getName()).isEqualTo(String.valueOf(USER_ID));
 	}
@@ -62,7 +62,7 @@ class UserRoleAuthenticationConverterTest {
 	@Test
 	@DisplayName("sub가 회원 ID 형식이 아니면 인증 예외로 거부한다")
 	void rejectsTokenWithNonNumericSubject() {
-		assertThatThrownBy(() -> convert(UserRole.MEMBER, "not-a-user-id"))
+		assertThatThrownBy(() -> convert(AuthorityRole.MEMBER, "not-a-user-id"))
 				.isInstanceOf(InvalidBearerTokenException.class);
 	}
 
@@ -74,11 +74,11 @@ class UserRoleAuthenticationConverterTest {
 				.hasMessageNotContaining(String.valueOf(USER_ID));
 	}
 
-	private AbstractAuthenticationToken convert(UserRole role, String subject) {
+	private AbstractAuthenticationToken convert(AuthorityRole role, String subject) {
 		return new UserRoleAuthenticationConverter(checkerWithRole(role)).convert(jwtWithSubject(subject));
 	}
 
-	private RegisteredUserChecker checkerWithRole(UserRole role) {
+	private RegisteredUserChecker checkerWithRole(AuthorityRole role) {
 		return new RegisteredUserChecker() {
 			@Override
 			public boolean isRegistered(Long userId) {
@@ -86,7 +86,7 @@ class UserRoleAuthenticationConverterTest {
 			}
 
 			@Override
-			public Optional<UserRole> findRole(Long userId) {
+			public Optional<AuthorityRole> findRole(Long userId) {
 				return Optional.ofNullable(role);
 			}
 		};

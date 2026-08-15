@@ -87,9 +87,11 @@ id_token의 서명이 유효하다는 것은 "카카오가 발급했다"만 증�
 이미지 업로드 presigned URL 발급과 기본 프로필 이미지 조회는 온보딩 중에도 열려 있어야 합니다.
 `GUEST`는 어떤 규칙에도 매칭되지 않아 모든 보호 경로에서 403이며, 아직 발급 경로가 없습니다.
 
-> 함정: role 문자열이 세 곳에 흩어져 있습니다 — `user/domain/UserRole` enum,
-> `SecurityConfig`의 상수, `GlobalExceptionHandler`의 `ROLE_ONBOARDING_MEMBER` 상수.
-> `shared`가 `user`를 참조할 수 없어 불가피하며, 불일치는 `SecurityFilterChainTest`가 잡습니다.
+역할 어휘의 단일 원천은 `shared/security/AuthorityRole`입니다. `TokenType`과 같은 부류
+(영속되지 않는 보안 어휘)라서 shared에 두고, `user/domain/UserRole`(영속 도메인 상태)이
+선언부 매핑으로 이 어휘를 참조합니다 — `shared`가 `user`를 참조할 수 없어 의존을 역전한 것입니다.
+`SecurityConfig`와 `GlobalExceptionHandler`도 같은 enum을 쓰므로 문자열 드리프트가 생길 수 없고,
+잘못된 매핑은 `UserTest`의 어휘 매핑 검증이 잡습니다.
 
 ### 액세스/리프레시 디코더 분리
 

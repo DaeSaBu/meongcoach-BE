@@ -1,7 +1,7 @@
 package com.daesabu.meongcoach.user.adapter.security;
 
+import com.daesabu.meongcoach.shared.security.AuthorityRole;
 import com.daesabu.meongcoach.user.application.provided.RegisteredUserChecker;
-import com.daesabu.meongcoach.user.domain.UserRole;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.core.convert.converter.Converter;
@@ -32,15 +32,15 @@ public class UserRoleAuthenticationConverter implements Converter<Jwt, AbstractA
 
 	@Override
 	public AbstractAuthenticationToken convert(Jwt jwt) {
-		UserRole role = findRole(jwt)
+		AuthorityRole role = findRole(jwt)
 				// AuthenticationException 계열이 아니면 401 대신 500이 되므로 예외 타입이 중요하다
 				.orElseThrow(() -> new InvalidBearerTokenException(ERROR_DESCRIPTION));
 		// JwtAuthenticationToken의 name은 sub 그대로라 @CurrentUserId 해석이 바뀌지 않는다
-		return new JwtAuthenticationToken(jwt, List.of(new SimpleGrantedAuthority("ROLE_" + role.name())));
+		return new JwtAuthenticationToken(jwt, List.of(new SimpleGrantedAuthority(role.authority())));
 	}
 
 	// 형식 위반 sub도 미등록과 같은 응답으로 돌린다
-	private Optional<UserRole> findRole(Jwt jwt) {
+	private Optional<AuthorityRole> findRole(Jwt jwt) {
 		try {
 			return registeredUserChecker.findRole(Long.valueOf(jwt.getSubject()));
 		} catch (NumberFormatException e) {

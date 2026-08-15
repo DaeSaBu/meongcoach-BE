@@ -3,10 +3,10 @@ package com.daesabu.meongcoach.user.application;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.daesabu.meongcoach.shared.security.AuthorityRole;
 import com.daesabu.meongcoach.user.application.provided.AuthToken;
 import com.daesabu.meongcoach.user.application.provided.RegisteredUserChecker;
 import com.daesabu.meongcoach.user.application.required.TokenProvider;
-import com.daesabu.meongcoach.user.domain.UserRole;
 import com.daesabu.meongcoach.user.domain.exception.InvalidRefreshTokenException;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
@@ -52,9 +52,9 @@ class TokenRefreshServiceTest {
 			}
 
 			@Override
-			public Optional<UserRole> findRole(Long userId) {
+			public Optional<AuthorityRole> findRole(Long userId) {
 				if (registered) {
-					return Optional.of(UserRole.MEMBER);
+					return Optional.of(AuthorityRole.MEMBER);
 				}
 				return Optional.empty();
 			}

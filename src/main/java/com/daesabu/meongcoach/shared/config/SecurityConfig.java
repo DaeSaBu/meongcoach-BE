@@ -1,5 +1,6 @@
 package com.daesabu.meongcoach.shared.config;
 
+import com.daesabu.meongcoach.shared.security.AuthorityRole;
 import com.daesabu.meongcoach.shared.security.CorsProperties;
 import com.daesabu.meongcoach.shared.security.JwtProperties;
 import com.daesabu.meongcoach.shared.security.TokenType;
@@ -58,11 +59,6 @@ public class SecurityConfig {
 			"/api/dogs/profile-image"
 	};
 
-	// user 모듈 UserRole enum 이름과 일치해야 한다. shared는 user를 참조할 수 없어 문자열로 두고,
-	// 불일치는 SecurityFilterChainTest가 잡는다
-	private static final String ROLE_MEMBER = "MEMBER";
-	private static final String ROLE_ONBOARDING_MEMBER = "ONBOARDING_MEMBER";
-
 	// Swagger UI 정적 파일과 그 안의 openapi3.json이 모두 이 경로 아래에 있다
 	private static final String[] API_DOCS_PATHS = {"/swagger-ui/**"};
 
@@ -85,9 +81,11 @@ public class SecurityConfig {
 				.authorizeHttpRequests(auth -> {
 					auth.requestMatchers(PERMIT_ALL_PATHS).permitAll();
 					configureApiDocsAccess(auth, apiDocsEnabled);
-					// 먼저 매칭된 규칙이 이기므로 온보딩 허용 경로를 anyRequest보다 앞에 둔다
-					auth.requestMatchers(ONBOARDING_ALLOWED_PATHS).hasAnyRole(ROLE_MEMBER, ROLE_ONBOARDING_MEMBER);
-					auth.anyRequest().hasRole(ROLE_MEMBER);
+					// 먼저 매칭된 규칙이 이기므로 온보딩 허용 경로를 anyRequest보다 앞에 둔다.
+					// 역할 어휘는 AuthorityRole이 단일 원천이다 (user 모듈 UserRole이 같은 어휘로 매핑된다)
+					auth.requestMatchers(ONBOARDING_ALLOWED_PATHS)
+							.hasAnyRole(AuthorityRole.MEMBER.name(), AuthorityRole.ONBOARDING_MEMBER.name());
+					auth.anyRequest().hasRole(AuthorityRole.MEMBER.name());
 				})
 				.oauth2ResourceServer(oauth2 -> oauth2
 						.jwt(jwt -> jwt.decoder(accessTokenDecoder)
