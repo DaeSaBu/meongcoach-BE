@@ -13,7 +13,7 @@ class LocalAccountTest {
 	@Test
 	@DisplayName("생성하면 자격 증명이 담긴 계정이 초기화된다")
 	void createInitializesAccountWithCredentials() {
-		User user = User.registerMember();
+		User user = User.registerOnboardingMember();
 		Email email = new Email("test1@meongcoach.com");
 
 		LocalAccount account = LocalAccount.create(user, new LocalAccountCreateCommand(email, "hashed-password"));

@@ -9,6 +9,7 @@ import com.daesabu.meongcoach.user.domain.Gender;
 import com.daesabu.meongcoach.user.domain.Mbti;
 import com.daesabu.meongcoach.user.domain.User;
 import com.daesabu.meongcoach.user.domain.UserProfile;
+import com.daesabu.meongcoach.user.domain.UserRole;
 import com.daesabu.meongcoach.user.domain.command.UserProfileCreateCommand;
 import com.daesabu.meongcoach.user.domain.exception.AlreadyOnboardedException;
 import com.daesabu.meongcoach.user.domain.exception.InvalidGenderException;
@@ -46,7 +47,7 @@ class UserProfileRegisterServiceTest {
 	@BeforeEach
 	void setUp() {
 		service = new UserProfileRegisterService(userRepository, userProfileRepository);
-		userId = userRepository.save(User.registerMember()).getId();
+		userId = userRepository.save(User.registerOnboardingMember()).getId();
 	}
 
 	@Test
@@ -109,6 +110,18 @@ class UserProfileRegisterServiceTest {
 		UserProfile profile = findPersistedProfile();
 		assertThat(profile.getPriorTrainingTopicIds()).containsExactlyInAnyOrder(1L, 2L);
 		assertThat(profile.getTrainingGoalTopicIds()).containsExactlyInAnyOrder(2L, 3L);
+	}
+
+	@Test
+	@DisplayName("프로필을 등록하면 온보딩 회원이 정회원으로 승격된다")
+	void registerPromotesOnboardingMemberToMember() {
+		service.register(userId,
+				command("멍멍이집사", null, VALID_MBTI, VALID_GENDER, null));
+
+		entityManager.flush();
+		entityManager.clear();
+		User user = userRepository.findById(userId).orElseThrow();
+		assertThat(user.getRole()).isEqualTo(UserRole.MEMBER);
 	}
 
 	@Test

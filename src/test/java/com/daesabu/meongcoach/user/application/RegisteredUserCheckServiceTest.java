@@ -26,7 +26,7 @@ class RegisteredUserCheckServiceTest {
 	@Test
 	@DisplayName("저장된 회원이면 참을 반환한다")
 	void isRegisteredReturnsTrueForSavedUser() {
-		Long userId = userRepository.save(User.registerMember()).getId();
+		Long userId = userRepository.save(User.registerOnboardingMember()).getId();
 
 		assertThat(registeredUserCheckService.isRegistered(userId)).isTrue();
 	}

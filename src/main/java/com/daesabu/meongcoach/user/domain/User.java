@@ -26,7 +26,7 @@ public class User extends BaseEntity {
 
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, length = 20)
-	private UserType userType;
+	private UserRole role;
 
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, length = 20)
@@ -36,19 +36,26 @@ public class User extends BaseEntity {
 	 * 회원 가입은 첫 소셜 로그인 또는 테스트 계정 시드에서만 일어난다.
 	 * 반드시 자격증명(SocialAccount/LocalAccount) 생성과 같은 트랜잭션에서 호출해야 한다.
 	 */
-	public static User registerMember() {
-		return create(UserType.MEMBER);
+	public static User registerOnboardingMember() {
+		return create(UserRole.ONBOARDING_MEMBER);
 	}
 
 	public static User registerGuest() {
-		return create(UserType.GUEST);
+		return create(UserRole.GUEST);
 	}
 
-	private static User create(UserType userType) {
+	private static User create(UserRole role) {
 		User user = new User();
-		user.userType = userType;
+		user.role = role;
 		user.status = UserStatus.ACTIVE;
 		return user;
+	}
+
+	/**
+	 * 온보딩 완료 시 호출한다. 프로필 생성과 같은 트랜잭션에서 불러야 role과 프로필이 함께 커밋된다.
+	 */
+	public void promoteToMember() {
+		this.role = UserRole.MEMBER;
 	}
 
 	public void withdraw() {
