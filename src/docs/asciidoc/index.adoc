@@ -217,7 +217,7 @@ AI 리포트 생성은 무료 체험으로 사용자당 총 3회까지 가능합
 link:{swagger-ui}#/AI/ai-video-upload-url[▶ Swagger에서 Try it out,window=swagger]
 
 훈련 영상을 AWS S3에 직접 업로드하기 위한 API입니다. 무료 체험 횟수를 검증한 뒤 URL을 발급합니다.
-최대 100MB(104857600바이트)까지 단일 `PUT`으로 올리며, `video/mp4`(mp4)와 `video/quicktime`(mov) 두 형식만 허용합니다.
+최대 50MB(52428800바이트)까지 단일 `PUT`으로 올리며, `video/mp4`(mp4)와 `video/quicktime`(mov) 두 형식만 허용합니다.
 
 이미지와 달리 응답에 `objectKey`가 함께 내려갑니다. 버킷을 비공개로 운영하면 `publicUrl` 직접 접근은 거부되므로,
 후속 API 요청에는 `objectKey`를 담아 보냅니다.
