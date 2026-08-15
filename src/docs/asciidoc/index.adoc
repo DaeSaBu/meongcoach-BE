@@ -30,6 +30,13 @@ operation::shared/error-validation[snippets='http-response,response-fields']
 
 operation::shared/error-unauthorized[snippets='http-response,response-fields']
 
+=== 온보딩 미완료
+
+온보딩을 완료하지 않은 회원이 온보딩 외 API를 호출하면 403을 반환합니다.
+클라이언트는 `code`가 `ONBOARDING_NOT_COMPLETED`이면 온보딩 화면으로 이동시킵니다.
+
+operation::shared/error-onboarding-not-completed[snippets='http-response,response-fields']
+
 == Auth API
 
 앱이 소셜 제공자 SDK로 로그인해 받은 자격증명을 서버가 검증하고, 우리 서비스의 JWT를 발급합니다.

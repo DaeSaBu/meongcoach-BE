@@ -11,7 +11,9 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -34,6 +36,10 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 	// 인증 실패 원인을 그대로 노출하면 공격자에게 힌트가 되므로 일반화된 문구만 응답한다
 	private static final String UNAUTHORIZED_MESSAGE = "인증이 필요합니다.";
 	private static final String FORBIDDEN_MESSAGE = "접근 권한이 없습니다.";
+	// user 모듈 UserRole·SecurityConfig의 role 문자열과 일치해야 한다. 불일치는 SecurityFilterChainTest가 잡는다
+	private static final String ROLE_ONBOARDING_MEMBER = "ROLE_ONBOARDING_MEMBER";
+	private static final String ONBOARDING_NOT_COMPLETED_CODE = "ONBOARDING_NOT_COMPLETED";
+	private static final String ONBOARDING_NOT_COMPLETED_MESSAGE = "온보딩을 완료해야 이용할 수 있는 기능입니다.";
 
 	@ExceptionHandler(DomainException.class)
 	ProblemDetail handleDomainException(DomainException e) {
@@ -59,8 +65,24 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
 	@ExceptionHandler(AccessDeniedException.class)
 	ProblemDetail handleAccessDeniedException(AccessDeniedException e) {
+		// 필터 체인이 던진 예외는 SecurityExceptionTranslator가 같은 스레드에서 되돌려 보내므로
+		// 인증을 통과한 요청이라면 SecurityContext가 아직 살아 있다
+		if (hasAuthority(ROLE_ONBOARDING_MEMBER)) {
+			log.warn("온보딩 미완료 회원의 접근: message={}", e.getMessage());
+			return problemDetail(HttpStatus.FORBIDDEN,
+					ONBOARDING_NOT_COMPLETED_CODE, ONBOARDING_NOT_COMPLETED_MESSAGE);
+		}
 		log.warn("접근 권한 없음: message={}", e.getMessage());
 		return problemDetail(HttpStatus.FORBIDDEN, HttpStatus.FORBIDDEN.name(), FORBIDDEN_MESSAGE);
+	}
+
+	private boolean hasAuthority(String authority) {
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+		if (authentication == null) {
+			return false;
+		}
+		return authentication.getAuthorities().stream()
+				.anyMatch(granted -> authority.equals(granted.getAuthority()));
 	}
 
 	@ExceptionHandler(Exception.class)
