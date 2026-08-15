@@ -13,7 +13,7 @@ MVP 개발 기간을 고려하여 아래 순서로 우선순위를 정해 작성
 ## 위치와 구조
 
 - 테스트 클래스는 프로덕션 코드와 동일한 패키지 구조를 `src/test/java`에 미러링해 배치합니다.
-- 테스트 클래스명은 `대상클래스명 + Test`로 짓습니다. (예: `UserRegisterTest`)
+- 테스트 클래스명은 `대상클래스명 + Test`로 짓습니다. (예: `DogRegisterServiceTest`)
 
 ## 스타일
 
@@ -22,12 +22,12 @@ MVP 개발 기간을 고려하여 아래 순서로 우선순위를 정해 작성
 
 ```java
 @Test
-@DisplayName("이메일이 중복되면 가입에 실패한다")
-void registerFailsWhenEmailIsDuplicated() {
-	when(userRepository.existsByEmail(any())).thenReturn(true);
+@DisplayName("등록되지 않은 회원이면 프로필 등록에 실패한다")
+void registerFailsWhenUserNotFound() {
+	when(userRepository.findById(any())).thenReturn(Optional.empty());
 
-	assertThatThrownBy(() -> userRegisterService.register(request))
-		.isInstanceOf(DuplicateEmailException.class);
+	assertThatThrownBy(() -> userProfileRegisterService.register(userId, command))
+		.isInstanceOf(UserNotFoundException.class);
 }
 ```
 
@@ -61,9 +61,10 @@ void findDelegatesWithCurrentUserId() throws Exception {
 
 ## 커버리지
 
-- JaCoCo 라인 커버리지 **70% 이상**을 CI에서 검증하며, 미달 시 빌드가 실패합니다. ([docs/ci-cd.md](../ci-cd.md))
+- JaCoCo 라인 커버리지를 CI에서 검증하며, 70% 미만이면 빌드가 실패합니다.
+- `MeongcoachApplication`과 `shared/config`는 검증에서 제외합니다. `shared/config`에는 설정만 두고 검증 로직은 커버리지 대상 패키지에 둡니다.
 
 ## 아키텍처 검증
 
 - ArchUnit 기반으로 아키텍처를 검증하는 단위 테스트를 작성합니다. ([archunit-convention.md](archunit-convention.md))
-- Spring Modulith 의존성 도입 후에는 `ApplicationModules.verify()` 모듈 경계 검증 테스트를 추가합니다. (`docs/architecture.md` 참고)
+- 모듈 경계는 `architecture/ModularityTest`의 `ApplicationModules.verify()`가 검증합니다. (`docs/architecture.md` 참고)

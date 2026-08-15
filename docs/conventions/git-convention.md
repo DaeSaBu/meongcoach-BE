@@ -1,4 +1,6 @@
-커밋 메시지 컨벤션
+# Git 컨벤션
+
+## 커밋 메시지 컨벤션
 
 모든 저장소와 자동화 도구가 다음 형식을 공통으로 쓴다.
 
@@ -81,13 +83,16 @@
 
 ## PR 컨벤션
 
-- 제목은 커밋 메시지 규칙과 동일한 `type: subject` 형식을 쓴다.
+- 제목은 커밋 메시지 규칙과 동일한 `<type>(<scope>): <subject>` 형식을 쓴다. (scope는 커밋과 동일하게 선택 사항)
 - 설명에는 변경 사항 요약, 대상 Linear 이슈의 식별자·링크, 테스트 방법을 포함한다.
 - 최소 1인 이상 승인 후 머지한다.
 - 머지 전략은 저장소별로 통일한다 — Squash merge를 기본, 릴리스 브랜치는 Merge commit.
 
 ## 코드 리뷰 규칙
 
-- `CODEOWNERS` 파일로 파일·디렉터리별 필수 리뷰어를 지정한다.
-- 리뷰 승인 조건: CI 통과 + 코드 오너 승인 + 미해결 코멘트 없음, 모두 적용.
+- 리뷰 승인 조건: CI 통과 + 최소 1인 승인 + 미해결 코멘트 없음, 모두 적용.
 - 리뷰 코멘트에는 구체적인 개선 방향을 적는다.
+
+## GitHub Actions 워크플로
+
+- 외부 Action은 [GitHub 보안 권장사항](https://docs.github.com/en/actions/reference/security/secure-use)에 따라 full commit SHA로 고정하고, 사람이 버전을 알아볼 수 있도록 같은 줄의 주석에 release version을 기록한다.

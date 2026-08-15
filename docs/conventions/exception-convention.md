@@ -44,73 +44,41 @@ Content-Type은 항상 `application/problem+json`입니다.
 
 ## 새 모듈에서 예외 정의하기 (4단계)
 
-user 모듈에서 이메일 중복 예외를 추가한다고 가정한 예시입니다.
+살아있는 예시는 `user/domain/exception`을 보세요. 아래는 `UserNotFoundException`을 기준으로 한 절차입니다.
 
-### ① `domain`에 `{모듈}ErrorCode` enum을 정의합니다
+### ① `domain/exception`에 `{모듈}ErrorCode` enum을 정의합니다
 
-모듈당 1개, `ErrorCode`를 구현합니다. `code()`는 `name()`을 반환하므로 enum 상수 이름이 곧 에러 코드입니다. 상수 이름은 `{모듈}_{원인}` 형식의 UPPER_SNAKE_CASE로 지어 전역에서 유일하게 만듭니다.
+모듈당 1개, `ErrorCode`를 구현합니다. `code()`는 `name()`을 반환하므로 enum 상수 이름이 곧 에러 코드입니다. 상수 이름은 `{모듈}_{원인}` 형식의 UPPER_SNAKE_CASE로 지어 전역에서 유일하게 만듭니다. (구현 형태는 `user/domain/exception/UserErrorCode` 참고)
 
 ```java
-package com.daesabu.meongcoach.user.domain;
-
-import com.daesabu.meongcoach.shared.exception.ErrorCode;
-
 public enum UserErrorCode implements ErrorCode {
 
 	USER_NOT_FOUND(404, "회원을 찾을 수 없습니다."),
-	USER_DUPLICATE_EMAIL(409, "이미 사용 중인 이메일입니다.");
-
-	private final int status;
-	private final String message;
-
-	UserErrorCode(int status, String message) {
-		this.status = status;
-		this.message = message;
-	}
-
-	@Override
-	public String code() {
-		return name();
-	}
-
-	@Override
-	public String message() {
-		return message;
-	}
-
-	@Override
-	public int status() {
-		return status;
-	}
-}
+	USER_INVALID_REFRESH_TOKEN(401, "리프레시 토큰이 유효하지 않습니다."),
+	...
 ```
 
-### ② `domain`에 케이스별 구체 예외 클래스를 정의합니다
+### ② `domain/exception`에 케이스별 구체 예외 클래스를 정의합니다
 
 `DomainException`을 상속하고 이름은 `~Exception`으로 끝냅니다. 구체 타입이 있어야 테스트에서 `isInstanceOf`로 검증할 수 있습니다.
 
 ```java
-package com.daesabu.meongcoach.user.domain;
+public class UserNotFoundException extends DomainException {
 
-import com.daesabu.meongcoach.shared.exception.DomainException;
-
-public class DuplicateEmailException extends DomainException {
-
-	public DuplicateEmailException(String email) {
-		super(UserErrorCode.USER_DUPLICATE_EMAIL, "이미 사용 중인 이메일입니다: " + email);
+	public UserNotFoundException(Long userId) {
+		super(UserErrorCode.USER_NOT_FOUND, "id가 " + userId + "인 회원을 찾을 수 없습니다.");
 	}
 }
 ```
 
-- 기본 메시지로 충분하면 `super(UserErrorCode.USER_DUPLICATE_EMAIL)`만 호출합니다.
+- 기본 메시지로 충분하면 `super(UserErrorCode.USER_NOT_FOUND)`만 호출합니다.
 - 상황 정보를 담고 싶으면 두 번째 인자로 detail을 넘깁니다. **detail은 응답에 그대로 노출되므로 비밀번호 등 민감 정보를 넣지 않습니다.**
 
 ### ③ 도메인/애플리케이션 로직에서 던집니다
 
 ```java
-if (userRepository.existsByEmail(email)) {
-	throw new DuplicateEmailException(email);
-}
+userRepository.findById(userId)
+		.orElseThrow(() -> new UserNotFoundException(userId));
 ```
 
 - 던지기만 하면 됩니다. `GlobalExceptionHandler`가 `ErrorCode`의 status/code/message로 Problem Details 응답을 만듭니다.
@@ -118,15 +86,15 @@ if (userRepository.existsByEmail(email)) {
 
 ### ④ 컨트롤러 테스트에 실패 케이스를 문서화합니다
 
-restdocs-convention.md에 따라 대표 에러 케이스 1개 이상을 `document("{모듈}/{행위}-error", ...)`로 문서화합니다.
+restdocs-convention.md에 따라 대표 에러 케이스 1개 이상을 `document("{모듈}/{행위}-error", ...)`로 문서화합니다. (실존 예시: `AuthControllerTest`의 `user/social-login-error`)
 
 ```java
-mockMvc.perform(post("/api/users")
+mockMvc.perform(post("/api/users/social/{provider}", "kakao")
 				.contentType(MediaType.APPLICATION_JSON)
-				.content(duplicateEmailRequest))
-		.andExpect(status().isConflict())
-		.andExpect(jsonPath("$.code").value("USER_DUPLICATE_EMAIL"))
-		.andDo(document("user/register-error", ...));
+				.content(invalidTokenRequest))
+		.andExpect(status().isUnauthorized())
+		.andExpect(jsonPath("$.code").value("USER_INVALID_SOCIAL_TOKEN"))
+		.andDo(document("user/social-login-error", ...));
 ```
 
 ## 전역 핸들러 처리 범위
@@ -151,7 +119,7 @@ mockMvc.perform(post("/api/users")
 
 ### 외부 API 연동 예외
 
-외부 시스템 연동 어댑터(`adapter/client`)는 인프라 예외(`RestClientException` 등)를 **그 자리에서 도메인 예외로 변환**합니다. 이는 "예외를 catch해서 에러 DTO를 조립하지 않는다"는 규칙과 충돌하지 않습니다 — DTO를 만드는 것이 아니라 계층 경계에서 예외 타입을 번역하는 것입니다.
+외부 시스템 연동 어댑터(`adapter/integration`)는 인프라 예외(`RestClientException` 등)를 **그 자리에서 도메인 예외로 변환**합니다. 이는 "예외를 catch해서 에러 DTO를 조립하지 않는다"는 규칙과 충돌하지 않습니다 — DTO를 만드는 것이 아니라 계층 경계에서 예외 타입을 번역하는 것입니다.
 
 호출 실패는 원인에 따라 구분합니다. 예를 들어 소셜 로그인은 "토큰이 무효"(401)와 "제공자와 통신 실패"(502)를 다른 에러 코드로 내려, 클라이언트가 재로그인과 재시도를 구분할 수 있게 합니다.
 
@@ -170,8 +138,8 @@ mockMvc.perform(post("/api/users")
 - 도메인 예외 발생 로직은 순수 단위 테스트로 검증합니다.
 
 ```java
-assertThatThrownBy(() -> userRegister.register(duplicateEmail))
-		.isInstanceOf(DuplicateEmailException.class);
+assertThatThrownBy(() -> userProfileRegister.register(unknownUserId, command))
+		.isInstanceOf(UserNotFoundException.class);
 ```
 
 - API 실패 응답은 `@WebMvcTest`에서 상태 코드와 `$.code`를 검증합니다. (위 4단계-④ 참고)

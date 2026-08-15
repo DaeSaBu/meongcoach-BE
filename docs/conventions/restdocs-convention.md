@@ -11,24 +11,30 @@ API 문서는 Spring REST Docs로 작성합니다. 문서 스니펫은 `adapter/
   (예외: `GlobalExceptionHandlerTest`는 테스트 전용 `/test/**` 경로가 스펙에 섞이지 않도록
   기존 `MockMvcRestDocumentation.document`를 유지합니다.)
 
+살아있는 예시는 `user/adapter/webapi/AuthControllerTest`를 보세요. 형태만 요약하면:
+
 ```java
-@WebMvcTest(UserController.class)
+@WebMvcTest(AuthController.class)
 @AutoConfigureRestDocs
-class UserControllerTest {
+class AuthControllerTest {
 
 	@Test
-	void register() throws Exception {
-		mockMvc.perform(post("/api/users")
+	void socialLoginReturnsTokens() throws Exception {
+		mockMvc.perform(post("/api/users/social/{provider}", "kakao")
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(requestBody))
-			.andExpect(status().isCreated())
-			.andDo(document("user/register",
+			.andExpect(status().isOk())
+			.andDo(document("user/social-login",
+				pathParameters(
+					parameterWithName("provider").description("소셜 로그인 제공자")
+				),
 				requestFields(
-					fieldWithPath("email").description("이메일"),
-					fieldWithPath("nickname").description("닉네임")
+					fieldWithPath("token").description("제공자 SDK로 받은 자격증명")
 				),
 				responseFields(
-					fieldWithPath("id").description("회원 ID")
+					fieldWithPath("accessToken").description("API 호출에 사용할 액세스 토큰"),
+					fieldWithPath("refreshToken").description("액세스 토큰 재발급용 리프레시 토큰"),
+					fieldWithPath("needsOnboarding").description("온보딩 화면으로 보내야 하는지 여부")
 				)
 			));
 	}
@@ -66,9 +72,7 @@ class UserControllerTest {
 
 - REST Docs HTML은 **로컬 빌드 산출물로만 생성**되며, 배포 산출물(jar)에는 포함되지 않습니다.
   테스트 실행 후 `build/docs/asciidoc/index.html`을 브라우저로 열어 확인합니다.
-- Swagger UI는 API 서버가 직접 서빙합니다. `develop`에 merge되어 dev 배포가 성공하면
-  https://api.dev.meongcoach.com/swagger-ui/index.html 이 자동 갱신됩니다.
-  `meongcoach.api-docs.enabled=true`인 환경(local·dev)에서만 열립니다. ([docs/profiles.md](../profiles.md) 참고)
+- Swagger UI는 API 서버가 직접 서빙합니다. 접근 주소와 프로파일별 노출 범위는 [docs/profiles.md](../profiles.md)를 참고하세요.
 
 ## OpenAPI 3 / Swagger UI
 
