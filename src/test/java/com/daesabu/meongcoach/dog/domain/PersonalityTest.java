@@ -17,6 +17,12 @@ class PersonalityTest {
 	}
 
 	@Test
+	@DisplayName("확장된 성격 코드도 변환한다")
+	void fromConvertsExpandedCodeToPersonality() {
+		assertThat(Personality.from("FEARFUL")).isEqualTo(Personality.FEARFUL);
+	}
+
+	@Test
 	@DisplayName("잘못된 값이면 변환에 실패한다")
 	void fromFailsWhenValueIsInvalid() {
 		assertThatThrownBy(() -> Personality.from("BRAVE"))
