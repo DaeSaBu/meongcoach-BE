@@ -58,7 +58,8 @@ class OnboardingMetadataServiceTest {
 				.startsWith("MALTESE")
 				.endsWith("MIXED");
 		assertThat(result.personalities()).extracting(PersonalityInfo::code)
-				.containsExactly("TIMID", "LIVELY", "FRIENDLY");
+				.containsExactly("TIMID", "LIVELY", "FRIENDLY", "CALM", "FEARFUL", "AFFECTIONATE",
+						"INDEPENDENT", "PLAYFUL", "EXCITABLE", "STUBBORN");
 		assertThat(result.mbtis()).hasSize(16).contains("ISTJ", "ENFP");
 	}
 
