@@ -80,11 +80,12 @@ id_token의 서명이 유효하다는 것은 "카카오가 발급했다"만 증�
 |---|---|---|
 | 1 | `/api/health`, `/api/auth/login/social/**`, `/api/auth/token/refresh` | permitAll |
 | 2 | `/swagger-ui/**` | 문서 활성 환경 permitAll, 그 외 denyAll |
-| 3 | `/api/onboarding/**`, `/api/media/presigned-urls`, `/api/dogs/profile/image` | `MEMBER`, `ONBOARDING_MEMBER` |
+| 3 | `/api/onboarding/**`, `/api/dogs/profile/image` | `MEMBER`, `ONBOARDING_MEMBER` |
 | 4 | 그 외 전부 | `MEMBER` |
 
 3번은 온보딩 화면에 필요한 경로입니다 — 온보딩 완료 요청에 프로필 이미지 URL이 들어가므로
-이미지 업로드 presigned URL 발급과 기본 프로필 이미지 조회는 온보딩 중에도 열려 있어야 합니다.
+기본 프로필 이미지 조회는 온보딩 중에도 열려 있어야 합니다. 이미지 업로드 presigned URL 발급은
+`POST /api/onboarding/presigned-urls`라 `/api/onboarding/**`에 이미 포함됩니다.
 `GUEST`는 어떤 규칙에도 매칭되지 않아 모든 보호 경로에서 403이며, 아직 발급 경로가 없습니다.
 
 역할 어휘의 단일 원천은 `shared/security/AuthorityRole`입니다. `TokenType`과 같은 부류

@@ -13,8 +13,10 @@ media 모듈은 **presigned URL 발급만** 담당하고, 파일은 앱이 스�
 
 ## 진입점
 
-- 이미지 업로드 URL: `POST /api/media/presigned-urls` (`MediaController`)
-- 영상 업로드 URL: media가 직접 노출하지 않습니다. `ai` 모듈이 `VideoUploadUrlIssuer`(provided)로 발급받아 `POST /api/ai/presigned-urls`로 노출합니다. 업로드 이후의 비동기 분석 흐름은 [ai-pipeline.md](ai-pipeline.md)를 참고하세요.
+media는 웹 API를 직접 노출하지 않습니다. 업로드 URL은 업로드가 필요한 모듈이 provided 인터페이스로 발급받아 자기 정책과 함께 노출합니다.
+
+- 이미지 업로드 URL: `onboarding` 모듈이 `ImageUploadUrlIssuer`(provided)로 발급받아 `POST /api/onboarding/presigned-urls`로 노출합니다.
+- 영상 업로드 URL: `ai` 모듈이 `VideoUploadUrlIssuer`(provided)로 발급받아 `POST /api/ai/presigned-urls`로 노출합니다. 업로드 이후의 비동기 분석 흐름은 [ai-pipeline.md](ai-pipeline.md)를 참고하세요.
 
 ## 객체 키 규칙
 

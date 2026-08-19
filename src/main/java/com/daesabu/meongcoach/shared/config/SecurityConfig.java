@@ -52,10 +52,9 @@ public class SecurityConfig {
 			"/api/auth/token/refresh"
 	};
 
-	// 온보딩 중에도 필요한 경로. 온보딩 화면이 이미지 업로드와 기본 프로필 이미지 조회를 쓴다
+	// 온보딩 중에도 필요한 경로. 이미지 업로드 URL 발급은 /api/onboarding/** 안에 있고, 프로필 이미지 조회만 밖에 있다
 	private static final String[] ONBOARDING_ALLOWED_PATHS = {
 			"/api/onboarding/**",
-			"/api/media/presigned-urls",
 			"/api/dogs/profile/image"
 	};
 
