@@ -239,7 +239,7 @@ class AiControllerTest {
 		given(aiVideoUploadUrlIssuer.issue(42L, "video/mp4", 10485760L)).willReturn(
 				new AiVideoUploadUrlView(VIDEO_UPLOAD_URL, VIDEO_PUBLIC_URL, VIDEO_OBJECT_KEY, 900L));
 
-		mockMvc.perform(post("/api/ai/video-upload-urls")
+		mockMvc.perform(post("/api/ai/presigned-urls")
 						.principal(CURRENT_USER)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
 						.contentType(MediaType.APPLICATION_JSON)
@@ -276,7 +276,7 @@ class AiControllerTest {
 		given(aiVideoUploadUrlIssuer.issue(42L, "video/mp4", 10485760L)).willReturn(
 				new AiVideoUploadUrlView(VIDEO_UPLOAD_URL, VIDEO_PUBLIC_URL, VIDEO_OBJECT_KEY, 900L));
 
-		mockMvc.perform(post("/api/ai/video-upload-urls")
+		mockMvc.perform(post("/api/ai/presigned-urls")
 						.principal(CURRENT_USER)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(VIDEO_ISSUE_REQUEST))
@@ -291,7 +291,7 @@ class AiControllerTest {
 		given(aiVideoUploadUrlIssuer.issue(42L, "video/mp4", 10485760L))
 				.willThrow(new AiReportTrialExceededException());
 
-		mockMvc.perform(post("/api/ai/video-upload-urls")
+		mockMvc.perform(post("/api/ai/presigned-urls")
 						.principal(CURRENT_USER)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
 						.contentType(MediaType.APPLICATION_JSON)
@@ -314,7 +314,7 @@ class AiControllerTest {
 	@Test
 	@DisplayName("영상 Content-Type이 비어 있으면 검증에 실패한다")
 	void issueVideoUploadUrlFailsWhenContentTypeIsBlank() throws Exception {
-		mockMvc.perform(post("/api/ai/video-upload-urls")
+		mockMvc.perform(post("/api/ai/presigned-urls")
 						.principal(CURRENT_USER)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(VIDEO_ISSUE_REQUEST.replace("video/mp4", "")))
@@ -326,7 +326,7 @@ class AiControllerTest {
 	@Test
 	@DisplayName("영상 파일 크기가 없으면 검증에 실패한다")
 	void issueVideoUploadUrlFailsWhenFileSizeIsMissing() throws Exception {
-		mockMvc.perform(post("/api/ai/video-upload-urls")
+		mockMvc.perform(post("/api/ai/presigned-urls")
 						.principal(CURRENT_USER)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"contentType\": \"video/mp4\"}"))
@@ -338,7 +338,7 @@ class AiControllerTest {
 	@Test
 	@DisplayName("인증 정보가 없으면 영상 업로드 URL 발급도 401을 반환한다")
 	void issueVideoUploadUrlReturnsUnauthorizedWhenNotAuthenticated() throws Exception {
-		mockMvc.perform(post("/api/ai/video-upload-urls")
+		mockMvc.perform(post("/api/ai/presigned-urls")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(VIDEO_ISSUE_REQUEST))
 				.andExpect(status().isUnauthorized())

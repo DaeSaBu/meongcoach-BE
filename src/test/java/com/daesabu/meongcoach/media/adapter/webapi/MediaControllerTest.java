@@ -48,7 +48,7 @@ class MediaControllerTest {
 	@Test
 	@DisplayName("이미지 업로드 URL을 발급한다")
 	void issueReturnsUploadUrl() throws Exception {
-		mockMvc.perform(post("/api/media/image-upload-urls")
+		mockMvc.perform(post("/api/media/presigned-urls")
 						.principal(() -> "1")
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
 						.contentType(MediaType.APPLICATION_JSON)
@@ -78,7 +78,7 @@ class MediaControllerTest {
 	@Test
 	@DisplayName("지원하지 않는 이미지 형식이면 400을 반환한다")
 	void issueFailsWhenContentTypeIsUnsupported() throws Exception {
-		mockMvc.perform(post("/api/media/image-upload-urls")
+		mockMvc.perform(post("/api/media/presigned-urls")
 						.principal(() -> "1")
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
 						.contentType(MediaType.APPLICATION_JSON)
@@ -100,7 +100,7 @@ class MediaControllerTest {
 	@Test
 	@DisplayName("지원하지 않는 업로드 대상이면 400을 반환한다")
 	void issueFailsWhenTargetIsInvalid() throws Exception {
-		mockMvc.perform(post("/api/media/image-upload-urls")
+		mockMvc.perform(post("/api/media/presigned-urls")
 						.principal(() -> "1")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(ISSUE_REQUEST.replace("USER_PROFILE", "BANNER")))
@@ -111,7 +111,7 @@ class MediaControllerTest {
 	@Test
 	@DisplayName("업로드 대상이 비어 있으면 검증에 실패한다")
 	void issueFailsWhenTargetIsBlank() throws Exception {
-		mockMvc.perform(post("/api/media/image-upload-urls")
+		mockMvc.perform(post("/api/media/presigned-urls")
 						.principal(() -> "1")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"target\": \"\", \"contentType\": \"image/jpeg\"}"))
@@ -123,7 +123,7 @@ class MediaControllerTest {
 	@Test
 	@DisplayName("이미지 Content-Type이 비어 있으면 검증에 실패한다")
 	void issueFailsWhenContentTypeIsBlank() throws Exception {
-		mockMvc.perform(post("/api/media/image-upload-urls")
+		mockMvc.perform(post("/api/media/presigned-urls")
 						.principal(() -> "1")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(ISSUE_REQUEST.replace("image/jpeg", "")))
@@ -135,7 +135,7 @@ class MediaControllerTest {
 	@Test
 	@DisplayName("인증 정보가 없으면 401을 반환한다")
 	void issueFailsWithoutPrincipal() throws Exception {
-		mockMvc.perform(post("/api/media/image-upload-urls")
+		mockMvc.perform(post("/api/media/presigned-urls")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(ISSUE_REQUEST))
 				.andExpect(status().isUnauthorized())

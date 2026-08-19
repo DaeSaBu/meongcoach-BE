@@ -10,7 +10,7 @@
 ```
 [앱] 카카오 SDK 네이티브 로그인 (네이티브 앱 키, 앱-투-앱, OIDC)
   → 카카오 id_token 획득
-     → POST /api/auth/login  { "provider": "kakao", "token": "..." }
+     → POST /api/auth/login/social/kakao  { "token": "..." }
         → 서버가 id_token 서명·발급자·만료·aud 검증 (캐시된 공개 키로 로컬 검증)
            → 회원 조회·생성 (User + SocialAccount)
               → 우리 JWT 발급
@@ -78,9 +78,9 @@ id_token의 서명이 유효하다는 것은 "카카오가 발급했다"만 증�
 
 | 순서 | 경로 | 접근 |
 |---|---|---|
-| 1 | `/api/health`, `/api/auth/login`, `/api/auth/token/refresh` | permitAll |
+| 1 | `/api/health`, `/api/auth/login/social/**`, `/api/auth/token/refresh` | permitAll |
 | 2 | `/swagger-ui/**` | 문서 활성 환경 permitAll, 그 외 denyAll |
-| 3 | `/api/onboarding/**`, `/api/media/image-upload-urls`, `/api/dogs/profile-image` | `MEMBER`, `ONBOARDING_MEMBER` |
+| 3 | `/api/onboarding/**`, `/api/media/presigned-urls`, `/api/dogs/profile/image` | `MEMBER`, `ONBOARDING_MEMBER` |
 | 4 | 그 외 전부 | `MEMBER` |
 
 3번은 온보딩 화면에 필요한 경로입니다 — 온보딩 완료 요청에 프로필 이미지 URL이 들어가므로
@@ -124,7 +124,7 @@ id_token의 서명이 유효하다는 것은 "카카오가 발급했다"만 증�
 
 - `csrf` / `formLogin` / `httpBasic` / `logout` 비활성화
 - `SessionCreationPolicy.STATELESS`
-- permitAll: `/api/health`, `/api/auth/login`, `/api/auth/token/refresh`
+- permitAll: `/api/health`, `/api/auth/login/social/**`, `/api/auth/token/refresh`
   (인증 엔드포인트만 개별 경로로 열고 `/api/auth/**`로 넓히지 않습니다. 이후 추가되는 인증 관련 API가 자동으로 공개되는 것을 막기 위함입니다)
 - 그 외 요청은 역할 기반 인가 (위 "URL 인가 규칙" 참고)
 - `oauth2ResourceServer.jwt()` — Bearer 토큰 파싱·검증은 프레임워크가 담당하므로 커스텀 필터가 없습니다.

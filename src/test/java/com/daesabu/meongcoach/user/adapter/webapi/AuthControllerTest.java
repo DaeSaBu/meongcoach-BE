@@ -1,10 +1,12 @@
 package com.daesabu.meongcoach.user.adapter.webapi;
 
 import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.document;
+import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.post;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
+import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -37,8 +39,8 @@ class AuthControllerTest {
 	@Autowired
 	private MockMvc mockMvc;
 
-	private static String loginBody(String provider, String token) {
-		return "{\"provider\": \"" + provider + "\", \"token\": \"" + token + "\"}";
+	private static String loginBody(String token) {
+		return "{\"token\": \"" + token + "\"}";
 	}
 
 	private static String refreshBody(String refreshToken) {
@@ -48,17 +50,18 @@ class AuthControllerTest {
 	@Test
 	@DisplayName("소셜 로그인하면 토큰과 온보딩 필요 여부를 반환한다")
 	void loginReturnsTokens() throws Exception {
-		mockMvc.perform(post("/api/auth/login")
+		mockMvc.perform(post("/api/auth/login/social/{provider}", "kakao")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content(loginBody("kakao", VALID_TOKEN)))
+						.content(loginBody(VALID_TOKEN)))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.accessToken").value("access-token"))
 				.andExpect(jsonPath("$.refreshToken").value("refresh-token"))
 				.andExpect(jsonPath("$.needsOnboarding").value(true))
 				.andDo(document("auth/login",
+						pathParameters(
+								parameterWithName("provider").description("소셜 로그인 제공자. 현재 `kakao`만 지원")
+						),
 						requestFields(
-								fieldWithPath("provider").description(
-										"필수 입력. 소셜 로그인 제공자. 현재 `kakao`만 지원"),
 								fieldWithPath("token").description(
 										"필수 입력. 앱이 제공자 SDK로 받은 자격증명. 카카오는 OIDC ID 토큰")
 						),
@@ -73,9 +76,9 @@ class AuthControllerTest {
 	@Test
 	@DisplayName("제공자가 토큰을 거부하면 401을 반환한다")
 	void loginFailsWhenSocialTokenIsInvalid() throws Exception {
-		mockMvc.perform(post("/api/auth/login")
+		mockMvc.perform(post("/api/auth/login/social/{provider}", "kakao")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content(loginBody("kakao", "invalid")))
+						.content(loginBody("invalid")))
 				.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.code").value("USER_INVALID_SOCIAL_TOKEN"))
 				.andDo(document("auth/login-error",
@@ -93,9 +96,9 @@ class AuthControllerTest {
 	@Test
 	@DisplayName("지원하지 않는 제공자면 400을 반환한다")
 	void loginFailsWhenProviderIsUnsupported() throws Exception {
-		mockMvc.perform(post("/api/auth/login")
+		mockMvc.perform(post("/api/auth/login/social/{provider}", "naver")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content(loginBody("naver", VALID_TOKEN)))
+						.content(loginBody(VALID_TOKEN)))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.code").value("USER_UNSUPPORTED_SOCIAL_PROVIDER"));
 	}
@@ -103,9 +106,9 @@ class AuthControllerTest {
 	@Test
 	@DisplayName("자격증명이 비어 있으면 검증에 실패한다")
 	void loginFailsWhenSocialTokenIsBlank() throws Exception {
-		mockMvc.perform(post("/api/auth/login")
+		mockMvc.perform(post("/api/auth/login/social/{provider}", "kakao")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content(loginBody("kakao", "")))
+						.content(loginBody("")))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
 				.andExpect(jsonPath("$.errors[0].field").value("token"));

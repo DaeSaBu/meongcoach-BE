@@ -89,10 +89,10 @@ class SecurityFilterChainTest {
 	void authenticatedSocialLoginWithInvalidCredentialReturnsUnauthorized() throws Exception {
 		AuthToken token = tokenProvider.issue(userId);
 
-		mockMvc.perform(post("/api/auth/login")
+		mockMvc.perform(post("/api/auth/login/social/kakao")
 						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken())
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"provider\": \"kakao\", \"token\": \"invalid\"}"))
+						.content("{\"token\": \"invalid\"}"))
 				.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.code").value("USER_INVALID_SOCIAL_TOKEN"));
 	}
@@ -211,7 +211,7 @@ class SecurityFilterChainTest {
 	void onboardingMemberCanAccessDogProfileImages() throws Exception {
 		AuthToken token = tokenProvider.issue(onboardingUserId);
 
-		mockMvc.perform(get("/api/dogs/profile-image")
+		mockMvc.perform(get("/api/dogs/profile/image")
 						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))
 				.andExpect(status().isNotFound());
 	}

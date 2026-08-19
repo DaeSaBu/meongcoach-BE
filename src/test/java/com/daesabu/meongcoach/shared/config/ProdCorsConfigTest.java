@@ -25,13 +25,13 @@ class ProdCorsConfigTest {
 	@Test
 	@DisplayName("운영 프론트엔드 origin만 허용한다")
 	void onlyProductionFrontendOriginIsPermitted() throws Exception {
-		mockMvc.perform(options("/api/training/categories")
+		mockMvc.perform(options("/api/training/training-categories")
 					.header(HttpHeaders.ORIGIN, "https://app.meongcoach.com")
 					.header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "GET"))
 				.andExpect(status().isOk())
 				.andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "https://app.meongcoach.com"));
 
-		mockMvc.perform(options("/api/training/categories")
+		mockMvc.perform(options("/api/training/training-categories")
 					.header(HttpHeaders.ORIGIN, "https://app.dev.meongcoach.com")
 					.header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "GET"))
 				.andExpect(status().isForbidden())

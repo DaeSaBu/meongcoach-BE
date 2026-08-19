@@ -37,7 +37,7 @@ public class AiController {
 		return AiReportDetailResponse.from(aiReportFinder.findReport(userId, reportId));
 	}
 
-	@PostMapping("/video-upload-urls")
+	@PostMapping("/presigned-urls")
 	public AiVideoUploadUrlResponse issueVideoUploadUrl(@CurrentUserId Long userId,
 	                                                    @Valid @RequestBody AiVideoUploadUrlRequest request) {
 		return AiVideoUploadUrlResponse.from(

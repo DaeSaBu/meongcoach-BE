@@ -28,7 +28,7 @@ class LocalCorsConfigTest {
 	@Test
 	@DisplayName("로컬 웹 프론트엔드의 preflight 요청을 허용한다")
 	void preflightIsPermitted() throws Exception {
-		mockMvc.perform(options("/api/training/categories")
+		mockMvc.perform(options("/api/training/training-categories")
 					.header(HttpHeaders.ORIGIN, ORIGIN)
 					.header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "GET")
 					.header(HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS, "authorization"))
@@ -41,7 +41,7 @@ class LocalCorsConfigTest {
 	@Test
 	@DisplayName("인증 실패 응답에도 CORS 헤더를 포함한다")
 	void unauthorizedResponseIncludesCorsHeader() throws Exception {
-		mockMvc.perform(get("/api/training/categories").header(HttpHeaders.ORIGIN, ORIGIN))
+		mockMvc.perform(get("/api/training/training-categories").header(HttpHeaders.ORIGIN, ORIGIN))
 				.andExpect(status().isUnauthorized())
 				.andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, ORIGIN));
 	}

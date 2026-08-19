@@ -11,6 +11,7 @@ import com.daesabu.meongcoach.user.application.provided.TokenRefresher;
 import com.daesabu.meongcoach.user.domain.SocialProvider;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -25,10 +26,10 @@ public class AuthController {
 	private final TokenRefresher tokenRefresher;
 
 	// 소셜 로그인의 회원 조회·생성은 클라이언트가 관찰할 수 없는 부수 효과이므로 계약은 로그인(토큰 발급)으로 유지한다
-	@PostMapping("/login")
-	public LoginResponse login(@Valid @RequestBody LoginRequest request) {
-		SocialProvider provider = SocialProvider.from(request.provider());
-		SocialLoginResult result = socialLogin.login(provider, request.token());
+	// 제공자는 경로 변수로 받아 구글·애플이 추가돼도 요청 본문 계약이 바뀌지 않게 한다
+	@PostMapping("/login/social/{provider}")
+	public LoginResponse login(@PathVariable String provider, @Valid @RequestBody LoginRequest request) {
+		SocialLoginResult result = socialLogin.login(SocialProvider.from(provider), request.token());
 		return LoginResponse.from(result);
 	}
 

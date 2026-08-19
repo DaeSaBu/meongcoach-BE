@@ -18,7 +18,7 @@ public class MediaController {
 
 	private final ImageUploadUrlIssuer imageUploadUrlIssuer;
 
-	@PostMapping("/image-upload-urls")
+	@PostMapping("/presigned-urls")
 	public ImageUploadUrlResponse issueImageUploadUrl(@CurrentUserId Long userId,
 	                                                  @Valid @RequestBody ImageUploadUrlRequest request) {
 		return ImageUploadUrlResponse.from(imageUploadUrlIssuer.issue(userId, request.target(), request.contentType()));
