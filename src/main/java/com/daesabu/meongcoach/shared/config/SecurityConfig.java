@@ -1,5 +1,6 @@
 package com.daesabu.meongcoach.shared.config;
 
+import com.daesabu.meongcoach.shared.security.AuthorityRole;
 import com.daesabu.meongcoach.shared.security.CorsProperties;
 import com.daesabu.meongcoach.shared.security.JwtProperties;
 import com.daesabu.meongcoach.shared.security.TokenType;
@@ -10,6 +11,8 @@ import javax.crypto.SecretKey;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.convert.converter.Converter;
+import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -49,11 +52,19 @@ public class SecurityConfig {
 			"/api/users/token/refresh"
 	};
 
+	// 온보딩 중에도 필요한 경로. 온보딩 화면이 이미지 업로드와 기본 프로필 이미지 조회를 쓴다
+	private static final String[] ONBOARDING_ALLOWED_PATHS = {
+			"/api/onboarding/**",
+			"/api/media/image-upload-urls",
+			"/api/dogs/profile-image"
+	};
+
 	// Swagger UI 정적 파일과 그 안의 openapi3.json이 모두 이 경로 아래에 있다
 	private static final String[] API_DOCS_PATHS = {"/swagger-ui/**"};
 
 	@Bean
 	SecurityFilterChain securityFilterChain(HttpSecurity http, JwtDecoder accessTokenDecoder,
+	                                        Converter<Jwt, AbstractAuthenticationToken> userRoleAuthenticationConverter,
 	                                        AuthenticationEntryPoint authenticationEntryPoint,
 	                                        AccessDeniedHandler accessDeniedHandler,
 	                                        CorsConfigurationSource corsConfigurationSource,
@@ -70,10 +81,15 @@ public class SecurityConfig {
 				.authorizeHttpRequests(auth -> {
 					auth.requestMatchers(PERMIT_ALL_PATHS).permitAll();
 					configureApiDocsAccess(auth, apiDocsEnabled);
-					auth.anyRequest().authenticated();
+					// 먼저 매칭된 규칙이 이기므로 온보딩 허용 경로를 anyRequest보다 앞에 둔다.
+					// 역할 어휘는 AuthorityRole이 단일 원천이다 (user 모듈 UserRole이 같은 어휘로 매핑된다)
+					auth.requestMatchers(ONBOARDING_ALLOWED_PATHS)
+							.hasAnyRole(AuthorityRole.MEMBER.name(), AuthorityRole.ONBOARDING_MEMBER.name());
+					auth.anyRequest().hasRole(AuthorityRole.MEMBER.name());
 				})
 				.oauth2ResourceServer(oauth2 -> oauth2
-						.jwt(jwt -> jwt.decoder(accessTokenDecoder))
+						.jwt(jwt -> jwt.decoder(accessTokenDecoder)
+								.jwtAuthenticationConverter(userRoleAuthenticationConverter))
 						.authenticationEntryPoint(authenticationEntryPoint))
 				.exceptionHandling(handling -> handling
 						.authenticationEntryPoint(authenticationEntryPoint)
@@ -112,10 +128,10 @@ public class SecurityConfig {
 	}
 
 	// 액세스·리프레시 디코더를 분리해 각자 용도를 강제한다. @Primary를 두지 않고 주입 지점마다 명시한다.
-	// 회원 존재 검증기는 user 모듈이 구현한다. shared가 user를 참조하면 순환 의존이 되므로 스프링 타입으로만 받는다
+	// 회원 등록 여부 확인은 역할 부여 컨버터(user 모듈 구현)가 겸하므로 디코더에는 검증기를 붙이지 않는다
 	@Bean
-	JwtDecoder accessTokenDecoder(JwtProperties properties, OAuth2TokenValidator<Jwt> registeredUserValidator) {
-		return tokenDecoder(properties, TokenType.ACCESS, List.of(registeredUserValidator));
+	JwtDecoder accessTokenDecoder(JwtProperties properties) {
+		return tokenDecoder(properties, TokenType.ACCESS, List.of());
 	}
 
 	// 재발급 경로는 회원 확인을 TokenRefreshService가 맡아 별도 에러 코드를 유지하므로 여기서는 붙이지 않는다

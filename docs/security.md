@@ -55,13 +55,43 @@ id_token의 서명이 유효하다는 것은 "카카오가 발급했다"만 증�
 2. `exp` (`JwtTimestampValidator`) — 만료되지 않았는가
 3. `iss` (`JwtIssuerValidator`) — 우리가 발급했는가
 4. `token_type` (`TokenTypeValidator`) — 액세스 토큰 자리에 맞는 용도인가
-5. `sub` (`RegisteredUserValidator`) — 등록된 회원인가
+5. `sub` (`UserRoleAuthenticationConverter`) — 등록된 회원인가 확인하며 DB에서 역할을 읽어 `ROLE_*` 권한 부여. 미등록이면 401
 
 5번이 없으면 회원 행이 사라진 뒤에도(예: DB 초기화) 남아 있는 토큰이 만료 전까지 그대로 통과하고,
-각 모듈이 존재하지 않는 `userId`로 조회·저장을 시도하게 됩니다. 회원 조회가 필요해 이 검증기만
-`shared`가 아니라 `user` 모듈(`user/adapter/security/RegisteredUserValidator`)에 둡니다 —
-`shared`가 `user`를 참조하면 순환 의존이 되므로 `SecurityConfig`는 `OAuth2TokenValidator<Jwt>` 타입으로만 받습니다.
-비용은 인증 요청당 PK 조회 한 번입니다.
+각 모듈이 존재하지 않는 `userId`로 조회·저장을 시도하게 됩니다. 회원 조회가 필요해 이 컨버터만
+`shared`가 아니라 `user` 모듈(`user/adapter/security/UserRoleAuthenticationConverter`)에 둡니다 —
+`shared`가 `user`를 참조하면 순환 의존이 되므로 `SecurityConfig`는 `Converter<Jwt, AbstractAuthenticationToken>`
+타입으로만 받습니다. 비용은 인증 요청당 PK 조회 한 번입니다.
+
+역할을 JWT 클레임이 아니라 요청마다 DB에서 읽는 이유: 온보딩 완료로 `ONBOARDING_MEMBER → MEMBER`
+승격이 일어나도 이미 발급된 액세스 토큰이 최대 1시간 낡은 역할을 들고 다니는 문제가 없고,
+클라이언트가 토큰을 재발급받을 필요도 없습니다. 어차피 5번이 요청당 PK 조회를 하고 있었으므로
+추가 비용도 없습니다.
+
+> 함정: 이 컨버터는 `@Component`가 아니라 `UserSecurityConfig`의 `@Bean`으로 등록합니다.
+> `Converter` 구현 컴포넌트는 `@WebMvcTest` 슬라이스의 로드 대상에 포함되어,
+> 모든 컨트롤러 슬라이스 테스트가 회원 조회 의존성을 요구하며 깨지기 때문입니다.
+
+### URL 인가 규칙
+
+첫 번째로 매칭된 규칙이 이기므로 **선언 순서가 결정적**입니다.
+
+| 순서 | 경로 | 접근 |
+|---|---|---|
+| 1 | `/api/health`, `/api/users/social/**`, `/api/users/token/refresh` | permitAll |
+| 2 | `/swagger-ui/**` | 문서 활성 환경 permitAll, 그 외 denyAll |
+| 3 | `/api/onboarding/**`, `/api/media/image-upload-urls`, `/api/dogs/profile-image` | `MEMBER`, `ONBOARDING_MEMBER` |
+| 4 | 그 외 전부 | `MEMBER` |
+
+3번은 온보딩 화면에 필요한 경로입니다 — 온보딩 완료 요청에 프로필 이미지 URL이 들어가므로
+이미지 업로드 presigned URL 발급과 기본 프로필 이미지 조회는 온보딩 중에도 열려 있어야 합니다.
+`GUEST`는 어떤 규칙에도 매칭되지 않아 모든 보호 경로에서 403이며, 아직 발급 경로가 없습니다.
+
+역할 어휘의 단일 원천은 `shared/security/AuthorityRole`입니다. `TokenType`과 같은 부류
+(영속되지 않는 보안 어휘)라서 shared에 두고, `user/domain/UserRole`(영속 도메인 상태)이
+선언부 매핑으로 이 어휘를 참조합니다 — `shared`가 `user`를 참조할 수 없어 의존을 역전한 것입니다.
+`SecurityConfig`와 `GlobalExceptionHandler`도 같은 enum을 쓰므로 문자열 드리프트가 생길 수 없고,
+잘못된 매핑은 `UserTest`의 어휘 매핑 검증이 잡습니다.
 
 ### 액세스/리프레시 디코더 분리
 
@@ -78,7 +108,7 @@ id_token의 서명이 유효하다는 것은 "카카오가 발급했다"만 증�
 탈취된 리프레시 토큰은 만료(14일)까지 유효합니다.
 
 회원 존재 검증이 막아주는 것은 **회원 행이 사라진 경우뿐**입니다. 탈퇴(`WITHDRAWN`)는 상태만 바뀌고 행이 남으므로
-여전히 만료까지 토큰이 유효합니다. 탈퇴 즉시 차단이 필요해지면 `RegisteredUserValidator`와
+여전히 만료까지 토큰이 유효합니다. 탈퇴 즉시 차단이 필요해지면 `UserRoleAuthenticationConverter`와
 `TokenRefreshService`에서 상태까지 확인하도록 넓히면 됩니다.
 
 완화 장치:
@@ -96,9 +126,9 @@ id_token의 서명이 유효하다는 것은 "카카오가 발급했다"만 증�
 - `SessionCreationPolicy.STATELESS`
 - permitAll: `/api/health`, `/api/users/social/**`, `/api/users/token/refresh`
   (인증 엔드포인트만 열고 `/api/users/**`로 넓히지 않습니다. 이후 추가되는 회원 API가 자동으로 공개되는 것을 막기 위함입니다)
-- 그 외 모든 요청은 인증 필요
+- 그 외 요청은 역할 기반 인가 (위 "URL 인가 규칙" 참고)
 - `oauth2ResourceServer.jwt()` — Bearer 토큰 파싱·검증은 프레임워크가 담당하므로 커스텀 필터가 없습니다.
-  회원 존재 확인도 커스텀 필터가 아니라 디코더의 검증기 체인에 얹습니다 (위 "액세스 토큰 검증 순서" 참고)
+  회원 존재 확인·권한 부여도 커스텀 필터가 아니라 디코더 뒤의 컨버터에 얹습니다 (위 "액세스 토큰 검증 순서" 참고)
 - `cors` — 프로파일별 `meongcoach.cors.allowed-origin-patterns`의 origin만 허용합니다 (허용 메서드: GET, POST, PUT, PATCH, DELETE, OPTIONS).
   CORS 필터가 체인 앞단에서 동작하므로 preflight는 인가 전에 처리되고, 401 응답에도 CORS 헤더가 실립니다.
   허용 목록 바인딩은 `shared/security/CorsProperties`, 빈 정의는 `SecurityConfig`에 둡니다.
@@ -113,6 +143,12 @@ id_token의 서명이 유효하다는 것은 "카카오가 발급했다"만 증�
 
 에러 코드는 `UNAUTHORIZED` / `FORBIDDEN` — "프레임워크 예외는 HTTP 상태 enum 이름" 규칙 그대로입니다.
 인증 실패 원인은 공격자에게 힌트가 되므로 `detail`에 일반화된 문구만 담습니다.
+
+예외가 하나 있습니다: 온보딩 미완료 회원(`ONBOARDING_MEMBER`)이 정회원 전용 경로에 접근해 생긴
+403은 클라이언트가 온보딩 화면으로 분기해야 하므로, `GlobalExceptionHandler`가 `SecurityContext`의
+권한을 보고 `ONBOARDING_NOT_COMPLETED` 코드로 구분해 응답합니다. `SecurityExceptionTranslator`의
+재디스패치가 같은 스레드에서 일어나 `SecurityContext`가 살아 있기에 가능한 방식입니다 —
+비동기 디스패치를 도입하면 재검토가 필요합니다.
 
 > 트레이드오프: 리소스 서버 기본 엔트리 포인트를 교체하므로 `WWW-Authenticate: Bearer` 헤더가 사라집니다.
 > 모바일 전용 API라 수용했습니다.
@@ -148,6 +184,9 @@ dev/prod의 DB 접속 변수(`DB_HOST` 등)는 [profiles.md](profiles.md)를 참
 
 ## 알려진 제약
 
+- **역할 도입 전 가입자** — `UserRole` 도입 전 `MEMBER`로 만들어진 회원 중 프로필이 없는 계정은
+  온보딩을 마치지 않고도 전 API에 접근할 수 있습니다(`needsOnboarding`은 여전히 true).
+  온보딩을 완료하면 멱등 승격으로 일관성이 회복되므로 MVP에서는 수용합니다.
 - **최초 로그인 동시성** — 같은 신규 계정으로 동시에 두 요청이 오면 `(provider, provider_id)`
   유니크 제약 위반으로 한쪽이 500이 될 수 있습니다. 확률이 낮아 MVP에서는 두고, 필요 시
   제약 위반을 잡아 재조회하도록 보완합니다.

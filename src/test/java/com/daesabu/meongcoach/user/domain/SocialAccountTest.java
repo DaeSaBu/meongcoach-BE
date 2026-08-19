@@ -12,7 +12,7 @@ class SocialAccountTest {
 	@Test
 	@DisplayName("연동하면 제공자 정보가 담긴 계정이 생성된다")
 	void linkCreatesAccountWithProviderInfo() {
-		User user = User.registerMember();
+		User user = User.registerOnboardingMember();
 
 		SocialAccount account = SocialAccount.link(user,
 				new SocialAccountLinkCommand(SocialProvider.KAKAO, "kakao-123", "test@kakao.com"));

@@ -13,6 +13,7 @@ import com.daesabu.meongcoach.shared.exception.DomainException;
 import com.daesabu.meongcoach.shared.exception.ErrorCode;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +23,8 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -162,6 +165,36 @@ class GlobalExceptionHandlerTest {
 				.andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
 				.andExpect(jsonPath("$.code").value("FORBIDDEN"))
 				.andExpect(jsonPath("$.detail").value("접근 권한이 없습니다."));
+	}
+
+	// 필터 체인 전용 에러라 컨트롤러 슬라이스에서 재현할 수 없어, 실제 흐름과 같은
+	// SecurityContext 권한을 테스트 스레드에 심어 재현한다 (MockMvc는 동일 스레드에서 실행된다)
+	@Test
+	@DisplayName("온보딩 미완료 회원의 권한 부족은 ONBOARDING_NOT_COMPLETED를 반환한다")
+	void accessDeniedForOnboardingMemberReturnsOnboardingNotCompleted() throws Exception {
+		SecurityContextHolder.getContext().setAuthentication(
+				new TestingAuthenticationToken("1", null, "ROLE_ONBOARDING_MEMBER"));
+
+		mockMvc.perform(get("/test/access-denied"))
+				.andExpect(status().isForbidden())
+				.andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+				.andExpect(jsonPath("$.code").value("ONBOARDING_NOT_COMPLETED"))
+				.andExpect(jsonPath("$.detail").value("온보딩을 완료해야 이용할 수 있는 기능입니다."))
+				.andDo(document("shared/error-onboarding-not-completed",
+						responseFields(
+								fieldWithPath("title").description("HTTP 상태 이름"),
+								fieldWithPath("status").description("HTTP 상태 코드"),
+								fieldWithPath("detail").description("사람이 읽을 수 있는 에러 설명"),
+								fieldWithPath("instance").description("에러가 발생한 요청 경로"),
+								fieldWithPath("code").description("클라이언트 분기용 에러 코드"),
+								fieldWithPath("timestamp").description("에러 발생 시각(UTC)")
+						)
+				));
+	}
+
+	@AfterEach
+	void clearSecurityContext() {
+		SecurityContextHolder.clearContext();
 	}
 
 	enum TestErrorCode implements ErrorCode {

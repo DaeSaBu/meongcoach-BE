@@ -17,7 +17,7 @@ class UserProfileTest {
 	@Test
 	@DisplayName("생성하면 Command의 값이 한 번에 채워지고 툴팁 완료 여부는 false로 초기화된다")
 	void createAssignsAllValuesFromCommand() {
-		UserProfile profile = UserProfile.create(User.registerMember(),
+		UserProfile profile = UserProfile.create(User.registerOnboardingMember(),
 				command(LocalDate.of(2000, 1, 1), Set.of(), Set.of()));
 
 		assertThat(profile.getNickname()).isEqualTo("멍멍이집사");
@@ -31,7 +31,7 @@ class UserProfileTest {
 	@Test
 	@DisplayName("생성하면 교육 이력과 목표 토픽이 중복 없이 저장된다")
 	void createStoresTrainingTopicsWithoutDuplicates() {
-		UserProfile profile = UserProfile.create(User.registerMember(),
+		UserProfile profile = UserProfile.create(User.registerOnboardingMember(),
 				command(null, Set.of(1L, 2L), Set.of(2L, 3L)));
 
 		assertThat(profile.getPriorTrainingTopicIds()).containsExactlyInAnyOrder(1L, 2L);
@@ -41,7 +41,7 @@ class UserProfileTest {
 	@Test
 	@DisplayName("교육 토픽이 null이면 빈 집합으로 저장된다")
 	void createTreatsNullTrainingTopicsAsEmpty() {
-		UserProfile profile = UserProfile.create(User.registerMember(), command(null, null, null));
+		UserProfile profile = UserProfile.create(User.registerOnboardingMember(), command(null, null, null));
 
 		assertThat(profile.getPriorTrainingTopicIds()).isEmpty();
 		assertThat(profile.getTrainingGoalTopicIds()).isEmpty();
@@ -50,7 +50,7 @@ class UserProfileTest {
 	@Test
 	@DisplayName("프로필 이미지가 null이면 빈 문자열로 저장된다")
 	void createDefaultsProfileImageUrlToEmptyWhenNull() {
-		UserProfile profile = UserProfile.create(User.registerMember(),
+		UserProfile profile = UserProfile.create(User.registerOnboardingMember(),
 				new UserProfileCreateCommand("멍멍이집사", null, null, "INFP", "FEMALE", Set.of(), Set.of()));
 
 		assertThat(profile.getProfileImageUrl()).isEmpty();
@@ -59,7 +59,7 @@ class UserProfileTest {
 	@Test
 	@DisplayName("유효하지 않은 MBTI 문자열로는 생성할 수 없다")
 	void createFailsWhenMbtiIsInvalid() {
-		assertThatThrownBy(() -> UserProfile.create(User.registerMember(),
+		assertThatThrownBy(() -> UserProfile.create(User.registerOnboardingMember(),
 				new UserProfileCreateCommand("멍멍이집사", null, null, "XXXX", "FEMALE", Set.of(), Set.of())))
 				.isInstanceOf(InvalidMbtiException.class);
 	}
@@ -67,7 +67,7 @@ class UserProfileTest {
 	@Test
 	@DisplayName("유효하지 않은 성별 문자열로는 생성할 수 없다")
 	void createFailsWhenGenderIsInvalid() {
-		assertThatThrownBy(() -> UserProfile.create(User.registerMember(),
+		assertThatThrownBy(() -> UserProfile.create(User.registerOnboardingMember(),
 				new UserProfileCreateCommand("멍멍이집사", null, null, "INFP", "OTHER", Set.of(), Set.of())))
 				.isInstanceOf(InvalidGenderException.class);
 	}
@@ -75,7 +75,7 @@ class UserProfileTest {
 	@Test
 	@DisplayName("생년월일로 나이를 계산한다")
 	void getAgeCalculatesFromBirthDate() {
-		UserProfile profile = UserProfile.create(User.registerMember(),
+		UserProfile profile = UserProfile.create(User.registerOnboardingMember(),
 				command(LocalDate.now().minusYears(20), Set.of(), Set.of()));
 
 		assertThat(profile.getAge()).isEqualTo(20);
@@ -84,7 +84,7 @@ class UserProfileTest {
 	@Test
 	@DisplayName("생년월일이 없으면 나이는 null을 반환한다")
 	void getAgeReturnsNullWhenBirthDateIsNull() {
-		UserProfile profile = UserProfile.create(User.registerMember(), command(null, Set.of(), Set.of()));
+		UserProfile profile = UserProfile.create(User.registerOnboardingMember(), command(null, Set.of(), Set.of()));
 
 		assertThat(profile.getAge()).isNull();
 	}
@@ -92,7 +92,7 @@ class UserProfileTest {
 	@Test
 	@DisplayName("툴팁을 완료하면 완료 상태로 표시된다")
 	void completeTooltipMarksTooltipCompleted() {
-		UserProfile profile = UserProfile.create(User.registerMember(), command(null, Set.of(), Set.of()));
+		UserProfile profile = UserProfile.create(User.registerOnboardingMember(), command(null, Set.of(), Set.of()));
 
 		profile.completeTooltip();
 

@@ -18,6 +18,7 @@ import com.daesabu.meongcoach.user.application.required.UserProfileRepository;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.User;
 import com.daesabu.meongcoach.user.domain.UserProfile;
+import com.daesabu.meongcoach.user.domain.UserRole;
 import com.daesabu.meongcoach.user.domain.exception.AlreadyOnboardedException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -56,7 +57,7 @@ class OnboardingCompleteServiceTest {
 				new UserProfileRegisterService(userRepository, userProfileRepository),
 				new DogRegisterService(dogRepository),
 				prefixValidator());
-		userId = userRepository.save(User.registerMember()).getId();
+		userId = userRepository.save(User.registerOnboardingMember()).getId();
 	}
 
 	// 미설정(null·빈 문자열)은 통과하고
@@ -179,6 +180,15 @@ class OnboardingCompleteServiceTest {
 		assertThatThrownBy(() -> service.complete(userId,
 				completeInfo(null, "https://evil.example.com/b.jpg")))
 				.isInstanceOf(InvalidImageUrlException.class);
+	}
+
+	@Test
+	@DisplayName("온보딩을 완료하면 온보딩 회원이 정회원으로 승격된다")
+	void completePromotesOnboardingMemberToMember() {
+		service.complete(userId, completeInfo());
+
+		User user = userRepository.findById(userId).orElseThrow();
+		assertThat(user.getRole()).isEqualTo(UserRole.MEMBER);
 	}
 
 	@Test

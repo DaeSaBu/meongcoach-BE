@@ -30,6 +30,8 @@ public class UserProfileRegisterService implements UserProfileRegister {
 
 		User user = userRepository.findById(userId)
 				.orElseThrow(() -> new UserNotFoundException(userId));
+		// 인가가 요청마다 DB의 role을 읽으므로 승격이 토큰 재발급 없이 즉시 반영된다
+		user.promoteToMember();
 
 		userProfileRepository.save(UserProfile.create(user, command));
 	}

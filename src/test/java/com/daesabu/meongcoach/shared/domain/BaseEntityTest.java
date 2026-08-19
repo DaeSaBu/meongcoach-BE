@@ -20,7 +20,7 @@ class BaseEntityTest {
 	@Test
 	@DisplayName("저장하면 생성 시각과 수정 시각이 초기화된다")
 	void persistInitializesCreatedAtAndUpdatedAt() {
-		User user = User.registerMember();
+		User user = User.registerOnboardingMember();
 
 		entityManager.persistAndFlush(user);
 
@@ -31,7 +31,7 @@ class BaseEntityTest {
 	@Test
 	@DisplayName("수정하면 수정 시각만 갱신된다")
 	void updateRenewsUpdatedAtOnly() {
-		User user = User.registerMember();
+		User user = User.registerOnboardingMember();
 		entityManager.persistAndFlush(user);
 		LocalDateTime createdAt = user.getCreatedAt();
 		LocalDateTime updatedAt = user.getUpdatedAt();
