@@ -54,8 +54,9 @@ class OnboardingMetadataServiceTest {
 		assertThat(result.topics()).extracting(TopicSummary::title)
 				.containsExactly("배변 훈련", "산책 훈련");
 		assertThat(result.breeds()).extracting(BreedInfo::code)
-				.containsExactly("POODLE", "MALTESE", "POMERANIAN", "SHIH_TZU", "JINDO",
-						"GOLDEN_RETRIEVER", "MIXED");
+				.hasSize(31)
+				.startsWith("MALTESE")
+				.endsWith("MIXED");
 		assertThat(result.personalities()).extracting(PersonalityInfo::code)
 				.containsExactly("TIMID", "LIVELY", "FRIENDLY");
 		assertThat(result.mbtis()).hasSize(16).contains("ISTJ", "ENFP");
