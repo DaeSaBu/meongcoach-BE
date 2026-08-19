@@ -33,7 +33,9 @@ class SecurityFilterChainTest {
 	private static final String PROTECTED_PATH = "/api/dogs";
 
 	// @CurrentUserId를 받는 보호 경로. 없는 토픽을 골라 두어 토픽 조회 단계에서 404로 끝난다
-	private static final String CURRENT_USER_PATH = "/api/training/topics/{topicId}";
+	private static final String CURRENT_USER_PATH = "/api/training/topic-selection";
+
+	private static final String MISSING_TOPIC_SELECTION_BODY = "{\"topicId\": 999}";
 
 	// 저장된 회원 ID에 더해 존재하지 않는 회원 ID를 만든다
 	private static final long UNREGISTERED_ID_OFFSET = 1_000_000L;
@@ -76,9 +78,9 @@ class SecurityFilterChainTest {
 	@Test
 	@DisplayName("토큰 재발급은 인증 없이 호출할 수 있다")
 	void tokenRefreshIsPermitted() throws Exception {
-		mockMvc.perform(post("/api/users/token/refresh")
+		mockMvc.perform(post("/api/auth/tokens")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"refreshToken\": \"\"}"))
+						.content("{\"grantType\": \"refresh\", \"refreshToken\": \"\"}"))
 				.andExpect(status().isBadRequest());
 	}
 
@@ -87,16 +89,16 @@ class SecurityFilterChainTest {
 	void authenticatedSocialLoginWithInvalidCredentialReturnsUnauthorized() throws Exception {
 		AuthToken token = tokenProvider.issue(userId);
 
-		mockMvc.perform(post("/api/users/social/kakao")
+		mockMvc.perform(post("/api/auth/tokens")
 						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken())
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"token\": \"invalid\"}"))
+						.content("{\"grantType\": \"social\", \"provider\": \"kakao\", \"token\": \"invalid\"}"))
 				.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.code").value("USER_INVALID_SOCIAL_TOKEN"));
 	}
 
 	@Test
-	@DisplayName("인증 엔드포인트가 아닌 회원 경로는 인증이 필요하다")
+	@DisplayName("회원 경로는 인증이 필요하다")
 	void otherUserPathsAreProtected() throws Exception {
 		mockMvc.perform(get("/api/users/me"))
 				.andExpect(status().isUnauthorized());
@@ -162,8 +164,10 @@ class SecurityFilterChainTest {
 	void authenticatedRequestResolvesCurrentUserId() throws Exception {
 		AuthToken token = tokenProvider.issue(userId);
 
-		mockMvc.perform(put(CURRENT_USER_PATH, 999L)
-						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))
+		mockMvc.perform(put(CURRENT_USER_PATH)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(MISSING_TOPIC_SELECTION_BODY))
 				.andExpect(status().isNotFound())
 				.andExpect(jsonPath("$.code").value("TRAINING_TOPIC_NOT_FOUND"));
 	}
@@ -171,7 +175,9 @@ class SecurityFilterChainTest {
 	@Test
 	@DisplayName("토큰 없이 @CurrentUserId 경로에 접근하면 401을 반환한다")
 	void currentUserIdPathWithoutTokenReturnsUnauthorized() throws Exception {
-		mockMvc.perform(put(CURRENT_USER_PATH, 999L))
+		mockMvc.perform(put(CURRENT_USER_PATH)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(MISSING_TOPIC_SELECTION_BODY))
 				.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
 	}

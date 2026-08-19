@@ -3,11 +3,10 @@ package com.daesabu.meongcoach.training.adapter.webapi;
 import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.document;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.BDDMockito.willThrow;
-import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.put;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
+import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
-import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
-import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -20,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -40,17 +40,23 @@ class TrainingTopicControllerTest {
 	@MockitoBean
 	private TopicSelector topicSelector;
 
+	private static String selectionBody(long topicId) {
+		return "{\"topicId\": " + topicId + "}";
+	}
+
 	@Test
 	@DisplayName("선택한 토픽 ID를 반환한다")
 	void selectTopicReturnsSelectedTopicId() throws Exception {
-		mockMvc.perform(put("/api/training/topics/{topicId}", 1L)
+		mockMvc.perform(put("/api/training/topic-selection")
 						.principal(CURRENT_USER)
-						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(selectionBody(1L)))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.topicId").value(1))
 				.andDo(document("training/topic-select",
-						pathParameters(
-								parameterWithName("topicId").description("커리큘럼 화면에 표시할 토픽 ID")
+						requestFields(
+								fieldWithPath("topicId").description("필수 입력. 커리큘럼 화면에 표시할 토픽 ID")
 						),
 						responseFields(
 								fieldWithPath("topicId").description("선택된 토픽 ID")
@@ -61,7 +67,10 @@ class TrainingTopicControllerTest {
 	@Test
 	@DisplayName("인증 주체에서 읽은 사용자로 토픽 선택을 위임한다")
 	void selectTopicDelegatesWithCurrentUserId() throws Exception {
-		mockMvc.perform(put("/api/training/topics/{topicId}", 7L).principal(CURRENT_USER))
+		mockMvc.perform(put("/api/training/topic-selection")
+						.principal(CURRENT_USER)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(selectionBody(7L)))
 				.andExpect(status().isOk());
 
 		then(topicSelector).should().selectTopic(42L, 7L);
@@ -70,13 +79,31 @@ class TrainingTopicControllerTest {
 	@Test
 	@DisplayName("같은 토픽을 연속으로 선택해도 200을 반환한다")
 	void selectTopicReturnsOkWhenSelectedRepeatedly() throws Exception {
-		mockMvc.perform(put("/api/training/topics/{topicId}", 1L).principal(CURRENT_USER))
+		mockMvc.perform(put("/api/training/topic-selection")
+						.principal(CURRENT_USER)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(selectionBody(1L)))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.topicId").value(1));
 
-		mockMvc.perform(put("/api/training/topics/{topicId}", 1L).principal(CURRENT_USER))
+		mockMvc.perform(put("/api/training/topic-selection")
+						.principal(CURRENT_USER)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(selectionBody(1L)))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.topicId").value(1));
+	}
+
+	@Test
+	@DisplayName("토픽 ID가 없으면 검증에 실패한다")
+	void selectTopicFailsWhenTopicIdIsMissing() throws Exception {
+		mockMvc.perform(put("/api/training/topic-selection")
+						.principal(CURRENT_USER)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{}"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
+				.andExpect(jsonPath("$.errors[0].field").value("topicId"));
 	}
 
 	@Test
@@ -84,16 +111,18 @@ class TrainingTopicControllerTest {
 	void selectTopicReturnsNotFoundWhenTopicDoesNotExist() throws Exception {
 		willThrow(new TopicNotFoundException(999L)).given(topicSelector).selectTopic(42L, 999L);
 
-		mockMvc.perform(put("/api/training/topics/{topicId}", 999L)
+		mockMvc.perform(put("/api/training/topic-selection")
 						.principal(CURRENT_USER)
-						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(selectionBody(999L)))
 				.andExpect(status().isNotFound())
 				.andExpect(jsonPath("$.status").value(404))
 				.andExpect(jsonPath("$.code").value("TRAINING_TOPIC_NOT_FOUND"))
 				.andExpect(jsonPath("$.detail").value("id가 999인 토픽을 찾을 수 없습니다."))
 				.andDo(document("training/topic-select-error",
-						pathParameters(
-								parameterWithName("topicId").description("커리큘럼 화면에 표시할 토픽 ID")
+						requestFields(
+								fieldWithPath("topicId").description("필수 입력. 커리큘럼 화면에 표시할 토픽 ID")
 						),
 						responseFields(
 								fieldWithPath("title").description("HTTP 상태 이름"),
@@ -109,7 +138,9 @@ class TrainingTopicControllerTest {
 	@Test
 	@DisplayName("인증 정보가 없으면 401을 반환한다")
 	void selectTopicReturnsUnauthorizedWhenNotAuthenticated() throws Exception {
-		mockMvc.perform(put("/api/training/topics/{topicId}", 1L))
+		mockMvc.perform(put("/api/training/topic-selection")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(selectionBody(1L)))
 				.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
 	}

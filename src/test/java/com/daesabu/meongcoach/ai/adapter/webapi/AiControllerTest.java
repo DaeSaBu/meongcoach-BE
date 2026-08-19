@@ -350,7 +350,7 @@ class AiControllerTest {
 	void findTrialReturnsTrialUsage() throws Exception {
 		given(aiTrialFinder.findTrial(42L)).willReturn(new AiTrial(1));
 
-		mockMvc.perform(get("/api/ai/trials")
+		mockMvc.perform(get("/api/ai/trial")
 						.principal(CURRENT_USER)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isOk())
@@ -371,7 +371,7 @@ class AiControllerTest {
 	void findTrialDelegatesWithCurrentUserId() throws Exception {
 		given(aiTrialFinder.findTrial(42L)).willReturn(new AiTrial(0));
 
-		mockMvc.perform(get("/api/ai/trials").principal(CURRENT_USER))
+		mockMvc.perform(get("/api/ai/trial").principal(CURRENT_USER))
 				.andExpect(status().isOk());
 
 		then(aiTrialFinder).should().findTrial(42L);
@@ -380,7 +380,7 @@ class AiControllerTest {
 	@Test
 	@DisplayName("인증 정보가 없으면 체험 횟수 조회도 401을 반환한다")
 	void findTrialReturnsUnauthorizedWhenNotAuthenticated() throws Exception {
-		mockMvc.perform(get("/api/ai/trials"))
+		mockMvc.perform(get("/api/ai/trial"))
 				.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
 	}

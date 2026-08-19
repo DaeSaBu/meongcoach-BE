@@ -45,11 +45,10 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @EnableWebSecurity
 public class SecurityConfig {
 
-	// 토큰을 아직 받지 못한 요청만 열어둔다. `/api/users/**`로 넓히면 이후 추가될 회원 API까지 공개된다
+	// 토큰을 아직 받지 못한 요청만 열어둔다. `/api/auth/**`로 넓히면 이후 추가될 인증 API까지 공개된다
 	private static final String[] PERMIT_ALL_PATHS = {
 			"/api/health",
-			"/api/users/social/**",
-			"/api/users/token/refresh"
+			"/api/auth/tokens"
 	};
 
 	// 온보딩 중에도 필요한 경로. 온보딩 화면이 이미지 업로드와 기본 프로필 이미지 조회를 쓴다

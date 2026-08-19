@@ -4,8 +4,6 @@ import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.docume
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
-import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
-import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -28,7 +26,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(AuthController.class)
-@Import(AuthControllerTest.StubConfig.class)
+@Import({AuthControllerTest.StubConfig.class, SocialTokenIssueHandler.class, RefreshTokenIssueHandler.class})
 @AutoConfigureRestDocs
 @DisplayName("인증 API")
 class AuthControllerTest {
@@ -39,41 +37,51 @@ class AuthControllerTest {
 	@Autowired
 	private MockMvc mockMvc;
 
+	private static String socialGrantBody(String provider, String token) {
+		return "{\"grantType\": \"social\", \"provider\": \"" + provider + "\", \"token\": \"" + token + "\"}";
+	}
+
+	private static String refreshGrantBody(String refreshToken) {
+		return "{\"grantType\": \"refresh\", \"refreshToken\": \"" + refreshToken + "\"}";
+	}
+
 	@Test
-	@DisplayName("소셜 로그인에 성공하면 토큰과 온보딩 필요 여부를 반환한다")
-	void socialLoginReturnsTokens() throws Exception {
-		mockMvc.perform(post("/api/users/social/{provider}", "kakao")
+	@DisplayName("social 발급 방식으로 로그인하면 토큰과 온보딩 필요 여부를 반환한다")
+	void issueTokenWithSocialGrantReturnsTokens() throws Exception {
+		mockMvc.perform(post("/api/auth/tokens")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"token\": \"" + VALID_TOKEN + "\"}"))
+						.content(socialGrantBody("kakao", VALID_TOKEN)))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.accessToken").value("access-token"))
 				.andExpect(jsonPath("$.refreshToken").value("refresh-token"))
 				.andExpect(jsonPath("$.needsOnboarding").value(true))
-				.andDo(document("user/social-login",
-						pathParameters(
-								parameterWithName("provider").description("소셜 로그인 제공자. 현재 `kakao`만 지원")
-						),
+				.andDo(document("auth/token-issue-social",
 						requestFields(
+								fieldWithPath("grantType").description(
+										"필수 입력. 발급 방식. `social`(소셜 로그인) 또는 `refresh`(토큰 갱신)"),
+								fieldWithPath("provider").description(
+										"social 발급 시 필수 입력. 소셜 로그인 제공자. 현재 `kakao`만 지원"),
 								fieldWithPath("token").description(
-										"필수 입력. 앱이 제공자 SDK로 받은 자격증명. 카카오는 OIDC ID 토큰")
+										"social 발급 시 필수 입력. 앱이 제공자 SDK로 받은 자격증명. 카카오는 OIDC ID 토큰")
 						),
 						responseFields(
 								fieldWithPath("accessToken").description("API 호출에 사용할 액세스 토큰"),
 								fieldWithPath("refreshToken").description("액세스 토큰 재발급용 리프레시 토큰"),
-								fieldWithPath("needsOnboarding").description("온보딩 화면으로 보내야 하는지 여부")
+								fieldWithPath("needsOnboarding").description(
+										"온보딩 화면으로 보내야 하는지 여부. social 발급에서만 내려간다")
 						)
 				));
 	}
 
 	@Test
 	@DisplayName("제공자가 토큰을 거부하면 401을 반환한다")
-	void socialLoginFailsWhenTokenIsInvalid() throws Exception {
-		mockMvc.perform(post("/api/users/social/{provider}", "kakao")
+	void issueTokenFailsWhenSocialTokenIsInvalid() throws Exception {
+		mockMvc.perform(post("/api/auth/tokens")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"token\": \"invalid\"}"))
+						.content(socialGrantBody("kakao", "invalid")))
 				.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.code").value("USER_INVALID_SOCIAL_TOKEN"))
-				.andDo(document("user/social-login-error",
+				.andDo(document("auth/token-issue-social-error",
 						responseFields(
 								fieldWithPath("title").description("HTTP 상태 이름"),
 								fieldWithPath("status").description("HTTP 상태 코드"),
@@ -87,37 +95,52 @@ class AuthControllerTest {
 
 	@Test
 	@DisplayName("지원하지 않는 제공자면 400을 반환한다")
-	void socialLoginFailsWhenProviderIsUnsupported() throws Exception {
-		mockMvc.perform(post("/api/users/social/{provider}", "naver")
+	void issueTokenFailsWhenProviderIsUnsupported() throws Exception {
+		mockMvc.perform(post("/api/auth/tokens")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"token\": \"" + VALID_TOKEN + "\"}"))
+						.content(socialGrantBody("naver", VALID_TOKEN)))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.code").value("USER_UNSUPPORTED_SOCIAL_PROVIDER"));
 	}
 
 	@Test
-	@DisplayName("자격증명이 비어 있으면 검증에 실패한다")
-	void socialLoginFailsWhenTokenIsBlank() throws Exception {
-		mockMvc.perform(post("/api/users/social/{provider}", "kakao")
+	@DisplayName("social 발급에서 자격증명이 비어 있으면 검증에 실패한다")
+	void issueTokenFailsWhenSocialTokenIsBlank() throws Exception {
+		mockMvc.perform(post("/api/auth/tokens")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"token\": \"\"}"))
+						.content(socialGrantBody("kakao", "")))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
-				.andExpect(jsonPath("$.errors[0].field").value("token"));
+				.andExpect(jsonPath("$.errors[0].field").value("tokenPresent"));
 	}
 
 	@Test
-	@DisplayName("리프레시 토큰으로 새 토큰을 발급받는다")
-	void refreshReturnsNewTokens() throws Exception {
-		mockMvc.perform(post("/api/users/token/refresh")
+	@DisplayName("grantType이 없거나 알 수 없는 값이면 검증에 실패한다")
+	void issueTokenFailsWhenGrantTypeIsUnknown() throws Exception {
+		mockMvc.perform(post("/api/auth/tokens")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"refreshToken\": \"" + VALID_REFRESH_TOKEN + "\"}"))
+						.content("{\"grantType\": \"password\"}"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
+				.andExpect(jsonPath("$.errors[0].field").value("grantType"));
+	}
+
+	@Test
+	@DisplayName("refresh 발급 방식으로 새 토큰을 발급받는다")
+	void issueTokenWithRefreshGrantReturnsNewTokens() throws Exception {
+		mockMvc.perform(post("/api/auth/tokens")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(refreshGrantBody(VALID_REFRESH_TOKEN)))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.accessToken").value("access-token"))
 				.andExpect(jsonPath("$.refreshToken").value("refresh-token"))
-				.andDo(document("user/token-refresh",
+				.andExpect(jsonPath("$.needsOnboarding").doesNotExist())
+				.andDo(document("auth/token-issue-refresh",
 						requestFields(
-								fieldWithPath("refreshToken").description("필수 입력. 로그인 시 발급받은 리프레시 토큰")
+								fieldWithPath("grantType").description(
+										"필수 입력. 발급 방식. `social`(소셜 로그인) 또는 `refresh`(토큰 갱신)"),
+								fieldWithPath("refreshToken").description(
+										"refresh 발급 시 필수 입력. 로그인 시 발급받은 리프레시 토큰")
 						),
 						responseFields(
 								fieldWithPath("accessToken").description("새로 발급된 액세스 토큰"),
@@ -128,13 +151,13 @@ class AuthControllerTest {
 
 	@Test
 	@DisplayName("유효하지 않은 리프레시 토큰이면 401을 반환한다")
-	void refreshFailsWhenTokenIsInvalid() throws Exception {
-		mockMvc.perform(post("/api/users/token/refresh")
+	void issueTokenFailsWhenRefreshTokenIsInvalid() throws Exception {
+		mockMvc.perform(post("/api/auth/tokens")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"refreshToken\": \"invalid\"}"))
+						.content(refreshGrantBody("invalid")))
 				.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.code").value("USER_INVALID_REFRESH_TOKEN"))
-				.andDo(document("user/token-refresh-error",
+				.andDo(document("auth/token-issue-refresh-error",
 						responseFields(
 								fieldWithPath("title").description("HTTP 상태 이름"),
 								fieldWithPath("status").description("HTTP 상태 코드"),
@@ -147,14 +170,14 @@ class AuthControllerTest {
 	}
 
 	@Test
-	@DisplayName("리프레시 토큰이 비어 있으면 검증에 실패한다")
-	void refreshFailsWhenTokenIsBlank() throws Exception {
-		mockMvc.perform(post("/api/users/token/refresh")
+	@DisplayName("refresh 발급에서 리프레시 토큰이 비어 있으면 검증에 실패한다")
+	void issueTokenFailsWhenRefreshTokenIsBlank() throws Exception {
+		mockMvc.perform(post("/api/auth/tokens")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"refreshToken\": \"\"}"))
+						.content(refreshGrantBody("")))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
-				.andExpect(jsonPath("$.errors[0].field").value("refreshToken"));
+				.andExpect(jsonPath("$.errors[0].field").value("refreshTokenPresent"));
 	}
 
 	@TestConfiguration

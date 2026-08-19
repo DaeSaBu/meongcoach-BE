@@ -57,7 +57,7 @@ class TrainingCategoryControllerTest {
 				)
 		));
 
-		mockMvc.perform(get("/api/training/training-categories")
+		mockMvc.perform(get("/api/training/categories")
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.trainingCategories[0].trainingCategoryId").value(1))
@@ -76,7 +76,7 @@ class TrainingCategoryControllerTest {
 				.andExpect(jsonPath("$.trainingCategories[0].topics[1].topicId").value(11))
 				.andExpect(jsonPath("$.trainingCategories[1].trainingCategoryId").value(2))
 				.andExpect(jsonPath("$.trainingCategories[1].topics[0].topicId").value(20))
-				.andDo(document("training/training-categories",
+				.andDo(document("training/categories",
 						responseFields(
 								fieldWithPath("trainingCategories[]").description("교육 카테고리 목록"),
 								fieldWithPath("trainingCategories[].trainingCategoryId").description("교육 카테고리 ID"),
@@ -113,7 +113,7 @@ class TrainingCategoryControllerTest {
 				)
 		));
 
-		mockMvc.perform(get("/api/training/training-categories"))
+		mockMvc.perform(get("/api/training/categories"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.trainingCategories[0].topics").isArray())
 				.andExpect(jsonPath("$.trainingCategories[0].topics").isEmpty());
@@ -124,7 +124,7 @@ class TrainingCategoryControllerTest {
 	void findAllReturnsEmptyArrayWhenNoCategoryExists() throws Exception {
 		given(trainingCategoryFinder.findAll()).willReturn(List.of());
 
-		mockMvc.perform(get("/api/training/training-categories"))
+		mockMvc.perform(get("/api/training/categories"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.trainingCategories").isArray())
 				.andExpect(jsonPath("$.trainingCategories").isEmpty());

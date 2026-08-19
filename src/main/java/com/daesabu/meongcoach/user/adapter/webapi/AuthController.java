@@ -1,41 +1,37 @@
 package com.daesabu.meongcoach.user.adapter.webapi;
 
-import com.daesabu.meongcoach.user.adapter.webapi.dto.SocialLoginRequest;
-import com.daesabu.meongcoach.user.adapter.webapi.dto.SocialLoginResponse;
-import com.daesabu.meongcoach.user.adapter.webapi.dto.TokenRefreshRequest;
-import com.daesabu.meongcoach.user.adapter.webapi.dto.TokenRefreshResponse;
-import com.daesabu.meongcoach.user.application.provided.AuthToken;
-import com.daesabu.meongcoach.user.application.provided.SocialLogin;
-import com.daesabu.meongcoach.user.application.provided.SocialLoginResult;
-import com.daesabu.meongcoach.user.application.provided.TokenRefresher;
-import com.daesabu.meongcoach.user.domain.SocialProvider;
+import com.daesabu.meongcoach.user.adapter.webapi.dto.GrantType;
+import com.daesabu.meongcoach.user.adapter.webapi.dto.TokenIssueRequest;
+import com.daesabu.meongcoach.user.adapter.webapi.dto.TokenResponse;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.PathVariable;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/users")
-@RequiredArgsConstructor
+@RequestMapping("/api/auth")
 public class AuthController {
 
-	private final SocialLogin socialLogin;
-	private final TokenRefresher tokenRefresher;
+	private final Map<GrantType, TokenIssueHandler> handlers;
 
-	// 제공자를 경로 변수로 받아 구글·애플을 추가해도 컨트롤러가 바뀌지 않게 한다
-	@PostMapping("/social/{provider}")
-	public SocialLoginResponse socialLogin(@PathVariable String provider,
-	                                       @Valid @RequestBody SocialLoginRequest request) {
-		SocialLoginResult result = socialLogin.login(SocialProvider.from(provider), request.token());
-		return SocialLoginResponse.from(result);
+	public AuthController(List<TokenIssueHandler> handlers) {
+		this.handlers = handlers.stream()
+				.collect(Collectors.toUnmodifiableMap(TokenIssueHandler::grantType, Function.identity()));
+		// switch가 주던 완전성 검사를 부팅 시점 검사로 대체한다. grant를 추가하고 핸들러를 빠뜨리면 기동에 실패한다
+		if (this.handlers.size() != GrantType.values().length) {
+			throw new IllegalStateException("모든 GrantType에 대한 TokenIssueHandler가 등록되어야 합니다");
+		}
 	}
 
-	@PostMapping("/token/refresh")
-	public TokenRefreshResponse refresh(@Valid @RequestBody TokenRefreshRequest request) {
-		AuthToken token = tokenRefresher.refresh(request.refreshToken());
-		return TokenRefreshResponse.from(token);
+	// OAuth2 token endpoint처럼 토큰 컬렉션 하나에 POST하고 발급 방식은 grantType이 구분한다.
+	// 소셜 로그인의 회원 조회·생성은 클라이언트가 관찰할 수 없는 부수 효과이므로 계약은 토큰 발급으로 유지한다
+	@PostMapping("/tokens")
+	public TokenResponse issueToken(@Valid @RequestBody TokenIssueRequest request) {
+		return handlers.get(request.grantType()).handle(request);
 	}
 }
