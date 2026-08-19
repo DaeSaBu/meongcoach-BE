@@ -37,14 +37,15 @@ public class AiController {
 		return AiReportDetailResponse.from(aiReportFinder.findReport(userId, reportId));
 	}
 
-	@PostMapping("/video-upload-urls")
+	@PostMapping("/presigned-urls")
 	public AiVideoUploadUrlResponse issueVideoUploadUrl(@CurrentUserId Long userId,
 	                                                    @Valid @RequestBody AiVideoUploadUrlRequest request) {
 		return AiVideoUploadUrlResponse.from(
 				aiVideoUploadUrlIssuer.issue(userId, request.contentType(), request.fileSizeBytes()));
 	}
 
-	@GetMapping("/trials")
+	// 사용자별 단일 체험 상태이므로 단수형 경로를 쓴다
+	@GetMapping("/trial")
 	public AiTrialResponse findTrial(@CurrentUserId Long userId) {
 		return AiTrialResponse.from(aiTrialFinder.findTrial(userId));
 	}

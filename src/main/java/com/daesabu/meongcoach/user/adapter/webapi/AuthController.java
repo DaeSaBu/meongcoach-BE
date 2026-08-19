@@ -1,7 +1,7 @@
 package com.daesabu.meongcoach.user.adapter.webapi;
 
-import com.daesabu.meongcoach.user.adapter.webapi.dto.SocialLoginRequest;
-import com.daesabu.meongcoach.user.adapter.webapi.dto.SocialLoginResponse;
+import com.daesabu.meongcoach.user.adapter.webapi.dto.LoginRequest;
+import com.daesabu.meongcoach.user.adapter.webapi.dto.LoginResponse;
 import com.daesabu.meongcoach.user.adapter.webapi.dto.TokenRefreshRequest;
 import com.daesabu.meongcoach.user.adapter.webapi.dto.TokenRefreshResponse;
 import com.daesabu.meongcoach.user.application.provided.AuthToken;
@@ -18,19 +18,19 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping("/api/auth")
 @RequiredArgsConstructor
 public class AuthController {
 
 	private final SocialLogin socialLogin;
 	private final TokenRefresher tokenRefresher;
 
-	// 제공자를 경로 변수로 받아 구글·애플을 추가해도 컨트롤러가 바뀌지 않게 한다
-	@PostMapping("/social/{provider}")
-	public SocialLoginResponse socialLogin(@PathVariable String provider,
-	                                       @Valid @RequestBody SocialLoginRequest request) {
+	// 소셜 로그인의 회원 조회·생성은 클라이언트가 관찰할 수 없는 부수 효과이므로 계약은 로그인(토큰 발급)으로 유지한다
+	// 제공자는 경로 변수로 받아 구글·애플이 추가돼도 요청 본문 계약이 바뀌지 않게 한다
+	@PostMapping("/login/social/{provider}")
+	public LoginResponse login(@PathVariable String provider, @Valid @RequestBody LoginRequest request) {
 		SocialLoginResult result = socialLogin.login(SocialProvider.from(provider), request.token());
-		return SocialLoginResponse.from(result);
+		return LoginResponse.from(result);
 	}
 
 	@PostMapping("/token/refresh")

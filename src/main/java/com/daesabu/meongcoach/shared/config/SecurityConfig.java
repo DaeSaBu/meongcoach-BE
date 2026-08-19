@@ -45,18 +45,17 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @EnableWebSecurity
 public class SecurityConfig {
 
-	// 토큰을 아직 받지 못한 요청만 열어둔다. `/api/users/**`로 넓히면 이후 추가될 회원 API까지 공개된다
+	// 토큰을 아직 받지 못한 요청만 열어둔다. `/api/auth/**`로 넓히면 이후 추가될 인증 API까지 공개된다
 	private static final String[] PERMIT_ALL_PATHS = {
 			"/api/health",
-			"/api/users/social/**",
-			"/api/users/token/refresh"
+			"/api/auth/login/social/**",
+			"/api/auth/token/refresh"
 	};
 
-	// 온보딩 중에도 필요한 경로. 온보딩 화면이 이미지 업로드와 기본 프로필 이미지 조회를 쓴다
+	// 온보딩 중에도 필요한 경로. 이미지 업로드 URL 발급은 /api/onboarding/** 안에 있고, 프로필 이미지 조회만 밖에 있다
 	private static final String[] ONBOARDING_ALLOWED_PATHS = {
 			"/api/onboarding/**",
-			"/api/media/image-upload-urls",
-			"/api/dogs/profile-image"
+			"/api/dogs/profile/image"
 	};
 
 	// Swagger UI 정적 파일과 그 안의 openapi3.json이 모두 이 경로 아래에 있다

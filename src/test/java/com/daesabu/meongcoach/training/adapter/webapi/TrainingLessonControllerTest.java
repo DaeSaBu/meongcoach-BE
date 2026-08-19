@@ -62,7 +62,7 @@ class TrainingLessonControllerTest {
 				))
 		));
 
-		mockMvc.perform(get("/api/training/lessons/{lessonId}", 1L)
+		mockMvc.perform(get("/api/training/lessons/{lessonId}/cards", 1L)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.cards[0].cardId").value(10))
@@ -105,7 +105,7 @@ class TrainingLessonControllerTest {
 				new CardView(10L, "앉아 준비", 1, "간식을 손에 쥐고 앉아를 말하세요", List.of())
 		));
 
-		mockMvc.perform(get("/api/training/lessons/{lessonId}", 1L))
+		mockMvc.perform(get("/api/training/lessons/{lessonId}/cards", 1L))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.cards[0].cardMedia").isArray())
 				.andExpect(jsonPath("$.cards[0].cardMedia").isEmpty());
@@ -116,7 +116,7 @@ class TrainingLessonControllerTest {
 	void findCardsReturnsEmptyArrayWhenLessonHasNoCard() throws Exception {
 		given(lessonFinder.findCards(1L)).willReturn(List.of());
 
-		mockMvc.perform(get("/api/training/lessons/{lessonId}", 1L))
+		mockMvc.perform(get("/api/training/lessons/{lessonId}/cards", 1L))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.cards").isArray())
 				.andExpect(jsonPath("$.cards").isEmpty());
@@ -127,7 +127,7 @@ class TrainingLessonControllerTest {
 	void findCardsReturnsNotFoundWhenLessonDoesNotExist() throws Exception {
 		given(lessonFinder.findCards(999L)).willThrow(new LessonNotFoundException(999L));
 
-		mockMvc.perform(get("/api/training/lessons/{lessonId}", 999L)
+		mockMvc.perform(get("/api/training/lessons/{lessonId}/cards", 999L)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isNotFound())
 				.andExpect(jsonPath("$.status").value(404))
@@ -153,10 +153,10 @@ class TrainingLessonControllerTest {
 	void completeLessonReturnsUpdatedCompletedCount() throws Exception {
 		given(lessonCompleter.completeLesson(42L, 1L)).willReturn(3);
 
-		mockMvc.perform(post("/api/training/lessons/{lessonId}", 1L)
+		mockMvc.perform(post("/api/training/lessons/{lessonId}/completion", 1L)
 						.principal(CURRENT_USER)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
-				.andExpect(status().isOk())
+				.andExpect(status().isCreated())
 				.andExpect(jsonPath("$.lessonId").value(1))
 				.andExpect(jsonPath("$.completedCount").value(3))
 				.andDo(document("training/lesson-complete",
@@ -173,8 +173,8 @@ class TrainingLessonControllerTest {
 	@Test
 	@DisplayName("인증 주체에서 읽은 사용자로 레슨 완료를 위임한다")
 	void completeLessonDelegatesWithCurrentUserId() throws Exception {
-		mockMvc.perform(post("/api/training/lessons/{lessonId}", 7L).principal(CURRENT_USER))
-				.andExpect(status().isOk());
+		mockMvc.perform(post("/api/training/lessons/{lessonId}/completion", 7L).principal(CURRENT_USER))
+				.andExpect(status().isCreated());
 
 		then(lessonCompleter).should().completeLesson(42L, 7L);
 	}
@@ -184,7 +184,7 @@ class TrainingLessonControllerTest {
 	void completeLessonReturnsNotFoundWhenLessonDoesNotExist() throws Exception {
 		given(lessonCompleter.completeLesson(42L, 999L)).willThrow(new LessonNotFoundException(999L));
 
-		mockMvc.perform(post("/api/training/lessons/{lessonId}", 999L)
+		mockMvc.perform(post("/api/training/lessons/{lessonId}/completion", 999L)
 						.principal(CURRENT_USER)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isNotFound())
@@ -209,7 +209,7 @@ class TrainingLessonControllerTest {
 	@Test
 	@DisplayName("레슨 완료 시 인증 정보가 없으면 401을 반환한다")
 	void completeLessonReturnsUnauthorizedWhenNotAuthenticated() throws Exception {
-		mockMvc.perform(post("/api/training/lessons/{lessonId}", 1L))
+		mockMvc.perform(post("/api/training/lessons/{lessonId}/completion", 1L))
 				.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
 	}

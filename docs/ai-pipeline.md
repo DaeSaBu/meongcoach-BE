@@ -5,7 +5,7 @@
 ## 전체 흐름
 
 ```
-앱 → POST /api/ai/video-upload-urls        (ai — media의 VideoUploadUrlIssuer로 presigned URL 발급)
+앱 → POST /api/ai/presigned-urls           (ai — media의 VideoUploadUrlIssuer로 presigned URL 발급)
 앱 → S3에 영상 직접 업로드                   (서버를 거치지 않음)
 S3 → ObjectCreated 이벤트 → SQS 큐          (meongcoach.ai.video-queue)
 VideoUploadSqsConsumer                      (ai/adapter/consumer)

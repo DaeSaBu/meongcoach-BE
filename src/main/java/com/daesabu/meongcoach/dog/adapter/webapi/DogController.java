@@ -16,7 +16,7 @@ public class DogController {
 
 	private final DogProfileImageFinder dogProfileImageFinder;
 
-	@GetMapping("/profile-image")
+	@GetMapping("/profile/image")
 	public DogProfileImageResponse findProfileImage(@CurrentUserId Long userId) {
 		DogProfileImageView profileImage = dogProfileImageFinder.findSelectedProfileImage(userId);
 		return DogProfileImageResponse.from(profileImage);

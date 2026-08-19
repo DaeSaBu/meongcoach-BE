@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/training/training-categories")
+@RequestMapping("/api/training/categories")
 @RequiredArgsConstructor
 public class TrainingCategoryController {
 

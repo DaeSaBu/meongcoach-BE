@@ -47,7 +47,7 @@ class DogControllerTest {
 		given(dogProfileImageFinder.findSelectedProfileImage(42L))
 				.willReturn(new DogProfileImageView(10L, IMAGE_URL));
 
-		mockMvc.perform(get("/api/dogs/profile-image")
+		mockMvc.perform(get("/api/dogs/profile/image")
 						.principal(CURRENT_USER)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isOk())
@@ -68,7 +68,7 @@ class DogControllerTest {
 		given(dogProfileImageFinder.findSelectedProfileImage(42L))
 				.willReturn(new DogProfileImageView(10L, IMAGE_URL));
 
-		mockMvc.perform(get("/api/dogs/profile-image").principal(CURRENT_USER))
+		mockMvc.perform(get("/api/dogs/profile/image").principal(CURRENT_USER))
 				.andExpect(status().isOk());
 
 		then(dogProfileImageFinder).should().findSelectedProfileImage(42L);
@@ -80,7 +80,7 @@ class DogControllerTest {
 		given(dogProfileImageFinder.findSelectedProfileImage(42L))
 				.willReturn(new DogProfileImageView(10L, ""));
 
-		mockMvc.perform(get("/api/dogs/profile-image").principal(CURRENT_USER))
+		mockMvc.perform(get("/api/dogs/profile/image").principal(CURRENT_USER))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.dogId").value(10))
 				.andExpect(jsonPath("$.profileImageUrl").value(""));
@@ -91,7 +91,7 @@ class DogControllerTest {
 	void findProfileImageReturnsNotFoundWhenNoDogIsSelected() throws Exception {
 		given(dogProfileImageFinder.findSelectedProfileImage(42L)).willThrow(new DogNotFoundException());
 
-		mockMvc.perform(get("/api/dogs/profile-image")
+		mockMvc.perform(get("/api/dogs/profile/image")
 						.principal(CURRENT_USER)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isNotFound())
@@ -113,7 +113,7 @@ class DogControllerTest {
 	@Test
 	@DisplayName("인증 정보가 없으면 401을 반환한다")
 	void findProfileImageReturnsUnauthorizedWhenNotAuthenticated() throws Exception {
-		mockMvc.perform(get("/api/dogs/profile-image"))
+		mockMvc.perform(get("/api/dogs/profile/image"))
 				.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
 	}
