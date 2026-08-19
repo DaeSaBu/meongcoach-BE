@@ -78,9 +78,9 @@ class SecurityFilterChainTest {
 	@Test
 	@DisplayName("토큰 재발급은 인증 없이 호출할 수 있다")
 	void tokenRefreshIsPermitted() throws Exception {
-		mockMvc.perform(post("/api/auth/tokens")
+		mockMvc.perform(post("/api/auth/token/refresh")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"grantType\": \"refresh\", \"refreshToken\": \"\"}"))
+						.content("{\"refreshToken\": \"\"}"))
 				.andExpect(status().isBadRequest());
 	}
 
@@ -89,10 +89,10 @@ class SecurityFilterChainTest {
 	void authenticatedSocialLoginWithInvalidCredentialReturnsUnauthorized() throws Exception {
 		AuthToken token = tokenProvider.issue(userId);
 
-		mockMvc.perform(post("/api/auth/tokens")
+		mockMvc.perform(post("/api/auth/login")
 						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken())
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"grantType\": \"social\", \"provider\": \"kakao\", \"token\": \"invalid\"}"))
+						.content("{\"provider\": \"kakao\", \"token\": \"invalid\"}"))
 				.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.code").value("USER_INVALID_SOCIAL_TOKEN"));
 	}
