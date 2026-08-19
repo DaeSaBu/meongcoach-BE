@@ -47,7 +47,7 @@ class TrainingTopicControllerTest {
 	@Test
 	@DisplayName("선택한 토픽 ID를 반환한다")
 	void selectTopicReturnsSelectedTopicId() throws Exception {
-		mockMvc.perform(put("/api/training/topic-selection")
+		mockMvc.perform(put("/api/training/topic/selection")
 						.principal(CURRENT_USER)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
 						.contentType(MediaType.APPLICATION_JSON)
@@ -67,7 +67,7 @@ class TrainingTopicControllerTest {
 	@Test
 	@DisplayName("인증 주체에서 읽은 사용자로 토픽 선택을 위임한다")
 	void selectTopicDelegatesWithCurrentUserId() throws Exception {
-		mockMvc.perform(put("/api/training/topic-selection")
+		mockMvc.perform(put("/api/training/topic/selection")
 						.principal(CURRENT_USER)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(selectionBody(7L)))
@@ -79,14 +79,14 @@ class TrainingTopicControllerTest {
 	@Test
 	@DisplayName("같은 토픽을 연속으로 선택해도 200을 반환한다")
 	void selectTopicReturnsOkWhenSelectedRepeatedly() throws Exception {
-		mockMvc.perform(put("/api/training/topic-selection")
+		mockMvc.perform(put("/api/training/topic/selection")
 						.principal(CURRENT_USER)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(selectionBody(1L)))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.topicId").value(1));
 
-		mockMvc.perform(put("/api/training/topic-selection")
+		mockMvc.perform(put("/api/training/topic/selection")
 						.principal(CURRENT_USER)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(selectionBody(1L)))
@@ -97,7 +97,7 @@ class TrainingTopicControllerTest {
 	@Test
 	@DisplayName("토픽 ID가 없으면 검증에 실패한다")
 	void selectTopicFailsWhenTopicIdIsMissing() throws Exception {
-		mockMvc.perform(put("/api/training/topic-selection")
+		mockMvc.perform(put("/api/training/topic/selection")
 						.principal(CURRENT_USER)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{}"))
@@ -111,7 +111,7 @@ class TrainingTopicControllerTest {
 	void selectTopicReturnsNotFoundWhenTopicDoesNotExist() throws Exception {
 		willThrow(new TopicNotFoundException(999L)).given(topicSelector).selectTopic(42L, 999L);
 
-		mockMvc.perform(put("/api/training/topic-selection")
+		mockMvc.perform(put("/api/training/topic/selection")
 						.principal(CURRENT_USER)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
 						.contentType(MediaType.APPLICATION_JSON)
@@ -138,7 +138,7 @@ class TrainingTopicControllerTest {
 	@Test
 	@DisplayName("인증 정보가 없으면 401을 반환한다")
 	void selectTopicReturnsUnauthorizedWhenNotAuthenticated() throws Exception {
-		mockMvc.perform(put("/api/training/topic-selection")
+		mockMvc.perform(put("/api/training/topic/selection")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(selectionBody(1L)))
 				.andExpect(status().isUnauthorized())

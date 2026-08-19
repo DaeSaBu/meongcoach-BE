@@ -33,7 +33,7 @@ class SecurityFilterChainTest {
 	private static final String PROTECTED_PATH = "/api/dogs";
 
 	// @CurrentUserId를 받는 보호 경로. 없는 토픽을 골라 두어 토픽 조회 단계에서 404로 끝난다
-	private static final String CURRENT_USER_PATH = "/api/training/topic-selection";
+	private static final String CURRENT_USER_PATH = "/api/training/topic/selection";
 
 	private static final String MISSING_TOPIC_SELECTION_BODY = "{\"topicId\": 999}";
 
