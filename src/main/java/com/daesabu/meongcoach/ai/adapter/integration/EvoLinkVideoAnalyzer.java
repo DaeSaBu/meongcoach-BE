@@ -1,10 +1,10 @@
-package com.daesabu.meongcoach.ai.adapter.client;
+package com.daesabu.meongcoach.ai.adapter.integration;
 
-import com.daesabu.meongcoach.ai.adapter.client.dto.EvoLinkChatRequest;
-import com.daesabu.meongcoach.ai.adapter.client.dto.EvoLinkChatRequest.ChatMessage;
-import com.daesabu.meongcoach.ai.adapter.client.dto.EvoLinkChatRequest.ContentPart;
-import com.daesabu.meongcoach.ai.adapter.client.dto.EvoLinkChatRequest.ResponseFormat;
-import com.daesabu.meongcoach.ai.adapter.client.dto.EvoLinkChatRequest.Thinking;
+import com.daesabu.meongcoach.ai.adapter.integration.dto.EvoLinkChatRequest;
+import com.daesabu.meongcoach.ai.adapter.integration.dto.EvoLinkChatRequest.ChatMessage;
+import com.daesabu.meongcoach.ai.adapter.integration.dto.EvoLinkChatRequest.ContentPart;
+import com.daesabu.meongcoach.ai.adapter.integration.dto.EvoLinkChatRequest.ResponseFormat;
+import com.daesabu.meongcoach.ai.adapter.integration.dto.EvoLinkChatRequest.Thinking;
 import com.daesabu.meongcoach.ai.application.provided.AiReportContent;
 import com.daesabu.meongcoach.ai.application.required.VideoAnalyzer;
 import com.daesabu.meongcoach.training.application.provided.TopicFinder;

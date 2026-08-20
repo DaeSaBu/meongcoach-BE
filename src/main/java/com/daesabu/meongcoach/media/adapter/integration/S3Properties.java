@@ -1,4 +1,4 @@
-package com.daesabu.meongcoach.media.adapter.client;
+package com.daesabu.meongcoach.media.adapter.integration;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

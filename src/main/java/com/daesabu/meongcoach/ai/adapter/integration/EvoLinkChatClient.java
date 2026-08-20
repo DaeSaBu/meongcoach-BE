@@ -1,7 +1,7 @@
-package com.daesabu.meongcoach.ai.adapter.client;
+package com.daesabu.meongcoach.ai.adapter.integration;
 
-import com.daesabu.meongcoach.ai.adapter.client.dto.EvoLinkChatRequest;
-import com.daesabu.meongcoach.ai.adapter.client.dto.EvoLinkChatResponse;
+import com.daesabu.meongcoach.ai.adapter.integration.dto.EvoLinkChatRequest;
+import com.daesabu.meongcoach.ai.adapter.integration.dto.EvoLinkChatResponse;
 import java.time.Duration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.http.client.ClientHttpRequestFactoryBuilder;

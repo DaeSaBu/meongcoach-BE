@@ -1,4 +1,4 @@
-package com.daesabu.meongcoach.user.adapter.client;
+package com.daesabu.meongcoach.user.adapter.integration;
 
 import com.daesabu.meongcoach.user.application.required.SocialProfileReader;
 import com.daesabu.meongcoach.user.domain.SocialProvider;

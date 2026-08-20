@@ -1,9 +1,9 @@
-package com.daesabu.meongcoach.ai.adapter.client;
+package com.daesabu.meongcoach.ai.adapter.integration;
 
-import com.daesabu.meongcoach.ai.adapter.client.dto.EvoLinkChatRequest;
-import com.daesabu.meongcoach.ai.adapter.client.dto.EvoLinkChatRequest.ChatMessage;
-import com.daesabu.meongcoach.ai.adapter.client.dto.EvoLinkChatRequest.ResponseFormat;
-import com.daesabu.meongcoach.ai.adapter.client.dto.EvoLinkChatRequest.Thinking;
+import com.daesabu.meongcoach.ai.adapter.integration.dto.EvoLinkChatRequest;
+import com.daesabu.meongcoach.ai.adapter.integration.dto.EvoLinkChatRequest.ChatMessage;
+import com.daesabu.meongcoach.ai.adapter.integration.dto.EvoLinkChatRequest.ResponseFormat;
+import com.daesabu.meongcoach.ai.adapter.integration.dto.EvoLinkChatRequest.Thinking;
 import com.daesabu.meongcoach.ai.application.required.ReportTitleGenerator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.List;

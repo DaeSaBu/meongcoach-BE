@@ -1,4 +1,4 @@
-package com.daesabu.meongcoach.media.adapter.client;
+package com.daesabu.meongcoach.media.adapter.integration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

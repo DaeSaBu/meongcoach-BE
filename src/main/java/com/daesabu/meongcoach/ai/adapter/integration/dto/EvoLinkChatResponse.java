@@ -1,4 +1,4 @@
-package com.daesabu.meongcoach.ai.adapter.client.dto;
+package com.daesabu.meongcoach.ai.adapter.integration.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;

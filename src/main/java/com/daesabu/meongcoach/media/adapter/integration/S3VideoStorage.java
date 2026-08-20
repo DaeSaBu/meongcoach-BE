@@ -1,4 +1,4 @@
-package com.daesabu.meongcoach.media.adapter.client;
+package com.daesabu.meongcoach.media.adapter.integration;
 
 import com.daesabu.meongcoach.media.application.required.VideoDownloadUrl;
 import com.daesabu.meongcoach.media.application.required.VideoStorage;

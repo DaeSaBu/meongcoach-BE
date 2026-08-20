@@ -1,4 +1,4 @@
-package com.daesabu.meongcoach.user.adapter.client;
+package com.daesabu.meongcoach.user.adapter.integration;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;

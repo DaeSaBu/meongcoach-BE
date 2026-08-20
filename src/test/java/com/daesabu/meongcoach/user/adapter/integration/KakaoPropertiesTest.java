@@ -1,4 +1,4 @@
-package com.daesabu.meongcoach.user.adapter.client;
+package com.daesabu.meongcoach.user.adapter.integration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

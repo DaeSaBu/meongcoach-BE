@@ -1,4 +1,4 @@
-package com.daesabu.meongcoach.ai.adapter.client;
+package com.daesabu.meongcoach.ai.adapter.integration;
 
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;

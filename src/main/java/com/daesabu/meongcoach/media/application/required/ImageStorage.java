@@ -3,7 +3,7 @@ package com.daesabu.meongcoach.media.application.required;
 import com.daesabu.meongcoach.media.domain.vo.ImageObjectKey;
 
 /**
- * 이미지 스토리지 연동 지점. 구현은 adapter/client의 R2 어댑터가 담당한다.
+ * 이미지 스토리지 연동 지점. 구현은 adapter/integration의 R2 어댑터가 담당한다.
  */
 public interface ImageStorage {
 

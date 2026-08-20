@@ -1,4 +1,4 @@
-package com.daesabu.meongcoach.ai.adapter.client;
+package com.daesabu.meongcoach.ai.adapter.integration;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
