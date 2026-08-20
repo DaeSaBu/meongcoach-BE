@@ -21,6 +21,16 @@ class AiReportTest {
 	}
 
 	@Test
+	@DisplayName("생성하면 상태가 COMPLETED로 설정된다")
+	void createSetsStatusCompleted() {
+		// create()는 분석 성공 경로에서만 호출되므로 상태는 항상 COMPLETED다
+		AiReport report = AiReport.create(new AiReportCreateCommand(1L,
+				"videos/training/1/video.mp4", "분리불안 징후 행동 분석", "분리불안 징후가 관찰됩니다."));
+
+		assertThat(report.getStatus()).isEqualTo(AiReportStatus.COMPLETED);
+	}
+
+	@Test
 	@DisplayName("제목 없이도 생성할 수 있다")
 	void createAllowsNullTitle() {
 		AiReport report = AiReport.create(new AiReportCreateCommand(1L,
