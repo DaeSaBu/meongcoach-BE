@@ -38,7 +38,6 @@
 | 도메인 예외·에러코드 | `domain/exception` | `{모듈}ErrorCode`, `~Exception` | `UserErrorCode`, `InvalidEmailException` |
 
 - `domain` 루트에는 엔티티와 enum을 두고, 값 객체는 `domain/vo`, 예외·에러코드는 `domain/exception`으로 분리합니다.
-- 기존 코드의 `~View` record와 `adapter/client` 패키지는 점진적으로 `~Result`·`adapter/integration`으로 전환합니다. 새 코드는 새 이름만 사용합니다.
 
 ## 트랜잭션
 
