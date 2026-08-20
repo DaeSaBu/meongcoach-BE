@@ -1,4 +1,14 @@
+---
+name: git-convention
+description: "이 저장소의 Git 컨벤션 — 커밋 메시지 type·scope·subject 규칙, 커밋 단위, 브랜치 규칙, push 규칙, PR·코드 리뷰 규칙, GitHub Actions 워크플로 규칙. Use when committing, creating branches, pushing, creating PRs, or reviewing code. Triggers on: git commit, 커밋, 브랜치 생성, push, PR 생성, 코드 리뷰, 워크플로 수정."
+user-invocable: true
+---
+
 # Git 컨벤션
+
+이 저장소에서 커밋·브랜치·push·PR을 다룰 때 반드시 따르는 규칙이다.
+
+---
 
 ## 커밋 메시지 컨벤션
 
@@ -57,6 +67,8 @@
 3. subject가 실제 변경 전체를 대표하는지 확인한다.
 4. 목적이 다른 파일이 섞였으면 커밋을 분리한다.
 
+---
+
 ## 브랜치 규칙
 
 이 저장소가 추가로 정의하는 브랜치 흐름이다.
@@ -73,6 +85,8 @@
 - 머지 방향은 `feature → develop → main`이다.
 - 머지 전략은 아래 [PR 컨벤션](#pr-컨벤션)에서 정의한다.
 
+---
+
 ## Push 규칙
 
 - push는 사용자가 명시적으로 요청한 경우에만 수행한다.
@@ -80,6 +94,8 @@
 - 일반 push에는 릴리스 노트, annotated tag, 버전 변경을 추가하지 않는다.
 - `--force`는 금지한다.
 - `--force-with-lease`는 원격 브랜치를 덮어쓰는 부작용을 인지한 후에만 사용한다.
+
+---
 
 ## PR 컨벤션
 
@@ -89,10 +105,14 @@
 - 최소 1인 이상 승인 후 머지한다.
 - 머지 전략은 저장소별로 통일한다 — Squash merge를 기본, 릴리스 브랜치는 Merge commit.
 
+---
+
 ## 코드 리뷰 규칙
 
 - 리뷰 승인 조건: CI 통과 + 최소 1인 승인 + 미해결 코멘트 없음, 모두 적용.
 - 리뷰 코멘트에는 구체적인 개선 방향을 적는다.
+
+---
 
 ## GitHub Actions 워크플로
 

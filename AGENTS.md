@@ -6,7 +6,7 @@
 ## 핵심 규칙
 
 - 코드 스타일의 원천은 `.editorconfig`(Wooteco 스타일)입니다. 도구로 강제되지 않는 규칙(삼항 연산자·else·switch 금지, return 인자에 호출 중첩 금지)은 code-convention.md 참고.
-- 커밋 메시지는 `type(scope): 한글 설명` 형식이며 scope는 선택입니다. (예: `feature(user): 소셜 로그인 API 추가` — 허용 타입·scope 후보는 git-convention.md 참고, `feat`이 아니라 `feature`)
+- 커밋 메시지는 `type(scope): 한글 설명` 형식이며 scope는 선택입니다. (예: `feature(user): 소셜 로그인 API 추가` — 허용 타입·scope 후보는 git-convention 스킬 참고, `feat`이 아니라 `feature`)
 - 아키텍처는 Spring Modulith 기반 모듈 구조를 따릅니다. 모듈 내부 의존 방향은 항상 `adapter → application → domain`이며, 모듈 간 접근은 `application/provided` 인터페이스로만 합니다.
 - 로그인 사용자 식별은 컨트롤러의 `@CurrentUserId Long userId` 파라미터로 받습니다. 인증 주체를 회원 ID로 해석하는 곳은 `shared/security/CurrentUserIdArgumentResolver` 한 곳뿐이며, 컨트롤러는 인증 주체를 직접 다루지 않습니다. (architecture.md 참고)
 - 애플리케이션 조회 결과는 도메인 타입 반환이 기본입니다. `~Result` record는 도메인 타입으로 부족할 때만 만듭니다 — 판단 기준은 code-convention.md 참고.
@@ -21,7 +21,7 @@
 
 | 문서                                                                         | 내용                         |
 |----------------------------------------------------------------------------|----------------------------|
-| [docs/conventions/git-convention.md](docs/conventions/git-convention.md)   | 커밋 메시지, 브랜치 전략, PR 규칙      |
+| [.claude/skills/git-convention/SKILL.md](.claude/skills/git-convention/SKILL.md) | 커밋 메시지, 브랜치 전략, PR 규칙 (Claude Code 스킬) |
 | [docs/conventions/code-convention.md](docs/conventions/code-convention.md) | 코드 스타일, 네이밍, Lombok/DTO 규칙 |
 | [docs/conventions/test-convention.md](docs/conventions/test-convention.md) | 테스트 작성 규칙                  |
 | [docs/conventions/restdocs-convention.md](docs/conventions/restdocs-convention.md) | RestDocs API 문서화 규칙   |
