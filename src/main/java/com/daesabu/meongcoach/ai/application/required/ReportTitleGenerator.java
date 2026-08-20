@@ -1,7 +1,7 @@
 package com.daesabu.meongcoach.ai.application.required;
 
 /**
- * 리포트 제목 생성 연동 지점. 구현은 adapter/client의 어댑터가 담당한다.
+ * 리포트 제목 생성 연동 지점. 구현은 adapter/integration의 어댑터가 담당한다.
  */
 public interface ReportTitleGenerator {
 

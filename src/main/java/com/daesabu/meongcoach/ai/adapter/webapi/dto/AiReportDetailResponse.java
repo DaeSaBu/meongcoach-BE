@@ -1,7 +1,7 @@
 package com.daesabu.meongcoach.ai.adapter.webapi.dto;
 
 import com.daesabu.meongcoach.ai.application.provided.AiReportContent;
-import com.daesabu.meongcoach.ai.application.provided.AiReportDetailView;
+import com.daesabu.meongcoach.ai.application.provided.AiReportDetailResult;
 import java.time.LocalDateTime;
 
 /**
@@ -11,8 +11,8 @@ import java.time.LocalDateTime;
 public record AiReportDetailResponse(Long reportId, String videoObjectKey, String title, AiReportContent content,
 		LocalDateTime createdAt) {
 
-	public static AiReportDetailResponse from(AiReportDetailView view) {
-		return new AiReportDetailResponse(view.id(), view.videoObjectKey(), view.title(), view.content(),
-				view.createdAt());
+	public static AiReportDetailResponse from(AiReportDetailResult result) {
+		return new AiReportDetailResponse(result.id(), result.videoObjectKey(), result.title(), result.content(),
+				result.createdAt());
 	}
 }

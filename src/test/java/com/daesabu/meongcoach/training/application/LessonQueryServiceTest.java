@@ -3,8 +3,8 @@ package com.daesabu.meongcoach.training.application;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.daesabu.meongcoach.training.application.provided.CardMediaView;
-import com.daesabu.meongcoach.training.application.provided.CardView;
+import com.daesabu.meongcoach.training.application.provided.CardMediaResult;
+import com.daesabu.meongcoach.training.application.provided.CardResult;
 import com.daesabu.meongcoach.training.application.provided.LessonFinder;
 import com.daesabu.meongcoach.training.domain.Card;
 import com.daesabu.meongcoach.training.domain.CardCreateCommand;
@@ -57,9 +57,9 @@ class LessonQueryServiceTest {
 		persistCard(lesson, "먼저 카드 지시문", 1);
 		flushAndClear();
 
-		List<CardView> cards = lessonFinder.findCards(lesson.getId());
+		List<CardResult> cards = lessonFinder.findCards(lesson.getId());
 
-		assertThat(cards).extracting(CardView::instruction)
+		assertThat(cards).extracting(CardResult::instruction)
 				.containsExactly("먼저 카드 지시문", "나중 카드 지시문");
 	}
 
@@ -70,9 +70,9 @@ class LessonQueryServiceTest {
 		persistCard(lesson, "앉아 준비", "지시문", 1);
 		flushAndClear();
 
-		List<CardView> cards = lessonFinder.findCards(lesson.getId());
+		List<CardResult> cards = lessonFinder.findCards(lesson.getId());
 
-		assertThat(cards).extracting(CardView::title).containsExactly("앉아 준비");
+		assertThat(cards).extracting(CardResult::title).containsExactly("앉아 준비");
 	}
 
 	@Test
@@ -85,10 +85,10 @@ class LessonQueryServiceTest {
 		persistCardMedia(card, MediaType.VIDEO, "https://cdn.example.com/2.mp4", 2);
 		flushAndClear();
 
-		List<CardView> cards = lessonFinder.findCards(lesson.getId());
+		List<CardResult> cards = lessonFinder.findCards(lesson.getId());
 
 		assertThat(cards).hasSize(1);
-		assertThat(cards.getFirst().cardMedia()).extracting(CardMediaView::url)
+		assertThat(cards.getFirst().cardMedia()).extracting(CardMediaResult::url)
 				.containsExactly("https://cdn.example.com/1.png", "https://cdn.example.com/2.mp4",
 						"https://cdn.example.com/3.png");
 	}
@@ -104,12 +104,12 @@ class LessonQueryServiceTest {
 		persistCardMedia(second, MediaType.IMAGE, "https://cdn.example.com/second.png", 2);
 		flushAndClear();
 
-		List<CardView> cards = lessonFinder.findCards(lesson.getId());
+		List<CardResult> cards = lessonFinder.findCards(lesson.getId());
 
 		assertThat(cards).hasSize(2);
-		assertThat(cards.get(0).cardMedia()).extracting(CardMediaView::url)
+		assertThat(cards.get(0).cardMedia()).extracting(CardMediaResult::url)
 				.containsExactly("https://cdn.example.com/first.png");
-		assertThat(cards.get(1).cardMedia()).extracting(CardMediaView::url)
+		assertThat(cards.get(1).cardMedia()).extracting(CardMediaResult::url)
 				.containsExactly("https://cdn.example.com/second.mp4", "https://cdn.example.com/second.png");
 	}
 
@@ -121,9 +121,9 @@ class LessonQueryServiceTest {
 		persistCardMedia(card, MediaType.VIDEO, "https://cdn.example.com/1.mp4", 1);
 		flushAndClear();
 
-		List<CardView> cards = lessonFinder.findCards(lesson.getId());
+		List<CardResult> cards = lessonFinder.findCards(lesson.getId());
 
-		CardMediaView cardMedia = cards.getFirst().cardMedia().getFirst();
+		CardMediaResult cardMedia = cards.getFirst().cardMedia().getFirst();
 		assertThat(cardMedia.mediaType()).isEqualTo(MediaType.VIDEO);
 		assertThat(cardMedia.cardId()).isEqualTo(card.getId());
 	}
@@ -137,7 +137,7 @@ class LessonQueryServiceTest {
 		persistCardMedia(other, MediaType.IMAGE, "https://cdn.example.com/1.png", 1);
 		flushAndClear();
 
-		List<CardView> cards = lessonFinder.findCards(lesson.getId());
+		List<CardResult> cards = lessonFinder.findCards(lesson.getId());
 
 		assertThat(cards).hasSize(2);
 		assertThat(cards.getFirst().cardMedia()).isEmpty();
@@ -152,9 +152,9 @@ class LessonQueryServiceTest {
 		persistCard(other, "다른 레슨 지시문", 1);
 		flushAndClear();
 
-		List<CardView> cards = lessonFinder.findCards(lesson.getId());
+		List<CardResult> cards = lessonFinder.findCards(lesson.getId());
 
-		assertThat(cards).extracting(CardView::instruction).containsExactly("대상 지시문");
+		assertThat(cards).extracting(CardResult::instruction).containsExactly("대상 지시문");
 	}
 
 	@Test
@@ -163,7 +163,7 @@ class LessonQueryServiceTest {
 		Lesson lesson = persistLesson("기본 교육");
 		flushAndClear();
 
-		List<CardView> cards = lessonFinder.findCards(lesson.getId());
+		List<CardResult> cards = lessonFinder.findCards(lesson.getId());
 
 		assertThat(cards).isEmpty();
 	}

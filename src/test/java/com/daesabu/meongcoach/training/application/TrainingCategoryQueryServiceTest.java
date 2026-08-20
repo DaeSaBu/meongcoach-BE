@@ -2,9 +2,9 @@ package com.daesabu.meongcoach.training.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.daesabu.meongcoach.training.application.provided.TopicView;
+import com.daesabu.meongcoach.training.application.provided.TopicResult;
 import com.daesabu.meongcoach.training.application.provided.TrainingCategoryFinder;
-import com.daesabu.meongcoach.training.application.provided.TrainingCategoryView;
+import com.daesabu.meongcoach.training.application.provided.TrainingCategoryResult;
 import com.daesabu.meongcoach.training.domain.Topic;
 import com.daesabu.meongcoach.training.domain.TopicCreateCommand;
 import com.daesabu.meongcoach.training.domain.TrainingCategory;
@@ -45,9 +45,9 @@ class TrainingCategoryQueryServiceTest {
 		persistCategory("먼저 카테고리", 1);
 		flushAndClear();
 
-		List<TrainingCategoryView> categories = trainingCategoryFinder.findAll();
+		List<TrainingCategoryResult> categories = trainingCategoryFinder.findAll();
 
-		assertThat(categories).extracting(TrainingCategoryView::title)
+		assertThat(categories).extracting(TrainingCategoryResult::title)
 				.containsExactly("먼저 카테고리", "나중 카테고리");
 	}
 
@@ -60,10 +60,10 @@ class TrainingCategoryQueryServiceTest {
 		persistTopic(category, "둘째 토픽", 2);
 		flushAndClear();
 
-		List<TrainingCategoryView> categories = trainingCategoryFinder.findAll();
+		List<TrainingCategoryResult> categories = trainingCategoryFinder.findAll();
 
 		assertThat(categories).hasSize(1);
-		assertThat(categories.getFirst().topics()).extracting(TopicView::title)
+		assertThat(categories.getFirst().topics()).extracting(TopicResult::title)
 				.containsExactly("첫째 토픽", "둘째 토픽", "셋째 토픽");
 	}
 
@@ -77,12 +77,12 @@ class TrainingCategoryQueryServiceTest {
 		persistTopic(advanced, "이리와", 2);
 		flushAndClear();
 
-		List<TrainingCategoryView> categories = trainingCategoryFinder.findAll();
+		List<TrainingCategoryResult> categories = trainingCategoryFinder.findAll();
 
-		assertThat(categories).extracting(TrainingCategoryView::title)
+		assertThat(categories).extracting(TrainingCategoryResult::title)
 				.containsExactly("기본 교육", "심화 교육");
-		assertThat(categories.get(0).topics()).extracting(TopicView::title).containsExactly("앉아");
-		assertThat(categories.get(1).topics()).extracting(TopicView::title).containsExactly("기다려", "이리와");
+		assertThat(categories.get(0).topics()).extracting(TopicResult::title).containsExactly("앉아");
+		assertThat(categories.get(1).topics()).extracting(TopicResult::title).containsExactly("기다려", "이리와");
 	}
 
 	@Test
@@ -100,12 +100,12 @@ class TrainingCategoryQueryServiceTest {
 		)));
 		flushAndClear();
 
-		TrainingCategoryView categoryView = trainingCategoryFinder.findAll().getFirst();
+		TrainingCategoryResult categoryResult = trainingCategoryFinder.findAll().getFirst();
 
-		assertThat(categoryView.description()).isEqualTo("기본기를 배우는 교육");
-		assertThat(categoryView.iconUrl()).isEqualTo("https://example.com/basic.png");
-		assertThat(categoryView.topics().getFirst())
-				.extracting(TopicView::description, TopicView::detail, TopicView::iconUrl)
+		assertThat(categoryResult.description()).isEqualTo("기본기를 배우는 교육");
+		assertThat(categoryResult.iconUrl()).isEqualTo("https://example.com/basic.png");
+		assertThat(categoryResult.topics().getFirst())
+				.extracting(TopicResult::description, TopicResult::detail, TopicResult::iconUrl)
 				.containsExactly(
 						"앉아 자세를 배우는 훈련",
 						"차분히 앉는 방법을 익혀요",
@@ -121,7 +121,7 @@ class TrainingCategoryQueryServiceTest {
 		persistTopic(other, "앉아", 1);
 		flushAndClear();
 
-		List<TrainingCategoryView> categories = trainingCategoryFinder.findAll();
+		List<TrainingCategoryResult> categories = trainingCategoryFinder.findAll();
 
 		assertThat(categories).hasSize(2);
 		assertThat(categories.getFirst().topics()).isEmpty();
@@ -130,7 +130,7 @@ class TrainingCategoryQueryServiceTest {
 	@Test
 	@DisplayName("등록된 카테고리가 없으면 빈 목록을 반환한다")
 	void findAllReturnsEmptyListWhenNoCategoryExists() {
-		List<TrainingCategoryView> categories = trainingCategoryFinder.findAll();
+		List<TrainingCategoryResult> categories = trainingCategoryFinder.findAll();
 
 		assertThat(categories).isEmpty();
 	}

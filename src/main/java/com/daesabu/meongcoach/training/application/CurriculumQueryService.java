@@ -2,11 +2,11 @@ package com.daesabu.meongcoach.training.application;
 
 import com.daesabu.meongcoach.progress.application.provided.LessonProgressFinder;
 import com.daesabu.meongcoach.progress.application.provided.TopicEntryFinder;
-import com.daesabu.meongcoach.training.application.provided.CurriculumDetailView;
+import com.daesabu.meongcoach.training.application.provided.CurriculumDetailResult;
 import com.daesabu.meongcoach.training.application.provided.CurriculumFinder;
-import com.daesabu.meongcoach.training.application.provided.CurriculumListView;
-import com.daesabu.meongcoach.training.application.provided.CurriculumView;
-import com.daesabu.meongcoach.training.application.provided.LessonView;
+import com.daesabu.meongcoach.training.application.provided.CurriculumListResult;
+import com.daesabu.meongcoach.training.application.provided.CurriculumResult;
+import com.daesabu.meongcoach.training.application.provided.LessonResult;
 import com.daesabu.meongcoach.training.application.required.CurriculumRepository;
 import com.daesabu.meongcoach.training.application.required.LessonRepository;
 import com.daesabu.meongcoach.training.application.required.TopicRepository;
@@ -43,22 +43,22 @@ public class CurriculumQueryService implements CurriculumFinder {
 	private final LessonProgressFinder lessonProgressFinder;
 
 	@Override
-	public CurriculumListView findCurriculums(Long userId) {
+	public CurriculumListResult findCurriculums(Long userId) {
 		Topic topic = resolveTopic(userId);
 
 		List<Curriculum> curriculums = curriculumRepository.findAllByTopic_IdOrderBySortOrderAscIdAsc(topic.getId());
 		Map<Long, List<Lesson>> lessonsByCurriculumId = groupLessonsByCurriculumId(curriculums);
 		Set<Long> completedLessonIds = findCompletedLessonIds(userId, lessonsByCurriculumId);
 
-		List<CurriculumView> curriculumViews = curriculums.stream()
-				.map(curriculum -> toView(curriculum,
+		List<CurriculumResult> curriculumResults = curriculums.stream()
+				.map(curriculum -> toResult(curriculum,
 						lessonsByCurriculumId.getOrDefault(curriculum.getId(), List.of()), completedLessonIds))
 				.toList();
-		return new CurriculumListView(topic.getId(), topic.getTitle(), curriculumViews);
+		return new CurriculumListResult(topic.getId(), topic.getTitle(), curriculumResults);
 	}
 
 	@Override
-	public CurriculumDetailView findCurriculum(Long userId, Long curriculumId) {
+	public CurriculumDetailResult findCurriculum(Long userId, Long curriculumId) {
 		Curriculum curriculum = curriculumRepository.findById(curriculumId)
 				.orElseThrow(() -> new CurriculumNotFoundException(curriculumId));
 
@@ -66,12 +66,12 @@ public class CurriculumQueryService implements CurriculumFinder {
 		List<Long> lessonIds = lessons.stream().map(Lesson::getId).toList();
 		Map<Long, Integer> completedCounts = lessonProgressFinder.findCompletedCounts(userId, lessonIds);
 
-		List<LessonView> lessonViews = lessons.stream()
-				.map(lesson -> toLessonView(lesson, completedCounts.get(lesson.getId())))
+		List<LessonResult> lessonResults = lessons.stream()
+				.map(lesson -> toLessonResult(lesson, completedCounts.get(lesson.getId())))
 				.toList();
 		// 토픽은 지연 로딩 프록시의 id만 읽어 추가 쿼리 없이 얻는다
-		return new CurriculumDetailView(curriculum.getId(), curriculum.getTopic().getId(), curriculum.getTitle(),
-				curriculum.getSortOrder(), lessonViews);
+		return new CurriculumDetailResult(curriculum.getId(), curriculum.getTopic().getId(), curriculum.getTitle(),
+				curriculum.getSortOrder(), lessonResults);
 	}
 
 	// 진입 기록이 없거나 기록된 토픽이 더 이상 없으면 카테고리·토픽 정렬 순서 기준 첫 토픽으로 폴백한다
@@ -101,18 +101,18 @@ public class CurriculumQueryService implements CurriculumFinder {
 		return lessonProgressFinder.findCompletedLessonIds(userId, lessonIds);
 	}
 
-	private CurriculumView toView(Curriculum curriculum, List<Lesson> lessons, Set<Long> completedLessonIds) {
+	private CurriculumResult toResult(Curriculum curriculum, List<Lesson> lessons, Set<Long> completedLessonIds) {
 		int totalLessons = lessons.size();
 		int completedLessons = (int) lessons.stream()
 				.map(Lesson::getId)
 				.filter(completedLessonIds::contains)
 				.count();
-		return new CurriculumView(curriculum.getId(), curriculum.getTitle(), totalLessons, completedLessons,
+		return new CurriculumResult(curriculum.getId(), curriculum.getTitle(), totalLessons, completedLessons,
 				CurriculumStatus.of(totalLessons, completedLessons));
 	}
 
-	private LessonView toLessonView(Lesson lesson, int completedCount) {
-		return new LessonView(lesson.getId(), lesson.getTitle(), lesson.getSortOrder(), lesson.getEstimatedMinutes(),
+	private LessonResult toLessonResult(Lesson lesson, int completedCount) {
+		return new LessonResult(lesson.getId(), lesson.getTitle(), lesson.getSortOrder(), lesson.getEstimatedMinutes(),
 				completedCount);
 	}
 }

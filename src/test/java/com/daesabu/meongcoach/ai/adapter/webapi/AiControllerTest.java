@@ -14,12 +14,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.daesabu.meongcoach.ai.application.provided.AiReportContent;
-import com.daesabu.meongcoach.ai.application.provided.AiReportDetailView;
+import com.daesabu.meongcoach.ai.application.provided.AiReportDetailResult;
 import com.daesabu.meongcoach.ai.application.provided.AiReportFinder;
-import com.daesabu.meongcoach.ai.application.provided.AiReportView;
+import com.daesabu.meongcoach.ai.application.provided.AiReportResult;
 import com.daesabu.meongcoach.ai.application.provided.AiTrialFinder;
 import com.daesabu.meongcoach.ai.application.provided.AiVideoUploadUrlIssuer;
-import com.daesabu.meongcoach.ai.application.provided.AiVideoUploadUrlView;
+import com.daesabu.meongcoach.ai.application.provided.AiVideoUploadUrlResult;
 import com.daesabu.meongcoach.ai.domain.exception.AiReportNotFoundException;
 import com.daesabu.meongcoach.ai.domain.exception.AiReportTrialExceededException;
 import com.daesabu.meongcoach.ai.domain.vo.AiTrial;
@@ -84,9 +84,9 @@ class AiControllerTest {
 	@DisplayName("리포트 목록을 최신순으로 반환한다")
 	void findReportsReturnsReportsLatestFirst() throws Exception {
 		given(aiReportFinder.findReports(42L)).willReturn(List.of(
-				new AiReportView(11L, "videos/training/42/second.mp4", "물체를 물고 달리는 행동 분석",
+				new AiReportResult(11L, "videos/training/42/second.mp4", "물체를 물고 달리는 행동 분석",
 						LocalDateTime.of(2026, 8, 2, 10, 30, 0)),
-				new AiReportView(10L, "videos/training/42/first.mp4", "분리불안 징후 행동 분석",
+				new AiReportResult(10L, "videos/training/42/first.mp4", "분리불안 징후 행동 분석",
 						LocalDateTime.of(2026, 8, 1, 9, 0, 0))
 		));
 
@@ -147,7 +147,7 @@ class AiControllerTest {
 	@Test
 	@DisplayName("리포트 하나를 본문과 함께 반환한다")
 	void findReportReturnsReportWithContent() throws Exception {
-		given(aiReportFinder.findReport(42L, 10L)).willReturn(new AiReportDetailView(10L,
+		given(aiReportFinder.findReport(42L, 10L)).willReturn(new AiReportDetailResult(10L,
 				"videos/training/42/first.mp4", "분리불안 징후 행동 분석", REPORT_CONTENT,
 				LocalDateTime.of(2026, 8, 1, 9, 0, 0)));
 
@@ -197,7 +197,7 @@ class AiControllerTest {
 	@Test
 	@DisplayName("인증 주체에서 읽은 사용자로 리포트 상세 조회를 위임한다")
 	void findReportDelegatesWithCurrentUserId() throws Exception {
-		given(aiReportFinder.findReport(42L, 10L)).willReturn(new AiReportDetailView(10L,
+		given(aiReportFinder.findReport(42L, 10L)).willReturn(new AiReportDetailResult(10L,
 				"videos/training/42/first.mp4", "분리불안 징후 행동 분석", REPORT_CONTENT,
 				LocalDateTime.of(2026, 8, 1, 9, 0, 0)));
 
@@ -237,7 +237,7 @@ class AiControllerTest {
 	@DisplayName("체험 횟수가 남아 있으면 영상 업로드 URL을 발급한다")
 	void issueVideoUploadUrlReturnsUploadUrl() throws Exception {
 		given(aiVideoUploadUrlIssuer.issue(42L, "video/mp4", 10485760L)).willReturn(
-				new AiVideoUploadUrlView(VIDEO_UPLOAD_URL, VIDEO_PUBLIC_URL, VIDEO_OBJECT_KEY, 900L));
+				new AiVideoUploadUrlResult(VIDEO_UPLOAD_URL, VIDEO_PUBLIC_URL, VIDEO_OBJECT_KEY, 900L));
 
 		mockMvc.perform(post("/api/ai/presigned-urls")
 						.principal(CURRENT_USER)
@@ -274,7 +274,7 @@ class AiControllerTest {
 	@DisplayName("인증 주체에서 읽은 사용자로 영상 업로드 URL 발급을 위임한다")
 	void issueVideoUploadUrlDelegatesWithCurrentUserId() throws Exception {
 		given(aiVideoUploadUrlIssuer.issue(42L, "video/mp4", 10485760L)).willReturn(
-				new AiVideoUploadUrlView(VIDEO_UPLOAD_URL, VIDEO_PUBLIC_URL, VIDEO_OBJECT_KEY, 900L));
+				new AiVideoUploadUrlResult(VIDEO_UPLOAD_URL, VIDEO_PUBLIC_URL, VIDEO_OBJECT_KEY, 900L));
 
 		mockMvc.perform(post("/api/ai/presigned-urls")
 						.principal(CURRENT_USER)

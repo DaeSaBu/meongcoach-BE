@@ -12,5 +12,5 @@ public interface LessonFinder {
 	 *
 	 * @throws com.daesabu.meongcoach.training.domain.exception.LessonNotFoundException 레슨이 없으면 발생한다
 	 */
-	List<CardView> findCards(Long lessonId);
+	List<CardResult> findCards(Long lessonId);
 }

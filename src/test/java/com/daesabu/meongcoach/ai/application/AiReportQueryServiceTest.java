@@ -4,9 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.daesabu.meongcoach.ai.application.provided.AiReportContent;
-import com.daesabu.meongcoach.ai.application.provided.AiReportDetailView;
+import com.daesabu.meongcoach.ai.application.provided.AiReportDetailResult;
 import com.daesabu.meongcoach.ai.application.provided.AiReportFinder;
-import com.daesabu.meongcoach.ai.application.provided.AiReportView;
+import com.daesabu.meongcoach.ai.application.provided.AiReportResult;
 import com.daesabu.meongcoach.ai.application.required.AiReportRepository;
 import com.daesabu.meongcoach.ai.domain.AiReport;
 import com.daesabu.meongcoach.ai.domain.AiReportCreateCommand;
@@ -61,11 +61,11 @@ class AiReportQueryServiceTest {
 		persistReport(USER_ID, "videos/training/42/second.mp4", "둘째 제목");
 		persistReport(OTHER_USER_ID, "videos/training/99/other.mp4", "남의 제목");
 
-		List<AiReportView> reports = aiReportFinder.findReports(USER_ID);
+		List<AiReportResult> reports = aiReportFinder.findReports(USER_ID);
 
 		// createdAt은 @PrePersist로 세팅되어 조작할 수 없으므로
 		// "나중 저장 = 최신"으로 순서를 검증한다
-		assertThat(reports).extracting(AiReportView::videoObjectKey)
+		assertThat(reports).extracting(AiReportResult::videoObjectKey)
 				.containsExactly("videos/training/42/second.mp4", "videos/training/42/first.mp4");
 	}
 
@@ -80,12 +80,12 @@ class AiReportQueryServiceTest {
 	void findReportsMapsListFields() {
 		AiReport saved = persistReport(USER_ID, "videos/training/42/key.mp4", "분리불안 징후 행동 분석");
 
-		AiReportView view = aiReportFinder.findReports(USER_ID).getFirst();
+		AiReportResult result = aiReportFinder.findReports(USER_ID).getFirst();
 
-		assertThat(view.id()).isEqualTo(saved.getId());
-		assertThat(view.videoObjectKey()).isEqualTo("videos/training/42/key.mp4");
-		assertThat(view.title()).isEqualTo("분리불안 징후 행동 분석");
-		assertThat(view.createdAt()).isNotNull();
+		assertThat(result.id()).isEqualTo(saved.getId());
+		assertThat(result.videoObjectKey()).isEqualTo("videos/training/42/key.mp4");
+		assertThat(result.title()).isEqualTo("분리불안 징후 행동 분석");
+		assertThat(result.createdAt()).isNotNull();
 	}
 
 	@Test
@@ -93,9 +93,9 @@ class AiReportQueryServiceTest {
 	void findReportsAllowsNullTitle() {
 		persistReport(USER_ID, "videos/training/42/key.mp4", null);
 
-		AiReportView view = aiReportFinder.findReports(USER_ID).getFirst();
+		AiReportResult result = aiReportFinder.findReports(USER_ID).getFirst();
 
-		assertThat(view.title()).isNull();
+		assertThat(result.title()).isNull();
 	}
 
 	@Test
@@ -103,7 +103,7 @@ class AiReportQueryServiceTest {
 	void findReportMapsAllDetailFields() {
 		AiReport saved = persistReport(USER_ID, "videos/training/42/key.mp4", "분리불안 징후 행동 분석");
 
-		AiReportDetailView detail = aiReportFinder.findReport(USER_ID, saved.getId());
+		AiReportDetailResult detail = aiReportFinder.findReport(USER_ID, saved.getId());
 
 		assertThat(detail.id()).isEqualTo(saved.getId());
 		assertThat(detail.videoObjectKey()).isEqualTo("videos/training/42/key.mp4");

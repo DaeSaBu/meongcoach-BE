@@ -1,7 +1,7 @@
 package com.daesabu.meongcoach.dog.application;
 
 import com.daesabu.meongcoach.dog.application.provided.DogProfileImageFinder;
-import com.daesabu.meongcoach.dog.application.provided.DogProfileImageView;
+import com.daesabu.meongcoach.dog.application.provided.DogProfileImageResult;
 import com.daesabu.meongcoach.dog.application.required.DogRepository;
 import com.daesabu.meongcoach.dog.domain.Dog;
 import com.daesabu.meongcoach.dog.domain.DogStatus;
@@ -21,9 +21,9 @@ public class DogProfileImageFinderService implements DogProfileImageFinder {
 	private final DogRepository dogRepository;
 
 	@Override
-	public DogProfileImageView findSelectedProfileImage(Long userId) {
+	public DogProfileImageResult findSelectedProfileImage(Long userId) {
 		Dog dog = dogRepository.findFirstByUserIdAndStatusOrderByIdAsc(userId, DogStatus.SELECTED)
 				.orElseThrow(DogNotFoundException::new);
-		return new DogProfileImageView(dog.getId(), dog.getProfileImageUrl());
+		return new DogProfileImageResult(dog.getId(), dog.getProfileImageUrl());
 	}
 }

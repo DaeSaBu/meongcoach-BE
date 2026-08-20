@@ -8,9 +8,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.daesabu.meongcoach.training.application.provided.TopicView;
+import com.daesabu.meongcoach.training.application.provided.TopicResult;
 import com.daesabu.meongcoach.training.application.provided.TrainingCategoryFinder;
-import com.daesabu.meongcoach.training.application.provided.TrainingCategoryView;
+import com.daesabu.meongcoach.training.application.provided.TrainingCategoryResult;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -39,19 +39,19 @@ class TrainingCategoryControllerTest {
 	@DisplayName("교육 카테고리와 소속 토픽 목록을 반환한다")
 	void findAllReturnsCategoriesWithTopics() throws Exception {
 		given(trainingCategoryFinder.findAll()).willReturn(List.of(
-				new TrainingCategoryView(
+				new TrainingCategoryResult(
 						1L, "기본 교육", "기본기를 배우는 교육", "https://example.com/basic.png", 1,
 						List.of(
-								new TopicView(10L, "앉아", "앉아 자세를 배우는 훈련", "차분히 앉는 방법을 익혀요",
+								new TopicResult(10L, "앉아", "앉아 자세를 배우는 훈련", "차분히 앉는 방법을 익혀요",
 										"https://example.com/sit.png", 1),
-								new TopicView(11L, "기다려", "기다림을 배우는 훈련", "보호자의 신호를 기다려요",
+								new TopicResult(11L, "기다려", "기다림을 배우는 훈련", "보호자의 신호를 기다려요",
 										"https://example.com/wait.png", 2)
 						)
 				),
-				new TrainingCategoryView(
+				new TrainingCategoryResult(
 						2L, "심화 교육", "응용 행동을 배우는 교육", "https://example.com/advanced.png", 2,
 						List.of(
-								new TopicView(20L, "이리와", "호출에 반응하는 훈련", "보호자에게 바로 돌아와요",
+								new TopicResult(20L, "이리와", "호출에 반응하는 훈련", "보호자에게 바로 돌아와요",
 										"https://example.com/come.png", 1)
 						)
 				)
@@ -103,7 +103,7 @@ class TrainingCategoryControllerTest {
 	@DisplayName("토픽이 없는 카테고리는 빈 배열을 반환한다")
 	void findAllReturnsEmptyTopicsWhenCategoryHasNoTopic() throws Exception {
 		given(trainingCategoryFinder.findAll()).willReturn(List.of(
-				new TrainingCategoryView(
+				new TrainingCategoryResult(
 						1L,
 						"기본 교육",
 						"기본기를 배우는 교육",

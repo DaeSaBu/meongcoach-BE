@@ -10,7 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.daesabu.meongcoach.dog.application.provided.DogProfileImageFinder;
-import com.daesabu.meongcoach.dog.application.provided.DogProfileImageView;
+import com.daesabu.meongcoach.dog.application.provided.DogProfileImageResult;
 import com.daesabu.meongcoach.dog.domain.exception.DogNotFoundException;
 import java.security.Principal;
 import org.junit.jupiter.api.DisplayName;
@@ -45,7 +45,7 @@ class DogControllerTest {
 	@DisplayName("선택된 강아지의 id와 프로필 이미지 URL을 반환한다")
 	void findProfileImageReturnsImageUrl() throws Exception {
 		given(dogProfileImageFinder.findSelectedProfileImage(42L))
-				.willReturn(new DogProfileImageView(10L, IMAGE_URL));
+				.willReturn(new DogProfileImageResult(10L, IMAGE_URL));
 
 		mockMvc.perform(get("/api/dogs/profile/image")
 						.principal(CURRENT_USER)
@@ -66,7 +66,7 @@ class DogControllerTest {
 	@DisplayName("로그인한 사용자 ID로 선택된 강아지의 프로필 이미지를 조회한다")
 	void findProfileImageWithCurrentUserId() throws Exception {
 		given(dogProfileImageFinder.findSelectedProfileImage(42L))
-				.willReturn(new DogProfileImageView(10L, IMAGE_URL));
+				.willReturn(new DogProfileImageResult(10L, IMAGE_URL));
 
 		mockMvc.perform(get("/api/dogs/profile/image").principal(CURRENT_USER))
 				.andExpect(status().isOk());
@@ -78,7 +78,7 @@ class DogControllerTest {
 	@DisplayName("프로필 이미지가 없는 강아지는 빈 문자열과 200을 반환한다")
 	void findProfileImageReturnsEmptyStringWhenImageIsAbsent() throws Exception {
 		given(dogProfileImageFinder.findSelectedProfileImage(42L))
-				.willReturn(new DogProfileImageView(10L, ""));
+				.willReturn(new DogProfileImageResult(10L, ""));
 
 		mockMvc.perform(get("/api/dogs/profile/image").principal(CURRENT_USER))
 				.andExpect(status().isOk())

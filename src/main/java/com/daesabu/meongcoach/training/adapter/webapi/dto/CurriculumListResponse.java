@@ -1,6 +1,6 @@
 package com.daesabu.meongcoach.training.adapter.webapi.dto;
 
-import com.daesabu.meongcoach.training.application.provided.CurriculumListView;
+import com.daesabu.meongcoach.training.application.provided.CurriculumListResult;
 import java.util.List;
 
 /**
@@ -8,10 +8,10 @@ import java.util.List;
  */
 public record CurriculumListResponse(Long topicId, String topicTitle, List<CurriculumResponse> curriculums) {
 
-	public static CurriculumListResponse from(CurriculumListView view) {
-		List<CurriculumResponse> curriculums = view.curriculums().stream()
+	public static CurriculumListResponse from(CurriculumListResult result) {
+		List<CurriculumResponse> curriculums = result.curriculums().stream()
 				.map(CurriculumResponse::from)
 				.toList();
-		return new CurriculumListResponse(view.topicId(), view.topicTitle(), curriculums);
+		return new CurriculumListResponse(result.topicId(), result.topicTitle(), curriculums);
 	}
 }

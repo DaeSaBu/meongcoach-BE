@@ -11,11 +11,11 @@ import static org.springframework.restdocs.request.RequestDocumentation.pathPara
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.daesabu.meongcoach.training.application.provided.CurriculumDetailView;
+import com.daesabu.meongcoach.training.application.provided.CurriculumDetailResult;
 import com.daesabu.meongcoach.training.application.provided.CurriculumFinder;
-import com.daesabu.meongcoach.training.application.provided.CurriculumListView;
-import com.daesabu.meongcoach.training.application.provided.CurriculumView;
-import com.daesabu.meongcoach.training.application.provided.LessonView;
+import com.daesabu.meongcoach.training.application.provided.CurriculumListResult;
+import com.daesabu.meongcoach.training.application.provided.CurriculumResult;
+import com.daesabu.meongcoach.training.application.provided.LessonResult;
 import com.daesabu.meongcoach.training.domain.CurriculumStatus;
 import com.daesabu.meongcoach.training.domain.exception.CurriculumNotFoundException;
 import com.daesabu.meongcoach.training.domain.exception.TopicNotConfiguredException;
@@ -50,9 +50,9 @@ class TrainingCurriculumControllerTest {
 	@Test
 	@DisplayName("선택된 토픽과 커리큘럼 목록을 반환한다")
 	void findCurriculumsReturnsTopicWithCurriculums() throws Exception {
-		given(curriculumFinder.findCurriculums(42L)).willReturn(new CurriculumListView(1L, "앉아", List.of(
-				new CurriculumView(10L, "앉아 1단계", 3, 3, CurriculumStatus.COMPLETED),
-				new CurriculumView(11L, "앉아 2단계", 4, 1, CurriculumStatus.IN_PROGRESS)
+		given(curriculumFinder.findCurriculums(42L)).willReturn(new CurriculumListResult(1L, "앉아", List.of(
+				new CurriculumResult(10L, "앉아 1단계", 3, 3, CurriculumStatus.COMPLETED),
+				new CurriculumResult(11L, "앉아 2단계", 4, 1, CurriculumStatus.IN_PROGRESS)
 		)));
 
 		mockMvc.perform(get("/api/training/curriculums")
@@ -88,7 +88,7 @@ class TrainingCurriculumControllerTest {
 	@Test
 	@DisplayName("인증 주체에서 읽은 사용자로 커리큘럼 조회를 위임한다")
 	void findCurriculumsDelegatesWithCurrentUserId() throws Exception {
-		given(curriculumFinder.findCurriculums(42L)).willReturn(new CurriculumListView(1L, "앉아", List.of()));
+		given(curriculumFinder.findCurriculums(42L)).willReturn(new CurriculumListResult(1L, "앉아", List.of()));
 
 		mockMvc.perform(get("/api/training/curriculums").principal(CURRENT_USER))
 				.andExpect(status().isOk());
@@ -99,7 +99,7 @@ class TrainingCurriculumControllerTest {
 	@Test
 	@DisplayName("커리큘럼이 없는 토픽은 빈 배열과 200을 반환한다")
 	void findCurriculumsReturnsEmptyArrayWhenTopicHasNoCurriculum() throws Exception {
-		given(curriculumFinder.findCurriculums(42L)).willReturn(new CurriculumListView(1L, "앉아", List.of()));
+		given(curriculumFinder.findCurriculums(42L)).willReturn(new CurriculumListResult(1L, "앉아", List.of()));
 
 		mockMvc.perform(get("/api/training/curriculums").principal(CURRENT_USER))
 				.andExpect(status().isOk())
@@ -143,10 +143,10 @@ class TrainingCurriculumControllerTest {
 	@Test
 	@DisplayName("커리큘럼과 레슨 목록을 반환한다")
 	void findCurriculumReturnsCurriculumWithLessons() throws Exception {
-		given(curriculumFinder.findCurriculum(42L, 10L)).willReturn(new CurriculumDetailView(10L, 1L, "앉아 1단계", 1,
+		given(curriculumFinder.findCurriculum(42L, 10L)).willReturn(new CurriculumDetailResult(10L, 1L, "앉아 1단계", 1,
 				List.of(
-						new LessonView(100L, "손 위의 간식", 1, 5, 3),
-						new LessonView(101L, "간식 없이 앉아", 2, 10, 0)
+						new LessonResult(100L, "손 위의 간식", 1, 5, 3),
+						new LessonResult(101L, "간식 없이 앉아", 2, 10, 0)
 				)));
 
 		mockMvc.perform(get("/api/training/curriculums/{curriculumId}", 10L)
@@ -190,7 +190,7 @@ class TrainingCurriculumControllerTest {
 	@DisplayName("인증 주체에서 읽은 사용자로 커리큘럼 세부 조회를 위임한다")
 	void findCurriculumDelegatesWithCurrentUserId() throws Exception {
 		given(curriculumFinder.findCurriculum(42L, 10L))
-				.willReturn(new CurriculumDetailView(10L, 1L, "앉아 1단계", 1, List.of()));
+				.willReturn(new CurriculumDetailResult(10L, 1L, "앉아 1단계", 1, List.of()));
 
 		mockMvc.perform(get("/api/training/curriculums/{curriculumId}", 10L).principal(CURRENT_USER))
 				.andExpect(status().isOk());
@@ -202,7 +202,7 @@ class TrainingCurriculumControllerTest {
 	@DisplayName("레슨이 없는 커리큘럼은 빈 배열과 200을 반환한다")
 	void findCurriculumReturnsEmptyArrayWhenCurriculumHasNoLesson() throws Exception {
 		given(curriculumFinder.findCurriculum(42L, 10L))
-				.willReturn(new CurriculumDetailView(10L, 1L, "앉아 1단계", 1, List.of()));
+				.willReturn(new CurriculumDetailResult(10L, 1L, "앉아 1단계", 1, List.of()));
 
 		mockMvc.perform(get("/api/training/curriculums/{curriculumId}", 10L).principal(CURRENT_USER))
 				.andExpect(status().isOk())

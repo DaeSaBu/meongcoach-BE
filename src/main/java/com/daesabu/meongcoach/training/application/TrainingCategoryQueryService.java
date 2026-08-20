@@ -1,8 +1,8 @@
 package com.daesabu.meongcoach.training.application;
 
-import com.daesabu.meongcoach.training.application.provided.TopicView;
+import com.daesabu.meongcoach.training.application.provided.TopicResult;
 import com.daesabu.meongcoach.training.application.provided.TrainingCategoryFinder;
-import com.daesabu.meongcoach.training.application.provided.TrainingCategoryView;
+import com.daesabu.meongcoach.training.application.provided.TrainingCategoryResult;
 import com.daesabu.meongcoach.training.application.required.TopicRepository;
 import com.daesabu.meongcoach.training.application.required.TrainingCategoryRepository;
 import com.daesabu.meongcoach.training.domain.Topic;
@@ -27,12 +27,12 @@ public class TrainingCategoryQueryService implements TrainingCategoryFinder {
 	private final TopicRepository topicRepository;
 
 	@Override
-	public List<TrainingCategoryView> findAll() {
+	public List<TrainingCategoryResult> findAll() {
 		List<TrainingCategory> categories = trainingCategoryRepository.findAllByOrderBySortOrderAscIdAsc();
 		Map<Long, List<Topic>> topicsByCategoryId = groupTopicsByCategoryId();
 
 		return categories.stream()
-				.map(category -> toView(category, topicsByCategoryId.getOrDefault(category.getId(), List.of())))
+				.map(category -> toResult(category, topicsByCategoryId.getOrDefault(category.getId(), List.of())))
 				.toList();
 	}
 
@@ -42,9 +42,9 @@ public class TrainingCategoryQueryService implements TrainingCategoryFinder {
 				.collect(Collectors.groupingBy(topic -> topic.getTrainingCategory().getId()));
 	}
 
-	private TrainingCategoryView toView(TrainingCategory category, List<Topic> topics) {
-		List<TopicView> topicViews = topics.stream()
-				.map(topic -> new TopicView(
+	private TrainingCategoryResult toResult(TrainingCategory category, List<Topic> topics) {
+		List<TopicResult> topicResults = topics.stream()
+				.map(topic -> new TopicResult(
 						topic.getId(),
 						topic.getTitle(),
 						topic.getDescription(),
@@ -53,13 +53,13 @@ public class TrainingCategoryQueryService implements TrainingCategoryFinder {
 						topic.getSortOrder()
 				))
 				.toList();
-		return new TrainingCategoryView(
+		return new TrainingCategoryResult(
 				category.getId(),
 				category.getTitle(),
 				category.getDescription(),
 				category.getIconUrl(),
 				category.getSortOrder(),
-				topicViews
+				topicResults
 		);
 	}
 }

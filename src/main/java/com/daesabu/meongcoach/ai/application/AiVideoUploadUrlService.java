@@ -2,7 +2,7 @@ package com.daesabu.meongcoach.ai.application;
 
 import com.daesabu.meongcoach.ai.application.provided.AiTrialFinder;
 import com.daesabu.meongcoach.ai.application.provided.AiVideoUploadUrlIssuer;
-import com.daesabu.meongcoach.ai.application.provided.AiVideoUploadUrlView;
+import com.daesabu.meongcoach.ai.application.provided.AiVideoUploadUrlResult;
 import com.daesabu.meongcoach.ai.domain.exception.AiReportTrialExceededException;
 import com.daesabu.meongcoach.ai.domain.vo.AiTrial;
 import com.daesabu.meongcoach.media.application.provided.VideoUploadUrlIssuer;
@@ -26,14 +26,14 @@ public class AiVideoUploadUrlService implements AiVideoUploadUrlIssuer {
 	private final AiTrialFinder aiTrialFinder;
 
 	@Override
-	public AiVideoUploadUrlView issue(Long userId, String contentType, long fileSizeBytes) {
+	public AiVideoUploadUrlResult issue(Long userId, String contentType, long fileSizeBytes) {
 		AiTrial trial = aiTrialFinder.findTrial(userId);
 		if (!trial.isAvailable()) {
 			throw new AiReportTrialExceededException();
 		}
 
 		VideoUploadUrlResult result = videoUploadUrlIssuer.issue(userId, UPLOAD_TARGET, contentType, fileSizeBytes);
-		return new AiVideoUploadUrlView(result.uploadUrl(), result.publicUrl(), result.objectKey(),
+		return new AiVideoUploadUrlResult(result.uploadUrl(), result.publicUrl(), result.objectKey(),
 				result.expiresInSeconds());
 	}
 }
