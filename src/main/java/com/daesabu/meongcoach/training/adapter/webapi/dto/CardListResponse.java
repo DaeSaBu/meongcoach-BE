@@ -1,6 +1,6 @@
 package com.daesabu.meongcoach.training.adapter.webapi.dto;
 
-import com.daesabu.meongcoach.training.application.provided.CardView;
+import com.daesabu.meongcoach.training.application.provided.CardResult;
 import java.util.List;
 
 /**
@@ -8,8 +8,8 @@ import java.util.List;
  */
 public record CardListResponse(List<CardResponse> cards) {
 
-	public static CardListResponse from(List<CardView> views) {
-		List<CardResponse> cards = views.stream()
+	public static CardListResponse from(List<CardResult> results) {
+		List<CardResponse> cards = results.stream()
 				.map(CardResponse::from)
 				.toList();
 		return new CardListResponse(cards);

@@ -1,6 +1,6 @@
 package com.daesabu.meongcoach.training.adapter.webapi.dto;
 
-import com.daesabu.meongcoach.training.application.provided.TrainingCategoryView;
+import com.daesabu.meongcoach.training.application.provided.TrainingCategoryResult;
 import java.util.List;
 
 /**
@@ -8,8 +8,8 @@ import java.util.List;
  */
 public record TrainingCategoryListResponse(List<TrainingCategoryResponse> trainingCategories) {
 
-	public static TrainingCategoryListResponse from(List<TrainingCategoryView> views) {
-		List<TrainingCategoryResponse> trainingCategories = views.stream()
+	public static TrainingCategoryListResponse from(List<TrainingCategoryResult> results) {
+		List<TrainingCategoryResponse> trainingCategories = results.stream()
 				.map(TrainingCategoryResponse::from)
 				.toList();
 		return new TrainingCategoryListResponse(trainingCategories);

@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.daesabu.meongcoach.ai.application.provided.AiTrialFinder;
-import com.daesabu.meongcoach.ai.application.provided.AiVideoUploadUrlView;
+import com.daesabu.meongcoach.ai.application.provided.AiVideoUploadUrlResult;
 import com.daesabu.meongcoach.ai.domain.exception.AiReportTrialExceededException;
 import com.daesabu.meongcoach.ai.domain.vo.AiTrial;
 import com.daesabu.meongcoach.media.application.provided.VideoUploadUrlIssuer;
@@ -41,13 +41,13 @@ class AiVideoUploadUrlServiceTest {
 	void issueDelegatesToMediaWhenTrialRemains(int usedCount) {
 		aiTrialFinder.usedCount = usedCount;
 
-		AiVideoUploadUrlView view = service.issue(7L, "video/mp4", 10485760L);
+		AiVideoUploadUrlResult result = service.issue(7L, "video/mp4", 10485760L);
 
 		assertThat(videoUploadUrlIssuer.issuedRequests).containsExactly("7:TRAINING_VIDEO:video/mp4:10485760");
-		assertThat(view.uploadUrl()).isEqualTo(UPLOAD_URL);
-		assertThat(view.publicUrl()).isEqualTo(PUBLIC_URL);
-		assertThat(view.objectKey()).isEqualTo(OBJECT_KEY);
-		assertThat(view.expiresInSeconds()).isEqualTo(900L);
+		assertThat(result.uploadUrl()).isEqualTo(UPLOAD_URL);
+		assertThat(result.publicUrl()).isEqualTo(PUBLIC_URL);
+		assertThat(result.objectKey()).isEqualTo(OBJECT_KEY);
+		assertThat(result.expiresInSeconds()).isEqualTo(900L);
 	}
 
 	@Test

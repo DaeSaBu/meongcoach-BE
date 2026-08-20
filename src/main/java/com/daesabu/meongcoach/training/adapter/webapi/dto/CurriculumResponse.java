@@ -1,6 +1,6 @@
 package com.daesabu.meongcoach.training.adapter.webapi.dto;
 
-import com.daesabu.meongcoach.training.application.provided.CurriculumView;
+import com.daesabu.meongcoach.training.application.provided.CurriculumResult;
 import com.daesabu.meongcoach.training.domain.CurriculumStatus;
 
 /**
@@ -9,8 +9,8 @@ import com.daesabu.meongcoach.training.domain.CurriculumStatus;
 public record CurriculumResponse(Long curriculumId, String curriculumTitle, int totalLessons, int completedLessons,
 		CurriculumStatus status) {
 
-	public static CurriculumResponse from(CurriculumView view) {
-		return new CurriculumResponse(view.id(), view.title(), view.totalLessons(), view.completedLessons(),
-				view.status());
+	public static CurriculumResponse from(CurriculumResult result) {
+		return new CurriculumResponse(result.id(), result.title(), result.totalLessons(), result.completedLessons(),
+				result.status());
 	}
 }

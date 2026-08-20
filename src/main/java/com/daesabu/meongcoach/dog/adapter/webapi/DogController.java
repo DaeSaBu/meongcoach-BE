@@ -2,7 +2,7 @@ package com.daesabu.meongcoach.dog.adapter.webapi;
 
 import com.daesabu.meongcoach.dog.adapter.webapi.dto.DogProfileImageResponse;
 import com.daesabu.meongcoach.dog.application.provided.DogProfileImageFinder;
-import com.daesabu.meongcoach.dog.application.provided.DogProfileImageView;
+import com.daesabu.meongcoach.dog.application.provided.DogProfileImageResult;
 import com.daesabu.meongcoach.shared.security.CurrentUserId;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,7 +18,7 @@ public class DogController {
 
 	@GetMapping("/profile/image")
 	public DogProfileImageResponse findProfileImage(@CurrentUserId Long userId) {
-		DogProfileImageView profileImage = dogProfileImageFinder.findSelectedProfileImage(userId);
+		DogProfileImageResult profileImage = dogProfileImageFinder.findSelectedProfileImage(userId);
 		return DogProfileImageResponse.from(profileImage);
 	}
 }

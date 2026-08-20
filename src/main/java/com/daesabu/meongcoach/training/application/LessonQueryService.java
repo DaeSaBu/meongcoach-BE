@@ -1,7 +1,7 @@
 package com.daesabu.meongcoach.training.application;
 
-import com.daesabu.meongcoach.training.application.provided.CardMediaView;
-import com.daesabu.meongcoach.training.application.provided.CardView;
+import com.daesabu.meongcoach.training.application.provided.CardMediaResult;
+import com.daesabu.meongcoach.training.application.provided.CardResult;
 import com.daesabu.meongcoach.training.application.provided.LessonFinder;
 import com.daesabu.meongcoach.training.application.required.CardMediaRepository;
 import com.daesabu.meongcoach.training.application.required.CardRepository;
@@ -31,7 +31,7 @@ public class LessonQueryService implements LessonFinder {
 	private final CardMediaRepository cardMediaRepository;
 
 	@Override
-	public List<CardView> findCards(Long lessonId) {
+	public List<CardResult> findCards(Long lessonId) {
 		if (!lessonRepository.existsById(lessonId)) {
 			throw new LessonNotFoundException(lessonId);
 		}
@@ -40,7 +40,7 @@ public class LessonQueryService implements LessonFinder {
 		Map<Long, List<CardMedia>> mediaByCardId = groupMediaByCardId(cards);
 
 		return cards.stream()
-				.map(card -> toView(card, mediaByCardId.getOrDefault(card.getId(), List.of())))
+				.map(card -> toResult(card, mediaByCardId.getOrDefault(card.getId(), List.of())))
 				.toList();
 	}
 
@@ -51,11 +51,11 @@ public class LessonQueryService implements LessonFinder {
 				.collect(Collectors.groupingBy(media -> media.getCard().getId()));
 	}
 
-	private CardView toView(Card card, List<CardMedia> cardMedia) {
-		List<CardMediaView> cardMediaViews = cardMedia.stream()
-				.map(media -> new CardMediaView(media.getId(), media.getCard().getId(), media.getMediaType(),
+	private CardResult toResult(Card card, List<CardMedia> cardMedia) {
+		List<CardMediaResult> cardMediaResults = cardMedia.stream()
+				.map(media -> new CardMediaResult(media.getId(), media.getCard().getId(), media.getMediaType(),
 						media.getUrl(), media.getSortOrder()))
 				.toList();
-		return new CardView(card.getId(), card.getTitle(), card.getSortOrder(), card.getInstruction(), cardMediaViews);
+		return new CardResult(card.getId(), card.getTitle(), card.getSortOrder(), card.getInstruction(), cardMediaResults);
 	}
 }

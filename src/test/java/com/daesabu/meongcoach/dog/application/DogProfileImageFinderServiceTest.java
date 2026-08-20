@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.daesabu.meongcoach.dog.application.provided.DogProfileImageFinder;
-import com.daesabu.meongcoach.dog.application.provided.DogProfileImageView;
+import com.daesabu.meongcoach.dog.application.provided.DogProfileImageResult;
 import com.daesabu.meongcoach.dog.application.required.DogRepository;
 import com.daesabu.meongcoach.dog.domain.Breed;
 import com.daesabu.meongcoach.dog.domain.Dog;
@@ -39,7 +39,7 @@ class DogProfileImageFinderServiceTest {
 	void findSelectedProfileImageReturnsImageUrl() {
 		Dog dog = persistSelectedDog(USER_ID, IMAGE_URL);
 
-		DogProfileImageView profileImage = dogProfileImageFinder.findSelectedProfileImage(USER_ID);
+		DogProfileImageResult profileImage = dogProfileImageFinder.findSelectedProfileImage(USER_ID);
 
 		assertThat(profileImage.id()).isEqualTo(dog.getId());
 		assertThat(profileImage.profileImageUrl()).isEqualTo(IMAGE_URL);
@@ -50,7 +50,7 @@ class DogProfileImageFinderServiceTest {
 	void findSelectedProfileImageReturnsEmptyStringWhenImageIsAbsent() {
 		persistSelectedDog(USER_ID, null);
 
-		DogProfileImageView profileImage = dogProfileImageFinder.findSelectedProfileImage(USER_ID);
+		DogProfileImageResult profileImage = dogProfileImageFinder.findSelectedProfileImage(USER_ID);
 
 		assertThat(profileImage.profileImageUrl()).isEmpty();
 	}

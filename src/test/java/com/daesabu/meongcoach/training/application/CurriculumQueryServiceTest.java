@@ -7,11 +7,11 @@ import com.daesabu.meongcoach.progress.application.LessonProgressService;
 import com.daesabu.meongcoach.progress.application.TopicEntryService;
 import com.daesabu.meongcoach.progress.application.provided.LessonProgressRecorder;
 import com.daesabu.meongcoach.progress.application.provided.TopicEntryRecorder;
-import com.daesabu.meongcoach.training.application.provided.CurriculumDetailView;
+import com.daesabu.meongcoach.training.application.provided.CurriculumDetailResult;
 import com.daesabu.meongcoach.training.application.provided.CurriculumFinder;
-import com.daesabu.meongcoach.training.application.provided.CurriculumListView;
-import com.daesabu.meongcoach.training.application.provided.CurriculumView;
-import com.daesabu.meongcoach.training.application.provided.LessonView;
+import com.daesabu.meongcoach.training.application.provided.CurriculumListResult;
+import com.daesabu.meongcoach.training.application.provided.CurriculumResult;
+import com.daesabu.meongcoach.training.application.provided.LessonResult;
 import com.daesabu.meongcoach.training.domain.Curriculum;
 import com.daesabu.meongcoach.training.domain.CurriculumCreateCommand;
 import com.daesabu.meongcoach.training.domain.CurriculumStatus;
@@ -73,11 +73,11 @@ class CurriculumQueryServiceTest {
 		topicEntryRecorder.enterTopic(USER_ID, second.getId());
 		flushAndClear();
 
-		CurriculumListView curriculumList = curriculumFinder.findCurriculums(USER_ID);
+		CurriculumListResult curriculumList = curriculumFinder.findCurriculums(USER_ID);
 
 		assertThat(curriculumList.topicId()).isEqualTo(second.getId());
 		assertThat(curriculumList.topicTitle()).isEqualTo("기다려");
-		assertThat(curriculumList.curriculums()).extracting(CurriculumView::title)
+		assertThat(curriculumList.curriculums()).extracting(CurriculumResult::title)
 				.containsExactly("기다려 1단계");
 	}
 
@@ -92,11 +92,11 @@ class CurriculumQueryServiceTest {
 		persistCurriculum(basicTopic, "앉아 1단계", 1);
 		flushAndClear();
 
-		CurriculumListView curriculumList = curriculumFinder.findCurriculums(USER_ID);
+		CurriculumListResult curriculumList = curriculumFinder.findCurriculums(USER_ID);
 
 		assertThat(curriculumList.topicId()).isEqualTo(basicTopic.getId());
 		assertThat(curriculumList.topicTitle()).isEqualTo("앉아");
-		assertThat(curriculumList.curriculums()).extracting(CurriculumView::title)
+		assertThat(curriculumList.curriculums()).extracting(CurriculumResult::title)
 				.containsExactly("앉아 1단계");
 	}
 
@@ -110,7 +110,7 @@ class CurriculumQueryServiceTest {
 		topicEntryRecorder.enterTopic(USER_ID, 999L);
 		flushAndClear();
 
-		CurriculumListView curriculumList = curriculumFinder.findCurriculums(USER_ID);
+		CurriculumListResult curriculumList = curriculumFinder.findCurriculums(USER_ID);
 
 		assertThat(curriculumList.topicId()).isEqualTo(topic.getId());
 		assertThat(curriculumList.topicTitle()).isEqualTo("앉아");
@@ -132,9 +132,9 @@ class CurriculumQueryServiceTest {
 		persistCurriculum(topic, "둘째 커리큘럼", 2);
 		flushAndClear();
 
-		CurriculumListView curriculumList = curriculumFinder.findCurriculums(USER_ID);
+		CurriculumListResult curriculumList = curriculumFinder.findCurriculums(USER_ID);
 
-		assertThat(curriculumList.curriculums()).extracting(CurriculumView::title)
+		assertThat(curriculumList.curriculums()).extracting(CurriculumResult::title)
 				.containsExactly("첫째 커리큘럼", "둘째 커리큘럼", "셋째 커리큘럼");
 	}
 
@@ -151,13 +151,13 @@ class CurriculumQueryServiceTest {
 		lessonProgressRecorder.completeLesson(USER_ID, completed.getId());
 		flushAndClear();
 
-		CurriculumListView curriculumList = curriculumFinder.findCurriculums(USER_ID);
+		CurriculumListResult curriculumList = curriculumFinder.findCurriculums(USER_ID);
 
-		assertThat(curriculumList.curriculums()).extracting(CurriculumView::totalLessons)
+		assertThat(curriculumList.curriculums()).extracting(CurriculumResult::totalLessons)
 				.containsExactly(2, 1);
-		assertThat(curriculumList.curriculums()).extracting(CurriculumView::completedLessons)
+		assertThat(curriculumList.curriculums()).extracting(CurriculumResult::completedLessons)
 				.containsExactly(1, 0);
-		assertThat(curriculumList.curriculums()).extracting(CurriculumView::status)
+		assertThat(curriculumList.curriculums()).extracting(CurriculumResult::status)
 				.containsExactly(CurriculumStatus.IN_PROGRESS, CurriculumStatus.NOT_STARTED);
 	}
 
@@ -171,7 +171,7 @@ class CurriculumQueryServiceTest {
 		lessonProgressRecorder.completeLesson(OTHER_USER_ID, lesson.getId());
 		flushAndClear();
 
-		CurriculumListView curriculumList = curriculumFinder.findCurriculums(USER_ID);
+		CurriculumListResult curriculumList = curriculumFinder.findCurriculums(USER_ID);
 
 		assertThat(curriculumList.curriculums().getFirst().completedLessons()).isZero();
 		assertThat(curriculumList.curriculums().getFirst().status()).isEqualTo(CurriculumStatus.NOT_STARTED);
@@ -186,9 +186,9 @@ class CurriculumQueryServiceTest {
 		persistLesson(other, "손 위의 간식", 1);
 		flushAndClear();
 
-		CurriculumListView curriculumList = curriculumFinder.findCurriculums(USER_ID);
+		CurriculumListResult curriculumList = curriculumFinder.findCurriculums(USER_ID);
 
-		CurriculumView empty = curriculumList.curriculums().getFirst();
+		CurriculumResult empty = curriculumList.curriculums().getFirst();
 		assertThat(empty.totalLessons()).isZero();
 		assertThat(empty.completedLessons()).isZero();
 		assertThat(empty.status()).isEqualTo(CurriculumStatus.NOT_STARTED);
@@ -206,12 +206,12 @@ class CurriculumQueryServiceTest {
 		lessonProgressRecorder.completeLesson(USER_ID, second.getId());
 		flushAndClear();
 
-		CurriculumListView curriculumList = curriculumFinder.findCurriculums(USER_ID);
+		CurriculumListResult curriculumList = curriculumFinder.findCurriculums(USER_ID);
 
-		CurriculumView view = curriculumList.curriculums().getFirst();
-		assertThat(view.totalLessons()).isEqualTo(2);
-		assertThat(view.completedLessons()).isEqualTo(2);
-		assertThat(view.status()).isEqualTo(CurriculumStatus.COMPLETED);
+		CurriculumResult result = curriculumList.curriculums().getFirst();
+		assertThat(result.totalLessons()).isEqualTo(2);
+		assertThat(result.completedLessons()).isEqualTo(2);
+		assertThat(result.status()).isEqualTo(CurriculumStatus.COMPLETED);
 	}
 
 	@Test
@@ -256,15 +256,15 @@ class CurriculumQueryServiceTest {
 		persistLesson(curriculum, "간식 없이 앉아", 2, 10);
 		flushAndClear();
 
-		CurriculumDetailView detail = curriculumFinder.findCurriculum(USER_ID, curriculum.getId());
+		CurriculumDetailResult detail = curriculumFinder.findCurriculum(USER_ID, curriculum.getId());
 
 		assertThat(detail.id()).isEqualTo(curriculum.getId());
 		assertThat(detail.topicId()).isEqualTo(topic.getId());
 		assertThat(detail.title()).isEqualTo("앉아 2단계");
 		assertThat(detail.sortOrder()).isEqualTo(2);
-		assertThat(detail.lessons()).extracting(LessonView::title)
+		assertThat(detail.lessons()).extracting(LessonResult::title)
 				.containsExactly("손 위의 간식", "간식 없이 앉아");
-		assertThat(detail.lessons()).extracting(LessonView::estimatedMinutes)
+		assertThat(detail.lessons()).extracting(LessonResult::estimatedMinutes)
 				.containsExactly(5, 10);
 	}
 
@@ -280,9 +280,9 @@ class CurriculumQueryServiceTest {
 		persistLesson(other, "다른 커리큘럼 레슨", 1, 5);
 		flushAndClear();
 
-		CurriculumDetailView detail = curriculumFinder.findCurriculum(USER_ID, curriculum.getId());
+		CurriculumDetailResult detail = curriculumFinder.findCurriculum(USER_ID, curriculum.getId());
 
-		assertThat(detail.lessons()).extracting(LessonView::title)
+		assertThat(detail.lessons()).extracting(LessonResult::title)
 				.containsExactly("첫째 레슨", "둘째 레슨", "셋째 레슨");
 	}
 
@@ -300,9 +300,9 @@ class CurriculumQueryServiceTest {
 		lessonProgressRecorder.completeLesson(USER_ID, once.getId());
 		flushAndClear();
 
-		CurriculumDetailView detail = curriculumFinder.findCurriculum(USER_ID, curriculum.getId());
+		CurriculumDetailResult detail = curriculumFinder.findCurriculum(USER_ID, curriculum.getId());
 
-		assertThat(detail.lessons()).extracting(LessonView::completedCount)
+		assertThat(detail.lessons()).extracting(LessonResult::completedCount)
 				.containsExactly(2, 1, 0);
 	}
 
@@ -316,7 +316,7 @@ class CurriculumQueryServiceTest {
 		lessonProgressRecorder.completeLesson(OTHER_USER_ID, lesson.getId());
 		flushAndClear();
 
-		CurriculumDetailView detail = curriculumFinder.findCurriculum(USER_ID, curriculum.getId());
+		CurriculumDetailResult detail = curriculumFinder.findCurriculum(USER_ID, curriculum.getId());
 
 		assertThat(detail.lessons().getFirst().completedCount()).isZero();
 	}
@@ -337,7 +337,7 @@ class CurriculumQueryServiceTest {
 		persistLesson(other, "손 위의 간식", 1, 5);
 		flushAndClear();
 
-		CurriculumDetailView detail = curriculumFinder.findCurriculum(USER_ID, empty.getId());
+		CurriculumDetailResult detail = curriculumFinder.findCurriculum(USER_ID, empty.getId());
 
 		assertThat(detail.id()).isEqualTo(empty.getId());
 		assertThat(detail.lessons()).isEmpty();

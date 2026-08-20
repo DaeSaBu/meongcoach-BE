@@ -1,6 +1,6 @@
 package com.daesabu.meongcoach.training.adapter.webapi.dto;
 
-import com.daesabu.meongcoach.training.application.provided.CardMediaView;
+import com.daesabu.meongcoach.training.application.provided.CardMediaResult;
 import com.daesabu.meongcoach.training.domain.MediaType;
 
 /**
@@ -8,7 +8,7 @@ import com.daesabu.meongcoach.training.domain.MediaType;
  */
 public record CardMediaResponse(Long cardMediaId, Long cardId, MediaType mediaType, String url, int sortOrder) {
 
-	public static CardMediaResponse from(CardMediaView view) {
-		return new CardMediaResponse(view.id(), view.cardId(), view.mediaType(), view.url(), view.sortOrder());
+	public static CardMediaResponse from(CardMediaResult result) {
+		return new CardMediaResponse(result.id(), result.cardId(), result.mediaType(), result.url(), result.sortOrder());
 	}
 }

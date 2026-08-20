@@ -1,6 +1,6 @@
 package com.daesabu.meongcoach.training.adapter.webapi.dto;
 
-import com.daesabu.meongcoach.training.application.provided.CurriculumDetailView;
+import com.daesabu.meongcoach.training.application.provided.CurriculumDetailResult;
 import java.util.List;
 
 /**
@@ -9,10 +9,10 @@ import java.util.List;
 public record CurriculumDetailResponse(Long curriculumId, Long topicId, String curriculumTitle,
 		int curriculumSortOrder, List<LessonResponse> lessons) {
 
-	public static CurriculumDetailResponse from(CurriculumDetailView view) {
-		List<LessonResponse> lessons = view.lessons().stream()
+	public static CurriculumDetailResponse from(CurriculumDetailResult result) {
+		List<LessonResponse> lessons = result.lessons().stream()
 				.map(LessonResponse::from)
 				.toList();
-		return new CurriculumDetailResponse(view.id(), view.topicId(), view.title(), view.sortOrder(), lessons);
+		return new CurriculumDetailResponse(result.id(), result.topicId(), result.title(), result.sortOrder(), lessons);
 	}
 }
