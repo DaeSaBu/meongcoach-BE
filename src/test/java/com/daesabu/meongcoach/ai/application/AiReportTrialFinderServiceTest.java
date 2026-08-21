@@ -5,8 +5,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.daesabu.meongcoach.ai.application.provided.AiTrialFinder;
 import com.daesabu.meongcoach.ai.application.required.AiReportRepository;
 import com.daesabu.meongcoach.ai.domain.AiReport;
-import com.daesabu.meongcoach.ai.domain.AiReportStatus;
 import com.daesabu.meongcoach.ai.domain.vo.AiTrial;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,8 +51,8 @@ class AiReportTrialFinderServiceTest {
 	@DisplayName("실패한 리포트는 사용 횟수에 세지 않는다")
 	void findTrialIgnoresFailedReports() {
 		persistCompletedReport(USER_ID, "videos/training/42/first.mp4");
-		persistFailedReport(USER_ID, "videos/training/42/failed.mp4", AiReportStatus.FAILED_ANALYSIS);
-		persistFailedReport(USER_ID, "videos/training/42/exceeded.mp4", AiReportStatus.FAILED_TRIAL_EXCEEDED);
+		persistFailedReport(USER_ID, "videos/training/42/failed.mp4", AiReport::failByAnalysis);
+		persistFailedReport(USER_ID, "videos/training/42/exceeded.mp4", AiReport::failByTrialExceeded);
 
 		assertThat(aiTrialFinder.findTrial(USER_ID)).isEqualTo(new AiTrial(1));
 	}
@@ -79,9 +79,9 @@ class AiReportTrialFinderServiceTest {
 		aiReportRepository.saveAndFlush(report);
 	}
 
-	private void persistFailedReport(Long userId, String videoObjectKey, AiReportStatus status) {
+	private void persistFailedReport(Long userId, String videoObjectKey, Consumer<AiReport> failure) {
 		AiReport report = AiReport.pending(userId, videoObjectKey);
-		report.fail(status);
+		failure.accept(report);
 		aiReportRepository.saveAndFlush(report);
 	}
 }

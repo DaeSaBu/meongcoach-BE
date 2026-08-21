@@ -74,13 +74,24 @@ public class AiReport extends BaseTimeEntity {
 	}
 
 	/**
-	 * 실패 결말을 기록한다. 진행 중·성공 상태를 실패로 넘기려는 호출은 프로그래밍 오류라 거부한다.
+	 * 컨슈머 처리 시점에 무료 체험 횟수를 초과해 분석을 건너뛴 결말을 기록한다.
 	 */
-	public void fail(AiReportStatus status) {
-		if (!status.isFailure()) {
-			throw new IllegalArgumentException("실패 상태가 아닌 값으로 리포트를 실패 처리할 수 없다: " + status);
-		}
-		this.status = status;
+	public void failByTrialExceeded() {
+		this.status = AiReportStatus.FAILED_TRIAL_EXCEEDED;
+	}
+
+	/**
+	 * 영상 분석 요청이 실패한 결말을 기록한다.
+	 */
+	public void failByAnalysis() {
+		this.status = AiReportStatus.FAILED_ANALYSIS;
+	}
+
+	/**
+	 * 예상하지 못한 예외로 실패한 결말을 기록한다.
+	 */
+	public void failUnexpectedly() {
+		this.status = AiReportStatus.FAILED_UNEXPECTED;
 	}
 
 	// 제목은 부가 정보라 규칙 위반을 거부하지 않고 저장 가능한 형태로 정규화한다.

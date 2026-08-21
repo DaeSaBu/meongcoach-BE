@@ -93,7 +93,7 @@ class AiReportQueryServiceTest {
 	@DisplayName("완료되지 않은 리포트도 목록에 상태와 함께 나온다")
 	void findReportsIncludesIncompleteReportsWithStatus() {
 		aiReportRepository.saveAndFlush(AiReport.pending(USER_ID, "videos/training/42/pending.mp4"));
-		persistFailedReport(USER_ID, "videos/training/42/failed.mp4", AiReportStatus.FAILED_ANALYSIS);
+		persistAnalysisFailedReport(USER_ID, "videos/training/42/failed.mp4");
 
 		List<AiReportResult> reports = aiReportFinder.findReports(USER_ID);
 
@@ -161,9 +161,9 @@ class AiReportQueryServiceTest {
 				.isInstanceOf(AiReportNotFoundException.class);
 	}
 
-	private void persistFailedReport(Long userId, String videoObjectKey, AiReportStatus status) {
+	private void persistAnalysisFailedReport(Long userId, String videoObjectKey) {
 		AiReport report = AiReport.pending(userId, videoObjectKey);
-		report.fail(status);
+		report.failByAnalysis();
 		aiReportRepository.saveAndFlush(report);
 	}
 

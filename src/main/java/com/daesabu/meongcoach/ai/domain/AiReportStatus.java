@@ -7,30 +7,17 @@ package com.daesabu.meongcoach.ai.domain;
 public enum AiReportStatus {
 
 	/** 분석 진행 중. 영상 소유자를 확인한 직후 기록한다 */
-	PENDING(false),
+	PENDING,
 
 	/** 분석 성공. 이 상태에서만 제목·본문이 채워진다 */
-	COMPLETED(false),
+	COMPLETED,
 
 	/** 컨슈머 처리 시점에 무료 이용 횟수 초과 */
-	FAILED_TRIAL_EXCEEDED(true),
+	FAILED_TRIAL_EXCEEDED,
 
 	/** 영상 분석 요청 실패 */
-	FAILED_ANALYSIS(true),
+	FAILED_ANALYSIS,
 
 	/** 예측하지 못한 예외로 실패 */
-	FAILED_UNEXPECTED(true);
-
-	private final boolean failure;
-
-	AiReportStatus(boolean failure) {
-		this.failure = failure;
-	}
-
-	/**
-	 * 실패 결말인지 판정한다. AiReport.fail()이 진행 중·성공 상태를 실패로 기록하려는 호출을 거부하는 데 쓴다.
-	 */
-	public boolean isFailure() {
-		return failure;
-	}
+	FAILED_UNEXPECTED,
 }

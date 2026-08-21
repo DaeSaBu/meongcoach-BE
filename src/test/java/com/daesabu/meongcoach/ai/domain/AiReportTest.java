@@ -1,12 +1,9 @@
 package com.daesabu.meongcoach.ai.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
 
 @DisplayName("AiReport 도메인")
 class AiReportTest {
@@ -88,15 +85,34 @@ class AiReportTest {
 		assertThat(report.getTitle()).isEqualTo(TITLE);
 	}
 
-	@ParameterizedTest
-	@EnumSource(value = AiReportStatus.class, names = "FAILED_.*", mode = EnumSource.Mode.MATCH_ANY)
-	@DisplayName("실패 상태로 실패 처리하면 상태가 그 값으로 바뀐다")
-	void failSetsFailureStatus(AiReportStatus failureStatus) {
+	@Test
+	@DisplayName("체험 횟수 초과로 실패 처리하면 상태가 FAILED_TRIAL_EXCEEDED가 된다")
+	void failByTrialExceededSetsStatus() {
 		AiReport report = AiReport.pending(1L, VIDEO_OBJECT_KEY);
 
-		report.fail(failureStatus);
+		report.failByTrialExceeded();
 
-		assertThat(report.getStatus()).isEqualTo(failureStatus);
+		assertThat(report.getStatus()).isEqualTo(AiReportStatus.FAILED_TRIAL_EXCEEDED);
+	}
+
+	@Test
+	@DisplayName("분석 실패로 실패 처리하면 상태가 FAILED_ANALYSIS가 된다")
+	void failByAnalysisSetsStatus() {
+		AiReport report = AiReport.pending(1L, VIDEO_OBJECT_KEY);
+
+		report.failByAnalysis();
+
+		assertThat(report.getStatus()).isEqualTo(AiReportStatus.FAILED_ANALYSIS);
+	}
+
+	@Test
+	@DisplayName("예상하지 못한 예외로 실패 처리하면 상태가 FAILED_UNEXPECTED가 된다")
+	void failUnexpectedlySetsStatus() {
+		AiReport report = AiReport.pending(1L, VIDEO_OBJECT_KEY);
+
+		report.failUnexpectedly();
+
+		assertThat(report.getStatus()).isEqualTo(AiReportStatus.FAILED_UNEXPECTED);
 	}
 
 	@Test
@@ -104,18 +120,8 @@ class AiReportTest {
 	void failKeepsContentEmpty() {
 		AiReport report = AiReport.pending(1L, VIDEO_OBJECT_KEY);
 
-		report.fail(AiReportStatus.FAILED_ANALYSIS);
+		report.failByAnalysis();
 
 		assertThat(report.getContent()).isNull();
-	}
-
-	@ParameterizedTest
-	@EnumSource(value = AiReportStatus.class, names = {"PENDING", "COMPLETED"})
-	@DisplayName("실패 상태가 아닌 값으로 실패 처리하면 예외를 던진다")
-	void failRejectsNonFailureStatus(AiReportStatus status) {
-		AiReport report = AiReport.pending(1L, VIDEO_OBJECT_KEY);
-
-		assertThatThrownBy(() -> report.fail(status))
-				.isInstanceOf(IllegalArgumentException.class);
 	}
 }

@@ -74,7 +74,7 @@ class AiReportRepositoryTest {
 		AiReport saved = aiReportRepository.saveAndFlush(AiReport.pending(7L, VIDEO_OBJECT_KEY));
 		entityManager.clear();
 
-		saved.fail(AiReportStatus.FAILED_ANALYSIS);
+		saved.failByAnalysis();
 		aiReportRepository.saveAndFlush(saved);
 		entityManager.clear();
 
@@ -94,7 +94,7 @@ class AiReportRepositoryTest {
 	@DisplayName("실패한 리포트의 영상 객체 키도 존재한다고 알려준다")
 	void existsByVideoObjectKeyReturnsTrueForFailedReport() {
 		// 상태를 가리지 않으므로 실패한 영상은 재분석되지 않는다
-		aiReportRepository.saveAndFlush(failedReport(7L, VIDEO_OBJECT_KEY, AiReportStatus.FAILED_ANALYSIS));
+		aiReportRepository.saveAndFlush(analysisFailedReport(7L, VIDEO_OBJECT_KEY));
 
 		assertThat(aiReportRepository.existsByVideoObjectKey(VIDEO_OBJECT_KEY)).isTrue();
 	}
@@ -131,7 +131,7 @@ class AiReportRepositoryTest {
 	void countByUserIdAndStatusCountsOnlyOwnReportsInStatus() {
 		aiReportRepository.saveAndFlush(completedReport(7L, "videos/training/7/first.mp4", "첫 제목", "첫 리포트"));
 		aiReportRepository.saveAndFlush(completedReport(7L, "videos/training/7/second.mp4", "둘째 제목", "둘째 리포트"));
-		aiReportRepository.saveAndFlush(failedReport(7L, "videos/training/7/failed.mp4", AiReportStatus.FAILED_ANALYSIS));
+		aiReportRepository.saveAndFlush(analysisFailedReport(7L, "videos/training/7/failed.mp4"));
 		aiReportRepository.saveAndFlush(AiReport.pending(7L, "videos/training/7/pending.mp4"));
 		aiReportRepository.saveAndFlush(completedReport(8L, "videos/training/8/other.mp4", "남의 제목", "남의 리포트"));
 
@@ -153,9 +153,9 @@ class AiReportRepositoryTest {
 		return report;
 	}
 
-	private static AiReport failedReport(Long userId, String videoObjectKey, AiReportStatus status) {
+	private static AiReport analysisFailedReport(Long userId, String videoObjectKey) {
 		AiReport report = AiReport.pending(userId, videoObjectKey);
-		report.fail(status);
+		report.failByAnalysis();
 		return report;
 	}
 }

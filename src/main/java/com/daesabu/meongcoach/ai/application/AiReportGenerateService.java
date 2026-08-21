@@ -6,10 +6,10 @@ import com.daesabu.meongcoach.ai.application.required.AiReportRepository;
 import com.daesabu.meongcoach.ai.application.required.ReportTitleGenerator;
 import com.daesabu.meongcoach.ai.application.required.VideoAnalyzer;
 import com.daesabu.meongcoach.ai.domain.AiReport;
-import com.daesabu.meongcoach.ai.domain.AiReportStatus;
 import com.daesabu.meongcoach.ai.domain.vo.AiTrial;
 import com.daesabu.meongcoach.media.application.provided.VideoDownloadUrlIssuer;
 import com.daesabu.meongcoach.media.application.provided.VideoDownloadUrlResult;
+import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -51,7 +51,7 @@ public class AiReportGenerateService implements AiReportGenerator {
 		}
 		catch (Exception e) {
 			log.error("예상하지 못한 오류로 리포트 생성에 실패했다: {}", objectKey, e);
-			fail(report, AiReportStatus.FAILED_UNEXPECTED);
+			recordFailure(report, AiReport::failUnexpectedly);
 		}
 	}
 
@@ -65,13 +65,13 @@ public class AiReportGenerateService implements AiReportGenerator {
 		AiTrial trial = aiTrialFinder.findTrial(report.getUserId());
 		if (!trial.isAvailable()) {
 			log.warn("무료 체험 횟수를 초과한 영상이라 리포트 생성을 건너뛴다: {}", objectKey);
-			fail(report, AiReportStatus.FAILED_TRIAL_EXCEEDED);
+			recordFailure(report, AiReport::failByTrialExceeded);
 			return;
 		}
 
 		String content = analyzeOrNull(objectKey, downloadUrl);
 		if (content == null) {
-			fail(report, AiReportStatus.FAILED_ANALYSIS);
+			recordFailure(report, AiReport::failByAnalysis);
 			return;
 		}
 
@@ -101,14 +101,14 @@ public class AiReportGenerateService implements AiReportGenerator {
 		}
 	}
 
-	// 실패 기록까지 실패하면 더 할 수 있는 일이 없다. 로그만 남기고 절대 던지지 않는다
-	private void fail(AiReport report, AiReportStatus status) {
+	// 어떤 실패 상태를 쓸지는 도메인 전이 메서드가 정한다. 실패 기록까지 실패하면 더 할 수 있는 일이 없으므로 로그만 남기고 절대 던지지 않는다
+	private void recordFailure(AiReport report, Consumer<AiReport> transition) {
 		try {
-			report.fail(status);
+			transition.accept(report);
 			aiReportRepository.save(report);
 		}
 		catch (Exception e) {
-			log.error("리포트 실패 상태({}) 기록에 실패했다: {}", status, report.getVideoObjectKey(), e);
+			log.error("리포트 실패 상태({}) 기록에 실패했다: {}", report.getStatus(), report.getVideoObjectKey(), e);
 		}
 	}
 }
