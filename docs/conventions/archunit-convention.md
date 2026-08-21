@@ -55,7 +55,7 @@ void modulesAreFreeOfCycles() {
 
 ### 3. 이름 형식
 
-클래스 이름이 [code-convention.md](code-convention.md)의 역할별 네이밍을 따르는지 검증합니다.
+클래스 이름이 [code-convention 스킬](../../.claude/skills/code-convention/SKILL.md)의 역할별 네이밍을 따르는지 검증합니다.
 
 ```java
 @Test

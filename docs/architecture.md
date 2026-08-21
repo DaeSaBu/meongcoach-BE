@@ -89,7 +89,7 @@ HTTP 요청
 
 리졸버가 보는 것은 서블릿 표준 `Principal`뿐이라 `SecurityContextHolder`·`Jwt` 같은 인증 구현 타입에 묶이지 않습니다. 인증 방식이 바뀌어도 필터 체인이 주체를 세우기만 하면 리졸버와 `@CurrentUserId`를 쓰는 컨트롤러 시그니처는 그대로 둘 수 있습니다.
 
-테스트에서는 컨트롤러 슬라이스에 필터 체인이 없어(`test-convention.md`) 요청 빌더의 `.principal(...)`로 인증 주체를 직접 세웁니다. 필터 체인이 세운 주체를 리졸버가 실제로 읽어내는지는 `shared/config/SecurityFilterChainTest`가 확인합니다.
+테스트에서는 컨트롤러 슬라이스에 필터 체인이 없어(code-convention 스킬의 `references/test-convention.md`) 요청 빌더의 `.principal(...)`로 인증 주체를 직접 세웁니다. 필터 체인이 세운 주체를 리졸버가 실제로 읽어내는지는 `shared/config/SecurityFilterChainTest`가 확인합니다.
 
 ## 모듈 경계 검증
 
@@ -97,4 +97,4 @@ HTTP 요청
 
 `architecture/ModularityTest`가 `ApplicationModules.verify()`로 모듈 경계 위반을 검증합니다.
 
-클래스 네이밍 규칙은 [docs/conventions/code-convention.md](conventions/code-convention.md)를 따릅니다.
+클래스 네이밍 규칙은 [code-convention 스킬](../.claude/skills/code-convention/SKILL.md)을 따릅니다.
