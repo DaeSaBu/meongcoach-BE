@@ -1,6 +1,7 @@
 package com.daesabu.meongcoach.ai.adapter.webapi;
 
 import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.document;
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.get;
@@ -17,6 +18,7 @@ import com.daesabu.meongcoach.ai.application.provided.AiReportContent;
 import com.daesabu.meongcoach.ai.application.provided.AiReportDetailResult;
 import com.daesabu.meongcoach.ai.application.provided.AiReportFinder;
 import com.daesabu.meongcoach.ai.application.provided.AiReportResult;
+import com.daesabu.meongcoach.ai.domain.AiReportStatus;
 import com.daesabu.meongcoach.ai.application.provided.AiTrialFinder;
 import com.daesabu.meongcoach.ai.application.provided.AiVideoUploadUrlIssuer;
 import com.daesabu.meongcoach.ai.application.provided.AiVideoUploadUrlResult;
@@ -85,9 +87,9 @@ class AiControllerTest {
 	void findReportsReturnsReportsLatestFirst() throws Exception {
 		given(aiReportFinder.findReports(42L)).willReturn(List.of(
 				new AiReportResult(11L, "videos/training/42/second.mp4", "물체를 물고 달리는 행동 분석",
-						LocalDateTime.of(2026, 8, 2, 10, 30, 0)),
+						AiReportStatus.COMPLETED, LocalDateTime.of(2026, 8, 2, 10, 30, 0)),
 				new AiReportResult(10L, "videos/training/42/first.mp4", "분리불안 징후 행동 분석",
-						LocalDateTime.of(2026, 8, 1, 9, 0, 0))
+						AiReportStatus.COMPLETED, LocalDateTime.of(2026, 8, 1, 9, 0, 0))
 		));
 
 		mockMvc.perform(get("/api/ai/reports")
@@ -97,6 +99,7 @@ class AiControllerTest {
 				.andExpect(jsonPath("$.reports[0].reportId").value(11))
 				.andExpect(jsonPath("$.reports[0].videoObjectKey").value("videos/training/42/second.mp4"))
 				.andExpect(jsonPath("$.reports[0].title").value("물체를 물고 달리는 행동 분석"))
+				.andExpect(jsonPath("$.reports[0].status").value("COMPLETED"))
 				.andExpect(jsonPath("$.reports[0].createdAt").value("2026-08-02T10:30:00"))
 				.andExpect(jsonPath("$.reports[1].reportId").value(10))
 				.andExpect(jsonPath("$.reports[1].videoObjectKey").value("videos/training/42/first.mp4"))
@@ -108,7 +111,10 @@ class AiControllerTest {
 								fieldWithPath("reports[].reportId").description("리포트 ID"),
 								fieldWithPath("reports[].videoObjectKey").description("분석한 영상의 S3 객체 키"),
 								fieldWithPath("reports[].title").optional()
-										.description("AI가 요약한 리포트 제목. 생성에 실패한 리포트는 null"),
+										.description("AI가 요약한 리포트 제목. COMPLETED가 아니거나 제목 생성에 실패한 리포트는 null"),
+								fieldWithPath("reports[].status").description(
+										"리포트 상태. PENDING(분석 중), COMPLETED(완료), FAILED_TRIAL_EXCEEDED(체험 횟수 초과), "
+												+ "FAILED_ANALYSIS(분석 실패), FAILED_UNEXPECTED(예기치 못한 오류). PENDING이 아니면 폴링을 멈춘다"),
 								fieldWithPath("reports[].createdAt").description("리포트 생성 시각(ISO-8601, 초 단위)")
 						)
 				));
@@ -148,7 +154,7 @@ class AiControllerTest {
 	@DisplayName("리포트 하나를 본문과 함께 반환한다")
 	void findReportReturnsReportWithContent() throws Exception {
 		given(aiReportFinder.findReport(42L, 10L)).willReturn(new AiReportDetailResult(10L,
-				"videos/training/42/first.mp4", "분리불안 징후 행동 분석", REPORT_CONTENT,
+				"videos/training/42/first.mp4", "분리불안 징후 행동 분석", AiReportStatus.COMPLETED, REPORT_CONTENT,
 				LocalDateTime.of(2026, 8, 1, 9, 0, 0)));
 
 		mockMvc.perform(get("/api/ai/reports/{reportId}", 10L)
@@ -158,6 +164,7 @@ class AiControllerTest {
 				.andExpect(jsonPath("$.reportId").value(10))
 				.andExpect(jsonPath("$.videoObjectKey").value("videos/training/42/first.mp4"))
 				.andExpect(jsonPath("$.title").value("분리불안 징후 행동 분석"))
+				.andExpect(jsonPath("$.status").value("COMPLETED"))
 				.andExpect(jsonPath("$.content.recommend[0].title").value("분리불안 교육"))
 				.andExpect(jsonPath("$.content.recommend[0].description")
 						.value("혼자 있는 시간을 편안하게 만드는 교육이라 도움이 돼요."))
@@ -174,8 +181,11 @@ class AiControllerTest {
 								fieldWithPath("reportId").description("리포트 ID"),
 								fieldWithPath("videoObjectKey").description("분석한 영상의 S3 객체 키"),
 								fieldWithPath("title").optional()
-										.description("AI가 요약한 리포트 제목. 생성에 실패한 리포트는 null"),
-								fieldWithPath("content").description("AI 분석 리포트 본문"),
+										.description("AI가 요약한 리포트 제목. COMPLETED가 아니거나 제목 생성에 실패한 리포트는 null"),
+								fieldWithPath("status").description(
+										"리포트 상태. PENDING(분석 중), COMPLETED(완료), FAILED_TRIAL_EXCEEDED(체험 횟수 초과), "
+												+ "FAILED_ANALYSIS(분석 실패), FAILED_UNEXPECTED(예기치 못한 오류). PENDING이 아니면 폴링을 멈춘다"),
+								fieldWithPath("content").optional().description("AI 분석 리포트 본문. COMPLETED가 아니면 null"),
 								fieldWithPath("content.recommend[]").description(
 										"추천 교육 목록. 문제 행동이 아닌 영상은 빈 배열"),
 								fieldWithPath("content.recommend[].title").description("추천 교육 이름"),
@@ -195,10 +205,24 @@ class AiControllerTest {
 	}
 
 	@Test
+	@DisplayName("완료되지 않은 리포트 상세는 상태와 함께 본문을 null로 내린다")
+	void findReportReturnsNullContentForIncompleteReport() throws Exception {
+		given(aiReportFinder.findReport(42L, 10L)).willReturn(new AiReportDetailResult(10L,
+				"videos/training/42/first.mp4", null, AiReportStatus.PENDING, null,
+				LocalDateTime.of(2026, 8, 1, 9, 0, 0)));
+
+		mockMvc.perform(get("/api/ai/reports/{reportId}", 10L).principal(CURRENT_USER))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.status").value("PENDING"))
+				.andExpect(jsonPath("$.title").value(nullValue()))
+				.andExpect(jsonPath("$.content").value(nullValue()));
+	}
+
+	@Test
 	@DisplayName("인증 주체에서 읽은 사용자로 리포트 상세 조회를 위임한다")
 	void findReportDelegatesWithCurrentUserId() throws Exception {
 		given(aiReportFinder.findReport(42L, 10L)).willReturn(new AiReportDetailResult(10L,
-				"videos/training/42/first.mp4", "분리불안 징후 행동 분석", REPORT_CONTENT,
+				"videos/training/42/first.mp4", "분리불안 징후 행동 분석", AiReportStatus.COMPLETED, REPORT_CONTENT,
 				LocalDateTime.of(2026, 8, 1, 9, 0, 0)));
 
 		mockMvc.perform(get("/api/ai/reports/{reportId}", 10L).principal(CURRENT_USER))

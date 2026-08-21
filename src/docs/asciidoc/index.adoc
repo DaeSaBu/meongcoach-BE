@@ -211,8 +211,9 @@ operation::training/topic-select-error[snippets='http-response,response-fields']
 
 훈련 영상 업로드 URL 발급과, 업로드한 영상을 AI가 분석해 만든 리포트를 조회하는 API입니다.
 모든 엔드포인트에 액세스 토큰 인증이 필요합니다.
-리포트는 영상 업로드 후 서버가 분석을 마친 시점에 생성되며,
-별도의 "생성 중" 상태 없이 완성된 리포트만 조회됩니다.
+리포트는 영상 업로드 직후 `PENDING`(분석 중) 상태로 생성되고, 분석이 끝나면 `COMPLETED` 또는
+`FAILED_*` 상태로 바뀝니다. 클라이언트는 목록·상세의 `status`를 폴링하다가 `PENDING`이 아니면 멈춥니다.
+`COMPLETED`가 아닌 리포트는 `title`과 `content`가 null입니다.
 `videoObjectKey`는 분석한 영상을 가리키는 S3 객체 키이며,
 영상 재생 URL은 내려가지 않습니다.
 
@@ -262,7 +263,7 @@ NOTE: 업로드한 영상의 재생 URL 발급 API는 아직 없습니다. 비�
 link:{swagger-ui}#/AI/ai-trial[▶ Swagger에서 Try it out,window=swagger]
 
 액세스 토큰으로 식별한 사용자의 무료 체험 사용 현황을 조회합니다.
-리포트를 생성한 적이 없으면 사용 0회로 내려갑니다.
+분석이 완료된(`COMPLETED`) 리포트만 사용 횟수로 세며, 없으면 사용 0회로 내려갑니다.
 
 operation::ai/trial[snippets='http-request,http-response,response-fields']
 
@@ -271,7 +272,8 @@ operation::ai/trial[snippets='http-request,http-response,response-fields']
 link:{swagger-ui}#/AI/ai-report-list[▶ Swagger에서 Try it out,window=swagger]
 
 액세스 토큰으로 식별한 사용자의 리포트 목록을 생성 시각 내림차순으로 조회합니다.
-리포트 본문은 상세 조회에서만 내려가며, 리포트가 없으면 빈 배열로 내려갑니다.
+분석 중·실패한 리포트도 `status`와 함께 포함되며, 리포트 본문은 상세 조회에서만 내려갑니다.
+리포트가 없으면 빈 배열로 내려갑니다.
 
 operation::ai/report-list[snippets='http-request,http-response,response-fields']
 
@@ -279,7 +281,7 @@ operation::ai/report-list[snippets='http-request,http-response,response-fields']
 
 link:{swagger-ui}#/AI/ai-report-detail[▶ Swagger에서 Try it out,window=swagger]
 
-리포트 하나를 본문(`content`)과 함께 조회합니다.
+리포트 하나를 본문(`content`)과 함께 조회합니다. `status`가 `COMPLETED`가 아니면 `content`는 null입니다.
 
 operation::ai/report-detail[snippets='http-request,path-parameters,http-response,response-fields']
 
