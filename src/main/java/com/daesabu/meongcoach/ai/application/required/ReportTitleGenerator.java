@@ -6,7 +6,8 @@ package com.daesabu.meongcoach.ai.application.required;
 public interface ReportTitleGenerator {
 
 	/**
-	 * 리포트 JSON 본문을 요약하는 한 줄 제목을 돌려준다. 생성에 실패하면 예외를 던진다.
+	 * 리포트 JSON 본문을 요약하는 한 줄 제목을 돌려준다. 생성에 실패하면
+	 * {@link com.daesabu.meongcoach.ai.domain.exception.ReportTitleGenerationFailedException}을 던진다.
 	 */
 	String generateTitle(String reportContentJson);
 }

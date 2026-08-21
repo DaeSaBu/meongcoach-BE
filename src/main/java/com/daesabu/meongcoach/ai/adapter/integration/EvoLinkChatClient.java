@@ -14,7 +14,8 @@ import org.springframework.web.client.RestClient;
  * EvoLink 채팅 API를 호출하는 공용 클라이언트. 영상 분석·제목 생성 어댑터가 같은 엔드포인트를 쓰므로
  * 전송과 응답 검증을 여기로 모은다. 전역 read-timeout(3초)으로는 모델 응답 전에 끊기므로
  * 이 클라이언트만 별도 requestFactory로 응답 타임아웃을 늘린다.
- * HTTP 오류(4xx·5xx)는 RestClient 예외를 그대로 전파하고, 삼킬지는 호출부인 AiReportGenerateService가 정한다.
+ * HTTP 오류(4xx·5xx)는 RestClient 예외를, 쓸 수 없는 응답은 EvoLinkResponseException을 던진다.
+ * 도메인 예외로의 번역은 용도를 아는 각 어댑터(영상 분석·제목 생성)가 한다.
  */
 @Component
 class EvoLinkChatClient {
@@ -58,18 +59,18 @@ class EvoLinkChatClient {
 
 	private static String extractContent(EvoLinkChatResponse response) {
 		if (response == null || response.choices() == null || response.choices().isEmpty()) {
-			throw new IllegalStateException("EvoLink 응답에 choices가 없습니다");
+			throw new EvoLinkResponseException("EvoLink 응답에 choices가 없습니다");
 		}
 		EvoLinkChatResponse.Choice choice = response.choices().getFirst();
 		if (FINISH_REASON_CONTENT_FILTER.equals(choice.finishReason())) {
-			throw new IllegalStateException("EvoLink 응답이 콘텐츠 검토로 차단되었습니다");
+			throw new EvoLinkResponseException("EvoLink 응답이 콘텐츠 검토로 차단되었습니다");
 		}
 		if (FINISH_REASON_LENGTH.equals(choice.finishReason())) {
-			throw new IllegalStateException("EvoLink 응답이 max_tokens 상한에 걸려 잘렸습니다");
+			throw new EvoLinkResponseException("EvoLink 응답이 max_tokens 상한에 걸려 잘렸습니다");
 		}
 		if (choice.message() == null || choice.message().content() == null
 				|| choice.message().content().isBlank()) {
-			throw new IllegalStateException("EvoLink 응답 내용이 비어 있습니다");
+			throw new EvoLinkResponseException("EvoLink 응답 내용이 비어 있습니다");
 		}
 		return choice.message().content();
 	}

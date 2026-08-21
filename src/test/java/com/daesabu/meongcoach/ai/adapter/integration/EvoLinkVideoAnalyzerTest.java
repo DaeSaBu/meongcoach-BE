@@ -11,8 +11,10 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.jsonPath;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withServerError;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
+import com.daesabu.meongcoach.ai.domain.exception.VideoAnalysisFailedException;
 import com.daesabu.meongcoach.training.application.provided.TopicFinder;
 import com.daesabu.meongcoach.training.application.provided.TopicSummary;
 import java.time.Duration;
@@ -92,7 +94,7 @@ class EvoLinkVideoAnalyzerTest {
 		givenModelResponds("```json\n" + VALID_CONTENT_JSON + "\n```");
 
 		assertThatThrownBy(() -> analyzer.analyze(VIDEO_URL))
-				.isInstanceOf(IllegalStateException.class);
+				.isInstanceOf(VideoAnalysisFailedException.class);
 	}
 
 	@Test
@@ -113,7 +115,7 @@ class EvoLinkVideoAnalyzerTest {
 		givenModelResponds("분리불안 징후가 관찰됩니다.");
 
 		assertThatThrownBy(() -> analyzer.analyze(VIDEO_URL))
-				.isInstanceOf(IllegalStateException.class);
+				.isInstanceOf(VideoAnalysisFailedException.class);
 	}
 
 	@Test
@@ -122,7 +124,7 @@ class EvoLinkVideoAnalyzerTest {
 		givenModelResponds("{\"recommend\": [잘못된 형식}");
 
 		assertThatThrownBy(() -> analyzer.analyze(VIDEO_URL))
-				.isInstanceOf(IllegalStateException.class);
+				.isInstanceOf(VideoAnalysisFailedException.class);
 	}
 
 	@Test
@@ -131,7 +133,28 @@ class EvoLinkVideoAnalyzerTest {
 		givenModelResponds("{\"recommend\":[],\"report\":[],\"solution\":[]}");
 
 		assertThatThrownBy(() -> analyzer.analyze(VIDEO_URL))
-				.isInstanceOf(IllegalStateException.class);
+				.isInstanceOf(VideoAnalysisFailedException.class);
+	}
+
+	@Test
+	@DisplayName("모델 API가 오류를 응답하면 VideoAnalysisFailedException으로 실패한다")
+	void analyzeTranslatesHttpErrorToDomainException() {
+		// HTTP 오류는 경계에서 도메인 예외로 번역하고, 삼킬지는 호출부가 정한다
+		expectChatRequest().andRespond(withServerError());
+
+		assertThatThrownBy(() -> analyzer.analyze(VIDEO_URL))
+				.isInstanceOf(VideoAnalysisFailedException.class)
+				.hasMessageNotContaining("X-Amz-Signature");
+	}
+
+	@Test
+	@DisplayName("choices가 없는 응답이면 VideoAnalysisFailedException으로 실패한다")
+	void analyzeTranslatesUnusableResponseToDomainException() {
+		expectChatRequest().andRespond(withSuccess("{\"id\":\"test-request-id\",\"choices\":[]}",
+				MediaType.APPLICATION_JSON));
+
+		assertThatThrownBy(() -> analyzer.analyze(VIDEO_URL))
+				.isInstanceOf(VideoAnalysisFailedException.class);
 	}
 
 	@Test

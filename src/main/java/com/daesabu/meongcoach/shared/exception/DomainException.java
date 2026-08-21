@@ -17,6 +17,12 @@ public abstract class DomainException extends RuntimeException {
 		this.errorCode = errorCode;
 	}
 
+	// 외부 연동 어댑터가 인프라 예외를 도메인 예외로 번역할 때 원인을 보존한다
+	protected DomainException(ErrorCode errorCode, String detail, Throwable cause) {
+		super(detail, cause);
+		this.errorCode = errorCode;
+	}
+
 	public ErrorCode getErrorCode() {
 		return errorCode;
 	}
