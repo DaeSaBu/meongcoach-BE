@@ -64,5 +64,8 @@ API 문서는 컨트롤러 테스트가 생성하는 Spring REST Docs 스니펫�
 
 ## 아키텍처 검증
 
-- ArchUnit 기반으로 아키텍처를 검증하는 단위 테스트를 작성한다. ([archunit-convention.md](../../../../docs/conventions/archunit-convention.md))
-- 모듈 경계는 `architecture/ModularityTest`의 `ApplicationModules.verify()`가 검증한다. ([docs/architecture.md](../../../../docs/architecture.md) 참고)
+아키텍처 규칙은 문서로만 남기지 않고 ArchUnit 단위 테스트(`archunit-junit5`)로 강제한다. 모듈 경계는 `architecture/ModularityTest`의 `ApplicationModules.verify()`가 검증한다. ([docs/architecture.md](../../../../docs/architecture.md) 참고)
+
+- 전 모듈 공통 아키텍처 테스트는 `src/test/java/com/daesabu/meongcoach/architecture/`에 두고, 테스트 클래스가 곧 검증 범주다 — 계층 의존 방향(`LayerDependencyTest`), 역할별 네이밍(`NamingTest`), 애노테이션 적용 위치(`AnnotationPatternTest`), 도메인 입력 모델(`DomainInputModelTest`), 도메인 순수성(`DomainPurityTest`). 새 아키텍처 규칙은 새 파일을 만들지 않고 해당 범주 테스트에 추가한다.
+- `ClassFileImporter`로 임포트한 `JavaClasses` 상수를 두고, 일반 `@Test` 메서드에서 `ArchRule.check()`로 검증한다. `@ArchTest` 필드 방식은 `@DisplayName`을 붙일 수 없어 쓰지 않는다.
+- `dependOnClassesThat`은 필드·파라미터·리턴 타입·상속 등 선언 수준까지 포함하는 넓은 검증이라 계층 격리 규칙에 쓰고, `accessClassesThat`은 메서드 호출·필드 접근 등 실행 코드 수준의 좁은 검증이라 특정 API 호출 금지 규칙에 쓴다. 무엇을 막으려는지에 따라 구분한다.
