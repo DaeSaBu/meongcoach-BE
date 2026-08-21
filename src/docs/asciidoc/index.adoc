@@ -211,9 +211,18 @@ operation::training/topic-select-error[snippets='http-response,response-fields']
 
 훈련 영상 업로드 URL 발급과, 업로드한 영상을 AI가 분석해 만든 리포트를 조회하는 API입니다.
 모든 엔드포인트에 액세스 토큰 인증이 필요합니다.
-리포트는 영상 업로드 직후 `PENDING`(분석 중) 상태로 생성되고, 분석이 끝나면 `COMPLETED` 또는
-`FAILED_*` 상태로 바뀝니다. 클라이언트는 목록·상세의 `status`를 폴링하다가 `PENDING`이 아니면 멈춥니다.
+리포트는 업로드 URL을 발급하는 순간 `UPLOADING`(업로드 대기) 상태로 생성되고, 업로드가 끝나면 `PENDING`(분석 중),
+분석이 끝나면 `COMPLETED` 또는 `FAILED_*` 상태로 바뀝니다.
 `COMPLETED`가 아닌 리포트는 `title`과 `content`가 null입니다.
+
+[NOTE]
+.분석 완료 폴링
+====
+클라이언트는 리포트 목록 조회를 폴링하다가 `UPLOADING`·`PENDING`인 리포트가 없으면 멈춥니다.
+리포트는 발급 즉시 목록에 나타나므로 앱이 재시작돼 `objectKey`·`reportId`를 잃어도 목록만으로 진행 중인 분석을 찾을 수 있습니다.
+`uploadUrl` 유효 시간(`expiresInSeconds`) 안에 업로드가 끝나지 않은 리포트는 `FAILED_UPLOAD`로 내려갑니다.
+업로드가 유효 시간을 넘겨 끝난 경우에는 업로드 완료 이벤트가 처리되기까지 잠시 `FAILED_UPLOAD`로 보이다가 `PENDING`으로 바뀔 수 있습니다.
+====
 `videoObjectKey`는 분석한 영상을 가리키는 S3 객체 키이며,
 영상 재생 URL은 내려가지 않습니다.
 
@@ -227,8 +236,8 @@ link:{swagger-ui}#/AI/ai-video-upload-url[▶ Swagger에서 Try it out,window=sw
 훈련 영상을 AWS S3에 직접 업로드하기 위한 API입니다. 무료 체험 횟수를 검증한 뒤 URL을 발급합니다.
 최대 50MB(52428800바이트)까지 단일 `PUT`으로 올리며, `video/mp4`(mp4)와 `video/quicktime`(mov) 두 형식만 허용합니다.
 
-이미지와 달리 응답에 `objectKey`가 함께 내려갑니다. 버킷을 비공개로 운영하면 `publicUrl` 직접 접근은 거부되므로,
-후속 API 요청에는 `objectKey`를 담아 보냅니다.
+발급과 동시에 `UPLOADING` 상태의 리포트가 만들어지고 그 `reportId`가 응답에 내려갑니다.
+`reportId`를 잃어버려도 리포트 목록 조회로 다시 찾을 수 있습니다.
 
 [IMPORTANT]
 ====

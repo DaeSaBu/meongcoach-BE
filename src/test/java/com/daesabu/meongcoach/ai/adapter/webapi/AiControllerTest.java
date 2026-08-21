@@ -113,8 +113,9 @@ class AiControllerTest {
 								fieldWithPath("reports[].title").optional()
 										.description("AI가 요약한 리포트 제목. COMPLETED가 아니거나 제목 생성에 실패한 리포트는 null"),
 								fieldWithPath("reports[].status").description(
-										"리포트 상태. PENDING(분석 중), COMPLETED(완료), FAILED_TRIAL_EXCEEDED(체험 횟수 초과), "
-												+ "FAILED_ANALYSIS(분석 실패), FAILED_UNEXPECTED(예기치 못한 오류). PENDING이 아니면 폴링을 멈춘다"),
+										"리포트 상태. UPLOADING(업로드 대기), PENDING(분석 중), COMPLETED(완료), FAILED_UPLOAD(업로드 미완료), "
+												+ "FAILED_TRIAL_EXCEEDED(체험 횟수 초과), FAILED_ANALYSIS(분석 실패), FAILED_UNEXPECTED(예기치 못한 오류). "
+												+ "UPLOADING·PENDING이 아니면 폴링을 멈춘다"),
 								fieldWithPath("reports[].createdAt").description("리포트 생성 시각(ISO-8601, 초 단위)")
 						)
 				));
@@ -183,8 +184,9 @@ class AiControllerTest {
 								fieldWithPath("title").optional()
 										.description("AI가 요약한 리포트 제목. COMPLETED가 아니거나 제목 생성에 실패한 리포트는 null"),
 								fieldWithPath("status").description(
-										"리포트 상태. PENDING(분석 중), COMPLETED(완료), FAILED_TRIAL_EXCEEDED(체험 횟수 초과), "
-												+ "FAILED_ANALYSIS(분석 실패), FAILED_UNEXPECTED(예기치 못한 오류). PENDING이 아니면 폴링을 멈춘다"),
+										"리포트 상태. UPLOADING(업로드 대기), PENDING(분석 중), COMPLETED(완료), FAILED_UPLOAD(업로드 미완료), "
+												+ "FAILED_TRIAL_EXCEEDED(체험 횟수 초과), FAILED_ANALYSIS(분석 실패), FAILED_UNEXPECTED(예기치 못한 오류). "
+												+ "UPLOADING·PENDING이 아니면 폴링을 멈춘다"),
 								fieldWithPath("content").optional().description("AI 분석 리포트 본문. COMPLETED가 아니면 null"),
 								fieldWithPath("content.recommend[]").description(
 										"추천 교육 목록. 문제 행동이 아닌 영상은 빈 배열"),
@@ -261,7 +263,7 @@ class AiControllerTest {
 	@DisplayName("체험 횟수가 남아 있으면 영상 업로드 URL을 발급한다")
 	void issueVideoUploadUrlReturnsUploadUrl() throws Exception {
 		given(aiVideoUploadUrlIssuer.issue(42L, "video/mp4", 10485760L)).willReturn(
-				new AiVideoUploadUrlResult(VIDEO_UPLOAD_URL, VIDEO_PUBLIC_URL, VIDEO_OBJECT_KEY, 900L));
+				new AiVideoUploadUrlResult(10L, VIDEO_UPLOAD_URL, VIDEO_PUBLIC_URL, VIDEO_OBJECT_KEY, 900L));
 
 		mockMvc.perform(post("/api/ai/presigned-urls")
 						.principal(CURRENT_USER)
@@ -269,6 +271,7 @@ class AiControllerTest {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(VIDEO_ISSUE_REQUEST))
 				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.reportId").value(10))
 				.andExpect(jsonPath("$.uploadUrl").value(VIDEO_UPLOAD_URL))
 				.andExpect(jsonPath("$.publicUrl").value(VIDEO_PUBLIC_URL))
 				.andExpect(jsonPath("$.objectKey").value(VIDEO_OBJECT_KEY))
@@ -282,14 +285,16 @@ class AiControllerTest {
 												+ "이 값이 그대로 presigned URL의 Content-Length 서명에 들어간다")
 						),
 						responseFields(
+								fieldWithPath("reportId").description(
+										"발급과 함께 UPLOADING 상태로 만든 리포트 ID. 리포트 목록·상세 조회에 그대로 쓴다"),
 								fieldWithPath("uploadUrl").description(
 										"영상을 PUT할 presigned URL. `Content-Type`은 요청한 값과, "
 												+ "`Content-Length`는 요청한 `fileSizeBytes`와 정확히 같아야 한다"),
 								fieldWithPath("publicUrl").description(
 										"공개 도메인 기준의 영상 URL. 버킷을 비공개로 운영하면 직접 접근은 거부된다"),
-								fieldWithPath("objectKey").description(
-										"업로드된 객체의 키. 이후 API 요청에는 이 값을 담아 등록한다"),
-								fieldWithPath("expiresInSeconds").description("uploadUrl의 유효 시간(초)")
+								fieldWithPath("objectKey").description("업로드된 객체의 키"),
+								fieldWithPath("expiresInSeconds").description(
+										"uploadUrl의 유효 시간(초). 이 안에 업로드를 마치지 않으면 리포트는 FAILED_UPLOAD로 조회된다")
 						)
 				));
 	}
@@ -298,7 +303,7 @@ class AiControllerTest {
 	@DisplayName("인증 주체에서 읽은 사용자로 영상 업로드 URL 발급을 위임한다")
 	void issueVideoUploadUrlDelegatesWithCurrentUserId() throws Exception {
 		given(aiVideoUploadUrlIssuer.issue(42L, "video/mp4", 10485760L)).willReturn(
-				new AiVideoUploadUrlResult(VIDEO_UPLOAD_URL, VIDEO_PUBLIC_URL, VIDEO_OBJECT_KEY, 900L));
+				new AiVideoUploadUrlResult(10L, VIDEO_UPLOAD_URL, VIDEO_PUBLIC_URL, VIDEO_OBJECT_KEY, 900L));
 
 		mockMvc.perform(post("/api/ai/presigned-urls")
 						.principal(CURRENT_USER)
