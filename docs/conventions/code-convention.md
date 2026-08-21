@@ -65,7 +65,7 @@
 	- 다음 중 하나에 해당할 때만 `application/provided`에 `~Result` record를 두고 감쌉니다.
 		- **도메인 타입 하나로 표현할 수 없을 때** — 여러 애그리거트 조합, 일부 필드만 내리는 projection, 집계값
 		- **모듈 경계를 넘는 반환일 때** — `@NamedInterface("provided")`는 provided 패키지에 물리적으로 존재하는 타입만 노출로 인정합니다. 인터페이스 시그니처에 등장하는 도메인 타입은 전파되지 않으므로, 도메인 타입을 반환하면 호출하는 모듈이 `ApplicationModules.verify()`에서 실패합니다
-		- **엔티티에 지연 로딩 연관이 있을 때** — `open-in-view: false`(`application.yml`)라 서비스 트랜잭션이 끝나면 준영속이 됩니다. `adapter`에서 연관을 건드리면 `LazyInitializationException`이 납니다
+	- `open-in-view: true`(`application.yml`)라 `adapter`에서 엔티티의 지연 로딩 연관을 읽어도 `LazyInitializationException`이 나지 않습니다. 다만 그 쿼리는 서비스 트랜잭션 밖에서 실행되고 요청이 끝날 때까지 커넥션을 잡으므로, 컬렉션을 내려야 하는 조회는 리포지토리 메서드에 `@EntityGraph`/fetch join을 붙여 트랜잭션 안에서 미리 로딩합니다.
 	- `~Result`를 둘 때 필드명은 도메인 기준(`id`, `title`, `sortOrder`)으로 두고, 웹 노출 이름(`topicId`, `topicTitle`)으로 바꾸는 일은 `~Response.from(...)` 정적 팩토리에서만 합니다. `~Result`에 웹 네이밍을 쓰면 `application`이 `adapter`의 관심사를 떠안게 됩니다.
 - DTO ↔ 도메인 변환은 DTO의 정적 팩토리 메서드(`from`, `of`) 또는 `toXxx` 메서드로 처리합니다.
 - 엔티티를 컨트롤러 **응답 본문**으로 직접 노출하지 않습니다. `application`이 엔티티를 반환하더라도 컨트롤러는 `~Response.from(엔티티)`로 감싸 내려보냅니다.
