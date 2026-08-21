@@ -38,16 +38,12 @@ public class AiReportGenerateService implements AiReportGenerator {
 			return;
 		}
 
-		// 분석기가 이 presigned URL로 영상을 직접 읽는다. 소유자 ID도 같은 결과에서 얻는다.
-		// 키 형식 위반은 소유자를 알 수 없어 row를 남길 수 없으므로 그대로 던진다 (컨슈머가 warn 로그로 버린다)
 		VideoDownloadUrlResult downloadUrl = videoDownloadUrlIssuer.issue(objectKey);
 
-		// 소유자를 알게 된 즉시 PENDING row를 남겨, 이후 어떤 결말이든 같은 row의 상태로 기록한다
 		AiReport report = aiReportRepository.save(AiReport.pending(downloadUrl.ownerUserId(), objectKey));
 
-		// PENDING row가 생긴 뒤의 예외는 전부 실패 결말로 남긴다. 예외를 던지면 SQS가 같은 메시지를 계속 재전달한다
 		try {
-			analyzeAndComplete(report, downloadUrl.downloadUrl());
+			recordOutcome(report, downloadUrl.downloadUrl());
 		}
 		catch (Exception e) {
 			log.error("예상하지 못한 오류로 리포트 생성에 실패했다: {}", objectKey, e);
@@ -59,23 +55,29 @@ public class AiReportGenerateService implements AiReportGenerator {
 		return aiReportRepository.existsByVideoObjectKey(objectKey);
 	}
 
-	private void analyzeAndComplete(AiReport report, String downloadUrl) {
-		String objectKey = report.getVideoObjectKey();
-
-		AiTrial trial = aiTrialFinder.findTrial(report.getUserId());
-		if (!trial.isAvailable()) {
-			log.warn("무료 체험 횟수를 초과한 영상이라 리포트 생성을 건너뛴다: {}", objectKey);
+	// 결말을 정해 기록한다. 모든 경로가 상태를 저장하며 끝난다
+	private void recordOutcome(AiReport report, String downloadUrl) {
+		if (isTrialExhausted(report.getUserId())) {
 			recordFailure(report, AiReport::failByTrialExceeded);
 			return;
 		}
 
-		String content = analyzeOrNull(objectKey, downloadUrl);
+		String content = analyzeOrNull(report.getVideoObjectKey(), downloadUrl);
 		if (content == null) {
 			recordFailure(report, AiReport::failByAnalysis);
 			return;
 		}
 
-		String title = generateTitleOrNull(objectKey, content);
+		recordCompletion(report, content);
+	}
+
+	private boolean isTrialExhausted(Long userId) {
+		AiTrial trial = aiTrialFinder.findTrial(userId);
+		return !trial.isAvailable();
+	}
+
+	private void recordCompletion(AiReport report, String content) {
+		String title = generateTitleOrNull(report.getVideoObjectKey(), content);
 		report.complete(title, content);
 		aiReportRepository.save(report);
 	}
