@@ -31,6 +31,12 @@ public interface AiReportRepository extends JpaRepository<AiReport, Long> {
 	Optional<AiReport> findByIdAndUserId(Long id, Long userId);
 
 	/**
+	 * 영상 객체 키와 소유자가 모두 일치할 때만 조회한다. 상태는 가리지 않는다.
+	 * 남의 영상 키는 결과 없음으로 처리해 존재 여부를 숨긴다.
+	 */
+	Optional<AiReport> findByVideoObjectKeyAndUserId(String videoObjectKey, Long userId);
+
+	/**
 	 * 사용자의 리포트 중 주어진 상태인 것만 센다.
 	 * 무료 체험 한도는 COMPLETED만 센다 — 실패·진행 중 리포트는 체험을 소모하지 않는다.
 	 */
