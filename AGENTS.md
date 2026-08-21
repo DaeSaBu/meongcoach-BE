@@ -22,11 +22,10 @@
 | 문서                                                                         | 내용                         |
 |----------------------------------------------------------------------------|----------------------------|
 | [.claude/skills/git-convention/SKILL.md](.claude/skills/git-convention/SKILL.md) | 커밋 메시지, 브랜치 전략, PR 규칙 (Claude Code 스킬) |
-| [.claude/skills/code-convention/SKILL.md](.claude/skills/code-convention/SKILL.md) | 코드 스타일, 네이밍, 트랜잭션, Lombok/DTO 규칙 (Claude Code 스킬) |
-| [.claude/skills/code-convention/references/test-convention.md](.claude/skills/code-convention/references/test-convention.md) | 테스트 작성 규칙 (code-convention 스킬 참조 문서) |
-| [docs/conventions/restdocs-convention.md](docs/conventions/restdocs-convention.md) | RestDocs API 문서화 규칙   |
-| [docs/conventions/archunit-convention.md](docs/conventions/archunit-convention.md) | ArchUnit 아키텍처 검증 규칙  |
-| [docs/conventions/exception-convention.md](docs/conventions/exception-convention.md) | 예외 정의 패턴, Problem Details 에러 응답 규칙 |
+| [.claude/skills/code-convention/SKILL.md](.claude/skills/code-convention/SKILL.md) | 코드 스타일, 네이밍, 트랜잭션, Lombok/DTO, 예외 정의 규칙 (Claude Code 스킬) |
+| [.claude/skills/code-convention/references/test-convention.md](.claude/skills/code-convention/references/test-convention.md) | 테스트 작성, RestDocs 문서화, ArchUnit 규칙 (code-convention 스킬 참조 문서) |
+| [docs/api-docs.md](docs/api-docs.md) | REST Docs 빌드, OpenAPI 후처리, Swagger UI 확인 경로 |
+| [docs/error-handling.md](docs/error-handling.md) | Problem Details 에러 응답 형식, 전역 핸들러 처리 범위 |
 | [docs/architecture.md](docs/architecture.md)                               | Spring Modulith 모듈 구조, 의존 규칙   |
 | [docs/security.md](docs/security.md)                                       | JWT 토큰 정책·검증 체인, 필터 체인 제약, 인증 환경 변수 |
 | [docs/ai-pipeline.md](docs/ai-pipeline.md)                                 | 영상 업로드→SQS→EvoLink 분석→리포트 저장 비동기 흐름 |
@@ -37,6 +36,6 @@
 
 새 컨벤션이나 결정 사항이 생기면 다음 절차로 추가합니다.
 
-1. `docs/` 아래에 마크다운 파일을 만듭니다. 컨벤션은 `docs/conventions/`, 그 외(아키텍처, 운영 등)는 `docs/` 바로 아래에 둡니다. 단, 에이전트가 코드·테스트를 작성하는 시점에 따라야 하는 컨벤션은 `docs/`가 아니라 `code-convention` 스킬(`.claude/skills/code-convention/SKILL.md` 또는 그 `references/`)에 둡니다.
+1. 코드·테스트를 작성할 때 따라야 하는 규칙은 `code-convention` 스킬(`.claude/skills/code-convention/SKILL.md` 또는 그 `references/`)에, 동작 원리·운영 같은 설명은 `docs/` 바로 아래 마크다운 파일에 둡니다.
 2. 위 [상세 문서](#상세-문서) 표에 링크를 등록합니다.
 3. 모든 팀원과 에이전트에게 항상 적용되어야 하는 규칙이라면 [핵심 규칙](#핵심-규칙)에도 한 줄로 요약해 추가합니다.
