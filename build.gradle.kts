@@ -1,5 +1,13 @@
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
+import org.objectweb.asm.ClassReader
+import org.objectweb.asm.Opcodes
+
+// 커버리지 제외 판별용 클래스 파일 파서. Java 25 클래스(major 69)를 읽으려면 ASM 9.8 이상이어야 한다
+buildscript {
+	repositories { mavenCentral() }
+	dependencies { classpath("org.ow2.asm:asm:9.9") }
+}
 
 plugins {
 	java
@@ -208,26 +216,34 @@ tasks.bootJar {
 	from(layout.buildDirectory.file("api-spec/openapi3.json")) { into("BOOT-INF/classes/static/swagger-ui") }
 }
 
-tasks.jacocoTestReport {
-	dependsOn(tasks.test)
-	reports {
-		xml.required = true
-	}
-}
-
-// 커버리지 검증 대상에서 부트스트랩·설정 클래스는 제외한다
+// 커버리지 대상에서 부트스트랩·설정 클래스와 enum(ErrorCode 포함)을 제외한다.
+// enum은 상수 나열이라 커버리지를 채우기 위한 테스트를 강제하지 않는다. 변환 로직(from/of)은 사용처 테스트가 간접 검증한다
 val jacocoExcludes = listOf(
 	"**/MeongcoachApplication*",
 	"**/shared/config/**",
 )
 
+// 이름 패턴으로는 enum을 가려낼 수 없으므로 컴파일된 클래스의 ACC_ENUM 플래그로 판별한다
+fun isEnumClassFile(file: File): Boolean =
+	file.extension == "class" && file.inputStream().use { (ClassReader(it).access and Opcodes.ACC_ENUM) != 0 }
+
+// FileCollection.filter는 지연 평가되므로 컴파일 이후(태스크 실행 시점)에 클래스 파일을 읽는다
+val jacocoClassDirectories = sourceSets.main.get().output.asFileTree
+	.matching { exclude(jacocoExcludes) }
+	.filter { !isEnumClassFile(it) }
+
+// 리포트(CI의 PR 코멘트)와 검증이 같은 분모를 쓰도록 둘 다 같은 컬렉션을 사용한다
+tasks.jacocoTestReport {
+	dependsOn(tasks.test)
+	classDirectories.setFrom(jacocoClassDirectories)
+	reports {
+		xml.required = true
+	}
+}
+
 tasks.jacocoTestCoverageVerification {
 	dependsOn(tasks.test)
-	classDirectories.setFrom(
-		sourceSets.main.get().output.asFileTree.matching {
-			exclude(jacocoExcludes)
-		}
-	)
+	classDirectories.setFrom(jacocoClassDirectories)
 	violationRules {
 		rule {
 			limit {
