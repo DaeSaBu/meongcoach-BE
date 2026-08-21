@@ -4,6 +4,8 @@ import com.daesabu.meongcoach.shared.domain.BaseTimeEntity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -42,11 +44,17 @@ public class AiReport extends BaseTimeEntity {
 	@Column(nullable = false, columnDefinition = "TEXT")
 	private String content;
 
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false, length = 30)
+	private AiReportStatus status;
+
 	private AiReport(AiReportCreateCommand command) {
 		this.userId = command.userId();
 		this.videoObjectKey = command.videoObjectKey();
 		this.title = normalizeTitle(command.title());
 		this.content = command.content();
+		// create()는 분석 성공 시에만 호출되므로 상태는 호출자 입력이 아니라 도메인이 결정한다
+		this.status = AiReportStatus.COMPLETED;
 	}
 
 	public static AiReport create(AiReportCreateCommand command) {
