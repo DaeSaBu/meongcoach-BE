@@ -57,7 +57,6 @@ public class AiReportGenerateService implements AiReportGenerator {
 		return aiReportRepository.existsByVideoObjectKey(objectKey);
 	}
 
-	// 결말을 정해 기록한다. 모든 경로가 상태를 저장하며 끝난다
 	private void recordOutcome(AiReport report, String downloadUrl) {
 		if (isTrialExhausted(report.getUserId())) {
 			recordFailure(report, AiReport::failByTrialExceeded);
@@ -84,7 +83,6 @@ public class AiReportGenerateService implements AiReportGenerator {
 		aiReportRepository.save(report);
 	}
 
-	// 어댑터가 번역한 연동 실패만 분석 실패로 본다. 그 외 예외는 버그로 보고 generate()의 catch에서 FAILED_UNEXPECTED로 남긴다
 	private String analyzeOrNull(String objectKey, String downloadUrl) {
 		try {
 			return videoAnalyzer.analyze(downloadUrl);
@@ -95,7 +93,6 @@ public class AiReportGenerateService implements AiReportGenerator {
 		}
 	}
 
-	// 제목은 부가 정보라 생성에 실패해도 리포트 저장은 계속한다
 	private String generateTitleOrNull(String objectKey, String content) {
 		try {
 			return reportTitleGenerator.generateTitle(content);
@@ -106,7 +103,6 @@ public class AiReportGenerateService implements AiReportGenerator {
 		}
 	}
 
-	// 저장이 실패하면 generate()의 catch가 FAILED_UNEXPECTED로 한 번 더 시도하고, 그마저 실패하면 컨슈머가 받아 버린다
 	private void recordFailure(AiReport report, Consumer<AiReport> transition) {
 		transition.accept(report);
 		aiReportRepository.save(report);
