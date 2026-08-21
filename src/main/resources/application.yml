@@ -8,7 +8,10 @@ spring:
     properties:
       hibernate:
         format_sql: true
-    open-in-view: false
+    # 서비스가 엔티티를 그대로 반환하고 adapter에서 지연 로딩을 허용하기 위해 켠다.
+    # adapter에서 일어나는 지연 로딩은 서비스 트랜잭션 밖이라 요청 끝까지 커넥션을 잡으므로,
+    # 컬렉션이 필요한 조회는 리포지토리에서 @EntityGraph/fetch join으로 미리 로딩한다.
+    open-in-view: true
   # 로그인 경로에 카카오 공개 키 조회가 끼므로 타임아웃을 반드시 건다 (기본값은 무제한)
   http:
     clients:
