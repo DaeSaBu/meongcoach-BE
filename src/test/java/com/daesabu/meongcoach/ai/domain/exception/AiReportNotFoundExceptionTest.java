@@ -17,13 +17,4 @@ class AiReportNotFoundExceptionTest {
 		assertThat(exception.getErrorCode()).isEqualTo(AiErrorCode.AI_REPORT_NOT_FOUND);
 		assertThat(exception.getMessage()).contains("2");
 	}
-
-	@Test
-	@DisplayName("영상 객체 키로 리포트를 찾지 못해도 AI_REPORT_NOT_FOUND 코드를 갖는다")
-	void hasAiReportNotFoundErrorCodeForVideoObjectKey() {
-		DomainException exception = new AiReportNotFoundException("videos/training/7/key.mp4");
-
-		assertThat(exception.getErrorCode()).isEqualTo(AiErrorCode.AI_REPORT_NOT_FOUND);
-		assertThat(exception.getMessage()).contains("videos/training/7/key.mp4");
-	}
 }

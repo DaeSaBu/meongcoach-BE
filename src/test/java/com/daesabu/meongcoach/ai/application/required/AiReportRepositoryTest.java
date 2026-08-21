@@ -147,21 +147,6 @@ class AiReportRepositoryTest {
 		assertThat(aiReportRepository.findByIdAndUserId(saved.getId(), 8L)).isEmpty();
 	}
 
-	@Test
-	@DisplayName("영상 객체 키와 소유자가 모두 일치할 때만 조회된다")
-	void findByVideoObjectKeyAndUserIdReturnsEmptyForOtherUsersReport() {
-		aiReportRepository.saveAndFlush(AiReport.pending(7L, VIDEO_OBJECT_KEY));
-
-		assertThat(aiReportRepository.findByVideoObjectKeyAndUserId(VIDEO_OBJECT_KEY, 7L)).isPresent();
-		assertThat(aiReportRepository.findByVideoObjectKeyAndUserId(VIDEO_OBJECT_KEY, 8L)).isEmpty();
-	}
-
-	@Test
-	@DisplayName("리포트가 없는 영상 객체 키면 조회되지 않는다")
-	void findByVideoObjectKeyAndUserIdReturnsEmptyWhenReportIsAbsent() {
-		assertThat(aiReportRepository.findByVideoObjectKeyAndUserId(VIDEO_OBJECT_KEY, 7L)).isEmpty();
-	}
-
 	private static AiReport completedReport(Long userId, String videoObjectKey, String title, String content) {
 		AiReport report = AiReport.pending(userId, videoObjectKey);
 		report.complete(title, content);

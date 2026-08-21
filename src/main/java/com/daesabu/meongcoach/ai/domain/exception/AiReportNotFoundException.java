@@ -8,8 +8,4 @@ public class AiReportNotFoundException extends DomainException {
 	public AiReportNotFoundException(Long reportId) {
 		super(AiErrorCode.AI_REPORT_NOT_FOUND, "id가 " + reportId + "인 AI 리포트를 찾을 수 없습니다.");
 	}
-
-	public AiReportNotFoundException(String videoObjectKey) {
-		super(AiErrorCode.AI_REPORT_NOT_FOUND, "영상 객체 키가 " + videoObjectKey + "인 AI 리포트를 찾을 수 없습니다.");
-	}
 }

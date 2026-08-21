@@ -11,7 +11,6 @@ import static org.springframework.restdocs.payload.PayloadDocumentation.requestF
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
 import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
-import static org.springframework.restdocs.request.RequestDocumentation.queryParameters;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -19,7 +18,6 @@ import com.daesabu.meongcoach.ai.application.provided.AiReportContent;
 import com.daesabu.meongcoach.ai.application.provided.AiReportDetailResult;
 import com.daesabu.meongcoach.ai.application.provided.AiReportFinder;
 import com.daesabu.meongcoach.ai.application.provided.AiReportResult;
-import com.daesabu.meongcoach.ai.application.provided.AiReportStatusResult;
 import com.daesabu.meongcoach.ai.application.provided.AiTrialFinder;
 import com.daesabu.meongcoach.ai.application.provided.AiVideoUploadUrlIssuer;
 import com.daesabu.meongcoach.ai.application.provided.AiVideoUploadUrlResult;
@@ -41,7 +39,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 /**
- * AI 리포트 목록·상세·상태 조회와 영상 업로드 URL 발급·체험 횟수 조회 API 검증.
+ * AI 리포트 목록·상세 조회와 영상 업로드 URL 발급·체험 횟수 조회 API 검증.
  */
 @WebMvcTest(AiController.class)
 @AutoConfigureRestDocs
@@ -257,88 +255,6 @@ class AiControllerTest {
 								fieldWithPath("timestamp").description("에러 발생 시각(UTC)")
 						)
 				));
-	}
-
-	@Test
-	@DisplayName("영상 객체 키로 리포트의 식별자와 상태를 반환한다")
-	void findReportStatusReturnsIdAndStatus() throws Exception {
-		given(aiReportFinder.findReportStatus(42L, VIDEO_OBJECT_KEY))
-				.willReturn(new AiReportStatusResult(10L, AiReportStatus.PENDING));
-
-		mockMvc.perform(get("/api/ai/reports/status")
-						.queryParam("videoObjectKey", VIDEO_OBJECT_KEY)
-						.principal(CURRENT_USER)
-						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.reportId").value(10))
-				.andExpect(jsonPath("$.status").value("PENDING"))
-				.andDo(document("ai/report-status",
-						queryParameters(
-								parameterWithName("videoObjectKey").description(
-										"영상 업로드 URL 발급 응답으로 받은 objectKey")
-						),
-						responseFields(
-								fieldWithPath("reportId").description("리포트 ID. 상세 조회에 쓴다"),
-								fieldWithPath("status").description(
-										"리포트 상태. PENDING(분석 중), COMPLETED(완료), FAILED_TRIAL_EXCEEDED(체험 횟수 초과), "
-												+ "FAILED_ANALYSIS(분석 실패), FAILED_UNEXPECTED(예기치 못한 오류). PENDING이 아니면 폴링을 멈춘다")
-						)
-				));
-	}
-
-	@Test
-	@DisplayName("인증 주체에서 읽은 사용자로 리포트 상태 조회를 위임한다")
-	void findReportStatusDelegatesWithCurrentUserId() throws Exception {
-		given(aiReportFinder.findReportStatus(42L, VIDEO_OBJECT_KEY))
-				.willReturn(new AiReportStatusResult(10L, AiReportStatus.COMPLETED));
-
-		mockMvc.perform(get("/api/ai/reports/status")
-						.queryParam("videoObjectKey", VIDEO_OBJECT_KEY)
-						.principal(CURRENT_USER))
-				.andExpect(status().isOk());
-
-		then(aiReportFinder).should().findReportStatus(42L, VIDEO_OBJECT_KEY);
-	}
-
-	@Test
-	@DisplayName("영상 객체 키에 해당하는 리포트가 없거나 본인 소유가 아니면 404와 에러 코드를 반환한다")
-	void findReportStatusReturnsNotFoundWhenReportDoesNotExistOrIsNotOwned() throws Exception {
-		given(aiReportFinder.findReportStatus(42L, VIDEO_OBJECT_KEY))
-				.willThrow(new AiReportNotFoundException(VIDEO_OBJECT_KEY));
-
-		mockMvc.perform(get("/api/ai/reports/status")
-						.queryParam("videoObjectKey", VIDEO_OBJECT_KEY)
-						.principal(CURRENT_USER)
-						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
-				.andExpect(status().isNotFound())
-				.andExpect(jsonPath("$.status").value(404))
-				.andExpect(jsonPath("$.code").value("AI_REPORT_NOT_FOUND"))
-				.andDo(document("ai/report-status-error",
-						responseFields(
-								fieldWithPath("title").description("HTTP 상태 이름"),
-								fieldWithPath("status").description("HTTP 상태 코드"),
-								fieldWithPath("detail").description("사람이 읽을 수 있는 에러 설명"),
-								fieldWithPath("instance").description("에러가 발생한 요청 경로"),
-								fieldWithPath("code").description("클라이언트 분기용 에러 코드"),
-								fieldWithPath("timestamp").description("에러 발생 시각(UTC)")
-						)
-				));
-	}
-
-	@Test
-	@DisplayName("영상 객체 키가 없으면 400을 반환한다")
-	void findReportStatusReturnsBadRequestWhenVideoObjectKeyIsMissing() throws Exception {
-		mockMvc.perform(get("/api/ai/reports/status").principal(CURRENT_USER))
-				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.code").value("BAD_REQUEST"));
-	}
-
-	@Test
-	@DisplayName("인증 정보가 없으면 리포트 상태 조회도 401을 반환한다")
-	void findReportStatusReturnsUnauthorizedWhenNotAuthenticated() throws Exception {
-		mockMvc.perform(get("/api/ai/reports/status").queryParam("videoObjectKey", VIDEO_OBJECT_KEY))
-				.andExpect(status().isUnauthorized())
-				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
 	}
 
 	@Test

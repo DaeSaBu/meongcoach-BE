@@ -18,7 +18,7 @@ VideoUploadSqsConsumer                      (ai/adapter/consumer)
      → AiReport COMPLETED 전이 저장           (그 외 예외는 FAILED_UNEXPECTED)
 ```
 
-앱은 `GET /api/ai/reports/status?videoObjectKey=`로 `status`를 폴링하다가 `PENDING`이 아니면 멈춥니다.
+앱은 리포트 목록·상세의 `status`를 폴링하다가 `PENDING`이 아니면 멈춥니다.
 
 소유자 식별은 객체 키 경로에 인코딩되어 있습니다 — `videos/{대상}/{userId}/{UUID}.{확장자}` 규칙은 `media/domain/vo/VideoObjectKey`가 단일 소유합니다.
 
@@ -30,7 +30,6 @@ VideoUploadSqsConsumer                      (ai/adapter/consumer)
 - **`AiReportGenerateService`는 의도적으로 트랜잭션이 없습니다.** 영상 분석이 수십 초 걸려 클래스 기본 `@Transactional(readOnly = true)` 패턴을 따르면 분석 내내 DB 커넥션을 점유합니다. 저장과 상태 전이는 리포지토리 `save`(준영속 엔티티는 merge → UPDATE)의 자체 트랜잭션에 맡깁니다. "서비스 클래스에 readOnly 기본" 규칙의 의도적 예외이므로 일괄 정리 대상이 아닙니다.
 - **무료 체험 횟수는 `COMPLETED` 리포트만 셉니다.** (`countByUserIdAndStatus`) 실패·진행 중 row는 체험을 소모하지 않으므로, 분석이 실패한 사용자는 다시 업로드할 수 있습니다.
 - **`ai_reports` 스키마 변경(status 컬럼, content NOT NULL 해제)은 dev·prod에 수동 DDL로 반영합니다.** 정책과 이유는 [profiles.md](profiles.md)의 ddl-auto 절이 원천입니다.
-- **업로드 완료부터 컨슈머가 PENDING row를 만들기까지의 구간에는 상태 폴링 API가 404를 돌려줍니다.** 서버는 이 404와 정말 없는 키의 404를 구분하지 않습니다 — 행을 미리 만들려면 업로드 URL 발급 시점에 생성해야 하는데, 발급만 받고 업로드하지 않은 영상이 PENDING으로 영영 남습니다. 대신 앱이 404를 "아직 생성 전"으로 보고 폴링을 계속하다가 자체 타임아웃으로 멈춥니다.
 - **중복 분석은 `existsByVideoObjectKey`로 막습니다.** SQS는 at-least-once 전달이라 같은 이벤트가 두 번 올 수 있습니다. 상태를 가리지 않으므로 PENDING·FAILED row에도 걸려 같은 영상은 재분석되지 않습니다. 따라서 분석 도중 앱이 죽으면 row가 PENDING으로 남고 재전달 메시지는 스킵됩니다 — 재시도를 도입할 때 함께 풀어야 할 한계입니다.
 - **제목 200자 규칙은 `AiReport` 도메인이 단일 소유합니다** (`TITLE_MAX_LENGTH`). 프롬프트나 어댑터에서 길이를 중복 강제하지 않습니다. 제목 생성 실패는 부가 정보 실패라 리포트 저장을 막지 않습니다.
 

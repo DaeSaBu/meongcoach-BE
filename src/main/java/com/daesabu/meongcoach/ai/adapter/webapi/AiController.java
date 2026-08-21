@@ -2,7 +2,6 @@ package com.daesabu.meongcoach.ai.adapter.webapi;
 
 import com.daesabu.meongcoach.ai.adapter.webapi.dto.AiReportDetailResponse;
 import com.daesabu.meongcoach.ai.adapter.webapi.dto.AiReportListResponse;
-import com.daesabu.meongcoach.ai.adapter.webapi.dto.AiReportStatusResponse;
 import com.daesabu.meongcoach.ai.adapter.webapi.dto.AiTrialResponse;
 import com.daesabu.meongcoach.ai.adapter.webapi.dto.AiVideoUploadUrlRequest;
 import com.daesabu.meongcoach.ai.adapter.webapi.dto.AiVideoUploadUrlResponse;
@@ -17,7 +16,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -37,13 +35,6 @@ public class AiController {
 	@GetMapping("/reports/{reportId}")
 	public AiReportDetailResponse findReport(@CurrentUserId Long userId, @PathVariable Long reportId) {
 		return AiReportDetailResponse.from(aiReportFinder.findReport(userId, reportId));
-	}
-
-	// 영상 객체 키에는 슬래시가 들어가 경로 변수로 쓸 수 없어 쿼리 파라미터로 받는다
-	@GetMapping("/reports/status")
-	public AiReportStatusResponse findReportStatus(@CurrentUserId Long userId,
-	                                               @RequestParam String videoObjectKey) {
-		return AiReportStatusResponse.from(aiReportFinder.findReportStatus(userId, videoObjectKey));
 	}
 
 	@PostMapping("/presigned-urls")

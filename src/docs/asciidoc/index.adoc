@@ -212,7 +212,7 @@ operation::training/topic-select-error[snippets='http-response,response-fields']
 훈련 영상 업로드 URL 발급과, 업로드한 영상을 AI가 분석해 만든 리포트를 조회하는 API입니다.
 모든 엔드포인트에 액세스 토큰 인증이 필요합니다.
 리포트는 영상 업로드 직후 `PENDING`(분석 중) 상태로 생성되고, 분석이 끝나면 `COMPLETED` 또는
-`FAILED_*` 상태로 바뀝니다. 클라이언트는 상태 조회 API의 `status`를 폴링하다가 `PENDING`이 아니면 멈춥니다.
+`FAILED_*` 상태로 바뀝니다. 클라이언트는 목록·상세의 `status`를 폴링하다가 `PENDING`이 아니면 멈춥니다.
 `COMPLETED`가 아닌 리포트는 `title`과 `content`가 null입니다.
 `videoObjectKey`는 분석한 영상을 가리키는 S3 객체 키이며,
 영상 재생 URL은 내려가지 않습니다.
@@ -288,26 +288,6 @@ operation::ai/report-detail[snippets='http-request,path-parameters,http-response
 존재하지 않거나 본인 소유가 아닌 리포트를 요청하면 404(`AI_REPORT_NOT_FOUND`)를 반환합니다.
 
 operation::ai/report-detail-error[snippets='http-response,response-fields']
-
-=== AI 리포트 상태 조회
-
-link:{swagger-ui}#/AI/ai-report-status[▶ Swagger에서 Try it out,window=swagger]
-
-영상 업로드 URL 발급 응답으로 받은 `objectKey`로 리포트의 `reportId`와 `status`만 조회하는 폴링용 API입니다.
-`status`가 `PENDING`이 아니면 폴링을 멈추고 `reportId`로 상세를 조회합니다.
-
-[IMPORTANT]
-====
-리포트는 S3 업로드 완료 이벤트를 서버가 받은 뒤 비동기로 생성됩니다. 업로드 직후에는 리포트가 아직 없어
-404(`AI_REPORT_NOT_FOUND`)가 내려갈 수 있으므로, 404는 "아직 생성 전"으로 보고 폴링을 계속하다가
-클라이언트가 정한 시간 안에 생성되지 않으면 멈춥니다.
-====
-
-operation::ai/report-status[snippets='http-request,query-parameters,http-response,response-fields']
-
-존재하지 않거나 본인 소유가 아닌 영상 객체 키를 요청하면 404(`AI_REPORT_NOT_FOUND`)를 반환합니다.
-
-operation::ai/report-status-error[snippets='http-response,response-fields']
 
 == Dog API
 
