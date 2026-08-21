@@ -16,6 +16,8 @@ import com.daesabu.meongcoach.ai.application.required.ReportTitleGenerator;
 import com.daesabu.meongcoach.ai.application.required.VideoAnalyzer;
 import com.daesabu.meongcoach.ai.domain.AiReport;
 import com.daesabu.meongcoach.ai.domain.AiReportStatus;
+import com.daesabu.meongcoach.ai.domain.exception.ReportTitleGenerationFailedException;
+import com.daesabu.meongcoach.ai.domain.exception.VideoAnalysisFailedException;
 import com.daesabu.meongcoach.ai.domain.vo.AiTrial;
 import com.daesabu.meongcoach.media.application.provided.VideoDownloadUrlIssuer;
 import com.daesabu.meongcoach.media.application.provided.VideoDownloadUrlResult;
@@ -160,7 +162,7 @@ class AiReportGenerateServiceTest {
 	@DisplayName("분석이 실패하면 예외를 던지지 않고 FAILED_ANALYSIS로 기록한다")
 	void generateRecordsAnalysisFailureWithoutThrowing() {
 		when(aiReportRepository.existsByVideoObjectKey(OBJECT_KEY)).thenReturn(false);
-		videoAnalyzer.failure = new IllegalStateException("분석 실패");
+		videoAnalyzer.failure = new VideoAnalysisFailedException("분석 실패");
 
 		// 예외를 던지면 SQS가 같은 메시지를 무한히 재전달한다
 		assertThatCode(() -> service.generate(OBJECT_KEY)).doesNotThrowAnyException();
@@ -175,7 +177,7 @@ class AiReportGenerateServiceTest {
 	@DisplayName("분석이 실패하면 제목 생성을 시도하지 않는다")
 	void generateSkipsTitleGenerationWhenAnalysisFails() {
 		when(aiReportRepository.existsByVideoObjectKey(OBJECT_KEY)).thenReturn(false);
-		videoAnalyzer.failure = new IllegalStateException("분석 실패");
+		videoAnalyzer.failure = new VideoAnalysisFailedException("분석 실패");
 
 		service.generate(OBJECT_KEY);
 
@@ -186,7 +188,7 @@ class AiReportGenerateServiceTest {
 	@DisplayName("제목 생성이 실패하면 제목 없이 COMPLETED로 저장한다")
 	void generateCompletesWithoutTitleWhenTitleGenerationFails() {
 		when(aiReportRepository.existsByVideoObjectKey(OBJECT_KEY)).thenReturn(false);
-		reportTitleGenerator.failure = new IllegalStateException("제목 생성 실패");
+		reportTitleGenerator.failure = new ReportTitleGenerationFailedException("제목 생성 실패");
 
 		assertThatCode(() -> service.generate(OBJECT_KEY)).doesNotThrowAnyException();
 
@@ -196,6 +198,28 @@ class AiReportGenerateServiceTest {
 		assertThat(saved.getTitle()).isNull();
 		assertThat(saved.getContent()).isEqualTo(ANALYZED_CONTENT);
 		assertThat(saved.getStatus()).isEqualTo(AiReportStatus.COMPLETED);
+	}
+
+	@Test
+	@DisplayName("분석기가 선언되지 않은 예외를 던지면 FAILED_ANALYSIS가 아니라 FAILED_UNEXPECTED로 기록한다")
+	void generateRecordsUnexpectedFailureWhenAnalyzerThrowsUndeclaredException() {
+		when(aiReportRepository.existsByVideoObjectKey(OBJECT_KEY)).thenReturn(false);
+		videoAnalyzer.failure = new IllegalStateException("어댑터 버그");
+
+		assertThatCode(() -> service.generate(OBJECT_KEY)).doesNotThrowAnyException();
+
+		assertThat(savedStatuses).containsExactly(AiReportStatus.PENDING, AiReportStatus.FAILED_UNEXPECTED);
+	}
+
+	@Test
+	@DisplayName("제목 생성기가 선언되지 않은 예외를 던지면 제목 없이 완료하지 않고 FAILED_UNEXPECTED로 기록한다")
+	void generateRecordsUnexpectedFailureWhenTitleGeneratorThrowsUndeclaredException() {
+		when(aiReportRepository.existsByVideoObjectKey(OBJECT_KEY)).thenReturn(false);
+		reportTitleGenerator.failure = new IllegalStateException("어댑터 버그");
+
+		assertThatCode(() -> service.generate(OBJECT_KEY)).doesNotThrowAnyException();
+
+		assertThat(savedStatuses).containsExactly(AiReportStatus.PENDING, AiReportStatus.FAILED_UNEXPECTED);
 	}
 
 	@Test
@@ -224,7 +248,7 @@ class AiReportGenerateServiceTest {
 	@DisplayName("실패 상태 기록이 실패하면 FAILED_UNEXPECTED로 다시 기록을 시도한다")
 	void generateRetriesAsUnexpectedFailureWhenFailureRecordingFails() {
 		when(aiReportRepository.existsByVideoObjectKey(OBJECT_KEY)).thenReturn(false);
-		videoAnalyzer.failure = new IllegalStateException("분석 실패");
+		videoAnalyzer.failure = new VideoAnalysisFailedException("분석 실패");
 		failingSaveCall = 2;
 
 		assertThatCode(() -> service.generate(OBJECT_KEY)).doesNotThrowAnyException();
@@ -236,7 +260,7 @@ class AiReportGenerateServiceTest {
 	@DisplayName("실패 기록이 계속 실패하면 예외를 그대로 전파한다")
 	void generatePropagatesWhenFailureRecordingKeepsFailing() {
 		when(aiReportRepository.existsByVideoObjectKey(OBJECT_KEY)).thenReturn(false);
-		videoAnalyzer.failure = new IllegalStateException("분석 실패");
+		videoAnalyzer.failure = new VideoAnalysisFailedException("분석 실패");
 		failingSaveCallFrom = 2;
 
 		// 더 할 수 있는 일이 없으므로 컨슈머의 최종 catch가 받아 error 로그 후 메시지를 버린다. row는 PENDING으로 남는다

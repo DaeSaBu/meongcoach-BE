@@ -6,6 +6,8 @@ import com.daesabu.meongcoach.ai.application.required.AiReportRepository;
 import com.daesabu.meongcoach.ai.application.required.ReportTitleGenerator;
 import com.daesabu.meongcoach.ai.application.required.VideoAnalyzer;
 import com.daesabu.meongcoach.ai.domain.AiReport;
+import com.daesabu.meongcoach.ai.domain.exception.ReportTitleGenerationFailedException;
+import com.daesabu.meongcoach.ai.domain.exception.VideoAnalysisFailedException;
 import com.daesabu.meongcoach.ai.domain.vo.AiTrial;
 import com.daesabu.meongcoach.media.application.provided.VideoDownloadUrlIssuer;
 import com.daesabu.meongcoach.media.application.provided.VideoDownloadUrlResult;
@@ -82,11 +84,12 @@ public class AiReportGenerateService implements AiReportGenerator {
 		aiReportRepository.save(report);
 	}
 
+	// 어댑터가 번역한 연동 실패만 분석 실패로 본다. 그 외 예외는 버그로 보고 generate()의 catch에서 FAILED_UNEXPECTED로 남긴다
 	private String analyzeOrNull(String objectKey, String downloadUrl) {
 		try {
 			return videoAnalyzer.analyze(downloadUrl);
 		}
-		catch (Exception e) {
+		catch (VideoAnalysisFailedException e) {
 			log.error("영상 분석에 실패해 리포트 생성을 건너뛴다: {}", objectKey, e);
 			return null;
 		}
@@ -97,7 +100,7 @@ public class AiReportGenerateService implements AiReportGenerator {
 		try {
 			return reportTitleGenerator.generateTitle(content);
 		}
-		catch (Exception e) {
+		catch (ReportTitleGenerationFailedException e) {
 			log.warn("리포트 제목 생성에 실패해 제목 없이 저장한다: {}", objectKey, e);
 			return null;
 		}
