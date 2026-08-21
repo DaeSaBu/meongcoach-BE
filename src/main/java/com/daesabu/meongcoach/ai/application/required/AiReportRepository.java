@@ -1,6 +1,7 @@
 package com.daesabu.meongcoach.ai.application.required;
 
 import com.daesabu.meongcoach.ai.domain.AiReport;
+import com.daesabu.meongcoach.ai.domain.AiReportStatus;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -13,6 +14,7 @@ public interface AiReportRepository extends JpaRepository<AiReport, Long> {
 	/**
 	 * 같은 영상(S3 객체 키 기준)에 대한 리포트가 이미 있는지 확인한다.
 	 * SQS 중복 전달로 인한 이중 생성을 막는 멱등 가드다.
+	 * 상태를 가리지 않으므로 PENDING·FAILED row에도 걸려 같은 영상은 재분석되지 않는다 (의도).
 	 */
 	boolean existsByVideoObjectKey(String videoObjectKey);
 
@@ -29,7 +31,8 @@ public interface AiReportRepository extends JpaRepository<AiReport, Long> {
 	Optional<AiReport> findByIdAndUserId(Long id, Long userId);
 
 	/**
-	 * 사용자가 지금까지 생성한 리포트 수를 센다. 무료 체험 한도 검증에 쓴다.
+	 * 사용자의 리포트 중 주어진 상태인 것만 센다.
+	 * 무료 체험 한도는 COMPLETED만 센다 — 실패·진행 중 리포트는 체험을 소모하지 않는다.
 	 */
-	long countByUserId(Long userId);
+	long countByUserIdAndStatus(Long userId, AiReportStatus status);
 }

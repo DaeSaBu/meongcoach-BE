@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.daesabu.meongcoach.ai.domain.AiReport;
 import com.daesabu.meongcoach.ai.domain.AiReportCreateCommand;
+import com.daesabu.meongcoach.ai.domain.AiReportStatus;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -85,22 +86,21 @@ class AiReportRepositoryTest {
 	}
 
 	@Test
-	@DisplayName("리포트가 없는 사용자의 리포트 수는 0이다")
-	void countByUserIdReturnsZeroWhenNoReportExists() {
-		assertThat(aiReportRepository.countByUserId(7L)).isZero();
+	@DisplayName("리포트가 없는 사용자의 완료 리포트 수는 0이다")
+	void countByUserIdAndStatusReturnsZeroWhenNoReportExists() {
+		assertThat(aiReportRepository.countByUserIdAndStatus(7L, AiReportStatus.COMPLETED)).isZero();
 	}
 
 	@Test
-	@DisplayName("사용자의 리포트 수만 센다")
-	void countByUserIdCountsOnlyOwnReports() {
-		aiReportRepository.saveAndFlush(
-				AiReport.create(new AiReportCreateCommand(7L, "videos/training/7/first.mp4", "첫 제목", "첫 리포트")));
-		aiReportRepository.saveAndFlush(
-				AiReport.create(new AiReportCreateCommand(7L, "videos/training/7/second.mp4", "둘째 제목", "둘째 리포트")));
-		aiReportRepository.saveAndFlush(
-				AiReport.create(new AiReportCreateCommand(8L, "videos/training/8/other.mp4", "남의 제목", "남의 리포트")));
+	@DisplayName("사용자의 리포트 중 주어진 상태인 것만 센다")
+	void countByUserIdAndStatusCountsOnlyOwnReportsInStatus() {
+		aiReportRepository.saveAndFlush(completedReport(7L, "videos/training/7/first.mp4", "첫 제목", "첫 리포트"));
+		aiReportRepository.saveAndFlush(completedReport(7L, "videos/training/7/second.mp4", "둘째 제목", "둘째 리포트"));
+		aiReportRepository.saveAndFlush(failedReport(7L, "videos/training/7/failed.mp4", AiReportStatus.FAILED_ANALYSIS));
+		aiReportRepository.saveAndFlush(AiReport.pending(7L, "videos/training/7/pending.mp4"));
+		aiReportRepository.saveAndFlush(completedReport(8L, "videos/training/8/other.mp4", "남의 제목", "남의 리포트"));
 
-		assertThat(aiReportRepository.countByUserId(7L)).isEqualTo(2);
+		assertThat(aiReportRepository.countByUserIdAndStatus(7L, AiReportStatus.COMPLETED)).isEqualTo(2);
 	}
 
 	@Test
@@ -111,5 +111,17 @@ class AiReportRepositoryTest {
 
 		assertThat(aiReportRepository.findByIdAndUserId(saved.getId(), 7L)).isPresent();
 		assertThat(aiReportRepository.findByIdAndUserId(saved.getId(), 8L)).isEmpty();
+	}
+
+	private static AiReport completedReport(Long userId, String videoObjectKey, String title, String content) {
+		AiReport report = AiReport.pending(userId, videoObjectKey);
+		report.complete(title, content);
+		return report;
+	}
+
+	private static AiReport failedReport(Long userId, String videoObjectKey, AiReportStatus status) {
+		AiReport report = AiReport.pending(userId, videoObjectKey);
+		report.fail(status);
+		return report;
 	}
 }

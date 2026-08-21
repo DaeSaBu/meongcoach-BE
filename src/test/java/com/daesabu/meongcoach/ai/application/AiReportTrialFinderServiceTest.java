@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.daesabu.meongcoach.ai.application.provided.AiTrialFinder;
 import com.daesabu.meongcoach.ai.application.required.AiReportRepository;
 import com.daesabu.meongcoach.ai.domain.AiReport;
-import com.daesabu.meongcoach.ai.domain.AiReportCreateCommand;
+import com.daesabu.meongcoach.ai.domain.AiReportStatus;
 import com.daesabu.meongcoach.ai.domain.vo.AiTrial;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -39,25 +39,49 @@ class AiReportTrialFinderServiceTest {
 	}
 
 	@Test
-	@DisplayName("생성한 리포트 수가 그대로 사용 횟수가 된다")
-	void findTrialCountsGeneratedReports() {
-		persistReport(USER_ID, "videos/training/42/first.mp4");
-		persistReport(USER_ID, "videos/training/42/second.mp4");
+	@DisplayName("완료한 리포트 수가 그대로 사용 횟수가 된다")
+	void findTrialCountsCompletedReports() {
+		persistCompletedReport(USER_ID, "videos/training/42/first.mp4");
+		persistCompletedReport(USER_ID, "videos/training/42/second.mp4");
 
 		assertThat(aiTrialFinder.findTrial(USER_ID)).isEqualTo(new AiTrial(2));
 	}
 
 	@Test
-	@DisplayName("다른 사용자의 리포트는 사용 횟수에 세지 않는다")
-	void findTrialIgnoresOtherUsersReports() {
-		persistReport(OTHER_USER_ID, "videos/training/99/other.mp4");
+	@DisplayName("실패한 리포트는 사용 횟수에 세지 않는다")
+	void findTrialIgnoresFailedReports() {
+		persistCompletedReport(USER_ID, "videos/training/42/first.mp4");
+		persistFailedReport(USER_ID, "videos/training/42/failed.mp4", AiReportStatus.FAILED_ANALYSIS);
+		persistFailedReport(USER_ID, "videos/training/42/exceeded.mp4", AiReportStatus.FAILED_TRIAL_EXCEEDED);
+
+		assertThat(aiTrialFinder.findTrial(USER_ID)).isEqualTo(new AiTrial(1));
+	}
+
+	@Test
+	@DisplayName("분석 중인 리포트는 사용 횟수에 세지 않는다")
+	void findTrialIgnoresPendingReports() {
+		aiReportRepository.saveAndFlush(AiReport.pending(USER_ID, "videos/training/42/pending.mp4"));
 
 		assertThat(aiTrialFinder.findTrial(USER_ID)).isEqualTo(new AiTrial(0));
 	}
 
-	private void persistReport(Long userId, String videoObjectKey) {
-		aiReportRepository.saveAndFlush(
-				AiReport.create(new AiReportCreateCommand(userId, videoObjectKey, "분리불안 징후 행동 분석",
-						"분리불안 징후가 관찰됩니다.")));
+	@Test
+	@DisplayName("다른 사용자의 리포트는 사용 횟수에 세지 않는다")
+	void findTrialIgnoresOtherUsersReports() {
+		persistCompletedReport(OTHER_USER_ID, "videos/training/99/other.mp4");
+
+		assertThat(aiTrialFinder.findTrial(USER_ID)).isEqualTo(new AiTrial(0));
+	}
+
+	private void persistCompletedReport(Long userId, String videoObjectKey) {
+		AiReport report = AiReport.pending(userId, videoObjectKey);
+		report.complete("분리불안 징후 행동 분석", "분리불안 징후가 관찰됩니다.");
+		aiReportRepository.saveAndFlush(report);
+	}
+
+	private void persistFailedReport(Long userId, String videoObjectKey, AiReportStatus status) {
+		AiReport report = AiReport.pending(userId, videoObjectKey);
+		report.fail(status);
+		aiReportRepository.saveAndFlush(report);
 	}
 }

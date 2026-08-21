@@ -359,7 +359,7 @@ class AiControllerTest {
 				.andExpect(jsonPath("$.remainingCount").value(2))
 				.andDo(document("ai/trial",
 						responseFields(
-								fieldWithPath("usedCount").description("지금까지 생성한 AI 리포트 수"),
+								fieldWithPath("usedCount").description("분석이 완료된 AI 리포트 수. 실패·진행 중은 세지 않는다"),
 								fieldWithPath("maxCount").description("무료 체험 최대 횟수"),
 								fieldWithPath("remainingCount").description("남은 횟수. 소진했으면 0")
 						)
