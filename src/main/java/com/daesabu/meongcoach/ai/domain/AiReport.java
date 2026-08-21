@@ -57,24 +57,11 @@ public class AiReport extends BaseTimeEntity {
 		this.status = AiReportStatus.PENDING;
 	}
 
-	private AiReport(AiReportCreateCommand command) {
-		this.userId = command.userId();
-		this.videoObjectKey = command.videoObjectKey();
-		this.title = normalizeTitle(command.title());
-		this.content = command.content();
-		// create()는 분석 성공 시에만 호출되므로 상태는 호출자 입력이 아니라 도메인이 결정한다
-		this.status = AiReportStatus.COMPLETED;
-	}
-
 	/**
 	 * 영상 소유자를 확인한 직후 분석 진행 중 상태로 만든다. 제목·본문은 complete()에서 채운다.
 	 */
 	public static AiReport pending(Long userId, String videoObjectKey) {
 		return new AiReport(userId, videoObjectKey);
-	}
-
-	public static AiReport create(AiReportCreateCommand command) {
-		return new AiReport(command);
 	}
 
 	/**

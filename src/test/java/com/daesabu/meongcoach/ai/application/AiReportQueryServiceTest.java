@@ -9,7 +9,6 @@ import com.daesabu.meongcoach.ai.application.provided.AiReportFinder;
 import com.daesabu.meongcoach.ai.application.provided.AiReportResult;
 import com.daesabu.meongcoach.ai.application.required.AiReportRepository;
 import com.daesabu.meongcoach.ai.domain.AiReport;
-import com.daesabu.meongcoach.ai.domain.AiReportCreateCommand;
 import com.daesabu.meongcoach.ai.domain.exception.AiReportNotFoundException;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
@@ -135,7 +134,8 @@ class AiReportQueryServiceTest {
 	}
 
 	private AiReport persistReport(Long userId, String videoObjectKey, String title) {
-		return aiReportRepository.saveAndFlush(
-				AiReport.create(new AiReportCreateCommand(userId, videoObjectKey, title, CONTENT_JSON)));
+		AiReport report = AiReport.pending(userId, videoObjectKey);
+		report.complete(title, CONTENT_JSON);
+		return aiReportRepository.saveAndFlush(report);
 	}
 }
