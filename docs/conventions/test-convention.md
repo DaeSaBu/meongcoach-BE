@@ -63,6 +63,7 @@ void findDelegatesWithCurrentUserId() throws Exception {
 
 - JaCoCo 라인 커버리지를 CI에서 검증하며, 70% 미만이면 빌드가 실패합니다.
 - `MeongcoachApplication`과 `shared/config`는 검증에서 제외합니다. `shared/config`에는 설정만 두고 검증 로직은 커버리지 대상 패키지에 둡니다.
+- enum 클래스(`{모듈}ErrorCode` 포함)는 빌드 시 자동으로 커버리지 대상에서 제외됩니다. 이름 목록이 아니라 컴파일된 클래스의 enum 플래그로 판별하므로 새 enum을 추가할 때 별도 설정은 필요 없습니다.
 
 ## 아키텍처 검증
 
