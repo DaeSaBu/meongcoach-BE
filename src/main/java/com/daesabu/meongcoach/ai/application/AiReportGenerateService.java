@@ -101,14 +101,9 @@ public class AiReportGenerateService implements AiReportGenerator {
 		}
 	}
 
-	// 어떤 실패 상태를 쓸지는 도메인 전이 메서드가 정한다. 실패 기록까지 실패하면 더 할 수 있는 일이 없으므로 로그만 남기고 절대 던지지 않는다
+	// 저장이 실패하면 generate()의 catch가 FAILED_UNEXPECTED로 한 번 더 시도하고, 그마저 실패하면 컨슈머가 받아 버린다
 	private void recordFailure(AiReport report, Consumer<AiReport> transition) {
-		try {
-			transition.accept(report);
-			aiReportRepository.save(report);
-		}
-		catch (Exception e) {
-			log.error("리포트 실패 상태({}) 기록에 실패했다: {}", report.getStatus(), report.getVideoObjectKey(), e);
-		}
+		transition.accept(report);
+		aiReportRepository.save(report);
 	}
 }

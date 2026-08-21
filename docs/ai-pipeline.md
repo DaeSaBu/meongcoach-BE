@@ -25,7 +25,7 @@ VideoUploadSqsConsumer                      (ai/adapter/consumer)
 ## 설계 결정과 함정
 
 - **컨슈머는 어떤 예외도 리스너 밖으로 내보내지 않습니다.** SQS는 리스너가 예외를 던지면 메시지를 재전달하는데, MVP라 재시도 로직이 없어 무한 재전달이 됩니다. 재시도가 필요해지면 예외를 삼키는 정책부터 다시 설계해야 합니다. (`VideoUploadSqsConsumer` 주석 참고)
-- **실패는 error 로그와 함께 같은 `AiReport` row의 `status`로 남깁니다.** 실패가 DB에 흔적을 남기지 않으면 앱 폴링에 종료 조건이 없기 때문입니다. 소유자를 확인한 직후 PENDING row를 만들고, 체험 초과는 `FAILED_TRIAL_EXCEEDED`, 분석 실패는 `FAILED_ANALYSIS`, 그 뒤의 예상 밖 예외는 `FAILED_UNEXPECTED`로 전이합니다. 실패 기록 자체가 실패하면 로그만 남기고 끝냅니다. 예외는 객체 키 형식 위반(`InvalidVideoObjectKeyException`) 하나뿐입니다 — 소유자를 알 수 없어 row 없이 컨슈머가 warn 로그로 버립니다.
+- **실패는 error 로그와 함께 같은 `AiReport` row의 `status`로 남깁니다.** 실패가 DB에 흔적을 남기지 않으면 앱 폴링에 종료 조건이 없기 때문입니다. 소유자를 확인한 직후 PENDING row를 만들고, 체험 초과는 `FAILED_TRIAL_EXCEEDED`, 분석 실패는 `FAILED_ANALYSIS`, 그 뒤의 예상 밖 예외는 `FAILED_UNEXPECTED`로 전이합니다. 실패 기록의 저장이 실패하면 `FAILED_UNEXPECTED`로 한 번 더 시도하고, 그마저 실패하면 예외가 컨슈머로 나가 error 로그 후 버려집니다(row는 PENDING으로 남음). 예외는 객체 키 형식 위반(`InvalidVideoObjectKeyException`) 하나뿐입니다 — 소유자를 알 수 없어 row 없이 컨슈머가 warn 로그로 버립니다.
 - **`AiReportGenerateService`는 의도적으로 트랜잭션이 없습니다.** 영상 분석이 수십 초 걸려 클래스 기본 `@Transactional(readOnly = true)` 패턴을 따르면 분석 내내 DB 커넥션을 점유합니다. 저장과 상태 전이는 리포지토리 `save`(준영속 엔티티는 merge → UPDATE)의 자체 트랜잭션에 맡깁니다. "서비스 클래스에 readOnly 기본" 규칙의 의도적 예외이므로 일괄 정리 대상이 아닙니다.
 - **무료 체험 횟수는 `COMPLETED` 리포트만 셉니다.** (`countByUserIdAndStatus`) 실패·진행 중 row는 체험을 소모하지 않으므로, 분석이 실패한 사용자는 다시 업로드할 수 있습니다.
 - **`ai_reports` 스키마 변경(status 컬럼, content NOT NULL 해제)은 dev·prod에 수동 DDL로 반영합니다.** 정책과 이유는 [profiles.md](profiles.md)의 ddl-auto 절이 원천입니다.

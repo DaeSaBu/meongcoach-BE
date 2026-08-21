@@ -48,6 +48,8 @@ class AiReportGenerateServiceTest {
 	private List<AiReportStatus> savedStatuses;
 	// n번째 save 호출에서 예외를 던지게 해 저장 실패 경로를 재현한다 (0이면 항상 성공)
 	private int failingSaveCall;
+	// n번째부터 모든 save 호출이 실패하게 해 DB 장애를 재현한다 (0이면 항상 성공)
+	private int failingSaveCallFrom;
 	private int saveCalls;
 
 	@BeforeEach
@@ -59,11 +61,15 @@ class AiReportGenerateServiceTest {
 		aiTrialFinder = new StubAiTrialFinder();
 		savedStatuses = new ArrayList<>();
 		failingSaveCall = 0;
+		failingSaveCallFrom = 0;
 		saveCalls = 0;
 		when(aiReportRepository.save(any())).thenAnswer(invocation -> {
 			saveCalls++;
 			if (saveCalls == failingSaveCall) {
 				throw new IllegalStateException("DB 저장 실패");
+			}
+			if (failingSaveCallFrom != 0 && saveCalls >= failingSaveCallFrom) {
+				throw new IllegalStateException("DB 장애");
 			}
 			AiReport report = invocation.getArgument(0);
 			savedStatuses.add(report.getStatus());
@@ -215,14 +221,27 @@ class AiReportGenerateServiceTest {
 	}
 
 	@Test
-	@DisplayName("실패 상태 기록마저 실패해도 예외를 던지지 않는다")
-	void generateSwallowsFailureRecordingError() {
+	@DisplayName("실패 상태 기록이 실패하면 FAILED_UNEXPECTED로 다시 기록을 시도한다")
+	void generateRetriesAsUnexpectedFailureWhenFailureRecordingFails() {
 		when(aiReportRepository.existsByVideoObjectKey(OBJECT_KEY)).thenReturn(false);
 		videoAnalyzer.failure = new IllegalStateException("분석 실패");
 		failingSaveCall = 2;
 
 		assertThatCode(() -> service.generate(OBJECT_KEY)).doesNotThrowAnyException();
 
+		assertThat(savedStatuses).containsExactly(AiReportStatus.PENDING, AiReportStatus.FAILED_UNEXPECTED);
+	}
+
+	@Test
+	@DisplayName("실패 기록이 계속 실패하면 예외를 그대로 전파한다")
+	void generatePropagatesWhenFailureRecordingKeepsFailing() {
+		when(aiReportRepository.existsByVideoObjectKey(OBJECT_KEY)).thenReturn(false);
+		videoAnalyzer.failure = new IllegalStateException("분석 실패");
+		failingSaveCallFrom = 2;
+
+		// 더 할 수 있는 일이 없으므로 컨슈머의 최종 catch가 받아 error 로그 후 메시지를 버린다. row는 PENDING으로 남는다
+		assertThatThrownBy(() -> service.generate(OBJECT_KEY))
+				.isInstanceOf(IllegalStateException.class);
 		assertThat(savedStatuses).containsExactly(AiReportStatus.PENDING);
 	}
 
