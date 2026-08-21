@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.daesabu.meongcoach.ai.domain.AiReport;
 import com.daesabu.meongcoach.ai.domain.AiReportStatus;
+import com.daesabu.meongcoach.ai.domain.AiReportUploadCommand;
+import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -21,6 +23,7 @@ class AiReportRepositoryTest {
 	private static final String VIDEO_OBJECT_KEY = "videos/training/7/key.mp4";
 	private static final String TITLE = "분리불안 징후 행동 분석";
 	private static final String CONTENT = "분리불안 징후가 관찰됩니다.";
+	private static final LocalDateTime UPLOAD_EXPIRES_AT = LocalDateTime.of(2026, 8, 21, 12, 15, 0);
 
 	@Autowired
 	private AiReportRepository aiReportRepository;
@@ -55,14 +58,15 @@ class AiReportRepositoryTest {
 	}
 
 	@Test
-	@DisplayName("본문이 없는 PENDING 리포트도 저장하고 다시 조회할 수 있다")
-	void saveAndFindRoundTripsPendingReportWithoutContent() {
-		AiReport saved = aiReportRepository.saveAndFlush(AiReport.pending(7L, VIDEO_OBJECT_KEY));
+	@DisplayName("본문이 없는 UPLOADING 리포트도 업로드 만료 시각과 함께 저장하고 다시 조회할 수 있다")
+	void saveAndFindRoundTripsUploadingReportWithoutContent() {
+		AiReport saved = aiReportRepository.saveAndFlush(uploadingReport(7L, VIDEO_OBJECT_KEY));
 		entityManager.clear();
 
 		AiReport found = aiReportRepository.findById(saved.getId()).orElseThrow();
 
-		assertThat(found.getStatus()).isEqualTo(AiReportStatus.PENDING);
+		assertThat(found.getStatus()).isEqualTo(AiReportStatus.UPLOADING);
+		assertThat(found.getUploadExpiresAt()).isEqualTo(UPLOAD_EXPIRES_AT);
 		assertThat(found.getTitle()).isNull();
 		assertThat(found.getContent()).isNull();
 	}
@@ -71,7 +75,7 @@ class AiReportRepositoryTest {
 	@DisplayName("준영속 리포트의 상태를 전이한 뒤 다시 저장하면 갱신된 상태로 조회된다")
 	void saveDetachedReportAfterTransitionUpdatesStatus() {
 		// 생성 서비스는 트랜잭션 없이 save(merge)로 상태를 전이하므로, 준영속 인스턴스의 재저장이 UPDATE로 반영돼야 한다
-		AiReport saved = aiReportRepository.saveAndFlush(AiReport.pending(7L, VIDEO_OBJECT_KEY));
+		AiReport saved = aiReportRepository.saveAndFlush(pendingReport(7L, VIDEO_OBJECT_KEY));
 		entityManager.clear();
 
 		saved.failByAnalysis();
@@ -83,26 +87,18 @@ class AiReportRepositoryTest {
 	}
 
 	@Test
-	@DisplayName("같은 영상 객체 키의 리포트가 있으면 존재한다고 알려준다")
-	void existsByVideoObjectKeyReturnsTrueWhenReportExists() {
-		aiReportRepository.saveAndFlush(completedReport(7L, VIDEO_OBJECT_KEY, TITLE, CONTENT));
+	@DisplayName("영상 객체 키로 발급 시 만든 리포트를 찾는다")
+	void findByVideoObjectKeyReturnsIssuedReport() {
+		AiReport saved = aiReportRepository.saveAndFlush(uploadingReport(7L, VIDEO_OBJECT_KEY));
 
-		assertThat(aiReportRepository.existsByVideoObjectKey(VIDEO_OBJECT_KEY)).isTrue();
+		assertThat(aiReportRepository.findByVideoObjectKey(VIDEO_OBJECT_KEY))
+				.map(AiReport::getId).contains(saved.getId());
 	}
 
 	@Test
-	@DisplayName("실패한 리포트의 영상 객체 키도 존재한다고 알려준다")
-	void existsByVideoObjectKeyReturnsTrueForFailedReport() {
-		// 상태를 가리지 않으므로 실패한 영상은 재분석되지 않는다
-		aiReportRepository.saveAndFlush(analysisFailedReport(7L, VIDEO_OBJECT_KEY));
-
-		assertThat(aiReportRepository.existsByVideoObjectKey(VIDEO_OBJECT_KEY)).isTrue();
-	}
-
-	@Test
-	@DisplayName("리포트가 없는 영상 객체 키면 존재하지 않는다고 알려준다")
-	void existsByVideoObjectKeyReturnsFalseWhenReportIsAbsent() {
-		assertThat(aiReportRepository.existsByVideoObjectKey(VIDEO_OBJECT_KEY)).isFalse();
+	@DisplayName("리포트가 없는 영상 객체 키면 결과가 비어 있다")
+	void findByVideoObjectKeyReturnsEmptyWhenReportIsAbsent() {
+		assertThat(aiReportRepository.findByVideoObjectKey(VIDEO_OBJECT_KEY)).isEmpty();
 	}
 
 	@Test
@@ -132,7 +128,7 @@ class AiReportRepositoryTest {
 		aiReportRepository.saveAndFlush(completedReport(7L, "videos/training/7/first.mp4", "첫 제목", "첫 리포트"));
 		aiReportRepository.saveAndFlush(completedReport(7L, "videos/training/7/second.mp4", "둘째 제목", "둘째 리포트"));
 		aiReportRepository.saveAndFlush(analysisFailedReport(7L, "videos/training/7/failed.mp4"));
-		aiReportRepository.saveAndFlush(AiReport.pending(7L, "videos/training/7/pending.mp4"));
+		aiReportRepository.saveAndFlush(pendingReport(7L, "videos/training/7/pending.mp4"));
 		aiReportRepository.saveAndFlush(completedReport(8L, "videos/training/8/other.mp4", "남의 제목", "남의 리포트"));
 
 		assertThat(aiReportRepository.countByUserIdAndStatus(7L, AiReportStatus.COMPLETED)).isEqualTo(2);
@@ -147,14 +143,24 @@ class AiReportRepositoryTest {
 		assertThat(aiReportRepository.findByIdAndUserId(saved.getId(), 8L)).isEmpty();
 	}
 
+	private static AiReport uploadingReport(Long userId, String videoObjectKey) {
+		return AiReport.uploading(new AiReportUploadCommand(userId, videoObjectKey, UPLOAD_EXPIRES_AT));
+	}
+
+	private static AiReport pendingReport(Long userId, String videoObjectKey) {
+		AiReport report = uploadingReport(userId, videoObjectKey);
+		report.startAnalysis();
+		return report;
+	}
+
 	private static AiReport completedReport(Long userId, String videoObjectKey, String title, String content) {
-		AiReport report = AiReport.pending(userId, videoObjectKey);
+		AiReport report = pendingReport(userId, videoObjectKey);
 		report.complete(title, content);
 		return report;
 	}
 
 	private static AiReport analysisFailedReport(Long userId, String videoObjectKey) {
-		AiReport report = AiReport.pending(userId, videoObjectKey);
+		AiReport report = pendingReport(userId, videoObjectKey);
 		report.failByAnalysis();
 		return report;
 	}

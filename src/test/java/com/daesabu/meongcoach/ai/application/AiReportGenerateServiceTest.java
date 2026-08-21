@@ -17,14 +17,17 @@ import com.daesabu.meongcoach.ai.application.required.ReportTitleGenerator;
 import com.daesabu.meongcoach.ai.application.required.VideoAnalyzer;
 import com.daesabu.meongcoach.ai.domain.AiReport;
 import com.daesabu.meongcoach.ai.domain.AiReportStatus;
+import com.daesabu.meongcoach.ai.domain.AiReportUploadCommand;
 import com.daesabu.meongcoach.ai.domain.exception.ReportTitleGenerationFailedException;
 import com.daesabu.meongcoach.ai.domain.exception.VideoAnalysisFailedException;
 import com.daesabu.meongcoach.ai.domain.vo.AiTrial;
 import com.daesabu.meongcoach.media.application.provided.VideoDownloadUrlIssuer;
 import com.daesabu.meongcoach.media.application.provided.VideoDownloadUrlResult;
 import com.daesabu.meongcoach.media.domain.exception.InvalidVideoObjectKeyException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -53,6 +56,9 @@ class AiReportGenerateServiceTest {
 	private AiTrialFinder aiTrialFinder;
 	private AiReportGenerateService service;
 
+	// 업로드 URL 발급 시 저장된 UPLOADING row. 서비스는 이 row를 찾아 전이시킨다
+	private AiReport issuedReport;
+
 	// 서비스는 같은 AiReport 인스턴스를 전이시키며 save()를 여러 번 부르므로, ArgumentCaptor로는 최종 상태만 보인다.
 	// 그래서 save 호출 시점의 상태를 순서대로 기록해 "PENDING이 먼저 저장됐다"를 검증한다
 	private final List<AiReportStatus> savedStatuses = new ArrayList<>();
@@ -74,7 +80,9 @@ class AiReportGenerateServiceTest {
 				aiReportRepository, aiTrialFinder);
 
 		// 기본은 성공 경로. 각 테스트는 깨뜨릴 협력자 하나만 덮어쓴다
-		when(aiReportRepository.existsByVideoObjectKey(OBJECT_KEY)).thenReturn(false);
+		issuedReport = AiReport.uploading(
+				new AiReportUploadCommand(USER_ID, OBJECT_KEY, LocalDateTime.now().plusMinutes(15)));
+		when(aiReportRepository.findByVideoObjectKey(OBJECT_KEY)).thenReturn(Optional.of(issuedReport));
 		when(downloadUrlIssuer.issue(OBJECT_KEY))
 				.thenReturn(new VideoDownloadUrlResult(DOWNLOAD_URL, PUBLIC_URL, USER_ID, 3600L));
 		when(aiTrialFinder.findTrial(USER_ID)).thenReturn(new AiTrial(0));
@@ -84,12 +92,13 @@ class AiReportGenerateServiceTest {
 	}
 
 	@Test
-	@DisplayName("발급받은 presigned URL로 분석한 결과를 제목과 함께 COMPLETED 리포트로 저장한다")
+	@DisplayName("발급받은 presigned URL로 분석한 결과를 제목과 함께 발급 시 만든 row에 COMPLETED로 저장한다")
 	void generateSavesCompletedReportWithAnalyzedContent() {
 		service.generate(OBJECT_KEY);
 
 		// 분석기가 이 presigned URL로 영상을 직접 읽는다
 		verify(videoAnalyzer).analyze(DOWNLOAD_URL);
+		assertThat(savedReport).isSameAs(issuedReport);
 		assertThat(savedReport.getUserId()).isEqualTo(USER_ID);
 		assertThat(savedReport.getVideoObjectKey()).isEqualTo(OBJECT_KEY);
 		assertThat(savedReport.getTitle()).isEqualTo(GENERATED_TITLE);
@@ -98,7 +107,7 @@ class AiReportGenerateServiceTest {
 	}
 
 	@Test
-	@DisplayName("분석을 시작하기 전에 PENDING 상태로 먼저 저장한다")
+	@DisplayName("분석을 시작하기 전에 UPLOADING row를 PENDING으로 먼저 전이해 저장한다")
 	void generateSavesPendingBeforeAnalysis() {
 		service.generate(OBJECT_KEY);
 
@@ -114,9 +123,9 @@ class AiReportGenerateServiceTest {
 	}
 
 	@Test
-	@DisplayName("같은 영상의 리포트가 이미 있으면 URL 발급·분석·저장 없이 건너뛴다")
-	void generateSkipsWhenReportAlreadyExists() {
-		when(aiReportRepository.existsByVideoObjectKey(OBJECT_KEY)).thenReturn(true);
+	@DisplayName("같은 영상의 리포트가 이미 분석을 시작했으면 URL 발급·분석·저장 없이 건너뛴다")
+	void generateSkipsWhenReportAlreadyStartedAnalysis() {
+		issuedReport.startAnalysis();
 
 		service.generate(OBJECT_KEY);
 
@@ -125,14 +134,26 @@ class AiReportGenerateServiceTest {
 	}
 
 	@Test
-	@DisplayName("객체 키 검증에 실패하면 row를 남기지 않고 예외를 그대로 던진다")
-	void generatePropagatesInvalidObjectKeyWithoutSaving() {
+	@DisplayName("업로드 URL 발급 기록이 없는 영상이면 URL 발급·분석·저장 없이 건너뛴다")
+	void generateSkipsWhenNoIssuedReportExists() {
+		when(aiReportRepository.findByVideoObjectKey(OBJECT_KEY)).thenReturn(Optional.empty());
+
+		service.generate(OBJECT_KEY);
+
+		verifyNoInteractions(downloadUrlIssuer, videoAnalyzer);
+		verify(aiReportRepository, never()).save(any());
+	}
+
+	@Test
+	@DisplayName("객체 키 검증에 실패하면 PENDING으로 전이하지 않고 예외를 그대로 던진다")
+	void generatePropagatesInvalidObjectKeyWithoutTransition() {
 		when(downloadUrlIssuer.issue(OBJECT_KEY)).thenThrow(new InvalidVideoObjectKeyException(OBJECT_KEY));
 
-		// 소유자를 알 수 없어 상태를 기록할 row를 만들 수 없다. 컨슈머가 warn 로그로 버린다
+		// row는 UPLOADING으로 남아 만료 뒤 FAILED_UPLOAD로 조회된다. 컨슈머가 warn 로그로 버린다
 		assertThatThrownBy(() -> service.generate(OBJECT_KEY))
 				.isInstanceOf(InvalidVideoObjectKeyException.class);
 		verify(aiReportRepository, never()).save(any());
+		assertThat(issuedReport.getStatus()).isEqualTo(AiReportStatus.UPLOADING);
 	}
 
 	@Test

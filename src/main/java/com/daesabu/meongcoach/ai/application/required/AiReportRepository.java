@@ -12,11 +12,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface AiReportRepository extends JpaRepository<AiReport, Long> {
 
 	/**
-	 * 같은 영상(S3 객체 키 기준)에 대한 리포트가 이미 있는지 확인한다.
-	 * SQS 중복 전달로 인한 이중 생성을 막는 멱등 가드다.
-	 * 상태를 가리지 않으므로 PENDING·FAILED row에도 걸려 같은 영상은 재분석되지 않는다 (의도).
+	 * 영상 객체 키로 업로드 URL 발급 시 만든 리포트를 찾는다.
+	 * 컨슈머가 이 row를 PENDING으로 전이하며, 상태가 UPLOADING이 아니면 SQS 중복 전달로 보고 건너뛴다.
 	 */
-	boolean existsByVideoObjectKey(String videoObjectKey);
+	Optional<AiReport> findByVideoObjectKey(String videoObjectKey);
 
 	/**
 	 * 사용자의 리포트를 생성 시각 내림차순으로 조회한다.

@@ -10,6 +10,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -42,14 +43,37 @@ public class AiReport extends BaseTimeEntity {
 	@Column(nullable = false, length = 30)
 	private AiReportStatus status;
 
-	private AiReport(Long userId, String videoObjectKey) {
-		this.userId = userId;
-		this.videoObjectKey = videoObjectKey;
+	// 발급 시점 도입 전에 만들어진 row는 null이다
+	private LocalDateTime uploadExpiresAt;
+
+	private AiReport(AiReportUploadCommand command) {
+		this.userId = command.userId();
+		this.videoObjectKey = command.videoObjectKey();
+		this.uploadExpiresAt = command.uploadExpiresAt();
+		this.status = AiReportStatus.UPLOADING;
+	}
+
+	public static AiReport uploading(AiReportUploadCommand command) {
+		return new AiReport(command);
+	}
+
+	public boolean isUploading() {
+		return status == AiReportStatus.UPLOADING;
+	}
+
+	public void startAnalysis() {
 		this.status = AiReportStatus.PENDING;
 	}
 
-	public static AiReport pending(Long userId, String videoObjectKey) {
-		return new AiReport(userId, videoObjectKey);
+	/**
+	 * 조회 시점 기준 상태. 업로드 URL이 만료되도록 업로드 완료 이벤트가 오지 않은 UPLOADING은 FAILED_UPLOAD로 본다.
+	 * 만료는 DB에 기록하지 않는다 — 만료 뒤 이벤트가 늦게 도착하면 컨슈머가 그대로 PENDING으로 전이한다.
+	 */
+	public AiReportStatus statusAt(LocalDateTime now) {
+		if (isUploading() && now.isAfter(uploadExpiresAt)) {
+			return AiReportStatus.FAILED_UPLOAD;
+		}
+		return status;
 	}
 
 	public void complete(String title, String content) {

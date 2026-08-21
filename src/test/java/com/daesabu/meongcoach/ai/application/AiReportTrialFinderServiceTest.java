@@ -5,7 +5,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.daesabu.meongcoach.ai.application.provided.AiTrialFinder;
 import com.daesabu.meongcoach.ai.application.required.AiReportRepository;
 import com.daesabu.meongcoach.ai.domain.AiReport;
+import com.daesabu.meongcoach.ai.domain.AiReportUploadCommand;
 import com.daesabu.meongcoach.ai.domain.vo.AiTrial;
+import java.time.LocalDateTime;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -58,9 +60,10 @@ class AiReportTrialFinderServiceTest {
 	}
 
 	@Test
-	@DisplayName("분석 중인 리포트는 사용 횟수에 세지 않는다")
-	void findTrialIgnoresPendingReports() {
-		aiReportRepository.saveAndFlush(AiReport.pending(USER_ID, "videos/training/42/pending.mp4"));
+	@DisplayName("업로드 대기·분석 중인 리포트는 사용 횟수에 세지 않는다")
+	void findTrialIgnoresInProgressReports() {
+		aiReportRepository.saveAndFlush(uploadingReport(USER_ID, "videos/training/42/uploading.mp4"));
+		aiReportRepository.saveAndFlush(pendingReport(USER_ID, "videos/training/42/pending.mp4"));
 
 		assertThat(aiTrialFinder.findTrial(USER_ID)).isEqualTo(new AiTrial(0));
 	}
@@ -74,14 +77,24 @@ class AiReportTrialFinderServiceTest {
 	}
 
 	private void persistCompletedReport(Long userId, String videoObjectKey) {
-		AiReport report = AiReport.pending(userId, videoObjectKey);
+		AiReport report = pendingReport(userId, videoObjectKey);
 		report.complete("분리불안 징후 행동 분석", "분리불안 징후가 관찰됩니다.");
 		aiReportRepository.saveAndFlush(report);
 	}
 
 	private void persistFailedReport(Long userId, String videoObjectKey, Consumer<AiReport> failure) {
-		AiReport report = AiReport.pending(userId, videoObjectKey);
+		AiReport report = pendingReport(userId, videoObjectKey);
 		failure.accept(report);
 		aiReportRepository.saveAndFlush(report);
+	}
+
+	private static AiReport uploadingReport(Long userId, String videoObjectKey) {
+		return AiReport.uploading(new AiReportUploadCommand(userId, videoObjectKey, LocalDateTime.now().plusMinutes(15)));
+	}
+
+	private static AiReport pendingReport(Long userId, String videoObjectKey) {
+		AiReport report = uploadingReport(userId, videoObjectKey);
+		report.startAnalysis();
+		return report;
 	}
 }
