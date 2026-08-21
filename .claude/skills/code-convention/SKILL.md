@@ -84,7 +84,6 @@ user-invocable: true
 
 | 상황 | 문서 |
 | --- | --- |
-| 테스트 작성·수정 | [references/test-convention.md](references/test-convention.md) |
-| 컨트롤러 슬라이스 테스트 + API 문서화 | [docs/conventions/restdocs-convention.md](../../../docs/conventions/restdocs-convention.md) |
+| 테스트 작성·수정, 컨트롤러 테스트 + API 문서화 | [references/test-convention.md](references/test-convention.md) |
 | ArchUnit 아키텍처 테스트 | [docs/conventions/archunit-convention.md](../../../docs/conventions/archunit-convention.md) |
 | 예외·에러코드 정의 | [docs/conventions/exception-convention.md](../../../docs/conventions/exception-convention.md) |

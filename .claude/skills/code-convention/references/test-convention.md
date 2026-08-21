@@ -8,7 +8,7 @@ MVP 개발 기간을 고려하여 아래 순서로 우선순위를 정해 작성
 
 1. **Domain Unit Test** — Spring 컨텍스트 없이 도메인 로직을 검증하는 순수 단위 테스트
 2. **Application Test** — `Application → Domain → DB`를 관통하는 테스트. 필요한 최소한의 컨텍스트만 사용
-3. **Adapter Unit Test** — `adapter/webapi` 컨트롤러 테스트(`@WebMvcTest`). RestDocs 문서 작성을 위한 내용을 함께 포함 ([restdocs-convention.md](../../../../docs/conventions/restdocs-convention.md))
+3. **Adapter Unit Test** — `adapter/webapi` 컨트롤러 테스트(`@WebMvcTest`). RestDocs 문서 작성을 위한 내용을 함께 포함 ([컨트롤러 테스트와 API 문서화](#컨트롤러-테스트와-api-문서화))
 
 ## 스타일
 
@@ -40,6 +40,22 @@ void findDelegatesWithCurrentUserId() throws Exception {
 ```
 
 필터 체인 자체의 동작(`SecurityConfig`는 커버리지 검증 제외 대상)은 `shared/config/SecurityFilterChainTest`가 `@SpringBootTest`로 실제 요청을 보내 검증한다.
+
+## 컨트롤러 테스트와 API 문서화
+
+API 문서는 컨트롤러 테스트가 생성하는 Spring REST Docs 스니펫으로 만든다. 산출물 빌드·확인 방법은 [docs/api-docs.md](../../../../docs/api-docs.md)를 본다. 살아있는 예시는 `user/adapter/webapi/AuthControllerTest`.
+
+- `@WebMvcTest` + `@AutoConfigureRestDocs` 조합으로 작성하고, 테스트에 `document(...)` 호출을 포함한다.
+- snippet identifier는 `{모듈}/{행위}` 형식을 쓴다. (예: `user/register`, `dog/register`) 실패 응답은 `{모듈}/{행위}-error`.
+- `document`는 `com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.document`를 static import한다. 기존 스니펫에 더해 OpenAPI 스펙의 재료인 `resource.json`이 함께 생성된다. 예외: `GlobalExceptionHandlerTest`는 테스트 전용 `/test/**` 경로가 스펙에 섞이지 않도록 `MockMvcRestDocumentation.document`를 유지한다.
+- 문서화 필수 항목 — 요청: path parameters / query parameters / request fields(해당하는 것 모두), 응답: response fields, 실패 응답: 대표 에러 케이스 1개 이상(Problem Details 형식), 인증이 필요한 API의 요청 예시: `Authorization: Bearer access-token` 헤더.
+- `.principal(...)`은 인증 주체만 주입하고 HTTP 헤더를 만들지 않는다. 문서 스니펫을 생성하는 요청에는 `.principal(...)`과 별도로 위 인증 헤더를 추가한다.
+
+새 API를 추가한 PR에는 다음을 함께 포함한다.
+
+- `src/docs/asciidoc/index.adoc`에 해당 API 섹션 추가 (형식과 Swagger 딥링크 규칙은 docs/api-docs.md)
+- 인증 없이 호출 가능한 공개 API면 `build.gradle.kts`의 `publicPaths` 목록 갱신
+- 새 모듈이면 `build.gradle.kts`의 `moduleTags` 매핑 갱신
 
 ## 커버리지
 
