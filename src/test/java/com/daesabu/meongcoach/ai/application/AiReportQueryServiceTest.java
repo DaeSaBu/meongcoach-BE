@@ -7,6 +7,7 @@ import com.daesabu.meongcoach.ai.application.provided.AiReportContent;
 import com.daesabu.meongcoach.ai.application.provided.AiReportDetailResult;
 import com.daesabu.meongcoach.ai.application.provided.AiReportFinder;
 import com.daesabu.meongcoach.ai.application.provided.AiReportResult;
+import com.daesabu.meongcoach.ai.application.provided.AiReportStatusResult;
 import com.daesabu.meongcoach.ai.application.required.AiReportRepository;
 import com.daesabu.meongcoach.ai.domain.AiReport;
 import com.daesabu.meongcoach.ai.domain.AiReportStatus;
@@ -158,6 +159,43 @@ class AiReportQueryServiceTest {
 		AiReport saved = persistReport(OTHER_USER_ID, "videos/training/99/other.mp4", "남의 제목");
 
 		assertThatThrownBy(() -> aiReportFinder.findReport(USER_ID, saved.getId()))
+				.isInstanceOf(AiReportNotFoundException.class);
+	}
+
+	@Test
+	@DisplayName("영상 객체 키로 분석 중인 리포트의 식별자와 상태를 반환한다")
+	void findReportStatusReturnsIdAndStatusOfPendingReport() {
+		AiReport saved = aiReportRepository.saveAndFlush(AiReport.pending(USER_ID, "videos/training/42/pending.mp4"));
+
+		AiReportStatusResult result = aiReportFinder.findReportStatus(USER_ID, "videos/training/42/pending.mp4");
+
+		assertThat(result.id()).isEqualTo(saved.getId());
+		assertThat(result.status()).isEqualTo(AiReportStatus.PENDING);
+	}
+
+	@Test
+	@DisplayName("영상 객체 키로 완료된 리포트의 상태를 반환한다")
+	void findReportStatusReturnsCompletedStatus() {
+		persistReport(USER_ID, "videos/training/42/key.mp4", "분리불안 징후 행동 분석");
+
+		AiReportStatusResult result = aiReportFinder.findReportStatus(USER_ID, "videos/training/42/key.mp4");
+
+		assertThat(result.status()).isEqualTo(AiReportStatus.COMPLETED);
+	}
+
+	@Test
+	@DisplayName("영상 객체 키에 해당하는 리포트가 없으면 예외를 던진다")
+	void findReportStatusThrowsWhenReportDoesNotExist() {
+		assertThatThrownBy(() -> aiReportFinder.findReportStatus(USER_ID, "videos/training/42/missing.mp4"))
+				.isInstanceOf(AiReportNotFoundException.class);
+	}
+
+	@Test
+	@DisplayName("다른 사용자의 영상 객체 키면 리포트가 있어도 예외를 던진다")
+	void findReportStatusThrowsForOtherUsersReport() {
+		persistReport(OTHER_USER_ID, "videos/training/99/other.mp4", "남의 제목");
+
+		assertThatThrownBy(() -> aiReportFinder.findReportStatus(USER_ID, "videos/training/99/other.mp4"))
 				.isInstanceOf(AiReportNotFoundException.class);
 	}
 

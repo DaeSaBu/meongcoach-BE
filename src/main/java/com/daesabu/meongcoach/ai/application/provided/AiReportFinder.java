@@ -17,4 +17,10 @@ public interface AiReportFinder {
 	 * 없거나 본인 소유가 아니면 {@code AiReportNotFoundException}을 던진다.
 	 */
 	AiReportDetailResult findReport(Long userId, Long reportId);
+
+	/**
+	 * 영상 객체 키로 리포트의 식별자와 상태만 조회한다. 앱이 분석 완료를 폴링할 때 쓴다.
+	 * 없거나 본인 소유가 아니면 {@code AiReportNotFoundException}을 던진다.
+	 */
+	AiReportStatusResult findReportStatus(Long userId, String videoObjectKey);
 }
