@@ -2,6 +2,7 @@ package com.daesabu.meongcoach.dog.application.required;
 
 import com.daesabu.meongcoach.dog.domain.Dog;
 import com.daesabu.meongcoach.dog.domain.DogStatus;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -20,4 +21,9 @@ public interface DogRepository extends JpaRepository<Dog, Long> {
 	 * 선택이 여러 건인 데이터가 남아 있어도 예외 없이 끝나도록 first + id 오름차순으로 조회한다.
 	 */
 	Optional<Dog> findFirstByUserIdAndStatusOrderByIdAsc(Long userId, DogStatus status);
+
+	/**
+	 * 사용자의 강아지를 등록 순(id 오름차순)으로 모두 조회한다. 없으면 빈 리스트를 반환한다.
+	 */
+	List<Dog> findAllByUserIdOrderByIdAsc(Long userId);
 }
