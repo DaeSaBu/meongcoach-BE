@@ -59,11 +59,11 @@ class AuthControllerTest {
 				.andExpect(jsonPath("$.needsOnboarding").value(true))
 				.andDo(document("auth/login",
 						pathParameters(
-								parameterWithName("provider").description("소셜 로그인 제공자. 현재 `kakao`만 지원")
+								parameterWithName("provider").description("소셜 로그인 제공자. `kakao`, `apple` 지원")
 						),
 						requestFields(
 								fieldWithPath("token").description(
-										"필수 입력. 앱이 제공자 SDK로 받은 자격증명. 카카오는 OIDC ID 토큰")
+										"필수 입력. 앱이 제공자 SDK로 받은 OIDC ID 토큰(애플은 identityToken)")
 						),
 						responseFields(
 								fieldWithPath("accessToken").description("API 호출에 사용할 액세스 토큰"),
