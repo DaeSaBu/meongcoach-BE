@@ -87,18 +87,20 @@ class DogTest {
 	}
 
 	@Test
-	void 프로필을_수정하면_이름_견종_성별_생년월일_몸무게_이미지_기대사항이_교체된다() {
+	void 프로필을_수정하면_이름_견종_성별_생년월일_몸무게_성격_이미지_기대사항이_교체된다() {
 		Dog dog = registerDog();
+		dog.changePersonalities(Set.of(Personality.FRIENDLY));
 
 		dog.updateProfile(new DogProfileUpdateCommand("보리", Breed.MALTESE, DogSex.FEMALE,
-				LocalDate.of(2023, 1, 15), new BigDecimal("3.20"), "https://cdn.meongcoach.com/bori.png",
-				"산책 예절을 배우고 싶어요."));
+				LocalDate.of(2023, 1, 15), new BigDecimal("3.20"), Set.of(Personality.TIMID, Personality.LIVELY),
+				"https://cdn.meongcoach.com/bori.png", "산책 예절을 배우고 싶어요."));
 
 		assertThat(dog.getName()).isEqualTo("보리");
 		assertThat(dog.getBreed()).isEqualTo(Breed.MALTESE);
 		assertThat(dog.getSex()).isEqualTo(DogSex.FEMALE);
 		assertThat(dog.getBirthDate()).isEqualTo(LocalDate.of(2023, 1, 15));
 		assertThat(dog.getWeightKg()).isEqualByComparingTo("3.20");
+		assertThat(dog.getPersonalities()).containsExactlyInAnyOrder(Personality.TIMID, Personality.LIVELY);
 		assertThat(dog.getProfileImageUrl()).isEqualTo("https://cdn.meongcoach.com/bori.png");
 		assertThat(dog.getExpectation()).isEqualTo("산책 예절을 배우고 싶어요.");
 	}
@@ -109,7 +111,7 @@ class DogTest {
 		dog.select();
 
 		dog.updateProfile(new DogProfileUpdateCommand("보리", Breed.MALTESE, DogSex.FEMALE, null,
-				new BigDecimal("3.20"), null, null));
+				new BigDecimal("3.20"), Set.of(), null, null));
 
 		assertThat(dog.getUserId()).isEqualTo(1L);
 		assertThat(dog.getStatus()).isEqualTo(DogStatus.SELECTED);
@@ -120,7 +122,7 @@ class DogTest {
 		Dog dog = registerDog();
 
 		dog.updateProfile(new DogProfileUpdateCommand("보리", Breed.MALTESE, DogSex.FEMALE, null,
-				new BigDecimal("3.20"), null, null));
+				new BigDecimal("3.20"), Set.of(), null, null));
 
 		assertThat(dog.getBirthDate()).isNull();
 		assertThat(dog.getAge()).isNull();
@@ -133,7 +135,7 @@ class DogTest {
 		dog.changeExpectation("기존 기대 사항");
 
 		dog.updateProfile(new DogProfileUpdateCommand("보리", Breed.MALTESE, DogSex.FEMALE, null,
-				new BigDecimal("3.20"), null, null));
+				new BigDecimal("3.20"), Set.of(), null, null));
 
 		assertThat(dog.getProfileImageUrl()).isEmpty();
 		assertThat(dog.getExpectation()).isEmpty();

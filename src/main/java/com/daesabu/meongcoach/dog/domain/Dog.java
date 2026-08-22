@@ -110,6 +110,7 @@ public class Dog extends BaseEntity {
 		this.weightKg = command.weightKg();
 		changeProfileImage(command.profileImageUrl());
 		changeExpectation(command.expectation());
+		changePersonalities(command.personalities());
 	}
 
 	public void changeProfileImage(String profileImageUrl) {

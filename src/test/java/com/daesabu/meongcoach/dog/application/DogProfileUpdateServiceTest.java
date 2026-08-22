@@ -3,19 +3,16 @@ package com.daesabu.meongcoach.dog.application;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.daesabu.meongcoach.dog.application.provided.DogProfileUpdateInfo;
 import com.daesabu.meongcoach.dog.application.provided.DogProfileUpdater;
 import com.daesabu.meongcoach.dog.application.required.DogRepository;
 import com.daesabu.meongcoach.dog.domain.Breed;
 import com.daesabu.meongcoach.dog.domain.Dog;
+import com.daesabu.meongcoach.dog.domain.DogProfileUpdateCommand;
 import com.daesabu.meongcoach.dog.domain.DogRegisterCommand;
 import com.daesabu.meongcoach.dog.domain.DogSex;
 import com.daesabu.meongcoach.dog.domain.DogStatus;
 import com.daesabu.meongcoach.dog.domain.Personality;
 import com.daesabu.meongcoach.dog.domain.exception.DogNotFoundException;
-import com.daesabu.meongcoach.dog.domain.exception.InvalidBreedException;
-import com.daesabu.meongcoach.dog.domain.exception.InvalidDogSexException;
-import com.daesabu.meongcoach.dog.domain.exception.InvalidPersonalityException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Set;
@@ -50,7 +47,7 @@ class DogProfileUpdateServiceTest {
 		Dog saved = persistSelectedDog(USER_ID);
 		entityManager.clear();
 
-		dogProfileUpdater.update(USER_ID, saved.getId(), updateInfo("MALTESE", "FEMALE", Set.of("TIMID", "LIVELY")));
+		dogProfileUpdater.update(USER_ID, saved.getId(), updateCommand(Set.of(Personality.TIMID, Personality.LIVELY)));
 		entityManager.flush();
 		entityManager.clear();
 
@@ -69,7 +66,7 @@ class DogProfileUpdateServiceTest {
 	void 수정된_강아지를_반환한다() {
 		Dog saved = persistSelectedDog(USER_ID);
 
-		Dog updated = dogProfileUpdater.update(USER_ID, saved.getId(), updateInfo("MALTESE", "FEMALE", Set.of("TIMID")));
+		Dog updated = dogProfileUpdater.update(USER_ID, saved.getId(), updateCommand(Set.of(Personality.TIMID)));
 
 		assertThat(updated.getId()).isEqualTo(saved.getId());
 		assertThat(updated.getName()).isEqualTo("보리");
@@ -80,7 +77,7 @@ class DogProfileUpdateServiceTest {
 	void 프로필_수정은_선택_상태와_소유자를_유지한다() {
 		Dog saved = persistSelectedDog(USER_ID);
 
-		Dog updated = dogProfileUpdater.update(USER_ID, saved.getId(), updateInfo("MALTESE", "FEMALE", Set.of()));
+		Dog updated = dogProfileUpdater.update(USER_ID, saved.getId(), updateCommand(Set.of()));
 
 		assertThat(updated.getStatus()).isEqualTo(DogStatus.SELECTED);
 		assertThat(updated.getUserId()).isEqualTo(USER_ID);
@@ -90,7 +87,7 @@ class DogProfileUpdateServiceTest {
 	void 성격을_비우면_빈_성격으로_저장된다() {
 		Dog saved = persistSelectedDog(USER_ID);
 
-		dogProfileUpdater.update(USER_ID, saved.getId(), updateInfo("MALTESE", "FEMALE", Set.of()));
+		dogProfileUpdater.update(USER_ID, saved.getId(), updateCommand(Set.of()));
 		entityManager.flush();
 		entityManager.clear();
 
@@ -99,21 +96,12 @@ class DogProfileUpdateServiceTest {
 	}
 
 	@Test
-	void 성격이_null이면_빈_성격으로_저장된다() {
-		Dog saved = persistSelectedDog(USER_ID);
-
-		Dog updated = dogProfileUpdater.update(USER_ID, saved.getId(), updateInfo("MALTESE", "FEMALE", null));
-
-		assertThat(updated.getPersonalities()).isEmpty();
-	}
-
-	@Test
 	void 생년월일과_이미지_기대사항이_없어도_수정할_수_있다() {
 		Dog saved = persistSelectedDog(USER_ID);
-		DogProfileUpdateInfo info = new DogProfileUpdateInfo("보리", "MALTESE", "FEMALE", null,
+		DogProfileUpdateCommand command = new DogProfileUpdateCommand("보리", Breed.MALTESE, DogSex.FEMALE, null,
 				new BigDecimal("3.20"), Set.of(), null, null);
 
-		Dog updated = dogProfileUpdater.update(USER_ID, saved.getId(), info);
+		Dog updated = dogProfileUpdater.update(USER_ID, saved.getId(), command);
 
 		assertThat(updated.getBirthDate()).isNull();
 		assertThat(updated.getProfileImageUrl()).isEmpty();
@@ -122,7 +110,7 @@ class DogProfileUpdateServiceTest {
 
 	@Test
 	void 없는_강아지_ID로_수정하면_예외를_던진다() {
-		assertThatThrownBy(() -> dogProfileUpdater.update(USER_ID, 999L, updateInfo("MALTESE", "FEMALE", Set.of())))
+		assertThatThrownBy(() -> dogProfileUpdater.update(USER_ID, 999L, updateCommand(Set.of())))
 				.isInstanceOf(DogNotFoundException.class);
 	}
 
@@ -131,7 +119,7 @@ class DogProfileUpdateServiceTest {
 		Dog othersDog = persistSelectedDog(OTHER_USER_ID);
 
 		assertThatThrownBy(() -> dogProfileUpdater.update(USER_ID, othersDog.getId(),
-				updateInfo("MALTESE", "FEMALE", Set.of())))
+				updateCommand(Set.of())))
 				.isInstanceOf(DogNotFoundException.class);
 
 		entityManager.clear();
@@ -139,34 +127,9 @@ class DogProfileUpdateServiceTest {
 		assertThat(unchanged.getName()).isEqualTo("초코");
 	}
 
-	@Test
-	void 잘못된_견종_값이면_수정에_실패한다() {
-		Dog saved = persistSelectedDog(USER_ID);
-
-		assertThatThrownBy(() -> dogProfileUpdater.update(USER_ID, saved.getId(), updateInfo("UNKNOWN", "FEMALE", Set.of())))
-				.isInstanceOf(InvalidBreedException.class);
-	}
-
-	@Test
-	void 잘못된_성별_값이면_수정에_실패한다() {
-		Dog saved = persistSelectedDog(USER_ID);
-
-		assertThatThrownBy(() -> dogProfileUpdater.update(USER_ID, saved.getId(), updateInfo("MALTESE", "UNKNOWN", Set.of())))
-				.isInstanceOf(InvalidDogSexException.class);
-	}
-
-	@Test
-	void 잘못된_성격_값이면_수정에_실패한다() {
-		Dog saved = persistSelectedDog(USER_ID);
-
-		assertThatThrownBy(() -> dogProfileUpdater.update(USER_ID, saved.getId(),
-				updateInfo("MALTESE", "FEMALE", Set.of("BRAVE"))))
-				.isInstanceOf(InvalidPersonalityException.class);
-	}
-
-	private DogProfileUpdateInfo updateInfo(String breed, String sex, Set<String> personalities) {
-		return new DogProfileUpdateInfo("보리", breed, sex, LocalDate.of(2023, 1, 15), new BigDecimal("3.20"),
-				personalities, NEW_IMAGE_URL, NEW_EXPECTATION);
+	private DogProfileUpdateCommand updateCommand(Set<Personality> personalities) {
+		return new DogProfileUpdateCommand("보리", Breed.MALTESE, DogSex.FEMALE, LocalDate.of(2023, 1, 15),
+				new BigDecimal("3.20"), personalities, NEW_IMAGE_URL, NEW_EXPECTATION);
 	}
 
 	private Dog persistSelectedDog(Long userId) {

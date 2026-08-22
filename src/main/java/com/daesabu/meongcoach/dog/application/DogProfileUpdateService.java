@@ -1,20 +1,16 @@
 package com.daesabu.meongcoach.dog.application;
 
-import com.daesabu.meongcoach.dog.application.provided.DogProfileUpdateInfo;
 import com.daesabu.meongcoach.dog.application.provided.DogProfileUpdater;
 import com.daesabu.meongcoach.dog.application.required.DogRepository;
-import com.daesabu.meongcoach.dog.domain.Breed;
 import com.daesabu.meongcoach.dog.domain.Dog;
 import com.daesabu.meongcoach.dog.domain.DogProfileUpdateCommand;
-import com.daesabu.meongcoach.dog.domain.DogSex;
-import com.daesabu.meongcoach.dog.domain.Personality;
 import com.daesabu.meongcoach.dog.domain.exception.DogNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 문자열 입력을 도메인 타입으로 변환·검증한 뒤 소유 강아지의 프로필을 전체 교체한다.
+ * 소유 강아지의 프로필을 전체 교체한다.
  */
 @Service
 @RequiredArgsConstructor
@@ -25,13 +21,11 @@ public class DogProfileUpdateService implements DogProfileUpdater {
 
 	@Override
 	@Transactional
-	public Dog update(Long userId, Long dogId, DogProfileUpdateInfo info) {
+	public Dog update(Long userId, Long dogId, DogProfileUpdateCommand command) {
 		// 소유자 필터를 겸한 조회라 남의 강아지는 존재하지 않는 것으로 처리된다
 		Dog dog = dogRepository.findByIdAndUserId(dogId, userId)
 				.orElseThrow(() -> new DogNotFoundException(dogId));
-		dog.updateProfile(new DogProfileUpdateCommand(info.name(), Breed.from(info.breed()), DogSex.from(info.sex()),
-				info.birthDate(), info.weightKg(), info.profileImageUrl(), info.expectation()));
-		dog.changePersonalities(Personality.fromCodes(info.personalities()));
+		dog.updateProfile(command);
 		// 영속 상태 엔티티라 트랜잭션 커밋 시 변경이 반영된다
 		return dog;
 	}

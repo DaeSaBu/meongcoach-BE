@@ -17,10 +17,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.daesabu.meongcoach.dog.application.provided.DogProfileFinder;
-import com.daesabu.meongcoach.dog.application.provided.DogProfileUpdateInfo;
 import com.daesabu.meongcoach.dog.application.provided.DogProfileUpdater;
 import com.daesabu.meongcoach.dog.domain.Breed;
 import com.daesabu.meongcoach.dog.domain.Dog;
+import com.daesabu.meongcoach.dog.domain.DogProfileUpdateCommand;
 import com.daesabu.meongcoach.dog.domain.DogRegisterCommand;
 import com.daesabu.meongcoach.dog.domain.DogSex;
 import com.daesabu.meongcoach.dog.domain.Personality;
@@ -336,7 +336,7 @@ class DogControllerTest {
 
 	@Test
 	void 소유_강아지의_프로필을_전체_교체하고_수정된_프로필을_반환한다() throws Exception {
-		given(dogProfileUpdater.update(eq(42L), eq(10L), any(DogProfileUpdateInfo.class))).willReturn(updatedDog(10L));
+		given(dogProfileUpdater.update(eq(42L), eq(10L), any(DogProfileUpdateCommand.class))).willReturn(updatedDog(10L));
 
 		mockMvc.perform(put("/api/dogs/{dogId}", 10L)
 						.principal(CURRENT_USER)
@@ -400,7 +400,7 @@ class DogControllerTest {
 
 	@Test
 	void 인증_주체와_경로의_강아지_ID_요청_본문으로_수정을_위임한다() throws Exception {
-		given(dogProfileUpdater.update(eq(42L), eq(10L), any(DogProfileUpdateInfo.class))).willReturn(updatedDog(10L));
+		given(dogProfileUpdater.update(eq(42L), eq(10L), any(DogProfileUpdateCommand.class))).willReturn(updatedDog(10L));
 
 		mockMvc.perform(put("/api/dogs/{dogId}", 10L)
 						.principal(CURRENT_USER)
@@ -408,9 +408,9 @@ class DogControllerTest {
 						.content(UPDATE_BODY))
 				.andExpect(status().isOk());
 
-		then(dogProfileUpdater).should().update(42L, 10L, new DogProfileUpdateInfo("보리", "MALTESE", "FEMALE",
-				LocalDate.of(2023, 1, 15), new BigDecimal("3.2"), Set.of("TIMID", "LIVELY"), NEW_IMAGE_URL,
-				NEW_EXPECTATION));
+		then(dogProfileUpdater).should().update(42L, 10L, new DogProfileUpdateCommand("보리", Breed.MALTESE,
+				DogSex.FEMALE, LocalDate.of(2023, 1, 15), new BigDecimal("3.2"),
+				Set.of(Personality.TIMID, Personality.LIVELY), NEW_IMAGE_URL, NEW_EXPECTATION));
 	}
 
 	@Test
@@ -428,7 +428,7 @@ class DogControllerTest {
 
 	@Test
 	void 없거나_본인_소유가_아닌_강아지를_수정하면_404와_에러_코드를_반환한다() throws Exception {
-		given(dogProfileUpdater.update(eq(42L), eq(999L), any(DogProfileUpdateInfo.class)))
+		given(dogProfileUpdater.update(eq(42L), eq(999L), any(DogProfileUpdateCommand.class)))
 				.willThrow(new DogNotFoundException(999L));
 
 		mockMvc.perform(put("/api/dogs/{dogId}", 999L)

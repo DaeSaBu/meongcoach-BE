@@ -42,7 +42,7 @@ public class DogController {
 	@PutMapping("/{dogId}")
 	public DogResponse updateDog(@CurrentUserId Long userId, @PathVariable Long dogId,
 	                             @Valid @RequestBody DogProfileUpdateRequest request) {
-		Dog dog = dogProfileUpdater.update(userId, dogId, request.toInfo());
+		Dog dog = dogProfileUpdater.update(userId, dogId, request.toCommand());
 		return DogResponse.from(dog);
 	}
 
