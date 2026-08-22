@@ -7,14 +7,17 @@ import com.daesabu.meongcoach.dog.domain.Dog;
 import com.daesabu.meongcoach.dog.domain.DogRegisterCommand;
 import com.daesabu.meongcoach.dog.domain.DogSex;
 import com.daesabu.meongcoach.dog.domain.DogStatus;
+import com.daesabu.meongcoach.dog.domain.Personality;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 
 /**
  * 강아지 리포지토리 검증.
@@ -29,6 +32,9 @@ class DogRepositoryTest {
 
 	@Autowired
 	private DogRepository dogRepository;
+
+	@Autowired
+	private TestEntityManager entityManager;
 
 	@Test
 	@DisplayName("선택된 강아지가 있으면 존재한다고 알려준다")
@@ -115,6 +121,46 @@ class DogRepositoryTest {
 		assertThat(dogRepository.findAllByUserIdOrderByIdAsc(USER_ID)).isEmpty();
 	}
 
+	// 성격 컬렉션은 LAZY라 트랜잭션 밖(adapter)에서 읽기 전에 선로딩돼야 한다. 영속성 컨텍스트를 비워 실제 쿼리 결과만으로 확인한다
+	@Test
+	@DisplayName("목록 조회는 성격을 함께 로딩하고 성격이 여러 개여도 강아지를 중복시키지 않는다")
+	void findAllByUserIdOrderByIdAscFetchesPersonalitiesWithoutDuplicatingDogs() {
+		Dog dog = persistDogWithPersonalities(USER_ID, Set.of(Personality.TIMID, Personality.LIVELY));
+		entityManager.clear();
+
+		List<Dog> found = dogRepository.findAllByUserIdOrderByIdAsc(USER_ID);
+
+		assertThat(found).extracting(Dog::getId).containsExactly(dog.getId());
+		assertThat(found.getFirst().getPersonalities())
+				.containsExactlyInAnyOrder(Personality.TIMID, Personality.LIVELY);
+	}
+
+	@Test
+	@DisplayName("ID와 소유자가 모두 일치하는 강아지를 성격과 함께 조회한다")
+	void findByIdAndUserIdReturnsOwnedDogWithPersonalities() {
+		Dog dog = persistDogWithPersonalities(USER_ID, Set.of(Personality.FRIENDLY));
+		entityManager.clear();
+
+		Optional<Dog> found = dogRepository.findByIdAndUserId(dog.getId(), USER_ID);
+
+		assertThat(found.orElseThrow().getId()).isEqualTo(dog.getId());
+		assertThat(found.orElseThrow().getPersonalities()).containsExactly(Personality.FRIENDLY);
+	}
+
+	@Test
+	@DisplayName("다른 사용자의 강아지 ID로 조회하면 빈 Optional을 반환한다")
+	void findByIdAndUserIdReturnsEmptyForOtherUsersDog() {
+		Dog othersDog = persistSelectedDog(OTHER_USER_ID);
+
+		assertThat(dogRepository.findByIdAndUserId(othersDog.getId(), USER_ID)).isEmpty();
+	}
+
+	@Test
+	@DisplayName("없는 강아지 ID로 조회하면 빈 Optional을 반환한다")
+	void findByIdAndUserIdReturnsEmptyWhenDogDoesNotExist() {
+		assertThat(dogRepository.findByIdAndUserId(999L, USER_ID)).isEmpty();
+	}
+
 	private Dog persistSelectedDog(Long userId) {
 		Dog dog = newDog(userId);
 		dog.select();
@@ -123,6 +169,12 @@ class DogRepositoryTest {
 
 	private Dog persistUnselectedDog(Long userId) {
 		return dogRepository.saveAndFlush(newDog(userId));
+	}
+
+	private Dog persistDogWithPersonalities(Long userId, Set<Personality> personalities) {
+		Dog dog = newDog(userId);
+		dog.changePersonalities(personalities);
+		return dogRepository.saveAndFlush(dog);
 	}
 
 	private Dog newDog(Long userId) {
