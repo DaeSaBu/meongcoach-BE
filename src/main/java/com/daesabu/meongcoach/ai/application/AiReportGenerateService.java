@@ -38,7 +38,7 @@ public class AiReportGenerateService implements AiReportGenerator {
 		AiReport report = aiReportRepository.findByVideoObjectKey(objectKey).orElse(null);
 		if (report == null) {
 			// 업로드 URL 발급 없이 올라온 객체(또는 발급 기록 도입 전 분량)는 소유자 row가 없어 분석하지 않는다
-			log.warn("업로드 URL 발급 기록이 없는 영상이라 리포트 생성을 건너뛴다: {}", objectKey);
+			log.warn("객체 키에 대응하는 AiReport가 없다: {}", objectKey);
 			return;
 		}
 		if (!report.isUploading()) {
