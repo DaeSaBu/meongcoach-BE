@@ -1,6 +1,8 @@
 package com.daesabu.meongcoach.dog.domain;
 
 import com.daesabu.meongcoach.dog.domain.exception.InvalidPersonalityException;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * 강아지 성격 특성. 보호자가 관찰한 특성을 중복 선택하는 평면 목록이며,
@@ -41,5 +43,17 @@ public enum Personality {
 		} catch (IllegalArgumentException e) {
 			throw new InvalidPersonalityException(value);
 		}
+	}
+
+	/**
+	 * 문자열 코드 집합을 enum 집합으로 변환한다. null은 '성격 미선택'이므로 빈 Set으로 취급한다.
+	 */
+	public static Set<Personality> fromCodes(Set<String> codes) {
+		if (codes == null) {
+			return Set.of();
+		}
+		return codes.stream()
+				.map(Personality::from)
+				.collect(Collectors.toSet());
 	}
 }
