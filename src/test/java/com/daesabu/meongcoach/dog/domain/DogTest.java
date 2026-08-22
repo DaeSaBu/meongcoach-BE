@@ -87,6 +87,59 @@ class DogTest {
 	}
 
 	@Test
+	void 프로필을_수정하면_이름_견종_성별_생년월일_몸무게_이미지_기대사항이_교체된다() {
+		Dog dog = registerDog();
+
+		dog.updateProfile(new DogProfileUpdateCommand("보리", Breed.MALTESE, DogSex.FEMALE,
+				LocalDate.of(2023, 1, 15), new BigDecimal("3.20"), "https://cdn.meongcoach.com/bori.png",
+				"산책 예절을 배우고 싶어요."));
+
+		assertThat(dog.getName()).isEqualTo("보리");
+		assertThat(dog.getBreed()).isEqualTo(Breed.MALTESE);
+		assertThat(dog.getSex()).isEqualTo(DogSex.FEMALE);
+		assertThat(dog.getBirthDate()).isEqualTo(LocalDate.of(2023, 1, 15));
+		assertThat(dog.getWeightKg()).isEqualByComparingTo("3.20");
+		assertThat(dog.getProfileImageUrl()).isEqualTo("https://cdn.meongcoach.com/bori.png");
+		assertThat(dog.getExpectation()).isEqualTo("산책 예절을 배우고 싶어요.");
+	}
+
+	@Test
+	void 프로필_수정은_소유자와_선택_상태를_바꾸지_않는다() {
+		Dog dog = registerDog();
+		dog.select();
+
+		dog.updateProfile(new DogProfileUpdateCommand("보리", Breed.MALTESE, DogSex.FEMALE, null,
+				new BigDecimal("3.20"), null, null));
+
+		assertThat(dog.getUserId()).isEqualTo(1L);
+		assertThat(dog.getStatus()).isEqualTo(DogStatus.SELECTED);
+	}
+
+	@Test
+	void 프로필_수정_시_생년월일이_null이면_나이_미상으로_바뀐다() {
+		Dog dog = registerDog();
+
+		dog.updateProfile(new DogProfileUpdateCommand("보리", Breed.MALTESE, DogSex.FEMALE, null,
+				new BigDecimal("3.20"), null, null));
+
+		assertThat(dog.getBirthDate()).isNull();
+		assertThat(dog.getAge()).isNull();
+	}
+
+	@Test
+	void 프로필_수정_시_이미지와_기대사항이_null이면_빈_문자열로_교체된다() {
+		Dog dog = registerDog();
+		dog.changeProfileImage("https://cdn.meongcoach.com/dog.png");
+		dog.changeExpectation("기존 기대 사항");
+
+		dog.updateProfile(new DogProfileUpdateCommand("보리", Breed.MALTESE, DogSex.FEMALE, null,
+				new BigDecimal("3.20"), null, null));
+
+		assertThat(dog.getProfileImageUrl()).isEmpty();
+		assertThat(dog.getExpectation()).isEmpty();
+	}
+
+	@Test
 	@DisplayName("생년월일로 나이를 계산한다")
 	void getAgeCalculatesFromBirthDate() {
 		Dog dog = registerDog(LocalDate.now().minusYears(3));
