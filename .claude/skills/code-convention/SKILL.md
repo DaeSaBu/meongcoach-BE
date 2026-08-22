@@ -89,6 +89,7 @@ user-invocable: true
 - `shared/exception`(`ErrorCode`, `DomainException`)은 순수 Java로 유지한다. `domain`은 Spring에 의존할 수 없으므로 `ErrorCode.status()`는 `HttpStatus`가 아닌 `int`를 반환하고 `HttpStatus` 변환은 `GlobalExceptionHandler`에서만 한다. 같은 이유로 `domain`은 `shared/webapi`를 참조하지 않는다.
 - `adapter/integration`은 인프라 예외(`RestClientException` 등)를 그 자리에서 도메인 예외로 번역한다. DTO 조립이 아니라 계층 경계의 타입 번역이라 위 규칙과 충돌하지 않는다. 실패 원인은 구분해 내린다. (예: 소셜 로그인은 토큰 무효 401과 제공자 통신 실패 502를 다른 에러 코드로 내려 클라이언트가 재로그인과 재시도를 구분하게 한다)
 - 컨트롤러 테스트에 대표 에러 케이스 1개 이상을 `{모듈}/{행위}-error`로 문서화한다. ([references/test-convention.md](references/test-convention.md))
+- `{모듈}ErrorCode` 자체의 단위 테스트는 만들지 않는다. 에러 코드 검증은 위 `-error` 문서화 케이스로 한다. ([references/test-convention.md](references/test-convention.md))
 
 ---
 

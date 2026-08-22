@@ -10,6 +10,14 @@ MVP 개발 기간을 고려하여 아래 순서로 우선순위를 정해 작성
 2. **Application Test** — `Application → Domain → DB`를 관통하는 테스트. 필요한 최소한의 컨텍스트만 사용
 3. **Adapter Unit Test** — `adapter/webapi` 컨트롤러 테스트(`@WebMvcTest`). RestDocs 문서 작성을 위한 내용을 함께 포함 ([컨트롤러 테스트와 API 문서화](#컨트롤러-테스트와-api-문서화))
 
+## 작성하지 않는 대상
+
+선언을 그대로 되읽기만 하는 테스트는 결함을 잡지 못하고 상수 하나 추가할 때마다 깨지므로 만들지 않는다.
+
+- **단순 enum** — 상수 나열, 필드 getter, 문자열→상수 조회(`valueOf` 래핑·필드 매칭)와 그 실패 시 도메인 예외 변환만 있는 enum은 단위 테스트를 만들지 않는다. (예: `user/domain/Gender.from`, `media/domain/ImageType.fromContentType`) enum은 JaCoCo 커버리지 대상에서 이미 제외되어(`build.gradle.kts`의 `isEnumClassFile`) 커버리지 명분도 없고, 변환 실패 경로는 그 enum을 받는 엔티티·서비스·컨트롤러 테스트의 에러 케이스에서 간접 검증된다. 분기·계산 로직이 있는 메서드는 **그 메서드만** 테스트한다. (예: `training/domain/CurriculumStatus.of(int, int)`)
+- **`{모듈}ErrorCode`** — 전용 테스트 클래스(`~ErrorCodeTest`)를 만들지 않는다. `code()`가 `name()`을 반환하는 것은 `shared/exception/ErrorCode` 계약이고 상태·메시지는 데이터 선언이다. 에러 코드가 실제로 어떤 응답이 되는지는 컨트롤러 테스트의 `{모듈}/{행위}-error` 문서화 케이스가 검증한다. ([컨트롤러 테스트와 API 문서화](#컨트롤러-테스트와-api-문서화))
+- 이미 있는 `~ErrorCodeTest`·단순 enum 테스트는 삭제 대상이 아니다. 유지하되 새로 만들지 않는다.
+
 ## 스타일
 
 - given-when-then 구조를 가져가되, 주석으로 명시하지 않고 빈 줄로 구간을 구분한다.
