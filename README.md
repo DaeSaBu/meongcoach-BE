@@ -38,6 +38,6 @@ docker compose --profile app up --build
 ## API 문서
 
 Swagger UI 접근 주소와 프로파일별 노출 범위는 [docs/profiles.md](docs/profiles.md)를,
-문서 작성 규칙은 [docs/conventions/restdocs-convention.md](docs/conventions/restdocs-convention.md)를 참고하세요.
+문서 작성 규칙은 code-convention 스킬의 [references/test-convention.md](.claude/skills/code-convention/references/test-convention.md)를, 빌드·확인 방법은 [docs/api-docs.md](docs/api-docs.md)를 참고하세요.
 
 자세한 규칙은 [AGENTS.md](AGENTS.md)와 [docs/](docs/)를 참고하세요.

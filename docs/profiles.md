@@ -57,7 +57,7 @@ CD는 환경별 task definition family의 최신 리비전에서 프로파일을
 
 Swagger UI는 API 서버가 정적 파일로 직접 서빙하며, 노출 범위를 프로파일별 플래그로 통제합니다.
 `develop`에 merge되어 dev 배포가 성공하면 https://api.dev.meongcoach.com/swagger-ui/index.html 이 자동 갱신됩니다.
-([restdocs 컨벤션](conventions/restdocs-convention.md) 참고)
+([api-docs.md](api-docs.md) 참고)
 
 | 프로파일 | 값 | `/swagger-ui/**` 동작 |
 |---|---|---|
