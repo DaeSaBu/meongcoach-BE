@@ -327,6 +327,23 @@ operation::dog/detail[snippets='http-request,path-parameters,http-response,respo
 
 operation::dog/detail-error[snippets='http-response,response-fields']
 
+=== 강아지 프로필 수정
+
+link:{swagger-ui}#/Dog/dog-update[▶ Swagger에서 Try it out,window=swagger]
+
+사용자가 소유한 강아지 한 마리의 프로필을 요청 본문 값으로 **전체 교체**합니다.
+수정 화면은 단건 조회 응답을 초기값으로 받아 모든 필드를 다시 보내며, 생략하거나 `null`로 보낸 선택 필드(`birthDate`, `personalities`, `profileImageUrl`, `expectation`)는 '값 없음'으로 저장됩니다.
+선택 상태(`status`)는 이 API로 바뀌지 않습니다. 견종·성격은 온보딩 메타데이터의 `code`로 보내고, 응답은 단건 조회와 같은 형태로 수정된 프로필을 내려줍니다.
+
+operation::dog/update[snippets='http-request,path-parameters,request-fields,http-response,response-fields']
+
+==== 실패 응답
+
+존재하지 않거나 본인 소유가 아닌 강아지를 요청하면 404(`DOG_NOT_FOUND`)를 반환합니다.
+잘못된 견종·성별·성격 코드는 400(`DOG_INVALID_BREED`, `DOG_INVALID_SEX`, `DOG_INVALID_PERSONALITY`)이며, 필수 입력 누락·형식 오류는 400(`BAD_REQUEST`)에 `errors` 필드로 항목별 원인이 내려갑니다.
+
+operation::dog/update-error[snippets='http-response,response-fields']
+
 === 선택된 강아지 프로필 이미지 조회
 
 link:{swagger-ui}#/Dog/dog-profile-image[▶ Swagger에서 Try it out,window=swagger]
