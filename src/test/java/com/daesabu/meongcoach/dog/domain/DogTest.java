@@ -37,6 +37,15 @@ class DogTest {
 	}
 
 	@Test
+	void 등록_시_프로필_이미지와_기대사항을_저장한다() {
+		Dog dog = Dog.register(new DogRegisterCommand(1L, "초코", Breed.POODLE, DogSex.MALE, LocalDate.of(2024, 3, 1),
+				new BigDecimal("4.50"), "https://cdn.meongcoach.com/dog.png", "다른 강아지와 편안하게 인사했으면 좋겠어요."));
+
+		assertThat(dog.getProfileImageUrl()).isEqualTo("https://cdn.meongcoach.com/dog.png");
+		assertThat(dog.getExpectation()).isEqualTo("다른 강아지와 편안하게 인사했으면 좋겠어요.");
+	}
+
+	@Test
 	@DisplayName("등록 직후에는 성격이 비어 있다")
 	void registerCreatesDogWithoutPersonalities() {
 		Dog dog = registerDog();
@@ -54,36 +63,6 @@ class DogTest {
 
 		assertThat(dog.getPersonalities())
 				.containsExactlyInAnyOrder(Personality.LIVELY, Personality.FRIENDLY);
-	}
-
-	@Test
-	@DisplayName("프로필 이미지를 변경하면 이미지 URL이 교체된다")
-	void changeProfileImageReplacesImageUrl() {
-		Dog dog = registerDog();
-
-		dog.changeProfileImage("https://cdn.meongcoach.com/dog.png");
-
-		assertThat(dog.getProfileImageUrl()).isEqualTo("https://cdn.meongcoach.com/dog.png");
-	}
-
-	@Test
-	@DisplayName("기대 사항을 변경하면 기존 내용이 교체된다")
-	void changeExpectationReplacesExpectation() {
-		Dog dog = registerDog();
-
-		dog.changeExpectation("다른 강아지와 편안하게 인사했으면 좋겠어요.");
-
-		assertThat(dog.getExpectation()).isEqualTo("다른 강아지와 편안하게 인사했으면 좋겠어요.");
-	}
-
-	@Test
-	@DisplayName("기대 사항이 없으면 빈 문자열로 변경된다")
-	void changeExpectationStoresEmptyStringWhenAbsent() {
-		Dog dog = registerDog();
-
-		dog.changeExpectation(null);
-
-		assertThat(dog.getExpectation()).isEmpty();
 	}
 
 	@Test
@@ -130,9 +109,8 @@ class DogTest {
 
 	@Test
 	void 프로필_수정_시_이미지와_기대사항이_null이면_빈_문자열로_교체된다() {
-		Dog dog = registerDog();
-		dog.changeProfileImage("https://cdn.meongcoach.com/dog.png");
-		dog.changeExpectation("기존 기대 사항");
+		Dog dog = Dog.register(new DogRegisterCommand(1L, "초코", Breed.POODLE, DogSex.MALE, LocalDate.of(2024, 3, 1),
+				new BigDecimal("4.50"), "https://cdn.meongcoach.com/dog.png", "기존 기대 사항"));
 
 		dog.updateProfile(new DogProfileUpdateCommand("보리", Breed.MALTESE, DogSex.FEMALE, null,
 				new BigDecimal("3.20"), Set.of(), null, null));

@@ -292,9 +292,7 @@ class DogControllerTest {
 	@Test
 	@DisplayName("프로필 이미지가 없는 강아지는 빈 문자열과 200을 반환한다")
 	void findProfileImageReturnsEmptyStringWhenImageIsAbsent() throws Exception {
-		Dog dogWithoutImage = selectedDog(10L);
-		dogWithoutImage.changeProfileImage("");
-		given(dogProfileFinder.findSelectedDog(42L)).willReturn(dogWithoutImage);
+		given(dogProfileFinder.findSelectedDog(42L)).willReturn(selectedDogWithoutImage(10L));
 
 		mockMvc.perform(get("/api/dogs/profile/image").principal(CURRENT_USER))
 				.andExpect(status().isOk())
@@ -498,6 +496,14 @@ class DogControllerTest {
 				LocalDate.of(2024, 3, 1), new BigDecimal("4.50"), IMAGE_URL, EXPECTATION));
 		dog.select();
 		dog.changePersonalities(Set.of(Personality.FRIENDLY, Personality.TIMID));
+		ReflectionTestUtils.setField(dog, "id", id);
+		return dog;
+	}
+
+	private Dog selectedDogWithoutImage(Long id) {
+		Dog dog = Dog.register(new DogRegisterCommand(42L, "초코", Breed.POODLE, DogSex.MALE,
+				LocalDate.of(2024, 3, 1), new BigDecimal("4.50"), null, EXPECTATION));
+		dog.select();
 		ReflectionTestUtils.setField(dog, "id", id);
 		return dog;
 	}

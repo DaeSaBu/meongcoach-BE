@@ -108,17 +108,9 @@ public class Dog extends BaseEntity {
 		this.sex = command.sex();
 		this.birthDate = command.birthDate();
 		this.weightKg = command.weightKg();
-		changeProfileImage(command.profileImageUrl());
-		changeExpectation(command.expectation());
+		this.profileImageUrl = Objects.requireNonNullElse(command.profileImageUrl(), "");
+		this.expectation = Objects.requireNonNullElse(command.expectation(), "");
 		changePersonalities(command.personalities());
-	}
-
-	public void changeProfileImage(String profileImageUrl) {
-		this.profileImageUrl = Objects.requireNonNullElse(profileImageUrl, "");
-	}
-
-	public void changeExpectation(String expectation) {
-		this.expectation = Objects.requireNonNullElse(expectation, "");
 	}
 
 	public void changePersonalities(Set<Personality> personalities) {
