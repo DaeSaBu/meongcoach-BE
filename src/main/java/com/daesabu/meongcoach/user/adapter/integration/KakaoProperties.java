@@ -18,5 +18,5 @@ public record KakaoProperties(
 		@NotBlank String issuer,
 		@NotBlank String jwkSetUri,
 		@NotEmpty List<@NotBlank String> audiences
-) {
+) implements OidcProviderProperties {
 }
