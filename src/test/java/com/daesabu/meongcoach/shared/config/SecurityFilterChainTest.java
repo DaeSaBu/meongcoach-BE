@@ -29,7 +29,7 @@ import org.springframework.test.web.servlet.MockMvc;
 @DisplayName("시큐리티 필터 체인")
 class SecurityFilterChainTest {
 
-	// 매핑되지 않은 보호 경로. 인증 없으면 401, 인증되면 401이 아닌 응답이 나온다
+	// MEMBER 역할만 허용되는 보호 경로. 인증 없으면 401, 인증되면 보유 강아지가 없어 빈 목록과 200이 나온다
 	private static final String PROTECTED_PATH = "/api/dogs";
 
 	// @CurrentUserId를 받는 보호 경로. 없는 토픽을 골라 두어 토픽 조회 단계에서 404로 끝난다
@@ -143,7 +143,7 @@ class SecurityFilterChainTest {
 		AuthToken token = tokenProvider.issue(userId);
 
 		mockMvc.perform(get(PROTECTED_PATH).header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))
-				.andExpect(status().isNotFound());
+				.andExpect(status().isOk());
 	}
 
 	// 서명이 유효해도 회원 행이 없으면 통과시키지 않는다. DB가 초기화된 뒤 남아 있는 토큰이 이 경우다
