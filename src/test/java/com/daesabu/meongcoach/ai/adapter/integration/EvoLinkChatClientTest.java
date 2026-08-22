@@ -84,7 +84,7 @@ class EvoLinkChatClientTest {
 				.andRespond(withSuccess("{\"id\":\"test-request-id\",\"choices\":[]}", MediaType.APPLICATION_JSON));
 
 		assertThatThrownBy(() -> client.complete(chatRequest()))
-				.isInstanceOf(IllegalStateException.class);
+				.isInstanceOf(EvoLinkResponseException.class);
 	}
 
 	@Test
@@ -94,7 +94,7 @@ class EvoLinkChatClientTest {
 				.andRespond(withSuccess(chatResponseJson("일부 내용", "content_filter"), MediaType.APPLICATION_JSON));
 
 		assertThatThrownBy(() -> client.complete(chatRequest()))
-				.isInstanceOf(IllegalStateException.class)
+				.isInstanceOf(EvoLinkResponseException.class)
 				.hasMessageContaining("콘텐츠 검토");
 	}
 
@@ -105,7 +105,7 @@ class EvoLinkChatClientTest {
 				.andRespond(withSuccess(chatResponseJson("잘린 내용", "length"), MediaType.APPLICATION_JSON));
 
 		assertThatThrownBy(() -> client.complete(chatRequest()))
-				.isInstanceOf(IllegalStateException.class)
+				.isInstanceOf(EvoLinkResponseException.class)
 				.hasMessageContaining("max_tokens");
 	}
 
@@ -116,7 +116,7 @@ class EvoLinkChatClientTest {
 				.andRespond(withSuccess(chatResponseJson(" ", "stop"), MediaType.APPLICATION_JSON));
 
 		assertThatThrownBy(() -> client.complete(chatRequest()))
-				.isInstanceOf(IllegalStateException.class);
+				.isInstanceOf(EvoLinkResponseException.class);
 	}
 
 	@Test

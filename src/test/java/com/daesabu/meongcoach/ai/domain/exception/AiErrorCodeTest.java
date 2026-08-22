@@ -25,16 +25,19 @@ class AiErrorCodeTest {
 	}
 
 	@Test
-	@DisplayName("리포트 미존재는 404, 체험 횟수 소진은 403 상태를 갖는다")
+	@DisplayName("리포트 미존재는 404, 체험 횟수 소진은 403, 외부 연동 실패는 502 상태를 갖는다")
 	void definesStatusPerErrorCode() {
 		assertThat(AiErrorCode.AI_REPORT_NOT_FOUND.status()).isEqualTo(404);
 		assertThat(AiErrorCode.AI_REPORT_TRIAL_EXCEEDED.status()).isEqualTo(403);
+		assertThat(AiErrorCode.AI_VIDEO_ANALYSIS_FAILED.status()).isEqualTo(502);
+		assertThat(AiErrorCode.AI_REPORT_TITLE_GENERATION_FAILED.status()).isEqualTo(502);
 	}
 
 	@Test
-	@DisplayName("리포트 미존재와 체험 횟수 소진 두 가지 코드를 정의한다")
-	void definesTwoErrorCodes() {
+	@DisplayName("리포트 미존재·체험 횟수 소진·영상 분석 실패·제목 생성 실패 네 가지 코드를 정의한다")
+	void definesFourErrorCodes() {
 		assertThat(AiErrorCode.values()).containsExactly(AiErrorCode.AI_REPORT_NOT_FOUND,
-				AiErrorCode.AI_REPORT_TRIAL_EXCEEDED);
+				AiErrorCode.AI_REPORT_TRIAL_EXCEEDED, AiErrorCode.AI_VIDEO_ANALYSIS_FAILED,
+				AiErrorCode.AI_REPORT_TITLE_GENERATION_FAILED);
 	}
 }

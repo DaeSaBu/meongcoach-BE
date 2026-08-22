@@ -43,7 +43,6 @@ public class VideoUploadSqsConsumer {
 		try {
 			event = objectMapper.readValue(message, S3EventMessage.class);
 		} catch (JacksonException e) {
-			// 파싱 불가 메시지는 재시도해도 같은 결과라 버린다
 			log.warn("S3 이벤트 형식이 아닌 SQS 메시지를 버린다", e);
 			return;
 		}
@@ -52,7 +51,6 @@ public class VideoUploadSqsConsumer {
 			log.info("Records 없는 SQS 메시지를 무시한다");
 			return;
 		}
-		// 레코드 하나가 실패해도 같은 메시지의 나머지 레코드는 계속 처리한다
 		for (S3EventMessage.EventRecord record : event.records()) {
 			handle(record);
 		}
@@ -70,10 +68,8 @@ public class VideoUploadSqsConsumer {
 		try {
 			aiReportGenerator.generate(objectKey);
 		} catch (DomainException e) {
-			// 키 형식 위반 등 도메인 검증 실패는 재시도해도 같은 결과라 버린다
 			log.warn("처리할 수 없는 S3 객체 키라 리포트 생성을 건너뛴다: {}", objectKey, e);
 		} catch (Exception e) {
-			// 모델·DB 장애처럼 재전달로 풀릴 수 있는 실패지만, MVP라 재시도를 두지 않고 버린다
 			log.error("리포트 생성에 실패했지만 SQS 무한 재전달을 막기 위해 메시지를 버린다: {}", objectKey, e);
 		}
 	}

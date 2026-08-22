@@ -8,7 +8,7 @@ import com.daesabu.meongcoach.ai.domain.vo.AiTrial;
 public interface AiTrialFinder {
 
 	/**
-	 * 사용자의 무료 체험 사용 현황을 조회한다. 리포트가 없으면 사용 횟수 0으로 내려간다.
+	 * 사용자의 무료 체험 사용 현황을 조회한다. 완료된 리포트만 세며, 없으면 사용 횟수 0으로 내려간다.
 	 */
 	AiTrial findTrial(Long userId);
 }

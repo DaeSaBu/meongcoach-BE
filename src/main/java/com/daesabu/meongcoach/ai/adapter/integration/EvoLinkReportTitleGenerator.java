@@ -5,10 +5,12 @@ import com.daesabu.meongcoach.ai.adapter.integration.dto.EvoLinkChatRequest.Chat
 import com.daesabu.meongcoach.ai.adapter.integration.dto.EvoLinkChatRequest.ResponseFormat;
 import com.daesabu.meongcoach.ai.adapter.integration.dto.EvoLinkChatRequest.Thinking;
 import com.daesabu.meongcoach.ai.application.required.ReportTitleGenerator;
+import com.daesabu.meongcoach.ai.domain.exception.ReportTitleGenerationFailedException;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.List;
 import java.util.Map;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestClientException;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
@@ -16,7 +18,7 @@ import tools.jackson.databind.ObjectMapper;
  * EvoLink 채팅 API로 리포트 제목을 생성하는 어댑터. 영상을 다시 분석하지 않고 이미 만든 리포트 JSON
  * 텍스트만 넘겨 한 줄 제목을 받는다. 응답은 json_schema strict로 {"title": ...} 형태를 강제하므로
  * 코드 펜스·따옴표 같은 평문 정제 없이 파싱만 한다.
- * 실패는 그대로 전파하고, 삼킬지는 호출부인 AiReportGenerateService가 정한다.
+ * 모델 호출·응답 해석 실패는 ReportTitleGenerationFailedException으로 번역해 던지고, 삼킬지는 호출부인 AiReportGenerateService가 정한다.
  */
 @Component
 public class EvoLinkReportTitleGenerator implements ReportTitleGenerator {
@@ -50,13 +52,23 @@ public class EvoLinkReportTitleGenerator implements ReportTitleGenerator {
 
 	@Override
 	public String generateTitle(String reportContentJson) {
-		String content = chatClient.complete(buildRequest(reportContentJson));
+		String content = completeOrThrow(reportContentJson);
 
 		String title = parseTitle(content);
 		if (title.isBlank()) {
-			throw new IllegalStateException("리포트 제목 생성 결과가 비어 있습니다");
+			throw new ReportTitleGenerationFailedException("리포트 제목 생성 결과가 비어 있습니다");
 		}
 		return title;
+	}
+
+	// HTTP 오류와 쓸 수 없는 응답을 경계에서 도메인 예외로 번역한다. 그 외 예외는 버그로 보고 그대로 둔다
+	private String completeOrThrow(String reportContentJson) {
+		try {
+			return chatClient.complete(buildRequest(reportContentJson));
+		}
+		catch (RestClientException | EvoLinkResponseException e) {
+			throw new ReportTitleGenerationFailedException("리포트 제목 생성 모델 호출에 실패했습니다", e);
+		}
 	}
 
 	private EvoLinkChatRequest buildRequest(String reportContentJson) {
@@ -78,10 +90,10 @@ public class EvoLinkReportTitleGenerator implements ReportTitleGenerator {
 			titleContent = objectMapper.readValue(content, TitleContent.class);
 		}
 		catch (JacksonException e) {
-			throw new IllegalStateException("리포트 제목 응답이 JSON 형식이 아닙니다", e);
+			throw new ReportTitleGenerationFailedException("리포트 제목 응답이 JSON 형식이 아닙니다", e);
 		}
 		if (titleContent.title() == null) {
-			throw new IllegalStateException("리포트 제목 응답에 title 항목이 없습니다");
+			throw new ReportTitleGenerationFailedException("리포트 제목 응답에 title 항목이 없습니다");
 		}
 		return titleContent.title().strip();
 	}
