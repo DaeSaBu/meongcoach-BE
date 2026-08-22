@@ -9,6 +9,7 @@ import com.daesabu.meongcoach.dog.domain.DogSex;
 import com.daesabu.meongcoach.dog.domain.DogStatus;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -82,6 +83,36 @@ class DogRepositoryTest {
 		persistUnselectedDog(USER_ID);
 
 		assertThat(dogRepository.findFirstByUserIdAndStatusOrderByIdAsc(USER_ID, DogStatus.SELECTED)).isEmpty();
+	}
+
+	@Test
+	@DisplayName("사용자의 강아지를 등록 순으로 모두 조회한다")
+	void findAllByUserIdOrderByIdAscReturnsDogsInRegistrationOrder() {
+		Dog first = persistSelectedDog(USER_ID);
+		Dog second = persistUnselectedDog(USER_ID);
+		Dog third = persistUnselectedDog(USER_ID);
+
+		List<Dog> found = dogRepository.findAllByUserIdOrderByIdAsc(USER_ID);
+
+		assertThat(found).extracting(Dog::getId)
+				.containsExactly(first.getId(), second.getId(), third.getId());
+	}
+
+	@Test
+	@DisplayName("다른 사용자의 강아지는 포함하지 않는다")
+	void findAllByUserIdOrderByIdAscIgnoresOtherUsersDog() {
+		Dog mine = persistSelectedDog(USER_ID);
+		persistSelectedDog(OTHER_USER_ID);
+
+		List<Dog> found = dogRepository.findAllByUserIdOrderByIdAsc(USER_ID);
+
+		assertThat(found).extracting(Dog::getId).containsExactly(mine.getId());
+	}
+
+	@Test
+	@DisplayName("강아지가 없으면 빈 리스트를 반환한다")
+	void findAllByUserIdOrderByIdAscReturnsEmptyWhenNoDogExists() {
+		assertThat(dogRepository.findAllByUserIdOrderByIdAsc(USER_ID)).isEmpty();
 	}
 
 	private Dog persistSelectedDog(Long userId) {

@@ -12,6 +12,7 @@ import com.daesabu.meongcoach.dog.domain.DogSex;
 import com.daesabu.meongcoach.dog.domain.exception.DogNotFoundException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -85,6 +86,31 @@ class DogProfileFinderServiceTest {
 
 		assertThatThrownBy(() -> dogProfileFinder.findSelectedDog(USER_ID))
 				.isInstanceOf(DogNotFoundException.class);
+	}
+
+	@Test
+	@DisplayName("사용자의 모든 강아지를 등록 순으로 반환한다")
+	void findDogsReturnsAllDogsInRegistrationOrder() {
+		Dog selected = persistSelectedDog(USER_ID);
+		Dog unselected = dogRepository.saveAndFlush(newDog(USER_ID));
+
+		List<Dog> found = dogProfileFinder.findDogs(USER_ID);
+
+		assertThat(found).extracting(Dog::getId).containsExactly(selected.getId(), unselected.getId());
+	}
+
+	@Test
+	@DisplayName("강아지가 없으면 빈 리스트를 반환한다")
+	void findDogsReturnsEmptyWhenNoDogExists() {
+		assertThat(dogProfileFinder.findDogs(USER_ID)).isEmpty();
+	}
+
+	@Test
+	@DisplayName("다른 사용자의 강아지는 반환하지 않는다")
+	void findDogsIgnoresOtherUsersDog() {
+		persistSelectedDog(OTHER_USER_ID);
+
+		assertThat(dogProfileFinder.findDogs(USER_ID)).isEmpty();
 	}
 
 	private Dog persistSelectedDog(Long userId) {
