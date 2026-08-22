@@ -4,8 +4,6 @@ import com.daesabu.meongcoach.dog.adapter.webapi.dto.DogListResponse;
 import com.daesabu.meongcoach.dog.adapter.webapi.dto.DogProfileImageResponse;
 import com.daesabu.meongcoach.dog.adapter.webapi.dto.DogResponse;
 import com.daesabu.meongcoach.dog.application.provided.DogProfileFinder;
-import com.daesabu.meongcoach.dog.application.provided.DogProfileImageFinder;
-import com.daesabu.meongcoach.dog.application.provided.DogProfileImageResult;
 import com.daesabu.meongcoach.dog.domain.Dog;
 import com.daesabu.meongcoach.shared.security.CurrentUserId;
 import java.util.List;
@@ -21,7 +19,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class DogController {
 
 	private final DogProfileFinder dogProfileFinder;
-	private final DogProfileImageFinder dogProfileImageFinder;
 
 	@GetMapping
 	public DogListResponse findDogs(@CurrentUserId Long userId) {
@@ -37,7 +34,7 @@ public class DogController {
 
 	@GetMapping("/profile/image")
 	public DogProfileImageResponse findProfileImage(@CurrentUserId Long userId) {
-		DogProfileImageResult profileImage = dogProfileImageFinder.findSelectedProfileImage(userId);
-		return DogProfileImageResponse.from(profileImage);
+		Dog dog = dogProfileFinder.findSelectedDog(userId);
+		return DogProfileImageResponse.from(dog);
 	}
 }

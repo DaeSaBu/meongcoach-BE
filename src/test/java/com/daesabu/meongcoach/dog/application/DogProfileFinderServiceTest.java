@@ -98,6 +98,66 @@ class DogProfileFinderServiceTest {
 				.isInstanceOf(DogNotFoundException.class);
 	}
 
+	@Test
+	@DisplayName("선택된 강아지를 반환한다")
+	void findSelectedDogReturnsSelectedDog() {
+		Dog saved = persistSelectedDog(USER_ID);
+
+		Dog found = dogProfileFinder.findSelectedDog(USER_ID);
+
+		assertThat(found.getId()).isEqualTo(saved.getId());
+		assertThat(found.getProfileImageUrl()).isEqualTo(IMAGE_URL);
+	}
+
+	@Test
+	@DisplayName("미선택 강아지와 함께 있어도 선택된 강아지를 반환한다")
+	void findSelectedDogIgnoresUnselectedDog() {
+		dogRepository.saveAndFlush(newDog(USER_ID));
+		Dog selected = persistSelectedDog(USER_ID);
+
+		Dog found = dogProfileFinder.findSelectedDog(USER_ID);
+
+		assertThat(found.getId()).isEqualTo(selected.getId());
+	}
+
+	@Test
+	@DisplayName("선택된 강아지의 프로필 이미지가 없으면 빈 문자열을 가진다")
+	void findSelectedDogHasEmptyImageUrlWhenImageIsAbsent() {
+		Dog dog = Dog.register(new DogRegisterCommand(USER_ID, "초코", Breed.POODLE, DogSex.MALE,
+				LocalDate.of(2024, 3, 1), new BigDecimal("4.50"), null, null));
+		dog.select();
+		dogRepository.saveAndFlush(dog);
+
+		Dog found = dogProfileFinder.findSelectedDog(USER_ID);
+
+		assertThat(found.getProfileImageUrl()).isEmpty();
+	}
+
+	@Test
+	@DisplayName("미선택 강아지만 있으면 예외를 던진다")
+	void findSelectedDogThrowsWhenOnlyUnselectedDogExists() {
+		dogRepository.saveAndFlush(newDog(USER_ID));
+
+		assertThatThrownBy(() -> dogProfileFinder.findSelectedDog(USER_ID))
+				.isInstanceOf(DogNotFoundException.class);
+	}
+
+	@Test
+	@DisplayName("강아지가 한 마리도 없으면 예외를 던진다")
+	void findSelectedDogThrowsWhenNoDogExists() {
+		assertThatThrownBy(() -> dogProfileFinder.findSelectedDog(USER_ID))
+				.isInstanceOf(DogNotFoundException.class);
+	}
+
+	@Test
+	@DisplayName("다른 사용자의 선택된 강아지는 반환하지 않는다")
+	void findSelectedDogThrowsForOtherUsersDog() {
+		persistSelectedDog(OTHER_USER_ID);
+
+		assertThatThrownBy(() -> dogProfileFinder.findSelectedDog(USER_ID))
+				.isInstanceOf(DogNotFoundException.class);
+	}
+
 	private Dog persistSelectedDog(Long userId) {
 		Dog dog = newDog(userId);
 		dog.select();
