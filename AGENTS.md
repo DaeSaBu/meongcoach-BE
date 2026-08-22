@@ -11,7 +11,7 @@
 - 로그인 사용자 식별은 컨트롤러의 `@CurrentUserId Long userId` 파라미터로 받습니다. 인증 주체를 회원 ID로 해석하는 곳은 `shared/security/CurrentUserIdArgumentResolver` 한 곳뿐이며, 컨트롤러는 인증 주체를 직접 다루지 않습니다. (architecture.md 참고)
 - 애플리케이션 조회 결과는 도메인 타입 반환이 기본입니다. `~Result` record는 도메인 타입으로 부족할 때만 만듭니다 — 판단 기준은 code-convention.md 참고.
 - 트랜잭션은 서비스 구현 클래스에 `@Transactional(readOnly = true)`를 붙여 기본값을 읽기 전용으로 두고, 쓰기 메서드에만 `@Transactional`로 오버라이드합니다. 메서드 어노테이션은 클래스 설정을 병합하지 않고 통째로 대체합니다. (code-convention.md 참고)
-- `main` 브랜치에 직접 push하지 않습니다. 변경은 작업 의미 단위별로 가능한 작게 즉시 커밋해 작업 브랜치에 push하고, 첫 커밋을 push하면 즉시 draft PR을 생성합니다. push 후에는 변경 내용을 요약해 공유합니다. (상세: git-convention 스킬)
+- `main` 브랜치에 직접 push하지 않습니다. 변경은 작업 의미 단위별로 가능한 작게 즉시 커밋하고, 동작을 추가·변경할 때는 테스트 커밋을 먼저, 구현 커밋을 뒤에 올립니다(TDD). 작업 브랜치에 push하고, 첫 커밋을 push하면 즉시 draft PR을 생성합니다. push 후에는 변경 내용을 요약해 공유합니다. (상세: git-convention 스킬)
 - 문서, 커밋 메시지, 코드 주석은 한국어로 작성합니다.
 - 예외는 각 모듈 `domain/exception`에 `{모듈}ErrorCode` enum + `DomainException` 하위 클래스로 정의해 던지기만 하고, 에러 응답 변환은 전역 핸들러가 RFC 9457 Problem Details 형식으로 전담합니다. 컨트롤러/서비스에서 개별 처리하지 않습니다.
 - 인증은 소셜 제공자 토큰을 서버가 검증한 뒤 자체 JWT를 발급하는 무상태 방식입니다. 리프레시 토큰은 저장하지 않으므로 강제 로그아웃·토큰 무효화 기능을 전제로 한 코드를 만들지 않습니다. (security.md 참고)

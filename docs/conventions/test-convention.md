@@ -34,6 +34,7 @@ void registerFailsWhenUserNotFound() {
 ## 작성 규칙
 
 - 하나의 테스트는 하나의 동작만 검증합니다.
+- 동작을 추가·변경할 때는 테스트를 먼저 작성해 `test` 커밋으로 올리고, 구현은 뒤따르는 커밋으로 올립니다. 커밋 분리 규칙은 git-convention 스킬의 "커밋 단위" 참고.
 - 테스트 간 순서 의존성을 만들지 않습니다. 각 테스트는 독립적으로 실행 가능해야 합니다.
 - 슬라이스 테스트: 컨트롤러는 `@WebMvcTest`, 리포지토리(`application/required`의 Spring Data 인터페이스)는 `@DataJpaTest`를 사용합니다.
 - 외부 API 연동은 `MockRestServiceServer.bindTo(RestClient.Builder)`로 검증합니다. 어댑터가 `RestClient`가 아닌 `RestClient.Builder`를 주입받아야 이 방식이 가능하므로, 생성자 파라미터를 `Builder`로 둡니다.
