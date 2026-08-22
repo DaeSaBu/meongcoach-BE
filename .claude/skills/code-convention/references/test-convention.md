@@ -21,7 +21,9 @@ MVP 개발 기간을 고려하여 아래 순서로 우선순위를 정해 작성
 ## 스타일
 
 - given-when-then 구조를 가져가되, 주석으로 명시하지 않고 빈 줄로 구간을 구분한다.
-- 테스트 클래스와 메서드에 한국어 `@DisplayName`을 붙인다. 메서드명은 영어 camelCase로 검증 의도를 서술한다.
+- `@DisplayName`은 쓰지 않는다. 테스트 메서드명을 한국어 문장으로 적어 검증 의도를 서술하고, 단어는 `_`로 구분한다. 문장 안에 등장하는 식별자(`contentType`, `null`, 클래스명)는 원래 표기를 유지한다. (예: `문자열_코드를_성별로_변환한다()`, `contentType이_없으면_변환에_실패한다()`) 테스트 클래스명은 `{대상}Test`로 두고 클래스 레벨 `@DisplayName`도 붙이지 않는다.
+	- `src/test/resources/junit-platform.properties`의 `ReplaceUnderscores` 표시 이름 생성기가 리포트·IDE에서 `_`를 공백으로 바꿔 보여준다. 인자별 표시 이름이 필요하면 `@ParameterizedTest(name = ...)`에서만 지정한다.
+	- 기존 `@DisplayName` 테스트는 수정하는 김에 이 규칙으로 맞추되, 일괄 변경하지 않는다.
 
 ## 작성 규칙
 
@@ -41,8 +43,7 @@ MVP 개발 기간을 고려하여 아래 순서로 우선순위를 정해 작성
 private static final Principal CURRENT_USER = () -> "42";
 
 @Test
-@DisplayName("인증 주체에서 읽은 사용자로 조회를 위임한다")
-void findDelegatesWithCurrentUserId() throws Exception {
+void 인증_주체에서_읽은_사용자로_조회를_위임한다() throws Exception {
 	mockMvc.perform(get("/api/training/curriculums").principal(CURRENT_USER)) ...
 }
 ```
@@ -75,5 +76,5 @@ API 문서는 컨트롤러 테스트가 생성하는 Spring REST Docs 스니펫�
 아키텍처 규칙은 문서로만 남기지 않고 ArchUnit 단위 테스트(`archunit-junit5`)로 강제한다. 모듈 경계는 `architecture/ModularityTest`의 `ApplicationModules.verify()`가 검증한다. ([docs/architecture.md](../../../../docs/architecture.md) 참고)
 
 - 전 모듈 공통 아키텍처 테스트는 `src/test/java/com/daesabu/meongcoach/architecture/`에 두고, 테스트 클래스가 곧 검증 범주다 — 계층 의존 방향(`LayerDependencyTest`), 역할별 네이밍(`NamingTest`), 애노테이션 적용 위치(`AnnotationPatternTest`), 도메인 입력 모델(`DomainInputModelTest`), 도메인 순수성(`DomainPurityTest`). 새 아키텍처 규칙은 새 파일을 만들지 않고 해당 범주 테스트에 추가한다.
-- `ClassFileImporter`로 임포트한 `JavaClasses` 상수를 두고, 일반 `@Test` 메서드에서 `ArchRule.check()`로 검증한다. `@ArchTest` 필드 방식은 `@DisplayName`을 붙일 수 없어 쓰지 않는다.
+- `ClassFileImporter`로 임포트한 `JavaClasses` 상수를 두고, 일반 `@Test` 메서드에서 `ArchRule.check()`로 검증한다. 다른 테스트와 같이 `@Test` 메서드명으로 검증 의도를 서술하기 위해 `@ArchTest` 필드 방식은 쓰지 않는다.
 - `dependOnClassesThat`은 필드·파라미터·리턴 타입·상속 등 선언 수준까지 포함하는 넓은 검증이라 계층 격리 규칙에 쓰고, `accessClassesThat`은 메서드 호출·필드 접근 등 실행 코드 수준의 좁은 검증이라 특정 API 호출 금지 규칙에 쓴다. 무엇을 막으려는지에 따라 구분한다.
