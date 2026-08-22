@@ -12,4 +12,10 @@ public interface DogProfileFinder {
 	 * 사용자가 보유한 강아지를 등록 순으로 모두 조회한다. 없으면 빈 리스트를 반환한다.
 	 */
 	List<Dog> findDogs(Long userId);
+
+	/**
+	 * 사용자가 소유한 강아지 한 마리를 ID로 조회한다.
+	 * 없거나 본인 소유가 아니면 {@code DogNotFoundException}을 던진다.
+	 */
+	Dog findDog(Long userId, Long dogId);
 }
