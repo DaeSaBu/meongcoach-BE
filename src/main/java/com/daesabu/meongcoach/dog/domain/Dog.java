@@ -16,6 +16,7 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.Period;
 import java.util.HashSet;
 import java.util.Objects;
@@ -23,10 +24,13 @@ import java.util.Set;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.SQLRestriction;
 
+// 소프트 딜리트: 삭제 건은 엔티티 조회(findById 포함)에서 자동 제외된다. 복구·관리 목적의 조회는 네이티브 쿼리가 필요하다
 @Getter
 @Entity
 @Table(name = "dogs")
+@SQLRestriction("deleted_at IS NULL")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Dog extends BaseEntity {
 
@@ -66,6 +70,9 @@ public class Dog extends BaseEntity {
 	// 기대 사항을 입력하지 않아도 등록할 수 있으므로 미설정은 빈 문자열로 저장한다
 	@Column(nullable = false, columnDefinition = "TEXT")
 	private String expectation;
+
+	// 소프트 딜리트 시각. null이면 삭제되지 않은 강아지다
+	private LocalDateTime deletedAt;
 
 	@ElementCollection(fetch = FetchType.LAZY)
 	@CollectionTable(
@@ -115,6 +122,11 @@ public class Dog extends BaseEntity {
 
 	public void changePersonalities(Set<Personality> personalities) {
 		this.personalities = new HashSet<>(personalities);
+	}
+
+	// 행을 지우지 않고 삭제 시각만 기록한다. 선택 상태는 건드리지 않는다 — 이후 조회에서 제외되므로 선택된 강아지가 없는 상태가 된다
+	public void delete() {
+		this.deletedAt = LocalDateTime.now();
 	}
 
 	// 나이는 저장하지 않고 생년월일로 계산한다
