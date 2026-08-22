@@ -155,4 +155,20 @@ class DogTest {
 
 		assertThat(dog.getStatus()).isEqualTo(DogStatus.SELECTED);
 	}
+
+	@Test
+	void 등록_직후에는_삭제_시각이_없다() {
+		Dog dog = registerDog();
+
+		assertThat(dog.getDeletedAt()).isNull();
+	}
+
+	@Test
+	void 삭제하면_삭제_시각이_기록된다() {
+		Dog dog = registerDog();
+
+		dog.delete();
+
+		assertThat(dog.getDeletedAt()).isNotNull();
+	}
 }

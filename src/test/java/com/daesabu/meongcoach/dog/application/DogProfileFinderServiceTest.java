@@ -158,6 +158,38 @@ class DogProfileFinderServiceTest {
 				.isInstanceOf(DogNotFoundException.class);
 	}
 
+	@Test
+	void 삭제된_강아지는_목록_조회에서_제외된다() {
+		Dog remaining = persistSelectedDog(USER_ID);
+		Dog deleted = dogRepository.saveAndFlush(newDog(USER_ID));
+		deleted.delete();
+		dogRepository.saveAndFlush(deleted);
+
+		List<Dog> found = dogProfileFinder.findDogs(USER_ID);
+
+		assertThat(found).extracting(Dog::getId).containsExactly(remaining.getId());
+	}
+
+	@Test
+	void 삭제된_강아지는_단건_조회되지_않는다() {
+		Dog deleted = persistSelectedDog(USER_ID);
+		deleted.delete();
+		dogRepository.saveAndFlush(deleted);
+
+		assertThatThrownBy(() -> dogProfileFinder.findDog(USER_ID, deleted.getId()))
+				.isInstanceOf(DogNotFoundException.class);
+	}
+
+	@Test
+	void 삭제된_강아지는_선택_조회에서_제외된다() {
+		Dog deleted = persistSelectedDog(USER_ID);
+		deleted.delete();
+		dogRepository.saveAndFlush(deleted);
+
+		assertThatThrownBy(() -> dogProfileFinder.findSelectedDog(USER_ID))
+				.isInstanceOf(DogNotFoundException.class);
+	}
+
 	private Dog persistSelectedDog(Long userId) {
 		Dog dog = newDog(userId);
 		dog.select();
