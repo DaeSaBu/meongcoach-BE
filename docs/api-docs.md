@@ -13,9 +13,9 @@ API 문서는 Spring REST Docs로 작성합니다. 문서 스니펫은 `adapter/
   ```adoc
   === 소셜 로그인
 
-  link:{swagger-ui}#/Auth/user-social-login[▶ Swagger에서 Try it out,window=swagger]
+  link:{swagger-ui}#/Auth/auth-login[▶ Swagger에서 Try it out,window=swagger]
 
-  operation::user/social-login[snippets='http-request,request-fields,http-response,response-fields']
+  operation::auth/login[snippets='http-request,path-parameters,request-fields,http-response,response-fields']
   ```
 - `./gradlew test` 실행 시 테스트 종료 후 asciidoctor가 자동 실행되어 `build/docs/asciidoc/index.html`이 생성됩니다.
 
@@ -40,10 +40,10 @@ asciidoc 문서와 별개로, 같은 테스트에서 OpenAPI 3 스펙을 생성�
   - 서버 주소: 상대 경로(`/`)로 덮어써 Try it out이 문서를 서빙한 오리진(localhost 또는 dev 서버)을 그대로 향합니다.
   - 보안 스킴: 문서화 테스트는 `principal()`로 인증을 우회하므로 bearerAuth 스킴과 전역 `security`를
     주입합니다. 인증 없이 호출 가능한 경로는 `build.gradle.kts`의 `publicPaths` 목록으로 제외합니다.
-  - 모듈 태그: 스니펫 식별자의 모듈 접두어(`user/…`, `training/…`)를 `moduleTags` 매핑에 따라 Swagger UI 그룹
+  - 모듈 태그: 스니펫 식별자의 모듈 접두어(`auth/…`, `training/…`)를 `moduleTags` 매핑에 따라 Swagger UI 그룹
     태그(Auth, Training 등)로 바꿉니다.
-  - operationId 정규화: Swagger UI 딥링크가 `/`를 해석하지 못해 `user/social-login`을
-    `user-social-login`으로 바꿉니다. REST Docs의 "Try it out" 링크가 이 규칙을 사용합니다.
+  - operationId 정규화: Swagger UI 딥링크가 `/`를 해석하지 못해 `auth/login`을
+    `auth-login`으로 바꿉니다. REST Docs의 "Try it out" 링크가 이 규칙을 사용합니다.
 - Swagger UI 서빙: swagger-ui dist 정적 파일이 `src/main/resources/static/swagger-ui/`에 커밋되어
   있습니다. 스펙은 배포 jar에서는 classpath(`bootJar`가 병합), 로컬 실행에서는 `build/api-spec/`
   산출물을 읽습니다(`WebConfig`). `./gradlew openapi3`를 다시 실행하면 재시작 없이 새로고침으로 반영됩니다.
