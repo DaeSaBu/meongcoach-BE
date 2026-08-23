@@ -12,6 +12,7 @@ import com.daesabu.meongcoach.dog.domain.DogSex;
 import com.daesabu.meongcoach.dog.domain.DogStatus;
 import com.daesabu.meongcoach.dog.domain.Personality;
 import com.daesabu.meongcoach.dog.domain.exception.DogNotFoundException;
+import com.daesabu.meongcoach.dog.domain.exception.LastDogNotDeletableException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Set;
@@ -42,6 +43,7 @@ class DogProfileDeleteServiceTest {
 	@Test
 	void 소유_강아지를_삭제하면_조회에서_제외된다() {
 		Dog saved = persistSelectedDog(USER_ID);
+		dogRepository.saveAndFlush(newDog(USER_ID));
 		entityManager.clear();
 
 		dogProfileDeleter.delete(USER_ID, saved.getId());
@@ -55,6 +57,7 @@ class DogProfileDeleteServiceTest {
 	@Test
 	void 삭제해도_행은_남고_삭제_시각이_기록된다() {
 		Dog saved = persistSelectedDog(USER_ID);
+		dogRepository.saveAndFlush(newDog(USER_ID));
 		entityManager.clear();
 
 		dogProfileDeleter.delete(USER_ID, saved.getId());
@@ -104,12 +107,38 @@ class DogProfileDeleteServiceTest {
 	@Test
 	void 이미_삭제된_강아지를_다시_삭제하면_예외를_던진다() {
 		Dog saved = persistSelectedDog(USER_ID);
+		dogRepository.saveAndFlush(newDog(USER_ID));
 		dogProfileDeleter.delete(USER_ID, saved.getId());
 		entityManager.flush();
 		entityManager.clear();
 
 		assertThatThrownBy(() -> dogProfileDeleter.delete(USER_ID, saved.getId()))
 				.isInstanceOf(DogNotFoundException.class);
+	}
+
+	@Test
+	void 마지막_한_마리는_삭제할_수_없다() {
+		Dog only = persistSelectedDog(USER_ID);
+		entityManager.clear();
+
+		assertThatThrownBy(() -> dogProfileDeleter.delete(USER_ID, only.getId()))
+				.isInstanceOf(LastDogNotDeletableException.class);
+
+		entityManager.clear();
+		Dog found = dogRepository.findById(only.getId()).orElseThrow();
+		assertThat(found.getDeletedAt()).isNull();
+	}
+
+	@Test
+	void 이미_삭제된_강아지는_개수에_포함되지_않는다() {
+		Dog remaining = persistSelectedDog(USER_ID);
+		Dog deleted = dogRepository.saveAndFlush(newDog(USER_ID));
+		deleted.delete();
+		dogRepository.saveAndFlush(deleted);
+		entityManager.clear();
+
+		assertThatThrownBy(() -> dogProfileDeleter.delete(USER_ID, remaining.getId()))
+				.isInstanceOf(LastDogNotDeletableException.class);
 	}
 
 	private Dog persistSelectedDog(Long userId) {

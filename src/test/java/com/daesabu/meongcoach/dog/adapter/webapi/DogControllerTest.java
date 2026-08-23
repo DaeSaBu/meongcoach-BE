@@ -28,6 +28,7 @@ import com.daesabu.meongcoach.dog.domain.DogRegisterCommand;
 import com.daesabu.meongcoach.dog.domain.DogSex;
 import com.daesabu.meongcoach.dog.domain.Personality;
 import com.daesabu.meongcoach.dog.domain.exception.DogNotFoundException;
+import com.daesabu.meongcoach.dog.domain.exception.LastDogNotDeletableException;
 import java.math.BigDecimal;
 import java.security.Principal;
 import java.time.LocalDate;
@@ -529,6 +530,32 @@ class DogControllerTest {
 				.andExpect(jsonPath("$.code").value("DOG_NOT_FOUND"))
 				.andExpect(jsonPath("$.detail").value("id가 999인 강아지를 찾을 수 없습니다."))
 				.andDo(document("dog/delete-error",
+						pathParameters(
+								parameterWithName("dogId").description("삭제할 강아지 ID")
+						),
+						responseFields(
+								fieldWithPath("title").description("HTTP 상태 이름"),
+								fieldWithPath("status").description("HTTP 상태 코드"),
+								fieldWithPath("detail").description("사람이 읽을 수 있는 에러 설명"),
+								fieldWithPath("instance").description("에러가 발생한 요청 경로"),
+								fieldWithPath("code").description("클라이언트 분기용 에러 코드"),
+								fieldWithPath("timestamp").description("에러 발생 시각(UTC)")
+						)
+				));
+	}
+
+	@Test
+	void 마지막_강아지를_삭제하면_409와_에러_코드를_반환한다() throws Exception {
+		willThrow(new LastDogNotDeletableException()).given(dogProfileDeleter).delete(42L, 10L);
+
+		mockMvc.perform(delete("/api/dogs/{dogId}", 10L)
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.status").value(409))
+				.andExpect(jsonPath("$.code").value("DOG_LAST_DOG_NOT_DELETABLE"))
+				.andExpect(jsonPath("$.detail").value("마지막 강아지는 삭제할 수 없습니다."))
+				.andDo(document("dog/delete-last-dog-error",
 						pathParameters(
 								parameterWithName("dogId").description("삭제할 강아지 ID")
 						),
