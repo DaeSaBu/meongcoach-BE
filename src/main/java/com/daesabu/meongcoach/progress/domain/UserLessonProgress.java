@@ -14,7 +14,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
- * 사용자별 레슨 진행 상태. completedCount는 반복 완료 횟수 캐시(U-0207)이며 원천은 완료 원장이다.
+ * 사용자별 레슨 진행 상태. completedCount는 반복 완료 횟수(U-0207)다.
  */
 @Getter
 @Entity
