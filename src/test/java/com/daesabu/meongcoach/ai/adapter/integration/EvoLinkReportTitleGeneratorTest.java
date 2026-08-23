@@ -7,8 +7,10 @@ import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.jsonPath;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withServerError;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
+import com.daesabu.meongcoach.ai.domain.exception.ReportTitleGenerationFailedException;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -166,7 +168,7 @@ class EvoLinkReportTitleGeneratorTest {
 		givenModelRespondsRaw("물체를 물고 달리는 행동 분석");
 
 		assertThatThrownBy(() -> generator.generateTitle(REPORT_JSON))
-				.isInstanceOf(IllegalStateException.class);
+				.isInstanceOf(ReportTitleGenerationFailedException.class);
 	}
 
 	@Test
@@ -175,7 +177,16 @@ class EvoLinkReportTitleGeneratorTest {
 		givenModelRespondsRaw("{\"summary\":\"제목이 아닌 필드\"}");
 
 		assertThatThrownBy(() -> generator.generateTitle(REPORT_JSON))
-				.isInstanceOf(IllegalStateException.class);
+				.isInstanceOf(ReportTitleGenerationFailedException.class);
+	}
+
+	@Test
+	@DisplayName("모델 API가 오류를 응답하면 ReportTitleGenerationFailedException으로 실패한다")
+	void generateTitleTranslatesHttpErrorToDomainException() {
+		server.expect(requestTo(CHAT_URL)).andRespond(withServerError());
+
+		assertThatThrownBy(() -> generator.generateTitle(REPORT_JSON))
+				.isInstanceOf(ReportTitleGenerationFailedException.class);
 	}
 
 	@Test
@@ -184,6 +195,6 @@ class EvoLinkReportTitleGeneratorTest {
 		givenModelRespondsTitle(" ");
 
 		assertThatThrownBy(() -> generator.generateTitle(REPORT_JSON))
-				.isInstanceOf(IllegalStateException.class);
+				.isInstanceOf(ReportTitleGenerationFailedException.class);
 	}
 }
