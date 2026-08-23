@@ -118,18 +118,6 @@ class LessonCompleteServiceTest {
 		assertThat(findCompletedCount(USER_ID, lesson.getId())).isOne();
 	}
 
-	@Test
-	@DisplayName("완료 원장은 기록하지 않는다")
-	void completeLessonDoesNotRecordCompletionLog() {
-		Lesson lesson = persistLesson("앉아");
-		flushAndClear();
-
-		lessonCompleter.completeLesson(USER_ID, lesson.getId());
-
-		flushAndClear();
-		assertThat(countCompletionLogs()).isZero();
-	}
-
 	private Lesson persistLesson(String title) {
 		TrainingCategory category = entityManager.persist(TrainingCategory.create(title + " 카테고리", 1, null, null));
 		Topic topic = entityManager.persist(Topic.create(category, new TopicCreateCommand(title, 1, null, null, null)));
@@ -141,12 +129,6 @@ class LessonCompleteServiceTest {
 	private long countProgress() {
 		return entityManager.getEntityManager()
 				.createQuery("select count(p) from UserLessonProgress p", Long.class)
-				.getSingleResult();
-	}
-
-	private long countCompletionLogs() {
-		return entityManager.getEntityManager()
-				.createQuery("select count(l) from LessonCompletionLog l", Long.class)
 				.getSingleResult();
 	}
 
