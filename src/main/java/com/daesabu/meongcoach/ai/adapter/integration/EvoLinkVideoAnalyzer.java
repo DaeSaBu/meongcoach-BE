@@ -7,11 +7,13 @@ import com.daesabu.meongcoach.ai.adapter.integration.dto.EvoLinkChatRequest.Resp
 import com.daesabu.meongcoach.ai.adapter.integration.dto.EvoLinkChatRequest.Thinking;
 import com.daesabu.meongcoach.ai.application.provided.AiReportContent;
 import com.daesabu.meongcoach.ai.application.required.VideoAnalyzer;
+import com.daesabu.meongcoach.ai.domain.exception.VideoAnalysisFailedException;
 import com.daesabu.meongcoach.training.application.provided.TopicFinder;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestClientException;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
@@ -20,7 +22,7 @@ import tools.jackson.databind.ObjectMapper;
  * video_url로 넘겨 모델이 직접 읽게 한다. 그래서 URL이 유효한 동안(발급 후 1시간)만 분석할 수 있다.
  * 사용자 메시지는 반드시 비디오를 텍스트보다 먼저 둔다. 순서가 뒤집히면 모델이 지시(언어·출력 형식)를
  * 무시하고 영어 장면 묘사로 빠지는 경향이 있다.
- * 실패는 그대로 전파하고, 삼킬지는 호출부인 AiReportGenerateService가 정한다.
+ * 모델 호출·응답 해석 실패는 VideoAnalysisFailedException으로 번역해 던지고, 삼킬지는 호출부인 AiReportGenerateService가 정한다.
  */
 @Component
 public class EvoLinkVideoAnalyzer implements VideoAnalyzer {
@@ -59,10 +61,20 @@ public class EvoLinkVideoAnalyzer implements VideoAnalyzer {
 
 	@Override
 	public String analyze(String videoUrl) {
-		String content = chatClient.complete(buildRequest(videoUrl));
+		String content = completeOrThrow(videoUrl);
 
 		AiReportContent reportContent = parseContent(content, videoUrl);
 		return objectMapper.writeValueAsString(reportContent);
+	}
+
+	// HTTP 오류와 쓸 수 없는 응답을 경계에서 도메인 예외로 번역한다. 그 외 예외는 버그로 보고 그대로 둔다
+	private String completeOrThrow(String videoUrl) {
+		try {
+			return chatClient.complete(buildRequest(videoUrl));
+		}
+		catch (RestClientException | EvoLinkResponseException e) {
+			throw new VideoAnalysisFailedException("영상 분석 모델 호출에 실패했습니다: " + withoutQuery(videoUrl), e);
+		}
 	}
 
 	private EvoLinkChatRequest buildRequest(String videoUrl) {
@@ -86,11 +98,11 @@ public class EvoLinkVideoAnalyzer implements VideoAnalyzer {
 			content = objectMapper.readValue(rawText, AiReportContent.class);
 		}
 		catch (JacksonException e) {
-			throw new IllegalStateException("영상 분석 응답이 JSON 형식이 아닙니다: " + withoutQuery(videoUrl), e);
+			throw new VideoAnalysisFailedException("영상 분석 응답이 JSON 형식이 아닙니다: " + withoutQuery(videoUrl), e);
 		}
 		// 스키마는 필드 구조만 강제하고 빈 배열은 막지 못하므로 핵심 항목 유무는 여기서 검증한다
 		if (content.report().isEmpty()) {
-			throw new IllegalStateException("영상 분석 응답에 report 항목이 없습니다: " + withoutQuery(videoUrl));
+			throw new VideoAnalysisFailedException("영상 분석 응답에 report 항목이 없습니다: " + withoutQuery(videoUrl));
 		}
 		return content;
 	}

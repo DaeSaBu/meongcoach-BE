@@ -9,8 +9,10 @@ import com.daesabu.meongcoach.ai.application.provided.AiReportFinder;
 import com.daesabu.meongcoach.ai.application.provided.AiReportResult;
 import com.daesabu.meongcoach.ai.application.required.AiReportRepository;
 import com.daesabu.meongcoach.ai.domain.AiReport;
-import com.daesabu.meongcoach.ai.domain.AiReportCreateCommand;
+import com.daesabu.meongcoach.ai.domain.AiReportStatus;
+import com.daesabu.meongcoach.ai.domain.AiReportUploadCommand;
 import com.daesabu.meongcoach.ai.domain.exception.AiReportNotFoundException;
+import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -76,7 +78,7 @@ class AiReportQueryServiceTest {
 	}
 
 	@Test
-	@DisplayName("목록 항목에 식별자·영상 객체 키·제목·생성 시각을 담는다")
+	@DisplayName("목록 항목에 식별자·영상 객체 키·제목·상태·생성 시각을 담는다")
 	void findReportsMapsListFields() {
 		AiReport saved = persistReport(USER_ID, "videos/training/42/key.mp4", "분리불안 징후 행동 분석");
 
@@ -85,7 +87,21 @@ class AiReportQueryServiceTest {
 		assertThat(result.id()).isEqualTo(saved.getId());
 		assertThat(result.videoObjectKey()).isEqualTo("videos/training/42/key.mp4");
 		assertThat(result.title()).isEqualTo("분리불안 징후 행동 분석");
+		assertThat(result.status()).isEqualTo(AiReportStatus.COMPLETED);
 		assertThat(result.createdAt()).isNotNull();
+	}
+
+	@Test
+	@DisplayName("완료되지 않은 리포트도 목록에 상태와 함께 나온다")
+	void findReportsIncludesIncompleteReportsWithStatus() {
+		aiReportRepository.saveAndFlush(pendingReport(USER_ID, "videos/training/42/pending.mp4"));
+		persistAnalysisFailedReport(USER_ID, "videos/training/42/failed.mp4");
+
+		List<AiReportResult> reports = aiReportFinder.findReports(USER_ID);
+
+		assertThat(reports).extracting(AiReportResult::status)
+				.containsExactly(AiReportStatus.FAILED_ANALYSIS, AiReportStatus.PENDING);
+		assertThat(reports).extracting(AiReportResult::title).containsOnlyNulls();
 	}
 
 	@Test
@@ -108,6 +124,7 @@ class AiReportQueryServiceTest {
 		assertThat(detail.id()).isEqualTo(saved.getId());
 		assertThat(detail.videoObjectKey()).isEqualTo("videos/training/42/key.mp4");
 		assertThat(detail.title()).isEqualTo("분리불안 징후 행동 분석");
+		assertThat(detail.status()).isEqualTo(AiReportStatus.COMPLETED);
 		assertThat(detail.createdAt()).isNotNull();
 		AiReportContent content = detail.content();
 		assertThat(content.recommend()).containsExactly(new AiReportContent.Recommend(
@@ -116,6 +133,18 @@ class AiReportQueryServiceTest {
 				new AiReportContent.ReportSection("영상에서 이런 행동이 보여요", "현관 앞을 서성여요."));
 		assertThat(content.solution()).containsExactly(
 				new AiReportContent.Solution(1, "혼자 있는 연습", "짧게 자리를 비워 보세요."));
+	}
+
+	@Test
+	@DisplayName("완료되지 않은 리포트 상세는 본문이 null이고 상태를 담는다")
+	void findReportReturnsNullContentForIncompleteReport() {
+		AiReport saved = aiReportRepository.saveAndFlush(pendingReport(USER_ID, "videos/training/42/pending.mp4"));
+
+		AiReportDetailResult detail = aiReportFinder.findReport(USER_ID, saved.getId());
+
+		assertThat(detail.status()).isEqualTo(AiReportStatus.PENDING);
+		assertThat(detail.title()).isNull();
+		assertThat(detail.content()).isNull();
 	}
 
 	@Test
@@ -134,8 +163,59 @@ class AiReportQueryServiceTest {
 				.isInstanceOf(AiReportNotFoundException.class);
 	}
 
+	@Test
+	@DisplayName("업로드 만료 전의 UPLOADING 리포트는 목록에 UPLOADING으로 나온다")
+	void findReportsReturnsUploadingBeforeExpiry() {
+		aiReportRepository.saveAndFlush(uploadingReport(USER_ID, "videos/training/42/uploading.mp4",
+				LocalDateTime.now().plusMinutes(15)));
+
+		AiReportResult result = aiReportFinder.findReports(USER_ID).getFirst();
+
+		assertThat(result.status()).isEqualTo(AiReportStatus.UPLOADING);
+	}
+
+	@Test
+	@DisplayName("업로드가 만료된 UPLOADING 리포트는 목록에 FAILED_UPLOAD로 나온다")
+	void findReportsDerivesFailedUploadAfterExpiry() {
+		aiReportRepository.saveAndFlush(uploadingReport(USER_ID, "videos/training/42/expired.mp4",
+				LocalDateTime.now().minusSeconds(1)));
+
+		AiReportResult result = aiReportFinder.findReports(USER_ID).getFirst();
+
+		assertThat(result.status()).isEqualTo(AiReportStatus.FAILED_UPLOAD);
+	}
+
+	@Test
+	@DisplayName("업로드가 만료된 UPLOADING 리포트 상세는 FAILED_UPLOAD와 빈 본문을 담는다")
+	void findReportDerivesFailedUploadAfterExpiry() {
+		AiReport saved = aiReportRepository.saveAndFlush(uploadingReport(USER_ID, "videos/training/42/expired.mp4",
+				LocalDateTime.now().minusSeconds(1)));
+
+		AiReportDetailResult detail = aiReportFinder.findReport(USER_ID, saved.getId());
+
+		assertThat(detail.status()).isEqualTo(AiReportStatus.FAILED_UPLOAD);
+		assertThat(detail.content()).isNull();
+	}
+
+	private void persistAnalysisFailedReport(Long userId, String videoObjectKey) {
+		AiReport report = pendingReport(userId, videoObjectKey);
+		report.failByAnalysis();
+		aiReportRepository.saveAndFlush(report);
+	}
+
 	private AiReport persistReport(Long userId, String videoObjectKey, String title) {
-		return aiReportRepository.saveAndFlush(
-				AiReport.create(new AiReportCreateCommand(userId, videoObjectKey, title, CONTENT_JSON)));
+		AiReport report = pendingReport(userId, videoObjectKey);
+		report.complete(title, CONTENT_JSON);
+		return aiReportRepository.saveAndFlush(report);
+	}
+
+	private static AiReport uploadingReport(Long userId, String videoObjectKey, LocalDateTime uploadExpiresAt) {
+		return AiReport.uploading(new AiReportUploadCommand(userId, videoObjectKey, uploadExpiresAt));
+	}
+
+	private static AiReport pendingReport(Long userId, String videoObjectKey) {
+		AiReport report = uploadingReport(userId, videoObjectKey, LocalDateTime.now().plusMinutes(15));
+		report.startAnalysis();
+		return report;
 	}
 }
