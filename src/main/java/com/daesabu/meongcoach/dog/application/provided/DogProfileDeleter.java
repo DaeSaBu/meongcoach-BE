@@ -8,6 +8,7 @@ public interface DogProfileDeleter {
 	/**
 	 * 사용자가 소유한 강아지를 삭제한다. 이후 조회에서 제외되며 선택 상태는 다른 강아지로 넘어가지 않는다.
 	 * 없거나 본인 소유가 아니거나 이미 삭제됐으면 {@code DogNotFoundException}을 던진다.
+	 * 사용자의 강아지가 한 마리뿐이면 {@code LastDogNotDeletableException}을 던지고 삭제하지 않는다.
 	 */
 	void delete(Long userId, Long dogId);
 }
