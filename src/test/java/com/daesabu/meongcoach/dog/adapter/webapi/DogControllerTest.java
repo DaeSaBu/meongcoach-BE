@@ -2,10 +2,14 @@ package com.daesabu.meongcoach.dog.adapter.webapi;
 
 import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.document;
 import static org.hamcrest.Matchers.nullValue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.get;
+import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.put;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
+import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
 import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
@@ -13,8 +17,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.daesabu.meongcoach.dog.application.provided.DogProfileFinder;
+import com.daesabu.meongcoach.dog.application.provided.DogProfileUpdater;
 import com.daesabu.meongcoach.dog.domain.Breed;
 import com.daesabu.meongcoach.dog.domain.Dog;
+import com.daesabu.meongcoach.dog.domain.DogProfileUpdateCommand;
 import com.daesabu.meongcoach.dog.domain.DogRegisterCommand;
 import com.daesabu.meongcoach.dog.domain.DogSex;
 import com.daesabu.meongcoach.dog.domain.Personality;
@@ -30,16 +36,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 
 /**
- * 강아지 프로필 조회 API 검증.
+ * 강아지 프로필 조회·수정 API 검증.
  */
 @WebMvcTest(DogController.class)
 @AutoConfigureRestDocs
-@DisplayName("강아지 프로필 조회 API")
 class DogControllerTest {
 
 	// 컨트롤러 슬라이스에는 필터 체인이 없으므로 인증 주체를 요청에 직접 실어 보낸다 (test-convention.md)
@@ -48,11 +54,29 @@ class DogControllerTest {
 	private static final String IMAGE_URL = "https://images.test.meongcoach.com/images/dog-profile/42/a.jpg";
 	private static final String EXPECTATION = "보호자와 즐겁게 교육받고 싶어요.";
 
+	private static final String NEW_IMAGE_URL = "https://images.test.meongcoach.com/images/dog-profile/42/b.jpg";
+	private static final String NEW_EXPECTATION = "산책 예절을 배우고 싶어요.";
+	private static final String UPDATE_BODY = """
+			{
+			  "name": "보리",
+			  "breed": "MALTESE",
+			  "sex": "FEMALE",
+			  "birthDate": "2023-01-15",
+			  "weightKg": 3.2,
+			  "personalities": ["TIMID", "LIVELY"],
+			  "profileImageUrl": "%s",
+			  "expectation": "%s"
+			}
+			""".formatted(NEW_IMAGE_URL, NEW_EXPECTATION);
+
 	@Autowired
 	private MockMvc mockMvc;
 
 	@MockitoBean
 	private DogProfileFinder dogProfileFinder;
+
+	@MockitoBean
+	private DogProfileUpdater dogProfileUpdater;
 
 	@Test
 	@DisplayName("보유 강아지 목록을 등록 순으로 반환한다")
@@ -268,9 +292,7 @@ class DogControllerTest {
 	@Test
 	@DisplayName("프로필 이미지가 없는 강아지는 빈 문자열과 200을 반환한다")
 	void findProfileImageReturnsEmptyStringWhenImageIsAbsent() throws Exception {
-		Dog dogWithoutImage = selectedDog(10L);
-		dogWithoutImage.changeProfileImage("");
-		given(dogProfileFinder.findSelectedDog(42L)).willReturn(dogWithoutImage);
+		given(dogProfileFinder.findSelectedDog(42L)).willReturn(selectedDogWithoutImage(10L));
 
 		mockMvc.perform(get("/api/dogs/profile/image").principal(CURRENT_USER))
 				.andExpect(status().isOk())
@@ -310,12 +332,188 @@ class DogControllerTest {
 				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
 	}
 
+	@Test
+	void 소유_강아지의_프로필을_전체_교체하고_수정된_프로필을_반환한다() throws Exception {
+		given(dogProfileUpdater.update(eq(42L), eq(10L), any(DogProfileUpdateCommand.class))).willReturn(updatedDog(10L));
+
+		mockMvc.perform(put("/api/dogs/{dogId}", 10L)
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(UPDATE_BODY))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.dogId").value(10))
+				.andExpect(jsonPath("$.name").value("보리"))
+				.andExpect(jsonPath("$.breed.code").value("MALTESE"))
+				.andExpect(jsonPath("$.breed.label").value("말티즈"))
+				.andExpect(jsonPath("$.sex").value("FEMALE"))
+				.andExpect(jsonPath("$.birthDate").value("2023-01-15"))
+				.andExpect(jsonPath("$.age").isNumber())
+				.andExpect(jsonPath("$.weightKg").value(3.2))
+				.andExpect(jsonPath("$.status").value("SELECTED"))
+				.andExpect(jsonPath("$.profileImageUrl").value(NEW_IMAGE_URL))
+				.andExpect(jsonPath("$.expectation").value(NEW_EXPECTATION))
+				.andExpect(jsonPath("$.personalities[0].code").value("TIMID"))
+				.andExpect(jsonPath("$.personalities[1].code").value("LIVELY"))
+				.andDo(document("dog/update",
+						pathParameters(
+								parameterWithName("dogId").description("수정할 강아지 ID")
+						),
+						requestFields(
+								fieldWithPath("name").description("필수 입력. 강아지 이름(최대 50자)"),
+								fieldWithPath("breed").description("필수 입력. 견종 코드(온보딩 메타데이터 breeds의 code)"),
+								fieldWithPath("sex").description("필수 입력. 성별(MALE, FEMALE)"),
+								fieldWithPath("birthDate").optional()
+										.description("생년월일(yyyy-MM-dd, 과거 날짜). 나이 미상이면 생략하거나 null"),
+								fieldWithPath("weightKg").description("필수 입력. 몸무게(kg, 양수)"),
+								fieldWithPath("personalities").optional()
+										.description("성격 코드 목록(온보딩 메타데이터 personalities의 code). 생략하거나 null이면 빈 목록으로 저장"),
+								fieldWithPath("profileImageUrl").optional()
+										.description("프로필 이미지 공개 URL(최대 512자). 생략하거나 null이면 빈 문자열로 저장"),
+								fieldWithPath("expectation").optional()
+										.description("교육 기대 사항(최대 500자). 생략하거나 null이면 빈 문자열로 저장")
+						),
+						responseFields(
+								fieldWithPath("dogId").description("강아지 ID"),
+								fieldWithPath("name").description("강아지 이름"),
+								fieldWithPath("breed").description("견종"),
+								fieldWithPath("breed.code").description("견종 코드"),
+								fieldWithPath("breed.label").description("견종 표시명"),
+								fieldWithPath("sex").description("성별(MALE, FEMALE)"),
+								fieldWithPath("birthDate").optional()
+										.description("생년월일(yyyy-MM-dd). 나이 미상이면 null"),
+								fieldWithPath("age").optional()
+										.description("생년월일로 계산한 만 나이. 나이 미상이면 null"),
+								fieldWithPath("weightKg").description("몸무게(kg)"),
+								fieldWithPath("status").description("선택 상태(SELECTED, UNSELECTED). 수정으로 바뀌지 않음"),
+								fieldWithPath("profileImageUrl")
+										.description("프로필 이미지 공개 URL. 등록하지 않았으면 빈 문자열"),
+								fieldWithPath("expectation").description("교육 기대 사항. 입력하지 않았으면 빈 문자열"),
+								fieldWithPath("personalities[]").description("성격 목록. 선언 순 정렬, 없으면 빈 배열"),
+								fieldWithPath("personalities[].code").description("성격 코드"),
+								fieldWithPath("personalities[].label").description("성격 표시명")
+						)
+				));
+	}
+
+	@Test
+	void 인증_주체와_경로의_강아지_ID_요청_본문으로_수정을_위임한다() throws Exception {
+		given(dogProfileUpdater.update(eq(42L), eq(10L), any(DogProfileUpdateCommand.class))).willReturn(updatedDog(10L));
+
+		mockMvc.perform(put("/api/dogs/{dogId}", 10L)
+						.principal(CURRENT_USER)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(UPDATE_BODY))
+				.andExpect(status().isOk());
+
+		then(dogProfileUpdater).should().update(42L, 10L, new DogProfileUpdateCommand("보리", Breed.MALTESE,
+				DogSex.FEMALE, LocalDate.of(2023, 1, 15), new BigDecimal("3.2"),
+				Set.of(Personality.TIMID, Personality.LIVELY), NEW_IMAGE_URL, NEW_EXPECTATION));
+	}
+
+	@Test
+	void 성격을_생략하면_빈_성격으로_수정을_위임한다() throws Exception {
+		given(dogProfileUpdater.update(eq(42L), eq(10L), any(DogProfileUpdateCommand.class))).willReturn(updatedDog(10L));
+
+		mockMvc.perform(put("/api/dogs/{dogId}", 10L)
+						.principal(CURRENT_USER)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(UPDATE_BODY.replace("\"personalities\": [\"TIMID\", \"LIVELY\"],", "")))
+				.andExpect(status().isOk());
+
+		then(dogProfileUpdater).should().update(42L, 10L, new DogProfileUpdateCommand("보리", Breed.MALTESE,
+				DogSex.FEMALE, LocalDate.of(2023, 1, 15), new BigDecimal("3.2"), Set.of(), NEW_IMAGE_URL,
+				NEW_EXPECTATION));
+	}
+
+	@Test
+	void 잘못된_견종_코드면_수정은_400과_에러_코드를_반환한다() throws Exception {
+		mockMvc.perform(put("/api/dogs/{dogId}", 10L)
+						.principal(CURRENT_USER)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(UPDATE_BODY.replace("\"MALTESE\"", "\"UNKNOWN\"")))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.status").value(400))
+				.andExpect(jsonPath("$.code").value("DOG_INVALID_BREED"));
+
+		then(dogProfileUpdater).shouldHaveNoInteractions();
+	}
+
+	@Test
+	void 이름이_비어_있으면_수정은_검증에_실패한다() throws Exception {
+		mockMvc.perform(put("/api/dogs/{dogId}", 10L)
+						.principal(CURRENT_USER)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(UPDATE_BODY.replace("\"보리\"", "\" \"")))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
+				.andExpect(jsonPath("$.errors[0].field").value("name"));
+
+		then(dogProfileUpdater).shouldHaveNoInteractions();
+	}
+
+	@Test
+	void 없거나_본인_소유가_아닌_강아지를_수정하면_404와_에러_코드를_반환한다() throws Exception {
+		given(dogProfileUpdater.update(eq(42L), eq(999L), any(DogProfileUpdateCommand.class)))
+				.willThrow(new DogNotFoundException(999L));
+
+		mockMvc.perform(put("/api/dogs/{dogId}", 999L)
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(UPDATE_BODY))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.status").value(404))
+				.andExpect(jsonPath("$.code").value("DOG_NOT_FOUND"))
+				.andExpect(jsonPath("$.detail").value("id가 999인 강아지를 찾을 수 없습니다."))
+				.andDo(document("dog/update-error",
+						pathParameters(
+								parameterWithName("dogId").description("수정할 강아지 ID")
+						),
+						responseFields(
+								fieldWithPath("title").description("HTTP 상태 이름"),
+								fieldWithPath("status").description("HTTP 상태 코드"),
+								fieldWithPath("detail").description("사람이 읽을 수 있는 에러 설명"),
+								fieldWithPath("instance").description("에러가 발생한 요청 경로"),
+								fieldWithPath("code").description("클라이언트 분기용 에러 코드"),
+								fieldWithPath("timestamp").description("에러 발생 시각(UTC)")
+						)
+				));
+	}
+
+	@Test
+	void 인증_정보가_없으면_수정은_401을_반환한다() throws Exception {
+		mockMvc.perform(put("/api/dogs/{dogId}", 10L)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(UPDATE_BODY))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+	}
+
 	// 슬라이스 테스트는 DB를 거치지 않아 JPA가 id를 채우지 않으므로, 응답의 dogId를 검증하려면 리플렉션으로 주입한다
 	private Dog selectedDog(Long id) {
 		Dog dog = Dog.register(new DogRegisterCommand(42L, "초코", Breed.POODLE, DogSex.MALE,
 				LocalDate.of(2024, 3, 1), new BigDecimal("4.50"), IMAGE_URL, EXPECTATION));
 		dog.select();
 		dog.changePersonalities(Set.of(Personality.FRIENDLY, Personality.TIMID));
+		ReflectionTestUtils.setField(dog, "id", id);
+		return dog;
+	}
+
+	private Dog selectedDogWithoutImage(Long id) {
+		Dog dog = Dog.register(new DogRegisterCommand(42L, "초코", Breed.POODLE, DogSex.MALE,
+				LocalDate.of(2024, 3, 1), new BigDecimal("4.50"), null, EXPECTATION));
+		dog.select();
+		ReflectionTestUtils.setField(dog, "id", id);
+		return dog;
+	}
+
+	// 수정 서비스가 돌려주는, 요청 본문대로 교체된 강아지
+	private Dog updatedDog(Long id) {
+		Dog dog = Dog.register(new DogRegisterCommand(42L, "보리", Breed.MALTESE, DogSex.FEMALE,
+				LocalDate.of(2023, 1, 15), new BigDecimal("3.20"), NEW_IMAGE_URL, NEW_EXPECTATION));
+		dog.select();
+		dog.changePersonalities(Set.of(Personality.TIMID, Personality.LIVELY));
 		ReflectionTestUtils.setField(dog, "id", id);
 		return dog;
 	}

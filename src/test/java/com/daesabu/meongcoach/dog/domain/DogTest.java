@@ -37,6 +37,15 @@ class DogTest {
 	}
 
 	@Test
+	void 등록_시_프로필_이미지와_기대사항을_저장한다() {
+		Dog dog = Dog.register(new DogRegisterCommand(1L, "초코", Breed.POODLE, DogSex.MALE, LocalDate.of(2024, 3, 1),
+				new BigDecimal("4.50"), "https://cdn.meongcoach.com/dog.png", "다른 강아지와 편안하게 인사했으면 좋겠어요."));
+
+		assertThat(dog.getProfileImageUrl()).isEqualTo("https://cdn.meongcoach.com/dog.png");
+		assertThat(dog.getExpectation()).isEqualTo("다른 강아지와 편안하게 인사했으면 좋겠어요.");
+	}
+
+	@Test
 	@DisplayName("등록 직후에는 성격이 비어 있다")
 	void registerCreatesDogWithoutPersonalities() {
 		Dog dog = registerDog();
@@ -57,32 +66,56 @@ class DogTest {
 	}
 
 	@Test
-	@DisplayName("프로필 이미지를 변경하면 이미지 URL이 교체된다")
-	void changeProfileImageReplacesImageUrl() {
+	void 프로필을_수정하면_이름_견종_성별_생년월일_몸무게_성격_이미지_기대사항이_교체된다() {
 		Dog dog = registerDog();
+		dog.changePersonalities(Set.of(Personality.FRIENDLY));
 
-		dog.changeProfileImage("https://cdn.meongcoach.com/dog.png");
+		dog.updateProfile(new DogProfileUpdateCommand("보리", Breed.MALTESE, DogSex.FEMALE,
+				LocalDate.of(2023, 1, 15), new BigDecimal("3.20"), Set.of(Personality.TIMID, Personality.LIVELY),
+				"https://cdn.meongcoach.com/bori.png", "산책 예절을 배우고 싶어요."));
 
-		assertThat(dog.getProfileImageUrl()).isEqualTo("https://cdn.meongcoach.com/dog.png");
+		assertThat(dog.getName()).isEqualTo("보리");
+		assertThat(dog.getBreed()).isEqualTo(Breed.MALTESE);
+		assertThat(dog.getSex()).isEqualTo(DogSex.FEMALE);
+		assertThat(dog.getBirthDate()).isEqualTo(LocalDate.of(2023, 1, 15));
+		assertThat(dog.getWeightKg()).isEqualByComparingTo("3.20");
+		assertThat(dog.getPersonalities()).containsExactlyInAnyOrder(Personality.TIMID, Personality.LIVELY);
+		assertThat(dog.getProfileImageUrl()).isEqualTo("https://cdn.meongcoach.com/bori.png");
+		assertThat(dog.getExpectation()).isEqualTo("산책 예절을 배우고 싶어요.");
 	}
 
 	@Test
-	@DisplayName("기대 사항을 변경하면 기존 내용이 교체된다")
-	void changeExpectationReplacesExpectation() {
+	void 프로필_수정은_소유자와_선택_상태를_바꾸지_않는다() {
 		Dog dog = registerDog();
+		dog.select();
 
-		dog.changeExpectation("다른 강아지와 편안하게 인사했으면 좋겠어요.");
+		dog.updateProfile(new DogProfileUpdateCommand("보리", Breed.MALTESE, DogSex.FEMALE, null,
+				new BigDecimal("3.20"), Set.of(), null, null));
 
-		assertThat(dog.getExpectation()).isEqualTo("다른 강아지와 편안하게 인사했으면 좋겠어요.");
+		assertThat(dog.getUserId()).isEqualTo(1L);
+		assertThat(dog.getStatus()).isEqualTo(DogStatus.SELECTED);
 	}
 
 	@Test
-	@DisplayName("기대 사항이 없으면 빈 문자열로 변경된다")
-	void changeExpectationStoresEmptyStringWhenAbsent() {
+	void 프로필_수정_시_생년월일이_null이면_나이_미상으로_바뀐다() {
 		Dog dog = registerDog();
 
-		dog.changeExpectation(null);
+		dog.updateProfile(new DogProfileUpdateCommand("보리", Breed.MALTESE, DogSex.FEMALE, null,
+				new BigDecimal("3.20"), Set.of(), null, null));
 
+		assertThat(dog.getBirthDate()).isNull();
+		assertThat(dog.getAge()).isNull();
+	}
+
+	@Test
+	void 프로필_수정_시_이미지와_기대사항이_null이면_빈_문자열로_교체된다() {
+		Dog dog = Dog.register(new DogRegisterCommand(1L, "초코", Breed.POODLE, DogSex.MALE, LocalDate.of(2024, 3, 1),
+				new BigDecimal("4.50"), "https://cdn.meongcoach.com/dog.png", "기존 기대 사항"));
+
+		dog.updateProfile(new DogProfileUpdateCommand("보리", Breed.MALTESE, DogSex.FEMALE, null,
+				new BigDecimal("3.20"), Set.of(), null, null));
+
+		assertThat(dog.getProfileImageUrl()).isEmpty();
 		assertThat(dog.getExpectation()).isEmpty();
 	}
 

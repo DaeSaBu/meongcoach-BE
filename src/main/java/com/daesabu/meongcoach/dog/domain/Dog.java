@@ -101,12 +101,16 @@ public class Dog extends BaseEntity {
 		this.status = DogStatus.UNSELECTED;
 	}
 
-	public void changeProfileImage(String profileImageUrl) {
-		this.profileImageUrl = Objects.requireNonNullElse(profileImageUrl, "");
-	}
-
-	public void changeExpectation(String expectation) {
-		this.expectation = Objects.requireNonNullElse(expectation, "");
+	// 수정 화면이 전체 값을 다시 보내는 전체 교체라 필드별 메서드 대신 한 번에 바꾼다. 소유자·선택 상태는 건드리지 않는다
+	public void updateProfile(DogProfileUpdateCommand command) {
+		this.name = command.name();
+		this.breed = command.breed();
+		this.sex = command.sex();
+		this.birthDate = command.birthDate();
+		this.weightKg = command.weightKg();
+		this.profileImageUrl = Objects.requireNonNullElse(command.profileImageUrl(), "");
+		this.expectation = Objects.requireNonNullElse(command.expectation(), "");
+		changePersonalities(command.personalities());
 	}
 
 	public void changePersonalities(Set<Personality> personalities) {
