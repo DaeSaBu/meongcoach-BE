@@ -1,0 +1,26 @@
+package com.daesabu.meongcoach.dog.application.provided;
+
+import com.daesabu.meongcoach.dog.domain.Dog;
+import java.util.List;
+
+/**
+ * 강아지 프로필 조회 능력.
+ */
+public interface DogProfileFinder {
+
+	/**
+	 * 사용자가 보유한 강아지를 등록 순으로 모두 조회한다. 없으면 빈 리스트를 반환한다.
+	 */
+	List<Dog> findDogs(Long userId);
+
+	/**
+	 * 사용자가 소유한 강아지 한 마리를 ID로 조회한다.
+	 * 없거나 본인 소유가 아니면 {@code DogNotFoundException}을 던진다.
+	 */
+	Dog findDog(Long userId, Long dogId);
+
+	/**
+	 * 사용자가 선택한 강아지를 조회한다. 선택된 강아지가 없으면 {@code DogNotFoundException}을 던진다.
+	 */
+	Dog findSelectedDog(Long userId);
+}

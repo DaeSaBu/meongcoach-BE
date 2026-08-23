@@ -27,6 +27,7 @@ MVP 개발 기간을 고려하여 아래 순서로 우선순위를 정해 작성
 
 ## 작성 규칙
 
+- 동작을 추가·변경할 때는 테스트를 먼저 작성해 `test` 커밋으로 올리고, 구현은 뒤따르는 커밋으로 올린다. 커밋 분리 규칙은 git-convention 스킬의 "커밋 단위" 참고.
 - 슬라이스 테스트: 컨트롤러는 `@WebMvcTest`, 리포지토리(`application/required`의 Spring Data 인터페이스)는 `@DataJpaTest`를 사용한다.
 - `@SpringBootTest` 전체 통합 테스트는 꼭 필요한 시나리오에만 최소한으로 사용한다.
 - 외부 API 연동은 `MockRestServiceServer.bindTo(RestClient.Builder)`로 검증한다. 어댑터가 `RestClient`가 아닌 `RestClient.Builder`를 주입받아야 이 방식이 가능하므로, 생성자 파라미터를 `Builder`로 둔다.
