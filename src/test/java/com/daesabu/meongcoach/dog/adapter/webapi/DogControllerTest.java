@@ -6,6 +6,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.BDDMockito.willThrow;
+import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.delete;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.get;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.put;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
@@ -16,6 +18,7 @@ import static org.springframework.restdocs.request.RequestDocumentation.pathPara
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.daesabu.meongcoach.dog.application.provided.DogProfileDeleter;
 import com.daesabu.meongcoach.dog.application.provided.DogProfileFinder;
 import com.daesabu.meongcoach.dog.application.provided.DogProfileUpdater;
 import com.daesabu.meongcoach.dog.domain.Breed;
@@ -25,6 +28,7 @@ import com.daesabu.meongcoach.dog.domain.DogRegisterCommand;
 import com.daesabu.meongcoach.dog.domain.DogSex;
 import com.daesabu.meongcoach.dog.domain.Personality;
 import com.daesabu.meongcoach.dog.domain.exception.DogNotFoundException;
+import com.daesabu.meongcoach.dog.domain.exception.LastDogNotDeletableException;
 import java.math.BigDecimal;
 import java.security.Principal;
 import java.time.LocalDate;
@@ -42,7 +46,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 
 /**
- * 강아지 프로필 조회·수정 API 검증.
+ * 강아지 프로필 조회·수정·삭제 API 검증.
  */
 @WebMvcTest(DogController.class)
 @AutoConfigureRestDocs
@@ -77,6 +81,9 @@ class DogControllerTest {
 
 	@MockitoBean
 	private DogProfileUpdater dogProfileUpdater;
+
+	@MockitoBean
+	private DogProfileDeleter dogProfileDeleter;
 
 	@Test
 	@DisplayName("보유 강아지 목록을 등록 순으로 반환한다")
@@ -488,6 +495,88 @@ class DogControllerTest {
 						.content(UPDATE_BODY))
 				.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+	}
+
+	@Test
+	void 소유_강아지를_삭제하면_204를_반환한다() throws Exception {
+		mockMvc.perform(delete("/api/dogs/{dogId}", 10L)
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+				.andExpect(status().isNoContent())
+				.andDo(document("dog/delete",
+						pathParameters(
+								parameterWithName("dogId").description("삭제할 강아지 ID")
+						)
+				));
+	}
+
+	@Test
+	void 인증_주체와_경로의_강아지_ID로_삭제를_위임한다() throws Exception {
+		mockMvc.perform(delete("/api/dogs/{dogId}", 10L).principal(CURRENT_USER))
+				.andExpect(status().isNoContent());
+
+		then(dogProfileDeleter).should().delete(42L, 10L);
+	}
+
+	@Test
+	void 없거나_본인_소유가_아닌_강아지를_삭제하면_404와_에러_코드를_반환한다() throws Exception {
+		willThrow(new DogNotFoundException(999L)).given(dogProfileDeleter).delete(42L, 999L);
+
+		mockMvc.perform(delete("/api/dogs/{dogId}", 999L)
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.status").value(404))
+				.andExpect(jsonPath("$.code").value("DOG_NOT_FOUND"))
+				.andExpect(jsonPath("$.detail").value("id가 999인 강아지를 찾을 수 없습니다."))
+				.andDo(document("dog/delete-error",
+						pathParameters(
+								parameterWithName("dogId").description("삭제할 강아지 ID")
+						),
+						responseFields(
+								fieldWithPath("title").description("HTTP 상태 이름"),
+								fieldWithPath("status").description("HTTP 상태 코드"),
+								fieldWithPath("detail").description("사람이 읽을 수 있는 에러 설명"),
+								fieldWithPath("instance").description("에러가 발생한 요청 경로"),
+								fieldWithPath("code").description("클라이언트 분기용 에러 코드"),
+								fieldWithPath("timestamp").description("에러 발생 시각(UTC)")
+						)
+				));
+	}
+
+	@Test
+	void 마지막_강아지를_삭제하면_409와_에러_코드를_반환한다() throws Exception {
+		willThrow(new LastDogNotDeletableException()).given(dogProfileDeleter).delete(42L, 10L);
+
+		mockMvc.perform(delete("/api/dogs/{dogId}", 10L)
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.status").value(409))
+				.andExpect(jsonPath("$.code").value("DOG_LAST_DOG_NOT_DELETABLE"))
+				.andExpect(jsonPath("$.detail").value("마지막 강아지는 삭제할 수 없습니다."))
+				.andDo(document("dog/delete-last-dog-error",
+						pathParameters(
+								parameterWithName("dogId").description("삭제할 강아지 ID")
+						),
+						responseFields(
+								fieldWithPath("title").description("HTTP 상태 이름"),
+								fieldWithPath("status").description("HTTP 상태 코드"),
+								fieldWithPath("detail").description("사람이 읽을 수 있는 에러 설명"),
+								fieldWithPath("instance").description("에러가 발생한 요청 경로"),
+								fieldWithPath("code").description("클라이언트 분기용 에러 코드"),
+								fieldWithPath("timestamp").description("에러 발생 시각(UTC)")
+						)
+				));
+	}
+
+	@Test
+	void 인증_정보가_없으면_삭제는_401을_반환한다() throws Exception {
+		mockMvc.perform(delete("/api/dogs/{dogId}", 10L))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+
+		then(dogProfileDeleter).shouldHaveNoInteractions();
 	}
 
 	// 슬라이스 테스트는 DB를 거치지 않아 JPA가 id를 채우지 않으므로, 응답의 dogId를 검증하려면 리플렉션으로 주입한다
