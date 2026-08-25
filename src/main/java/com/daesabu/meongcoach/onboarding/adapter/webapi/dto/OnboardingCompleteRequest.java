@@ -1,6 +1,9 @@
 package com.daesabu.meongcoach.onboarding.adapter.webapi.dto;
 
 import com.daesabu.meongcoach.dog.application.provided.DogRegisterInfo;
+import com.daesabu.meongcoach.dog.domain.shared.Breed;
+import com.daesabu.meongcoach.dog.domain.shared.DogSex;
+import com.daesabu.meongcoach.dog.domain.shared.Personality;
 import com.daesabu.meongcoach.onboarding.application.provided.OnboardingCompleteInfo;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -53,9 +56,13 @@ public record OnboardingCompleteRequest(
 			@Size(max = 512) String profileImageUrl,
 			@Size(max = 500) String expectation) {
 
+		// 견종·성별·성격 코드는 여기서 dog 도메인 enum으로 변환하며, 잘못된 코드는 도메인 예외로 400이 된다
 		public DogRegisterInfo toInfo() {
-			return new DogRegisterInfo(name, breed, sex, birthDate, weightKg, personalities, profileImageUrl,
-					expectation);
+			Breed parsedBreed = Breed.from(breed);
+			DogSex parsedSex = DogSex.from(sex);
+			Set<Personality> parsedPersonalities = Personality.fromCodes(personalities);
+			return new DogRegisterInfo(name, parsedBreed, parsedSex, birthDate, weightKg, parsedPersonalities,
+					profileImageUrl, expectation);
 		}
 	}
 }

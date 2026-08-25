@@ -30,7 +30,6 @@ import com.daesabu.meongcoach.dog.domain.DogProfileUpdateCommand;
 import com.daesabu.meongcoach.dog.domain.DogRegisterCommand;
 import com.daesabu.meongcoach.dog.domain.exception.DogLimitExceededException;
 import com.daesabu.meongcoach.dog.domain.exception.DogNotFoundException;
-import com.daesabu.meongcoach.dog.domain.exception.InvalidBreedException;
 import com.daesabu.meongcoach.dog.domain.exception.LastDogNotDeletableException;
 import com.daesabu.meongcoach.dog.domain.shared.Breed;
 import com.daesabu.meongcoach.dog.domain.shared.DogSex;
@@ -183,8 +182,9 @@ class DogControllerTest {
 
 		ArgumentCaptor<DogRegisterInfo> captor = ArgumentCaptor.forClass(DogRegisterInfo.class);
 		then(dogRegister).should().register(eq(42L), captor.capture());
-		assertThat(captor.getValue()).isEqualTo(new DogRegisterInfo("초코", "POODLE", "MALE",
-				LocalDate.of(2024, 3, 1), new BigDecimal("4.5"), Set.of("TIMID", "FRIENDLY"), IMAGE_URL, EXPECTATION));
+		assertThat(captor.getValue()).isEqualTo(new DogRegisterInfo("초코", Breed.POODLE, DogSex.MALE,
+				LocalDate.of(2024, 3, 1), new BigDecimal("4.5"), Set.of(Personality.TIMID, Personality.FRIENDLY),
+				IMAGE_URL, EXPECTATION));
 		then(dogProfileFinder).should().findDog(42L, 10L);
 	}
 
@@ -201,7 +201,7 @@ class DogControllerTest {
 
 		ArgumentCaptor<DogRegisterInfo> captor = ArgumentCaptor.forClass(DogRegisterInfo.class);
 		then(dogRegister).should().register(eq(42L), captor.capture());
-		assertThat(captor.getValue().personalities()).isNull();
+		assertThat(captor.getValue().personalities()).isEmpty();
 	}
 
 	@Test
@@ -219,8 +219,6 @@ class DogControllerTest {
 
 	@Test
 	void 잘못된_견종_코드면_등록은_400과_에러_코드를_반환한다() throws Exception {
-		given(dogRegister.register(eq(42L), any(DogRegisterInfo.class))).willThrow(new InvalidBreedException("UNKNOWN"));
-
 		mockMvc.perform(post("/api/dogs")
 						.principal(CURRENT_USER)
 						.contentType(MediaType.APPLICATION_JSON)
@@ -229,6 +227,7 @@ class DogControllerTest {
 				.andExpect(jsonPath("$.status").value(400))
 				.andExpect(jsonPath("$.code").value("DOG_INVALID_BREED"));
 
+		then(dogRegister).shouldHaveNoInteractions();
 		then(dogProfileFinder).shouldHaveNoInteractions();
 	}
 
