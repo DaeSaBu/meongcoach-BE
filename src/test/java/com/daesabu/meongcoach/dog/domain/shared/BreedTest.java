@@ -1,4 +1,4 @@
-package com.daesabu.meongcoach.dog.domain;
+package com.daesabu.meongcoach.dog.domain.shared;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

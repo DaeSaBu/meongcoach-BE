@@ -1,9 +1,9 @@
 package com.daesabu.meongcoach.dog.adapter.webapi.dto;
 
-import com.daesabu.meongcoach.dog.domain.Breed;
 import com.daesabu.meongcoach.dog.domain.DogProfileUpdateCommand;
-import com.daesabu.meongcoach.dog.domain.DogSex;
-import com.daesabu.meongcoach.dog.domain.Personality;
+import com.daesabu.meongcoach.dog.domain.shared.Breed;
+import com.daesabu.meongcoach.dog.domain.shared.DogSex;
+import com.daesabu.meongcoach.dog.domain.shared.Personality;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Past;

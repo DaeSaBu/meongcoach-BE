@@ -2,12 +2,12 @@ package com.daesabu.meongcoach.dog.application.required;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.daesabu.meongcoach.dog.domain.Breed;
 import com.daesabu.meongcoach.dog.domain.Dog;
 import com.daesabu.meongcoach.dog.domain.DogRegisterCommand;
-import com.daesabu.meongcoach.dog.domain.DogSex;
 import com.daesabu.meongcoach.dog.domain.DogStatus;
-import com.daesabu.meongcoach.dog.domain.Personality;
+import com.daesabu.meongcoach.dog.domain.shared.Breed;
+import com.daesabu.meongcoach.dog.domain.shared.DogSex;
+import com.daesabu.meongcoach.dog.domain.shared.Personality;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;

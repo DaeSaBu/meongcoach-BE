@@ -1,4 +1,4 @@
-package com.daesabu.meongcoach.dog.domain;
+package com.daesabu.meongcoach.dog.domain.shared;
 
 import com.daesabu.meongcoach.dog.domain.exception.InvalidDogSexException;
 

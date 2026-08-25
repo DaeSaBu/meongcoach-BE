@@ -1,5 +1,8 @@
 package com.daesabu.meongcoach.dog.domain;
 
+import com.daesabu.meongcoach.dog.domain.shared.Breed;
+import com.daesabu.meongcoach.dog.domain.shared.DogSex;
+import com.daesabu.meongcoach.dog.domain.shared.Personality;
 import com.daesabu.meongcoach.shared.domain.BaseEntity;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
