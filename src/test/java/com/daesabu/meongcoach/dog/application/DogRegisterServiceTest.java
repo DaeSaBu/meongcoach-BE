@@ -10,17 +10,21 @@ import com.daesabu.meongcoach.dog.domain.Dog;
 import com.daesabu.meongcoach.dog.domain.DogSex;
 import com.daesabu.meongcoach.dog.domain.DogStatus;
 import com.daesabu.meongcoach.dog.domain.Personality;
+import com.daesabu.meongcoach.dog.domain.exception.DogLimitExceededException;
 import com.daesabu.meongcoach.dog.domain.exception.InvalidBreedException;
 import com.daesabu.meongcoach.dog.domain.exception.InvalidDogSexException;
 import com.daesabu.meongcoach.dog.domain.exception.InvalidPersonalityException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 
 @DataJpaTest
 @DisplayName("강아지 등록 서비스")
@@ -28,6 +32,9 @@ class DogRegisterServiceTest {
 
 	@Autowired
 	private DogRepository dogRepository;
+
+	@Autowired
+	private TestEntityManager entityManager;
 
 	private DogRegisterService service;
 
@@ -182,5 +189,44 @@ class DogRegisterServiceTest {
 	void registerFailsWhenPersonalityIsInvalid() {
 		assertThatThrownBy(() -> service.register(1L, registerInfo("MALE", Set.of("BRAVE"))))
 				.isInstanceOf(InvalidPersonalityException.class);
+	}
+
+	@Test
+	void 강아지가_5마리면_더_등록할_수_없다() {
+		registerDogs(1L, 5);
+
+		assertThatThrownBy(() -> service.register(1L, registerInfo("MALE", Set.of())))
+				.isInstanceOf(DogLimitExceededException.class);
+
+		assertThat(dogRepository.countByUserId(1L)).isEqualTo(5);
+	}
+
+	@Test
+	void 삭제된_강아지는_등록_개수에_포함되지_않는다() {
+		Long deletedDogId = registerDogs(1L, 5).getFirst();
+		Dog deletedDog = dogRepository.findById(deletedDogId).orElseThrow();
+		deletedDog.delete();
+		dogRepository.saveAndFlush(deletedDog);
+		entityManager.clear();
+
+		Long dogId = service.register(1L, registerInfo("MALE", Set.of()));
+
+		assertThat(dogRepository.findById(dogId)).isPresent();
+		assertThat(dogRepository.countByUserId(1L)).isEqualTo(5);
+	}
+
+	@Test
+	void 다른_사용자의_강아지는_등록_개수에_포함되지_않는다() {
+		registerDogs(1L, 5);
+
+		Long otherUserDogId = service.register(2L, registerInfo("MALE", Set.of()));
+
+		assertThat(dogRepository.findById(otherUserDogId)).isPresent();
+	}
+
+	private List<Long> registerDogs(Long userId, int count) {
+		return IntStream.range(0, count)
+				.mapToObj(i -> service.register(userId, registerInfo("MALE", Set.of())))
+				.toList();
 	}
 }
