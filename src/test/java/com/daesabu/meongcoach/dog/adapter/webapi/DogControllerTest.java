@@ -1,6 +1,7 @@
 package com.daesabu.meongcoach.dog.adapter.webapi;
 
 import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.document;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -9,6 +10,7 @@ import static org.mockito.BDDMockito.then;
 import static org.mockito.BDDMockito.willThrow;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.delete;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.get;
+import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.post;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.put;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
@@ -21,13 +23,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.daesabu.meongcoach.dog.application.provided.DogProfileDeleter;
 import com.daesabu.meongcoach.dog.application.provided.DogProfileFinder;
 import com.daesabu.meongcoach.dog.application.provided.DogProfileUpdater;
+import com.daesabu.meongcoach.dog.application.provided.DogRegister;
+import com.daesabu.meongcoach.dog.application.provided.DogRegisterInfo;
 import com.daesabu.meongcoach.dog.domain.Breed;
 import com.daesabu.meongcoach.dog.domain.Dog;
 import com.daesabu.meongcoach.dog.domain.DogProfileUpdateCommand;
 import com.daesabu.meongcoach.dog.domain.DogRegisterCommand;
 import com.daesabu.meongcoach.dog.domain.DogSex;
 import com.daesabu.meongcoach.dog.domain.Personality;
+import com.daesabu.meongcoach.dog.domain.exception.DogLimitExceededException;
 import com.daesabu.meongcoach.dog.domain.exception.DogNotFoundException;
+import com.daesabu.meongcoach.dog.domain.exception.InvalidBreedException;
 import com.daesabu.meongcoach.dog.domain.exception.LastDogNotDeletableException;
 import java.math.BigDecimal;
 import java.security.Principal;
@@ -36,6 +42,7 @@ import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -46,7 +53,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 
 /**
- * 강아지 프로필 조회·수정·삭제 API 검증.
+ * 강아지 등록·프로필 조회·수정·삭제 API 검증.
  */
 @WebMvcTest(DogController.class)
 @AutoConfigureRestDocs
@@ -60,6 +67,18 @@ class DogControllerTest {
 
 	private static final String NEW_IMAGE_URL = "https://images.test.meongcoach.com/images/dog-profile/42/b.jpg";
 	private static final String NEW_EXPECTATION = "산책 예절을 배우고 싶어요.";
+	private static final String REGISTER_BODY = """
+			{
+			  "name": "초코",
+			  "breed": "POODLE",
+			  "sex": "MALE",
+			  "birthDate": "2024-03-01",
+			  "weightKg": 4.5,
+			  "personalities": ["TIMID", "FRIENDLY"],
+			  "profileImageUrl": "%s",
+			  "expectation": "%s"
+			}
+			""".formatted(IMAGE_URL, EXPECTATION);
 	private static final String UPDATE_BODY = """
 			{
 			  "name": "보리",
@@ -77,6 +96,9 @@ class DogControllerTest {
 	private MockMvc mockMvc;
 
 	@MockitoBean
+	private DogRegister dogRegister;
+
+	@MockitoBean
 	private DogProfileFinder dogProfileFinder;
 
 	@MockitoBean
@@ -84,6 +106,169 @@ class DogControllerTest {
 
 	@MockitoBean
 	private DogProfileDeleter dogProfileDeleter;
+
+	@Test
+	void 강아지를_등록하면_201과_등록된_프로필을_반환한다() throws Exception {
+		given(dogRegister.register(eq(42L), any(DogRegisterInfo.class))).willReturn(10L);
+		given(dogProfileFinder.findDog(42L, 10L)).willReturn(selectedDog(10L));
+
+		mockMvc.perform(post("/api/dogs")
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(REGISTER_BODY))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.dogId").value(10))
+				.andExpect(jsonPath("$.name").value("초코"))
+				.andExpect(jsonPath("$.breed.code").value("POODLE"))
+				.andExpect(jsonPath("$.breed.label").value("푸들"))
+				.andExpect(jsonPath("$.sex").value("MALE"))
+				.andExpect(jsonPath("$.birthDate").value("2024-03-01"))
+				.andExpect(jsonPath("$.age").isNumber())
+				.andExpect(jsonPath("$.weightKg").value(4.5))
+				.andExpect(jsonPath("$.status").value("SELECTED"))
+				.andExpect(jsonPath("$.profileImageUrl").value(IMAGE_URL))
+				.andExpect(jsonPath("$.expectation").value(EXPECTATION))
+				.andExpect(jsonPath("$.personalities[0].code").value("TIMID"))
+				.andExpect(jsonPath("$.personalities[1].code").value("FRIENDLY"))
+				.andDo(document("dog/register",
+						requestFields(
+								fieldWithPath("name").description("필수 입력. 강아지 이름(최대 50자)"),
+								fieldWithPath("breed").description("필수 입력. 견종 코드(온보딩 메타데이터 breeds의 code)"),
+								fieldWithPath("sex").description("필수 입력. 성별(MALE, FEMALE)"),
+								fieldWithPath("birthDate").optional()
+										.description("생년월일(yyyy-MM-dd, 과거 날짜). 나이 미상이면 생략하거나 null"),
+								fieldWithPath("weightKg").description("필수 입력. 몸무게(kg, 양수)"),
+								fieldWithPath("personalities").optional()
+										.description("성격 코드 목록(온보딩 메타데이터 personalities의 code). 생략하거나 null이면 빈 목록으로 저장"),
+								fieldWithPath("profileImageUrl").optional()
+										.description("프로필 이미지 공개 URL(최대 512자). 생략하거나 null이면 빈 문자열로 저장"),
+								fieldWithPath("expectation").optional()
+										.description("교육 기대 사항(최대 500자). 생략하거나 null이면 빈 문자열로 저장")
+						),
+						responseFields(
+								fieldWithPath("dogId").description("등록된 강아지 ID"),
+								fieldWithPath("name").description("강아지 이름"),
+								fieldWithPath("breed").description("견종"),
+								fieldWithPath("breed.code").description("견종 코드"),
+								fieldWithPath("breed.label").description("견종 표시명"),
+								fieldWithPath("sex").description("성별(MALE, FEMALE)"),
+								fieldWithPath("birthDate").optional()
+										.description("생년월일(yyyy-MM-dd). 나이 미상이면 null"),
+								fieldWithPath("age").optional()
+										.description("생년월일로 계산한 만 나이. 나이 미상이면 null"),
+								fieldWithPath("weightKg").description("몸무게(kg)"),
+								fieldWithPath("status").description(
+										"선택 상태(SELECTED, UNSELECTED). 선택된 강아지가 없을 때 등록하면 SELECTED"),
+								fieldWithPath("profileImageUrl")
+										.description("프로필 이미지 공개 URL. 등록하지 않았으면 빈 문자열"),
+								fieldWithPath("expectation").description("교육 기대 사항. 입력하지 않았으면 빈 문자열"),
+								fieldWithPath("personalities[]").description("성격 목록. 선언 순 정렬, 없으면 빈 배열"),
+								fieldWithPath("personalities[].code").description("성격 코드"),
+								fieldWithPath("personalities[].label").description("성격 표시명")
+						)
+				));
+	}
+
+	@Test
+	void 인증_주체에서_읽은_사용자와_요청_본문으로_등록을_위임하고_등록된_강아지를_재조회한다() throws Exception {
+		given(dogRegister.register(eq(42L), any(DogRegisterInfo.class))).willReturn(10L);
+		given(dogProfileFinder.findDog(42L, 10L)).willReturn(selectedDog(10L));
+
+		mockMvc.perform(post("/api/dogs")
+						.principal(CURRENT_USER)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(REGISTER_BODY))
+				.andExpect(status().isCreated());
+
+		ArgumentCaptor<DogRegisterInfo> captor = ArgumentCaptor.forClass(DogRegisterInfo.class);
+		then(dogRegister).should().register(eq(42L), captor.capture());
+		assertThat(captor.getValue()).isEqualTo(new DogRegisterInfo("초코", "POODLE", "MALE",
+				LocalDate.of(2024, 3, 1), new BigDecimal("4.5"), Set.of("TIMID", "FRIENDLY"), IMAGE_URL, EXPECTATION));
+		then(dogProfileFinder).should().findDog(42L, 10L);
+	}
+
+	@Test
+	void 성격을_생략하면_성격_없이_등록을_위임한다() throws Exception {
+		given(dogRegister.register(eq(42L), any(DogRegisterInfo.class))).willReturn(10L);
+		given(dogProfileFinder.findDog(42L, 10L)).willReturn(selectedDog(10L));
+
+		mockMvc.perform(post("/api/dogs")
+						.principal(CURRENT_USER)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(REGISTER_BODY.replace("\"personalities\": [\"TIMID\", \"FRIENDLY\"],", "")))
+				.andExpect(status().isCreated());
+
+		ArgumentCaptor<DogRegisterInfo> captor = ArgumentCaptor.forClass(DogRegisterInfo.class);
+		then(dogRegister).should().register(eq(42L), captor.capture());
+		assertThat(captor.getValue().personalities()).isNull();
+	}
+
+	@Test
+	void 이름이_비어_있으면_등록은_검증에_실패한다() throws Exception {
+		mockMvc.perform(post("/api/dogs")
+						.principal(CURRENT_USER)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(REGISTER_BODY.replace("\"초코\"", "\" \"")))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
+				.andExpect(jsonPath("$.errors[0].field").value("name"));
+
+		then(dogRegister).shouldHaveNoInteractions();
+	}
+
+	@Test
+	void 잘못된_견종_코드면_등록은_400과_에러_코드를_반환한다() throws Exception {
+		given(dogRegister.register(eq(42L), any(DogRegisterInfo.class))).willThrow(new InvalidBreedException("UNKNOWN"));
+
+		mockMvc.perform(post("/api/dogs")
+						.principal(CURRENT_USER)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(REGISTER_BODY.replace("\"POODLE\"", "\"UNKNOWN\"")))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.status").value(400))
+				.andExpect(jsonPath("$.code").value("DOG_INVALID_BREED"));
+
+		then(dogProfileFinder).shouldHaveNoInteractions();
+	}
+
+	@Test
+	void 강아지가_5마리면_등록은_409와_에러_코드를_반환한다() throws Exception {
+		given(dogRegister.register(eq(42L), any(DogRegisterInfo.class))).willThrow(new DogLimitExceededException());
+
+		mockMvc.perform(post("/api/dogs")
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(REGISTER_BODY))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.status").value(409))
+				.andExpect(jsonPath("$.code").value("DOG_LIMIT_EXCEEDED"))
+				.andExpect(jsonPath("$.detail").value("강아지는 최대 5마리까지 등록할 수 있습니다."))
+				.andDo(document("dog/register-error",
+						responseFields(
+								fieldWithPath("title").description("HTTP 상태 이름"),
+								fieldWithPath("status").description("HTTP 상태 코드"),
+								fieldWithPath("detail").description("사람이 읽을 수 있는 에러 설명"),
+								fieldWithPath("instance").description("에러가 발생한 요청 경로"),
+								fieldWithPath("code").description("클라이언트 분기용 에러 코드"),
+								fieldWithPath("timestamp").description("에러 발생 시각(UTC)")
+						)
+				));
+
+		then(dogProfileFinder).shouldHaveNoInteractions();
+	}
+
+	@Test
+	void 인증_정보가_없으면_등록은_401을_반환한다() throws Exception {
+		mockMvc.perform(post("/api/dogs")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(REGISTER_BODY))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+
+		then(dogRegister).shouldHaveNoInteractions();
+	}
 
 	@Test
 	@DisplayName("보유 강아지 목록을 등록 순으로 반환한다")
