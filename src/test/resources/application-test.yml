@@ -42,6 +42,8 @@ meongcoach:
   social:
     kakao:
       audiences: test-kakao-native-app-key
+    apple:
+      audiences: test-apple-bundle-id
   storage:
     r2:
       # presign은 로컬 서명 연산이라 더미 자격 증명으로도 실제 URL 생성까지 동작한다

@@ -1,15 +1,15 @@
 # 프로파일 구성
 
-환경별 설정은 Spring 프로파일로 분리합니다. 공통 값(JWT·카카오 설정, HTTP 타임아웃 등)은
+환경별 설정은 Spring 프로파일로 분리합니다. 공통 값(JWT·소셜 로그인 설정, HTTP 타임아웃 등)은
 `application.yml`에 두고, 환경별로 달라지는 값(DB, ddl-auto, 초기 데이터)만 프로파일 파일에 둡니다.
 
 ## 프로파일 표
 
 | 프로파일 | DB | ddl-auto | 용도 | 필요 환경 변수 |
 |---|---|---|---|---|
-| `local` | PostgreSQL 18.3 | `create-drop` | 로컬 개발. 스키마와 교육 초기 데이터 재생성 | `JWT_SECRET`, `KAKAO_NATIVE_APP_KEY`, `KAKAO_REST_API_KEY` |
-| `dev` | PostgreSQL | `update` | 개발 서버 | `JWT_SECRET`, `KAKAO_NATIVE_APP_KEY`, `KAKAO_REST_API_KEY`, `DB_HOST`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD` |
-| `prod` | PostgreSQL | `validate` | 운영 | `JWT_SECRET`, `KAKAO_NATIVE_APP_KEY`, `KAKAO_REST_API_KEY`, `DB_HOST`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD` |
+| `local` | PostgreSQL 18.3 | `create-drop` | 로컬 개발. 스키마와 교육 초기 데이터 재생성 | `JWT_SECRET`, `KAKAO_NATIVE_APP_KEY`, `KAKAO_REST_API_KEY`, `APPLE_BUNDLE_ID` |
+| `dev` | PostgreSQL | `update` | 개발 서버 | `JWT_SECRET`, `KAKAO_NATIVE_APP_KEY`, `KAKAO_REST_API_KEY`, `APPLE_BUNDLE_ID`, `DB_HOST`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD` |
+| `prod` | PostgreSQL | `validate` | 운영 | `JWT_SECRET`, `KAKAO_NATIVE_APP_KEY`, `KAKAO_REST_API_KEY`, `APPLE_BUNDLE_ID`, `DB_HOST`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD` |
 | `test` | H2 (인메모리) | `create-drop` | 테스트. `build.gradle.kts`가 강제 활성화 | 없음 (더미 값 내장) |
 
 - `DB_HOST`와 `DB_NAME`으로 `jdbc:postgresql://{host}:5432/{database}` URL을 구성합니다.

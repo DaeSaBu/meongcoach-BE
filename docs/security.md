@@ -5,37 +5,39 @@
 ## 로그인 흐름 — 네이티브 SDK + 서버 검증
 
 클라이언트가 React Native 앱이므로, 서버가 리다이렉트를 주고받는 OAuth2 인가 코드 흐름을 쓰지 않습니다.
-**서버가 카카오 REST 키·시크릿을 보관하지 않습니다.** 서버가 아는 카카오 값은 공개 식별자인 네이티브 앱 키(`aud`)뿐입니다.
+**서버가 제공자의 REST 키·시크릿을 보관하지 않습니다.** 서버가 아는 제공자 값은 우리 앱을 가리키는 공개 식별자(`aud`)뿐입니다.
+지원 제공자는 카카오(`kakao`)와 애플(`apple`)이며, 둘 다 OIDC id_token을 받습니다.
 
 ```
-[앱] 카카오 SDK 네이티브 로그인 (네이티브 앱 키, 앱-투-앱, OIDC)
-  → 카카오 id_token 획득
-     → POST /api/auth/login/social/kakao  { "token": "..." }
+[앱] 제공자 SDK 네이티브 로그인 (카카오 SDK / Sign in with Apple, OIDC)
+  → 제공자 id_token 획득 (애플은 identityToken)
+     → POST /api/auth/login/social/{provider}  { "token": "..." }
         → 서버가 id_token 서명·발급자·만료·aud 검증 (캐시된 공개 키로 로컬 검증)
            → 회원 조회·생성 (User + SocialAccount)
               → 우리 JWT 발급
         ← { accessToken, refreshToken, needsOnboarding }
 ```
 
-카카오가 발급한 토큰은 **로그인 시점에만 쓰고 버립니다.** 이후 인가는 전적으로 우리 JWT로 합니다.
+제공자가 발급한 토큰은 **로그인 시점에만 쓰고 버립니다.** 이후 인가는 전적으로 우리 JWT로 합니다.
 제공자 토큰은 "제공자 API를 호출할 권한"이지 "우리 서비스를 쓸 권한"이 아니고, 우리 권한 정보를 담을 수도 없기 때문입니다.
 
 ## aud 검증 — 생략하면 안 되는 이유
 
-id_token의 서명이 유효하다는 것은 "카카오가 발급했다"만 증명하고,
+id_token의 서명이 유효하다는 것은 "제공자가 발급했다"만 증명하고,
 **"우리 앱에 발급했다"는 증명하지 않습니다.**
 
-검증이 없으면 공격자가 자신의 카카오 앱에서 받은 유효한 토큰을 우리 서버에 제출해
-**해당 카카오 사용자로 로그인할 수 있습니다** (confused deputy).
+검증이 없으면 공격자가 자신의 카카오·애플 앱에서 받은 유효한 토큰을 우리 서버에 제출해
+**해당 제공자 사용자로 로그인할 수 있습니다** (confused deputy).
 
-그래서 `KakaoSocialProfileReader`는 id_token의 `aud`가 설정된
-`meongcoach.social.kakao.audiences`에 포함되는지 대조하고, 아니면 거부합니다
+그래서 `OidcIdTokenVerifier`는 id_token의 `aud`가 설정된
+`meongcoach.social.{provider}.audiences`에 포함되는지 대조하고, 아니면 거부합니다
 (`USER_SOCIAL_TOKEN_APP_MISMATCH`). `aud`가 아예 없는 토큰도 같은 이유로 거부합니다.
 
-`aud`는 플랫폼마다 다릅니다 — **네이티브 앱은 네이티브 앱 키, 웹은 REST API 키**입니다.
-그래서 단일 값이 아니라 목록으로 받습니다. 여기에는 반드시 우리 앱의 키만 넣어야 합니다.
+`aud`는 플랫폼마다 다릅니다 — 카카오는 **네이티브 앱은 네이티브 앱 키, 웹은 REST API 키**,
+애플은 **iOS 네이티브는 앱 번들 ID, 웹·안드로이드는 Services ID**입니다.
+그래서 단일 값이 아니라 목록으로 받습니다. 여기에는 반드시 우리 앱의 식별자만 넣어야 합니다.
 
-`aud` 검증만 디코더의 `OAuth2TokenValidator` 체인이 아니라 `read()`에서 직접 합니다.
+`aud` 검증만 디코더의 `OAuth2TokenValidator` 체인이 아니라 `verify()`에서 직접 합니다.
 검증기에 넣으면 서명 실패와 같은 `JwtValidationException`으로 뭉개져
 `USER_INVALID_SOCIAL_TOKEN`과 구분할 수 없기 때문입니다. 이 검증은 별도 에러 코드를 유지할 값어치가 있습니다.
 
@@ -166,8 +168,11 @@ public interface SocialProfileReader {
 ```
 
 `SocialLoginService`가 `List<SocialProfileReader>`를 주입받아 `provider()` 기준 맵으로 만듭니다.
-**제공자 추가 = `@Component` 1개 + 설정 블록. 기존 클래스 수정은 없습니다.**
-OIDC 제공자는 모두 "JWKS 디코더 + `iss` + `exp` + `aud`" 동일 형태라 `KakaoSocialProfileReader`를 그대로 베끼고 설정값만 바꾸면 됩니다.
+**제공자 추가 = `{제공자}Properties` record + `{제공자}SocialProfileReader` `@Component` + 설정 블록. 기존 클래스 수정은 없습니다.**
+
+OIDC 제공자는 모두 "JWKS 디코더 + `iss` + `exp` + `aud`" 동일 형태라, 검증은 `user/adapter/integration/OidcIdTokenVerifier`
+하나가 맡고 제공자별 리더는 설정 배선과 클레임 매핑만 합니다. `{제공자}Properties`가 `OidcProviderProperties`
+(`issuer`, `jwkSetUri`, `audiences`)를 구현하면 검증기에 그대로 넘길 수 있습니다. 살아있는 예시는 `AppleSocialProfileReader`.
 
 ## 환경 변수
 
@@ -178,6 +183,7 @@ OIDC 제공자는 모두 "JWKS 디코더 + `iss` + `exp` + `aud`" 동일 형태�
 | `JWT_SECRET` | JWT 서명 키. **32바이트 이상** (미달 시 기동 실패) |
 | `KAKAO_NATIVE_APP_KEY` | 네이티브 SDK id_token의 `aud`. 시크릿이 아닌 식별자. **빈 값이면 기동 실패** |
 | `KAKAO_REST_API_KEY` | 웹 로그인 id_token의 `aud`. 시크릿이 아닌 식별자. **빈 값이면 기동 실패** |
+| `APPLE_BUNDLE_ID` | Sign in with Apple id_token의 `aud`(iOS 앱 번들 ID). 시크릿이 아닌 식별자. **빈 값이면 기동 실패** |
 
 로컬은 환경 변수로 export하고, 배포는 ECS task definition의 환경변수와 Secrets Manager 참조로 주입합니다.
 테스트는 `src/test/resources/application-test.yml`의 더미 값을 쓰므로 환경 변수가 필요 없습니다.
@@ -196,7 +202,13 @@ dev/prod의 DB 접속 변수(`DB_HOST` 등)는 [profiles.md](profiles.md)를 참
   `SocialAccount.email`이 nullable이라 동작에는 문제가 없습니다.
 - **앱이 OIDC를 켜야 합니다.** 카카오 개발자 콘솔에서 OpenID Connect를 활성화하고 앱이 `openid`
   스코프로 로그인해야 id_token이 내려옵니다. 액세스 토큰만 보내면 `USER_INVALID_SOCIAL_TOKEN`입니다.
+- **애플 이메일은 비공개 릴레이 주소일 수 있습니다.** 사용자가 "이메일 가리기"를 고르면 `email`이
+  `@privaterelay.appleid.com` 주소로 오고, 이메일 공유에 동의하지 않으면 클레임 자체가 없습니다.
+  카카오와 마찬가지로 `SocialAccount.email`이 nullable이라 동작에는 문제가 없습니다. 이름은 id_token에
+  없고 최초 인가 응답에만 실리므로 서버는 받지 않습니다.
+- **애플 id_token의 `nonce`는 검증하지 않습니다.** 서버가 nonce를 발급·보관하는 왕복이 없는 무상태
+  설계라 카카오와 같은 기준을 적용합니다. 재사용 창은 id_token 만료(애플 10분)로 제한됩니다.
 - **공개 키 조회 실패는 여전히 로그인을 막습니다.** 디코더가 JWKS를 캐시하므로 매 로그인이
-  카카오에 묶이지는 않지만, 캐시가 비어 있을 때 조회에 실패하면
+  제공자에 묶이지는 않지만, 캐시가 비어 있을 때 조회에 실패하면
   `USER_SOCIAL_PROVIDER_UNAVAILABLE`(502)로 토큰 무효(401)와 구분해 응답합니다.
   `spring.http.clients.read-timeout`(3초)이 최후 방어선입니다.

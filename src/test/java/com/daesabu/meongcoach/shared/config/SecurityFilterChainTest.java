@@ -98,6 +98,15 @@ class SecurityFilterChainTest {
 	}
 
 	@Test
+	void 애플_로그인_경로도_인증_없이_열려_있고_잘못된_토큰이면_401을_반환한다() throws Exception {
+		mockMvc.perform(post("/api/auth/login/social/apple")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"token\": \"invalid\"}"))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.code").value("USER_INVALID_SOCIAL_TOKEN"));
+	}
+
+	@Test
 	@DisplayName("회원 경로는 인증이 필요하다")
 	void otherUserPathsAreProtected() throws Exception {
 		mockMvc.perform(get("/api/users/me"))
