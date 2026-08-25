@@ -23,7 +23,9 @@ public record OnboardingCompleteRequest(
 		@Size(max = 512) String profileImageUrl,
 		@Size(max = 100) List<@NotNull @Positive Long> priorTrainingTopicIds,
 		@Size(max = 100) List<@NotNull @Positive Long> trainingGoalTopicIds,
-		@NotEmpty @Valid List<DogRequest> dogs) {
+		// 최대 크기는 dog 모듈의 사용자당 강아지 수 제한(DogRegisterService.MAX_DOGS_PER_USER)과 같은 값이다.
+		// 모듈 경계를 넘어 상수를 참조하지 않으므로 값이 바뀌면 함께 고친다
+		@NotEmpty @Size(max = 5) @Valid List<DogRequest> dogs) {
 
 	public OnboardingCompleteInfo toInfo() {
 		return new OnboardingCompleteInfo(
