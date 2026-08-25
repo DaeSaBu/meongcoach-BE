@@ -1,16 +1,14 @@
 package com.daesabu.meongcoach.dog.domain;
 
-import com.daesabu.meongcoach.dog.domain.shared.Breed;
-import com.daesabu.meongcoach.dog.domain.shared.DogSex;
-import com.daesabu.meongcoach.dog.domain.shared.Personality;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Set;
 
 /**
- * 강아지 프로필 수정 입력. 전체 교체 입력이라 성격 집합도 함께 담는다. 소유자·선택 상태는 수정 대상이 아니라 담지 않는다.
+ * 강아지 프로필 전체 교체 입력. 견종·성별·성격은 문자열 코드로 받고 enum 변환·검증은 Dog.updateProfile에서 일어난다.
+ * personalities는 미선택이면 null을 허용한다.
  */
-public record DogProfileUpdateCommand(String name, Breed breed, DogSex sex, LocalDate birthDate,
-                                      BigDecimal weightKg, Set<Personality> personalities,
+public record DogProfileUpdateCommand(String name, String breed, String sex, LocalDate birthDate,
+                                      BigDecimal weightKg, Set<String> personalities,
                                       String profileImageUrl, String expectation) {
 }

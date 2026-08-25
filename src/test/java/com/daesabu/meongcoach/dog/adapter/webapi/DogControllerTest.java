@@ -30,6 +30,7 @@ import com.daesabu.meongcoach.dog.domain.DogProfileUpdateCommand;
 import com.daesabu.meongcoach.dog.domain.DogRegisterCommand;
 import com.daesabu.meongcoach.dog.domain.exception.DogLimitExceededException;
 import com.daesabu.meongcoach.dog.domain.exception.DogNotFoundException;
+import com.daesabu.meongcoach.dog.domain.exception.InvalidBreedException;
 import com.daesabu.meongcoach.dog.domain.exception.LastDogNotDeletableException;
 import com.daesabu.meongcoach.dog.domain.shared.Breed;
 import com.daesabu.meongcoach.dog.domain.shared.DogSex;
@@ -597,13 +598,13 @@ class DogControllerTest {
 						.content(UPDATE_BODY))
 				.andExpect(status().isOk());
 
-		then(dogProfileUpdater).should().update(42L, 10L, new DogProfileUpdateCommand("보리", Breed.MALTESE,
-				DogSex.FEMALE, LocalDate.of(2023, 1, 15), new BigDecimal("3.2"),
-				Set.of(Personality.TIMID, Personality.LIVELY), NEW_IMAGE_URL, NEW_EXPECTATION));
+		then(dogProfileUpdater).should().update(42L, 10L, new DogProfileUpdateCommand("보리", "MALTESE",
+				"FEMALE", LocalDate.of(2023, 1, 15), new BigDecimal("3.2"),
+				Set.of("TIMID", "LIVELY"), NEW_IMAGE_URL, NEW_EXPECTATION));
 	}
 
 	@Test
-	void 성격을_생략하면_빈_성격으로_수정을_위임한다() throws Exception {
+	void 성격을_생략하면_성격_없이_수정을_위임한다() throws Exception {
 		given(dogProfileUpdater.update(eq(42L), eq(10L), any(DogProfileUpdateCommand.class))).willReturn(updatedDog(10L));
 
 		mockMvc.perform(put("/api/dogs/{dogId}", 10L)
@@ -612,13 +613,16 @@ class DogControllerTest {
 						.content(UPDATE_BODY.replace("\"personalities\": [\"TIMID\", \"LIVELY\"],", "")))
 				.andExpect(status().isOk());
 
-		then(dogProfileUpdater).should().update(42L, 10L, new DogProfileUpdateCommand("보리", Breed.MALTESE,
-				DogSex.FEMALE, LocalDate.of(2023, 1, 15), new BigDecimal("3.2"), Set.of(), NEW_IMAGE_URL,
+		then(dogProfileUpdater).should().update(42L, 10L, new DogProfileUpdateCommand("보리", "MALTESE",
+				"FEMALE", LocalDate.of(2023, 1, 15), new BigDecimal("3.2"), null, NEW_IMAGE_URL,
 				NEW_EXPECTATION));
 	}
 
 	@Test
 	void 잘못된_견종_코드면_수정은_400과_에러_코드를_반환한다() throws Exception {
+		given(dogProfileUpdater.update(eq(42L), eq(10L), any(DogProfileUpdateCommand.class)))
+				.willThrow(new InvalidBreedException("UNKNOWN"));
+
 		mockMvc.perform(put("/api/dogs/{dogId}", 10L)
 						.principal(CURRENT_USER)
 						.contentType(MediaType.APPLICATION_JSON)
@@ -626,8 +630,6 @@ class DogControllerTest {
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.status").value(400))
 				.andExpect(jsonPath("$.code").value("DOG_INVALID_BREED"));
-
-		then(dogProfileUpdater).shouldHaveNoInteractions();
 	}
 
 	@Test

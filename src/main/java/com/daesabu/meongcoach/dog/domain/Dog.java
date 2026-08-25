@@ -117,14 +117,18 @@ public class Dog extends BaseEntity {
 
 	// 수정 화면이 전체 값을 다시 보내는 전체 교체라 필드별 메서드 대신 한 번에 바꾼다. 소유자·선택 상태는 건드리지 않는다
 	public void updateProfile(DogProfileUpdateCommand command) {
+		// 코드 변환을 먼저 끝내야 성격 코드가 잘못됐을 때 이름·견종만 바뀐 채 예외가 나가지 않는다
+		Breed parsedBreed = Breed.from(command.breed());
+		DogSex parsedSex = DogSex.from(command.sex());
+		Set<Personality> parsedPersonalities = Personality.fromCodes(command.personalities());
 		this.name = command.name();
-		this.breed = command.breed();
-		this.sex = command.sex();
+		this.breed = parsedBreed;
+		this.sex = parsedSex;
 		this.birthDate = command.birthDate();
 		this.weightKg = command.weightKg();
 		this.profileImageUrl = Objects.requireNonNullElse(command.profileImageUrl(), "");
 		this.expectation = Objects.requireNonNullElse(command.expectation(), "");
-		changePersonalities(command.personalities());
+		changePersonalities(parsedPersonalities);
 	}
 
 	public void changePersonalities(Set<Personality> personalities) {

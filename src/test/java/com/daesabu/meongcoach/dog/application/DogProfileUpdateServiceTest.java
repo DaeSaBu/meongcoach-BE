@@ -47,7 +47,7 @@ class DogProfileUpdateServiceTest {
 		Dog saved = persistSelectedDog(USER_ID);
 		entityManager.clear();
 
-		dogProfileUpdater.update(USER_ID, saved.getId(), updateCommand(Set.of(Personality.TIMID, Personality.LIVELY)));
+		dogProfileUpdater.update(USER_ID, saved.getId(), updateCommand(Set.of("TIMID", "LIVELY")));
 		entityManager.flush();
 		entityManager.clear();
 
@@ -66,7 +66,7 @@ class DogProfileUpdateServiceTest {
 	void 수정된_강아지를_반환한다() {
 		Dog saved = persistSelectedDog(USER_ID);
 
-		Dog updated = dogProfileUpdater.update(USER_ID, saved.getId(), updateCommand(Set.of(Personality.TIMID)));
+		Dog updated = dogProfileUpdater.update(USER_ID, saved.getId(), updateCommand(Set.of("TIMID")));
 
 		assertThat(updated.getId()).isEqualTo(saved.getId());
 		assertThat(updated.getName()).isEqualTo("보리");
@@ -98,7 +98,7 @@ class DogProfileUpdateServiceTest {
 	@Test
 	void 생년월일과_이미지_기대사항이_없어도_수정할_수_있다() {
 		Dog saved = persistSelectedDog(USER_ID);
-		DogProfileUpdateCommand command = new DogProfileUpdateCommand("보리", Breed.MALTESE, DogSex.FEMALE, null,
+		DogProfileUpdateCommand command = new DogProfileUpdateCommand("보리", "MALTESE", "FEMALE", null,
 				new BigDecimal("3.20"), Set.of(), null, null);
 
 		Dog updated = dogProfileUpdater.update(USER_ID, saved.getId(), command);
@@ -127,8 +127,8 @@ class DogProfileUpdateServiceTest {
 		assertThat(unchanged.getName()).isEqualTo("초코");
 	}
 
-	private DogProfileUpdateCommand updateCommand(Set<Personality> personalities) {
-		return new DogProfileUpdateCommand("보리", Breed.MALTESE, DogSex.FEMALE, LocalDate.of(2023, 1, 15),
+	private DogProfileUpdateCommand updateCommand(Set<String> personalities) {
+		return new DogProfileUpdateCommand("보리", "MALTESE", "FEMALE", LocalDate.of(2023, 1, 15),
 				new BigDecimal("3.20"), personalities, NEW_IMAGE_URL, NEW_EXPECTATION);
 	}
 
