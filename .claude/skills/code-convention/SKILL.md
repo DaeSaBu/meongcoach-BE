@@ -33,9 +33,9 @@ user-invocable: true
 | 외부 API 연동 포트 | `application/required` | 자원 이름 그대로 | `SocialProfileReader` |
 | 외부 API 연동 구현 | `adapter/integration` | `{제공자}~` | `KakaoSocialProfileReader` |
 | 도메인 모델 | `domain` | 개념 이름 그대로 | `User` |
-| 도메인 입력 모델 | `domain` | `~Command` (record) | `DogRegisterCommand` |
+| 도메인 입력 모델 | `domain` (다른 모듈이 조립하면 `domain/shared`) | `~Command` (record) | `DogProfileUpdateCommand`, `DogRegisterCommand` |
 | 일급 컬렉션 | `domain` | 엔티티 이름의 복수형 | `Dogs` |
-| 다른 모듈에 노출하는 도메인 타입 | `domain/shared` | 개념 이름 그대로. `package-info.java`에 `@NamedInterface("shared")` 선언 | `Breed` |
+| 다른 모듈에 노출하는 도메인 타입 | `domain/shared` | 개념 이름 그대로. `package-info.java`에 `@NamedInterface("shared")` 선언 | `Breed`, `DogRegisterCommand` |
 | 값 객체 | `domain/vo` | 개념 이름 그대로 | `Email` |
 | 도메인 예외·에러코드 | `domain/exception` | `{모듈}ErrorCode`, `~Exception` | `UserErrorCode`, `InvalidEmailException` |
 
@@ -70,6 +70,7 @@ user-invocable: true
 - 도메인 입력 모델은 `~Command` 접미사의 record로 `domain`에 두며, 웹 DTO와 별개로 유지한다. (예: `DogRegisterCommand`)
 	- 엔티티 정적 팩토리의 순수 값 파라미터가 3개 이상이면 Command로 묶고, 팩토리는 Command를 받아 생성자에 전달한다.
 	- 연관 엔티티는 Command에 담지 않고 별도 인자로 전달한다. (예: `Curriculum.create(Topic topic, CurriculumCreateCommand command)`)
+	- Command의 enum 값은 **문자열 코드로 받고, 변환·검증은 Command를 소비하는 도메인 객체가 한다.** (예: `UserProfile`의 `Mbti.from`·`Gender.from`, `Dog`의 `Breed.from`·`Personality.fromCodes`) 요청 DTO나 서비스에서 미리 변환하지 않는다 — 변환 지점이 한 곳이어야 다른 모듈이 조립하는 Command와 같은 경로로 검증되고, 잘못된 코드는 어디서 오든 같은 도메인 예외로 400이 된다. 소유자 ID처럼 요청 주체에서 오는 값은 Command에 넣지 않고 별도 인자로 넘긴다. (예: `DogRegister.register(Long userId, DogRegisterCommand command)`)
 - 애플리케이션 조회 결과는 **도메인 타입(엔티티·값 객체)을 그대로 반환하는 것이 기본**이다. 값을 그대로 옮겨 담기만 하는 `~Result`는 만들지 않는다.
 	- **도메인 타입 하나로 표현할 수 없을 때만** — 여러 애그리거트 조합, 일부 필드만 내리는 projection, 집계값 — `application/provided`에 `~Result` record를 두고 감싼다.
 	- 모듈 경계를 넘는다는 이유만으로 `~Result`를 만들지 않는다. 다른 모듈이 필요한 enum·값 객체·Command는 `domain/shared`(또는 `user/domain/command` 같은 named interface 패키지)로 노출해 그대로 주고받는다. 노출되지 않은 도메인 타입을 provided 인터페이스 시그니처에 쓰면 호출하는 모듈이 `ApplicationModules.verify()`에서 실패한다 — 그때 해법은 record 복사본이 아니라 노출이다. 엔티티는 노출하지 않으므로 엔티티를 경계 밖으로 내려야 하면 `~Result`로 projection한다
