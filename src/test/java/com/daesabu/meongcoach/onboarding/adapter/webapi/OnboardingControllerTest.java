@@ -10,8 +10,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.daesabu.meongcoach.dog.application.provided.BreedInfo;
-import com.daesabu.meongcoach.dog.application.provided.PersonalityInfo;
+import com.daesabu.meongcoach.dog.domain.shared.Breed;
+import com.daesabu.meongcoach.dog.domain.shared.Personality;
 import com.daesabu.meongcoach.media.domain.ImageType;
 import com.daesabu.meongcoach.media.domain.ImageUploadTarget;
 import com.daesabu.meongcoach.onboarding.application.provided.OnboardingCompleteInfo;
@@ -598,8 +598,8 @@ class OnboardingControllerTest {
 			return () -> new OnboardingMetadataResult(
 					List.of(new TopicSummary(1L, "배변 훈련", "편안한 배변 습관 만들기"),
 								new TopicSummary(2L, "산책 훈련", "즐겁고 안전한 첫 산책")),
-					List.of(new BreedInfo("POODLE", "푸들"), new BreedInfo("MALTESE", "말티즈")),
-					List.of(new PersonalityInfo("TIMID", "소심함"), new PersonalityInfo("LIVELY", "활발함")),
+					List.of(Breed.POODLE, Breed.MALTESE),
+					List.of(Personality.TIMID, Personality.LIVELY),
 					List.of("ISTJ", "INTJ"));
 		}
 

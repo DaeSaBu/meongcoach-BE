@@ -4,8 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.daesabu.meongcoach.dog.application.BreedFinderService;
 import com.daesabu.meongcoach.dog.application.PersonalityFinderService;
-import com.daesabu.meongcoach.dog.application.provided.BreedInfo;
-import com.daesabu.meongcoach.dog.application.provided.PersonalityInfo;
+import com.daesabu.meongcoach.dog.domain.shared.Breed;
+import com.daesabu.meongcoach.dog.domain.shared.Personality;
 import com.daesabu.meongcoach.onboarding.application.provided.OnboardingMetadataResult;
 import com.daesabu.meongcoach.training.application.TopicFinderService;
 import com.daesabu.meongcoach.training.application.provided.TopicSummary;
@@ -53,11 +53,11 @@ class OnboardingMetadataServiceTest {
 
 		assertThat(result.topics()).extracting(TopicSummary::title)
 				.containsExactly("배변 훈련", "산책 훈련");
-		assertThat(result.breeds()).extracting(BreedInfo::code)
+		assertThat(result.breeds()).extracting(Breed::name)
 				.hasSize(31)
 				.startsWith("MALTESE")
 				.endsWith("MIXED");
-		assertThat(result.personalities()).extracting(PersonalityInfo::code)
+		assertThat(result.personalities()).extracting(Personality::name)
 				.containsExactly("TIMID", "LIVELY", "FRIENDLY", "CALM", "FEARFUL", "AFFECTIONATE",
 						"INDEPENDENT", "PLAYFUL", "EXCITABLE", "STUBBORN");
 		assertThat(result.mbtis()).hasSize(16).contains("ISTJ", "ENFP");
