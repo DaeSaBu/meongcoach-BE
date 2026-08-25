@@ -34,10 +34,12 @@ user-invocable: true
 | 외부 API 연동 구현 | `adapter/integration` | `{제공자}~` | `KakaoSocialProfileReader` |
 | 도메인 모델 | `domain` | 개념 이름 그대로 | `User` |
 | 도메인 입력 모델 | `domain` | `~Command` (record) | `DogRegisterCommand` |
+| 일급 컬렉션 | `domain` | 엔티티 이름의 복수형 | `Dogs` |
 | 값 객체 | `domain/vo` | 개념 이름 그대로 | `Email` |
 | 도메인 예외·에러코드 | `domain/exception` | `{모듈}ErrorCode`, `~Exception` | `UserErrorCode`, `InvalidEmailException` |
 
-- `domain` 루트에는 엔티티와 enum을 두고, 값 객체는 `domain/vo`, 예외·에러코드는 `domain/exception`으로 분리한다.
+- `domain` 루트에는 엔티티·enum·일급 컬렉션을 두고, 값 객체는 `domain/vo`, 예외·에러코드는 `domain/exception`으로 분리한다.
+- 일급 컬렉션은 엔티티 하나로는 판단할 수 없는 규칙(마리 수 상한, 마지막 한 마리 삭제 금지처럼 한 사용자 소유 목록 전체를 봐야 하는 규칙)을 담을 때만 둔다. 영속화 단위가 아니라 application이 리포지토리로 조회한 목록을 생성자로 넘겨 만들며, 리포지토리를 참조하지 않는다. 규칙은 Spring 없는 단위 테스트로 검증한다. (살아있는 예시: `dog/domain/Dogs`)
 
 ---
 
