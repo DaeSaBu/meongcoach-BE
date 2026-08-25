@@ -35,10 +35,11 @@ user-invocable: true
 | 도메인 모델 | `domain` | 개념 이름 그대로 | `User` |
 | 도메인 입력 모델 | `domain` | `~Command` (record) | `DogRegisterCommand` |
 | 일급 컬렉션 | `domain` | 엔티티 이름의 복수형 | `Dogs` |
+| 다른 모듈에 노출하는 도메인 타입 | `domain/shared` | 개념 이름 그대로. `package-info.java`에 `@NamedInterface("shared")` 선언 | `Breed` |
 | 값 객체 | `domain/vo` | 개념 이름 그대로 | `Email` |
 | 도메인 예외·에러코드 | `domain/exception` | `{모듈}ErrorCode`, `~Exception` | `UserErrorCode`, `InvalidEmailException` |
 
-- `domain` 루트에는 엔티티·enum·일급 컬렉션을 두고, 값 객체는 `domain/vo`, 예외·에러코드는 `domain/exception`으로 분리한다.
+- `domain` 루트에는 엔티티·enum·일급 컬렉션을 두고, 값 객체는 `domain/vo`, 예외·에러코드는 `domain/exception`으로 분리한다. 다른 모듈이 써야 하는 enum·값 객체는 `domain/shared`에 두고 `@NamedInterface("shared")`로 노출한다 — Modulith `verify()`는 named interface 패키지에 물리적으로 있는 타입만 공개로 인정하고, `DomainPurityTest`가 `package-info` 외 domain 클래스의 스프링 의존을 막으므로 타입에 직접 붙이지 않는다. (살아있는 예시: `dog/domain/shared`)
 - 일급 컬렉션은 엔티티 하나로는 판단할 수 없는 규칙(마리 수 상한, 마지막 한 마리 삭제 금지처럼 한 사용자 소유 목록 전체를 봐야 하는 규칙)을 담을 때만 둔다. 영속화 단위가 아니라 application이 리포지토리로 조회한 목록을 생성자로 넘겨 만들며, 리포지토리를 참조하지 않는다. 규칙은 Spring 없는 단위 테스트로 검증한다. (살아있는 예시: `dog/domain/Dogs`)
 
 ---
@@ -70,9 +71,8 @@ user-invocable: true
 	- 엔티티 정적 팩토리의 순수 값 파라미터가 3개 이상이면 Command로 묶고, 팩토리는 Command를 받아 생성자에 전달한다.
 	- 연관 엔티티는 Command에 담지 않고 별도 인자로 전달한다. (예: `Curriculum.create(Topic topic, CurriculumCreateCommand command)`)
 - 애플리케이션 조회 결과는 **도메인 타입(엔티티·값 객체)을 그대로 반환하는 것이 기본**이다. 값을 그대로 옮겨 담기만 하는 `~Result`는 만들지 않는다.
-	- 다음 중 하나에 해당할 때만 `application/provided`에 `~Result` record를 두고 감싼다.
-		- **도메인 타입 하나로 표현할 수 없을 때** — 여러 애그리거트 조합, 일부 필드만 내리는 projection, 집계값
-		- **모듈 경계를 넘는 반환일 때** — `@NamedInterface("provided")`는 provided 패키지에 물리적으로 존재하는 타입만 노출로 인정한다. 인터페이스 시그니처에 등장하는 도메인 타입은 전파되지 않으므로, 도메인 타입을 반환하면 호출하는 모듈이 `ApplicationModules.verify()`에서 실패한다
+	- **도메인 타입 하나로 표현할 수 없을 때만** — 여러 애그리거트 조합, 일부 필드만 내리는 projection, 집계값 — `application/provided`에 `~Result` record를 두고 감싼다.
+	- 모듈 경계를 넘는다는 이유만으로 `~Result`를 만들지 않는다. 다른 모듈이 필요한 enum·값 객체·Command는 `domain/shared`(또는 `user/domain/command` 같은 named interface 패키지)로 노출해 그대로 주고받는다. 노출되지 않은 도메인 타입을 provided 인터페이스 시그니처에 쓰면 호출하는 모듈이 `ApplicationModules.verify()`에서 실패한다 — 그때 해법은 record 복사본이 아니라 노출이다. 엔티티는 노출하지 않으므로 엔티티를 경계 밖으로 내려야 하면 `~Result`로 projection한다
 	- `open-in-view: true`(`application.yml`)라 `adapter`에서 엔티티의 지연 로딩 연관을 읽어도 `LazyInitializationException`이 나지 않는다. 다만 그 쿼리는 서비스 트랜잭션 밖에서 실행되고 요청이 끝날 때까지 커넥션을 잡으므로, 컬렉션을 내려야 하는 조회는 리포지토리 메서드에 `@EntityGraph`/fetch join을 붙여 트랜잭션 안에서 미리 로딩한다.
 	- `~Result`를 둘 때 필드명은 도메인 기준(`id`, `title`, `sortOrder`)으로 두고, 웹 노출 이름(`topicId`, `topicTitle`)으로 바꾸는 일은 `~Response.from(...)` 정적 팩토리에서만 한다. `~Result`에 웹 네이밍을 쓰면 `application`이 `adapter`의 관심사를 떠안게 된다.
 - DTO ↔ 도메인 변환은 DTO의 정적 팩토리 메서드(`from`, `of`) 또는 `toXxx` 메서드로 처리한다.
