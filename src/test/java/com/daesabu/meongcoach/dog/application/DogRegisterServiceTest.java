@@ -9,6 +9,7 @@ import com.daesabu.meongcoach.dog.domain.Breed;
 import com.daesabu.meongcoach.dog.domain.Dog;
 import com.daesabu.meongcoach.dog.domain.DogSex;
 import com.daesabu.meongcoach.dog.domain.DogStatus;
+import com.daesabu.meongcoach.dog.domain.Dogs;
 import com.daesabu.meongcoach.dog.domain.Personality;
 import com.daesabu.meongcoach.dog.domain.exception.DogLimitExceededException;
 import com.daesabu.meongcoach.dog.domain.exception.InvalidBreedException;
@@ -204,9 +205,9 @@ class DogRegisterServiceTest {
 	@Test
 	void 삭제된_강아지는_등록_개수에_포함되지_않는다() {
 		Long deletedDogId = registerDogs(1L, 5).getFirst();
-		Dog deletedDog = dogRepository.findById(deletedDogId).orElseThrow();
-		deletedDog.delete();
-		dogRepository.saveAndFlush(deletedDog);
+		Dogs dogs = new Dogs(dogRepository.findAllByUserIdOrderByIdAsc(1L));
+		dogs.delete(deletedDogId);
+		entityManager.flush();
 		entityManager.clear();
 
 		Long dogId = service.register(1L, registerInfo("MALE", Set.of()));
