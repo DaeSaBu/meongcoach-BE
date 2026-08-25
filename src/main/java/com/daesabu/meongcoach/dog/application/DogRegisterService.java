@@ -7,9 +7,9 @@ import com.daesabu.meongcoach.dog.domain.Breed;
 import com.daesabu.meongcoach.dog.domain.Dog;
 import com.daesabu.meongcoach.dog.domain.DogRegisterCommand;
 import com.daesabu.meongcoach.dog.domain.DogSex;
-import com.daesabu.meongcoach.dog.domain.DogStatus;
+import com.daesabu.meongcoach.dog.domain.Dogs;
 import com.daesabu.meongcoach.dog.domain.Personality;
-import com.daesabu.meongcoach.dog.domain.exception.DogLimitExceededException;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,25 +22,18 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class DogRegisterService implements DogRegister {
 
-	// 사용자당 등록할 수 있는 강아지 수. 온보딩 요청의 dogs 목록 크기 제한과 같은 값이다
-	private static final int MAX_DOGS_PER_USER = 5;
-
 	private final DogRepository dogRepository;
 
 	@Override
 	@Transactional
 	public Long register(Long userId, DogRegisterInfo info) {
-		// 소프트 딜리트된 강아지는 엔티티의 @SQLRestriction으로 개수에서 제외된다
-		if (dogRepository.countByUserId(userId) >= MAX_DOGS_PER_USER) {
-			throw new DogLimitExceededException();
-		}
-		Dog dog = Dog.register(new DogRegisterCommand(userId, info.name(), Breed.from(info.breed()),
+		// 마리 수 상한·선택 여부는 사용자 단위 규칙이라 Dogs가 판단한다.
+		// 소프트 딜리트된 강아지는 엔티티의 @SQLRestriction으로 조회에서 제외되므로 살아있는 강아지만 담긴다
+		List<Dog> owned = dogRepository.findAllByUserIdOrderByIdAsc(userId);
+		Dogs dogs = new Dogs(owned);
+		Dog dog = dogs.register(new DogRegisterCommand(userId, info.name(), Breed.from(info.breed()),
 				DogSex.from(info.sex()), info.birthDate(), info.weightKg(), info.profileImageUrl(), info.expectation()));
 		dog.changePersonalities(Personality.fromCodes(info.personalities()));
-		// 사용자당 선택된 강아지는 한 마리다. 선택된 강아지가 없을 때 등록하는 강아지가 선택되며, 첫 등록이 여기 해당한다
-		if (!dogRepository.existsByUserIdAndStatus(userId, DogStatus.SELECTED)) {
-			dog.select();
-		}
 		return dogRepository.save(dog).getId();
 	}
 }

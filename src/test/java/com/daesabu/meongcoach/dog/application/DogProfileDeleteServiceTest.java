@@ -82,7 +82,7 @@ class DogProfileDeleteServiceTest {
 		entityManager.flush();
 		entityManager.clear();
 
-		assertThat(dogRepository.existsByUserIdAndStatus(USER_ID, DogStatus.SELECTED)).isFalse();
+		assertThat(dogRepository.findAllByUserIdOrderByIdAsc(USER_ID)).noneMatch(Dog::isSelected);
 		Dog remaining = dogRepository.findById(unselected.getId()).orElseThrow();
 		assertThat(remaining.getStatus()).isEqualTo(DogStatus.UNSELECTED);
 	}

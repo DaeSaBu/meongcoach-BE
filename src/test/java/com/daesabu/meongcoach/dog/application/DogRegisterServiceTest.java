@@ -198,7 +198,7 @@ class DogRegisterServiceTest {
 		assertThatThrownBy(() -> service.register(1L, registerInfo("MALE", Set.of())))
 				.isInstanceOf(DogLimitExceededException.class);
 
-		assertThat(dogRepository.countByUserId(1L)).isEqualTo(5);
+		assertThat(dogRepository.findAllByUserIdOrderByIdAsc(1L)).hasSize(5);
 	}
 
 	@Test
@@ -212,7 +212,7 @@ class DogRegisterServiceTest {
 		Long dogId = service.register(1L, registerInfo("MALE", Set.of()));
 
 		assertThat(dogRepository.findById(dogId)).isPresent();
-		assertThat(dogRepository.countByUserId(1L)).isEqualTo(5);
+		assertThat(dogRepository.findAllByUserIdOrderByIdAsc(1L)).hasSize(5);
 	}
 
 	@Test
