@@ -10,11 +10,13 @@ import com.daesabu.meongcoach.dog.domain.Dog;
 import com.daesabu.meongcoach.dog.domain.DogRegisterCommand;
 import com.daesabu.meongcoach.dog.domain.DogSex;
 import com.daesabu.meongcoach.dog.domain.DogStatus;
+import com.daesabu.meongcoach.dog.domain.Dogs;
 import com.daesabu.meongcoach.dog.domain.Personality;
 import com.daesabu.meongcoach.dog.domain.exception.DogNotFoundException;
 import com.daesabu.meongcoach.dog.domain.exception.LastDogNotDeletableException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -82,7 +84,7 @@ class DogProfileDeleteServiceTest {
 		entityManager.flush();
 		entityManager.clear();
 
-		assertThat(dogRepository.existsByUserIdAndStatus(USER_ID, DogStatus.SELECTED)).isFalse();
+		assertThat(dogRepository.findAllByUserIdOrderByIdAsc(USER_ID)).noneMatch(Dog::isSelected);
 		Dog remaining = dogRepository.findById(unselected.getId()).orElseThrow();
 		assertThat(remaining.getStatus()).isEqualTo(DogStatus.UNSELECTED);
 	}
@@ -133,7 +135,7 @@ class DogProfileDeleteServiceTest {
 	void 이미_삭제된_강아지는_개수에_포함되지_않는다() {
 		Dog remaining = persistSelectedDog(USER_ID);
 		Dog deleted = dogRepository.saveAndFlush(newDog(USER_ID));
-		deleted.delete();
+		new Dogs(List.of(remaining, deleted)).delete(deleted.getId());
 		dogRepository.saveAndFlush(deleted);
 		entityManager.clear();
 

@@ -37,30 +37,6 @@ class DogRepositoryTest {
 	private TestEntityManager entityManager;
 
 	@Test
-	@DisplayName("선택된 강아지가 있으면 존재한다고 알려준다")
-	void existsByUserIdAndStatusReturnsTrueWhenSelectedDogExists() {
-		persistSelectedDog(USER_ID);
-
-		assertThat(dogRepository.existsByUserIdAndStatus(USER_ID, DogStatus.SELECTED)).isTrue();
-	}
-
-	@Test
-	@DisplayName("미선택 강아지만 있으면 선택된 강아지가 없다고 알려준다")
-	void existsByUserIdAndStatusReturnsFalseWhenOnlyUnselectedDogExists() {
-		persistUnselectedDog(USER_ID);
-
-		assertThat(dogRepository.existsByUserIdAndStatus(USER_ID, DogStatus.SELECTED)).isFalse();
-	}
-
-	@Test
-	@DisplayName("다른 사용자의 선택된 강아지는 세지 않는다")
-	void existsByUserIdAndStatusIgnoresOtherUsersDog() {
-		persistSelectedDog(OTHER_USER_ID);
-
-		assertThat(dogRepository.existsByUserIdAndStatus(USER_ID, DogStatus.SELECTED)).isFalse();
-	}
-
-	@Test
 	@DisplayName("사용자의 선택된 강아지를 조회한다")
 	void findFirstByUserIdAndStatusReturnsSelectedDog() {
 		persistUnselectedDog(USER_ID);
