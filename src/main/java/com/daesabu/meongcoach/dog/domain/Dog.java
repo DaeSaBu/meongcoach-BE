@@ -128,8 +128,9 @@ public class Dog extends BaseEntity {
 		this.personalities = new HashSet<>(personalities);
 	}
 
-	// 행을 지우지 않고 삭제 시각만 기록한다. 선택 상태는 건드리지 않는다 — 이후 조회에서 제외되므로 선택된 강아지가 없는 상태가 된다
-	public void delete() {
+	// 행을 지우지 않고 삭제 시각만 기록한다. 선택 상태는 건드리지 않는다 — 이후 조회에서 제외되므로 선택된 강아지가 없는 상태가 된다.
+	// 소유 확인·마지막 한 마리 삭제 금지는 Dogs.delete()에 있으므로 application이 우회하지 못하게 같은 패키지에서만 연다
+	void delete() {
 		this.deletedAt = LocalDateTime.now();
 	}
 
