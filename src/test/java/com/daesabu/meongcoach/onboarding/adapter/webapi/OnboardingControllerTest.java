@@ -23,6 +23,7 @@ import com.daesabu.meongcoach.onboarding.application.provided.OnboardingMetadata
 import com.daesabu.meongcoach.training.application.provided.TopicSummary;
 import com.daesabu.meongcoach.user.domain.exception.AlreadyOnboardedException;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -102,6 +103,12 @@ class OnboardingControllerTest {
 
 	@Autowired
 	private RecordingOnboardingCompleter onboardingCompleter;
+
+	// 컨텍스트가 테스트 간 공유되므로 이전 테스트가 남긴 기록을 지운다
+	@BeforeEach
+	void resetCompleter() {
+		onboardingCompleter.lastInfo = null;
+	}
 
 	@Test
 	@DisplayName("온보딩 메타데이터를 조회한다")
@@ -382,6 +389,19 @@ class OnboardingControllerTest {
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
 				.andExpect(jsonPath("$.errors[0].field").value("gender"));
+	}
+
+	@Test
+	void 잘못된_견종_코드면_온보딩_완료는_400과_에러_코드를_반환한다() throws Exception {
+		mockMvc.perform(post("/api/onboarding")
+						.principal(() -> "1")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(COMPLETE_REQUEST.replace("\"POODLE\"", "\"UNKNOWN\"")))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.status").value(400))
+				.andExpect(jsonPath("$.code").value("DOG_INVALID_BREED"));
+
+		assertThat(onboardingCompleter.lastInfo).isNull();
 	}
 
 	@Test
