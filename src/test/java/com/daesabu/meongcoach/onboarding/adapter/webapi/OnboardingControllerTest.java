@@ -392,19 +392,6 @@ class OnboardingControllerTest {
 	}
 
 	@Test
-	void 잘못된_견종_코드면_온보딩_완료는_400과_에러_코드를_반환한다() throws Exception {
-		mockMvc.perform(post("/api/onboarding")
-						.principal(() -> "1")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content(COMPLETE_REQUEST.replace("\"POODLE\"", "\"UNKNOWN\"")))
-				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.status").value(400))
-				.andExpect(jsonPath("$.code").value("DOG_INVALID_BREED"));
-
-		assertThat(onboardingCompleter.lastInfo).isNull();
-	}
-
-	@Test
 	@DisplayName("강아지 이름이 50자를 넘으면 검증에 실패한다")
 	void completeFailsWhenDogNameIsTooLong() throws Exception {
 		String request = COMPLETE_REQUEST.replace("\"name\": \"초코\"",

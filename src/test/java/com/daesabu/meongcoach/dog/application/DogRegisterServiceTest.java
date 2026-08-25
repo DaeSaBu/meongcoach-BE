@@ -3,12 +3,12 @@ package com.daesabu.meongcoach.dog.application;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.daesabu.meongcoach.dog.application.provided.DogRegisterInfo;
 import com.daesabu.meongcoach.dog.application.required.DogRepository;
 import com.daesabu.meongcoach.dog.domain.Dog;
 import com.daesabu.meongcoach.dog.domain.DogStatus;
 import com.daesabu.meongcoach.dog.domain.exception.DogLimitExceededException;
 import com.daesabu.meongcoach.dog.domain.shared.Breed;
+import com.daesabu.meongcoach.dog.domain.shared.DogRegisterCommand;
 import com.daesabu.meongcoach.dog.domain.shared.DogSex;
 import com.daesabu.meongcoach.dog.domain.shared.Personality;
 import java.math.BigDecimal;
@@ -40,15 +40,15 @@ class DogRegisterServiceTest {
 		service = new DogRegisterService(dogRepository);
 	}
 
-	private DogRegisterInfo registerInfo(DogSex sex, Set<Personality> personalities) {
-		return new DogRegisterInfo("초코", Breed.POODLE, sex, LocalDate.of(2024, 3, 1),
+	private DogRegisterCommand registerCommand(String sex, Set<String> personalities) {
+		return new DogRegisterCommand("초코", "POODLE", sex, LocalDate.of(2024, 3, 1),
 				new BigDecimal("4.50"), personalities, null, null);
 	}
 
 	@Test
 	@DisplayName("강아지를 등록하면 성격과 함께 저장된다")
 	void registerSavesDogWithPersonalities() {
-		Long dogId = service.register(1L, registerInfo(DogSex.MALE, Set.of(Personality.TIMID, Personality.LIVELY)));
+		Long dogId = service.register(1L, registerCommand("MALE", Set.of("TIMID", "LIVELY")));
 
 		Dog dog = dogRepository.findById(dogId).orElseThrow();
 		assertThat(dog.getUserId()).isEqualTo(1L);
@@ -62,9 +62,9 @@ class DogRegisterServiceTest {
 	@Test
 	@DisplayName("두 번째로 등록한 강아지는 미선택 상태가 된다")
 	void registerLeavesSecondDogUnselected() {
-		Long firstDogId = service.register(1L, registerInfo(DogSex.MALE, Set.of()));
+		Long firstDogId = service.register(1L, registerCommand("MALE", Set.of()));
 
-		Long secondDogId = service.register(1L, registerInfo(DogSex.FEMALE, Set.of()));
+		Long secondDogId = service.register(1L, registerCommand("FEMALE", Set.of()));
 
 		Dog firstDog = dogRepository.findById(firstDogId).orElseThrow();
 		Dog secondDog = dogRepository.findById(secondDogId).orElseThrow();
@@ -75,9 +75,9 @@ class DogRegisterServiceTest {
 	@Test
 	@DisplayName("다른 사용자의 선택된 강아지는 선택 여부에 영향을 주지 않는다")
 	void registerSelectsFirstDogOfEachUser() {
-		service.register(1L, registerInfo(DogSex.MALE, Set.of()));
+		service.register(1L, registerCommand("MALE", Set.of()));
 
-		Long otherUserDogId = service.register(2L, registerInfo(DogSex.MALE, Set.of()));
+		Long otherUserDogId = service.register(2L, registerCommand("MALE", Set.of()));
 
 		Dog otherUserDog = dogRepository.findById(otherUserDogId).orElseThrow();
 		assertThat(otherUserDog.getStatus()).isEqualTo(DogStatus.SELECTED);
@@ -86,10 +86,10 @@ class DogRegisterServiceTest {
 	@Test
 	@DisplayName("생년월일이 없어도 등록할 수 있다")
 	void registerAllowsNullBirthDate() {
-		DogRegisterInfo info = new DogRegisterInfo("초코", Breed.POODLE, DogSex.MALE, null,
+		DogRegisterCommand command = new DogRegisterCommand("초코", "POODLE", "MALE", null,
 				new BigDecimal("4.50"), Set.of(), null, null);
 
-		Long dogId = service.register(1L, info);
+		Long dogId = service.register(1L, command);
 
 		Dog dog = dogRepository.findById(dogId).orElseThrow();
 		assertThat(dog.getBirthDate()).isNull();
@@ -99,10 +99,10 @@ class DogRegisterServiceTest {
 	@DisplayName("프로필 이미지 URL을 함께 저장한다")
 	void registerSavesProfileImage() {
 		String imageUrl = "https://images.test.meongcoach.com/images/dog-profile/1/a.jpg";
-		DogRegisterInfo info = new DogRegisterInfo("초코", Breed.POODLE, DogSex.MALE, null,
+		DogRegisterCommand command = new DogRegisterCommand("초코", "POODLE", "MALE", null,
 				new BigDecimal("4.50"), Set.of(), imageUrl, null);
 
-		Long dogId = service.register(1L, info);
+		Long dogId = service.register(1L, command);
 
 		Dog dog = dogRepository.findById(dogId).orElseThrow();
 		assertThat(dog.getProfileImageUrl()).isEqualTo(imageUrl);
@@ -111,7 +111,7 @@ class DogRegisterServiceTest {
 	@Test
 	@DisplayName("프로필 이미지가 없으면 빈 문자열로 저장한다")
 	void registerStoresEmptyProfileImageWhenAbsent() {
-		Long dogId = service.register(1L, registerInfo(DogSex.MALE, Set.of()));
+		Long dogId = service.register(1L, registerCommand("MALE", Set.of()));
 
 		Dog dog = dogRepository.findById(dogId).orElseThrow();
 		assertThat(dog.getProfileImageUrl()).isEmpty();
@@ -120,10 +120,10 @@ class DogRegisterServiceTest {
 	@Test
 	@DisplayName("기대 사항을 함께 저장한다")
 	void registerSavesExpectation() {
-		DogRegisterInfo info = new DogRegisterInfo("초코", Breed.POODLE, DogSex.MALE, null,
+		DogRegisterCommand command = new DogRegisterCommand("초코", "POODLE", "MALE", null,
 				new BigDecimal("4.50"), Set.of(), null, "보호자와 즐겁게 교육받고 싶어요.");
 
-		Long dogId = service.register(1L, info);
+		Long dogId = service.register(1L, command);
 
 		Dog dog = dogRepository.findById(dogId).orElseThrow();
 		assertThat(dog.getExpectation()).isEqualTo("보호자와 즐겁게 교육받고 싶어요.");
@@ -132,7 +132,7 @@ class DogRegisterServiceTest {
 	@Test
 	@DisplayName("기대 사항이 없으면 빈 문자열로 저장한다")
 	void registerStoresEmptyExpectationWhenAbsent() {
-		Long dogId = service.register(1L, registerInfo(DogSex.MALE, Set.of()));
+		Long dogId = service.register(1L, registerCommand("MALE", Set.of()));
 
 		Dog dog = dogRepository.findById(dogId).orElseThrow();
 		assertThat(dog.getExpectation()).isEmpty();
@@ -142,7 +142,7 @@ class DogRegisterServiceTest {
 	void 강아지가_5마리면_더_등록할_수_없다() {
 		registerDogs(1L, 5);
 
-		assertThatThrownBy(() -> service.register(1L, registerInfo(DogSex.MALE, Set.of())))
+		assertThatThrownBy(() -> service.register(1L, registerCommand("MALE", Set.of())))
 				.isInstanceOf(DogLimitExceededException.class);
 
 		assertThat(dogRepository.findAllByUserIdOrderByIdAsc(1L)).hasSize(5);
@@ -156,7 +156,7 @@ class DogRegisterServiceTest {
 		dogRepository.saveAndFlush(deletedDog);
 		entityManager.clear();
 
-		Long dogId = service.register(1L, registerInfo(DogSex.MALE, Set.of()));
+		Long dogId = service.register(1L, registerCommand("MALE", Set.of()));
 
 		assertThat(dogRepository.findById(dogId)).isPresent();
 		assertThat(dogRepository.findAllByUserIdOrderByIdAsc(1L)).hasSize(5);
@@ -166,14 +166,14 @@ class DogRegisterServiceTest {
 	void 다른_사용자의_강아지는_등록_개수에_포함되지_않는다() {
 		registerDogs(1L, 5);
 
-		Long otherUserDogId = service.register(2L, registerInfo(DogSex.MALE, Set.of()));
+		Long otherUserDogId = service.register(2L, registerCommand("MALE", Set.of()));
 
 		assertThat(dogRepository.findById(otherUserDogId)).isPresent();
 	}
 
 	private List<Long> registerDogs(Long userId, int count) {
 		return IntStream.range(0, count)
-				.mapToObj(i -> service.register(userId, registerInfo(DogSex.MALE, Set.of())))
+				.mapToObj(i -> service.register(userId, registerCommand("MALE", Set.of())))
 				.toList();
 	}
 }

@@ -1,6 +1,7 @@
 package com.daesabu.meongcoach.dog.domain;
 
 import com.daesabu.meongcoach.dog.domain.shared.Breed;
+import com.daesabu.meongcoach.dog.domain.shared.DogRegisterCommand;
 import com.daesabu.meongcoach.dog.domain.shared.DogSex;
 import com.daesabu.meongcoach.dog.domain.shared.Personality;
 import com.daesabu.meongcoach.shared.domain.BaseEntity;
@@ -86,21 +87,23 @@ public class Dog extends BaseEntity {
 	@Column(name = "personality", nullable = false, length = 30)
 	private Set<Personality> personalities = new HashSet<>();
 
-	private Dog(DogRegisterCommand command) {
-		this.userId = command.userId();
+	// 견종·성별·성격은 문자열 코드로 받아 여기서 enum으로 변환한다. 잘못된 코드는 도메인 예외로 400이 된다
+	private Dog(Long userId, DogRegisterCommand command) {
+		this.userId = userId;
 		this.name = command.name();
-		this.breed = command.breed();
-		this.sex = command.sex();
+		this.breed = Breed.from(command.breed());
+		this.sex = DogSex.from(command.sex());
 		this.birthDate = command.birthDate();
 		this.weightKg = command.weightKg();
 		// 선택 여부는 다른 강아지가 있는지 봐야 정해지므로, 등록 시점에는 미선택으로 두고 Dogs가 select()로 정한다
 		this.status = DogStatus.UNSELECTED;
 		this.profileImageUrl = Objects.requireNonNullElse(command.profileImageUrl(), "");
 		this.expectation = Objects.requireNonNullElse(command.expectation(), "");
+		changePersonalities(Personality.fromCodes(command.personalities()));
 	}
 
-	public static Dog register(DogRegisterCommand command) {
-		return new Dog(command);
+	public static Dog register(Long userId, DogRegisterCommand command) {
+		return new Dog(userId, command);
 	}
 
 	public boolean isSelected() {
@@ -131,7 +134,7 @@ public class Dog extends BaseEntity {
 		changePersonalities(parsedPersonalities);
 	}
 
-	public void changePersonalities(Set<Personality> personalities) {
+	private void changePersonalities(Set<Personality> personalities) {
 		this.personalities = new HashSet<>(personalities);
 	}
 

@@ -3,10 +3,8 @@ package com.daesabu.meongcoach.dog.application.required;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.daesabu.meongcoach.dog.domain.Dog;
-import com.daesabu.meongcoach.dog.domain.DogRegisterCommand;
 import com.daesabu.meongcoach.dog.domain.DogStatus;
-import com.daesabu.meongcoach.dog.domain.shared.Breed;
-import com.daesabu.meongcoach.dog.domain.shared.DogSex;
+import com.daesabu.meongcoach.dog.domain.shared.DogRegisterCommand;
 import com.daesabu.meongcoach.dog.domain.shared.Personality;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -101,7 +99,7 @@ class DogRepositoryTest {
 	@Test
 	@DisplayName("목록 조회는 성격을 함께 로딩하고 성격이 여러 개여도 강아지를 중복시키지 않는다")
 	void findAllByUserIdOrderByIdAscFetchesPersonalitiesWithoutDuplicatingDogs() {
-		Dog dog = persistDogWithPersonalities(USER_ID, Set.of(Personality.TIMID, Personality.LIVELY));
+		Dog dog = persistDogWithPersonalities(USER_ID, Set.of("TIMID", "LIVELY"));
 		entityManager.clear();
 
 		List<Dog> found = dogRepository.findAllByUserIdOrderByIdAsc(USER_ID);
@@ -114,7 +112,7 @@ class DogRepositoryTest {
 	@Test
 	@DisplayName("ID와 소유자가 모두 일치하는 강아지를 성격과 함께 조회한다")
 	void findByIdAndUserIdReturnsOwnedDogWithPersonalities() {
-		Dog dog = persistDogWithPersonalities(USER_ID, Set.of(Personality.FRIENDLY));
+		Dog dog = persistDogWithPersonalities(USER_ID, Set.of("FRIENDLY"));
 		entityManager.clear();
 
 		Optional<Dog> found = dogRepository.findByIdAndUserId(dog.getId(), USER_ID);
@@ -147,14 +145,17 @@ class DogRepositoryTest {
 		return dogRepository.saveAndFlush(newDog(userId));
 	}
 
-	private Dog persistDogWithPersonalities(Long userId, Set<Personality> personalities) {
-		Dog dog = newDog(userId);
-		dog.changePersonalities(personalities);
+	private Dog persistDogWithPersonalities(Long userId, Set<String> personalities) {
+		Dog dog = newDog(userId, personalities);
 		return dogRepository.saveAndFlush(dog);
 	}
 
 	private Dog newDog(Long userId) {
-		return Dog.register(new DogRegisterCommand(userId, "초코", Breed.POODLE, DogSex.MALE,
-				LocalDate.of(2024, 3, 1), new BigDecimal("4.50"), IMAGE_URL, null));
+		return newDog(userId, null);
+	}
+
+	private Dog newDog(Long userId, Set<String> personalities) {
+		return Dog.register(userId, new DogRegisterCommand("초코", "POODLE", "MALE",
+				LocalDate.of(2024, 3, 1), new BigDecimal("4.50"), personalities, IMAGE_URL, null));
 	}
 }

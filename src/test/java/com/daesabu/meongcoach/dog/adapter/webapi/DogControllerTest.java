@@ -24,17 +24,13 @@ import com.daesabu.meongcoach.dog.application.provided.DogProfileDeleter;
 import com.daesabu.meongcoach.dog.application.provided.DogProfileFinder;
 import com.daesabu.meongcoach.dog.application.provided.DogProfileUpdater;
 import com.daesabu.meongcoach.dog.application.provided.DogRegister;
-import com.daesabu.meongcoach.dog.application.provided.DogRegisterInfo;
 import com.daesabu.meongcoach.dog.domain.Dog;
 import com.daesabu.meongcoach.dog.domain.DogProfileUpdateCommand;
-import com.daesabu.meongcoach.dog.domain.DogRegisterCommand;
 import com.daesabu.meongcoach.dog.domain.exception.DogLimitExceededException;
 import com.daesabu.meongcoach.dog.domain.exception.DogNotFoundException;
 import com.daesabu.meongcoach.dog.domain.exception.InvalidBreedException;
 import com.daesabu.meongcoach.dog.domain.exception.LastDogNotDeletableException;
-import com.daesabu.meongcoach.dog.domain.shared.Breed;
-import com.daesabu.meongcoach.dog.domain.shared.DogSex;
-import com.daesabu.meongcoach.dog.domain.shared.Personality;
+import com.daesabu.meongcoach.dog.domain.shared.DogRegisterCommand;
 import java.math.BigDecimal;
 import java.security.Principal;
 import java.time.LocalDate;
@@ -109,7 +105,7 @@ class DogControllerTest {
 
 	@Test
 	void 강아지를_등록하면_201과_등록된_프로필을_반환한다() throws Exception {
-		given(dogRegister.register(eq(42L), any(DogRegisterInfo.class))).willReturn(10L);
+		given(dogRegister.register(eq(42L), any(DogRegisterCommand.class))).willReturn(10L);
 		given(dogProfileFinder.findDog(42L, 10L)).willReturn(selectedDog(10L));
 
 		mockMvc.perform(post("/api/dogs")
@@ -172,7 +168,7 @@ class DogControllerTest {
 
 	@Test
 	void 인증_주체에서_읽은_사용자와_요청_본문으로_등록을_위임하고_등록된_강아지를_재조회한다() throws Exception {
-		given(dogRegister.register(eq(42L), any(DogRegisterInfo.class))).willReturn(10L);
+		given(dogRegister.register(eq(42L), any(DogRegisterCommand.class))).willReturn(10L);
 		given(dogProfileFinder.findDog(42L, 10L)).willReturn(selectedDog(10L));
 
 		mockMvc.perform(post("/api/dogs")
@@ -181,17 +177,16 @@ class DogControllerTest {
 						.content(REGISTER_BODY))
 				.andExpect(status().isCreated());
 
-		ArgumentCaptor<DogRegisterInfo> captor = ArgumentCaptor.forClass(DogRegisterInfo.class);
+		ArgumentCaptor<DogRegisterCommand> captor = ArgumentCaptor.forClass(DogRegisterCommand.class);
 		then(dogRegister).should().register(eq(42L), captor.capture());
-		assertThat(captor.getValue()).isEqualTo(new DogRegisterInfo("초코", Breed.POODLE, DogSex.MALE,
-				LocalDate.of(2024, 3, 1), new BigDecimal("4.5"), Set.of(Personality.TIMID, Personality.FRIENDLY),
-				IMAGE_URL, EXPECTATION));
+		assertThat(captor.getValue()).isEqualTo(new DogRegisterCommand("초코", "POODLE", "MALE",
+				LocalDate.of(2024, 3, 1), new BigDecimal("4.5"), Set.of("TIMID", "FRIENDLY"), IMAGE_URL, EXPECTATION));
 		then(dogProfileFinder).should().findDog(42L, 10L);
 	}
 
 	@Test
 	void 성격을_생략하면_성격_없이_등록을_위임한다() throws Exception {
-		given(dogRegister.register(eq(42L), any(DogRegisterInfo.class))).willReturn(10L);
+		given(dogRegister.register(eq(42L), any(DogRegisterCommand.class))).willReturn(10L);
 		given(dogProfileFinder.findDog(42L, 10L)).willReturn(selectedDog(10L));
 
 		mockMvc.perform(post("/api/dogs")
@@ -200,9 +195,9 @@ class DogControllerTest {
 						.content(REGISTER_BODY.replace("\"personalities\": [\"TIMID\", \"FRIENDLY\"],", "")))
 				.andExpect(status().isCreated());
 
-		ArgumentCaptor<DogRegisterInfo> captor = ArgumentCaptor.forClass(DogRegisterInfo.class);
+		ArgumentCaptor<DogRegisterCommand> captor = ArgumentCaptor.forClass(DogRegisterCommand.class);
 		then(dogRegister).should().register(eq(42L), captor.capture());
-		assertThat(captor.getValue().personalities()).isEmpty();
+		assertThat(captor.getValue().personalities()).isNull();
 	}
 
 	@Test
@@ -220,6 +215,8 @@ class DogControllerTest {
 
 	@Test
 	void 잘못된_견종_코드면_등록은_400과_에러_코드를_반환한다() throws Exception {
+		given(dogRegister.register(eq(42L), any(DogRegisterCommand.class))).willThrow(new InvalidBreedException("UNKNOWN"));
+
 		mockMvc.perform(post("/api/dogs")
 						.principal(CURRENT_USER)
 						.contentType(MediaType.APPLICATION_JSON)
@@ -228,13 +225,12 @@ class DogControllerTest {
 				.andExpect(jsonPath("$.status").value(400))
 				.andExpect(jsonPath("$.code").value("DOG_INVALID_BREED"));
 
-		then(dogRegister).shouldHaveNoInteractions();
 		then(dogProfileFinder).shouldHaveNoInteractions();
 	}
 
 	@Test
 	void 강아지가_5마리면_등록은_409와_에러_코드를_반환한다() throws Exception {
-		given(dogRegister.register(eq(42L), any(DogRegisterInfo.class))).willThrow(new DogLimitExceededException());
+		given(dogRegister.register(eq(42L), any(DogRegisterCommand.class))).willThrow(new DogLimitExceededException());
 
 		mockMvc.perform(post("/api/dogs")
 						.principal(CURRENT_USER)
@@ -767,17 +763,16 @@ class DogControllerTest {
 
 	// 슬라이스 테스트는 DB를 거치지 않아 JPA가 id를 채우지 않으므로, 응답의 dogId를 검증하려면 리플렉션으로 주입한다
 	private Dog selectedDog(Long id) {
-		Dog dog = Dog.register(new DogRegisterCommand(42L, "초코", Breed.POODLE, DogSex.MALE,
-				LocalDate.of(2024, 3, 1), new BigDecimal("4.50"), IMAGE_URL, EXPECTATION));
+		Dog dog = Dog.register(42L, new DogRegisterCommand("초코", "POODLE", "MALE",
+				LocalDate.of(2024, 3, 1), new BigDecimal("4.50"), Set.of("FRIENDLY", "TIMID"), IMAGE_URL, EXPECTATION));
 		dog.select();
-		dog.changePersonalities(Set.of(Personality.FRIENDLY, Personality.TIMID));
 		ReflectionTestUtils.setField(dog, "id", id);
 		return dog;
 	}
 
 	private Dog selectedDogWithoutImage(Long id) {
-		Dog dog = Dog.register(new DogRegisterCommand(42L, "초코", Breed.POODLE, DogSex.MALE,
-				LocalDate.of(2024, 3, 1), new BigDecimal("4.50"), null, EXPECTATION));
+		Dog dog = Dog.register(42L, new DogRegisterCommand("초코", "POODLE", "MALE",
+				LocalDate.of(2024, 3, 1), new BigDecimal("4.50"), null, null, EXPECTATION));
 		dog.select();
 		ReflectionTestUtils.setField(dog, "id", id);
 		return dog;
@@ -785,17 +780,16 @@ class DogControllerTest {
 
 	// 수정 서비스가 돌려주는, 요청 본문대로 교체된 강아지
 	private Dog updatedDog(Long id) {
-		Dog dog = Dog.register(new DogRegisterCommand(42L, "보리", Breed.MALTESE, DogSex.FEMALE,
-				LocalDate.of(2023, 1, 15), new BigDecimal("3.20"), NEW_IMAGE_URL, NEW_EXPECTATION));
+		Dog dog = Dog.register(42L, new DogRegisterCommand("보리", "MALTESE", "FEMALE",
+				LocalDate.of(2023, 1, 15), new BigDecimal("3.20"), Set.of("TIMID", "LIVELY"), NEW_IMAGE_URL, NEW_EXPECTATION));
 		dog.select();
-		dog.changePersonalities(Set.of(Personality.TIMID, Personality.LIVELY));
 		ReflectionTestUtils.setField(dog, "id", id);
 		return dog;
 	}
 
 	private Dog unselectedDog(Long id) {
-		Dog dog = Dog.register(new DogRegisterCommand(42L, "보리", Breed.MALTESE, DogSex.FEMALE,
-				null, new BigDecimal("3.20"), "", null));
+		Dog dog = Dog.register(42L, new DogRegisterCommand("보리", "MALTESE", "FEMALE",
+				null, new BigDecimal("3.20"), null, "", null));
 		ReflectionTestUtils.setField(dog, "id", id);
 		return dog;
 	}

@@ -7,10 +7,10 @@ import com.daesabu.meongcoach.dog.application.provided.DogProfileUpdater;
 import com.daesabu.meongcoach.dog.application.required.DogRepository;
 import com.daesabu.meongcoach.dog.domain.Dog;
 import com.daesabu.meongcoach.dog.domain.DogProfileUpdateCommand;
-import com.daesabu.meongcoach.dog.domain.DogRegisterCommand;
 import com.daesabu.meongcoach.dog.domain.DogStatus;
 import com.daesabu.meongcoach.dog.domain.exception.DogNotFoundException;
 import com.daesabu.meongcoach.dog.domain.shared.Breed;
+import com.daesabu.meongcoach.dog.domain.shared.DogRegisterCommand;
 import com.daesabu.meongcoach.dog.domain.shared.DogSex;
 import com.daesabu.meongcoach.dog.domain.shared.Personality;
 import java.math.BigDecimal;
@@ -133,10 +133,9 @@ class DogProfileUpdateServiceTest {
 	}
 
 	private Dog persistSelectedDog(Long userId) {
-		Dog dog = Dog.register(new DogRegisterCommand(userId, "초코", Breed.POODLE, DogSex.MALE,
-				LocalDate.of(2024, 3, 1), new BigDecimal("4.50"), IMAGE_URL, EXPECTATION));
+		Dog dog = Dog.register(userId, new DogRegisterCommand("초코", "POODLE", "MALE",
+				LocalDate.of(2024, 3, 1), new BigDecimal("4.50"), Set.of("FRIENDLY"), IMAGE_URL, EXPECTATION));
 		dog.select();
-		dog.changePersonalities(Set.of(Personality.FRIENDLY));
 		return dogRepository.saveAndFlush(dog);
 	}
 }

@@ -38,7 +38,7 @@ public class DogController {
 	@PostMapping
 	@ResponseStatus(HttpStatus.CREATED)
 	public DogResponse registerDog(@CurrentUserId Long userId, @Valid @RequestBody DogRegisterRequest request) {
-		Long dogId = dogRegister.register(userId, request.toInfo());
+		Long dogId = dogRegister.register(userId, request.toCommand());
 		// register는 온보딩 모듈도 쓰는 공개 API라 모듈 경계를 넘는 Dog 대신 ID만 반환한다.
 		// 응답은 단건 조회와 같은 형태로 내리기 위해 성격까지 함께 로딩하는 findDog로 재조회한다
 		Dog dog = dogProfileFinder.findDog(userId, dogId);

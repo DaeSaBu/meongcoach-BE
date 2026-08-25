@@ -4,12 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.daesabu.meongcoach.dog.application.DogRegisterService;
-import com.daesabu.meongcoach.dog.application.provided.DogRegisterInfo;
 import com.daesabu.meongcoach.dog.application.required.DogRepository;
 import com.daesabu.meongcoach.dog.domain.Dog;
 import com.daesabu.meongcoach.dog.domain.DogStatus;
 import com.daesabu.meongcoach.dog.domain.shared.Breed;
-import com.daesabu.meongcoach.dog.domain.shared.DogSex;
+import com.daesabu.meongcoach.dog.domain.shared.DogRegisterCommand;
 import com.daesabu.meongcoach.dog.domain.shared.Personality;
 import com.daesabu.meongcoach.media.application.provided.StoredImageUrlValidator;
 import com.daesabu.meongcoach.media.domain.exception.InvalidImageUrlException;
@@ -85,10 +84,10 @@ class OnboardingCompleteServiceTest {
 				Set.of(PRIOR_TRAINING_TOPIC_ID),
 				Set.of(TRAINING_GOAL_TOPIC_ID),
 				List.of(
-						new DogRegisterInfo("초코", Breed.POODLE, DogSex.MALE, LocalDate.of(2024, 3, 1),
-								new BigDecimal("4.50"), Set.of(Personality.TIMID), dogImageUrl,
+						new DogRegisterCommand("초코", "POODLE", "MALE", LocalDate.of(2024, 3, 1),
+								new BigDecimal("4.50"), Set.of("TIMID"), dogImageUrl,
 								"산책할 때 보호자에게 집중하면 좋겠어요."),
-						new DogRegisterInfo("보리", Breed.MALTESE, DogSex.FEMALE, null,
+						new DogRegisterCommand("보리", "MALTESE", "FEMALE", null,
 								new BigDecimal("3.20"), Set.of(), null, null)));
 	}
 
