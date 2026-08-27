@@ -11,8 +11,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.daesabu.meongcoach.user.application.provided.AuthToken;
+import com.daesabu.meongcoach.user.application.provided.LoginResult;
 import com.daesabu.meongcoach.user.application.provided.SocialLogin;
-import com.daesabu.meongcoach.user.application.provided.SocialLoginResult;
 import com.daesabu.meongcoach.user.application.provided.TokenRefresher;
 import com.daesabu.meongcoach.user.domain.exception.InvalidRefreshTokenException;
 import com.daesabu.meongcoach.user.domain.exception.InvalidSocialTokenException;
@@ -176,7 +176,7 @@ class AuthControllerTest {
 				if (!VALID_TOKEN.equals(credential)) {
 					throw new InvalidSocialTokenException();
 				}
-				return new SocialLoginResult(new AuthToken("access-token", "refresh-token"), true);
+				return new LoginResult(new AuthToken("access-token", "refresh-token"), true);
 			};
 		}
 
