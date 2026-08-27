@@ -20,7 +20,8 @@
 - **로컬**: `./gradlew bootRun`(또는 IDE Run)만 실행하면 됩니다. `spring-boot-docker-compose`
   의존성(`developmentOnly` — 배포 jar에는 포함되지 않음)이 `compose.yml`의 postgres를 자동으로
   기동하고 접속 정보를 주입하며, 애플리케이션을 종료하면 컨테이너도 함께 정지합니다. 교육 초기 데이터는
-  `src/main/resources/db/local/training-initial-data.sql`에서 자동으로 적재됩니다.
+  `src/main/resources/db/local/training-initial-data.sql`에서, 스토어 심사용 테스트 계정은
+  `db/local/test-account-data.sql`에서 자동으로 적재됩니다. (계정 정보는 파일 머리 주석, 등록 방법은 [security.md](security.md) 참고)
   애플리케이션을 기동할 때마다 스키마를 재생성합니다. PostgreSQL 데이터는 `tmpfs`에 저장되어
   컨테이너를 중지하거나 재시작하면 초기화됩니다.
   백엔드까지 컨테이너로 실행할 때는 `.env`를 준비하고
@@ -69,7 +70,7 @@ Swagger UI는 API 서버가 정적 파일로 직접 서빙하며, 노출 범위�
 
 | 프로파일 | 값 | 함의 |
 |---|---|---|
-| `local` | `create-drop` | 애플리케이션 기동 시 엔티티 스키마와 교육 초기 데이터를 재생성 |
+| `local` | `create-drop` | 애플리케이션 기동 시 엔티티 스키마와 교육 초기 데이터·테스트 계정을 재생성 |
 | `test` | `create-drop` | H2 인메모리 스키마를 테스트마다 재생성 |
 | `dev` | `update` | 엔티티 변경을 자동 반영. **컬럼 삭제·이름 변경·타입 축소는 반영되지 않아** 드리프트가 쌓일 수 있음 — dev DB는 언제든 재생성 가능하다는 전제로 운용 |
 | `prod` | `validate` | 스키마를 자동 변경하지 않음. 엔티티와 불일치하면 기동 실패 |
