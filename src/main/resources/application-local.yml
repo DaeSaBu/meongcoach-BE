@@ -15,7 +15,10 @@ spring:
       ddl-auto: create-drop
   sql:
     init:
-      data-locations: classpath:db/local/training-initial-data.sql
+      # 교육 초기 데이터 → 스토어 심사용 테스트 계정 순서로 적재한다
+      data-locations:
+        - classpath:db/local/training-initial-data.sql
+        - classpath:db/local/test-account-data.sql
       mode: always
   cloud:
     aws:
