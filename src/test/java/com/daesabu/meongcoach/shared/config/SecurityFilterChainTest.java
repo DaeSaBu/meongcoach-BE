@@ -1,5 +1,6 @@
 package com.daesabu.meongcoach.shared.config;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -233,6 +234,32 @@ class SecurityFilterChainTest {
 		mockMvc.perform(get("/api/dogs/profile/image")
 						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))
 				.andExpect(status().isNotFound());
+	}
+
+	// 심사관이 온보딩을 마치지 않고 탈퇴할 수 있으므로 탈퇴 경로는 온보딩 미완료 회원에게도 열려 있어야 한다.
+	// 탈퇴 뒤에는 같은 토큰이 등록 확인에서 걸려 401로 끝나는지도 확인한다
+	@Test
+	void 온보딩_미완료_회원도_탈퇴할_수_있고_탈퇴_후_같은_토큰은_거부된다() throws Exception {
+		AuthToken token = tokenProvider.issue(onboardingUserId);
+
+		mockMvc.perform(delete("/api/users/me")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))
+				.andExpect(status().isNoContent());
+
+		mockMvc.perform(get("/api/onboarding/metadata")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))
+				.andExpect(status().isUnauthorized());
+	}
+
+	// 탈퇴는 DELETE만 열었으므로 같은 경로의 다른 메서드는 정회원 규칙을 그대로 따른다
+	@Test
+	void 온보딩_미완료_회원은_탈퇴_외의_회원_경로에_접근할_수_없다() throws Exception {
+		AuthToken token = tokenProvider.issue(onboardingUserId);
+
+		mockMvc.perform(get("/api/users/me")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.code").value("ONBOARDING_NOT_COMPLETED"));
 	}
 
 	// 온보딩 허용 경로가 hasAnyRole로 정회원까지 포함하는지 확인한다
