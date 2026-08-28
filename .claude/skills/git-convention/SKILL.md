@@ -92,7 +92,7 @@ user-invocable: true
 |---|---|---|
 | `main` | 배포 기준 | 직접 push 금지, `develop`에서만 머지 |
 | `develop` | 통합 개발 | 직접 push 금지, PR로만 머지 |
-| `feature/{이슈번호}` | 기능 개발 | Linear 이슈 기준 생성, `develop`에서 분기 |
+| `feature/{이슈번호}` | 기능 개발 | Linear 이슈 기준 생성, `develop`에서 분기, PR base는 `develop` |
 
 - 브랜치명에는 Linear가 제공하는 이슈번호를 소문자로 그대로 쓴다. (예: `feature/dae-179`)
 - 작업 내용을 덧붙일 경우 `feature/dae-179-add-sns-login`처럼 영문 소문자와 하이픈으로 이어 쓴다.
@@ -116,6 +116,12 @@ user-invocable: true
 ## PR 컨벤션
 
 - 브랜치에 첫 코드 수정 커밋이 만들어지면 즉시 해당 브랜치의 draft PR을 생성한다. 작업 방향을 일찍 공유해 리뷰 비용을 줄이기 위함이며, 리뷰 준비가 되면 draft를 해제한다.
+- `feature/*` 브랜치의 PR 대상(base)은 항상 `develop`이다. GitHub 기본 브랜치가 `main`이라 `--base`를 생략하면 `main`으로 생성되므로 반드시 명시한다.
+  ```bash
+  gh pr create --draft --base develop --title "<type>(<scope>): <subject>" --body "..."
+  ```
+- PR을 생성한 뒤 `gh pr view --json baseRefName`으로 base가 `develop`인지 확인한다. 잘못 생성했다면 `gh pr edit <번호> --base develop`으로 바로잡는다.
+- `main`을 대상으로 하는 PR은 `develop → main` 릴리스 PR뿐이며, 사용자가 명시적으로 요청할 때만 만든다.
 - 제목은 커밋 메시지 규칙과 동일한 `<type>(<scope>): <subject>` 형식을 쓴다. (scope는 커밋과 동일하게 선택 사항)
 - 설명에는 변경 사항 요약, 대상 Linear 이슈의 식별자·링크, 테스트 방법을 포함한다.
 - 최소 1인 이상 승인 후 머지한다.
