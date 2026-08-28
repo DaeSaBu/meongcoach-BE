@@ -150,6 +150,7 @@ val postProcessOpenApiSpec = tasks.register("postProcessOpenApiSpec") {
 	// REST Docs 스니펫 식별자의 모듈 접두어 → Swagger UI 그룹 태그. 선언 순서가 화면 표시 순서다
 	val moduleTags = linkedMapOf(
 		"auth" to "Auth",
+		"user" to "User",
 		"media" to "Media",
 		"onboarding" to "Onboarding",
 		"health" to "Health",

@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.convert.converter.Converter;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -61,6 +62,10 @@ public class SecurityConfig {
 			"/api/dogs/profile/image"
 	};
 
+	// 스토어 심사관이 온보딩을 마치지 않고 탈퇴할 수 있으므로 탈퇴만 온보딩 중에도 연다.
+	// 메서드를 한정해 같은 경로에 나중에 생길 회원 조회·수정이 온보딩 회원에게 열리지 않게 한다
+	private static final String WITHDRAW_PATH = "/api/users/me";
+
 	// Swagger UI 정적 파일과 그 안의 openapi3.json이 모두 이 경로 아래에 있다
 	private static final String[] API_DOCS_PATHS = {"/swagger-ui/**"};
 
@@ -86,6 +91,8 @@ public class SecurityConfig {
 					// 먼저 매칭된 규칙이 이기므로 온보딩 허용 경로를 anyRequest보다 앞에 둔다.
 					// 역할 어휘는 AuthorityRole이 단일 원천이다 (user 모듈 UserRole이 같은 어휘로 매핑된다)
 					auth.requestMatchers(ONBOARDING_ALLOWED_PATHS)
+							.hasAnyRole(AuthorityRole.MEMBER.name(), AuthorityRole.ONBOARDING_MEMBER.name());
+					auth.requestMatchers(HttpMethod.DELETE, WITHDRAW_PATH)
 							.hasAnyRole(AuthorityRole.MEMBER.name(), AuthorityRole.ONBOARDING_MEMBER.name());
 					auth.anyRequest().hasRole(AuthorityRole.MEMBER.name());
 				})
