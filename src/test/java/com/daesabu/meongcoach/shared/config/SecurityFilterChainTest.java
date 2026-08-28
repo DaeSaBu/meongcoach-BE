@@ -106,6 +106,16 @@ class SecurityFilterChainTest {
 				.andExpect(jsonPath("$.code").value("USER_INVALID_SOCIAL_TOKEN"));
 	}
 
+	// 필터 체인이 막았다면 코드가 UNAUTHORIZED다. 도메인 에러 코드가 나오면 컨트롤러까지 도달한 것이다
+	@Test
+	void 이메일_로그인_경로는_인증_없이_열려_있고_자격증명이_틀리면_401을_반환한다() throws Exception {
+		mockMvc.perform(post("/api/auth/login/local")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"email\": \"nobody@meongcoach.com\", \"password\": \"wrong-password\"}"))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.code").value("USER_INVALID_CREDENTIALS"));
+	}
+
 	@Test
 	@DisplayName("회원 경로는 인증이 필요하다")
 	void otherUserPathsAreProtected() throws Exception {

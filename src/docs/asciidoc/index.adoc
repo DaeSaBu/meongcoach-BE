@@ -40,6 +40,7 @@ operation::shared/error-onboarding-not-completed[snippets='http-response,respons
 == Auth API
 
 앱이 소셜 제공자 SDK로 로그인해 받은 자격증명을 서버가 검증하고, 우리 서비스의 JWT를 발급합니다.
+스토어 심사용 테스트 계정은 이메일 로그인으로 같은 JWT를 발급받습니다.
 인증이 필요한 API는 발급받은 액세스 토큰을 `Authorization: Bearer {accessToken}` 헤더로 전달해 호출합니다.
 인증이 필요한 API에서 사용자를 식별하는 값은 액세스 토큰의 `sub` 클레임(회원 ID)이며, 별도 요청 헤더나 파라미터로 받지 않습니다.
 
@@ -52,6 +53,20 @@ operation::auth/login[snippets='http-request,path-parameters,request-fields,http
 ==== 실패 응답
 
 operation::auth/login-error[snippets='http-response,response-fields']
+
+=== 이메일 로그인
+
+link:{swagger-ui}#/Auth/auth-local-login[▶ Swagger에서 Try it out,window=swagger]
+
+스토어 심사(Google Play·App Store)용 테스트 계정 전용입니다. 회원가입·비밀번호 변경 API는 없으며 계정은 서버에서 직접 등록합니다.
+이메일이 없거나 비밀번호가 틀리면 원인을 구분하지 않고 401(`USER_INVALID_CREDENTIALS`)을 반환합니다.
+응답 형식은 소셜 로그인과 같습니다.
+
+operation::auth/local-login[snippets='http-request,request-fields,http-response,response-fields']
+
+==== 실패 응답
+
+operation::auth/local-login-error[snippets='http-response,response-fields']
 
 === 토큰 재발급
 

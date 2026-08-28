@@ -26,7 +26,7 @@ user-invocable: true
 | 역할 | 위치 | 규칙 | 예시 |
 | --- | --- | --- | --- |
 | 모듈 공개 API 인터페이스 | `application/provided` | 능력을 나타내는 이름, `~Service` 접미사 없음 | `DogRegister`, `MbtiFinder` |
-| 애플리케이션 조회 결과 래퍼 | `application/provided` | `~Result` (record) — 도메인 타입만으로 부족할 때만 | `VideoUploadUrlResult`, `SocialLoginResult` |
+| 애플리케이션 조회 결과 래퍼 | `application/provided` | `~Result` (record) — 도메인 타입만으로 부족할 때만 | `VideoUploadUrlResult`, `LoginResult` |
 | 필요 자원 인터페이스 | `application/required` | 자원 이름 그대로 | `UserRepository`, `VideoStorage` |
 | 애플리케이션 서비스 | `application` | `~Service` | `SocialLoginService`, `CurriculumQueryService` |
 | 컨트롤러 | `adapter/webapi` | `~Controller` | `AuthController` |

@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.daesabu.meongcoach.user.application.provided.AuthToken;
-import com.daesabu.meongcoach.user.application.provided.SocialLoginResult;
+import com.daesabu.meongcoach.user.application.provided.LoginResult;
 import com.daesabu.meongcoach.user.application.required.SocialAccountRepository;
 import com.daesabu.meongcoach.user.application.required.SocialProfileReader;
 import com.daesabu.meongcoach.user.application.required.TokenProvider;
@@ -56,7 +56,7 @@ class SocialLoginServiceTest {
 	@Test
 	@DisplayName("최초 로그인하면 회원과 소셜 계정이 함께 생성된다")
 	void loginRegistersMemberOnFirstLogin() {
-		SocialLoginResult result = service.login(SocialProvider.KAKAO, CREDENTIAL);
+		LoginResult result = service.login(SocialProvider.KAKAO, CREDENTIAL);
 
 		assertThat(userRepository.count()).isEqualTo(1);
 		assertThat(socialAccountRepository.count()).isEqualTo(1);
@@ -67,9 +67,9 @@ class SocialLoginServiceTest {
 	@Test
 	@DisplayName("이미 연동된 계정으로 재로그인하면 회원을 새로 만들지 않는다")
 	void loginReusesUserOnSecondLogin() {
-		SocialLoginResult first = service.login(SocialProvider.KAKAO, CREDENTIAL);
+		LoginResult first = service.login(SocialProvider.KAKAO, CREDENTIAL);
 
-		SocialLoginResult second = service.login(SocialProvider.KAKAO, CREDENTIAL);
+		LoginResult second = service.login(SocialProvider.KAKAO, CREDENTIAL);
 
 		assertThat(userRepository.count()).isEqualTo(1);
 		assertThat(socialAccountRepository.count()).isEqualTo(1);
@@ -86,7 +86,7 @@ class SocialLoginServiceTest {
 		entityManager.persistAndFlush(profile);
 		entityManager.clear();
 
-		SocialLoginResult result = service.login(SocialProvider.KAKAO, CREDENTIAL);
+		LoginResult result = service.login(SocialProvider.KAKAO, CREDENTIAL);
 
 		assertThat(result.needsOnboarding()).isFalse();
 	}

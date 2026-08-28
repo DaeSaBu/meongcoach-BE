@@ -18,6 +18,8 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
@@ -49,6 +51,7 @@ public class SecurityConfig {
 	private static final String[] PERMIT_ALL_PATHS = {
 			"/api/health",
 			"/api/auth/login/social/**",
+			"/api/auth/login/local",
 			"/api/auth/token/refresh"
 	};
 
@@ -119,6 +122,13 @@ public class SecurityConfig {
 		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
 		source.registerCorsConfiguration("/**", configuration);
 		return source;
+	}
+
+	// 이메일 로그인(스토어 심사용 테스트 계정)의 비밀번호 대조에 쓴다. domain은 Spring에 의존할 수 없어 해시 문자열만 보관하고,
+	// 해싱·대조는 application이 이 빈으로 수행한다
+	@Bean
+	PasswordEncoder passwordEncoder() {
+		return new BCryptPasswordEncoder();
 	}
 
 	@Bean

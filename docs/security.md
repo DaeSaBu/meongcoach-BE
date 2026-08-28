@@ -1,6 +1,7 @@
 # 인증·보안
 
 소셜 로그인으로 회원을 식별하고, 이후 모든 API 인가는 **자체 발급 JWT**로 합니다.
+스토어 심사용 테스트 계정만 예외적으로 이메일·비밀번호 로그인을 쓰며, 발급되는 JWT는 같습니다. ([이메일 로그인](#이메일-로그인-스토어-심사용-테스트-계정) 참고)
 
 ## 로그인 흐름 — 네이티브 SDK + 서버 검증
 
@@ -80,7 +81,7 @@ id_token의 서명이 유효하다는 것은 "제공자가 발급했다"만 증�
 
 | 순서 | 경로 | 접근 |
 |---|---|---|
-| 1 | `/api/health`, `/api/auth/login/social/**`, `/api/auth/token/refresh` | permitAll |
+| 1 | `/api/health`, `/api/auth/login/social/**`, `/api/auth/login/local`, `/api/auth/token/refresh` | permitAll |
 | 2 | `/swagger-ui/**` | 문서 활성 환경 permitAll, 그 외 denyAll |
 | 3 | `/api/onboarding/**`, `/api/dogs/profile/image` | `MEMBER`, `ONBOARDING_MEMBER` |
 | 4 | 그 외 전부 | `MEMBER` |
@@ -127,7 +128,7 @@ id_token의 서명이 유효하다는 것은 "제공자가 발급했다"만 증�
 
 - `csrf` / `formLogin` / `httpBasic` / `logout` 비활성화
 - `SessionCreationPolicy.STATELESS`
-- permitAll: `/api/health`, `/api/auth/login/social/**`, `/api/auth/token/refresh`
+- permitAll: `/api/health`, `/api/auth/login/social/**`, `/api/auth/login/local`, `/api/auth/token/refresh`
   (인증 엔드포인트만 개별 경로로 열고 `/api/auth/**`로 넓히지 않습니다. 이후 추가되는 인증 관련 API가 자동으로 공개되는 것을 막기 위함입니다)
 - 그 외 요청은 역할 기반 인가 (위 "URL 인가 규칙" 참고)
 - `oauth2ResourceServer.jwt()` — Bearer 토큰 파싱·검증은 프레임워크가 담당하므로 커스텀 필터가 없습니다.
@@ -155,6 +156,59 @@ id_token의 서명이 유효하다는 것은 "제공자가 발급했다"만 증�
 
 > 트레이드오프: 리소스 서버 기본 엔트리 포인트를 교체하므로 `WWW-Authenticate: Bearer` 헤더가 사라집니다.
 > 모바일 전용 API라 수용했습니다.
+
+## 이메일 로그인 (스토어 심사용 테스트 계정)
+
+Google Play·App Store 심사자는 소셜 계정을 만들 수 없으므로, 심사용 테스트 계정만 이메일·비밀번호로 로그인합니다.
+**회원가입·이메일 인증·비밀번호 변경 API는 없습니다.** 계정(`LocalAccount`)은 운영자가 DB에 직접 등록하며 생성 이후 수정되지 않습니다.
+
+```
+[앱] 이메일·비밀번호 입력
+  → POST /api/auth/login/local  { "email": "...", "password": "..." }
+     → LocalAccountRepository.findByEmail → PasswordEncoder.matches(BCrypt) → 탈퇴 여부 확인
+        → 우리 JWT 발급 (소셜 로그인과 동일)
+  ← { accessToken, refreshToken, needsOnboarding }
+```
+
+비밀번호는 `BCryptPasswordEncoder`(빈 정의는 `SecurityConfig`) 해시로만 저장합니다. `domain`은 Spring에 의존할 수 없어
+`LocalAccount`는 해시 문자열만 보관하고, 대조는 `application/LocalLoginService`가 합니다.
+
+### 실패 응답 정책
+
+| 상황 | 응답 |
+|---|---|
+| 이메일 미등록 **또는** 비밀번호 불일치 | 401 `USER_INVALID_CREDENTIALS` — 어느 쪽인지 구분하지 않습니다. 구분하면 계정 존재 여부가 드러납니다 |
+| 이메일 형식 오류 | 400 `USER_INVALID_EMAIL` — 계정 존재와 무관한 입력 형식 검증이라 정보가 새지 않습니다. 형식 규칙은 `Email` 값 객체 한 곳에만 둡니다 |
+| 탈퇴한 회원 | 403 `USER_WITHDRAWN` — **비밀번호 대조를 통과한 뒤에만** 확인해, 비밀번호를 모르는 쪽에 탈퇴 여부가 드러나지 않게 합니다 |
+
+### 테스트 계정 등록
+
+**local**은 `src/main/resources/db/local/test-account-data.sql`이 기동마다 적재합니다(이메일·비밀번호는 파일 머리 주석 참고).
+온보딩 전 상태(`ONBOARDING_MEMBER`, 프로필 없음)로 두어 심사자가 앱에서 온보딩까지 직접 진행합니다.
+
+**dev/prod**는 마이그레이션 도구가 없어 psql로 직접 등록합니다. 먼저 BCrypt 해시를 만듭니다.
+
+```bash
+htpasswd -bnBC 10 "" '비밀번호' | tr -d ':\n'   # macOS 기본 제공. $2y$ 접두어도 BCryptPasswordEncoder가 허용합니다
+```
+
+그 다음 회원 행과 계정 행을 같은 트랜잭션으로 넣습니다. (`User` Javadoc의 규칙 — 회원 생성은 자격증명 생성과 같은 트랜잭션에서만)
+
+```sql
+BEGIN;
+WITH new_user AS (
+	INSERT INTO users (role, status, created_at, updated_at)
+	VALUES ('ONBOARDING_MEMBER', 'ACTIVE', now(), now()) RETURNING id
+)
+INSERT INTO local_accounts (user_id, email, password_hash, created_at, updated_at)
+SELECT id, 'review@example.com', '$2y$10$...', now(), now() FROM new_user;
+COMMIT;
+```
+
+- 평문 비밀번호는 커밋하지 않고 심사 제출 양식에만 적습니다. local 시드의 비밀번호는 로컬 전용이라 예외입니다.
+- 심사가 끝나 계정을 막으려면 `UPDATE users SET status = 'WITHDRAWN' WHERE id = (SELECT user_id FROM local_accounts WHERE email = '...')`.
+  행을 지우려면 `local_accounts` → `users` 순서로 삭제합니다.
+- prod는 `ddl-auto: validate`라 `local_accounts` 테이블이 없으면 기동 자체가 실패합니다. 엔티티는 이미 배포되어 있으므로 테이블 존재만 확인하면 됩니다.
 
 ## 제공자 추가 방법
 
@@ -191,6 +245,9 @@ dev/prod의 DB 접속 변수(`DB_HOST` 등)는 [profiles.md](profiles.md)를 참
 
 ## 알려진 제약
 
+- **이메일 로그인은 응답 시간을 균등화하지 않습니다.** 이메일이 없으면 BCrypt 대조 없이 바로 401이라, 응답 시간으로
+  등록 여부를 추정할 수 있습니다. 로컬 계정은 심사용 몇 개뿐이라 MVP에서는 수용하며, 필요해지면 미존재 분기에서도
+  더미 해시에 `matches`를 한 번 호출해 균등화합니다.
 - **역할 도입 전 가입자** — `UserRole` 도입 전 `MEMBER`로 만들어진 회원 중 프로필이 없는 계정은
   온보딩을 마치지 않고도 전 API에 접근할 수 있습니다(`needsOnboarding`은 여전히 true).
   온보딩을 완료하면 멱등 승격으로 일관성이 회복되므로 MVP에서는 수용합니다.

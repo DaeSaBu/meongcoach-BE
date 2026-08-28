@@ -9,5 +9,5 @@ public interface SocialLogin {
 	 *
 	 * @param credential 소셜 제공자가 발급한 ID 토큰(OIDC)
 	 */
-	SocialLoginResult login(SocialProvider provider, String credential);
+	LoginResult login(SocialProvider provider, String credential);
 }

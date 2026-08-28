@@ -1,12 +1,14 @@
 package com.daesabu.meongcoach.user.adapter.webapi;
 
-import com.daesabu.meongcoach.user.adapter.webapi.dto.LoginRequest;
+import com.daesabu.meongcoach.user.adapter.webapi.dto.LocalLoginRequest;
 import com.daesabu.meongcoach.user.adapter.webapi.dto.LoginResponse;
+import com.daesabu.meongcoach.user.adapter.webapi.dto.SocialLoginRequest;
 import com.daesabu.meongcoach.user.adapter.webapi.dto.TokenRefreshRequest;
 import com.daesabu.meongcoach.user.adapter.webapi.dto.TokenRefreshResponse;
 import com.daesabu.meongcoach.user.application.provided.AuthToken;
+import com.daesabu.meongcoach.user.application.provided.LocalLogin;
+import com.daesabu.meongcoach.user.application.provided.LoginResult;
 import com.daesabu.meongcoach.user.application.provided.SocialLogin;
-import com.daesabu.meongcoach.user.application.provided.SocialLoginResult;
 import com.daesabu.meongcoach.user.application.provided.TokenRefresher;
 import com.daesabu.meongcoach.user.domain.SocialProvider;
 import jakarta.validation.Valid;
@@ -23,13 +25,21 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
 	private final SocialLogin socialLogin;
+	private final LocalLogin localLogin;
 	private final TokenRefresher tokenRefresher;
 
 	// 소셜 로그인의 회원 조회·생성은 클라이언트가 관찰할 수 없는 부수 효과이므로 계약은 로그인(토큰 발급)으로 유지한다
 	// 제공자는 경로 변수로 받아 구글·애플이 추가돼도 요청 본문 계약이 바뀌지 않게 한다
 	@PostMapping("/login/social/{provider}")
-	public LoginResponse login(@PathVariable String provider, @Valid @RequestBody LoginRequest request) {
-		SocialLoginResult result = socialLogin.login(SocialProvider.from(provider), request.token());
+	public LoginResponse login(@PathVariable String provider, @Valid @RequestBody SocialLoginRequest request) {
+		LoginResult result = socialLogin.login(SocialProvider.from(provider), request.token());
+		return LoginResponse.from(result);
+	}
+
+	// 스토어 심사용 테스트 계정 전용. 가입 API가 없으므로 시드된 계정만 로그인할 수 있다
+	@PostMapping("/login/local")
+	public LoginResponse loginLocal(@Valid @RequestBody LocalLoginRequest request) {
+		LoginResult result = localLogin.login(request.email(), request.password());
 		return LoginResponse.from(result);
 	}
 

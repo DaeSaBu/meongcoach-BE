@@ -10,7 +10,7 @@
 
 ```
 com.daesabu.meongcoach
-├── user         ← 회원 계정·소셜 로그인·프로필
+├── user         ← 회원 계정·소셜/이메일 로그인·프로필
 ├── dog          ← 반려견 프로필
 ├── training     ← 훈련 콘텐츠 카탈로그
 ├── progress     ← 학습 진도
