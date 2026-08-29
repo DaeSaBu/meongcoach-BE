@@ -7,7 +7,6 @@ import com.daesabu.meongcoach.progress.domain.UserLessonProgress;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -19,7 +18,6 @@ import org.springframework.context.annotation.Import;
  */
 @DataJpaTest
 @Import(LessonProgressService.class)
-@DisplayName("레슨 진행도 서비스")
 class LessonProgressServiceTest {
 
 	private static final Long USER_ID = 1L;
@@ -36,8 +34,7 @@ class LessonProgressServiceTest {
 	private TestEntityManager entityManager;
 
 	@Test
-	@DisplayName("완료 횟수가 1 이상인 레슨의 id만 반환한다")
-	void findCompletedLessonIdsReturnsOnlyLessonsCompletedAtLeastOnce() {
+	void 완료_횟수가_1_이상인_레슨의_id만_반환한다() {
 		persistProgress(USER_ID, 10L, 1);
 		persistProgress(USER_ID, 20L, 0);
 		entityManager.flush();
@@ -48,8 +45,7 @@ class LessonProgressServiceTest {
 	}
 
 	@Test
-	@DisplayName("다른 사용자가 완료한 레슨의 id는 반환하지 않는다")
-	void findCompletedLessonIdsExcludesLessonsCompletedByOtherUsers() {
+	void 다른_사용자가_완료한_레슨의_id는_반환하지_않는다() {
 		persistProgress(OTHER_USER_ID, 10L, 3);
 		entityManager.flush();
 
@@ -59,8 +55,7 @@ class LessonProgressServiceTest {
 	}
 
 	@Test
-	@DisplayName("진행 기록이 없는 레슨의 완료 횟수는 0으로 조회된다")
-	void findCompletedCountsTreatsLessonWithoutProgressAsZero() {
+	void 진행_기록이_없는_레슨의_완료_횟수는_0으로_조회된다() {
 		persistProgress(USER_ID, 10L, 2);
 		entityManager.flush();
 
@@ -70,8 +65,7 @@ class LessonProgressServiceTest {
 	}
 
 	@Test
-	@DisplayName("다른 사용자의 완료 횟수는 조회되지 않는다")
-	void findCompletedCountsExcludesProgressOfOtherUsers() {
+	void 다른_사용자의_완료_횟수는_조회되지_않는다() {
 		persistProgress(OTHER_USER_ID, 10L, 3);
 		entityManager.flush();
 
@@ -81,8 +75,7 @@ class LessonProgressServiceTest {
 	}
 
 	@Test
-	@DisplayName("첫 완료 시 진행 기록이 생성되고 완료 횟수 1을 반환한다")
-	void completeLessonCreatesProgressWithCountOne() {
+	void 첫_완료_시_진행_기록이_생성되고_완료_횟수_1을_반환한다() {
 		int completedCount = lessonProgressService.completeLesson(USER_ID, 10L);
 
 		entityManager.flush();
@@ -93,8 +86,7 @@ class LessonProgressServiceTest {
 	}
 
 	@Test
-	@DisplayName("반복 완료 시 호출할 때마다 완료 횟수가 1씩 증가한다")
-	void completeLessonIncreasesCompletedCountByOnePerCall() {
+	void 반복_완료_시_호출할_때마다_완료_횟수가_1씩_증가한다() {
 		lessonProgressService.completeLesson(USER_ID, 10L);
 		lessonProgressService.completeLesson(USER_ID, 10L);
 		int completedCount = lessonProgressService.completeLesson(USER_ID, 10L);
@@ -107,8 +99,7 @@ class LessonProgressServiceTest {
 	}
 
 	@Test
-	@DisplayName("반복 완료해도 진행 기록은 한 건만 유지된다")
-	void completeLessonKeepsSingleProgressRow() {
+	void 반복_완료해도_진행_기록은_한_건만_유지된다() {
 		lessonProgressService.completeLesson(USER_ID, 10L);
 		lessonProgressService.completeLesson(USER_ID, 10L);
 
