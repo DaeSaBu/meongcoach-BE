@@ -17,7 +17,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -32,7 +31,6 @@ import org.springframework.context.annotation.Import;
  */
 @DataJpaTest
 @Import({AiVideoUploadUrlService.class, AiReportTrialFinderService.class})
-@DisplayName("AI 영상 업로드 URL 발급 서비스")
 class AiVideoUploadUrlServiceTest {
 
 	private static final Long USER_ID = 7L;
@@ -66,8 +64,7 @@ class AiVideoUploadUrlServiceTest {
 
 	@ParameterizedTest
 	@ValueSource(ints = {0, 1, 2})
-	@DisplayName("체험 횟수가 남아 있으면 훈련 영상 대상으로 업로드 URL 발급을 위임한다")
-	void issueDelegatesToMediaWhenTrialRemains(int usedCount) {
+	void 체험_횟수가_남아_있으면_훈련_영상_대상으로_업로드_URL_발급을_위임한다(int usedCount) {
 		persistCompletedReports(usedCount);
 
 		AiVideoUploadUrlResult result = service.issue(USER_ID, "video/mp4", 10485760L);
@@ -80,8 +77,7 @@ class AiVideoUploadUrlServiceTest {
 	}
 
 	@Test
-	@DisplayName("발급과 함께 UPLOADING 리포트를 저장하고 그 ID를 돌려준다")
-	void issueSavesUploadingReportAndReturnsItsId() {
+	void 발급과_함께_UPLOADING_리포트를_저장하고_그_ID를_돌려준다() {
 		AiVideoUploadUrlResult result = service.issue(USER_ID, "video/mp4", 10485760L);
 
 		AiReport saved = aiReportRepository.findById(result.reportId()).orElseThrow();
@@ -91,8 +87,7 @@ class AiVideoUploadUrlServiceTest {
 	}
 
 	@Test
-	@DisplayName("업로드 만료 시각은 발급 시각에 URL 유효 시간을 더한 값이다")
-	void issueSetsUploadExpiryFromUrlLifetime() {
+	void 업로드_만료_시각은_발급_시각에_URL_유효_시간을_더한_값이다() {
 		LocalDateTime before = LocalDateTime.now();
 
 		AiVideoUploadUrlResult result = service.issue(USER_ID, "video/mp4", 10485760L);
@@ -104,8 +99,7 @@ class AiVideoUploadUrlServiceTest {
 	}
 
 	@Test
-	@DisplayName("체험 횟수를 소진했으면 URL 발급과 리포트 저장 없이 예외를 던진다")
-	void issueThrowsWithoutDelegationWhenTrialExhausted() {
+	void 체험_횟수를_소진했으면_URL_발급과_리포트_저장_없이_예외를_던진다() {
 		persistCompletedReports(AiTrial.MAX_COUNT);
 
 		assertThatThrownBy(() -> service.issue(USER_ID, "video/mp4", 10485760L))
@@ -115,8 +109,7 @@ class AiVideoUploadUrlServiceTest {
 	}
 
 	@Test
-	@DisplayName("체험 현황은 요청한 사용자 기준으로 조회하므로 다른 사용자의 완료 리포트는 세지 않는다")
-	void issueLooksUpTrialForRequestedUser() {
+	void 체험_현황은_요청한_사용자_기준으로_조회하므로_다른_사용자의_완료_리포트는_세지_않는다() {
 		for (int i = 0; i < AiTrial.MAX_COUNT; i++) {
 			persistCompletedReport(99L, "videos/training/99/" + i + ".mp4");
 		}

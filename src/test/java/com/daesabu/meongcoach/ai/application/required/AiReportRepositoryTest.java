@@ -7,7 +7,6 @@ import com.daesabu.meongcoach.ai.domain.AiReportStatus;
 import com.daesabu.meongcoach.ai.domain.AiReportUploadCommand;
 import java.time.LocalDateTime;
 import java.util.List;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -17,7 +16,6 @@ import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
  * AI 리포트 저장 리포지토리 검증.
  */
 @DataJpaTest
-@DisplayName("AI 리포트 리포지토리")
 class AiReportRepositoryTest {
 
 	private static final String VIDEO_OBJECT_KEY = "videos/training/7/key.mp4";
@@ -32,8 +30,7 @@ class AiReportRepositoryTest {
 	private TestEntityManager entityManager;
 
 	@Test
-	@DisplayName("완료된 리포트를 저장하고 다시 조회할 수 있다")
-	void saveAndFindRoundTrips() {
+	void 완료된_리포트를_저장하고_다시_조회할_수_있다() {
 		AiReport saved = aiReportRepository.saveAndFlush(completedReport(7L, VIDEO_OBJECT_KEY, TITLE, CONTENT));
 		entityManager.clear();
 
@@ -47,8 +44,7 @@ class AiReportRepositoryTest {
 	}
 
 	@Test
-	@DisplayName("제목이 없는 리포트도 저장하고 다시 조회할 수 있다")
-	void saveAndFindRoundTripsWithoutTitle() {
+	void 제목이_없는_리포트도_저장하고_다시_조회할_수_있다() {
 		AiReport saved = aiReportRepository.saveAndFlush(completedReport(7L, VIDEO_OBJECT_KEY, null, CONTENT));
 		entityManager.clear();
 
@@ -58,8 +54,7 @@ class AiReportRepositoryTest {
 	}
 
 	@Test
-	@DisplayName("본문이 없는 UPLOADING 리포트도 업로드 만료 시각과 함께 저장하고 다시 조회할 수 있다")
-	void saveAndFindRoundTripsUploadingReportWithoutContent() {
+	void 본문이_없는_UPLOADING_리포트도_업로드_만료_시각과_함께_저장하고_다시_조회할_수_있다() {
 		AiReport saved = aiReportRepository.saveAndFlush(uploadingReport(7L, VIDEO_OBJECT_KEY));
 		entityManager.clear();
 
@@ -72,8 +67,7 @@ class AiReportRepositoryTest {
 	}
 
 	@Test
-	@DisplayName("준영속 리포트의 상태를 전이한 뒤 다시 저장하면 갱신된 상태로 조회된다")
-	void saveDetachedReportAfterTransitionUpdatesStatus() {
+	void 준영속_리포트의_상태를_전이한_뒤_다시_저장하면_갱신된_상태로_조회된다() {
 		// 생성 서비스는 트랜잭션 없이 save(merge)로 상태를 전이하므로, 준영속 인스턴스의 재저장이 UPDATE로 반영돼야 한다
 		AiReport saved = aiReportRepository.saveAndFlush(pendingReport(7L, VIDEO_OBJECT_KEY));
 		entityManager.clear();
@@ -87,8 +81,7 @@ class AiReportRepositoryTest {
 	}
 
 	@Test
-	@DisplayName("영상 객체 키로 발급 시 만든 리포트를 찾는다")
-	void findByVideoObjectKeyReturnsIssuedReport() {
+	void 영상_객체_키로_발급_시_만든_리포트를_찾는다() {
 		AiReport saved = aiReportRepository.saveAndFlush(uploadingReport(7L, VIDEO_OBJECT_KEY));
 
 		assertThat(aiReportRepository.findByVideoObjectKey(VIDEO_OBJECT_KEY))
@@ -96,14 +89,12 @@ class AiReportRepositoryTest {
 	}
 
 	@Test
-	@DisplayName("리포트가 없는 영상 객체 키면 결과가 비어 있다")
-	void findByVideoObjectKeyReturnsEmptyWhenReportIsAbsent() {
+	void 리포트가_없는_영상_객체_키면_결과가_비어_있다() {
 		assertThat(aiReportRepository.findByVideoObjectKey(VIDEO_OBJECT_KEY)).isEmpty();
 	}
 
 	@Test
-	@DisplayName("사용자의 리포트만 생성 시각 내림차순으로 조회한다")
-	void findAllByUserIdReturnsOwnReportsLatestFirst() {
+	void 사용자의_리포트만_생성_시각_내림차순으로_조회한다() {
 		AiReport first = aiReportRepository.saveAndFlush(
 				completedReport(7L, "videos/training/7/first.mp4", "첫 제목", "첫 리포트"));
 		AiReport second = aiReportRepository.saveAndFlush(
@@ -117,14 +108,12 @@ class AiReportRepositoryTest {
 	}
 
 	@Test
-	@DisplayName("리포트가 없는 사용자의 완료 리포트 수는 0이다")
-	void countByUserIdAndStatusReturnsZeroWhenNoReportExists() {
+	void 리포트가_없는_사용자의_완료_리포트_수는_0이다() {
 		assertThat(aiReportRepository.countByUserIdAndStatus(7L, AiReportStatus.COMPLETED)).isZero();
 	}
 
 	@Test
-	@DisplayName("사용자의 리포트 중 주어진 상태인 것만 센다")
-	void countByUserIdAndStatusCountsOnlyOwnReportsInStatus() {
+	void 사용자의_리포트_중_주어진_상태인_것만_센다() {
 		aiReportRepository.saveAndFlush(completedReport(7L, "videos/training/7/first.mp4", "첫 제목", "첫 리포트"));
 		aiReportRepository.saveAndFlush(completedReport(7L, "videos/training/7/second.mp4", "둘째 제목", "둘째 리포트"));
 		aiReportRepository.saveAndFlush(analysisFailedReport(7L, "videos/training/7/failed.mp4"));
@@ -135,8 +124,7 @@ class AiReportRepositoryTest {
 	}
 
 	@Test
-	@DisplayName("리포트 ID와 소유자가 모두 일치할 때만 조회된다")
-	void findByIdAndUserIdReturnsEmptyForOtherUsersReport() {
+	void 리포트_ID와_소유자가_모두_일치할_때만_조회된다() {
 		AiReport saved = aiReportRepository.saveAndFlush(completedReport(7L, VIDEO_OBJECT_KEY, TITLE, CONTENT));
 
 		assertThat(aiReportRepository.findByIdAndUserId(saved.getId(), 7L)).isPresent();

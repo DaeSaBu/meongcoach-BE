@@ -21,7 +21,6 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
@@ -33,7 +32,6 @@ import tools.jackson.databind.ObjectMapper;
 /**
  * 모델 호출은 MockRestServiceServer로 가로채고, 채팅 요청 구성과 응답 처리를 검증한다.
  */
-@DisplayName("EvoLink 영상 분석 어댑터")
 class EvoLinkVideoAnalyzerTest {
 
 	private static final String BASE_URL = "https://api.evolink.test";
@@ -79,8 +77,7 @@ class EvoLinkVideoAnalyzerTest {
 	}
 
 	@Test
-	@DisplayName("모델이 반환한 JSON을 정규화해 반환한다")
-	void analyzeReturnsNormalizedJson() {
+	void 모델이_반환한_JSON을_정규화해_반환한다() {
 		givenModelResponds(VALID_CONTENT_JSON);
 
 		String content = analyzer.analyze(VIDEO_URL);
@@ -89,8 +86,7 @@ class EvoLinkVideoAnalyzerTest {
 	}
 
 	@Test
-	@DisplayName("json_schema strict를 어긴 코드 펜스 응답이면 분석에 실패한다")
-	void analyzeFailsWhenResponseWrappedInFences() {
+	void json_schema_strict를_어긴_코드_펜스_응답이면_분석에_실패한다() {
 		givenModelResponds("```json\n" + VALID_CONTENT_JSON + "\n```");
 
 		assertThatThrownBy(() -> analyzer.analyze(VIDEO_URL))
@@ -98,8 +94,7 @@ class EvoLinkVideoAnalyzerTest {
 	}
 
 	@Test
-	@DisplayName("recommend와 solution이 없으면 빈 배열로 정규화한다")
-	void analyzeNormalizesMissingListsToEmptyArrays() {
+	void recommend와_solution이_없으면_빈_배열로_정규화한다() {
 		givenModelResponds("{\"report\":[{\"subTitle\":\"영상에서 이런 행동이 보여요\",\"description\":\"산책 중이에요.\"}]}");
 
 		String content = analyzer.analyze(VIDEO_URL);
@@ -110,8 +105,7 @@ class EvoLinkVideoAnalyzerTest {
 	}
 
 	@Test
-	@DisplayName("응답에서 JSON 객체를 찾지 못하면 분석에 실패한다")
-	void analyzeFailsWhenResponseHasNoJsonObject() {
+	void 응답에서_JSON_객체를_찾지_못하면_분석에_실패한다() {
 		givenModelResponds("분리불안 징후가 관찰됩니다.");
 
 		assertThatThrownBy(() -> analyzer.analyze(VIDEO_URL))
@@ -119,8 +113,7 @@ class EvoLinkVideoAnalyzerTest {
 	}
 
 	@Test
-	@DisplayName("응답이 JSON 형식이 아니면 분석에 실패한다")
-	void analyzeFailsWhenResponseIsMalformedJson() {
+	void 응답이_JSON_형식이_아니면_분석에_실패한다() {
 		givenModelResponds("{\"recommend\": [잘못된 형식}");
 
 		assertThatThrownBy(() -> analyzer.analyze(VIDEO_URL))
@@ -128,8 +121,7 @@ class EvoLinkVideoAnalyzerTest {
 	}
 
 	@Test
-	@DisplayName("report 항목이 비어 있으면 분석에 실패한다")
-	void analyzeFailsWhenReportIsEmpty() {
+	void report_항목이_비어_있으면_분석에_실패한다() {
 		givenModelResponds("{\"recommend\":[],\"report\":[],\"solution\":[]}");
 
 		assertThatThrownBy(() -> analyzer.analyze(VIDEO_URL))
@@ -137,8 +129,7 @@ class EvoLinkVideoAnalyzerTest {
 	}
 
 	@Test
-	@DisplayName("모델 API가 오류를 응답하면 VideoAnalysisFailedException으로 실패한다")
-	void analyzeTranslatesHttpErrorToDomainException() {
+	void 모델_API가_오류를_응답하면_VideoAnalysisFailedException으로_실패한다() {
 		// HTTP 오류는 경계에서 도메인 예외로 번역하고, 삼킬지는 호출부가 정한다
 		expectChatRequest().andRespond(withServerError());
 
@@ -148,8 +139,7 @@ class EvoLinkVideoAnalyzerTest {
 	}
 
 	@Test
-	@DisplayName("choices가 없는 응답이면 VideoAnalysisFailedException으로 실패한다")
-	void analyzeTranslatesUnusableResponseToDomainException() {
+	void choices가_없는_응답이면_VideoAnalysisFailedException으로_실패한다() {
 		expectChatRequest().andRespond(withSuccess("{\"id\":\"test-request-id\",\"choices\":[]}",
 				MediaType.APPLICATION_JSON));
 
@@ -158,8 +148,7 @@ class EvoLinkVideoAnalyzerTest {
 	}
 
 	@Test
-	@DisplayName("실패 메시지에 presigned URL의 서명 쿼리를 남기지 않는다")
-	void analyzeFailureMessageExcludesPresignedQuery() {
+	void 실패_메시지에_presigned_URL의_서명_쿼리를_남기지_않는다() {
 		givenModelResponds("분리불안 징후가 관찰됩니다.");
 
 		assertThatThrownBy(() -> analyzer.analyze(VIDEO_URL))
@@ -167,8 +156,7 @@ class EvoLinkVideoAnalyzerTest {
 	}
 
 	@Test
-	@DisplayName("설정된 모델·최대 토큰·온도·사고 모드로 요청한다")
-	void analyzeUsesConfiguredModelSettings() {
+	void 설정된_모델_최대_토큰_온도_사고_모드로_요청한다() {
 		expectChatRequest()
 				.andExpect(jsonPath("$.model").value(MODEL))
 				.andExpect(jsonPath("$.max_tokens").value(4096))
@@ -182,8 +170,7 @@ class EvoLinkVideoAnalyzerTest {
 	}
 
 	@Test
-	@DisplayName("리포트 구조의 json_schema를 strict로 지정한다")
-	void analyzeRequestsStrictJsonSchemaResponseFormat() {
+	void 리포트_구조의_json_schema를_strict로_지정한다() {
 		expectChatRequest()
 				.andExpect(jsonPath("$.response_format.type").value("json_schema"))
 				.andExpect(jsonPath("$.response_format.json_schema.name").value("ai_report"))
@@ -199,8 +186,7 @@ class EvoLinkVideoAnalyzerTest {
 	}
 
 	@Test
-	@DisplayName("설정된 API 키를 Bearer 토큰으로 보낸다")
-	void analyzeSendsBearerAuthorization() {
+	void 설정된_API_키를_Bearer_토큰으로_보낸다() {
 		expectChatRequest()
 				.andExpect(header("Authorization", "Bearer test-evolink-api-key"))
 				.andRespond(withSuccess(chatResponseJson(VALID_CONTENT_JSON), MediaType.APPLICATION_JSON));
@@ -211,8 +197,7 @@ class EvoLinkVideoAnalyzerTest {
 	}
 
 	@Test
-	@DisplayName("비디오 블록을 텍스트보다 먼저 보낸다")
-	void analyzeSendsVideoBeforeText() {
+	void 비디오_블록을_텍스트보다_먼저_보낸다() {
 		// 순서가 뒤집히면 모델이 지시를 무시하고 영어 장면 묘사로 빠진다
 		expectChatRequest()
 				.andExpect(jsonPath("$.messages[1].content[0].type").value("video_url"))
@@ -225,8 +210,7 @@ class EvoLinkVideoAnalyzerTest {
 	}
 
 	@Test
-	@DisplayName("presigned URL을 video_url로 프레임 추출 빈도와 함께 실어 보낸다")
-	void analyzeAttachesPresignedUrlAsVideoUrl() {
+	void presigned_URL을_video_url로_프레임_추출_빈도와_함께_실어_보낸다() {
 		expectChatRequest()
 				.andExpect(jsonPath("$.messages[1].content[0].video_url.url").value(VIDEO_URL))
 				.andExpect(jsonPath("$.messages[1].content[0].video_url.fps").value(1.0))
@@ -238,8 +222,7 @@ class EvoLinkVideoAnalyzerTest {
 	}
 
 	@Test
-	@DisplayName("분석 지시를 system 메시지로 보낸다")
-	void analyzeSendsAnalysisInstructionAsSystemMessage() {
+	void 분석_지시를_system_메시지로_보낸다() {
 		expectChatRequest()
 				.andExpect(jsonPath("$.messages[0].role").value("system"))
 				.andExpect(jsonPath("$.messages[0].content", containsString("반려견")))
@@ -251,8 +234,7 @@ class EvoLinkVideoAnalyzerTest {
 	}
 
 	@Test
-	@DisplayName("사용자 프롬프트에 교육 목록을 치환해 보낸다")
-	void analyzeInjectsTopicsIntoUserPrompt() {
+	void 사용자_프롬프트에_교육_목록을_치환해_보낸다() {
 		when(topicFinder.findAllOrdered()).thenReturn(List.of(
 				new TopicSummary(1L, "배변", "편안한 배변 습관 만들기"),
 				new TopicSummary(2L, "분리불안", "혼자서도 편안하게")));

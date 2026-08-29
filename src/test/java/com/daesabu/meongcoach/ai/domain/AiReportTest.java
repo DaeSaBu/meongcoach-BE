@@ -3,10 +3,8 @@ package com.daesabu.meongcoach.ai.domain;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.LocalDateTime;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-@DisplayName("AiReport 도메인")
 class AiReportTest {
 
 	private static final String VIDEO_OBJECT_KEY = "videos/training/1/video.mp4";
@@ -16,8 +14,7 @@ class AiReportTest {
 	private static final LocalDateTime UPLOAD_EXPIRES_AT = NOW.plusMinutes(15);
 
 	@Test
-	@DisplayName("UPLOADING으로 생성하면 사용자·영상 객체 키·업로드 만료 시각이 설정되고 제목·본문은 비어 있다")
-	void uploadingSetsUserKeyAndExpiryWithoutTitleAndContent() {
+	void UPLOADING으로_생성하면_사용자_영상_객체_키_업로드_만료_시각이_설정되고_제목_본문은_비어_있다() {
 		AiReport report = uploadingReport();
 
 		assertThat(report.getUserId()).isEqualTo(1L);
@@ -28,8 +25,7 @@ class AiReportTest {
 	}
 
 	@Test
-	@DisplayName("UPLOADING으로 생성하면 상태가 UPLOADING이다")
-	void uploadingSetsStatusUploading() {
+	void UPLOADING으로_생성하면_상태가_UPLOADING이다() {
 		AiReport report = uploadingReport();
 
 		assertThat(report.getStatus()).isEqualTo(AiReportStatus.UPLOADING);
@@ -37,8 +33,7 @@ class AiReportTest {
 	}
 
 	@Test
-	@DisplayName("분석을 시작하면 상태가 PENDING이 된다")
-	void startAnalysisSetsStatusPending() {
+	void 분석을_시작하면_상태가_PENDING이_된다() {
 		AiReport report = uploadingReport();
 
 		report.startAnalysis();
@@ -48,16 +43,14 @@ class AiReportTest {
 	}
 
 	@Test
-	@DisplayName("업로드 만료 전의 UPLOADING은 조회 시점 상태도 UPLOADING이다")
-	void statusAtKeepsUploadingBeforeExpiry() {
+	void 업로드_만료_전의_UPLOADING은_조회_시점_상태도_UPLOADING이다() {
 		AiReport report = uploadingReport();
 
 		assertThat(report.statusAt(UPLOAD_EXPIRES_AT)).isEqualTo(AiReportStatus.UPLOADING);
 	}
 
 	@Test
-	@DisplayName("업로드가 만료된 UPLOADING은 조회 시점 상태가 FAILED_UPLOAD다")
-	void statusAtDerivesFailedUploadAfterExpiry() {
+	void 업로드가_만료된_UPLOADING은_조회_시점_상태가_FAILED_UPLOAD다() {
 		AiReport report = uploadingReport();
 
 		assertThat(report.statusAt(UPLOAD_EXPIRES_AT.plusSeconds(1))).isEqualTo(AiReportStatus.FAILED_UPLOAD);
@@ -66,16 +59,14 @@ class AiReportTest {
 	}
 
 	@Test
-	@DisplayName("UPLOADING이 아닌 리포트는 만료 시각이 지나도 조회 시점 상태가 그대로다")
-	void statusAtLeavesNonUploadingStatusUntouched() {
+	void UPLOADING이_아닌_리포트는_만료_시각이_지나도_조회_시점_상태가_그대로다() {
 		AiReport report = pendingReport();
 
 		assertThat(report.statusAt(UPLOAD_EXPIRES_AT.plusDays(1))).isEqualTo(AiReportStatus.PENDING);
 	}
 
 	@Test
-	@DisplayName("완료하면 제목·본문이 채워지고 상태가 COMPLETED가 된다")
-	void completeSetsTitleContentAndStatusCompleted() {
+	void 완료하면_제목_본문이_채워지고_상태가_COMPLETED가_된다() {
 		AiReport report = pendingReport();
 
 		report.complete(TITLE, CONTENT);
@@ -86,8 +77,7 @@ class AiReportTest {
 	}
 
 	@Test
-	@DisplayName("제목 없이도 완료할 수 있다")
-	void completeAllowsNullTitle() {
+	void 제목_없이도_완료할_수_있다() {
 		AiReport report = pendingReport();
 
 		report.complete(null, CONTENT);
@@ -97,8 +87,7 @@ class AiReportTest {
 	}
 
 	@Test
-	@DisplayName("컬럼 길이를 넘는 제목은 잘라서 저장한다")
-	void completeTruncatesTitleOverColumnLength() {
+	void 컬럼_길이를_넘는_제목은_잘라서_저장한다() {
 		// 제목은 부가 정보라 길이 위반으로 리포트 저장 전체가 실패해서는 안 된다
 		AiReport report = pendingReport();
 
@@ -108,8 +97,7 @@ class AiReportTest {
 	}
 
 	@Test
-	@DisplayName("공백뿐인 제목은 null로 저장한다")
-	void completeNormalizesBlankTitleToNull() {
+	void 공백뿐인_제목은_null로_저장한다() {
 		AiReport report = pendingReport();
 
 		report.complete("   ", CONTENT);
@@ -118,8 +106,7 @@ class AiReportTest {
 	}
 
 	@Test
-	@DisplayName("제목 앞뒤 공백은 제거해 저장한다")
-	void completeStripsTitleWhitespace() {
+	void 제목_앞뒤_공백은_제거해_저장한다() {
 		AiReport report = pendingReport();
 
 		report.complete("  " + TITLE + "  ", CONTENT);
@@ -128,8 +115,7 @@ class AiReportTest {
 	}
 
 	@Test
-	@DisplayName("체험 횟수 초과로 실패 처리하면 상태가 FAILED_TRIAL_EXCEEDED가 된다")
-	void failByTrialExceededSetsStatus() {
+	void 체험_횟수_초과로_실패_처리하면_상태가_FAILED_TRIAL_EXCEEDED가_된다() {
 		AiReport report = pendingReport();
 
 		report.failByTrialExceeded();
@@ -138,8 +124,7 @@ class AiReportTest {
 	}
 
 	@Test
-	@DisplayName("분석 실패로 실패 처리하면 상태가 FAILED_ANALYSIS가 된다")
-	void failByAnalysisSetsStatus() {
+	void 분석_실패로_실패_처리하면_상태가_FAILED_ANALYSIS가_된다() {
 		AiReport report = pendingReport();
 
 		report.failByAnalysis();
@@ -148,8 +133,7 @@ class AiReportTest {
 	}
 
 	@Test
-	@DisplayName("예상하지 못한 예외로 실패 처리하면 상태가 FAILED_UNEXPECTED가 된다")
-	void failUnexpectedlySetsStatus() {
+	void 예상하지_못한_예외로_실패_처리하면_상태가_FAILED_UNEXPECTED가_된다() {
 		AiReport report = pendingReport();
 
 		report.failUnexpectedly();
@@ -158,8 +142,7 @@ class AiReportTest {
 	}
 
 	@Test
-	@DisplayName("실패 처리해도 본문은 채워지지 않는다")
-	void failKeepsContentEmpty() {
+	void 실패_처리해도_본문은_채워지지_않는다() {
 		AiReport report = pendingReport();
 
 		report.failByAnalysis();

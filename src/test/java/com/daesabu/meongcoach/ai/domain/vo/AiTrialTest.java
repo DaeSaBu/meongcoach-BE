@@ -2,59 +2,50 @@ package com.daesabu.meongcoach.ai.domain.vo;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-@DisplayName("AiTrial 값 객체")
 class AiTrialTest {
 
 	@Test
-	@DisplayName("무료 체험 최대 횟수는 3회다")
-	void maxCountIsThree() {
+	void 무료_체험_최대_횟수는_3회다() {
 		// 한도가 조용히 바뀌면 API 문서와 클라이언트 안내 문구가 어긋나므로 값 자체를 고정한다
 		assertThat(AiTrial.MAX_COUNT).isEqualTo(3);
 	}
 
 	@Test
-	@DisplayName("리포지토리 count 결과로 생성한다")
-	void ofNarrowsRepositoryCount() {
+	void 리포지토리_count_결과로_생성한다() {
 		assertThat(AiTrial.of(2L)).isEqualTo(new AiTrial(2));
 	}
 
 	@ParameterizedTest
 	@ValueSource(ints = {0, 1, 2})
-	@DisplayName("생성한 리포트가 한도 미만이면 체험이 남아 있다")
-	void isAvailableWhenUsedCountIsBelowMax(int usedCount) {
+	void 생성한_리포트가_한도_미만이면_체험이_남아_있다(int usedCount) {
 		assertThat(new AiTrial(usedCount).isAvailable()).isTrue();
 	}
 
 	@ParameterizedTest
 	@ValueSource(ints = {3, 4})
-	@DisplayName("생성한 리포트가 한도 이상이면 체험을 소진했다")
-	void isNotAvailableWhenUsedCountReachesMax(int usedCount) {
+	void 생성한_리포트가_한도_이상이면_체험을_소진했다(int usedCount) {
 		assertThat(new AiTrial(usedCount).isAvailable()).isFalse();
 	}
 
 	@ParameterizedTest
 	@CsvSource({"0, 3", "1, 2", "2, 1", "3, 0"})
-	@DisplayName("사용한 만큼 잔여 횟수가 줄어든다")
-	void remainingCountDecreasesAsUsed(int usedCount, int expected) {
+	void 사용한_만큼_잔여_횟수가_줄어든다(int usedCount, int expected) {
 		assertThat(new AiTrial(usedCount).remainingCount()).isEqualTo(expected);
 	}
 
 	@Test
-	@DisplayName("한도를 넘겨 저장된 경우에도 잔여 횟수는 0으로 내려간다")
-	void remainingCountIsClampedToZero() {
+	void 한도를_넘겨_저장된_경우에도_잔여_횟수는_0으로_내려간다() {
 		// 업로드 URL 발급과 리포트 생성이 비동기라 한도를 넘겨 저장될 수 있다
 		assertThat(new AiTrial(4).remainingCount()).isZero();
 	}
 
 	@Test
-	@DisplayName("같은 사용 횟수끼리는 동등하다")
-	void sameUsedCountsAreEqual() {
+	void 같은_사용_횟수끼리는_동등하다() {
 		assertThat(new AiTrial(2)).isEqualTo(new AiTrial(2));
 	}
 }

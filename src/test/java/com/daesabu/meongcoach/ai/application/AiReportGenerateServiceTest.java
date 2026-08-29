@@ -29,7 +29,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.Answer;
 
@@ -37,7 +36,6 @@ import org.mockito.stubbing.Answer;
  * 리포지토리까지 mock으로 두는 이유: "n번째 save만 실패" 같은 DB 장애 경로를 재현해야 하는데
  * 실제 H2로는 저장 실패를 주입할 수 없기 때문이다.
  */
-@DisplayName("AI 리포트 생성 서비스")
 class AiReportGenerateServiceTest {
 
 	private static final Long USER_ID = 7L;
@@ -92,8 +90,7 @@ class AiReportGenerateServiceTest {
 	}
 
 	@Test
-	@DisplayName("발급받은 presigned URL로 분석한 결과를 제목과 함께 발급 시 만든 row에 COMPLETED로 저장한다")
-	void generateSavesCompletedReportWithAnalyzedContent() {
+	void 발급받은_presigned_URL로_분석한_결과를_제목과_함께_발급_시_만든_row에_COMPLETED로_저장한다() {
 		service.generate(OBJECT_KEY);
 
 		// 분석기가 이 presigned URL로 영상을 직접 읽는다
@@ -107,24 +104,21 @@ class AiReportGenerateServiceTest {
 	}
 
 	@Test
-	@DisplayName("분석을 시작하기 전에 UPLOADING row를 PENDING으로 먼저 전이해 저장한다")
-	void generateSavesPendingBeforeAnalysis() {
+	void 분석을_시작하기_전에_UPLOADING_row를_PENDING으로_먼저_전이해_저장한다() {
 		service.generate(OBJECT_KEY);
 
 		assertThat(savedStatuses).containsExactly(AiReportStatus.PENDING, AiReportStatus.COMPLETED);
 	}
 
 	@Test
-	@DisplayName("제목 생성기에 분석 결과 JSON을 그대로 넘긴다")
-	void generatePassesAnalyzedContentToTitleGenerator() {
+	void 제목_생성기에_분석_결과_JSON을_그대로_넘긴다() {
 		service.generate(OBJECT_KEY);
 
 		verify(reportTitleGenerator).generateTitle(ANALYZED_CONTENT);
 	}
 
 	@Test
-	@DisplayName("같은 영상의 리포트가 이미 분석을 시작했으면 URL 발급·분석·저장 없이 건너뛴다")
-	void generateSkipsWhenReportAlreadyStartedAnalysis() {
+	void 같은_영상의_리포트가_이미_분석을_시작했으면_URL_발급_분석_저장_없이_건너뛴다() {
 		issuedReport.startAnalysis();
 
 		service.generate(OBJECT_KEY);
@@ -134,8 +128,7 @@ class AiReportGenerateServiceTest {
 	}
 
 	@Test
-	@DisplayName("업로드 URL 발급 기록이 없는 영상이면 URL 발급·분석·저장 없이 건너뛴다")
-	void generateSkipsWhenNoIssuedReportExists() {
+	void 업로드_URL_발급_기록이_없는_영상이면_URL_발급_분석_저장_없이_건너뛴다() {
 		when(aiReportRepository.findByVideoObjectKey(OBJECT_KEY)).thenReturn(Optional.empty());
 
 		service.generate(OBJECT_KEY);
@@ -145,8 +138,7 @@ class AiReportGenerateServiceTest {
 	}
 
 	@Test
-	@DisplayName("객체 키 검증에 실패하면 PENDING으로 전이하지 않고 예외를 그대로 던진다")
-	void generatePropagatesInvalidObjectKeyWithoutTransition() {
+	void 객체_키_검증에_실패하면_PENDING으로_전이하지_않고_예외를_그대로_던진다() {
 		when(downloadUrlIssuer.issue(OBJECT_KEY)).thenThrow(new InvalidVideoObjectKeyException(OBJECT_KEY));
 
 		// row는 UPLOADING으로 남아 만료 뒤 FAILED_UPLOAD로 조회된다. 컨슈머가 warn 로그로 버린다
@@ -157,8 +149,7 @@ class AiReportGenerateServiceTest {
 	}
 
 	@Test
-	@DisplayName("영상 소유자가 체험 횟수를 소진했으면 분석 없이 FAILED_TRIAL_EXCEEDED로 기록한다")
-	void generateRecordsTrialExceededWhenOwnerTrialExhausted() {
+	void 영상_소유자가_체험_횟수를_소진했으면_분석_없이_FAILED_TRIAL_EXCEEDED로_기록한다() {
 		when(aiTrialFinder.findTrial(USER_ID)).thenReturn(new AiTrial(AiTrial.MAX_COUNT));
 
 		service.generate(OBJECT_KEY);
@@ -168,8 +159,7 @@ class AiReportGenerateServiceTest {
 	}
 
 	@Test
-	@DisplayName("분석이 실패하면 예외를 던지지 않고 FAILED_ANALYSIS로 기록한다")
-	void generateRecordsAnalysisFailureWithoutThrowing() {
+	void 분석이_실패하면_예외를_던지지_않고_FAILED_ANALYSIS로_기록한다() {
 		when(videoAnalyzer.analyze(DOWNLOAD_URL)).thenThrow(new VideoAnalysisFailedException("분석 실패"));
 
 		// 예외를 던지면 SQS가 같은 메시지를 무한히 재전달한다
@@ -180,8 +170,7 @@ class AiReportGenerateServiceTest {
 	}
 
 	@Test
-	@DisplayName("분석이 실패하면 제목 생성을 시도하지 않는다")
-	void generateSkipsTitleGenerationWhenAnalysisFails() {
+	void 분석이_실패하면_제목_생성을_시도하지_않는다() {
 		when(videoAnalyzer.analyze(DOWNLOAD_URL)).thenThrow(new VideoAnalysisFailedException("분석 실패"));
 
 		service.generate(OBJECT_KEY);
@@ -190,8 +179,7 @@ class AiReportGenerateServiceTest {
 	}
 
 	@Test
-	@DisplayName("제목 생성이 실패하면 제목 없이 COMPLETED로 저장한다")
-	void generateCompletesWithoutTitleWhenTitleGenerationFails() {
+	void 제목_생성이_실패하면_제목_없이_COMPLETED로_저장한다() {
 		when(reportTitleGenerator.generateTitle(ANALYZED_CONTENT))
 				.thenThrow(new ReportTitleGenerationFailedException("제목 생성 실패"));
 
@@ -203,8 +191,7 @@ class AiReportGenerateServiceTest {
 	}
 
 	@Test
-	@DisplayName("분석기가 선언되지 않은 예외를 던지면 FAILED_ANALYSIS가 아니라 FAILED_UNEXPECTED로 기록한다")
-	void generateRecordsUnexpectedFailureWhenAnalyzerThrowsUndeclaredException() {
+	void 분석기가_선언되지_않은_예외를_던지면_FAILED_ANALYSIS가_아니라_FAILED_UNEXPECTED로_기록한다() {
 		when(videoAnalyzer.analyze(DOWNLOAD_URL)).thenThrow(new IllegalStateException("어댑터 버그"));
 
 		assertThatCode(() -> service.generate(OBJECT_KEY)).doesNotThrowAnyException();
@@ -213,8 +200,7 @@ class AiReportGenerateServiceTest {
 	}
 
 	@Test
-	@DisplayName("제목 생성기가 선언되지 않은 예외를 던지면 제목 없이 완료하지 않고 FAILED_UNEXPECTED로 기록한다")
-	void generateRecordsUnexpectedFailureWhenTitleGeneratorThrowsUndeclaredException() {
+	void 제목_생성기가_선언되지_않은_예외를_던지면_제목_없이_완료하지_않고_FAILED_UNEXPECTED로_기록한다() {
 		when(reportTitleGenerator.generateTitle(ANALYZED_CONTENT)).thenThrow(new IllegalStateException("어댑터 버그"));
 
 		assertThatCode(() -> service.generate(OBJECT_KEY)).doesNotThrowAnyException();
@@ -223,8 +209,7 @@ class AiReportGenerateServiceTest {
 	}
 
 	@Test
-	@DisplayName("PENDING 기록 뒤 예상하지 못한 예외가 나면 FAILED_UNEXPECTED로 기록한다")
-	void generateRecordsUnexpectedFailureWhenTrialLookupThrows() {
+	void PENDING_기록_뒤_예상하지_못한_예외가_나면_FAILED_UNEXPECTED로_기록한다() {
 		when(aiTrialFinder.findTrial(USER_ID)).thenThrow(new IllegalStateException("체험 조회 실패"));
 
 		assertThatCode(() -> service.generate(OBJECT_KEY)).doesNotThrowAnyException();
@@ -233,8 +218,7 @@ class AiReportGenerateServiceTest {
 	}
 
 	@Test
-	@DisplayName("완료 저장이 실패하면 FAILED_UNEXPECTED로 기록한다")
-	void generateRecordsUnexpectedFailureWhenCompletionSaveFails() {
+	void 완료_저장이_실패하면_FAILED_UNEXPECTED로_기록한다() {
 		// 1번째(PENDING) 성공 → 2번째(COMPLETED) 실패 → 3번째(FAILED_UNEXPECTED) 성공
 		doAnswer(recordSave).doThrow(SAVE_FAILURE).doAnswer(recordSave).when(aiReportRepository).save(any());
 
@@ -244,8 +228,7 @@ class AiReportGenerateServiceTest {
 	}
 
 	@Test
-	@DisplayName("실패 상태 기록이 실패하면 FAILED_UNEXPECTED로 다시 기록을 시도한다")
-	void generateRetriesAsUnexpectedFailureWhenFailureRecordingFails() {
+	void 실패_상태_기록이_실패하면_FAILED_UNEXPECTED로_다시_기록을_시도한다() {
 		when(videoAnalyzer.analyze(DOWNLOAD_URL)).thenThrow(new VideoAnalysisFailedException("분석 실패"));
 		// 1번째(PENDING) 성공 → 2번째(FAILED_ANALYSIS) 실패 → 3번째(FAILED_UNEXPECTED) 성공
 		doAnswer(recordSave).doThrow(SAVE_FAILURE).doAnswer(recordSave).when(aiReportRepository).save(any());
@@ -256,8 +239,7 @@ class AiReportGenerateServiceTest {
 	}
 
 	@Test
-	@DisplayName("실패 기록이 계속 실패하면 예외를 그대로 전파한다")
-	void generatePropagatesWhenFailureRecordingKeepsFailing() {
+	void 실패_기록이_계속_실패하면_예외를_그대로_전파한다() {
 		when(videoAnalyzer.analyze(DOWNLOAD_URL)).thenThrow(new VideoAnalysisFailedException("분석 실패"));
 		// 1번째(PENDING) 성공 → 2번째부터 계속 실패 (마지막 스터빙이 반복된다)
 		doAnswer(recordSave).doThrow(SAVE_FAILURE).when(aiReportRepository).save(any());
