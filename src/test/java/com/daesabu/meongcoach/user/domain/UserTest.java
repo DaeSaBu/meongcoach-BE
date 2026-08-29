@@ -2,15 +2,12 @@ package com.daesabu.meongcoach.user.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-@DisplayName("User 도메인")
 class UserTest {
 
 	@Test
-	@DisplayName("온보딩 회원으로 등록하면 ACTIVE 상태의 ONBOARDING_MEMBER가 생성된다")
-	void registerOnboardingMemberCreatesActiveOnboardingMember() {
+	void 온보딩_회원으로_등록하면_ACTIVE_상태의_ONBOARDING_MEMBER가_생성된다() {
 		User user = User.registerOnboardingMember();
 
 		assertThat(user.getRole()).isEqualTo(UserRole.ONBOARDING_MEMBER);
@@ -18,8 +15,7 @@ class UserTest {
 	}
 
 	@Test
-	@DisplayName("게스트로 등록하면 ACTIVE 상태의 GUEST가 생성된다")
-	void registerGuestCreatesActiveGuest() {
+	void 게스트로_등록하면_ACTIVE_상태의_GUEST가_생성된다() {
 		User user = User.registerGuest();
 
 		assertThat(user.getRole()).isEqualTo(UserRole.GUEST);
@@ -27,8 +23,7 @@ class UserTest {
 	}
 
 	@Test
-	@DisplayName("온보딩 회원을 승격하면 MEMBER가 된다")
-	void promoteToMemberChangesRoleToMember() {
+	void 온보딩_회원을_승격하면_MEMBER가_된다() {
 		User user = User.registerOnboardingMember();
 
 		user.promoteToMember();
@@ -37,8 +32,7 @@ class UserTest {
 	}
 
 	@Test
-	@DisplayName("이미 MEMBER여도 승격은 멱등이다")
-	void promoteToMemberIsIdempotent() {
+	void 이미_MEMBER여도_승격은_멱등이다() {
 		User user = User.registerOnboardingMember();
 		user.promoteToMember();
 
@@ -49,16 +43,14 @@ class UserTest {
 
 	// 인가 어휘 매핑이 잘못되면(예: MEMBER에 GUEST 어휘) 인가 규칙 전체가 어긋나므로 선언부를 검증한다
 	@Test
-	@DisplayName("모든 역할은 같은 이름의 인가 어휘로 매핑된다")
-	void everyRoleMapsToAuthorityRoleOfSameName() {
+	void 모든_역할은_같은_이름의_인가_어휘로_매핑된다() {
 		for (UserRole role : UserRole.values()) {
 			assertThat(role.authorityRole().name()).isEqualTo(role.name());
 		}
 	}
 
 	@Test
-	@DisplayName("탈퇴하면 상태가 WITHDRAWN으로 변경된다")
-	void withdrawChangesStatusToWithdrawn() {
+	void 탈퇴하면_상태가_WITHDRAWN으로_변경된다() {
 		User user = User.registerOnboardingMember();
 
 		user.withdraw();

@@ -8,15 +8,12 @@ import com.daesabu.meongcoach.user.domain.exception.InvalidGenderException;
 import com.daesabu.meongcoach.user.domain.exception.InvalidMbtiException;
 import java.time.LocalDate;
 import java.util.Set;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-@DisplayName("UserProfile 도메인")
 class UserProfileTest {
 
 	@Test
-	@DisplayName("생성하면 Command의 값이 한 번에 채워지고 툴팁 완료 여부는 false로 초기화된다")
-	void createAssignsAllValuesFromCommand() {
+	void 생성하면_Command의_값이_한_번에_채워지고_툴팁_완료_여부는_false로_초기화된다() {
 		UserProfile profile = UserProfile.create(User.registerOnboardingMember(),
 				command(LocalDate.of(2000, 1, 1), Set.of(), Set.of()));
 
@@ -29,8 +26,7 @@ class UserProfileTest {
 	}
 
 	@Test
-	@DisplayName("생성하면 교육 이력과 목표 토픽이 중복 없이 저장된다")
-	void createStoresTrainingTopicsWithoutDuplicates() {
+	void 생성하면_교육_이력과_목표_토픽이_중복_없이_저장된다() {
 		UserProfile profile = UserProfile.create(User.registerOnboardingMember(),
 				command(null, Set.of(1L, 2L), Set.of(2L, 3L)));
 
@@ -39,8 +35,7 @@ class UserProfileTest {
 	}
 
 	@Test
-	@DisplayName("교육 토픽이 null이면 빈 집합으로 저장된다")
-	void createTreatsNullTrainingTopicsAsEmpty() {
+	void 교육_토픽이_null이면_빈_집합으로_저장된다() {
 		UserProfile profile = UserProfile.create(User.registerOnboardingMember(), command(null, null, null));
 
 		assertThat(profile.getPriorTrainingTopicIds()).isEmpty();
@@ -48,8 +43,7 @@ class UserProfileTest {
 	}
 
 	@Test
-	@DisplayName("프로필 이미지가 null이면 빈 문자열로 저장된다")
-	void createDefaultsProfileImageUrlToEmptyWhenNull() {
+	void 프로필_이미지가_null이면_빈_문자열로_저장된다() {
 		UserProfile profile = UserProfile.create(User.registerOnboardingMember(),
 				new UserProfileCreateCommand("멍멍이집사", null, null, "INFP", "FEMALE", Set.of(), Set.of()));
 
@@ -57,24 +51,21 @@ class UserProfileTest {
 	}
 
 	@Test
-	@DisplayName("유효하지 않은 MBTI 문자열로는 생성할 수 없다")
-	void createFailsWhenMbtiIsInvalid() {
+	void 유효하지_않은_MBTI_문자열로는_생성할_수_없다() {
 		assertThatThrownBy(() -> UserProfile.create(User.registerOnboardingMember(),
 				new UserProfileCreateCommand("멍멍이집사", null, null, "XXXX", "FEMALE", Set.of(), Set.of())))
 				.isInstanceOf(InvalidMbtiException.class);
 	}
 
 	@Test
-	@DisplayName("유효하지 않은 성별 문자열로는 생성할 수 없다")
-	void createFailsWhenGenderIsInvalid() {
+	void 유효하지_않은_성별_문자열로는_생성할_수_없다() {
 		assertThatThrownBy(() -> UserProfile.create(User.registerOnboardingMember(),
 				new UserProfileCreateCommand("멍멍이집사", null, null, "INFP", "OTHER", Set.of(), Set.of())))
 				.isInstanceOf(InvalidGenderException.class);
 	}
 
 	@Test
-	@DisplayName("생년월일로 나이를 계산한다")
-	void getAgeCalculatesFromBirthDate() {
+	void 생년월일로_나이를_계산한다() {
 		UserProfile profile = UserProfile.create(User.registerOnboardingMember(),
 				command(LocalDate.now().minusYears(20), Set.of(), Set.of()));
 
@@ -82,16 +73,14 @@ class UserProfileTest {
 	}
 
 	@Test
-	@DisplayName("생년월일이 없으면 나이는 null을 반환한다")
-	void getAgeReturnsNullWhenBirthDateIsNull() {
+	void 생년월일이_없으면_나이는_null을_반환한다() {
 		UserProfile profile = UserProfile.create(User.registerOnboardingMember(), command(null, Set.of(), Set.of()));
 
 		assertThat(profile.getAge()).isNull();
 	}
 
 	@Test
-	@DisplayName("툴팁을 완료하면 완료 상태로 표시된다")
-	void completeTooltipMarksTooltipCompleted() {
+	void 툴팁을_완료하면_완료_상태로_표시된다() {
 		UserProfile profile = UserProfile.create(User.registerOnboardingMember(), command(null, Set.of(), Set.of()));
 
 		profile.completeTooltip();

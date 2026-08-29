@@ -4,47 +4,40 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.daesabu.meongcoach.user.domain.exception.InvalidEmailException;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-@DisplayName("Email 값 객체")
 class EmailTest {
 
 	@Test
-	@DisplayName("유효한 주소로 생성에 성공한다")
-	void createSucceedsWithValidAddress() {
+	void 유효한_주소로_생성에_성공한다() {
 		Email email = new Email("test@kakao.com");
 
 		assertThat(email.address()).isEqualTo("test@kakao.com");
 	}
 
 	@Test
-	@DisplayName("같은 주소끼리는 동등하다")
-	void sameAddressesAreEqual() {
+	void 같은_주소끼리는_동등하다() {
 		assertThat(new Email("test@kakao.com")).isEqualTo(new Email("test@kakao.com"));
 	}
 
 	@Test
-	@DisplayName("주소가 null이면 생성에 실패한다")
-	void createFailsWhenAddressIsNull() {
+	void 주소가_null이면_생성에_실패한다() {
 		assertThatThrownBy(() -> new Email(null))
 				.isInstanceOf(InvalidEmailException.class);
 	}
 
 	@ParameterizedTest
-	@DisplayName("주소 형식이 잘못되면 생성에 실패한다")
 	@ValueSource(strings = {"", " ", "invalid", "no-at-sign.com", "@no-local.com", "user@", "user@domain",
 			"user@domain."})
-	void createFailsWhenAddressFormatIsInvalid(String address) {
+	void 주소_형식이_잘못되면_생성에_실패한다(String address) {
 		assertThatThrownBy(() -> new Email(address))
 				.isInstanceOf(InvalidEmailException.class);
 	}
 
 	@Test
-	@DisplayName("주소가 최대 길이를 초과하면 생성에 실패한다")
-	void createFailsWhenAddressExceedsMaxLength() {
+	void 주소가_최대_길이를_초과하면_생성에_실패한다() {
 		String longAddress = "a".repeat(250) + "@test.com";
 
 		assertThatThrownBy(() -> new Email(longAddress))

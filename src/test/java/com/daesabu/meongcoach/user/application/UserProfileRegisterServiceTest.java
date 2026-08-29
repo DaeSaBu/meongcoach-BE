@@ -18,14 +18,12 @@ import com.daesabu.meongcoach.user.domain.exception.UserNotFoundException;
 import java.time.LocalDate;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 
 @DataJpaTest
-@DisplayName("사용자 프로필 등록 서비스")
 class UserProfileRegisterServiceTest {
 
 	private static final String VALID_MBTI = "INTJ";
@@ -51,8 +49,7 @@ class UserProfileRegisterServiceTest {
 	}
 
 	@Test
-	@DisplayName("필수 정보로 프로필을 생성한다")
-	void registerCreatesProfileWithRequiredFields() {
+	void 필수_정보로_프로필을_생성한다() {
 		service.register(userId,
 				command("멍멍이집사", null, VALID_MBTI, VALID_GENDER, null));
 
@@ -66,8 +63,7 @@ class UserProfileRegisterServiceTest {
 	}
 
 	@Test
-	@DisplayName("생년월일을 필수 프로필 정보와 함께 저장한다")
-	void registerCreatesProfileWithBirthDate() {
+	void 생년월일을_필수_프로필_정보와_함께_저장한다() {
 		service.register(userId,
 				command("멍멍이집사", LocalDate.of(1998, 1, 1), VALID_MBTI, VALID_GENDER, null));
 
@@ -78,8 +74,7 @@ class UserProfileRegisterServiceTest {
 	}
 
 	@Test
-	@DisplayName("프로필 이미지 URL을 함께 저장한다")
-	void registerCreatesProfileWithProfileImage() {
+	void 프로필_이미지_URL을_함께_저장한다() {
 		String imageUrl = "https://images.test.meongcoach.com/images/user-profile/1/a.jpg";
 
 		service.register(userId,
@@ -90,8 +85,7 @@ class UserProfileRegisterServiceTest {
 	}
 
 	@Test
-	@DisplayName("프로필 이미지가 없으면 빈 문자열로 저장한다")
-	void registerStoresEmptyProfileImageWhenAbsent() {
+	void 프로필_이미지가_없으면_빈_문자열로_저장한다() {
 		service.register(userId,
 				command("멍멍이집사", null, VALID_MBTI, VALID_GENDER, null));
 
@@ -100,8 +94,7 @@ class UserProfileRegisterServiceTest {
 	}
 
 	@Test
-	@DisplayName("교육 이력·목표를 함께 저장한다")
-	void registerStoresTrainingTopics() {
+	void 교육_이력_목표를_함께_저장한다() {
 		UserProfileCreateCommand command = new UserProfileCreateCommand(
 				"멍멍이집사", null, null, VALID_MBTI, VALID_GENDER, Set.of(1L, 2L), Set.of(2L, 3L));
 
@@ -113,8 +106,7 @@ class UserProfileRegisterServiceTest {
 	}
 
 	@Test
-	@DisplayName("프로필을 등록하면 온보딩 회원이 정회원으로 승격된다")
-	void registerPromotesOnboardingMemberToMember() {
+	void 프로필을_등록하면_온보딩_회원이_정회원으로_승격된다() {
 		service.register(userId,
 				command("멍멍이집사", null, VALID_MBTI, VALID_GENDER, null));
 
@@ -125,8 +117,7 @@ class UserProfileRegisterServiceTest {
 	}
 
 	@Test
-	@DisplayName("이미 프로필이 있으면 등록에 실패한다")
-	void registerFailsWhenProfileAlreadyExists() {
+	void 이미_프로필이_있으면_등록에_실패한다() {
 		service.register(userId,
 				command("멍멍이집사", null, VALID_MBTI, VALID_GENDER, null));
 
@@ -136,56 +127,49 @@ class UserProfileRegisterServiceTest {
 	}
 
 	@Test
-	@DisplayName("회원이 없으면 등록에 실패한다")
-	void registerFailsWhenUserDoesNotExist() {
+	void 회원이_없으면_등록에_실패한다() {
 		assertThatThrownBy(() -> service.register(999L,
 				command("멍멍이집사", null, VALID_MBTI, VALID_GENDER, null)))
 				.isInstanceOf(UserNotFoundException.class);
 	}
 
 	@Test
-	@DisplayName("잘못된 MBTI 값이면 등록에 실패한다")
-	void registerFailsWhenMbtiIsInvalid() {
+	void 잘못된_MBTI_값이면_등록에_실패한다() {
 		assertThatThrownBy(() -> service.register(userId,
 				command("멍멍이집사", null, "XXXX", VALID_GENDER, null)))
 				.isInstanceOf(InvalidMbtiException.class);
 	}
 
 	@Test
-	@DisplayName("MBTI가 null이면 등록에 실패한다")
-	void registerFailsWhenMbtiIsNull() {
+	void MBTI가_null이면_등록에_실패한다() {
 		assertThatThrownBy(() -> service.register(userId,
 				command("멍멍이집사", null, null, VALID_GENDER, null)))
 				.isInstanceOf(InvalidMbtiException.class);
 	}
 
 	@Test
-	@DisplayName("MBTI가 공백이면 등록에 실패한다")
-	void registerFailsWhenMbtiIsBlank() {
+	void MBTI가_공백이면_등록에_실패한다() {
 		assertThatThrownBy(() -> service.register(userId,
 				command("멍멍이집사", null, "   ", VALID_GENDER, null)))
 				.isInstanceOf(InvalidMbtiException.class);
 	}
 
 	@Test
-	@DisplayName("잘못된 성별 값이면 등록에 실패한다")
-	void registerFailsWhenGenderIsInvalid() {
+	void 잘못된_성별_값이면_등록에_실패한다() {
 		assertThatThrownBy(() -> service.register(userId,
 				command("멍멍이집사", null, VALID_MBTI, "OTHER", null)))
 				.isInstanceOf(InvalidGenderException.class);
 	}
 
 	@Test
-	@DisplayName("성별이 null이면 등록에 실패한다")
-	void registerFailsWhenGenderIsNull() {
+	void 성별이_null이면_등록에_실패한다() {
 		assertThatThrownBy(() -> service.register(userId,
 				command("멍멍이집사", null, VALID_MBTI, null, null)))
 				.isInstanceOf(InvalidGenderException.class);
 	}
 
 	@Test
-	@DisplayName("성별이 공백이면 등록에 실패한다")
-	void registerFailsWhenGenderIsBlank() {
+	void 성별이_공백이면_등록에_실패한다() {
 		assertThatThrownBy(() -> service.register(userId,
 				command("멍멍이집사", null, VALID_MBTI, "   ", null)))
 				.isInstanceOf(InvalidGenderException.class);
