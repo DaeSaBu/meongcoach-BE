@@ -11,13 +11,11 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
  * 잘못된 설정이 기동 시점에 걸러지는지 제약 자체를 검증한다.
  */
-@DisplayName("R2 연동 설정")
 class R2PropertiesTest {
 
 	private static final String VALID_ENDPOINT = "https://test-account.r2.cloudflarestorage.com";
@@ -49,8 +47,7 @@ class R2PropertiesTest {
 	}
 
 	@Test
-	@DisplayName("모든 값이 올바르면 위반이 없다")
-	void validPropertiesHaveNoViolation() {
+	void 모든_값이_올바르면_위반이_없다() {
 		R2Properties properties = new R2Properties(VALID_ENDPOINT, VALID_ACCESS_KEY_ID, VALID_SECRET_ACCESS_KEY,
 				VALID_BUCKET, VALID_PUBLIC_BASE_URL, VALID_VALIDITY);
 
@@ -58,8 +55,7 @@ class R2PropertiesTest {
 	}
 
 	@Test
-	@DisplayName("엔드포인트가 비어 있으면 위반이다")
-	void blankEndpointIsRejected() {
+	void 엔드포인트가_비어_있으면_위반이다() {
 		R2Properties properties = new R2Properties(" ", VALID_ACCESS_KEY_ID, VALID_SECRET_ACCESS_KEY,
 				VALID_BUCKET, VALID_PUBLIC_BASE_URL, VALID_VALIDITY);
 
@@ -67,8 +63,7 @@ class R2PropertiesTest {
 	}
 
 	@Test
-	@DisplayName("액세스 키가 비어 있으면 위반이다")
-	void blankAccessKeyIdIsRejected() {
+	void 액세스_키가_비어_있으면_위반이다() {
 		R2Properties properties = new R2Properties(VALID_ENDPOINT, " ", VALID_SECRET_ACCESS_KEY,
 				VALID_BUCKET, VALID_PUBLIC_BASE_URL, VALID_VALIDITY);
 
@@ -76,8 +71,7 @@ class R2PropertiesTest {
 	}
 
 	@Test
-	@DisplayName("시크릿 키가 비어 있으면 위반이다")
-	void blankSecretAccessKeyIsRejected() {
+	void 시크릿_키가_비어_있으면_위반이다() {
 		R2Properties properties = new R2Properties(VALID_ENDPOINT, VALID_ACCESS_KEY_ID, " ",
 				VALID_BUCKET, VALID_PUBLIC_BASE_URL, VALID_VALIDITY);
 
@@ -85,8 +79,7 @@ class R2PropertiesTest {
 	}
 
 	@Test
-	@DisplayName("버킷이 비어 있으면 위반이다")
-	void blankBucketIsRejected() {
+	void 버킷이_비어_있으면_위반이다() {
 		R2Properties properties = new R2Properties(VALID_ENDPOINT, VALID_ACCESS_KEY_ID, VALID_SECRET_ACCESS_KEY,
 				" ", VALID_PUBLIC_BASE_URL, VALID_VALIDITY);
 
@@ -94,8 +87,7 @@ class R2PropertiesTest {
 	}
 
 	@Test
-	@DisplayName("공개 도메인이 비어 있으면 위반이다")
-	void blankPublicBaseUrlIsRejected() {
+	void 공개_도메인이_비어_있으면_위반이다() {
 		R2Properties properties = new R2Properties(VALID_ENDPOINT, VALID_ACCESS_KEY_ID, VALID_SECRET_ACCESS_KEY,
 				VALID_BUCKET, " ", VALID_VALIDITY);
 
@@ -103,8 +95,7 @@ class R2PropertiesTest {
 	}
 
 	@Test
-	@DisplayName("유효 시간이 없으면 위반이다")
-	void nullValidityIsRejected() {
+	void 유효_시간이_없으면_위반이다() {
 		R2Properties properties = new R2Properties(VALID_ENDPOINT, VALID_ACCESS_KEY_ID, VALID_SECRET_ACCESS_KEY,
 				VALID_BUCKET, VALID_PUBLIC_BASE_URL, null);
 

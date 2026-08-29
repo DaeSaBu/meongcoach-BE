@@ -8,10 +8,8 @@ import com.daesabu.meongcoach.media.application.required.ImageUploadUrl;
 import com.daesabu.meongcoach.media.domain.exception.InvalidImageUrlException;
 import com.daesabu.meongcoach.media.domain.vo.ImageObjectKey;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-@DisplayName("저장 이미지 URL 검증 서비스")
 class StoredImageUrlValidateServiceTest {
 
 	private static final String PUBLIC_BASE_URL = "https://images.test.meongcoach.com/";
@@ -24,27 +22,23 @@ class StoredImageUrlValidateServiceTest {
 	}
 
 	@Test
-	@DisplayName("우리 스토리지의 공개 URL이면 통과한다")
-	void validatePassesStorageUrl() {
+	void 우리_스토리지의_공개_URL이면_통과한다() {
 		assertThatCode(() -> service.validate(PUBLIC_BASE_URL + "images/user-profile/1/a.jpg"))
 				.doesNotThrowAnyException();
 	}
 
 	@Test
-	@DisplayName("이미지 미설정(null)은 통과한다")
-	void validatePassesNull() {
+	void 이미지가_null이면_통과한다() {
 		assertThatCode(() -> service.validate(null)).doesNotThrowAnyException();
 	}
 
 	@Test
-	@DisplayName("이미지 미설정(빈 문자열)은 통과한다")
-	void validatePassesBlank() {
+	void 이미지가_빈_문자열이면_통과한다() {
 		assertThatCode(() -> service.validate(" ")).doesNotThrowAnyException();
 	}
 
 	@Test
-	@DisplayName("외부 URL이면 검증에 실패한다")
-	void validateFailsWhenUrlIsExternal() {
+	void 외부_URL이면_검증에_실패한다() {
 		assertThatThrownBy(() -> service.validate("https://evil.example.com/a.jpg"))
 				.isInstanceOf(InvalidImageUrlException.class);
 	}

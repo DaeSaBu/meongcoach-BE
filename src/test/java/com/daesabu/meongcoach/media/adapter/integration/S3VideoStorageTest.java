@@ -7,13 +7,11 @@ import com.daesabu.meongcoach.media.application.required.VideoUploadUrl;
 import com.daesabu.meongcoach.media.domain.vo.VideoObjectKey;
 import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
  * presign은 로컬 서명 연산이라 네트워크 없이 실제 S3Presigner로 검증한다.
  */
-@DisplayName("S3 영상 스토리지")
 class S3VideoStorageTest {
 
 	private static final String REGION = "ap-northeast-2";
@@ -32,8 +30,7 @@ class S3VideoStorageTest {
 	}
 
 	@Test
-	@DisplayName("업로드 URL은 가상 호스팅 스타일의 버킷·키 경로를 가리킨다")
-	void uploadUrlPointsToVirtualHostedBucketAndKey() {
+	void 업로드_URL은_가상_호스팅_스타일의_버킷_키_경로를_가리킨다() {
 		VideoUploadUrl url = storage.issueUploadUrl(KEY, "video/mp4", CONTENT_LENGTH);
 
 		assertThat(url.uploadUrl())
@@ -41,8 +38,7 @@ class S3VideoStorageTest {
 	}
 
 	@Test
-	@DisplayName("업로드 URL은 서명과 유효 시간을 담은 presigned URL이다")
-	void uploadUrlIsPresigned() {
+	void 업로드_URL은_서명과_유효_시간을_담은_presigned_URL이다() {
 		VideoUploadUrl url = storage.issueUploadUrl(KEY, "video/mp4", CONTENT_LENGTH);
 
 		assertThat(url.uploadUrl()).contains("X-Amz-Signature=");
@@ -50,8 +46,7 @@ class S3VideoStorageTest {
 	}
 
 	@Test
-	@DisplayName("서명 대상 헤더에 Content-Length가 포함된다")
-	void uploadUrlSignsContentLengthAndContentTypeAndHost() {
+	void 서명_대상_헤더에_contentLength가_포함된다() {
 		VideoUploadUrl url = storage.issueUploadUrl(KEY, "video/mp4", CONTENT_LENGTH);
 
 		// Content-Length가 서명에 들어가야 신고한 크기와 다른 업로드를 S3가 403으로 거부한다
@@ -59,40 +54,35 @@ class S3VideoStorageTest {
 	}
 
 	@Test
-	@DisplayName("서명 자격 증명은 설정한 리전을 사용한다")
-	void uploadUrlCredentialUsesConfiguredRegion() {
+	void 서명_자격_증명은_설정한_리전을_사용한다() {
 		VideoUploadUrl url = storage.issueUploadUrl(KEY, "video/mp4", CONTENT_LENGTH);
 
 		assertThat(url.uploadUrl()).contains("%2F" + REGION + "%2Fs3%2Faws4_request");
 	}
 
 	@Test
-	@DisplayName("공개 URL은 공개 도메인 아래의 키 경로다")
-	void publicUrlIsUnderPublicBaseUrl() {
+	void 공개_URL은_공개_도메인_아래의_키_경로다() {
 		VideoUploadUrl url = storage.issueUploadUrl(KEY, "video/mp4", CONTENT_LENGTH);
 
 		assertThat(url.publicUrl()).isEqualTo(PUBLIC_BASE_URL + "/" + KEY.value());
 	}
 
 	@Test
-	@DisplayName("객체 키를 그대로 함께 반환한다")
-	void objectKeyIsReturnedAsIs() {
+	void 객체_키를_그대로_함께_반환한다() {
 		VideoUploadUrl url = storage.issueUploadUrl(KEY, "video/mp4", CONTENT_LENGTH);
 
 		assertThat(url.objectKey()).isEqualTo(KEY.value());
 	}
 
 	@Test
-	@DisplayName("유효 시간을 초 단위로 알려준다")
-	void expiresInSecondsMatchesValidity() {
+	void 유효_시간을_초_단위로_알려준다() {
 		VideoUploadUrl url = storage.issueUploadUrl(KEY, "video/mp4", CONTENT_LENGTH);
 
 		assertThat(url.expiresInSeconds()).isEqualTo(900L);
 	}
 
 	@Test
-	@DisplayName("다운로드 URL은 가상 호스팅 스타일의 버킷·키 경로를 가리킨다")
-	void downloadUrlPointsToVirtualHostedBucketAndKey() {
+	void 다운로드_URL은_가상_호스팅_스타일의_버킷_키_경로를_가리킨다() {
 		VideoDownloadUrl url = storage.issueDownloadUrl(KEY);
 
 		assertThat(url.downloadUrl())
@@ -100,8 +90,7 @@ class S3VideoStorageTest {
 	}
 
 	@Test
-	@DisplayName("다운로드 URL은 서명과 다운로드 전용 유효 시간을 담은 presigned URL이다")
-	void downloadUrlIsPresignedWithDownloadValidity() {
+	void 다운로드_URL은_서명과_다운로드_전용_유효_시간을_담은_presigned_URL이다() {
 		VideoDownloadUrl url = storage.issueDownloadUrl(KEY);
 
 		assertThat(url.downloadUrl()).contains("X-Amz-Signature=");
@@ -109,16 +98,14 @@ class S3VideoStorageTest {
 	}
 
 	@Test
-	@DisplayName("다운로드 결과의 공개 URL은 공개 도메인 아래의 키 경로다")
-	void downloadPublicUrlIsUnderPublicBaseUrl() {
+	void 다운로드_결과의_공개_URL은_공개_도메인_아래의_키_경로다() {
 		VideoDownloadUrl url = storage.issueDownloadUrl(KEY);
 
 		assertThat(url.publicUrl()).isEqualTo(PUBLIC_BASE_URL + "/" + KEY.value());
 	}
 
 	@Test
-	@DisplayName("다운로드 유효 시간을 초 단위로 알려준다")
-	void downloadExpiresInSecondsMatchesDownloadValidity() {
+	void 다운로드_유효_시간을_초_단위로_알려준다() {
 		VideoDownloadUrl url = storage.issueDownloadUrl(KEY);
 
 		assertThat(url.expiresInSeconds()).isEqualTo(3600L);

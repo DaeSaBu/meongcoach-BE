@@ -12,10 +12,8 @@ import com.daesabu.meongcoach.media.domain.vo.VideoObjectKey;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-@DisplayName("영상 다운로드 URL 발급 서비스")
 class VideoDownloadUrlIssueServiceTest {
 
 	private static final String OBJECT_KEY = "videos/training/7/550e8400-e29b-41d4-a716-446655440000.mp4";
@@ -30,16 +28,14 @@ class VideoDownloadUrlIssueServiceTest {
 	}
 
 	@Test
-	@DisplayName("검증한 객체 키를 스토리지에 넘긴다")
-	void issuePassesParsedKeyToStorage() {
+	void 검증한_객체_키를_스토리지에_넘긴다() {
 		service.issue(OBJECT_KEY);
 
 		assertThat(videoStorage.lastKey().value()).isEqualTo(OBJECT_KEY);
 	}
 
 	@Test
-	@DisplayName("스토리지가 발급한 URL과 키에서 추출한 소유자 ID를 결과로 반환한다")
-	void issueReturnsStorageResultWithOwnerUserId() {
+	void 스토리지가_발급한_URL과_키에서_추출한_소유자_ID를_결과로_반환한다() {
 		VideoDownloadUrlResult result = service.issue(OBJECT_KEY);
 
 		assertThat(result.downloadUrl()).isEqualTo("https://storage.test/download");
@@ -49,8 +45,7 @@ class VideoDownloadUrlIssueServiceTest {
 	}
 
 	@Test
-	@DisplayName("규칙에 어긋나는 객체 키면 발급에 실패한다")
-	void issueFailsWhenKeyIsMalformed() {
+	void 규칙에_어긋나는_객체_키면_발급에_실패한다() {
 		assertThatThrownBy(() -> service.issue("images/profile/7/key.png"))
 				.isInstanceOf(InvalidVideoObjectKeyException.class);
 		assertThat(videoStorage.keys).isEmpty();
