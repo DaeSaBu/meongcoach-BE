@@ -2,10 +2,8 @@ package com.daesabu.meongcoach.shared.exception;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-@DisplayName("DomainException")
 class DomainExceptionTest {
 
 	private enum TestErrorCode implements ErrorCode {
@@ -47,8 +45,7 @@ class DomainExceptionTest {
 	}
 
 	@Test
-	@DisplayName("메시지는 기본적으로 에러 코드의 메시지를 사용한다")
-	void messageDefaultsToErrorCodeMessage() {
+	void 메시지는_기본적으로_에러_코드의_메시지를_사용한다() {
 		DomainException exception = new TestNotFoundException();
 
 		assertThat(exception.getMessage()).isEqualTo("테스트 리소스를 찾을 수 없습니다.");
@@ -56,8 +53,7 @@ class DomainExceptionTest {
 	}
 
 	@Test
-	@DisplayName("상세 메시지를 전달하면 메시지를 덮어쓸 수 있다")
-	void messageCanBeOverriddenWithDetail() {
+	void 상세_메시지를_전달하면_메시지를_덮어쓸_수_있다() {
 		DomainException exception = new TestNotFoundException("id가 1인 테스트 리소스를 찾을 수 없습니다.");
 
 		assertThat(exception.getMessage()).isEqualTo("id가 1인 테스트 리소스를 찾을 수 없습니다.");

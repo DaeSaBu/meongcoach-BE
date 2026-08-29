@@ -4,7 +4,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -16,15 +15,13 @@ import org.springframework.test.web.servlet.MockMvc;
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles({"dev", "test"})
-@DisplayName("개발 환경 CORS 구성")
 class DevCorsConfigTest {
 
 	@Autowired
 	private MockMvc mockMvc;
 
 	@Test
-	@DisplayName("개발 프론트엔드 origin만 허용한다")
-	void onlyDevelopmentFrontendOriginIsPermitted() throws Exception {
+	void 개발_프론트엔드_origin만_허용한다() throws Exception {
 		mockMvc.perform(options("/api/training/categories")
 					.header(HttpHeaders.ORIGIN, "https://app.dev.meongcoach.com")
 					.header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "GET"))

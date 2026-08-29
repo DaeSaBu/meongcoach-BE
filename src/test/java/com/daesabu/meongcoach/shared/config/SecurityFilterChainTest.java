@@ -13,7 +13,6 @@ import com.daesabu.meongcoach.user.application.required.TokenProvider;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.User;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -27,7 +26,6 @@ import org.springframework.test.web.servlet.MockMvc;
  */
 @SpringBootTest
 @AutoConfigureMockMvc
-@DisplayName("시큐리티 필터 체인")
 class SecurityFilterChainTest {
 
 	// MEMBER 역할만 허용되는 보호 경로. 인증 없으면 401, 인증되면 보유 강아지가 없어 빈 목록과 200이 나온다
@@ -70,15 +68,13 @@ class SecurityFilterChainTest {
 	}
 
 	@Test
-	@DisplayName("헬스 체크는 인증 없이 호출할 수 있다")
-	void healthIsPermitted() throws Exception {
+	void 헬스_체크는_인증_없이_호출할_수_있다() throws Exception {
 		mockMvc.perform(get("/api/health"))
 				.andExpect(status().isOk());
 	}
 
 	@Test
-	@DisplayName("토큰 재발급은 인증 없이 호출할 수 있다")
-	void tokenRefreshIsPermitted() throws Exception {
+	void 토큰_재발급은_인증_없이_호출할_수_있다() throws Exception {
 		mockMvc.perform(post("/api/auth/token/refresh")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"refreshToken\": \"\"}"))
@@ -86,8 +82,7 @@ class SecurityFilterChainTest {
 	}
 
 	@Test
-	@DisplayName("잘못된 소셜 토큰을 제출하면 401을 반환한다")
-	void authenticatedSocialLoginWithInvalidCredentialReturnsUnauthorized() throws Exception {
+	void 잘못된_소셜_토큰을_제출하면_401을_반환한다() throws Exception {
 		AuthToken token = tokenProvider.issue(userId);
 
 		mockMvc.perform(post("/api/auth/login/social/kakao")
@@ -118,15 +113,13 @@ class SecurityFilterChainTest {
 	}
 
 	@Test
-	@DisplayName("회원 경로는 인증이 필요하다")
-	void otherUserPathsAreProtected() throws Exception {
+	void 회원_경로는_인증이_필요하다() throws Exception {
 		mockMvc.perform(get("/api/users/me"))
 				.andExpect(status().isUnauthorized());
 	}
 
 	@Test
-	@DisplayName("토큰 없이 보호된 경로에 접근하면 Problem Details로 401을 반환한다")
-	void protectedPathWithoutTokenReturnsUnauthorized() throws Exception {
+	void 토큰_없이_보호된_경로에_접근하면_Problem_Details로_401을_반환한다() throws Exception {
 		mockMvc.perform(get(PROTECTED_PATH))
 				.andExpect(status().isUnauthorized())
 				.andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
@@ -135,22 +128,19 @@ class SecurityFilterChainTest {
 	}
 
 	@Test
-	@DisplayName("local 프로파일이 아니면 h2-console 경로도 인증이 필요하다")
-	void h2ConsoleIsProtectedOutsideLocal() throws Exception {
+	void local_프로파일이_아니면_h2_console_경로도_인증이_필요하다() throws Exception {
 		mockMvc.perform(get("/h2-console"))
 				.andExpect(status().isUnauthorized());
 	}
 
 	@Test
-	@DisplayName("위조된 토큰은 거부된다")
-	void forgedTokenIsRejected() throws Exception {
+	void 위조된_토큰은_거부된다() throws Exception {
 		mockMvc.perform(get(PROTECTED_PATH).header(HttpHeaders.AUTHORIZATION, "Bearer forged.token.value"))
 				.andExpect(status().isUnauthorized());
 	}
 
 	@Test
-	@DisplayName("리프레시 토큰은 액세스 토큰 자리에서 거부된다")
-	void refreshTokenIsRejectedAsBearerToken() throws Exception {
+	void 리프레시_토큰은_액세스_토큰_자리에서_거부된다() throws Exception {
 		AuthToken token = tokenProvider.issue(userId);
 
 		mockMvc.perform(get(PROTECTED_PATH).header(HttpHeaders.AUTHORIZATION, "Bearer " + token.refreshToken()))
@@ -158,8 +148,7 @@ class SecurityFilterChainTest {
 	}
 
 	@Test
-	@DisplayName("유효한 액세스 토큰이면 인증을 통과한다")
-	void validAccessTokenPassesAuthentication() throws Exception {
+	void 유효한_액세스_토큰이면_인증을_통과한다() throws Exception {
 		AuthToken token = tokenProvider.issue(userId);
 
 		mockMvc.perform(get(PROTECTED_PATH).header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))
@@ -168,8 +157,7 @@ class SecurityFilterChainTest {
 
 	// 서명이 유효해도 회원 행이 없으면 통과시키지 않는다. DB가 초기화된 뒤 남아 있는 토큰이 이 경우다
 	@Test
-	@DisplayName("등록되지 않은 회원의 액세스 토큰은 거부된다")
-	void accessTokenOfUnregisteredUserIsRejected() throws Exception {
+	void 등록되지_않은_회원의_액세스_토큰은_거부된다() throws Exception {
 		AuthToken token = tokenProvider.issue(userId + UNREGISTERED_ID_OFFSET);
 
 		mockMvc.perform(get(PROTECTED_PATH).header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))
@@ -180,8 +168,7 @@ class SecurityFilterChainTest {
 	// 컨트롤러 슬라이스에는 필터 체인이 없으므로, 필터 체인이 세운 인증 주체를 CurrentUserIdArgumentResolver가
 	// 실제로 읽어내는지는 여기에서만 확인할 수 있다. 401이 아니라 404면 해석에 성공한 것이다
 	@Test
-	@DisplayName("필터 체인이 세운 인증 주체가 @CurrentUserId 파라미터로 해석된다")
-	void authenticatedRequestResolvesCurrentUserId() throws Exception {
+	void 필터_체인이_세운_인증_주체가_CurrentUserId_파라미터로_해석된다() throws Exception {
 		AuthToken token = tokenProvider.issue(userId);
 
 		mockMvc.perform(put(CURRENT_USER_PATH)
@@ -193,8 +180,7 @@ class SecurityFilterChainTest {
 	}
 
 	@Test
-	@DisplayName("토큰 없이 @CurrentUserId 경로에 접근하면 401을 반환한다")
-	void currentUserIdPathWithoutTokenReturnsUnauthorized() throws Exception {
+	void 토큰_없이_CurrentUserId_경로에_접근하면_401을_반환한다() throws Exception {
 		mockMvc.perform(put(CURRENT_USER_PATH)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(MISSING_TOPIC_SELECTION_BODY))
@@ -203,8 +189,7 @@ class SecurityFilterChainTest {
 	}
 
 	@Test
-	@DisplayName("온보딩 미완료 회원이 정회원 전용 경로에 접근하면 ONBOARDING_NOT_COMPLETED 403을 반환한다")
-	void onboardingMemberOnMemberOnlyPathReturnsOnboardingNotCompleted() throws Exception {
+	void 온보딩_미완료_회원이_정회원_전용_경로에_접근하면_ONBOARDING_NOT_COMPLETED_403을_반환한다() throws Exception {
 		AuthToken token = tokenProvider.issue(onboardingUserId);
 
 		mockMvc.perform(get("/api/training/curriculums")
@@ -215,8 +200,7 @@ class SecurityFilterChainTest {
 	}
 
 	@Test
-	@DisplayName("온보딩 미완료 회원도 온보딩 메타데이터를 조회할 수 있다")
-	void onboardingMemberCanAccessOnboardingMetadata() throws Exception {
+	void 온보딩_미완료_회원도_온보딩_메타데이터를_조회할_수_있다() throws Exception {
 		AuthToken token = tokenProvider.issue(onboardingUserId);
 
 		mockMvc.perform(get("/api/onboarding/metadata")
@@ -227,8 +211,7 @@ class SecurityFilterChainTest {
 	// 온보딩 화면이 쓰는 프로필 이미지 조회가 인가에서 걸리지 않는지 확인한다.
 	// 강아지가 없는 회원이라 404로 끝나면 403 없이 컨트롤러까지 도달한 것이다
 	@Test
-	@DisplayName("온보딩 미완료 회원도 강아지 프로필 이미지 경로에 접근할 수 있다")
-	void onboardingMemberCanAccessDogProfileImages() throws Exception {
+	void 온보딩_미완료_회원도_강아지_프로필_이미지_경로에_접근할_수_있다() throws Exception {
 		AuthToken token = tokenProvider.issue(onboardingUserId);
 
 		mockMvc.perform(get("/api/dogs/profile/image")
@@ -264,8 +247,7 @@ class SecurityFilterChainTest {
 
 	// 온보딩 허용 경로가 hasAnyRole로 정회원까지 포함하는지 확인한다
 	@Test
-	@DisplayName("정회원도 온보딩 메타데이터를 조회할 수 있다")
-	void memberCanAccessOnboardingMetadata() throws Exception {
+	void 정회원도_온보딩_메타데이터를_조회할_수_있다() throws Exception {
 		AuthToken token = tokenProvider.issue(userId);
 
 		mockMvc.perform(get("/api/onboarding/metadata")
@@ -276,16 +258,14 @@ class SecurityFilterChainTest {
 	// test 프로파일은 meongcoach.api-docs.enabled를 두지 않아 기본값(false) 경로가 검증된다.
 	// denyAll은 인증 여부와 무관하게 AccessDeniedException으로 끝나므로 미인증도 401이 아닌 403이다
 	@Test
-	@DisplayName("문서 비활성 환경에서는 토큰 없이 Swagger UI에 접근하면 403을 반환한다")
-	void apiDocsDisabledWithoutTokenReturnsForbidden() throws Exception {
+	void 문서_비활성_환경에서는_토큰_없이_Swagger_UI에_접근하면_403을_반환한다() throws Exception {
 		mockMvc.perform(get("/swagger-ui/index.html"))
 				.andExpect(status().isForbidden());
 	}
 
 	// denyAll이 authenticated보다 우선함을 증명한다. 유효 토큰 소지자도 문서를 볼 수 없어야 한다
 	@Test
-	@DisplayName("문서 비활성 환경에서는 유효한 토큰으로도 Swagger UI에 접근할 수 없다")
-	void apiDocsDisabledWithValidTokenReturnsForbidden() throws Exception {
+	void 문서_비활성_환경에서는_유효한_토큰으로도_Swagger_UI에_접근할_수_없다() throws Exception {
 		AuthToken token = tokenProvider.issue(userId);
 
 		mockMvc.perform(get("/swagger-ui/index.html")

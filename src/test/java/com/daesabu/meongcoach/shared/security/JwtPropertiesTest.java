@@ -11,13 +11,11 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
  * 잘못된 설정이 기동 시점에 걸러지는지 제약 자체를 검증한다.
  */
-@DisplayName("JWT 설정")
 class JwtPropertiesTest {
 
 	private static final String VALID_ISSUER = "meongcoach";
@@ -48,8 +46,7 @@ class JwtPropertiesTest {
 	}
 
 	@Test
-	@DisplayName("모든 값이 올바르면 위반이 없다")
-	void validPropertiesHaveNoViolation() {
+	void 모든_값이_올바르면_위반이_없다() {
 		JwtProperties properties = new JwtProperties(VALID_ISSUER, VALID_SECRET,
 				VALID_ACCESS_TOKEN_VALIDITY, VALID_REFRESH_TOKEN_VALIDITY);
 
@@ -57,8 +54,7 @@ class JwtPropertiesTest {
 	}
 
 	@Test
-	@DisplayName("발급자가 비어 있으면 위반이다")
-	void blankIssuerIsRejected() {
+	void 발급자가_비어_있으면_위반이다() {
 		JwtProperties properties = new JwtProperties(" ", VALID_SECRET,
 				VALID_ACCESS_TOKEN_VALIDITY, VALID_REFRESH_TOKEN_VALIDITY);
 
@@ -66,8 +62,7 @@ class JwtPropertiesTest {
 	}
 
 	@Test
-	@DisplayName("서명 키가 32자 미만이면 위반이다")
-	void shortSecretIsRejected() {
+	void 서명_키가_32자_미만이면_위반이다() {
 		JwtProperties properties = new JwtProperties(VALID_ISSUER, "too-short-secret",
 				VALID_ACCESS_TOKEN_VALIDITY, VALID_REFRESH_TOKEN_VALIDITY);
 
@@ -75,8 +70,7 @@ class JwtPropertiesTest {
 	}
 
 	@Test
-	@DisplayName("서명 키가 없으면 위반이다")
-	void nullSecretIsRejected() {
+	void 서명_키가_없으면_위반이다() {
 		JwtProperties properties = new JwtProperties(VALID_ISSUER, null,
 				VALID_ACCESS_TOKEN_VALIDITY, VALID_REFRESH_TOKEN_VALIDITY);
 
@@ -84,8 +78,7 @@ class JwtPropertiesTest {
 	}
 
 	@Test
-	@DisplayName("토큰 유효기간이 없으면 위반이다")
-	void nullTokenValidityIsRejected() {
+	void 토큰_유효기간이_없으면_위반이다() {
 		JwtProperties properties = new JwtProperties(VALID_ISSUER, VALID_SECRET, null, null);
 
 		assertThat(violatedFields(properties))
@@ -93,8 +86,7 @@ class JwtPropertiesTest {
 	}
 
 	@Test
-	@DisplayName("서명 키로 HS256 키를 만든다")
-	void secretKeyUsesHmacSha256() {
+	void 서명_키로_HS256_키를_만든다() {
 		JwtProperties properties = new JwtProperties(VALID_ISSUER, VALID_SECRET,
 				VALID_ACCESS_TOKEN_VALIDITY, VALID_REFRESH_TOKEN_VALIDITY);
 
