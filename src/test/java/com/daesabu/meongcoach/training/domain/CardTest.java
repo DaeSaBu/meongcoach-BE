@@ -2,10 +2,8 @@ package com.daesabu.meongcoach.training.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-@DisplayName("Card 도메인")
 class CardTest {
 
 	private Lesson createLesson() {
@@ -16,8 +14,7 @@ class CardTest {
 	}
 
 	@Test
-	@DisplayName("생성하면 레슨과 지시문이 설정된다")
-	void createSetsLessonAndInstruction() {
+	void 생성하면_레슨과_지시문이_설정된다() {
 		Lesson lesson = createLesson();
 
 		Card card = Card.create(lesson, new CardCreateCommand("리드줄 냄새 맡게 하기", 1, "리드줄을 바닥에 두고 냄새를 맡게 하세요."));
@@ -30,8 +27,7 @@ class CardTest {
 	}
 
 	@Test
-	@DisplayName("지시문 없이 미디어만 있는 카드를 생성할 수 있다")
-	void createAllowsMediaOnlyCardWithoutInstruction() {
+	void 지시문_없이_미디어만_있는_카드를_생성할_수_있다() {
 		Card card = Card.create(createLesson(), new CardCreateCommand(null, 2, null));
 
 		assertThat(card.getTitle()).isEmpty();

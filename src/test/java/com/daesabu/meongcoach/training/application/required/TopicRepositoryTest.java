@@ -7,7 +7,6 @@ import com.daesabu.meongcoach.training.domain.TopicCreateCommand;
 import com.daesabu.meongcoach.training.domain.TrainingCategory;
 import java.util.List;
 import java.util.Optional;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -17,7 +16,6 @@ import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
  * 토픽 조회 리포지토리 검증.
  */
 @DataJpaTest
-@DisplayName("토픽 리포지토리")
 class TopicRepositoryTest {
 
 	@Autowired
@@ -27,8 +25,7 @@ class TopicRepositoryTest {
 	private TestEntityManager entityManager;
 
 	@Test
-	@DisplayName("카테고리 정렬 순서, 토픽 정렬 순서 오름차순으로 조회한다")
-	void findAllOrdersByCategorySortOrderThenTopicSortOrder() {
+	void 카테고리_정렬_순서_토픽_정렬_순서_오름차순으로_조회한다() {
 		TrainingCategory later = persistCategory("나중 카테고리", 2);
 		TrainingCategory earlier = persistCategory("먼저 카테고리", 1);
 		persistTopic(later, "나중-첫째", 1);
@@ -43,8 +40,7 @@ class TopicRepositoryTest {
 	}
 
 	@Test
-	@DisplayName("카테고리와 정렬 순서가 같으면 id 오름차순으로 조회한다")
-	void findAllOrdersByIdAscendingWhenSortOrderIsSame() {
+	void 카테고리와_정렬_순서가_같으면_id_오름차순으로_조회한다() {
 		TrainingCategory category = persistCategory("기본 교육", 1);
 		Topic first = persistTopic(category, "먼저 등록", 1);
 		Topic second = persistTopic(category, "나중 등록", 1);
@@ -57,8 +53,7 @@ class TopicRepositoryTest {
 	}
 
 	@Test
-	@DisplayName("정렬 순서가 가장 앞선 토픽 하나를 조회한다")
-	void findFirstReturnsTopicWithLowestSortOrder() {
+	void 정렬_순서가_가장_앞선_토픽_하나를_조회한다() {
 		TrainingCategory later = persistCategory("나중 카테고리", 2);
 		TrainingCategory earlier = persistCategory("먼저 카테고리", 1);
 		persistTopic(later, "나중-첫째", 1);
@@ -73,8 +68,7 @@ class TopicRepositoryTest {
 	}
 
 	@Test
-	@DisplayName("등록된 토픽이 없으면 빈 값을 반환한다")
-	void findFirstReturnsEmptyWhenNoTopicExists() {
+	void 등록된_토픽이_없으면_빈_값을_반환한다() {
 		Optional<Topic> topic = topicRepository.findFirstByOrderByTrainingCategory_SortOrderAscSortOrderAscIdAsc();
 
 		assertThat(topic).isEmpty();

@@ -13,7 +13,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.daesabu.meongcoach.training.application.provided.TopicSelector;
 import com.daesabu.meongcoach.training.domain.exception.TopicNotFoundException;
 import java.security.Principal;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
@@ -28,7 +27,6 @@ import org.springframework.test.web.servlet.MockMvc;
  */
 @WebMvcTest(TrainingTopicController.class)
 @AutoConfigureRestDocs
-@DisplayName("커리큘럼 화면 변경 API")
 class TrainingTopicControllerTest {
 
 	// 컨트롤러 슬라이스에는 필터 체인이 없으므로 인증 주체를 요청에 직접 실어 보낸다 (test-convention.md)
@@ -45,8 +43,7 @@ class TrainingTopicControllerTest {
 	}
 
 	@Test
-	@DisplayName("선택한 토픽 ID를 반환한다")
-	void selectTopicReturnsSelectedTopicId() throws Exception {
+	void 선택한_토픽_ID를_반환한다() throws Exception {
 		mockMvc.perform(put("/api/training/topic/selection")
 						.principal(CURRENT_USER)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
@@ -65,8 +62,7 @@ class TrainingTopicControllerTest {
 	}
 
 	@Test
-	@DisplayName("인증 주체에서 읽은 사용자로 토픽 선택을 위임한다")
-	void selectTopicDelegatesWithCurrentUserId() throws Exception {
+	void 인증_주체에서_읽은_사용자로_토픽_선택을_위임한다() throws Exception {
 		mockMvc.perform(put("/api/training/topic/selection")
 						.principal(CURRENT_USER)
 						.contentType(MediaType.APPLICATION_JSON)
@@ -77,8 +73,7 @@ class TrainingTopicControllerTest {
 	}
 
 	@Test
-	@DisplayName("같은 토픽을 연속으로 선택해도 200을 반환한다")
-	void selectTopicReturnsOkWhenSelectedRepeatedly() throws Exception {
+	void 같은_토픽을_연속으로_선택해도_200을_반환한다() throws Exception {
 		mockMvc.perform(put("/api/training/topic/selection")
 						.principal(CURRENT_USER)
 						.contentType(MediaType.APPLICATION_JSON)
@@ -95,8 +90,7 @@ class TrainingTopicControllerTest {
 	}
 
 	@Test
-	@DisplayName("토픽 ID가 없으면 검증에 실패한다")
-	void selectTopicFailsWhenTopicIdIsMissing() throws Exception {
+	void 토픽_ID가_없으면_검증에_실패한다() throws Exception {
 		mockMvc.perform(put("/api/training/topic/selection")
 						.principal(CURRENT_USER)
 						.contentType(MediaType.APPLICATION_JSON)
@@ -107,8 +101,7 @@ class TrainingTopicControllerTest {
 	}
 
 	@Test
-	@DisplayName("존재하지 않는 토픽이면 404와 에러 코드를 반환한다")
-	void selectTopicReturnsNotFoundWhenTopicDoesNotExist() throws Exception {
+	void 존재하지_않는_토픽이면_404와_에러_코드를_반환한다() throws Exception {
 		willThrow(new TopicNotFoundException(999L)).given(topicSelector).selectTopic(42L, 999L);
 
 		mockMvc.perform(put("/api/training/topic/selection")
@@ -136,8 +129,7 @@ class TrainingTopicControllerTest {
 	}
 
 	@Test
-	@DisplayName("인증 정보가 없으면 401을 반환한다")
-	void selectTopicReturnsUnauthorizedWhenNotAuthenticated() throws Exception {
+	void 인증_정보가_없으면_401을_반환한다() throws Exception {
 		mockMvc.perform(put("/api/training/topic/selection")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(selectionBody(1L)))

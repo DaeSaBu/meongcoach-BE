@@ -25,7 +25,6 @@ import com.daesabu.meongcoach.training.domain.exception.TopicNotConfiguredExcept
 import jakarta.persistence.EntityManagerFactory;
 import org.hibernate.SessionFactory;
 import org.hibernate.stat.Statistics;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -39,7 +38,6 @@ import org.springframework.test.context.TestPropertySource;
 @DataJpaTest
 @Import({CurriculumQueryService.class, TopicEntryService.class, LessonProgressService.class})
 @TestPropertySource(properties = "spring.jpa.properties.hibernate.generate_statistics=true")
-@DisplayName("커리큘럼 조회 서비스")
 class CurriculumQueryServiceTest {
 
 	private static final Long USER_ID = 42L;
@@ -62,8 +60,7 @@ class CurriculumQueryServiceTest {
 	private EntityManagerFactory entityManagerFactory;
 
 	@Test
-	@DisplayName("가장 최근에 진입한 토픽의 커리큘럼을 반환한다")
-	void findCurriculumsReturnsCurriculumsOfLatestEnteredTopic() {
+	void 가장_최근에_진입한_토픽의_커리큘럼을_반환한다() {
 		TrainingCategory category = persistCategory("기본 교육", 1);
 		Topic first = persistTopic(category, "앉아", 1);
 		Topic second = persistTopic(category, "기다려", 2);
@@ -82,8 +79,7 @@ class CurriculumQueryServiceTest {
 	}
 
 	@Test
-	@DisplayName("진입 기록이 없으면 첫 토픽으로 폴백한다")
-	void findCurriculumsFallsBackToFirstTopicWhenNoEntryRecorded() {
+	void 진입_기록이_없으면_첫_토픽으로_폴백한다() {
 		TrainingCategory advanced = persistCategory("심화 교육", 2);
 		TrainingCategory basic = persistCategory("기본 교육", 1);
 		Topic advancedTopic = persistTopic(advanced, "이리와", 1);
@@ -101,8 +97,7 @@ class CurriculumQueryServiceTest {
 	}
 
 	@Test
-	@DisplayName("진입 기록의 토픽이 더 이상 존재하지 않으면 첫 토픽으로 폴백한다")
-	void findCurriculumsFallsBackToFirstTopicWhenEnteredTopicIsGone() {
+	void 진입_기록의_토픽이_더_이상_존재하지_않으면_첫_토픽으로_폴백한다() {
 		TrainingCategory category = persistCategory("기본 교육", 1);
 		Topic topic = persistTopic(category, "앉아", 1);
 		persistCurriculum(topic, "앉아 1단계", 1);
@@ -117,15 +112,13 @@ class CurriculumQueryServiceTest {
 	}
 
 	@Test
-	@DisplayName("등록된 토픽이 하나도 없으면 예외를 던진다")
-	void findCurriculumsThrowsWhenNoTopicIsConfigured() {
+	void 등록된_토픽이_하나도_없으면_예외를_던진다() {
 		assertThatThrownBy(() -> curriculumFinder.findCurriculums(USER_ID))
 				.isInstanceOf(TopicNotConfiguredException.class);
 	}
 
 	@Test
-	@DisplayName("커리큘럼을 정렬 순서 오름차순으로 반환한다")
-	void findCurriculumsOrdersCurriculumsBySortOrder() {
+	void 커리큘럼을_정렬_순서_오름차순으로_반환한다() {
 		Topic topic = persistTopicWithCategory();
 		persistCurriculum(topic, "셋째 커리큘럼", 3);
 		persistCurriculum(topic, "첫째 커리큘럼", 1);
@@ -139,8 +132,7 @@ class CurriculumQueryServiceTest {
 	}
 
 	@Test
-	@DisplayName("커리큘럼마다 전체 레슨 수와 완료한 레슨 수를 센다")
-	void findCurriculumsCountsTotalAndCompletedLessons() {
+	void 커리큘럼마다_전체_레슨_수와_완료한_레슨_수를_센다() {
 		Topic topic = persistTopicWithCategory();
 		Curriculum first = persistCurriculum(topic, "1단계", 1);
 		Curriculum second = persistCurriculum(topic, "2단계", 2);
@@ -162,8 +154,7 @@ class CurriculumQueryServiceTest {
 	}
 
 	@Test
-	@DisplayName("다른 사용자의 완료 기록은 세지 않는다")
-	void findCurriculumsIgnoresOtherUsersCompletion() {
+	void 커리큘럼_목록에서_다른_사용자의_완료_기록은_세지_않는다() {
 		Topic topic = persistTopicWithCategory();
 		Curriculum curriculum = persistCurriculum(topic, "1단계", 1);
 		Lesson lesson = persistLesson(curriculum, "손 위의 간식", 1);
@@ -178,8 +169,7 @@ class CurriculumQueryServiceTest {
 	}
 
 	@Test
-	@DisplayName("레슨이 없는 커리큘럼은 시작 전 상태로 반환한다")
-	void findCurriculumsReturnsNotStartedWhenCurriculumHasNoLesson() {
+	void 레슨이_없는_커리큘럼은_시작_전_상태로_반환한다() {
 		Topic topic = persistTopicWithCategory();
 		persistCurriculum(topic, "레슨 없는 커리큘럼", 1);
 		Curriculum other = persistCurriculum(topic, "레슨 있는 커리큘럼", 2);
@@ -195,8 +185,7 @@ class CurriculumQueryServiceTest {
 	}
 
 	@Test
-	@DisplayName("모든 레슨을 완료한 커리큘럼은 완료 상태로 반환한다")
-	void findCurriculumsReturnsCompletedWhenEveryLessonIsCompleted() {
+	void 모든_레슨을_완료한_커리큘럼은_완료_상태로_반환한다() {
 		Topic topic = persistTopicWithCategory();
 		Curriculum curriculum = persistCurriculum(topic, "1단계", 1);
 		Lesson first = persistLesson(curriculum, "손 위의 간식", 1);
@@ -215,8 +204,7 @@ class CurriculumQueryServiceTest {
 	}
 
 	@Test
-	@DisplayName("커리큘럼 수와 무관하게 다섯 번의 쿼리로 조회한다")
-	void findCurriculumsExecutesConstantQueryCount() {
+	void 커리큘럼_수와_무관하게_다섯_번의_쿼리로_조회한다() {
 		Topic topic = persistTopicWithCategory();
 		Curriculum first = persistCurriculum(topic, "1단계", 1);
 		Curriculum second = persistCurriculum(topic, "2단계", 2);
@@ -235,8 +223,7 @@ class CurriculumQueryServiceTest {
 	}
 
 	@Test
-	@DisplayName("조회만 하고 진입 기록을 저장하지 않는다")
-	void findCurriculumsDoesNotStoreAnyData() {
+	void 조회만_하고_진입_기록을_저장하지_않는다() {
 		Topic topic = persistTopicWithCategory();
 		persistCurriculum(topic, "1단계", 1);
 		flushAndClear();
@@ -248,8 +235,7 @@ class CurriculumQueryServiceTest {
 	}
 
 	@Test
-	@DisplayName("커리큘럼과 그 레슨 목록을 반환한다")
-	void findCurriculumReturnsCurriculumWithLessons() {
+	void 커리큘럼과_그_레슨_목록을_반환한다() {
 		Topic topic = persistTopicWithCategory();
 		Curriculum curriculum = persistCurriculum(topic, "앉아 2단계", 2);
 		persistLesson(curriculum, "손 위의 간식", 1, 5);
@@ -269,8 +255,7 @@ class CurriculumQueryServiceTest {
 	}
 
 	@Test
-	@DisplayName("레슨을 정렬 순서 오름차순으로 반환하고 다른 커리큘럼의 레슨은 제외한다")
-	void findCurriculumOrdersLessonsBySortOrder() {
+	void 레슨을_정렬_순서_오름차순으로_반환하고_다른_커리큘럼의_레슨은_제외한다() {
 		Topic topic = persistTopicWithCategory();
 		Curriculum curriculum = persistCurriculum(topic, "1단계", 1);
 		Curriculum other = persistCurriculum(topic, "2단계", 2);
@@ -287,8 +272,7 @@ class CurriculumQueryServiceTest {
 	}
 
 	@Test
-	@DisplayName("레슨마다 사용자의 반복 완료 횟수를 반환하고 기록이 없으면 0으로 채운다")
-	void findCurriculumReturnsCompletedCountOfEachLesson() {
+	void 레슨마다_사용자의_반복_완료_횟수를_반환하고_기록이_없으면_0으로_채운다() {
 		Topic topic = persistTopicWithCategory();
 		Curriculum curriculum = persistCurriculum(topic, "1단계", 1);
 		Lesson twice = persistLesson(curriculum, "첫째 레슨", 1, 5);
@@ -307,8 +291,7 @@ class CurriculumQueryServiceTest {
 	}
 
 	@Test
-	@DisplayName("다른 사용자의 완료 기록은 세지 않는다")
-	void findCurriculumIgnoresOtherUsersProgress() {
+	void 커리큘럼_상세에서_다른_사용자의_완료_기록은_세지_않는다() {
 		Topic topic = persistTopicWithCategory();
 		Curriculum curriculum = persistCurriculum(topic, "1단계", 1);
 		Lesson lesson = persistLesson(curriculum, "손 위의 간식", 1, 5);
@@ -322,15 +305,13 @@ class CurriculumQueryServiceTest {
 	}
 
 	@Test
-	@DisplayName("존재하지 않는 커리큘럼이면 예외를 던진다")
-	void findCurriculumThrowsWhenCurriculumDoesNotExist() {
+	void 존재하지_않는_커리큘럼이면_예외를_던진다() {
 		assertThatThrownBy(() -> curriculumFinder.findCurriculum(USER_ID, 999L))
 				.isInstanceOf(CurriculumNotFoundException.class);
 	}
 
 	@Test
-	@DisplayName("레슨이 없는 커리큘럼은 빈 레슨 목록을 반환한다")
-	void findCurriculumReturnsEmptyLessonsWhenCurriculumHasNoLesson() {
+	void 레슨이_없는_커리큘럼은_빈_레슨_목록을_반환한다() {
 		Topic topic = persistTopicWithCategory();
 		Curriculum empty = persistCurriculum(topic, "레슨 없는 커리큘럼", 1);
 		Curriculum other = persistCurriculum(topic, "레슨 있는 커리큘럼", 2);
@@ -344,8 +325,7 @@ class CurriculumQueryServiceTest {
 	}
 
 	@Test
-	@DisplayName("레슨 수와 무관하게 세 번의 쿼리로 조회한다")
-	void findCurriculumExecutesConstantQueryCount() {
+	void 레슨_수와_무관하게_세_번의_쿼리로_조회한다() {
 		Topic topic = persistTopicWithCategory();
 		Curriculum curriculum = persistCurriculum(topic, "1단계", 1);
 		persistLesson(curriculum, "첫째 레슨", 1, 5);

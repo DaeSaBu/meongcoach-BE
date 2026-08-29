@@ -21,7 +21,6 @@ import com.daesabu.meongcoach.training.domain.exception.CurriculumNotFoundExcept
 import com.daesabu.meongcoach.training.domain.exception.TopicNotConfiguredException;
 import java.security.Principal;
 import java.util.List;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
@@ -35,7 +34,6 @@ import org.springframework.test.web.servlet.MockMvc;
  */
 @WebMvcTest(TrainingCurriculumController.class)
 @AutoConfigureRestDocs
-@DisplayName("커리큘럼 조회 API")
 class TrainingCurriculumControllerTest {
 
 	// 컨트롤러 슬라이스에는 필터 체인이 없으므로 인증 주체를 요청에 직접 실어 보낸다 (test-convention.md)
@@ -48,8 +46,7 @@ class TrainingCurriculumControllerTest {
 	private CurriculumFinder curriculumFinder;
 
 	@Test
-	@DisplayName("선택된 토픽과 커리큘럼 목록을 반환한다")
-	void findCurriculumsReturnsTopicWithCurriculums() throws Exception {
+	void 선택된_토픽과_커리큘럼_목록을_반환한다() throws Exception {
 		given(curriculumFinder.findCurriculums(42L)).willReturn(new CurriculumListResult(1L, "앉아", List.of(
 				new CurriculumResult(10L, "앉아 1단계", 3, 3, CurriculumStatus.COMPLETED),
 				new CurriculumResult(11L, "앉아 2단계", 4, 1, CurriculumStatus.IN_PROGRESS)
@@ -86,8 +83,7 @@ class TrainingCurriculumControllerTest {
 	}
 
 	@Test
-	@DisplayName("인증 주체에서 읽은 사용자로 커리큘럼 조회를 위임한다")
-	void findCurriculumsDelegatesWithCurrentUserId() throws Exception {
+	void 인증_주체에서_읽은_사용자로_커리큘럼_조회를_위임한다() throws Exception {
 		given(curriculumFinder.findCurriculums(42L)).willReturn(new CurriculumListResult(1L, "앉아", List.of()));
 
 		mockMvc.perform(get("/api/training/curriculums").principal(CURRENT_USER))
@@ -97,8 +93,7 @@ class TrainingCurriculumControllerTest {
 	}
 
 	@Test
-	@DisplayName("커리큘럼이 없는 토픽은 빈 배열과 200을 반환한다")
-	void findCurriculumsReturnsEmptyArrayWhenTopicHasNoCurriculum() throws Exception {
+	void 커리큘럼이_없는_토픽은_빈_배열과_200을_반환한다() throws Exception {
 		given(curriculumFinder.findCurriculums(42L)).willReturn(new CurriculumListResult(1L, "앉아", List.of()));
 
 		mockMvc.perform(get("/api/training/curriculums").principal(CURRENT_USER))
@@ -109,8 +104,7 @@ class TrainingCurriculumControllerTest {
 	}
 
 	@Test
-	@DisplayName("등록된 토픽이 없으면 404와 에러 코드를 반환한다")
-	void findCurriculumsReturnsNotFoundWhenNoTopicIsConfigured() throws Exception {
+	void 등록된_토픽이_없으면_404와_에러_코드를_반환한다() throws Exception {
 		given(curriculumFinder.findCurriculums(42L)).willThrow(new TopicNotConfiguredException());
 
 		mockMvc.perform(get("/api/training/curriculums")
@@ -133,16 +127,14 @@ class TrainingCurriculumControllerTest {
 	}
 
 	@Test
-	@DisplayName("인증 정보가 없으면 401을 반환한다")
-	void findCurriculumsReturnsUnauthorizedWhenNotAuthenticated() throws Exception {
+	void 인증_정보가_없으면_401을_반환한다() throws Exception {
 		mockMvc.perform(get("/api/training/curriculums"))
 				.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
 	}
 
 	@Test
-	@DisplayName("커리큘럼과 레슨 목록을 반환한다")
-	void findCurriculumReturnsCurriculumWithLessons() throws Exception {
+	void 커리큘럼과_레슨_목록을_반환한다() throws Exception {
 		given(curriculumFinder.findCurriculum(42L, 10L)).willReturn(new CurriculumDetailResult(10L, 1L, "앉아 1단계", 1,
 				List.of(
 						new LessonResult(100L, "손 위의 간식", 1, 5, 3),
@@ -187,8 +179,7 @@ class TrainingCurriculumControllerTest {
 	}
 
 	@Test
-	@DisplayName("인증 주체에서 읽은 사용자로 커리큘럼 세부 조회를 위임한다")
-	void findCurriculumDelegatesWithCurrentUserId() throws Exception {
+	void 인증_주체에서_읽은_사용자로_커리큘럼_세부_조회를_위임한다() throws Exception {
 		given(curriculumFinder.findCurriculum(42L, 10L))
 				.willReturn(new CurriculumDetailResult(10L, 1L, "앉아 1단계", 1, List.of()));
 
@@ -199,8 +190,7 @@ class TrainingCurriculumControllerTest {
 	}
 
 	@Test
-	@DisplayName("레슨이 없는 커리큘럼은 빈 배열과 200을 반환한다")
-	void findCurriculumReturnsEmptyArrayWhenCurriculumHasNoLesson() throws Exception {
+	void 레슨이_없는_커리큘럼은_빈_배열과_200을_반환한다() throws Exception {
 		given(curriculumFinder.findCurriculum(42L, 10L))
 				.willReturn(new CurriculumDetailResult(10L, 1L, "앉아 1단계", 1, List.of()));
 
@@ -212,8 +202,7 @@ class TrainingCurriculumControllerTest {
 	}
 
 	@Test
-	@DisplayName("존재하지 않는 커리큘럼이면 404와 에러 코드를 반환한다")
-	void findCurriculumReturnsNotFoundWhenCurriculumDoesNotExist() throws Exception {
+	void 존재하지_않는_커리큘럼이면_404와_에러_코드를_반환한다() throws Exception {
 		given(curriculumFinder.findCurriculum(42L, 999L)).willThrow(new CurriculumNotFoundException(999L));
 
 		mockMvc.perform(get("/api/training/curriculums/{curriculumId}", 999L)

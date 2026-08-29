@@ -8,7 +8,6 @@ import com.daesabu.meongcoach.training.domain.Topic;
 import com.daesabu.meongcoach.training.domain.TopicCreateCommand;
 import com.daesabu.meongcoach.training.domain.TrainingCategory;
 import java.util.List;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -18,7 +17,6 @@ import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
  * 커리큘럼 조회 리포지토리 검증.
  */
 @DataJpaTest
-@DisplayName("커리큘럼 리포지토리")
 class CurriculumRepositoryTest {
 
 	@Autowired
@@ -28,8 +26,7 @@ class CurriculumRepositoryTest {
 	private TestEntityManager entityManager;
 
 	@Test
-	@DisplayName("토픽의 커리큘럼을 정렬 순서 오름차순으로 조회한다")
-	void findAllByTopicOrdersBySortOrderAscending() {
+	void 토픽의_커리큘럼을_정렬_순서_오름차순으로_조회한다() {
 		Topic topic = persistTopic("기본 교육");
 		persistCurriculum(topic, "셋째", 3);
 		persistCurriculum(topic, "첫째", 1);
@@ -43,8 +40,7 @@ class CurriculumRepositoryTest {
 	}
 
 	@Test
-	@DisplayName("정렬 순서가 같으면 id 오름차순으로 조회한다")
-	void findAllByTopicOrdersByIdAscendingWhenSortOrderIsSame() {
+	void 정렬_순서가_같으면_id_오름차순으로_조회한다() {
 		Topic topic = persistTopic("기본 교육");
 		Curriculum first = persistCurriculum(topic, "먼저 등록", 1);
 		Curriculum second = persistCurriculum(topic, "나중 등록", 1);
@@ -57,8 +53,7 @@ class CurriculumRepositoryTest {
 	}
 
 	@Test
-	@DisplayName("다른 토픽의 커리큘럼은 조회되지 않는다")
-	void findAllByTopicExcludesOtherTopicCurriculums() {
+	void 다른_토픽의_커리큘럼은_조회되지_않는다() {
 		Topic topic = persistTopic("기본 교육");
 		Topic otherTopic = persistTopic("문제 행동");
 		persistCurriculum(topic, "대상 커리큘럼", 1);
@@ -72,8 +67,7 @@ class CurriculumRepositoryTest {
 	}
 
 	@Test
-	@DisplayName("커리큘럼이 없는 토픽이면 빈 목록을 반환한다")
-	void findAllByTopicReturnsEmptyListWhenTopicHasNoCurriculum() {
+	void 커리큘럼이_없는_토픽이면_빈_목록을_반환한다() {
 		Topic topic = persistTopic("기본 교육");
 		entityManager.flush();
 
