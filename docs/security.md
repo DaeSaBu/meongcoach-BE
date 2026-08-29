@@ -84,12 +84,16 @@ id_token의 서명이 유효하다는 것은 "제공자가 발급했다"만 증�
 | 1 | `/api/health`, `/api/auth/login/social/**`, `/api/auth/login/local`, `/api/auth/token/refresh` | permitAll |
 | 2 | `/swagger-ui/**` | 문서 활성 환경 permitAll, 그 외 denyAll |
 | 3 | `/api/onboarding/**`, `/api/dogs/profile/image` | `MEMBER`, `ONBOARDING_MEMBER` |
-| 4 | 그 외 전부 | `MEMBER` |
+| 4 | `DELETE /api/users/me` | `MEMBER`, `ONBOARDING_MEMBER` |
+| 5 | 그 외 전부 | `MEMBER` |
 
 3번은 온보딩 화면에 필요한 경로입니다 — 온보딩 완료 요청에 프로필 이미지 URL이 들어가므로
 기본 프로필 이미지 조회는 온보딩 중에도 열려 있어야 합니다. 이미지 업로드 presigned URL 발급은
 `POST /api/onboarding/presigned-urls`라 `/api/onboarding/**`에 이미 포함됩니다.
 `GUEST`는 어떤 규칙에도 매칭되지 않아 모든 보호 경로에서 403이며, 아직 발급 경로가 없습니다.
+
+4번은 스토어 심사관이 온보딩을 마치지 않은 채 탈퇴를 시험할 수 있어서 둔 예외입니다. `DELETE` 메서드만 열어,
+같은 경로에 나중에 생길 회원 조회·수정이 온보딩 회원에게 함께 열리지 않게 합니다.
 
 역할 어휘의 단일 원천은 `shared/security/AuthorityRole`입니다. `TokenType`과 같은 부류
 (영속되지 않는 보안 어휘)라서 shared에 두고, `user/domain/UserRole`(영속 도메인 상태)이
@@ -111,9 +115,10 @@ id_token의 서명이 유효하다는 것은 "제공자가 발급했다"만 증�
 리프레시 토큰을 저장하지 않으므로 **강제 로그아웃·토큰 무효화가 불가능합니다.**
 탈취된 리프레시 토큰은 만료(14일)까지 유효합니다.
 
-회원 존재 검증이 막아주는 것은 **회원 행이 사라진 경우뿐**입니다. 탈퇴(`WITHDRAWN`)는 상태만 바뀌고 행이 남으므로
-여전히 만료까지 토큰이 유효합니다. 탈퇴 즉시 차단이 필요해지면 `UserRoleAuthenticationConverter`와
-`TokenRefreshService`에서 상태까지 확인하도록 넓히면 됩니다.
+회원 존재 검증은 **탈퇴 회원도 미등록으로 취급**합니다(`RegisteredUserCheckService`). 탈퇴(`WITHDRAWN`)는 상태만 바뀌고
+행이 남는 soft delete라 존재 여부만 보면 만료까지 토큰이 통과하기 때문입니다. 액세스 토큰 인증(`UserRoleAuthenticationConverter`)과
+재발급(`TokenRefreshService`)이 모두 이 서비스를 거치므로, 토큰을 저장하지 않고도 탈퇴 즉시 두 경로가 401로 끝납니다.
+이는 특정 회원의 토큰 전부를 거부하는 것이라 토큰 단위 무효화(강제 로그아웃)와는 다릅니다.
 
 완화 장치:
 - 액세스 토큰 수명을 1시간으로 짧게 유지
@@ -208,6 +213,9 @@ COMMIT;
 - 평문 비밀번호는 커밋하지 않고 심사 제출 양식에만 적습니다. local 시드의 비밀번호는 로컬 전용이라 예외입니다.
 - 심사가 끝나 계정을 막으려면 `UPDATE users SET status = 'WITHDRAWN' WHERE id = (SELECT user_id FROM local_accounts WHERE email = '...')`.
   행을 지우려면 `local_accounts` → `users` 순서로 삭제합니다.
+- **심사관이 탈퇴 API(`DELETE /api/users/me`)를 시험하면 `local_accounts` 행이 삭제되어 그 계정으로는 더 로그인할 수 없습니다.**
+  `users` 행은 `WITHDRAWN`으로 남지만 이메일 유니크는 풀리므로, 위 SQL로 같은 이메일을 다시 등록하면 됩니다(새 `users` 행이 생깁니다).
+  심사 제출 전과 심사 사이에 계정이 살아 있는지 확인하세요. local은 기동마다 시드가 다시 적재되어 신경 쓸 필요가 없습니다.
 - prod는 `ddl-auto: validate`라 `local_accounts` 테이블이 없으면 기동 자체가 실패합니다. 엔티티는 이미 배포되어 있으므로 테이블 존재만 확인하면 됩니다.
 
 ## 제공자 추가 방법
@@ -245,6 +253,15 @@ dev/prod의 DB 접속 변수(`DB_HOST` 등)는 [profiles.md](profiles.md)를 참
 
 ## 알려진 제약
 
+- **탈퇴 시 소셜 제공자 연결을 끊지 않습니다.** 애플 심사 가이드라인 5.1.1(v)은 Sign in with Apple 앱이 계정 삭제 시
+  `https://appleid.apple.com/auth/revoke`로 토큰을 revoke하도록 요구하지만, 서버는 id_token만 검증하고 `.p8` 키·client_secret·
+  authorization code 수신 경로가 없어 아직 구현하지 않았습니다. 구현하려면 `APPLE_TEAM_ID`·`APPLE_KEY_ID`·`APPLE_PRIVATE_KEY`로
+  ES256 client_secret을 만들고, 클라이언트가 탈퇴 요청에 authorization code를 실어 보내 `/auth/token` 교환 → `/auth/revoke` 순으로
+  호출해야 합니다. 카카오 unlink(`/v1/user/unlink`)도 같은 이유로 미구현입니다. 그동안 사용자 기기의 설정 > Apple ID >
+  Apple로 로그인 목록에는 앱이 남습니다.
+- **탈퇴해도 타 모듈 데이터는 남습니다.** 강아지(`dogs`)·AI 리포트(`ai_reports`)·학습 진도는 옛 `userId`로 남으며, 재가입은 새
+  `userId`를 받으므로 도달할 수 없는 고아 행이 됩니다. 삭제용 `provided` 인터페이스나 모듈 이벤트 선례가 없어 MVP에서는 두고,
+  필요해지면 `UserWithdrawer`에서 각 모듈의 정리 인터페이스를 호출하도록 넓힙니다.
 - **이메일 로그인은 응답 시간을 균등화하지 않습니다.** 이메일이 없으면 BCrypt 대조 없이 바로 401이라, 응답 시간으로
   등록 여부를 추정할 수 있습니다. 로컬 계정은 심사용 몇 개뿐이라 MVP에서는 수용하며, 필요해지면 미존재 분기에서도
   더미 해시에 `matches`를 한 번 호출해 균등화합니다.

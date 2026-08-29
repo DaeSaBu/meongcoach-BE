@@ -51,4 +51,15 @@ class RegisteredUserCheckServiceTest {
 	void findRoleReturnsEmptyForUnknownId() {
 		assertThat(registeredUserCheckService.findRole(UNREGISTERED_USER_ID)).isEmpty();
 	}
+
+	// 탈퇴해도 행은 남으므로 존재 여부만 보면 탈퇴 회원의 토큰이 만료까지 통과한다
+	@Test
+	void 탈퇴한_회원은_미등록으로_취급한다() {
+		User user = User.registerOnboardingMember();
+		user.withdraw();
+		Long userId = userRepository.save(user).getId();
+
+		assertThat(registeredUserCheckService.isRegistered(userId)).isFalse();
+		assertThat(registeredUserCheckService.findRole(userId)).isEmpty();
+	}
 }
