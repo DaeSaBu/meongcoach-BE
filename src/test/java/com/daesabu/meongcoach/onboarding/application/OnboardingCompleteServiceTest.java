@@ -25,13 +25,11 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 
 @DataJpaTest
-@DisplayName("온보딩 완료 서비스")
 class OnboardingCompleteServiceTest {
 
 	private static final String STORAGE_BASE_URL = "https://images.test.meongcoach.com/";
@@ -92,8 +90,7 @@ class OnboardingCompleteServiceTest {
 	}
 
 	@Test
-	@DisplayName("온보딩을 완료하면 프로필과 강아지들이 함께 생성된다")
-	void completeCreatesProfileAndDogs() {
+	void 온보딩을_완료하면_프로필과_강아지들이_함께_생성된다() {
 		List<Long> dogIds = service.complete(userId, completeInfo());
 
 		UserProfile profile = userProfileRepository.findById(userId).orElseThrow();
@@ -106,8 +103,7 @@ class OnboardingCompleteServiceTest {
 	}
 
 	@Test
-	@DisplayName("여러 마리를 등록하면 첫 번째 강아지만 선택 상태가 된다")
-	void completeSelectsOnlyFirstDog() {
+	void 여러_마리를_등록하면_첫_번째_강아지만_선택_상태가_된다() {
 		List<Long> dogIds = service.complete(userId, completeInfo());
 
 		List<Dog> dogs = dogRepository.findAllById(dogIds);
@@ -118,8 +114,7 @@ class OnboardingCompleteServiceTest {
 	}
 
 	@Test
-	@DisplayName("등록한 강아지에 성격이 저장된다")
-	void completeSavesDogPersonalities() {
+	void 등록한_강아지에_성격이_저장된다() {
 		List<Long> dogIds = service.complete(userId, completeInfo());
 
 		List<Dog> dogs = dogRepository.findAllById(dogIds);
@@ -129,8 +124,7 @@ class OnboardingCompleteServiceTest {
 	}
 
 	@Test
-	@DisplayName("등록한 강아지에 기대 사항이 저장된다")
-	void completeSavesDogExpectation() {
+	void 등록한_강아지에_기대_사항이_저장된다() {
 		List<Long> dogIds = service.complete(userId, completeInfo());
 
 		assertThat(dogRepository.findAllById(dogIds))
@@ -141,8 +135,7 @@ class OnboardingCompleteServiceTest {
 	}
 
 	@Test
-	@DisplayName("교육 이력·목표가 저장된다")
-	void completeSavesTrainingTopics() {
+	void 교육_이력_목표가_저장된다() {
 		service.complete(userId, completeInfo());
 
 		UserProfile profile = userProfileRepository.findById(userId).orElseThrow();
@@ -151,8 +144,7 @@ class OnboardingCompleteServiceTest {
 	}
 
 	@Test
-	@DisplayName("사용자·강아지 프로필 이미지 URL이 함께 저장된다")
-	void completeSavesProfileImages() {
+	void 사용자_강아지_프로필_이미지_URL이_함께_저장된다() {
 		String userImageUrl = STORAGE_BASE_URL + "images/user-profile/1/a.jpg";
 		String dogImageUrl = STORAGE_BASE_URL + "images/dog-profile/1/b.jpg";
 
@@ -167,24 +159,21 @@ class OnboardingCompleteServiceTest {
 	}
 
 	@Test
-	@DisplayName("사용자 이미지가 우리 스토리지 URL이 아니면 실패한다")
-	void completeFailsWhenUserImageUrlIsExternal() {
+	void 사용자_이미지가_우리_스토리지_URL이_아니면_실패한다() {
 		assertThatThrownBy(() -> service.complete(userId,
 				completeInfo("https://evil.example.com/a.jpg", null)))
 				.isInstanceOf(InvalidImageUrlException.class);
 	}
 
 	@Test
-	@DisplayName("강아지 이미지가 우리 스토리지 URL이 아니면 실패한다")
-	void completeFailsWhenDogImageUrlIsExternal() {
+	void 강아지_이미지가_우리_스토리지_URL이_아니면_실패한다() {
 		assertThatThrownBy(() -> service.complete(userId,
 				completeInfo(null, "https://evil.example.com/b.jpg")))
 				.isInstanceOf(InvalidImageUrlException.class);
 	}
 
 	@Test
-	@DisplayName("온보딩을 완료하면 온보딩 회원이 정회원으로 승격된다")
-	void completePromotesOnboardingMemberToMember() {
+	void 온보딩을_완료하면_온보딩_회원이_정회원으로_승격된다() {
 		service.complete(userId, completeInfo());
 
 		User user = userRepository.findById(userId).orElseThrow();
@@ -192,8 +181,7 @@ class OnboardingCompleteServiceTest {
 	}
 
 	@Test
-	@DisplayName("이미 온보딩을 완료한 회원이면 실패한다")
-	void completeFailsWhenAlreadyOnboarded() {
+	void 이미_온보딩을_완료한_회원이면_실패한다() {
 		service.complete(userId, completeInfo());
 
 		assertThatThrownBy(() -> service.complete(userId, completeInfo()))

@@ -23,7 +23,6 @@ import com.daesabu.meongcoach.onboarding.application.provided.OnboardingMetadata
 import com.daesabu.meongcoach.training.application.provided.TopicSummary;
 import com.daesabu.meongcoach.user.domain.exception.AlreadyOnboardedException;
 import java.util.List;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
@@ -38,7 +37,6 @@ import org.springframework.test.web.servlet.MockMvc;
 @WebMvcTest(OnboardingController.class)
 @Import(OnboardingControllerTest.StubConfig.class)
 @AutoConfigureRestDocs
-@DisplayName("온보딩 API")
 class OnboardingControllerTest {
 
 	private static final long ONBOARDED_USER_ID = 99L;
@@ -104,8 +102,7 @@ class OnboardingControllerTest {
 	private RecordingOnboardingCompleter onboardingCompleter;
 
 	@Test
-	@DisplayName("온보딩 메타데이터를 조회한다")
-	void metadataReturnsOnboardingLists() throws Exception {
+	void 온보딩_메타데이터를_조회한다() throws Exception {
 		mockMvc.perform(get("/api/onboarding/metadata")
 						.principal(() -> "1")
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
@@ -129,8 +126,7 @@ class OnboardingControllerTest {
 	}
 
 	@Test
-	@DisplayName("온보딩을 완료하면 생성된 강아지 ID 목록을 반환한다")
-	void completeReturnsCreatedDogIds() throws Exception {
+	void 온보딩을_완료하면_생성된_강아지_ID_목록을_반환한다() throws Exception {
 		mockMvc.perform(post("/api/onboarding")
 						.principal(() -> "1")
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
@@ -182,8 +178,7 @@ class OnboardingControllerTest {
 	}
 
 	@Test
-	@DisplayName("교육 토픽 배열이 null 또는 빈 배열이면 선택 없음으로 처리한다")
-	void completeNormalizesNullableFields() throws Exception {
+	void 교육_토픽_배열이_null_또는_빈_배열이면_선택_없음으로_처리한다() throws Exception {
 		mockMvc.perform(post("/api/onboarding")
 						.principal(() -> "1")
 						.contentType(MediaType.APPLICATION_JSON)
@@ -197,8 +192,7 @@ class OnboardingControllerTest {
 	}
 
 	@Test
-	@DisplayName("중복된 교육 토픽 ID는 한 번만 전달한다")
-	void completeDeduplicatesTopicIds() throws Exception {
+	void 중복된_교육_토픽_ID는_한_번만_전달한다() throws Exception {
 		String request = COMPLETE_REQUEST.replace("\"priorTrainingTopicIds\": [1, 2]",
 				"\"priorTrainingTopicIds\": [1, 1, 2]");
 
@@ -213,8 +207,7 @@ class OnboardingControllerTest {
 	}
 
 	@Test
-	@DisplayName("교육 토픽 ID가 양수가 아니면 검증에 실패한다")
-	void completeFailsWhenTopicIdIsNotPositive() throws Exception {
+	void 교육_토픽_ID가_양수가_아니면_검증에_실패한다() throws Exception {
 		String request = COMPLETE_REQUEST.replace("\"priorTrainingTopicIds\": [1, 2]",
 				"\"priorTrainingTopicIds\": [0]");
 
@@ -237,8 +230,7 @@ class OnboardingControllerTest {
 	}
 
 	@Test
-	@DisplayName("강아지 기대 사항이 500자를 넘으면 검증에 실패한다")
-	void completeFailsWhenDogExpectationIsTooLong() throws Exception {
+	void 강아지_기대_사항이_500자를_넘으면_검증에_실패한다() throws Exception {
 		String request = COMPLETE_REQUEST.replace(
 				"산책할 때 보호자에게 집중하면 좋겠어요.", "가".repeat(501));
 
@@ -251,8 +243,7 @@ class OnboardingControllerTest {
 	}
 
 	@Test
-	@DisplayName("이미 온보딩을 완료한 회원이면 409를 반환한다")
-	void completeFailsWhenAlreadyOnboarded() throws Exception {
+	void 이미_온보딩을_완료한_회원이면_409를_반환한다() throws Exception {
 		mockMvc.perform(post("/api/onboarding")
 						.principal(() -> String.valueOf(ONBOARDED_USER_ID))
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
@@ -273,8 +264,7 @@ class OnboardingControllerTest {
 	}
 
 	@Test
-	@DisplayName("닉네임이 비어 있으면 검증에 실패한다")
-	void completeFailsWhenNicknameIsBlank() throws Exception {
+	void 닉네임이_비어_있으면_검증에_실패한다() throws Exception {
 		mockMvc.perform(post("/api/onboarding")
 						.principal(() -> "1")
 						.contentType(MediaType.APPLICATION_JSON)
@@ -285,24 +275,21 @@ class OnboardingControllerTest {
 	}
 
 	@Test
-	@DisplayName("닉네임이 50자를 넘으면 검증에 실패한다")
-	void completeFailsWhenNicknameIsTooLong() throws Exception {
+	void 닉네임이_50자를_넘으면_검증에_실패한다() throws Exception {
 		String request = COMPLETE_REQUEST.replace("멍멍이집사", "가".repeat(51));
 
 		assertValidationFails(request, "nickname");
 	}
 
 	@Test
-	@DisplayName("사용자 생년월일이 과거가 아니면 검증에 실패한다")
-	void completeFailsWhenUserBirthDateIsNotPast() throws Exception {
+	void 사용자_생년월일이_과거가_아니면_검증에_실패한다() throws Exception {
 		String request = COMPLETE_REQUEST.replace("1998-01-01", "2999-01-01");
 
 		assertValidationFails(request, "birthDate");
 	}
 
 	@Test
-	@DisplayName("사용자 프로필 이미지 URL이 512자를 넘으면 검증에 실패한다")
-	void completeFailsWhenUserProfileImageUrlIsTooLong() throws Exception {
+	void 사용자_프로필_이미지_URL이_512자를_넘으면_검증에_실패한다() throws Exception {
 		String request = COMPLETE_REQUEST.replace(
 				"https://images.test.meongcoach.com/images/user-profile/1/a.jpg",
 				"https://example.com/" + "a".repeat(500));
@@ -311,8 +298,7 @@ class OnboardingControllerTest {
 	}
 
 	@Test
-	@DisplayName("교육 토픽 ID가 100개를 넘으면 검증에 실패한다")
-	void completeFailsWhenPriorTrainingTopicIdsExceedMaxSize() throws Exception {
+	void 교육_토픽_ID가_100개를_넘으면_검증에_실패한다() throws Exception {
 		String request = COMPLETE_REQUEST.replace("\"priorTrainingTopicIds\": [1, 2]",
 				"\"priorTrainingTopicIds\": [" + "1, ".repeat(100) + "1]");
 
@@ -320,8 +306,7 @@ class OnboardingControllerTest {
 	}
 
 	@Test
-	@DisplayName("목표 토픽 ID가 양수가 아니면 검증에 실패한다")
-	void completeFailsWhenTrainingGoalTopicIdIsNotPositive() throws Exception {
+	void 목표_토픽_ID가_양수가_아니면_검증에_실패한다() throws Exception {
 		String request = COMPLETE_REQUEST.replace("\"trainingGoalTopicIds\": [2, 3]",
 				"\"trainingGoalTopicIds\": [0]");
 
@@ -329,8 +314,7 @@ class OnboardingControllerTest {
 	}
 
 	@Test
-	@DisplayName("MBTI가 null이면 검증에 실패한다")
-	void completeFailsWhenMbtiIsNull() throws Exception {
+	void MBTI가_null이면_검증에_실패한다() throws Exception {
 		String request = COMPLETE_REQUEST.replace("\"mbti\": \"INTJ\"", "\"mbti\": null");
 
 		mockMvc.perform(post("/api/onboarding")
@@ -343,8 +327,7 @@ class OnboardingControllerTest {
 	}
 
 	@Test
-	@DisplayName("MBTI가 공백이면 검증에 실패한다")
-	void completeFailsWhenMbtiIsBlank() throws Exception {
+	void MBTI가_공백이면_검증에_실패한다() throws Exception {
 		String request = COMPLETE_REQUEST.replace("\"mbti\": \"INTJ\"", "\"mbti\": \"   \"");
 
 		mockMvc.perform(post("/api/onboarding")
@@ -357,8 +340,7 @@ class OnboardingControllerTest {
 	}
 
 	@Test
-	@DisplayName("성별이 null이면 검증에 실패한다")
-	void completeFailsWhenGenderIsNull() throws Exception {
+	void 성별이_null이면_검증에_실패한다() throws Exception {
 		String request = COMPLETE_REQUEST.replace("\"gender\": \"FEMALE\"", "\"gender\": null");
 
 		mockMvc.perform(post("/api/onboarding")
@@ -371,8 +353,7 @@ class OnboardingControllerTest {
 	}
 
 	@Test
-	@DisplayName("성별이 공백이면 검증에 실패한다")
-	void completeFailsWhenGenderIsBlank() throws Exception {
+	void 성별이_공백이면_검증에_실패한다() throws Exception {
 		String request = COMPLETE_REQUEST.replace("\"gender\": \"FEMALE\"", "\"gender\": \"   \"");
 
 		mockMvc.perform(post("/api/onboarding")
@@ -385,8 +366,7 @@ class OnboardingControllerTest {
 	}
 
 	@Test
-	@DisplayName("강아지 이름이 50자를 넘으면 검증에 실패한다")
-	void completeFailsWhenDogNameIsTooLong() throws Exception {
+	void 강아지_이름이_50자를_넘으면_검증에_실패한다() throws Exception {
 		String request = COMPLETE_REQUEST.replace("\"name\": \"초코\"",
 				"\"name\": \"" + "가".repeat(51) + "\"");
 
@@ -394,16 +374,14 @@ class OnboardingControllerTest {
 	}
 
 	@Test
-	@DisplayName("강아지 이름이 비어 있으면 검증에 실패한다")
-	void completeFailsWhenDogNameIsBlank() throws Exception {
+	void 강아지_이름이_비어_있으면_검증에_실패한다() throws Exception {
 		String request = COMPLETE_REQUEST.replace("\"name\": \"초코\"", "\"name\": \"\"");
 
 		assertValidationFails(request, "dogs[0].name");
 	}
 
 	@Test
-	@DisplayName("강아지 견종 코드가 30자를 넘으면 검증에 실패한다")
-	void completeFailsWhenDogBreedIsTooLong() throws Exception {
+	void 강아지_견종_코드가_30자를_넘으면_검증에_실패한다() throws Exception {
 		String request = COMPLETE_REQUEST.replace("\"breed\": \"POODLE\"",
 				"\"breed\": \"" + "A".repeat(31) + "\"");
 
@@ -411,48 +389,42 @@ class OnboardingControllerTest {
 	}
 
 	@Test
-	@DisplayName("강아지 견종 코드가 비어 있으면 검증에 실패한다")
-	void completeFailsWhenDogBreedIsBlank() throws Exception {
+	void 강아지_견종_코드가_비어_있으면_검증에_실패한다() throws Exception {
 		String request = COMPLETE_REQUEST.replace("\"breed\": \"POODLE\"", "\"breed\": \"\"");
 
 		assertValidationFails(request, "dogs[0].breed");
 	}
 
 	@Test
-	@DisplayName("강아지 성별이 비어 있으면 검증에 실패한다")
-	void completeFailsWhenDogSexIsBlank() throws Exception {
+	void 강아지_성별이_비어_있으면_검증에_실패한다() throws Exception {
 		String request = COMPLETE_REQUEST.replace("\"sex\": \"MALE\"", "\"sex\": \"\"");
 
 		assertValidationFails(request, "dogs[0].sex");
 	}
 
 	@Test
-	@DisplayName("강아지 생년월일이 과거가 아니면 검증에 실패한다")
-	void completeFailsWhenDogBirthDateIsNotPast() throws Exception {
+	void 강아지_생년월일이_과거가_아니면_검증에_실패한다() throws Exception {
 		String request = COMPLETE_REQUEST.replace("2024-03-01", "2999-01-01");
 
 		assertValidationFails(request, "dogs[0].birthDate");
 	}
 
 	@Test
-	@DisplayName("강아지 몸무게가 양수가 아니면 검증에 실패한다")
-	void completeFailsWhenDogWeightIsNotPositive() throws Exception {
+	void 강아지_몸무게가_양수가_아니면_검증에_실패한다() throws Exception {
 		String request = COMPLETE_REQUEST.replace("\"weightKg\": 4.50", "\"weightKg\": 0");
 
 		assertValidationFails(request, "dogs[0].weightKg");
 	}
 
 	@Test
-	@DisplayName("강아지 몸무게가 없으면 검증에 실패한다")
-	void completeFailsWhenDogWeightIsMissing() throws Exception {
+	void 강아지_몸무게가_없으면_검증에_실패한다() throws Exception {
 		String request = COMPLETE_REQUEST.replace("\"weightKg\": 4.50,", "");
 
 		assertValidationFails(request, "dogs[0].weightKg");
 	}
 
 	@Test
-	@DisplayName("강아지 프로필 이미지 URL이 512자를 넘으면 검증에 실패한다")
-	void completeFailsWhenDogProfileImageUrlIsTooLong() throws Exception {
+	void 강아지_프로필_이미지_URL이_512자를_넘으면_검증에_실패한다() throws Exception {
 		String request = COMPLETE_REQUEST.replace(
 				"https://images.test.meongcoach.com/images/dog-profile/1/b.jpg",
 				"https://example.com/" + "a".repeat(500));
@@ -461,8 +433,7 @@ class OnboardingControllerTest {
 	}
 
 	@Test
-	@DisplayName("강아지 없이 온보딩을 완료할 수 없다")
-	void completeFailsWhenDogsIsEmpty() throws Exception {
+	void 강아지_없이_온보딩을_완료할_수_없다() throws Exception {
 		mockMvc.perform(post("/api/onboarding")
 						.principal(() -> "1")
 						.contentType(MediaType.APPLICATION_JSON)
@@ -474,8 +445,7 @@ class OnboardingControllerTest {
 	}
 
 	@Test
-	@DisplayName("인증 정보가 없으면 401을 반환한다")
-	void completeFailsWithoutPrincipal() throws Exception {
+	void 인증_정보가_없으면_401을_반환한다() throws Exception {
 		mockMvc.perform(post("/api/onboarding")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(COMPLETE_REQUEST))
@@ -484,8 +454,7 @@ class OnboardingControllerTest {
 	}
 
 	@Test
-	@DisplayName("프로필 이미지 업로드 URL을 발급한다")
-	void issueImageUploadUrlReturnsUploadUrl() throws Exception {
+	void 프로필_이미지_업로드_URL을_발급한다() throws Exception {
 		mockMvc.perform(post("/api/onboarding/presigned-urls")
 						.principal(() -> "1")
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
@@ -514,8 +483,7 @@ class OnboardingControllerTest {
 	}
 
 	@Test
-	@DisplayName("지원하지 않는 이미지 형식이면 400을 반환한다")
-	void issueImageUploadUrlFailsWhenContentTypeIsUnsupported() throws Exception {
+	void 지원하지_않는_이미지_형식이면_400을_반환한다() throws Exception {
 		mockMvc.perform(post("/api/onboarding/presigned-urls")
 						.principal(() -> "1")
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
@@ -536,8 +504,7 @@ class OnboardingControllerTest {
 	}
 
 	@Test
-	@DisplayName("지원하지 않는 업로드 대상이면 400을 반환한다")
-	void issueImageUploadUrlFailsWhenTargetIsInvalid() throws Exception {
+	void 지원하지_않는_업로드_대상이면_400을_반환한다() throws Exception {
 		mockMvc.perform(post("/api/onboarding/presigned-urls")
 						.principal(() -> "1")
 						.contentType(MediaType.APPLICATION_JSON)
@@ -547,8 +514,7 @@ class OnboardingControllerTest {
 	}
 
 	@Test
-	@DisplayName("업로드 대상이 비어 있으면 검증에 실패한다")
-	void issueImageUploadUrlFailsWhenTargetIsBlank() throws Exception {
+	void 업로드_대상이_비어_있으면_검증에_실패한다() throws Exception {
 		mockMvc.perform(post("/api/onboarding/presigned-urls")
 						.principal(() -> "1")
 						.contentType(MediaType.APPLICATION_JSON)
@@ -559,8 +525,7 @@ class OnboardingControllerTest {
 	}
 
 	@Test
-	@DisplayName("이미지 Content-Type이 비어 있으면 검증에 실패한다")
-	void issueImageUploadUrlFailsWhenContentTypeIsBlank() throws Exception {
+	void 이미지_contentType이_비어_있으면_검증에_실패한다() throws Exception {
 		mockMvc.perform(post("/api/onboarding/presigned-urls")
 						.principal(() -> "1")
 						.contentType(MediaType.APPLICATION_JSON)
@@ -571,8 +536,7 @@ class OnboardingControllerTest {
 	}
 
 	@Test
-	@DisplayName("이미지 업로드 URL 발급 시 인증 정보가 없으면 401을 반환한다")
-	void issueImageUploadUrlFailsWithoutPrincipal() throws Exception {
+	void 이미지_업로드_URL_발급_시_인증_정보가_없으면_401을_반환한다() throws Exception {
 		mockMvc.perform(post("/api/onboarding/presigned-urls")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(IMAGE_ISSUE_REQUEST))

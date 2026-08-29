@@ -15,14 +15,12 @@ import com.daesabu.meongcoach.training.domain.TopicCreateCommand;
 import com.daesabu.meongcoach.training.domain.TrainingCategory;
 import com.daesabu.meongcoach.user.application.MbtiFinderService;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 
 @DataJpaTest
-@DisplayName("온보딩 메타데이터 조회 서비스")
 class OnboardingMetadataServiceTest {
 
 	@Autowired
@@ -43,8 +41,7 @@ class OnboardingMetadataServiceTest {
 	}
 
 	@Test
-	@DisplayName("토픽·견종·성격·MBTI 목록을 한 번에 모아 반환한다")
-	void findCollectsTopicsBreedsPersonalitiesAndMbtis() {
+	void 토픽_견종_성격_MBTI_목록을_한_번에_모아_반환한다() {
 		TrainingCategory category = entityManager.persist(TrainingCategory.create("기본 훈련", 1, null, null));
 		entityManager.persist(Topic.create(category, new TopicCreateCommand("산책 훈련", 2, null, null, null)));
 		entityManager.persist(Topic.create(category, new TopicCreateCommand("배변 훈련", 1, null, null, null)));
@@ -64,8 +61,7 @@ class OnboardingMetadataServiceTest {
 	}
 
 	@Test
-	@DisplayName("토픽이 없어도 견종·성격·MBTI 목록은 그대로 반환한다")
-	void findReturnsEnumListsWhenNoTopics() {
+	void 토픽이_없어도_견종_성격_MBTI_목록은_그대로_반환한다() {
 		OnboardingMetadataResult result = service.find();
 
 		assertThat(result.topics()).isEmpty();
