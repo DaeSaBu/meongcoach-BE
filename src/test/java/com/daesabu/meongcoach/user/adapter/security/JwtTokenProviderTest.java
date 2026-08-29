@@ -34,7 +34,7 @@ class JwtTokenProviderTest {
 	private static final Long USER_ID = 42L;
 
 	@Test
-	void 발급하면_액세스_리프레시_토큰이_각자의_용도로_만들어진다() {
+	void 발급하면_액세스_토큰과_리프레시_토큰이_각자의_용도로_만들어진다() {
 		JwtTokenProvider provider = tokenProvider(SECRET, Duration.ofHours(1), Duration.ofDays(14));
 
 		AuthToken token = provider.issue(USER_ID);

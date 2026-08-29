@@ -94,7 +94,7 @@ class UserProfileRegisterServiceTest {
 	}
 
 	@Test
-	void 교육_이력_목표를_함께_저장한다() {
+	void 교육_이력과_목표를_함께_저장한다() {
 		UserProfileCreateCommand command = new UserProfileCreateCommand(
 				"멍멍이집사", null, null, VALID_MBTI, VALID_GENDER, Set.of(1L, 2L), Set.of(2L, 3L));
 

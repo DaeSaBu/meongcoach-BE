@@ -28,7 +28,7 @@ class DomainInputModelTest {
 	}
 
 	@Test
-	void domain_패키지에_Request_Response_접미사_클래스를_두지_않는다() {
+	void domain_패키지에_Request나_Response_접미사_클래스를_두지_않는다() {
 		noClasses()
 				.that().resideInAPackage("..domain..")
 				.should().haveSimpleNameEndingWith("Request")

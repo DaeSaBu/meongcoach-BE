@@ -24,7 +24,7 @@ class CurriculumTest {
 	}
 
 	@Test
-	void 생성하면_토픽_카테고리와_연결된다() {
+	void 생성하면_토픽과_카테고리에_연결된다() {
 		Curriculum curriculum = createCurriculum();
 
 		assertThat(curriculum.getTopic().getTitle()).isEqualTo("산책 교육");

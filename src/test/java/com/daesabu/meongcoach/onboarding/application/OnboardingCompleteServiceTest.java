@@ -135,7 +135,7 @@ class OnboardingCompleteServiceTest {
 	}
 
 	@Test
-	void 교육_이력_목표가_저장된다() {
+	void 교육_이력과_목표가_저장된다() {
 		service.complete(userId, completeInfo());
 
 		UserProfile profile = userProfileRepository.findById(userId).orElseThrow();
@@ -144,7 +144,7 @@ class OnboardingCompleteServiceTest {
 	}
 
 	@Test
-	void 사용자_강아지_프로필_이미지_URL이_함께_저장된다() {
+	void 사용자와_강아지_프로필_이미지_URL이_함께_저장된다() {
 		String userImageUrl = STORAGE_BASE_URL + "images/user-profile/1/a.jpg";
 		String dogImageUrl = STORAGE_BASE_URL + "images/dog-profile/1/b.jpg";
 

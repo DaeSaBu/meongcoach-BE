@@ -14,7 +14,7 @@ class AiReportTest {
 	private static final LocalDateTime UPLOAD_EXPIRES_AT = NOW.plusMinutes(15);
 
 	@Test
-	void UPLOADING으로_생성하면_사용자_영상_객체_키_업로드_만료_시각이_설정되고_제목_본문은_비어_있다() {
+	void UPLOADING으로_생성하면_사용자와_영상_객체_키_업로드_만료_시각이_설정되고_제목과_본문은_비어_있다() {
 		AiReport report = uploadingReport();
 
 		assertThat(report.getUserId()).isEqualTo(1L);
@@ -66,7 +66,7 @@ class AiReportTest {
 	}
 
 	@Test
-	void 완료하면_제목_본문이_채워지고_상태가_COMPLETED가_된다() {
+	void 완료하면_제목과_본문이_채워지고_상태가_COMPLETED가_된다() {
 		AiReport report = pendingReport();
 
 		report.complete(TITLE, CONTENT);

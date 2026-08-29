@@ -55,7 +55,7 @@ class AiReportTrialFinderServiceTest {
 	}
 
 	@Test
-	void 업로드_대기_분석_중인_리포트는_사용_횟수에_세지_않는다() {
+	void 업로드_대기_중이거나_분석_중인_리포트는_사용_횟수에_세지_않는다() {
 		aiReportRepository.saveAndFlush(uploadingReport(USER_ID, "videos/training/42/uploading.mp4"));
 		aiReportRepository.saveAndFlush(pendingReport(USER_ID, "videos/training/42/pending.mp4"));
 
