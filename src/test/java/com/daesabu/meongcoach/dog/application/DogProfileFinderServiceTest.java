@@ -17,7 +17,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -25,7 +24,6 @@ import org.springframework.context.annotation.Import;
 
 @DataJpaTest
 @Import(DogProfileFinderService.class)
-@DisplayName("강아지 프로필 조회 서비스")
 class DogProfileFinderServiceTest {
 
 	private static final Long USER_ID = 42L;
@@ -40,8 +38,7 @@ class DogProfileFinderServiceTest {
 	private DogRepository dogRepository;
 
 	@Test
-	@DisplayName("사용자의 모든 강아지를 등록 순으로 반환한다")
-	void findDogsReturnsAllDogsInRegistrationOrder() {
+	void 사용자의_모든_강아지를_등록_순으로_반환한다() {
 		Dog selected = persistSelectedDog(USER_ID);
 		Dog unselected = dogRepository.saveAndFlush(newDog(USER_ID));
 
@@ -51,22 +48,19 @@ class DogProfileFinderServiceTest {
 	}
 
 	@Test
-	@DisplayName("강아지가 없으면 빈 리스트를 반환한다")
-	void findDogsReturnsEmptyWhenNoDogExists() {
+	void 강아지가_없으면_빈_리스트를_반환한다() {
 		assertThat(dogProfileFinder.findDogs(USER_ID)).isEmpty();
 	}
 
 	@Test
-	@DisplayName("다른 사용자의 강아지는 반환하지 않는다")
-	void findDogsIgnoresOtherUsersDog() {
+	void 다른_사용자의_강아지는_반환하지_않는다() {
 		persistSelectedDog(OTHER_USER_ID);
 
 		assertThat(dogProfileFinder.findDogs(USER_ID)).isEmpty();
 	}
 
 	@Test
-	@DisplayName("사용자 소유 강아지를 ID로 조회해 프로필 정보를 반환한다")
-	void findDogReturnsOwnedDogProfile() {
+	void 사용자_소유_강아지를_ID로_조회해_프로필_정보를_반환한다() {
 		Dog saved = persistSelectedDog(USER_ID);
 
 		Dog found = dogProfileFinder.findDog(USER_ID, saved.getId());
@@ -84,8 +78,7 @@ class DogProfileFinderServiceTest {
 	}
 
 	@Test
-	@DisplayName("다른 사용자의 강아지 ID로 조회하면 예외를 던진다")
-	void findDogThrowsForOtherUsersDog() {
+	void 다른_사용자의_강아지_ID로_조회하면_예외를_던진다() {
 		Dog othersDog = persistSelectedDog(OTHER_USER_ID);
 
 		assertThatThrownBy(() -> dogProfileFinder.findDog(USER_ID, othersDog.getId()))
@@ -93,15 +86,13 @@ class DogProfileFinderServiceTest {
 	}
 
 	@Test
-	@DisplayName("없는 강아지 ID로 조회하면 예외를 던진다")
-	void findDogThrowsWhenDogDoesNotExist() {
+	void 없는_강아지_ID로_조회하면_예외를_던진다() {
 		assertThatThrownBy(() -> dogProfileFinder.findDog(USER_ID, 999L))
 				.isInstanceOf(DogNotFoundException.class);
 	}
 
 	@Test
-	@DisplayName("선택된 강아지를 반환한다")
-	void findSelectedDogReturnsSelectedDog() {
+	void 선택된_강아지를_반환한다() {
 		Dog saved = persistSelectedDog(USER_ID);
 
 		Dog found = dogProfileFinder.findSelectedDog(USER_ID);
@@ -111,8 +102,7 @@ class DogProfileFinderServiceTest {
 	}
 
 	@Test
-	@DisplayName("미선택 강아지와 함께 있어도 선택된 강아지를 반환한다")
-	void findSelectedDogIgnoresUnselectedDog() {
+	void 미선택_강아지와_함께_있어도_선택된_강아지를_반환한다() {
 		dogRepository.saveAndFlush(newDog(USER_ID));
 		Dog selected = persistSelectedDog(USER_ID);
 
@@ -122,8 +112,7 @@ class DogProfileFinderServiceTest {
 	}
 
 	@Test
-	@DisplayName("선택된 강아지의 프로필 이미지가 없으면 빈 문자열을 가진다")
-	void findSelectedDogHasEmptyImageUrlWhenImageIsAbsent() {
+	void 선택된_강아지의_프로필_이미지가_없으면_빈_문자열을_가진다() {
 		Dog dog = Dog.register(new DogRegisterCommand(USER_ID, "초코", Breed.POODLE, DogSex.MALE,
 				LocalDate.of(2024, 3, 1), new BigDecimal("4.50"), null, null));
 		dog.select();
@@ -135,8 +124,7 @@ class DogProfileFinderServiceTest {
 	}
 
 	@Test
-	@DisplayName("미선택 강아지만 있으면 예외를 던진다")
-	void findSelectedDogThrowsWhenOnlyUnselectedDogExists() {
+	void 미선택_강아지만_있으면_예외를_던진다() {
 		dogRepository.saveAndFlush(newDog(USER_ID));
 
 		assertThatThrownBy(() -> dogProfileFinder.findSelectedDog(USER_ID))
@@ -144,15 +132,13 @@ class DogProfileFinderServiceTest {
 	}
 
 	@Test
-	@DisplayName("강아지가 한 마리도 없으면 예외를 던진다")
-	void findSelectedDogThrowsWhenNoDogExists() {
+	void 강아지가_한_마리도_없으면_예외를_던진다() {
 		assertThatThrownBy(() -> dogProfileFinder.findSelectedDog(USER_ID))
 				.isInstanceOf(DogNotFoundException.class);
 	}
 
 	@Test
-	@DisplayName("다른 사용자의 선택된 강아지는 반환하지 않는다")
-	void findSelectedDogThrowsForOtherUsersDog() {
+	void 다른_사용자의_선택된_강아지는_반환하지_않는다() {
 		persistSelectedDog(OTHER_USER_ID);
 
 		assertThatThrownBy(() -> dogProfileFinder.findSelectedDog(USER_ID))

@@ -5,10 +5,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Set;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-@DisplayName("Dog 도메인")
 class DogTest {
 
 	private Dog registerDog() {
@@ -21,8 +19,7 @@ class DogTest {
 	}
 
 	@Test
-	@DisplayName("등록하면 미선택 상태의 강아지가 생성된다")
-	void registerCreatesUnselectedDog() {
+	void 등록하면_미선택_상태의_강아지가_생성된다() {
 		Dog dog = registerDog();
 
 		assertThat(dog.getUserId()).isEqualTo(1L);
@@ -46,16 +43,14 @@ class DogTest {
 	}
 
 	@Test
-	@DisplayName("등록 직후에는 성격이 비어 있다")
-	void registerCreatesDogWithoutPersonalities() {
+	void 등록_직후에는_성격이_비어_있다() {
 		Dog dog = registerDog();
 
 		assertThat(dog.getPersonalities()).isEmpty();
 	}
 
 	@Test
-	@DisplayName("성격을 변경하면 기존 성격이 교체된다")
-	void changePersonalitiesReplacesPersonalities() {
+	void 성격을_변경하면_기존_성격이_교체된다() {
 		Dog dog = registerDog();
 		dog.changePersonalities(Set.of(Personality.TIMID));
 
@@ -120,24 +115,21 @@ class DogTest {
 	}
 
 	@Test
-	@DisplayName("생년월일로 나이를 계산한다")
-	void getAgeCalculatesFromBirthDate() {
+	void 생년월일로_나이를_계산한다() {
 		Dog dog = registerDog(LocalDate.now().minusYears(3));
 
 		assertThat(dog.getAge()).isEqualTo(3);
 	}
 
 	@Test
-	@DisplayName("생년월일이 없으면 나이는 null을 반환한다")
-	void getAgeReturnsNullWhenBirthDateIsNull() {
+	void 생년월일이_없으면_나이는_null을_반환한다() {
 		Dog dog = registerDog(null);
 
 		assertThat(dog.getAge()).isNull();
 	}
 
 	@Test
-	@DisplayName("선택 해제하면 상태가 UNSELECTED로 변경된다")
-	void unselectChangesStatusToUnselected() {
+	void 선택_해제하면_상태가_UNSELECTED로_변경된다() {
 		Dog dog = registerDog();
 
 		dog.unselect();
@@ -146,8 +138,7 @@ class DogTest {
 	}
 
 	@Test
-	@DisplayName("선택하면 상태가 SELECTED로 변경된다")
-	void selectChangesStatusToSelected() {
+	void 선택하면_상태가_SELECTED로_변경된다() {
 		Dog dog = registerDog();
 		dog.unselect();
 

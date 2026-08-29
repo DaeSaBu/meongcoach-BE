@@ -13,7 +13,6 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -23,7 +22,6 @@ import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
  * 강아지 리포지토리 검증.
  */
 @DataJpaTest
-@DisplayName("강아지 리포지토리")
 class DogRepositoryTest {
 
 	private static final Long USER_ID = 42L;
@@ -37,8 +35,7 @@ class DogRepositoryTest {
 	private TestEntityManager entityManager;
 
 	@Test
-	@DisplayName("사용자의 선택된 강아지를 조회한다")
-	void findFirstByUserIdAndStatusReturnsSelectedDog() {
+	void 사용자의_선택된_강아지를_조회한다() {
 		persistUnselectedDog(USER_ID);
 		Dog selected = persistSelectedDog(USER_ID);
 
@@ -49,8 +46,7 @@ class DogRepositoryTest {
 
 	// 애플리케이션 레이어에서만 불변식을 강제하므로, 선택이 여러 건인 데이터가 남아 있어도 예외 없이 끝나야 한다
 	@Test
-	@DisplayName("선택된 강아지가 여러 건이어도 가장 먼저 등록된 한 마리를 반환한다")
-	void findFirstByUserIdAndStatusReturnsEarliestWhenSelectionIsDuplicated() {
+	void 선택된_강아지가_여러_건이어도_가장_먼저_등록된_한_마리를_반환한다() {
 		Dog first = persistSelectedDog(USER_ID);
 		persistSelectedDog(USER_ID);
 
@@ -60,16 +56,14 @@ class DogRepositoryTest {
 	}
 
 	@Test
-	@DisplayName("선택된 강아지가 없으면 빈 Optional을 반환한다")
-	void findFirstByUserIdAndStatusReturnsEmptyWhenNoSelectedDogExists() {
+	void 선택된_강아지가_없으면_빈_Optional을_반환한다() {
 		persistUnselectedDog(USER_ID);
 
 		assertThat(dogRepository.findFirstByUserIdAndStatusOrderByIdAsc(USER_ID, DogStatus.SELECTED)).isEmpty();
 	}
 
 	@Test
-	@DisplayName("사용자의 강아지를 등록 순으로 모두 조회한다")
-	void findAllByUserIdOrderByIdAscReturnsDogsInRegistrationOrder() {
+	void 사용자의_강아지를_등록_순으로_모두_조회한다() {
 		Dog first = persistSelectedDog(USER_ID);
 		Dog second = persistUnselectedDog(USER_ID);
 		Dog third = persistUnselectedDog(USER_ID);
@@ -81,8 +75,7 @@ class DogRepositoryTest {
 	}
 
 	@Test
-	@DisplayName("다른 사용자의 강아지는 포함하지 않는다")
-	void findAllByUserIdOrderByIdAscIgnoresOtherUsersDog() {
+	void 다른_사용자의_강아지는_포함하지_않는다() {
 		Dog mine = persistSelectedDog(USER_ID);
 		persistSelectedDog(OTHER_USER_ID);
 
@@ -92,15 +85,13 @@ class DogRepositoryTest {
 	}
 
 	@Test
-	@DisplayName("강아지가 없으면 빈 리스트를 반환한다")
-	void findAllByUserIdOrderByIdAscReturnsEmptyWhenNoDogExists() {
+	void 강아지가_없으면_빈_리스트를_반환한다() {
 		assertThat(dogRepository.findAllByUserIdOrderByIdAsc(USER_ID)).isEmpty();
 	}
 
 	// 성격 컬렉션은 LAZY라 트랜잭션 밖(adapter)에서 읽기 전에 선로딩돼야 한다. 영속성 컨텍스트를 비워 실제 쿼리 결과만으로 확인한다
 	@Test
-	@DisplayName("목록 조회는 성격을 함께 로딩하고 성격이 여러 개여도 강아지를 중복시키지 않는다")
-	void findAllByUserIdOrderByIdAscFetchesPersonalitiesWithoutDuplicatingDogs() {
+	void 목록_조회는_성격을_함께_로딩하고_성격이_여러_개여도_강아지를_중복시키지_않는다() {
 		Dog dog = persistDogWithPersonalities(USER_ID, Set.of(Personality.TIMID, Personality.LIVELY));
 		entityManager.clear();
 
@@ -112,8 +103,7 @@ class DogRepositoryTest {
 	}
 
 	@Test
-	@DisplayName("ID와 소유자가 모두 일치하는 강아지를 성격과 함께 조회한다")
-	void findByIdAndUserIdReturnsOwnedDogWithPersonalities() {
+	void ID와_소유자가_모두_일치하는_강아지를_성격과_함께_조회한다() {
 		Dog dog = persistDogWithPersonalities(USER_ID, Set.of(Personality.FRIENDLY));
 		entityManager.clear();
 
@@ -124,16 +114,14 @@ class DogRepositoryTest {
 	}
 
 	@Test
-	@DisplayName("다른 사용자의 강아지 ID로 조회하면 빈 Optional을 반환한다")
-	void findByIdAndUserIdReturnsEmptyForOtherUsersDog() {
+	void 다른_사용자의_강아지_ID로_조회하면_빈_Optional을_반환한다() {
 		Dog othersDog = persistSelectedDog(OTHER_USER_ID);
 
 		assertThat(dogRepository.findByIdAndUserId(othersDog.getId(), USER_ID)).isEmpty();
 	}
 
 	@Test
-	@DisplayName("없는 강아지 ID로 조회하면 빈 Optional을 반환한다")
-	void findByIdAndUserIdReturnsEmptyWhenDogDoesNotExist() {
+	void 없는_강아지_ID로_조회하면_빈_Optional을_반환한다() {
 		assertThat(dogRepository.findByIdAndUserId(999L, USER_ID)).isEmpty();
 	}
 
