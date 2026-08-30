@@ -64,7 +64,7 @@ class AuthControllerTest {
 				.andExpect(jsonPath("$.needsOnboarding").value(true))
 				.andDo(document("auth/login",
 						pathParameters(
-								parameterWithName("provider").description("소셜 로그인 제공자. `kakao`, `apple` 지원")
+								parameterWithName("provider").description("소셜 로그인 제공자. `kakao`, `google`, `apple` 지원")
 						),
 						requestFields(
 								fieldWithPath("token").description(
