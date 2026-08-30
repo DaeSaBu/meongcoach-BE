@@ -63,7 +63,9 @@ jq \
 	--arg sqs_region "${SQS_REGION:-}" \
 	--arg sqs_access_key_id "${SQS_ACCESS_KEY_ID:-}" \
 	--arg sqs_secret_access_key "${SQS_SECRET_ACCESS_KEY:-}" \
-	--arg ai_video_queue "${AI_VIDEO_QUEUE:-}" '
+	--arg ai_video_queue "${AI_VIDEO_QUEUE:-}" \
+	--arg sentry_dsn "${SENTRY_DSN:-}" \
+	--arg sentry_release "${SENTRY_RELEASE:-}" '
 	if ([.containerDefinitions[] | select(.name == $container)] | length) != 1 then
 		error("배포 대상 컨테이너는 정확히 하나여야 합니다.")
 	else
@@ -147,7 +149,9 @@ jq \
 								.name != "BEDROCK_MODEL" and
 								.name != "EVOLINK_API_KEY" and
 								.name != "EVOLINK_BASE_URL" and
-								.name != "EVOLINK_MODEL"
+								.name != "EVOLINK_MODEL" and
+								.name != "SENTRY_DSN" and
+								.name != "SENTRY_RELEASE"
 							))) +
 						[
 							{"name": "JWT_SECRET", "value": $jwt_secret},
@@ -187,6 +191,15 @@ jq \
 							[]
 						 else
 							[{"name": "EVOLINK_MODEL", "value": $evolink_model}]
+						 end) +
+						# Sentry는 선택 사항이다. DSN이 없으면 주입을 생략해 SDK가 꺼진 채 기동한다
+						(if $sentry_dsn == "" then
+							[]
+						 else
+							[
+								{"name": "SENTRY_DSN", "value": $sentry_dsn},
+								{"name": "SENTRY_RELEASE", "value": $sentry_release}
+							]
 						 end)
 					)
 					| .image = $image

@@ -67,6 +67,9 @@ dependencies {
 	implementation("software.amazon.awssdk:s3:2.46.7")
 	// S3 업로드 완료 이벤트를 SQS로 받아 AI 분석을 트리거한다
 	implementation("io.awspring.cloud:spring-cloud-aws-starter-sqs")
+	// 에러 모니터링. starter는 logback 연동을 포함하지 않아 따로 넣는다. error 로그가 Sentry 이벤트가 된다
+	implementation("io.sentry:sentry-spring-boot-4-starter:8.54.0")
+	implementation("io.sentry:sentry-logback:8.54.0")
 	testImplementation("org.springframework.security:spring-security-test")
 	compileOnly("org.projectlombok:lombok")
 	runtimeOnly("com.h2database:h2")
