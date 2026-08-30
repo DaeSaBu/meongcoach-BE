@@ -28,7 +28,6 @@ import com.daesabu.meongcoach.ai.domain.vo.AiTrial;
 import java.security.Principal;
 import java.time.LocalDateTime;
 import java.util.List;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
@@ -43,7 +42,6 @@ import org.springframework.test.web.servlet.MockMvc;
  */
 @WebMvcTest(AiController.class)
 @AutoConfigureRestDocs
-@DisplayName("AI API")
 class AiControllerTest {
 
 	// 컨트롤러 슬라이스에는 필터 체인이 없으므로 인증 주체를 요청에 직접 실어 보낸다
@@ -83,8 +81,7 @@ class AiControllerTest {
 	private AiTrialFinder aiTrialFinder;
 
 	@Test
-	@DisplayName("리포트 목록을 최신순으로 반환한다")
-	void findReportsReturnsReportsLatestFirst() throws Exception {
+	void 리포트_목록을_최신순으로_반환한다() throws Exception {
 		given(aiReportFinder.findReports(42L)).willReturn(List.of(
 				new AiReportResult(11L, "videos/training/42/second.mp4", "물체를 물고 달리는 행동 분석",
 						AiReportStatus.COMPLETED, LocalDateTime.of(2026, 8, 2, 10, 30, 0)),
@@ -122,8 +119,7 @@ class AiControllerTest {
 	}
 
 	@Test
-	@DisplayName("리포트가 없으면 빈 배열과 200을 반환한다")
-	void findReportsReturnsEmptyArrayWhenNoReportExists() throws Exception {
+	void 리포트가_없으면_빈_배열과_200을_반환한다() throws Exception {
 		given(aiReportFinder.findReports(42L)).willReturn(List.of());
 
 		mockMvc.perform(get("/api/ai/reports").principal(CURRENT_USER))
@@ -133,8 +129,7 @@ class AiControllerTest {
 	}
 
 	@Test
-	@DisplayName("인증 주체에서 읽은 사용자로 리포트 목록 조회를 위임한다")
-	void findReportsDelegatesWithCurrentUserId() throws Exception {
+	void 인증_주체에서_읽은_사용자로_리포트_목록_조회를_위임한다() throws Exception {
 		given(aiReportFinder.findReports(42L)).willReturn(List.of());
 
 		mockMvc.perform(get("/api/ai/reports").principal(CURRENT_USER))
@@ -144,16 +139,14 @@ class AiControllerTest {
 	}
 
 	@Test
-	@DisplayName("인증 정보가 없으면 401을 반환한다")
-	void findReportsReturnsUnauthorizedWhenNotAuthenticated() throws Exception {
+	void 인증_정보가_없으면_401을_반환한다() throws Exception {
 		mockMvc.perform(get("/api/ai/reports"))
 				.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
 	}
 
 	@Test
-	@DisplayName("리포트 하나를 본문과 함께 반환한다")
-	void findReportReturnsReportWithContent() throws Exception {
+	void 리포트_하나를_본문과_함께_반환한다() throws Exception {
 		given(aiReportFinder.findReport(42L, 10L)).willReturn(new AiReportDetailResult(10L,
 				"videos/training/42/first.mp4", "분리불안 징후 행동 분석", AiReportStatus.COMPLETED, REPORT_CONTENT,
 				LocalDateTime.of(2026, 8, 1, 9, 0, 0)));
@@ -207,8 +200,7 @@ class AiControllerTest {
 	}
 
 	@Test
-	@DisplayName("완료되지 않은 리포트 상세는 상태와 함께 본문을 null로 내린다")
-	void findReportReturnsNullContentForIncompleteReport() throws Exception {
+	void 완료되지_않은_리포트_상세는_상태와_함께_본문을_null로_내린다() throws Exception {
 		given(aiReportFinder.findReport(42L, 10L)).willReturn(new AiReportDetailResult(10L,
 				"videos/training/42/first.mp4", null, AiReportStatus.PENDING, null,
 				LocalDateTime.of(2026, 8, 1, 9, 0, 0)));
@@ -221,8 +213,7 @@ class AiControllerTest {
 	}
 
 	@Test
-	@DisplayName("인증 주체에서 읽은 사용자로 리포트 상세 조회를 위임한다")
-	void findReportDelegatesWithCurrentUserId() throws Exception {
+	void 인증_주체에서_읽은_사용자로_리포트_상세_조회를_위임한다() throws Exception {
 		given(aiReportFinder.findReport(42L, 10L)).willReturn(new AiReportDetailResult(10L,
 				"videos/training/42/first.mp4", "분리불안 징후 행동 분석", AiReportStatus.COMPLETED, REPORT_CONTENT,
 				LocalDateTime.of(2026, 8, 1, 9, 0, 0)));
@@ -234,8 +225,7 @@ class AiControllerTest {
 	}
 
 	@Test
-	@DisplayName("없거나 본인 소유가 아닌 리포트면 404와 에러 코드를 반환한다")
-	void findReportReturnsNotFoundWhenReportDoesNotExistOrIsNotOwned() throws Exception {
+	void 없거나_본인_소유가_아닌_리포트면_404와_에러_코드를_반환한다() throws Exception {
 		given(aiReportFinder.findReport(42L, 999L)).willThrow(new AiReportNotFoundException(999L));
 
 		mockMvc.perform(get("/api/ai/reports/{reportId}", 999L)
@@ -260,8 +250,7 @@ class AiControllerTest {
 	}
 
 	@Test
-	@DisplayName("체험 횟수가 남아 있으면 영상 업로드 URL을 발급한다")
-	void issueVideoUploadUrlReturnsUploadUrl() throws Exception {
+	void 체험_횟수가_남아_있으면_영상_업로드_URL을_발급한다() throws Exception {
 		given(aiVideoUploadUrlIssuer.issue(42L, "video/mp4", 10485760L)).willReturn(
 				new AiVideoUploadUrlResult(10L, VIDEO_UPLOAD_URL, VIDEO_PUBLIC_URL, VIDEO_OBJECT_KEY, 900L));
 
@@ -300,8 +289,7 @@ class AiControllerTest {
 	}
 
 	@Test
-	@DisplayName("인증 주체에서 읽은 사용자로 영상 업로드 URL 발급을 위임한다")
-	void issueVideoUploadUrlDelegatesWithCurrentUserId() throws Exception {
+	void 인증_주체에서_읽은_사용자로_영상_업로드_URL_발급을_위임한다() throws Exception {
 		given(aiVideoUploadUrlIssuer.issue(42L, "video/mp4", 10485760L)).willReturn(
 				new AiVideoUploadUrlResult(10L, VIDEO_UPLOAD_URL, VIDEO_PUBLIC_URL, VIDEO_OBJECT_KEY, 900L));
 
@@ -315,8 +303,7 @@ class AiControllerTest {
 	}
 
 	@Test
-	@DisplayName("체험 횟수를 소진했으면 403과 에러 코드를 반환한다")
-	void issueVideoUploadUrlReturnsForbiddenWhenTrialExhausted() throws Exception {
+	void 체험_횟수를_소진했으면_403과_에러_코드를_반환한다() throws Exception {
 		given(aiVideoUploadUrlIssuer.issue(42L, "video/mp4", 10485760L))
 				.willThrow(new AiReportTrialExceededException());
 
@@ -341,8 +328,7 @@ class AiControllerTest {
 	}
 
 	@Test
-	@DisplayName("영상 Content-Type이 비어 있으면 검증에 실패한다")
-	void issueVideoUploadUrlFailsWhenContentTypeIsBlank() throws Exception {
+	void 영상_contentType이_비어_있으면_검증에_실패한다() throws Exception {
 		mockMvc.perform(post("/api/ai/presigned-urls")
 						.principal(CURRENT_USER)
 						.contentType(MediaType.APPLICATION_JSON)
@@ -353,8 +339,7 @@ class AiControllerTest {
 	}
 
 	@Test
-	@DisplayName("영상 파일 크기가 없으면 검증에 실패한다")
-	void issueVideoUploadUrlFailsWhenFileSizeIsMissing() throws Exception {
+	void 영상_파일_크기가_없으면_검증에_실패한다() throws Exception {
 		mockMvc.perform(post("/api/ai/presigned-urls")
 						.principal(CURRENT_USER)
 						.contentType(MediaType.APPLICATION_JSON)
@@ -365,8 +350,7 @@ class AiControllerTest {
 	}
 
 	@Test
-	@DisplayName("인증 정보가 없으면 영상 업로드 URL 발급도 401을 반환한다")
-	void issueVideoUploadUrlReturnsUnauthorizedWhenNotAuthenticated() throws Exception {
+	void 인증_정보가_없으면_영상_업로드_URL_발급도_401을_반환한다() throws Exception {
 		mockMvc.perform(post("/api/ai/presigned-urls")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(VIDEO_ISSUE_REQUEST))
@@ -375,8 +359,7 @@ class AiControllerTest {
 	}
 
 	@Test
-	@DisplayName("체험 횟수 사용 현황을 반환한다")
-	void findTrialReturnsTrialUsage() throws Exception {
+	void 체험_횟수_사용_현황을_반환한다() throws Exception {
 		given(aiTrialFinder.findTrial(42L)).willReturn(new AiTrial(1));
 
 		mockMvc.perform(get("/api/ai/trial")
@@ -396,8 +379,7 @@ class AiControllerTest {
 	}
 
 	@Test
-	@DisplayName("인증 주체에서 읽은 사용자로 체험 횟수 조회를 위임한다")
-	void findTrialDelegatesWithCurrentUserId() throws Exception {
+	void 인증_주체에서_읽은_사용자로_체험_횟수_조회를_위임한다() throws Exception {
 		given(aiTrialFinder.findTrial(42L)).willReturn(new AiTrial(0));
 
 		mockMvc.perform(get("/api/ai/trial").principal(CURRENT_USER))
@@ -407,8 +389,7 @@ class AiControllerTest {
 	}
 
 	@Test
-	@DisplayName("인증 정보가 없으면 체험 횟수 조회도 401을 반환한다")
-	void findTrialReturnsUnauthorizedWhenNotAuthenticated() throws Exception {
+	void 인증_정보가_없으면_체험_횟수_조회도_401을_반환한다() throws Exception {
 		mockMvc.perform(get("/api/ai/trial"))
 				.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));

@@ -14,7 +14,6 @@ import com.daesabu.meongcoach.ai.domain.AiReportUploadCommand;
 import com.daesabu.meongcoach.ai.domain.exception.AiReportNotFoundException;
 import java.time.LocalDateTime;
 import java.util.List;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -28,7 +27,6 @@ import tools.jackson.databind.ObjectMapper;
  */
 @DataJpaTest
 @Import(AiReportQueryService.class)
-@DisplayName("AI 리포트 조회 서비스")
 class AiReportQueryServiceTest {
 
 	private static final Long USER_ID = 42L;
@@ -57,8 +55,7 @@ class AiReportQueryServiceTest {
 	}
 
 	@Test
-	@DisplayName("내 리포트만 최신순으로 반환한다")
-	void findReportsReturnsOwnReportsLatestFirst() {
+	void 내_리포트만_최신순으로_반환한다() {
 		persistReport(USER_ID, "videos/training/42/first.mp4", "첫 제목");
 		persistReport(USER_ID, "videos/training/42/second.mp4", "둘째 제목");
 		persistReport(OTHER_USER_ID, "videos/training/99/other.mp4", "남의 제목");
@@ -72,14 +69,12 @@ class AiReportQueryServiceTest {
 	}
 
 	@Test
-	@DisplayName("리포트가 없으면 빈 리스트를 반환한다")
-	void findReportsReturnsEmptyListWhenNoReportExists() {
+	void 리포트가_없으면_빈_리스트를_반환한다() {
 		assertThat(aiReportFinder.findReports(USER_ID)).isEmpty();
 	}
 
 	@Test
-	@DisplayName("목록 항목에 식별자·영상 객체 키·제목·상태·생성 시각을 담는다")
-	void findReportsMapsListFields() {
+	void 목록_항목에_식별자_영상_객체_키_제목_상태_생성_시각을_담는다() {
 		AiReport saved = persistReport(USER_ID, "videos/training/42/key.mp4", "분리불안 징후 행동 분석");
 
 		AiReportResult result = aiReportFinder.findReports(USER_ID).getFirst();
@@ -92,8 +87,7 @@ class AiReportQueryServiceTest {
 	}
 
 	@Test
-	@DisplayName("완료되지 않은 리포트도 목록에 상태와 함께 나온다")
-	void findReportsIncludesIncompleteReportsWithStatus() {
+	void 완료되지_않은_리포트도_목록에_상태와_함께_나온다() {
 		aiReportRepository.saveAndFlush(pendingReport(USER_ID, "videos/training/42/pending.mp4"));
 		persistAnalysisFailedReport(USER_ID, "videos/training/42/failed.mp4");
 
@@ -105,8 +99,7 @@ class AiReportQueryServiceTest {
 	}
 
 	@Test
-	@DisplayName("제목이 없는 리포트는 목록에서 제목이 null이다")
-	void findReportsAllowsNullTitle() {
+	void 제목이_없는_리포트는_목록에서_제목이_null이다() {
 		persistReport(USER_ID, "videos/training/42/key.mp4", null);
 
 		AiReportResult result = aiReportFinder.findReports(USER_ID).getFirst();
@@ -115,8 +108,7 @@ class AiReportQueryServiceTest {
 	}
 
 	@Test
-	@DisplayName("리포트 하나를 구조화된 본문까지 모든 필드와 함께 반환한다")
-	void findReportMapsAllDetailFields() {
+	void 리포트_하나를_구조화된_본문까지_모든_필드와_함께_반환한다() {
 		AiReport saved = persistReport(USER_ID, "videos/training/42/key.mp4", "분리불안 징후 행동 분석");
 
 		AiReportDetailResult detail = aiReportFinder.findReport(USER_ID, saved.getId());
@@ -136,8 +128,7 @@ class AiReportQueryServiceTest {
 	}
 
 	@Test
-	@DisplayName("완료되지 않은 리포트 상세는 본문이 null이고 상태를 담는다")
-	void findReportReturnsNullContentForIncompleteReport() {
+	void 완료되지_않은_리포트_상세는_본문이_null이고_상태를_담는다() {
 		AiReport saved = aiReportRepository.saveAndFlush(pendingReport(USER_ID, "videos/training/42/pending.mp4"));
 
 		AiReportDetailResult detail = aiReportFinder.findReport(USER_ID, saved.getId());
@@ -148,15 +139,13 @@ class AiReportQueryServiceTest {
 	}
 
 	@Test
-	@DisplayName("존재하지 않는 리포트면 예외를 던진다")
-	void findReportThrowsWhenReportDoesNotExist() {
+	void 존재하지_않는_리포트면_예외를_던진다() {
 		assertThatThrownBy(() -> aiReportFinder.findReport(USER_ID, 999L))
 				.isInstanceOf(AiReportNotFoundException.class);
 	}
 
 	@Test
-	@DisplayName("다른 사용자의 리포트면 존재해도 예외를 던진다")
-	void findReportThrowsForOtherUsersReport() {
+	void 다른_사용자의_리포트면_존재해도_예외를_던진다() {
 		AiReport saved = persistReport(OTHER_USER_ID, "videos/training/99/other.mp4", "남의 제목");
 
 		assertThatThrownBy(() -> aiReportFinder.findReport(USER_ID, saved.getId()))
@@ -164,8 +153,7 @@ class AiReportQueryServiceTest {
 	}
 
 	@Test
-	@DisplayName("업로드 만료 전의 UPLOADING 리포트는 목록에 UPLOADING으로 나온다")
-	void findReportsReturnsUploadingBeforeExpiry() {
+	void 업로드_만료_전의_UPLOADING_리포트는_목록에_UPLOADING으로_나온다() {
 		aiReportRepository.saveAndFlush(uploadingReport(USER_ID, "videos/training/42/uploading.mp4",
 				LocalDateTime.now().plusMinutes(15)));
 
@@ -175,8 +163,7 @@ class AiReportQueryServiceTest {
 	}
 
 	@Test
-	@DisplayName("업로드가 만료된 UPLOADING 리포트는 목록에 FAILED_UPLOAD로 나온다")
-	void findReportsDerivesFailedUploadAfterExpiry() {
+	void 업로드가_만료된_UPLOADING_리포트는_목록에_FAILED_UPLOAD로_나온다() {
 		aiReportRepository.saveAndFlush(uploadingReport(USER_ID, "videos/training/42/expired.mp4",
 				LocalDateTime.now().minusSeconds(1)));
 
@@ -186,8 +173,7 @@ class AiReportQueryServiceTest {
 	}
 
 	@Test
-	@DisplayName("업로드가 만료된 UPLOADING 리포트 상세는 FAILED_UPLOAD와 빈 본문을 담는다")
-	void findReportDerivesFailedUploadAfterExpiry() {
+	void 업로드가_만료된_UPLOADING_리포트_상세는_FAILED_UPLOAD와_빈_본문을_담는다() {
 		AiReport saved = aiReportRepository.saveAndFlush(uploadingReport(USER_ID, "videos/training/42/expired.mp4",
 				LocalDateTime.now().minusSeconds(1)));
 

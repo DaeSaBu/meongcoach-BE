@@ -9,7 +9,6 @@ import com.daesabu.meongcoach.training.domain.Topic;
 import com.daesabu.meongcoach.training.domain.TopicCreateCommand;
 import com.daesabu.meongcoach.training.domain.TrainingCategory;
 import com.daesabu.meongcoach.training.domain.exception.TopicNotFoundException;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -21,7 +20,6 @@ import org.springframework.context.annotation.Import;
  */
 @DataJpaTest
 @Import({TopicSelectService.class, TopicEntryService.class})
-@DisplayName("커리큘럼 화면 변경 서비스")
 class TopicSelectServiceTest {
 
 	private static final Long USER_ID = 1L;
@@ -35,8 +33,7 @@ class TopicSelectServiceTest {
 	private TestEntityManager entityManager;
 
 	@Test
-	@DisplayName("진입 기록이 없으면 새로 생성한다")
-	void selectTopicCreatesEntryWhenAbsent() {
+	void 진입_기록이_없으면_새로_생성한다() {
 		Topic topic = persistTopic("앉아", 1);
 		flushAndClear();
 
@@ -48,8 +45,7 @@ class TopicSelectServiceTest {
 	}
 
 	@Test
-	@DisplayName("같은 토픽을 다시 선택해도 진입 기록은 한 건만 유지된다")
-	void selectTopicKeepsSingleEntryOnReselect() {
+	void 같은_토픽을_다시_선택해도_진입_기록은_한_건만_유지된다() {
 		Topic topic = persistTopic("앉아", 1);
 		flushAndClear();
 
@@ -61,8 +57,7 @@ class TopicSelectServiceTest {
 	}
 
 	@Test
-	@DisplayName("다른 토픽을 선택하면 진입 기록의 토픽이 바뀐다")
-	void selectTopicMovesEntryToAnotherTopic() {
+	void 다른_토픽을_선택하면_진입_기록의_토픽이_바뀐다() {
 		Topic sit = persistTopic("앉아", 1);
 		Topic wait = persistTopic("기다려", 2);
 		flushAndClear();
@@ -76,15 +71,13 @@ class TopicSelectServiceTest {
 	}
 
 	@Test
-	@DisplayName("존재하지 않는 토픽이면 예외를 던진다")
-	void selectTopicThrowsWhenTopicDoesNotExist() {
+	void 존재하지_않는_토픽이면_예외를_던진다() {
 		assertThatThrownBy(() -> topicSelector.selectTopic(USER_ID, ABSENT_TOPIC_ID))
 				.isInstanceOf(TopicNotFoundException.class);
 	}
 
 	@Test
-	@DisplayName("존재하지 않는 토픽이면 진입 기록을 만들지 않는다")
-	void selectTopicDoesNotRecordEntryWhenTopicDoesNotExist() {
+	void 존재하지_않는_토픽이면_진입_기록을_만들지_않는다() {
 		assertThatThrownBy(() -> topicSelector.selectTopic(USER_ID, ABSENT_TOPIC_ID))
 				.isInstanceOf(TopicNotFoundException.class);
 

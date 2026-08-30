@@ -4,17 +4,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.daesabu.meongcoach.dog.application.provided.BreedInfo;
 import java.util.List;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-@DisplayName("강아지 견종 조회 서비스")
 class BreedFinderServiceTest {
 
 	private final BreedFinderService service = new BreedFinderService();
 
 	@Test
-	@DisplayName("모든 견종을 코드와 한글 라벨로 반환한다")
-	void findAllReturnsAllBreedsWithLabels() {
+	void 모든_견종을_코드와_한글_라벨로_반환한다() {
 		List<BreedInfo> breeds = service.findAll();
 
 		assertThat(breeds).containsExactly(

@@ -13,7 +13,6 @@ import com.daesabu.meongcoach.training.domain.Topic;
 import com.daesabu.meongcoach.training.domain.TopicCreateCommand;
 import com.daesabu.meongcoach.training.domain.TrainingCategory;
 import com.daesabu.meongcoach.training.domain.exception.LessonNotFoundException;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -25,7 +24,6 @@ import org.springframework.context.annotation.Import;
  */
 @DataJpaTest
 @Import({LessonCompleteService.class, LessonProgressService.class})
-@DisplayName("레슨 완료 서비스")
 class LessonCompleteServiceTest {
 
 	private static final Long USER_ID = 1L;
@@ -41,8 +39,7 @@ class LessonCompleteServiceTest {
 	private TestEntityManager entityManager;
 
 	@Test
-	@DisplayName("첫 완료 시 완료 횟수 1을 반환한다")
-	void completeLessonReturnsOneOnFirstCompletion() {
+	void 첫_완료_시_완료_횟수_1을_반환한다() {
 		Lesson lesson = persistLesson("앉아");
 		flushAndClear();
 
@@ -52,8 +49,7 @@ class LessonCompleteServiceTest {
 	}
 
 	@Test
-	@DisplayName("첫 완료 시 진행도가 생성되고 완료 횟수가 1이 된다")
-	void completeLessonCreatesProgressOnFirstCompletion() {
+	void 첫_완료_시_진행도가_생성되고_완료_횟수가_1이_된다() {
 		Lesson lesson = persistLesson("앉아");
 		flushAndClear();
 
@@ -65,8 +61,7 @@ class LessonCompleteServiceTest {
 	}
 
 	@Test
-	@DisplayName("반복 완료 시 호출할 때마다 완료 횟수가 1씩 증가한다")
-	void completeLessonIncreasesCompletedCountOnEachCall() {
+	void 반복_완료_시_호출할_때마다_완료_횟수가_1씩_증가한다() {
 		Lesson lesson = persistLesson("앉아");
 		flushAndClear();
 
@@ -80,8 +75,7 @@ class LessonCompleteServiceTest {
 	}
 
 	@Test
-	@DisplayName("다른 사용자의 완료 횟수에는 영향을 주지 않는다")
-	void completeLessonDoesNotAffectOtherUserProgress() {
+	void 다른_사용자의_완료_횟수에는_영향을_주지_않는다() {
 		Lesson lesson = persistLesson("앉아");
 		flushAndClear();
 		lessonCompleter.completeLesson(OTHER_USER_ID, lesson.getId());
@@ -96,15 +90,13 @@ class LessonCompleteServiceTest {
 	}
 
 	@Test
-	@DisplayName("존재하지 않는 레슨이면 예외를 던진다")
-	void completeLessonThrowsWhenLessonDoesNotExist() {
+	void 존재하지_않는_레슨이면_예외를_던진다() {
 		assertThatThrownBy(() -> lessonCompleter.completeLesson(USER_ID, ABSENT_LESSON_ID))
 				.isInstanceOf(LessonNotFoundException.class);
 	}
 
 	@Test
-	@DisplayName("존재하지 않는 레슨이면 진행도를 변경하지 않는다")
-	void completeLessonDoesNotChangeProgressWhenLessonDoesNotExist() {
+	void 존재하지_않는_레슨이면_진행도를_변경하지_않는다() {
 		Lesson lesson = persistLesson("앉아");
 		flushAndClear();
 		lessonCompleter.completeLesson(USER_ID, lesson.getId());

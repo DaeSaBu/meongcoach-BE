@@ -6,7 +6,6 @@ import com.daesabu.meongcoach.progress.application.required.UserSelectedTopicRep
 import com.daesabu.meongcoach.progress.domain.UserSelectedTopic;
 import java.time.LocalDateTime;
 import java.util.Optional;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -18,7 +17,6 @@ import org.springframework.context.annotation.Import;
  */
 @DataJpaTest
 @Import(TopicEntryService.class)
-@DisplayName("토픽 진입 서비스")
 class TopicEntryServiceTest {
 
 	private static final Long USER_ID = 1L;
@@ -37,16 +35,14 @@ class TopicEntryServiceTest {
 	private TestEntityManager entityManager;
 
 	@Test
-	@DisplayName("진입 기록이 없으면 빈 Optional을 반환한다")
-	void findLatestEnteredTopicIdReturnsEmptyWhenNoEntryExists() {
+	void 진입_기록이_없으면_빈_Optional을_반환한다() {
 		Optional<Long> topicId = topicEntryService.findLatestEnteredTopicId(USER_ID);
 
 		assertThat(topicId).isEmpty();
 	}
 
 	@Test
-	@DisplayName("두 토픽에 순차 진입하면 마지막에 진입한 토픽을 반환한다")
-	void findLatestEnteredTopicIdReturnsLastEnteredTopic() {
+	void 두_토픽에_순차_진입하면_마지막에_진입한_토픽을_반환한다() {
 		topicEntryService.enterTopic(USER_ID, 10L);
 		topicEntryService.enterTopic(USER_ID, 20L);
 		flushAndClear();
@@ -57,8 +53,7 @@ class TopicEntryServiceTest {
 	}
 
 	@Test
-	@DisplayName("이미 진입했던 토픽에 다시 진입하면 그 토픽이 가장 최신 진입 토픽이 된다")
-	void findLatestEnteredTopicIdReturnsReenteredTopic() {
+	void 이미_진입했던_토픽에_다시_진입하면_그_토픽이_가장_최신_진입_토픽이_된다() {
 		topicEntryService.enterTopic(USER_ID, 10L);
 		topicEntryService.enterTopic(USER_ID, 20L);
 		flushAndClear();
@@ -70,8 +65,7 @@ class TopicEntryServiceTest {
 	}
 
 	@Test
-	@DisplayName("다른 사용자의 진입 기록은 반환하지 않는다")
-	void findLatestEnteredTopicIdExcludesEntryOfOtherUsers() {
+	void 다른_사용자의_진입_기록은_반환하지_않는다() {
 		topicEntryService.enterTopic(OTHER_USER_ID, 10L);
 		flushAndClear();
 
@@ -81,8 +75,7 @@ class TopicEntryServiceTest {
 	}
 
 	@Test
-	@DisplayName("진입 기록이 없으면 새로 생성한다")
-	void enterTopicCreatesEntryWhenAbsent() {
+	void 진입_기록이_없으면_새로_생성한다() {
 		topicEntryService.enterTopic(USER_ID, 10L);
 
 		flushAndClear();
@@ -91,8 +84,7 @@ class TopicEntryServiceTest {
 	}
 
 	@Test
-	@DisplayName("여러 토픽에 진입해도 진입 기록은 한 건만 유지된다")
-	void enterTopicKeepsSingleEntryRow() {
+	void 여러_토픽에_진입해도_진입_기록은_한_건만_유지된다() {
 		topicEntryService.enterTopic(USER_ID, 10L);
 		topicEntryService.enterTopic(USER_ID, 20L);
 		topicEntryService.enterTopic(USER_ID, 10L);
@@ -102,8 +94,7 @@ class TopicEntryServiceTest {
 	}
 
 	@Test
-	@DisplayName("다른 토픽에 진입하면 수정 시각이 갱신된다")
-	void enterTopicRenewsUpdatedAtWhenTopicChanges() {
+	void 다른_토픽에_진입하면_수정_시각이_갱신된다() {
 		topicEntryService.enterTopic(USER_ID, 10L);
 		entityManager.flush();
 		backdateUpdatedAt(USER_ID, BACKDATED);
@@ -116,8 +107,7 @@ class TopicEntryServiceTest {
 	}
 
 	@Test
-	@DisplayName("같은 토픽에 다시 진입하면 아무것도 갱신하지 않는다")
-	void enterTopicUpdatesNothingWhenTopicIsUnchanged() {
+	void 같은_토픽에_다시_진입하면_아무것도_갱신하지_않는다() {
 		topicEntryService.enterTopic(USER_ID, 10L);
 		entityManager.flush();
 		backdateUpdatedAt(USER_ID, BACKDATED);

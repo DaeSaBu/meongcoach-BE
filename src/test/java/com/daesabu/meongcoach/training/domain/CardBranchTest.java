@@ -2,15 +2,12 @@ package com.daesabu.meongcoach.training.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-@DisplayName("CardBranch 도메인")
 class CardBranchTest {
 
 	@Test
-	@DisplayName("생성하면 카드와 다음 카드 ID가 설정된다")
-	void createSetsCardAndNextCardId() {
+	void 생성하면_카드와_다음_카드_ID가_설정된다() {
 		TrainingCategory category = TrainingCategory.create("기본 교육", 1, null, null);
 		Topic topic = Topic.create(category, new TopicCreateCommand("산책 교육", 1, null, null, null));
 		Curriculum curriculum = Curriculum.create(topic, new CurriculumCreateCommand("리드줄 적응", 1, null, null));

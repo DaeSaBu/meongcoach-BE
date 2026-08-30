@@ -14,10 +14,8 @@ import com.daesabu.meongcoach.media.domain.vo.ImageObjectKey;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-@DisplayName("이미지 업로드 URL 발급 서비스")
 class ImageUploadUrlIssueServiceTest {
 
 	private RecordingImageStorage imageStorage;
@@ -30,8 +28,7 @@ class ImageUploadUrlIssueServiceTest {
 	}
 
 	@Test
-	@DisplayName("업로드 대상·사용자·이미지 형식으로 만든 객체 키를 스토리지에 넘긴다")
-	void issuePassesGeneratedKeyToStorage() {
+	void 업로드_대상_사용자_이미지_형식으로_만든_객체_키를_스토리지에_넘긴다() {
 		service.issue(7L, "DOG_PROFILE", "image/png");
 
 		// 키 포맷 자체는 ImageObjectKeyTest가 검증한다. 여기서는 변환한 값이 그대로 전달되는지만 본다
@@ -41,16 +38,14 @@ class ImageUploadUrlIssueServiceTest {
 	}
 
 	@Test
-	@DisplayName("요청한 Content-Type 그대로 스토리지에 전달한다")
-	void issuePassesContentTypeToStorage() {
+	void 요청한_contentType_그대로_스토리지에_전달한다() {
 		service.issue(7L, "USER_PROFILE", "image/webp");
 
 		assertThat(imageStorage.lastContentType()).isEqualTo("image/webp");
 	}
 
 	@Test
-	@DisplayName("스토리지가 발급한 URL을 결과로 반환한다")
-	void issueReturnsStorageUrls() {
+	void 스토리지가_발급한_URL을_결과로_반환한다() {
 		ImageUploadUrlResult result = service.issue(7L, "USER_PROFILE", "image/jpeg");
 
 		assertThat(result.uploadUrl()).isEqualTo("https://storage.test/upload");
@@ -59,16 +54,14 @@ class ImageUploadUrlIssueServiceTest {
 	}
 
 	@Test
-	@DisplayName("지원하지 않는 업로드 대상이면 발급에 실패한다")
-	void issueFailsWhenTargetIsInvalid() {
+	void 지원하지_않는_업로드_대상이면_발급에_실패한다() {
 		assertThatThrownBy(() -> service.issue(7L, "BANNER", "image/jpeg"))
 				.isInstanceOf(InvalidUploadTargetException.class);
 		assertThat(imageStorage.keys).isEmpty();
 	}
 
 	@Test
-	@DisplayName("지원하지 않는 이미지 형식이면 발급에 실패한다")
-	void issueFailsWhenContentTypeIsUnsupported() {
+	void 지원하지_않는_이미지_형식이면_발급에_실패한다() {
 		assertThatThrownBy(() -> service.issue(7L, "USER_PROFILE", "image/gif"))
 				.isInstanceOf(UnsupportedImageTypeException.class);
 		assertThat(imageStorage.keys).isEmpty();

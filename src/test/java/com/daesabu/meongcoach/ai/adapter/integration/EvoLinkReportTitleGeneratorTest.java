@@ -15,7 +15,6 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
@@ -27,7 +26,6 @@ import tools.jackson.databind.ObjectMapper;
 /**
  * 모델 호출은 MockRestServiceServer로 가로채고, 제목 생성 요청 구성과 {"title": ...} 응답 파싱을 검증한다.
  */
-@DisplayName("EvoLink 리포트 제목 생성 어댑터")
 class EvoLinkReportTitleGeneratorTest {
 
 	private static final String BASE_URL = "https://api.evolink.test";
@@ -70,8 +68,7 @@ class EvoLinkReportTitleGeneratorTest {
 	}
 
 	@Test
-	@DisplayName("응답 JSON의 title을 제목으로 반환한다")
-	void generateTitleReturnsTitleFromJsonResponse() {
+	void 응답_JSON의_title을_제목으로_반환한다() {
 		givenModelRespondsTitle("물체를 물고 달리는 행동 분석");
 
 		String title = generator.generateTitle(REPORT_JSON);
@@ -80,8 +77,7 @@ class EvoLinkReportTitleGeneratorTest {
 	}
 
 	@Test
-	@DisplayName("설정된 모델·최대 토큰·온도·사고 모드로 요청한다")
-	void generateTitleUsesConfiguredModelSettings() {
+	void 설정된_모델_최대_토큰_온도_사고_모드로_요청한다() {
 		expectChatRequest()
 				.andExpect(jsonPath("$.model").value(MODEL))
 				.andExpect(jsonPath("$.max_tokens").value(4096))
@@ -96,8 +92,7 @@ class EvoLinkReportTitleGeneratorTest {
 	}
 
 	@Test
-	@DisplayName("제목 구조의 json_schema를 strict로 지정한다")
-	void generateTitleRequestsStrictJsonSchemaResponseFormat() {
+	void 제목_구조의_json_schema를_strict로_지정한다() {
 		expectChatRequest()
 				.andExpect(jsonPath("$.response_format.type").value("json_schema"))
 				.andExpect(jsonPath("$.response_format.json_schema.name").value("report_title"))
@@ -112,8 +107,7 @@ class EvoLinkReportTitleGeneratorTest {
 	}
 
 	@Test
-	@DisplayName("영상 없이 텍스트 메시지만 보낸다")
-	void generateTitleSendsTextOnlyMessage() {
+	void 영상_없이_텍스트_메시지만_보낸다() {
 		expectChatRequest()
 				.andExpect(jsonPath("$.messages[1].role").value("user"))
 				.andExpect(jsonPath("$.messages[1].content", containsString("물체를 물고 달려요")))
@@ -126,8 +120,7 @@ class EvoLinkReportTitleGeneratorTest {
 	}
 
 	@Test
-	@DisplayName("사용자 프롬프트에 리포트 JSON을 치환해 보낸다")
-	void generateTitleInjectsReportIntoUserPrompt() {
+	void 사용자_프롬프트에_리포트_JSON을_치환해_보낸다() {
 		expectChatRequest()
 				.andExpect(jsonPath("$.messages[1].content", not(containsString("{{report}}"))))
 				.andRespond(withSuccess(chatResponseJson("{\"title\":\"물체를 물고 달리는 행동 분석\"}"),
@@ -139,8 +132,7 @@ class EvoLinkReportTitleGeneratorTest {
 	}
 
 	@Test
-	@DisplayName("제목 지시를 system 메시지로 보낸다")
-	void generateTitleSendsInstructionAsSystemMessage() {
+	void 제목_지시를_system_메시지로_보낸다() {
 		expectChatRequest()
 				.andExpect(jsonPath("$.messages[0].role").value("system"))
 				.andExpect(jsonPath("$.messages[0].content", containsString("제목")))
@@ -153,8 +145,7 @@ class EvoLinkReportTitleGeneratorTest {
 	}
 
 	@Test
-	@DisplayName("제목 앞뒤 공백은 제거한다")
-	void generateTitleStripsSurroundingWhitespace() {
+	void 제목_앞뒤_공백은_제거한다() {
 		givenModelRespondsTitle("  물체를 물고 달리는 행동 분석  ");
 
 		String title = generator.generateTitle(REPORT_JSON);
@@ -163,8 +154,7 @@ class EvoLinkReportTitleGeneratorTest {
 	}
 
 	@Test
-	@DisplayName("json_schema strict를 어긴 평문 응답이면 제목 생성에 실패한다")
-	void generateTitleFailsWhenResponseIsNotJson() {
+	void json_schema_strict를_어긴_평문_응답이면_제목_생성에_실패한다() {
 		givenModelRespondsRaw("물체를 물고 달리는 행동 분석");
 
 		assertThatThrownBy(() -> generator.generateTitle(REPORT_JSON))
@@ -172,8 +162,7 @@ class EvoLinkReportTitleGeneratorTest {
 	}
 
 	@Test
-	@DisplayName("응답에 title 항목이 없으면 제목 생성에 실패한다")
-	void generateTitleFailsWhenTitleFieldMissing() {
+	void 응답에_title_항목이_없으면_제목_생성에_실패한다() {
 		givenModelRespondsRaw("{\"summary\":\"제목이 아닌 필드\"}");
 
 		assertThatThrownBy(() -> generator.generateTitle(REPORT_JSON))
@@ -181,8 +170,7 @@ class EvoLinkReportTitleGeneratorTest {
 	}
 
 	@Test
-	@DisplayName("모델 API가 오류를 응답하면 ReportTitleGenerationFailedException으로 실패한다")
-	void generateTitleTranslatesHttpErrorToDomainException() {
+	void 모델_API가_오류를_응답하면_ReportTitleGenerationFailedException으로_실패한다() {
 		server.expect(requestTo(CHAT_URL)).andRespond(withServerError());
 
 		assertThatThrownBy(() -> generator.generateTitle(REPORT_JSON))
@@ -190,8 +178,7 @@ class EvoLinkReportTitleGeneratorTest {
 	}
 
 	@Test
-	@DisplayName("제목이 비어 있으면 제목 생성에 실패한다")
-	void generateTitleFailsWhenTitleIsBlank() {
+	void 제목이_비어_있으면_제목_생성에_실패한다() {
 		givenModelRespondsTitle(" ");
 
 		assertThatThrownBy(() -> generator.generateTitle(REPORT_JSON))

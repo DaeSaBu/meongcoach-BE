@@ -23,7 +23,6 @@ import jakarta.persistence.EntityManagerFactory;
 import java.util.List;
 import org.hibernate.SessionFactory;
 import org.hibernate.stat.Statistics;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -37,7 +36,6 @@ import org.springframework.test.context.TestPropertySource;
 @DataJpaTest
 @Import(LessonQueryService.class)
 @TestPropertySource(properties = "spring.jpa.properties.hibernate.generate_statistics=true")
-@DisplayName("레슨 카드 조회 서비스")
 class LessonQueryServiceTest {
 
 	@Autowired
@@ -50,8 +48,7 @@ class LessonQueryServiceTest {
 	private EntityManagerFactory entityManagerFactory;
 
 	@Test
-	@DisplayName("카드를 정렬 순서 오름차순으로 반환한다")
-	void findCardsOrdersCardsBySortOrder() {
+	void 카드를_정렬_순서_오름차순으로_반환한다() {
 		Lesson lesson = persistLesson("기본 교육");
 		persistCard(lesson, "나중 카드 지시문", 2);
 		persistCard(lesson, "먼저 카드 지시문", 1);
@@ -64,8 +61,7 @@ class LessonQueryServiceTest {
 	}
 
 	@Test
-	@DisplayName("카드 타이틀을 반환한다")
-	void findCardsReturnsCardTitle() {
+	void 카드_타이틀을_반환한다() {
 		Lesson lesson = persistLesson("기본 교육");
 		persistCard(lesson, "앉아 준비", "지시문", 1);
 		flushAndClear();
@@ -76,8 +72,7 @@ class LessonQueryServiceTest {
 	}
 
 	@Test
-	@DisplayName("카드 안의 미디어를 정렬 순서 오름차순으로 반환한다")
-	void findCardsOrdersCardMediaBySortOrderWithinCard() {
+	void 카드_안의_미디어를_정렬_순서_오름차순으로_반환한다() {
 		Lesson lesson = persistLesson("기본 교육");
 		Card card = persistCard(lesson, "지시문", 1);
 		persistCardMedia(card, MediaType.IMAGE, "https://cdn.example.com/3.png", 3);
@@ -94,8 +89,7 @@ class LessonQueryServiceTest {
 	}
 
 	@Test
-	@DisplayName("미디어를 소속 카드에 담아 반환한다")
-	void findCardsGroupsCardMediaIntoOwningCard() {
+	void 미디어를_소속_카드에_담아_반환한다() {
 		Lesson lesson = persistLesson("기본 교육");
 		Card first = persistCard(lesson, "첫째 지시문", 1);
 		Card second = persistCard(lesson, "둘째 지시문", 2);
@@ -114,8 +108,7 @@ class LessonQueryServiceTest {
 	}
 
 	@Test
-	@DisplayName("미디어 유형과 소속 카드 id를 그대로 반환한다")
-	void findCardsReturnsMediaTypeAndOwningCardId() {
+	void 미디어_유형과_소속_카드_id를_그대로_반환한다() {
 		Lesson lesson = persistLesson("기본 교육");
 		Card card = persistCard(lesson, "지시문", 1);
 		persistCardMedia(card, MediaType.VIDEO, "https://cdn.example.com/1.mp4", 1);
@@ -129,8 +122,7 @@ class LessonQueryServiceTest {
 	}
 
 	@Test
-	@DisplayName("미디어가 없는 카드는 빈 미디어 목록을 갖는다")
-	void findCardsReturnsEmptyCardMediaWhenCardHasNoMedia() {
+	void 미디어가_없는_카드는_빈_미디어_목록을_갖는다() {
 		Lesson lesson = persistLesson("기본 교육");
 		persistCard(lesson, "미디어 없는 지시문", 1);
 		Card other = persistCard(lesson, "미디어 있는 지시문", 2);
@@ -144,8 +136,7 @@ class LessonQueryServiceTest {
 	}
 
 	@Test
-	@DisplayName("다른 레슨의 카드는 조회되지 않는다")
-	void findCardsExcludesCardsOfOtherLessons() {
+	void 다른_레슨의_카드는_조회되지_않는다() {
 		Lesson lesson = persistLesson("기본 교육");
 		Lesson other = persistLesson("심화 교육");
 		persistCard(lesson, "대상 지시문", 1);
@@ -158,8 +149,7 @@ class LessonQueryServiceTest {
 	}
 
 	@Test
-	@DisplayName("카드가 없는 레슨은 빈 목록을 반환한다")
-	void findCardsReturnsEmptyListWhenLessonHasNoCard() {
+	void 카드가_없는_레슨은_빈_목록을_반환한다() {
 		Lesson lesson = persistLesson("기본 교육");
 		flushAndClear();
 
@@ -169,8 +159,7 @@ class LessonQueryServiceTest {
 	}
 
 	@Test
-	@DisplayName("존재하지 않는 레슨이면 예외를 던진다")
-	void findCardsThrowsExceptionWhenLessonDoesNotExist() {
+	void 존재하지_않는_레슨이면_예외를_던진다() {
 		flushAndClear();
 
 		assertThatThrownBy(() -> lessonFinder.findCards(-1L))
@@ -178,8 +167,7 @@ class LessonQueryServiceTest {
 	}
 
 	@Test
-	@DisplayName("카드 수와 무관하게 세 번의 쿼리로 조회한다")
-	void findCardsExecutesThreeQueries() {
+	void 카드_수와_무관하게_세_번의_쿼리로_조회한다() {
 		Lesson lesson = persistLesson("기본 교육");
 		Card first = persistCard(lesson, "첫째 지시문", 1);
 		Card second = persistCard(lesson, "둘째 지시문", 2);

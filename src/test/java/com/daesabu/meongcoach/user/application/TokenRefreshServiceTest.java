@@ -9,15 +9,12 @@ import com.daesabu.meongcoach.user.application.provided.RegisteredUserChecker;
 import com.daesabu.meongcoach.user.application.required.TokenProvider;
 import com.daesabu.meongcoach.user.domain.exception.InvalidRefreshTokenException;
 import java.util.Optional;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-@DisplayName("토큰 재발급 서비스")
 class TokenRefreshServiceTest {
 
 	@Test
-	@DisplayName("리프레시 토큰의 회원으로 새 토큰을 발급한다")
-	void refreshIssuesNewTokenForTokenOwner() {
+	void 리프레시_토큰의_회원으로_새_토큰을_발급한다() {
 		TokenRefreshService service = new TokenRefreshService(new StubTokenProvider(7L), checker(true));
 
 		AuthToken token = service.refresh("refresh-token");
@@ -27,8 +24,7 @@ class TokenRefreshServiceTest {
 	}
 
 	@Test
-	@DisplayName("유효하지 않은 리프레시 토큰이면 예외를 그대로 전파한다")
-	void refreshPropagatesInvalidTokenException() {
+	void 유효하지_않은_리프레시_토큰이면_예외를_그대로_전파한다() {
 		TokenRefreshService service = new TokenRefreshService(new StubTokenProvider(null), checker(true));
 
 		assertThatThrownBy(() -> service.refresh("invalid"))
@@ -36,8 +32,7 @@ class TokenRefreshServiceTest {
 	}
 
 	@Test
-	@DisplayName("등록되지 않은 회원이면 재발급하지 않는다")
-	void refreshRejectsUnregisteredUser() {
+	void 등록되지_않은_회원이면_재발급하지_않는다() {
 		TokenRefreshService service = new TokenRefreshService(new StubTokenProvider(7L), checker(false));
 
 		assertThatThrownBy(() -> service.refresh("refresh-token"))

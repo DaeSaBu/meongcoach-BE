@@ -8,10 +8,8 @@ import com.daesabu.meongcoach.onboarding.application.provided.OnboardingImageUpl
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-@DisplayName("온보딩 이미지 업로드 URL 발급 서비스")
 class OnboardingImageUploadUrlServiceTest {
 
 	private static final String UPLOAD_URL = "https://storage.test/upload?X-Amz-Signature=abc";
@@ -27,16 +25,14 @@ class OnboardingImageUploadUrlServiceTest {
 	}
 
 	@Test
-	@DisplayName("요청한 사용자·대상·형식 그대로 media에 발급을 위임한다")
-	void issueDelegatesToMedia() {
+	void 요청한_사용자_대상_형식_그대로_media에_발급을_위임한다() {
 		service.issue(7L, "USER_PROFILE", "image/jpeg");
 
 		assertThat(imageUploadUrlIssuer.issuedRequests).containsExactly("7:USER_PROFILE:image/jpeg");
 	}
 
 	@Test
-	@DisplayName("media 발급 결과를 온보딩 결과로 재매핑해 반환한다")
-	void issueRemapsMediaResult() {
+	void media_발급_결과를_온보딩_결과로_재매핑해_반환한다() {
 		OnboardingImageUploadUrlResult result = service.issue(7L, "DOG_PROFILE", "image/png");
 
 		assertThat(result.uploadUrl()).isEqualTo(UPLOAD_URL);

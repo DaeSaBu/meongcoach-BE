@@ -40,7 +40,6 @@ import java.security.Principal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -271,8 +270,7 @@ class DogControllerTest {
 	}
 
 	@Test
-	@DisplayName("보유 강아지 목록을 등록 순으로 반환한다")
-	void findDogsReturnsDogsInRegistrationOrder() throws Exception {
+	void 보유_강아지_목록을_등록_순으로_반환한다() throws Exception {
 		Dog selected = selectedDog(10L);
 		Dog unselected = unselectedDog(11L);
 		given(dogProfileFinder.findDogs(42L)).willReturn(List.of(selected, unselected));
@@ -326,8 +324,7 @@ class DogControllerTest {
 	}
 
 	@Test
-	@DisplayName("강아지가 없으면 빈 배열과 200을 반환한다")
-	void findDogsReturnsEmptyArrayWhenNoDogExists() throws Exception {
+	void 강아지가_없으면_빈_배열과_200을_반환한다() throws Exception {
 		given(dogProfileFinder.findDogs(42L)).willReturn(List.of());
 
 		mockMvc.perform(get("/api/dogs").principal(CURRENT_USER))
@@ -337,8 +334,7 @@ class DogControllerTest {
 	}
 
 	@Test
-	@DisplayName("인증 주체에서 읽은 사용자로 목록 조회를 위임한다")
-	void findDogsDelegatesWithCurrentUserId() throws Exception {
+	void 인증_주체에서_읽은_사용자로_목록_조회를_위임한다() throws Exception {
 		given(dogProfileFinder.findDogs(42L)).willReturn(List.of());
 
 		mockMvc.perform(get("/api/dogs").principal(CURRENT_USER))
@@ -348,16 +344,14 @@ class DogControllerTest {
 	}
 
 	@Test
-	@DisplayName("인증 정보가 없으면 목록 조회는 401을 반환한다")
-	void findDogsReturnsUnauthorizedWhenNotAuthenticated() throws Exception {
+	void 인증_정보가_없으면_목록_조회는_401을_반환한다() throws Exception {
 		mockMvc.perform(get("/api/dogs"))
 				.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
 	}
 
 	@Test
-	@DisplayName("강아지 한 마리의 프로필을 반환한다")
-	void findDogReturnsDogProfile() throws Exception {
+	void 강아지_한_마리의_프로필을_반환한다() throws Exception {
 		given(dogProfileFinder.findDog(42L, 10L)).willReturn(selectedDog(10L));
 
 		mockMvc.perform(get("/api/dogs/{dogId}", 10L)
@@ -405,8 +399,7 @@ class DogControllerTest {
 	}
 
 	@Test
-	@DisplayName("인증 주체에서 읽은 사용자와 경로의 강아지 ID로 단건 조회를 위임한다")
-	void findDogDelegatesWithCurrentUserIdAndDogId() throws Exception {
+	void 인증_주체에서_읽은_사용자와_경로의_강아지_ID로_단건_조회를_위임한다() throws Exception {
 		given(dogProfileFinder.findDog(42L, 10L)).willReturn(selectedDog(10L));
 
 		mockMvc.perform(get("/api/dogs/{dogId}", 10L).principal(CURRENT_USER))
@@ -416,8 +409,7 @@ class DogControllerTest {
 	}
 
 	@Test
-	@DisplayName("없거나 본인 소유가 아닌 강아지면 404와 에러 코드를 반환한다")
-	void findDogReturnsNotFoundWhenDogDoesNotExistOrIsNotOwned() throws Exception {
+	void 없거나_본인_소유가_아닌_강아지면_404와_에러_코드를_반환한다() throws Exception {
 		given(dogProfileFinder.findDog(42L, 999L)).willThrow(new DogNotFoundException(999L));
 
 		mockMvc.perform(get("/api/dogs/{dogId}", 999L)
@@ -443,16 +435,14 @@ class DogControllerTest {
 	}
 
 	@Test
-	@DisplayName("인증 정보가 없으면 단건 조회는 401을 반환한다")
-	void findDogReturnsUnauthorizedWhenNotAuthenticated() throws Exception {
+	void 인증_정보가_없으면_단건_조회는_401을_반환한다() throws Exception {
 		mockMvc.perform(get("/api/dogs/{dogId}", 10L))
 				.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
 	}
 
 	@Test
-	@DisplayName("선택된 강아지의 id와 프로필 이미지 URL을 반환한다")
-	void findProfileImageReturnsImageUrl() throws Exception {
+	void 선택된_강아지의_id와_프로필_이미지_URL을_반환한다() throws Exception {
 		given(dogProfileFinder.findSelectedDog(42L)).willReturn(selectedDog(10L));
 
 		mockMvc.perform(get("/api/dogs/profile/image")
@@ -471,8 +461,7 @@ class DogControllerTest {
 	}
 
 	@Test
-	@DisplayName("로그인한 사용자 ID로 선택된 강아지의 프로필 이미지를 조회한다")
-	void findProfileImageWithCurrentUserId() throws Exception {
+	void 로그인한_사용자_ID로_선택된_강아지의_프로필_이미지를_조회한다() throws Exception {
 		given(dogProfileFinder.findSelectedDog(42L)).willReturn(selectedDog(10L));
 
 		mockMvc.perform(get("/api/dogs/profile/image").principal(CURRENT_USER))
@@ -482,8 +471,7 @@ class DogControllerTest {
 	}
 
 	@Test
-	@DisplayName("프로필 이미지가 없는 강아지는 빈 문자열과 200을 반환한다")
-	void findProfileImageReturnsEmptyStringWhenImageIsAbsent() throws Exception {
+	void 프로필_이미지가_없는_강아지는_빈_문자열과_200을_반환한다() throws Exception {
 		given(dogProfileFinder.findSelectedDog(42L)).willReturn(selectedDogWithoutImage(10L));
 
 		mockMvc.perform(get("/api/dogs/profile/image").principal(CURRENT_USER))
@@ -493,8 +481,7 @@ class DogControllerTest {
 	}
 
 	@Test
-	@DisplayName("선택된 강아지가 없으면 404와 에러 코드를 반환한다")
-	void findProfileImageReturnsNotFoundWhenNoDogIsSelected() throws Exception {
+	void 선택된_강아지가_없으면_404와_에러_코드를_반환한다() throws Exception {
 		given(dogProfileFinder.findSelectedDog(42L)).willThrow(new DogNotFoundException());
 
 		mockMvc.perform(get("/api/dogs/profile/image")
@@ -517,8 +504,7 @@ class DogControllerTest {
 	}
 
 	@Test
-	@DisplayName("인증 정보가 없으면 프로필 이미지 조회는 401을 반환한다")
-	void findProfileImageReturnsUnauthorizedWhenNotAuthenticated() throws Exception {
+	void 인증_정보가_없으면_프로필_이미지_조회는_401을_반환한다() throws Exception {
 		mockMvc.perform(get("/api/dogs/profile/image"))
 				.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));

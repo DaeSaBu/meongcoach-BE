@@ -15,7 +15,6 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -28,7 +27,6 @@ import tools.jackson.databind.ObjectMapper;
 /**
  * HTTP 호출은 MockRestServiceServer로 가로채고, 요청 구성(엔드포인트·인증)과 응답 검증 규칙을 확인한다.
  */
-@DisplayName("EvoLink 채팅 클라이언트")
 class EvoLinkChatClientTest {
 
 	private static final String BASE_URL = "https://api.evolink.test";
@@ -64,8 +62,7 @@ class EvoLinkChatClientTest {
 	}
 
 	@Test
-	@DisplayName("chat/completions 엔드포인트에 Bearer 인증으로 POST 요청한다")
-	void completePostsToChatCompletionsWithBearerAuth() {
+	void chat_completions_엔드포인트에_Bearer_인증으로_POST_요청한다() {
 		server.expect(requestTo(CHAT_URL))
 				.andExpect(method(HttpMethod.POST))
 				.andExpect(header("Authorization", "Bearer " + API_KEY))
@@ -78,8 +75,7 @@ class EvoLinkChatClientTest {
 	}
 
 	@Test
-	@DisplayName("choices가 없는 응답이면 실패한다")
-	void completeFailsWhenChoicesMissing() {
+	void choices가_없는_응답이면_실패한다() {
 		server.expect(requestTo(CHAT_URL))
 				.andRespond(withSuccess("{\"id\":\"test-request-id\",\"choices\":[]}", MediaType.APPLICATION_JSON));
 
@@ -88,8 +84,7 @@ class EvoLinkChatClientTest {
 	}
 
 	@Test
-	@DisplayName("콘텐츠 검토로 차단된 응답이면 실패한다")
-	void completeFailsWhenContentFiltered() {
+	void 콘텐츠_검토로_차단된_응답이면_실패한다() {
 		server.expect(requestTo(CHAT_URL))
 				.andRespond(withSuccess(chatResponseJson("일부 내용", "content_filter"), MediaType.APPLICATION_JSON));
 
@@ -99,8 +94,7 @@ class EvoLinkChatClientTest {
 	}
 
 	@Test
-	@DisplayName("max_tokens 상한에 걸려 잘린 응답이면 실패한다")
-	void completeFailsWhenTruncatedByMaxTokens() {
+	void max_tokens_상한에_걸려_잘린_응답이면_실패한다() {
 		server.expect(requestTo(CHAT_URL))
 				.andRespond(withSuccess(chatResponseJson("잘린 내용", "length"), MediaType.APPLICATION_JSON));
 
@@ -110,8 +104,7 @@ class EvoLinkChatClientTest {
 	}
 
 	@Test
-	@DisplayName("응답 내용이 비어 있으면 실패한다")
-	void completeFailsWhenContentIsBlank() {
+	void 응답_내용이_비어_있으면_실패한다() {
 		server.expect(requestTo(CHAT_URL))
 				.andRespond(withSuccess(chatResponseJson(" ", "stop"), MediaType.APPLICATION_JSON));
 
@@ -120,8 +113,7 @@ class EvoLinkChatClientTest {
 	}
 
 	@Test
-	@DisplayName("4xx 응답은 RestClient 예외를 그대로 전파한다")
-	void completePropagatesClientError() {
+	void 응답이_4xx면_RestClient_예외를_그대로_전파한다() {
 		// 재시도·폴백 없이 전파하고, 삼킬지는 호출부(AiReportGenerateService)가 정한다
 		server.expect(requestTo(CHAT_URL))
 				.andRespond(withStatus(HttpStatus.UNAUTHORIZED));
@@ -131,8 +123,7 @@ class EvoLinkChatClientTest {
 	}
 
 	@Test
-	@DisplayName("5xx 응답은 RestClient 예외를 그대로 전파한다")
-	void completePropagatesServerError() {
+	void 응답이_5xx면_RestClient_예외를_그대로_전파한다() {
 		server.expect(requestTo(CHAT_URL))
 				.andRespond(withServerError());
 

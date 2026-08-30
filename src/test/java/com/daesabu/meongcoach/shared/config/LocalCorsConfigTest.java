@@ -5,7 +5,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -17,7 +16,6 @@ import org.springframework.test.web.servlet.MockMvc;
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles({"local", "test"})
-@DisplayName("로컬 CORS 구성")
 class LocalCorsConfigTest {
 
 	private static final String ORIGIN = "http://127.0.0.1:8083";
@@ -26,8 +24,7 @@ class LocalCorsConfigTest {
 	private MockMvc mockMvc;
 
 	@Test
-	@DisplayName("로컬 웹 프론트엔드의 preflight 요청을 허용한다")
-	void preflightIsPermitted() throws Exception {
+	void 로컬_웹_프론트엔드의_preflight_요청을_허용한다() throws Exception {
 		mockMvc.perform(options("/api/training/categories")
 					.header(HttpHeaders.ORIGIN, ORIGIN)
 					.header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "GET")
@@ -39,8 +36,7 @@ class LocalCorsConfigTest {
 	}
 
 	@Test
-	@DisplayName("인증 실패 응답에도 CORS 헤더를 포함한다")
-	void unauthorizedResponseIncludesCorsHeader() throws Exception {
+	void 인증_실패_응답에도_CORS_헤더를_포함한다() throws Exception {
 		mockMvc.perform(get("/api/training/categories").header(HttpHeaders.ORIGIN, ORIGIN))
 				.andExpect(status().isUnauthorized())
 				.andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, ORIGIN));

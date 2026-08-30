@@ -4,32 +4,27 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Instant;
 import java.util.Map;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.oauth2.jwt.Jwt;
 
-@DisplayName("토큰 용도 검증")
 class TokenTypeValidatorTest {
 
 	@Test
-	@DisplayName("기대한 용도의 토큰은 검증을 통과한다")
-	void validateSucceedsWhenTokenTypeMatches() {
+	void 기대한_용도의_토큰은_검증을_통과한다() {
 		Jwt jwt = jwtWithClaims(Map.of(TokenType.CLAIM_NAME, TokenType.ACCESS.claimValue()));
 
 		assertThat(new TokenTypeValidator(TokenType.ACCESS).validate(jwt).hasErrors()).isFalse();
 	}
 
 	@Test
-	@DisplayName("리프레시 토큰은 액세스 토큰 자리에서 거부된다")
-	void validateFailsWhenRefreshTokenIsUsedAsAccessToken() {
+	void 리프레시_토큰은_액세스_토큰_자리에서_거부된다() {
 		Jwt jwt = jwtWithClaims(Map.of(TokenType.CLAIM_NAME, TokenType.REFRESH.claimValue()));
 
 		assertThat(new TokenTypeValidator(TokenType.ACCESS).validate(jwt).hasErrors()).isTrue();
 	}
 
 	@Test
-	@DisplayName("용도 클레임이 없으면 거부된다")
-	void validateFailsWhenClaimIsMissing() {
+	void 용도_클레임이_없으면_거부된다() {
 		Jwt jwt = jwtWithClaims(Map.of("sub", "1"));
 
 		assertThat(new TokenTypeValidator(TokenType.ACCESS).validate(jwt).hasErrors()).isTrue();

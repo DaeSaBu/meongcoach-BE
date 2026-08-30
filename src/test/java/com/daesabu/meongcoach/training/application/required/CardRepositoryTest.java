@@ -12,7 +12,6 @@ import com.daesabu.meongcoach.training.domain.Topic;
 import com.daesabu.meongcoach.training.domain.TopicCreateCommand;
 import com.daesabu.meongcoach.training.domain.TrainingCategory;
 import java.util.List;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -22,7 +21,6 @@ import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
  * 카드 조회 리포지토리 검증.
  */
 @DataJpaTest
-@DisplayName("카드 리포지토리")
 class CardRepositoryTest {
 
 	@Autowired
@@ -32,8 +30,7 @@ class CardRepositoryTest {
 	private TestEntityManager entityManager;
 
 	@Test
-	@DisplayName("레슨의 카드를 정렬 순서 오름차순으로 조회한다")
-	void findAllByLessonIdOrdersBySortOrderAscending() {
+	void 레슨의_카드를_정렬_순서_오름차순으로_조회한다() {
 		Lesson lesson = persistLesson("기본 교육");
 		persistCard(lesson, "셋째", 3);
 		persistCard(lesson, "첫째", 1);
@@ -47,8 +44,7 @@ class CardRepositoryTest {
 	}
 
 	@Test
-	@DisplayName("정렬 순서가 같으면 id 오름차순으로 조회한다")
-	void findAllByLessonIdOrdersByIdAscendingWhenSortOrderIsSame() {
+	void 정렬_순서가_같으면_id_오름차순으로_조회한다() {
 		Lesson lesson = persistLesson("기본 교육");
 		Card first = persistCard(lesson, "먼저 등록", 1);
 		Card second = persistCard(lesson, "나중 등록", 1);
@@ -61,8 +57,7 @@ class CardRepositoryTest {
 	}
 
 	@Test
-	@DisplayName("다른 레슨의 카드는 조회되지 않는다")
-	void findAllByLessonIdExcludesOtherLessonCards() {
+	void 다른_레슨의_카드는_조회되지_않는다() {
 		Lesson target = persistLesson("기본 교육");
 		Lesson other = persistLesson("문제 행동");
 		persistCard(target, "대상 카드", 1);
@@ -76,8 +71,7 @@ class CardRepositoryTest {
 	}
 
 	@Test
-	@DisplayName("카드가 없는 레슨이면 빈 목록을 반환한다")
-	void findAllByLessonIdReturnsEmptyListWhenLessonHasNoCard() {
+	void 카드가_없는_레슨이면_빈_목록을_반환한다() {
 		Lesson lesson = persistLesson("기본 교육");
 		entityManager.flush();
 

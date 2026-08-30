@@ -12,7 +12,6 @@ import jakarta.persistence.EntityManagerFactory;
 import java.util.List;
 import org.hibernate.SessionFactory;
 import org.hibernate.stat.Statistics;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -26,7 +25,6 @@ import org.springframework.test.context.TestPropertySource;
 @DataJpaTest
 @Import(TrainingCategoryQueryService.class)
 @TestPropertySource(properties = "spring.jpa.properties.hibernate.generate_statistics=true")
-@DisplayName("교육 카테고리 조회 서비스")
 class TrainingCategoryQueryServiceTest {
 
 	@Autowired
@@ -39,8 +37,7 @@ class TrainingCategoryQueryServiceTest {
 	private EntityManagerFactory entityManagerFactory;
 
 	@Test
-	@DisplayName("카테고리를 정렬 순서 오름차순으로 반환한다")
-	void findAllOrdersCategoriesBySortOrder() {
+	void 카테고리를_정렬_순서_오름차순으로_반환한다() {
 		persistCategory("나중 카테고리", 2);
 		persistCategory("먼저 카테고리", 1);
 		flushAndClear();
@@ -52,8 +49,7 @@ class TrainingCategoryQueryServiceTest {
 	}
 
 	@Test
-	@DisplayName("카테고리 안의 토픽을 정렬 순서 오름차순으로 반환한다")
-	void findAllOrdersTopicsBySortOrderWithinCategory() {
+	void 카테고리_안의_토픽을_정렬_순서_오름차순으로_반환한다() {
 		TrainingCategory category = persistCategory("기본 교육", 1);
 		persistTopic(category, "셋째 토픽", 3);
 		persistTopic(category, "첫째 토픽", 1);
@@ -68,8 +64,7 @@ class TrainingCategoryQueryServiceTest {
 	}
 
 	@Test
-	@DisplayName("토픽을 소속 카테고리에 담아 반환한다")
-	void findAllGroupsTopicsIntoOwningCategory() {
+	void 토픽을_소속_카테고리에_담아_반환한다() {
 		TrainingCategory basic = persistCategory("기본 교육", 1);
 		TrainingCategory advanced = persistCategory("심화 교육", 2);
 		persistTopic(basic, "앉아", 1);
@@ -86,8 +81,7 @@ class TrainingCategoryQueryServiceTest {
 	}
 
 	@Test
-	@DisplayName("카테고리와 토픽의 설명 및 아이콘 정보를 반환한다")
-	void findAllReturnsDescriptionsAndIconUrls() {
+	void 카테고리와_토픽의_설명_및_아이콘_정보를_반환한다() {
 		TrainingCategory category = entityManager.persist(TrainingCategory.create(
 				"기본 교육", 1, "기본기를 배우는 교육", "https://example.com/basic.png"
 		));
@@ -114,8 +108,7 @@ class TrainingCategoryQueryServiceTest {
 	}
 
 	@Test
-	@DisplayName("토픽이 없는 카테고리는 빈 토픽 목록을 갖는다")
-	void findAllReturnsEmptyTopicsWhenCategoryHasNoTopic() {
+	void 토픽이_없는_카테고리는_빈_토픽_목록을_갖는다() {
 		persistCategory("토픽 없는 카테고리", 1);
 		TrainingCategory other = persistCategory("토픽 있는 카테고리", 2);
 		persistTopic(other, "앉아", 1);
@@ -128,16 +121,14 @@ class TrainingCategoryQueryServiceTest {
 	}
 
 	@Test
-	@DisplayName("등록된 카테고리가 없으면 빈 목록을 반환한다")
-	void findAllReturnsEmptyListWhenNoCategoryExists() {
+	void 등록된_카테고리가_없으면_빈_목록을_반환한다() {
 		List<TrainingCategoryResult> categories = trainingCategoryFinder.findAll();
 
 		assertThat(categories).isEmpty();
 	}
 
 	@Test
-	@DisplayName("카테고리 수와 무관하게 두 번의 쿼리로 조회한다")
-	void findAllExecutesTwoQueries() {
+	void 카테고리_수와_무관하게_두_번의_쿼리로_조회한다() {
 		TrainingCategory basic = persistCategory("기본 교육", 1);
 		TrainingCategory advanced = persistCategory("심화 교육", 2);
 		persistTopic(basic, "앉아", 1);

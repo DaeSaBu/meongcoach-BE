@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.daesabu.meongcoach.progress.domain.UserSelectedTopic;
 import java.util.Optional;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -16,7 +15,6 @@ import org.springframework.dao.DataIntegrityViolationException;
  * 사용자별 선택 토픽 조회 리포지토리 검증.
  */
 @DataJpaTest
-@DisplayName("선택 토픽 리포지토리")
 class UserSelectedTopicRepositoryTest {
 
 	private static final Long USER_ID = 1L;
@@ -30,8 +28,7 @@ class UserSelectedTopicRepositoryTest {
 	private TestEntityManager entityManager;
 
 	@Test
-	@DisplayName("사용자가 선택한 토픽을 조회한다")
-	void findByUserIdReturnsSelectedTopic() {
+	void 사용자가_선택한_토픽을_조회한다() {
 		entityManager.persist(UserSelectedTopic.enter(USER_ID, 10L));
 		flushAndClear();
 
@@ -41,16 +38,14 @@ class UserSelectedTopicRepositoryTest {
 	}
 
 	@Test
-	@DisplayName("선택 기록이 없으면 빈 Optional을 반환한다")
-	void findByUserIdReturnsEmptyWhenSelectedTopicIsAbsent() {
+	void 선택_기록이_없으면_빈_Optional을_반환한다() {
 		Optional<UserSelectedTopic> selectedTopic = userSelectedTopicRepository.findByUserId(USER_ID);
 
 		assertThat(selectedTopic).isEmpty();
 	}
 
 	@Test
-	@DisplayName("다른 사용자의 선택 기록은 조회되지 않는다")
-	void findByUserIdExcludesSelectedTopicOfOtherUsers() {
+	void 다른_사용자의_선택_기록은_조회되지_않는다() {
 		entityManager.persist(UserSelectedTopic.enter(OTHER_USER_ID, 10L));
 		flushAndClear();
 
@@ -60,8 +55,7 @@ class UserSelectedTopicRepositoryTest {
 	}
 
 	@Test
-	@DisplayName("한 사용자의 선택 기록을 두 건 저장하면 실패한다")
-	void saveFailsWhenUserIdIsDuplicated() {
+	void 한_사용자의_선택_기록을_두_건_저장하면_실패한다() {
 		userSelectedTopicRepository.saveAndFlush(UserSelectedTopic.enter(USER_ID, 10L));
 
 		assertThatThrownBy(() -> userSelectedTopicRepository.saveAndFlush(UserSelectedTopic.enter(USER_ID, 20L)))

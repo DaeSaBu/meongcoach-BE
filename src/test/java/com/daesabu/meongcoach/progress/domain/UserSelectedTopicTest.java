@@ -2,15 +2,12 @@ package com.daesabu.meongcoach.progress.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-@DisplayName("UserSelectedTopic 도메인")
 class UserSelectedTopicTest {
 
 	@Test
-	@DisplayName("진입하면 사용자와 토픽 정보가 설정된다")
-	void enterSetsUserAndTopic() {
+	void 진입하면_사용자와_토픽_정보가_설정된다() {
 		UserSelectedTopic selectedTopic = UserSelectedTopic.enter(1L, 3L);
 
 		assertThat(selectedTopic.getUserId()).isEqualTo(1L);
@@ -18,8 +15,7 @@ class UserSelectedTopicTest {
 	}
 
 	@Test
-	@DisplayName("다른 토픽으로 옮기면 선택 토픽이 바뀐다")
-	void moveToChangesTopic() {
+	void 다른_토픽으로_옮기면_선택_토픽이_바뀐다() {
 		UserSelectedTopic selectedTopic = UserSelectedTopic.enter(1L, 3L);
 
 		selectedTopic.moveTo(5L);

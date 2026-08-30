@@ -20,7 +20,6 @@ import com.daesabu.meongcoach.training.domain.MediaType;
 import com.daesabu.meongcoach.training.domain.exception.LessonNotFoundException;
 import java.security.Principal;
 import java.util.List;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
@@ -34,7 +33,6 @@ import org.springframework.test.web.servlet.MockMvc;
  */
 @WebMvcTest(TrainingLessonController.class)
 @AutoConfigureRestDocs
-@DisplayName("레슨 API")
 class TrainingLessonControllerTest {
 
 	// 컨트롤러 슬라이스에는 필터 체인이 없으므로 인증 주체를 요청에 직접 실어 보낸다 (test-convention.md)
@@ -50,8 +48,7 @@ class TrainingLessonControllerTest {
 	private LessonCompleter lessonCompleter;
 
 	@Test
-	@DisplayName("레슨의 카드와 미디어 목록을 반환한다")
-	void findCardsReturnsCardsWithCardMedia() throws Exception {
+	void 레슨의_카드와_미디어_목록을_반환한다() throws Exception {
 		given(lessonFinder.findCards(1L)).willReturn(List.of(
 				new CardResult(10L, "앉아 준비", 1, "간식을 손에 쥐고 앉아를 말하세요", List.of(
 						new CardMediaResult(100L, 10L, MediaType.IMAGE, "https://cdn.example.com/1.png", 1),
@@ -99,8 +96,7 @@ class TrainingLessonControllerTest {
 	}
 
 	@Test
-	@DisplayName("미디어가 없는 카드는 빈 배열을 반환한다")
-	void findCardsReturnsEmptyCardMediaWhenCardHasNoMedia() throws Exception {
+	void 미디어가_없는_카드는_빈_배열을_반환한다() throws Exception {
 		given(lessonFinder.findCards(1L)).willReturn(List.of(
 				new CardResult(10L, "앉아 준비", 1, "간식을 손에 쥐고 앉아를 말하세요", List.of())
 		));
@@ -112,8 +108,7 @@ class TrainingLessonControllerTest {
 	}
 
 	@Test
-	@DisplayName("카드가 없는 레슨은 빈 배열과 200을 반환한다")
-	void findCardsReturnsEmptyArrayWhenLessonHasNoCard() throws Exception {
+	void 카드가_없는_레슨은_빈_배열과_200을_반환한다() throws Exception {
 		given(lessonFinder.findCards(1L)).willReturn(List.of());
 
 		mockMvc.perform(get("/api/training/lessons/{lessonId}/cards", 1L))
@@ -123,8 +118,7 @@ class TrainingLessonControllerTest {
 	}
 
 	@Test
-	@DisplayName("존재하지 않는 레슨이면 404와 에러 코드를 반환한다")
-	void findCardsReturnsNotFoundWhenLessonDoesNotExist() throws Exception {
+	void 존재하지_않는_레슨이면_404와_에러_코드를_반환한다() throws Exception {
 		given(lessonFinder.findCards(999L)).willThrow(new LessonNotFoundException(999L));
 
 		mockMvc.perform(get("/api/training/lessons/{lessonId}/cards", 999L)
@@ -149,8 +143,7 @@ class TrainingLessonControllerTest {
 	}
 
 	@Test
-	@DisplayName("레슨을 완료하면 레슨 ID와 갱신된 완료 횟수를 반환한다")
-	void completeLessonReturnsUpdatedCompletedCount() throws Exception {
+	void 레슨을_완료하면_레슨_ID와_갱신된_완료_횟수를_반환한다() throws Exception {
 		given(lessonCompleter.completeLesson(42L, 1L)).willReturn(3);
 
 		mockMvc.perform(post("/api/training/lessons/{lessonId}/completion", 1L)
@@ -171,8 +164,7 @@ class TrainingLessonControllerTest {
 	}
 
 	@Test
-	@DisplayName("인증 주체에서 읽은 사용자로 레슨 완료를 위임한다")
-	void completeLessonDelegatesWithCurrentUserId() throws Exception {
+	void 인증_주체에서_읽은_사용자로_레슨_완료를_위임한다() throws Exception {
 		mockMvc.perform(post("/api/training/lessons/{lessonId}/completion", 7L).principal(CURRENT_USER))
 				.andExpect(status().isCreated());
 
@@ -180,8 +172,7 @@ class TrainingLessonControllerTest {
 	}
 
 	@Test
-	@DisplayName("존재하지 않는 레슨을 완료하면 404와 에러 코드를 반환한다")
-	void completeLessonReturnsNotFoundWhenLessonDoesNotExist() throws Exception {
+	void 존재하지_않는_레슨을_완료하면_404와_에러_코드를_반환한다() throws Exception {
 		given(lessonCompleter.completeLesson(42L, 999L)).willThrow(new LessonNotFoundException(999L));
 
 		mockMvc.perform(post("/api/training/lessons/{lessonId}/completion", 999L)
@@ -207,8 +198,7 @@ class TrainingLessonControllerTest {
 	}
 
 	@Test
-	@DisplayName("레슨 완료 시 인증 정보가 없으면 401을 반환한다")
-	void completeLessonReturnsUnauthorizedWhenNotAuthenticated() throws Exception {
+	void 레슨_완료_시_인증_정보가_없으면_401을_반환한다() throws Exception {
 		mockMvc.perform(post("/api/training/lessons/{lessonId}/completion", 1L))
 				.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));

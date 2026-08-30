@@ -18,10 +18,8 @@ import com.daesabu.meongcoach.media.domain.vo.VideoObjectKey;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-@DisplayName("영상 업로드 URL 발급 서비스")
 class VideoUploadUrlIssueServiceTest {
 
 	private static final long VALID_SIZE = 10L * 1024 * 1024;
@@ -36,8 +34,7 @@ class VideoUploadUrlIssueServiceTest {
 	}
 
 	@Test
-	@DisplayName("업로드 대상·사용자·영상 형식으로 만든 객체 키를 스토리지에 넘긴다")
-	void issuePassesGeneratedKeyToStorage() {
+	void 업로드_대상_사용자_영상_형식으로_만든_객체_키를_스토리지에_넘긴다() {
 		service.issue(7L, "TRAINING_VIDEO", "video/mp4", VALID_SIZE);
 
 		// 키 포맷 자체는 VideoObjectKeyTest가 검증한다. 여기서는 변환한 값이 그대로 전달되는지만 본다
@@ -47,24 +44,21 @@ class VideoUploadUrlIssueServiceTest {
 	}
 
 	@Test
-	@DisplayName("요청한 Content-Type 그대로 스토리지에 전달한다")
-	void issuePassesContentTypeToStorage() {
+	void 요청한_contentType_그대로_스토리지에_전달한다() {
 		service.issue(7L, "TRAINING_VIDEO", "video/quicktime", VALID_SIZE);
 
 		assertThat(videoStorage.lastContentType()).isEqualTo("video/quicktime");
 	}
 
 	@Test
-	@DisplayName("요청한 파일 크기를 스토리지에 전달해 서명에 포함되게 한다")
-	void issuePassesFileSizeToStorage() {
+	void 요청한_파일_크기를_스토리지에_전달해_서명에_포함되게_한다() {
 		service.issue(7L, "TRAINING_VIDEO", "video/mp4", VALID_SIZE);
 
 		assertThat(videoStorage.lastContentLength()).isEqualTo(VALID_SIZE);
 	}
 
 	@Test
-	@DisplayName("스토리지가 발급한 URL을 결과로 반환한다")
-	void issueReturnsStorageResult() {
+	void 스토리지가_발급한_URL을_결과로_반환한다() {
 		VideoUploadUrlResult result = service.issue(7L, "TRAINING_VIDEO", "video/mp4", VALID_SIZE);
 
 		assertThat(result.uploadUrl()).isEqualTo("https://storage.test/upload");
@@ -74,32 +68,28 @@ class VideoUploadUrlIssueServiceTest {
 	}
 
 	@Test
-	@DisplayName("지원하지 않는 업로드 대상이면 발급에 실패한다")
-	void issueFailsWhenTargetIsInvalid() {
+	void 지원하지_않는_업로드_대상이면_발급에_실패한다() {
 		assertThatThrownBy(() -> service.issue(7L, "USER_PROFILE", "video/mp4", VALID_SIZE))
 				.isInstanceOf(InvalidVideoUploadTargetException.class);
 		assertThat(videoStorage.keys).isEmpty();
 	}
 
 	@Test
-	@DisplayName("지원하지 않는 영상 형식이면 발급에 실패한다")
-	void issueFailsWhenContentTypeIsUnsupported() {
+	void 지원하지_않는_영상_형식이면_발급에_실패한다() {
 		assertThatThrownBy(() -> service.issue(7L, "TRAINING_VIDEO", "video/webm", VALID_SIZE))
 				.isInstanceOf(UnsupportedVideoTypeException.class);
 		assertThat(videoStorage.keys).isEmpty();
 	}
 
 	@Test
-	@DisplayName("상한을 넘는 파일 크기면 발급에 실패한다")
-	void issueFailsWhenFileSizeExceedsMax() {
+	void 상한을_넘는_파일_크기면_발급에_실패한다() {
 		assertThatThrownBy(() -> service.issue(7L, "TRAINING_VIDEO", "video/mp4", VideoFileSize.MAX_BYTES + 1))
 				.isInstanceOf(VideoFileSizeExceededException.class);
 		assertThat(videoStorage.keys).isEmpty();
 	}
 
 	@Test
-	@DisplayName("0 이하의 파일 크기면 발급에 실패한다")
-	void issueFailsWhenFileSizeIsNotPositive() {
+	void 파일_크기가_0_이하면_발급에_실패한다() {
 		assertThatThrownBy(() -> service.issue(7L, "TRAINING_VIDEO", "video/mp4", 0L))
 				.isInstanceOf(InvalidVideoFileSizeException.class);
 		assertThat(videoStorage.keys).isEmpty();

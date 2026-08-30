@@ -3,7 +3,6 @@ package com.daesabu.meongcoach.shared.config;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -16,15 +15,13 @@ import org.springframework.test.web.servlet.MockMvc;
  */
 @SpringBootTest(properties = "meongcoach.api-docs.enabled=true")
 @AutoConfigureMockMvc
-@DisplayName("API 문서 접근")
 class ApiDocsAccessTest {
 
 	@Autowired
 	private MockMvc mockMvc;
 
 	@Test
-	@DisplayName("문서 활성 환경에서는 인증 없이 Swagger UI 페이지를 볼 수 있다")
-	void swaggerUiIsPermittedWhenEnabled() throws Exception {
+	void 문서_활성_환경에서는_인증_없이_Swagger_UI_페이지를_볼_수_있다() throws Exception {
 		mockMvc.perform(get("/swagger-ui/index.html"))
 				.andExpect(status().isOk());
 	}
@@ -32,8 +29,7 @@ class ApiDocsAccessTest {
 	// openapi3.json은 빌드 산출물이라 실행 시점에 따라 200(생성됨) 또는 404(미생성)다.
 	// 이 테스트는 파일 유무가 아니라 보안 통과(401·403이 아님)만 검증한다
 	@Test
-	@DisplayName("문서 활성 환경에서는 스펙 경로도 인증 없이 통과된다")
-	void openApiSpecPathIsPermittedWhenEnabled() throws Exception {
+	void 문서_활성_환경에서는_스펙_경로도_인증_없이_통과된다() throws Exception {
 		mockMvc.perform(get("/swagger-ui/openapi3.json"))
 				.andExpect(result -> {
 					int status = result.getResponse().getStatus();

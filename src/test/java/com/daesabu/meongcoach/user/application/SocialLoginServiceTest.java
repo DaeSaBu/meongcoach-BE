@@ -21,14 +21,12 @@ import com.daesabu.meongcoach.user.domain.exception.WithdrawnUserException;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 
 @DataJpaTest
-@DisplayName("소셜 로그인 서비스")
 class SocialLoginServiceTest {
 
 	private static final String PROVIDER_ID = "3812345678";
@@ -54,8 +52,7 @@ class SocialLoginServiceTest {
 	}
 
 	@Test
-	@DisplayName("최초 로그인하면 회원과 소셜 계정이 함께 생성된다")
-	void loginRegistersMemberOnFirstLogin() {
+	void 최초_로그인하면_회원과_소셜_계정이_함께_생성된다() {
 		LoginResult result = service.login(SocialProvider.KAKAO, CREDENTIAL);
 
 		assertThat(userRepository.count()).isEqualTo(1);
@@ -65,8 +62,7 @@ class SocialLoginServiceTest {
 	}
 
 	@Test
-	@DisplayName("이미 연동된 계정으로 재로그인하면 회원을 새로 만들지 않는다")
-	void loginReusesUserOnSecondLogin() {
+	void 이미_연동된_계정으로_재로그인하면_회원을_새로_만들지_않는다() {
 		LoginResult first = service.login(SocialProvider.KAKAO, CREDENTIAL);
 
 		LoginResult second = service.login(SocialProvider.KAKAO, CREDENTIAL);
@@ -77,8 +73,7 @@ class SocialLoginServiceTest {
 	}
 
 	@Test
-	@DisplayName("프로필이 있으면 온보딩이 필요하지 않다")
-	void loginReturnsOnboardingCompletedWhenProfileExists() {
+	void 프로필이_있으면_온보딩이_필요하지_않다() {
 		service.login(SocialProvider.KAKAO, CREDENTIAL);
 		User user = userRepository.findAll().getFirst();
 		UserProfile profile = UserProfile.create(user,
@@ -92,8 +87,7 @@ class SocialLoginServiceTest {
 	}
 
 	@Test
-	@DisplayName("탈퇴한 회원은 로그인할 수 없다")
-	void loginFailsWhenUserIsWithdrawn() {
+	void 탈퇴한_회원은_로그인할_수_없다() {
 		service.login(SocialProvider.KAKAO, CREDENTIAL);
 		User user = userRepository.findAll().getFirst();
 		user.withdraw();
@@ -106,8 +100,7 @@ class SocialLoginServiceTest {
 	}
 
 	@Test
-	@DisplayName("구현체가 없는 제공자로는 로그인할 수 없다")
-	void loginFailsWhenProviderIsNotRegistered() {
+	void 구현체가_없는_제공자로는_로그인할_수_없다() {
 		assertThatThrownBy(() -> service.login(SocialProvider.GOOGLE, CREDENTIAL))
 				.isInstanceOf(UnsupportedSocialProviderException.class);
 	}

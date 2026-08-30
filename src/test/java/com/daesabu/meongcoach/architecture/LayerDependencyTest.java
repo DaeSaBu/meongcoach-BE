@@ -6,13 +6,11 @@ import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.sli
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import com.tngtech.archunit.core.importer.ImportOption;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
  * 모듈 내부 계층 의존 방향 검증. 의존은 항상 adapter → application → domain 이어야 한다.
  */
-@DisplayName("계층 의존 방향 검증")
 class LayerDependencyTest {
 
 	private static final JavaClasses CLASSES = new ClassFileImporter()
@@ -20,8 +18,7 @@ class LayerDependencyTest {
 			.importPackages("com.daesabu.meongcoach");
 
 	@Test
-	@DisplayName("계층 의존은 adapter에서 application, domain 방향으로만 흐른다")
-	void layersDependInOneDirection() {
+	void 계층_의존은_adapter에서_application_domain_방향으로만_흐른다() {
 		layeredArchitecture()
 				.consideringOnlyDependenciesInLayers()
 				.layer("Adapter").definedBy("..adapter..")
@@ -34,8 +31,7 @@ class LayerDependencyTest {
 	}
 
 	@Test
-	@DisplayName("최상위 모듈 사이에 순환 의존이 없다")
-	void modulesAreFreeOfCycles() {
+	void 최상위_모듈_사이에_순환_의존이_없다() {
 		slices()
 				.matching("com.daesabu.meongcoach.(*)..")
 				.should().beFreeOfCycles()

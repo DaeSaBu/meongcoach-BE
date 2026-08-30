@@ -15,7 +15,6 @@ import com.daesabu.meongcoach.training.domain.Topic;
 import com.daesabu.meongcoach.training.domain.TopicCreateCommand;
 import com.daesabu.meongcoach.training.domain.TrainingCategory;
 import java.util.List;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -25,7 +24,6 @@ import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
  * 카드 미디어 조회 리포지토리 검증.
  */
 @DataJpaTest
-@DisplayName("카드 미디어 리포지토리")
 class CardMediaRepositoryTest {
 
 	@Autowired
@@ -35,8 +33,7 @@ class CardMediaRepositoryTest {
 	private TestEntityManager entityManager;
 
 	@Test
-	@DisplayName("여러 카드의 미디어를 정렬 순서 오름차순으로 조회한다")
-	void findAllByCardIdInOrdersBySortOrderAscending() {
+	void 여러_카드의_미디어를_정렬_순서_오름차순으로_조회한다() {
 		Lesson lesson = persistLesson("기본 교육");
 		Card first = persistCard(lesson, "첫째 카드", 1);
 		Card second = persistCard(lesson, "둘째 카드", 2);
@@ -54,8 +51,7 @@ class CardMediaRepositoryTest {
 	}
 
 	@Test
-	@DisplayName("정렬 순서가 같으면 id 오름차순으로 조회한다")
-	void findAllByCardIdInOrdersByIdAscendingWhenSortOrderIsSame() {
+	void 정렬_순서가_같으면_id_오름차순으로_조회한다() {
 		Lesson lesson = persistLesson("기본 교육");
 		Card card = persistCard(lesson, "카드", 1);
 		CardMedia first = persistCardMedia(card, "https://cdn.example.com/first.png", 1);
@@ -70,8 +66,7 @@ class CardMediaRepositoryTest {
 	}
 
 	@Test
-	@DisplayName("조회 대상에 없는 카드의 미디어는 조회되지 않는다")
-	void findAllByCardIdInExcludesMediaOfOtherCards() {
+	void 조회_대상에_없는_카드의_미디어는_조회되지_않는다() {
 		Lesson lesson = persistLesson("기본 교육");
 		Card target = persistCard(lesson, "대상 카드", 1);
 		Card other = persistCard(lesson, "다른 카드", 2);
@@ -87,8 +82,7 @@ class CardMediaRepositoryTest {
 	}
 
 	@Test
-	@DisplayName("카드 id 목록이 비어 있으면 빈 목록을 반환한다")
-	void findAllByCardIdInReturnsEmptyListWhenIdsAreEmpty() {
+	void 카드_id_목록이_비어_있으면_빈_목록을_반환한다() {
 		Lesson lesson = persistLesson("기본 교육");
 		Card card = persistCard(lesson, "카드", 1);
 		persistCardMedia(card, "https://cdn.example.com/1.png", 1);

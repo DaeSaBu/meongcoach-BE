@@ -2,10 +2,8 @@ package com.daesabu.meongcoach.training.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-@DisplayName("Curriculum 도메인")
 class CurriculumTest {
 
 	private Curriculum createCurriculum() {
@@ -16,8 +14,7 @@ class CurriculumTest {
 	}
 
 	@Test
-	@DisplayName("생성하면 커리큘럼 필드가 설정된다")
-	void createSetsFields() {
+	void 생성하면_커리큘럼_필드가_설정된다() {
 		Curriculum curriculum = createCurriculum();
 
 		assertThat(curriculum.getTitle()).isEqualTo("리드줄 적응");
@@ -27,8 +24,7 @@ class CurriculumTest {
 	}
 
 	@Test
-	@DisplayName("생성하면 토픽·카테고리와 연결된다")
-	void createConnectsTopicAndCategory() {
+	void 생성하면_토픽과_카테고리에_연결된다() {
 		Curriculum curriculum = createCurriculum();
 
 		assertThat(curriculum.getTopic().getTitle()).isEqualTo("산책 교육");

@@ -12,7 +12,6 @@ import com.daesabu.meongcoach.training.application.provided.TopicResult;
 import com.daesabu.meongcoach.training.application.provided.TrainingCategoryFinder;
 import com.daesabu.meongcoach.training.application.provided.TrainingCategoryResult;
 import java.util.List;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
@@ -26,7 +25,6 @@ import org.springframework.test.web.servlet.MockMvc;
  */
 @WebMvcTest(TrainingCategoryController.class)
 @AutoConfigureRestDocs
-@DisplayName("라이브러리 탭 진입 API")
 class TrainingCategoryControllerTest {
 
 	@Autowired
@@ -36,8 +34,7 @@ class TrainingCategoryControllerTest {
 	private TrainingCategoryFinder trainingCategoryFinder;
 
 	@Test
-	@DisplayName("교육 카테고리와 소속 토픽 목록을 반환한다")
-	void findAllReturnsCategoriesWithTopics() throws Exception {
+	void 교육_카테고리와_소속_토픽_목록을_반환한다() throws Exception {
 		given(trainingCategoryFinder.findAll()).willReturn(List.of(
 				new TrainingCategoryResult(
 						1L, "기본 교육", "기본기를 배우는 교육", "https://example.com/basic.png", 1,
@@ -100,8 +97,7 @@ class TrainingCategoryControllerTest {
 	}
 
 	@Test
-	@DisplayName("토픽이 없는 카테고리는 빈 배열을 반환한다")
-	void findAllReturnsEmptyTopicsWhenCategoryHasNoTopic() throws Exception {
+	void 토픽이_없는_카테고리는_빈_배열을_반환한다() throws Exception {
 		given(trainingCategoryFinder.findAll()).willReturn(List.of(
 				new TrainingCategoryResult(
 						1L,
@@ -120,8 +116,7 @@ class TrainingCategoryControllerTest {
 	}
 
 	@Test
-	@DisplayName("등록된 카테고리가 없으면 빈 배열과 200을 반환한다")
-	void findAllReturnsEmptyArrayWhenNoCategoryExists() throws Exception {
+	void 등록된_카테고리가_없으면_빈_배열과_200을_반환한다() throws Exception {
 		given(trainingCategoryFinder.findAll()).willReturn(List.of());
 
 		mockMvc.perform(get("/api/training/categories"))

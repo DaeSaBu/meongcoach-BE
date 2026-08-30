@@ -9,7 +9,6 @@ import com.daesabu.meongcoach.ai.domain.AiReportUploadCommand;
 import com.daesabu.meongcoach.ai.domain.vo.AiTrial;
 import java.time.LocalDateTime;
 import java.util.function.Consumer;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -21,7 +20,6 @@ import org.springframework.context.annotation.Import;
  */
 @DataJpaTest
 @Import(AiReportTrialFinderService.class)
-@DisplayName("AI 리포트 체험 조회 서비스")
 class AiReportTrialFinderServiceTest {
 
 	private static final Long USER_ID = 42L;
@@ -35,14 +33,12 @@ class AiReportTrialFinderServiceTest {
 	private AiReportRepository aiReportRepository;
 
 	@Test
-	@DisplayName("리포트가 없으면 사용 0회로 조회된다")
-	void findTrialReturnsZeroUsedCountWhenNoReportExists() {
+	void 리포트가_없으면_사용_0회로_조회된다() {
 		assertThat(aiTrialFinder.findTrial(USER_ID)).isEqualTo(new AiTrial(0));
 	}
 
 	@Test
-	@DisplayName("완료한 리포트 수가 그대로 사용 횟수가 된다")
-	void findTrialCountsCompletedReports() {
+	void 완료한_리포트_수가_그대로_사용_횟수가_된다() {
 		persistCompletedReport(USER_ID, "videos/training/42/first.mp4");
 		persistCompletedReport(USER_ID, "videos/training/42/second.mp4");
 
@@ -50,8 +46,7 @@ class AiReportTrialFinderServiceTest {
 	}
 
 	@Test
-	@DisplayName("실패한 리포트는 사용 횟수에 세지 않는다")
-	void findTrialIgnoresFailedReports() {
+	void 실패한_리포트는_사용_횟수에_세지_않는다() {
 		persistCompletedReport(USER_ID, "videos/training/42/first.mp4");
 		persistFailedReport(USER_ID, "videos/training/42/failed.mp4", AiReport::failByAnalysis);
 		persistFailedReport(USER_ID, "videos/training/42/exceeded.mp4", AiReport::failByTrialExceeded);
@@ -60,8 +55,7 @@ class AiReportTrialFinderServiceTest {
 	}
 
 	@Test
-	@DisplayName("업로드 대기·분석 중인 리포트는 사용 횟수에 세지 않는다")
-	void findTrialIgnoresInProgressReports() {
+	void 업로드_대기_중이거나_분석_중인_리포트는_사용_횟수에_세지_않는다() {
 		aiReportRepository.saveAndFlush(uploadingReport(USER_ID, "videos/training/42/uploading.mp4"));
 		aiReportRepository.saveAndFlush(pendingReport(USER_ID, "videos/training/42/pending.mp4"));
 
@@ -69,8 +63,7 @@ class AiReportTrialFinderServiceTest {
 	}
 
 	@Test
-	@DisplayName("다른 사용자의 리포트는 사용 횟수에 세지 않는다")
-	void findTrialIgnoresOtherUsersReports() {
+	void 다른_사용자의_리포트는_사용_횟수에_세지_않는다() {
 		persistCompletedReport(OTHER_USER_ID, "videos/training/99/other.mp4");
 
 		assertThat(aiTrialFinder.findTrial(USER_ID)).isEqualTo(new AiTrial(0));

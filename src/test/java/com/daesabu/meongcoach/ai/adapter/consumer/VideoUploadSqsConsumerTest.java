@@ -8,11 +8,9 @@ import com.daesabu.meongcoach.media.domain.exception.InvalidVideoObjectKeyExcept
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.json.JsonMapper;
 
-@DisplayName("영상 업로드 SQS 컨슈머")
 class VideoUploadSqsConsumerTest {
 
 	private RecordingAiReportGenerator aiReportGenerator;
@@ -43,16 +41,14 @@ class VideoUploadSqsConsumerTest {
 	}
 
 	@Test
-	@DisplayName("업로드 완료 이벤트의 객체 키로 리포트 생성을 위임한다")
-	void consumeDelegatesObjectKeyToGenerator() throws Exception {
+	void 업로드_완료_이벤트의_객체_키로_리포트_생성을_위임한다() throws Exception {
 		consumer.consume(s3Event("ObjectCreated:Put", "videos/training/7/key.mp4"));
 
 		assertThat(aiReportGenerator.objectKeys).containsExactly("videos/training/7/key.mp4");
 	}
 
 	@Test
-	@DisplayName("실제 S3 이벤트 2.5 형식의 업로드 완료 메시지를 처리한다")
-	void consumeSupportsActualS3EventVersion25() {
+	void 실제_S3_이벤트_형식의_업로드_완료_메시지를_처리한다() {
 		consumer.consume("""
 				{
 					"Records": [
@@ -90,8 +86,7 @@ class VideoUploadSqsConsumerTest {
 	}
 
 	@Test
-	@DisplayName("URL 인코딩된 객체 키는 디코딩해 위임한다")
-	void consumeDecodesUrlEncodedKey() throws Exception {
+	void URL_인코딩된_객체_키는_디코딩해_위임한다() throws Exception {
 		consumer.consume(s3Event("ObjectCreated:Put", "videos/training/7/my+video%3D1.mp4"));
 
 		// 디코딩된 키여야 presigned URL 발급 시 실제 객체를 가리킨다
@@ -99,8 +94,7 @@ class VideoUploadSqsConsumerTest {
 	}
 
 	@Test
-	@DisplayName("여러 레코드가 오면 각각 위임한다")
-	void consumeDelegatesEachRecord() throws Exception {
+	void 여러_레코드가_오면_각각_위임한다() throws Exception {
 		consumer.consume("""
 				{
 					"Records": [
@@ -121,8 +115,7 @@ class VideoUploadSqsConsumerTest {
 	}
 
 	@Test
-	@DisplayName("Records가 없는 테스트 이벤트는 무시한다")
-	void consumeIgnoresMessageWithoutRecords() throws Exception {
+	void Records가_없는_테스트_이벤트는_무시한다() throws Exception {
 		consumer.consume("""
 				{ "Service": "Amazon S3", "Event": "s3:TestEvent", "Bucket": "test-video-bucket" }
 				""");
@@ -131,24 +124,21 @@ class VideoUploadSqsConsumerTest {
 	}
 
 	@Test
-	@DisplayName("업로드 완료가 아닌 이벤트는 무시한다")
-	void consumeIgnoresNonObjectCreatedEvent() throws Exception {
+	void 업로드_완료가_아닌_이벤트는_무시한다() throws Exception {
 		consumer.consume(s3Event("ObjectRemoved:Delete", "videos/training/7/key.mp4"));
 
 		assertThat(aiReportGenerator.objectKeys).isEmpty();
 	}
 
 	@Test
-	@DisplayName("S3 이벤트 형식이 아닌 메시지는 버리고 정상 반환한다")
-	void consumeDropsUnparseableMessage() {
+	void S3_이벤트_형식이_아닌_메시지는_버리고_정상_반환한다() {
 		consumer.consume("not-a-json");
 
 		assertThat(aiReportGenerator.objectKeys).isEmpty();
 	}
 
 	@Test
-	@DisplayName("도메인 검증에 실패한 키는 버리고 정상 반환한다")
-	void consumeDropsKeyRejectedByDomainValidation() throws Exception {
+	void 도메인_검증에_실패한_키는_버리고_정상_반환한다() throws Exception {
 		aiReportGenerator.failure = new InvalidVideoObjectKeyException("images/profile/7/key.png");
 
 		consumer.consume(s3Event("ObjectCreated:Put", "images/profile/7/key.png"));
@@ -156,8 +146,7 @@ class VideoUploadSqsConsumerTest {
 	}
 
 	@Test
-	@DisplayName("리포트 생성이 실패해도 예외를 삼키고 정상 반환한다")
-	void consumeSwallowsGenerationFailure() {
+	void 리포트_생성이_실패해도_예외를_삼키고_정상_반환한다() {
 		// MVP라 재시도를 두지 않는다. 예외가 나가면 SQS가 메시지를 삭제하지 않고 무한 재전달한다
 		aiReportGenerator.failure = new IllegalStateException("모델 호출 실패");
 
@@ -166,8 +155,7 @@ class VideoUploadSqsConsumerTest {
 	}
 
 	@Test
-	@DisplayName("한 레코드가 실패해도 같은 메시지의 나머지 레코드는 처리한다")
-	void consumeKeepsProcessingRecordsAfterFailure() {
+	void 한_레코드가_실패해도_같은_메시지의_나머지_레코드는_처리한다() {
 		aiReportGenerator.failUntilFirstAttempt = true;
 
 		consumer.consume("""
@@ -189,8 +177,7 @@ class VideoUploadSqsConsumerTest {
 	}
 
 	@Test
-	@DisplayName("객체 키가 없는 레코드는 버리고 정상 반환한다")
-	void consumeDropsRecordWithoutObjectKey() {
+	void 객체_키가_없는_레코드는_버리고_정상_반환한다() {
 		// 알 수 없는 필드를 무시하는 설정이라 s3·object·key가 빠진 메시지도 그대로 도달한다
 		assertThatCode(() -> consumer.consume("""
 				{
@@ -206,8 +193,7 @@ class VideoUploadSqsConsumerTest {
 	}
 
 	@Test
-	@DisplayName("URL 디코딩할 수 없는 객체 키는 버리고 정상 반환한다")
-	void consumeDropsUndecodableObjectKey() {
+	void URL_디코딩할_수_없는_객체_키는_버리고_정상_반환한다() {
 		assertThatCode(() -> consumer.consume(s3Event("ObjectCreated:Put", "videos/training/7/key%ZZ.mp4")))
 				.doesNotThrowAnyException();
 

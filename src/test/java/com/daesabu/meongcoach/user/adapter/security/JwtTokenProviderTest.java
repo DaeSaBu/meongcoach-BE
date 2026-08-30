@@ -13,7 +13,6 @@ import java.time.Duration;
 import java.time.Instant;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
@@ -27,7 +26,6 @@ import org.springframework.security.oauth2.jwt.JwtTimestampValidator;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 
-@DisplayName("JWT 토큰 발급 어댑터")
 class JwtTokenProviderTest {
 
 	private static final String ISSUER = "meongcoach";
@@ -36,8 +34,7 @@ class JwtTokenProviderTest {
 	private static final Long USER_ID = 42L;
 
 	@Test
-	@DisplayName("발급하면 액세스·리프레시 토큰이 각자의 용도로 만들어진다")
-	void issueCreatesAccessAndRefreshTokens() {
+	void 발급하면_액세스_토큰과_리프레시_토큰이_각자의_용도로_만들어진다() {
 		JwtTokenProvider provider = tokenProvider(SECRET, Duration.ofHours(1), Duration.ofDays(14));
 
 		AuthToken token = provider.issue(USER_ID);
@@ -52,8 +49,7 @@ class JwtTokenProviderTest {
 	}
 
 	@Test
-	@DisplayName("리프레시 토큰에서 회원 식별자를 꺼낸다")
-	void extractUserIdReturnsSubject() {
+	void 리프레시_토큰에서_회원_식별자를_꺼낸다() {
 		JwtTokenProvider provider = tokenProvider(SECRET, Duration.ofHours(1), Duration.ofDays(14));
 		AuthToken token = provider.issue(USER_ID);
 
@@ -61,8 +57,7 @@ class JwtTokenProviderTest {
 	}
 
 	@Test
-	@DisplayName("액세스 토큰을 리프레시 토큰 자리에 제출하면 실패한다")
-	void extractUserIdFailsWhenAccessTokenIsSubmitted() {
+	void 액세스_토큰을_리프레시_토큰_자리에_제출하면_실패한다() {
 		JwtTokenProvider provider = tokenProvider(SECRET, Duration.ofHours(1), Duration.ofDays(14));
 		AuthToken token = provider.issue(USER_ID);
 
@@ -71,8 +66,7 @@ class JwtTokenProviderTest {
 	}
 
 	@Test
-	@DisplayName("다른 키로 서명된 토큰은 거부된다")
-	void extractUserIdFailsWhenSignedWithAnotherKey() {
+	void 다른_키로_서명된_토큰은_거부된다() {
 		AuthToken forged = tokenProvider(OTHER_SECRET, Duration.ofHours(1), Duration.ofDays(14)).issue(USER_ID);
 		JwtTokenProvider provider = tokenProvider(SECRET, Duration.ofHours(1), Duration.ofDays(14));
 
@@ -81,8 +75,7 @@ class JwtTokenProviderTest {
 	}
 
 	@Test
-	@DisplayName("만료된 리프레시 토큰은 거부된다")
-	void extractUserIdFailsWhenTokenIsExpired() {
+	void 만료된_리프레시_토큰은_거부된다() {
 		JwtTokenProvider provider = tokenProvider(SECRET, Duration.ofHours(1), Duration.ofDays(14));
 		String expired = expiredRefreshToken();
 
@@ -91,8 +84,7 @@ class JwtTokenProviderTest {
 	}
 
 	@Test
-	@DisplayName("검증 실패 응답에 토큰 값이 노출되지 않는다")
-	void extractUserIdFailureHidesTokenValue() {
+	void 검증_실패_응답에_토큰_값이_노출되지_않는다() {
 		JwtTokenProvider provider = tokenProvider(SECRET, Duration.ofHours(1), Duration.ofDays(14));
 		String tampered = provider.issue(USER_ID).refreshToken() + "tampered";
 

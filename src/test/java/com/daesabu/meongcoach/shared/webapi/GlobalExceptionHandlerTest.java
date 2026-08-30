@@ -14,7 +14,6 @@ import com.daesabu.meongcoach.shared.exception.ErrorCode;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
@@ -34,15 +33,13 @@ import org.springframework.web.bind.annotation.RestController;
 @WebMvcTest(GlobalExceptionHandlerTest.ExceptionTriggerController.class)
 @Import(GlobalExceptionHandlerTest.ExceptionTriggerController.class)
 @AutoConfigureRestDocs
-@DisplayName("전역 예외 처리")
 class GlobalExceptionHandlerTest {
 
 	@Autowired
 	private MockMvc mockMvc;
 
 	@Test
-	@DisplayName("도메인 예외는 에러 코드가 담긴 ProblemDetail을 반환한다")
-	void domainExceptionReturnsProblemDetailWithErrorCode() throws Exception {
+	void 도메인_예외는_에러_코드가_담긴_ProblemDetail을_반환한다() throws Exception {
 		mockMvc.perform(get("/test/domain-error"))
 				.andExpect(status().isNotFound())
 				.andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
@@ -63,8 +60,7 @@ class GlobalExceptionHandlerTest {
 	}
 
 	@Test
-	@DisplayName("검증에 실패하면 필드 에러 목록을 반환한다")
-	void validationFailureReturnsFieldErrors() throws Exception {
+	void 검증에_실패하면_필드_에러_목록을_반환한다() throws Exception {
 		mockMvc.perform(post("/test/validation")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"name\": \"\"}"))
@@ -87,8 +83,7 @@ class GlobalExceptionHandlerTest {
 	}
 
 	@Test
-	@DisplayName("서버 측 도메인 예외도 에러 코드가 담긴 ProblemDetail을 반환한다")
-	void serverSideDomainExceptionReturnsProblemDetailWithErrorCode() throws Exception {
+	void 서버_측_도메인_예외도_에러_코드가_담긴_ProblemDetail을_반환한다() throws Exception {
 		mockMvc.perform(get("/test/domain-error-5xx"))
 				.andExpect(status().isInternalServerError())
 				.andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
@@ -98,8 +93,7 @@ class GlobalExceptionHandlerTest {
 	}
 
 	@Test
-	@DisplayName("알 수 없는 경로는 NOT_FOUND를 반환한다")
-	void unknownPathReturnsNotFoundProblem() throws Exception {
+	void 알_수_없는_경로는_NOT_FOUND를_반환한다() throws Exception {
 		mockMvc.perform(get("/test/unknown"))
 				.andExpect(status().isNotFound())
 				.andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
@@ -107,8 +101,7 @@ class GlobalExceptionHandlerTest {
 	}
 
 	@Test
-	@DisplayName("지원하지 않는 HTTP 메서드는 METHOD_NOT_ALLOWED를 반환한다")
-	void unsupportedMethodReturnsMethodNotAllowed() throws Exception {
+	void 지원하지_않는_HTTP_메서드는_METHOD_NOT_ALLOWED를_반환한다() throws Exception {
 		mockMvc.perform(post("/test/domain-error"))
 				.andExpect(status().isMethodNotAllowed())
 				.andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
@@ -116,8 +109,7 @@ class GlobalExceptionHandlerTest {
 	}
 
 	@Test
-	@DisplayName("잘못된 형식의 JSON은 BAD_REQUEST를 반환한다")
-	void malformedJsonReturnsBadRequest() throws Exception {
+	void 잘못된_형식의_JSON은_BAD_REQUEST를_반환한다() throws Exception {
 		mockMvc.perform(post("/test/validation")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{invalid-json"))
@@ -127,8 +119,7 @@ class GlobalExceptionHandlerTest {
 	}
 
 	@Test
-	@DisplayName("예상치 못한 예외는 내부 정보 노출 없이 INTERNAL_SERVER_ERROR를 반환한다")
-	void unexpectedExceptionReturnsInternalServerErrorWithoutInternalDetail() throws Exception {
+	void 예상치_못한_예외는_내부_정보_노출_없이_INTERNAL_SERVER_ERROR를_반환한다() throws Exception {
 		mockMvc.perform(get("/test/unexpected"))
 				.andExpect(status().isInternalServerError())
 				.andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
@@ -137,8 +128,7 @@ class GlobalExceptionHandlerTest {
 	}
 
 	@Test
-	@DisplayName("인증 실패는 원인 노출 없이 UNAUTHORIZED를 반환한다")
-	void authenticationFailureReturnsUnauthorized() throws Exception {
+	void 인증_실패는_원인_노출_없이_UNAUTHORIZED를_반환한다() throws Exception {
 		mockMvc.perform(get("/test/authentication-error"))
 				.andExpect(status().isUnauthorized())
 				.andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
@@ -158,8 +148,7 @@ class GlobalExceptionHandlerTest {
 	}
 
 	@Test
-	@DisplayName("권한 부족은 FORBIDDEN을 반환한다")
-	void accessDeniedReturnsForbidden() throws Exception {
+	void 권한_부족은_FORBIDDEN을_반환한다() throws Exception {
 		mockMvc.perform(get("/test/access-denied"))
 				.andExpect(status().isForbidden())
 				.andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
@@ -170,8 +159,7 @@ class GlobalExceptionHandlerTest {
 	// 필터 체인 전용 에러라 컨트롤러 슬라이스에서 재현할 수 없어, 실제 흐름과 같은
 	// SecurityContext 권한을 테스트 스레드에 심어 재현한다 (MockMvc는 동일 스레드에서 실행된다)
 	@Test
-	@DisplayName("온보딩 미완료 회원의 권한 부족은 ONBOARDING_NOT_COMPLETED를 반환한다")
-	void accessDeniedForOnboardingMemberReturnsOnboardingNotCompleted() throws Exception {
+	void 온보딩_미완료_회원의_권한_부족은_ONBOARDING_NOT_COMPLETED를_반환한다() throws Exception {
 		SecurityContextHolder.getContext().setAuthentication(
 				new TestingAuthenticationToken("1", null, "ROLE_ONBOARDING_MEMBER"));
 

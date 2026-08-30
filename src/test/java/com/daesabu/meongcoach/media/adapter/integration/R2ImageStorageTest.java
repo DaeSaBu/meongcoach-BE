@@ -6,13 +6,11 @@ import com.daesabu.meongcoach.media.application.required.ImageUploadUrl;
 import com.daesabu.meongcoach.media.domain.vo.ImageObjectKey;
 import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
  * presign은 로컬 서명 연산이라 네트워크 없이 실제 S3Presigner로 검증한다.
  */
-@DisplayName("R2 이미지 스토리지")
 class R2ImageStorageTest {
 
 	private static final String ENDPOINT = "https://test-account.r2.cloudflarestorage.com";
@@ -30,16 +28,14 @@ class R2ImageStorageTest {
 	}
 
 	@Test
-	@DisplayName("업로드 URL은 R2 엔드포인트의 버킷·키 경로를 가리킨다")
-	void uploadUrlPointsToBucketAndKey() {
+	void 업로드_URL은_R2_엔드포인트의_버킷_키_경로를_가리킨다() {
 		ImageUploadUrl url = storage.issueUploadUrl(KEY, "image/jpeg");
 
 		assertThat(url.uploadUrl()).startsWith(ENDPOINT + "/" + BUCKET + "/" + KEY.value());
 	}
 
 	@Test
-	@DisplayName("업로드 URL은 서명과 유효 시간을 담은 presigned URL이다")
-	void uploadUrlIsPresigned() {
+	void 업로드_URL은_서명과_유효_시간을_담은_presigned_URL이다() {
 		ImageUploadUrl url = storage.issueUploadUrl(KEY, "image/jpeg");
 
 		assertThat(url.uploadUrl()).contains("X-Amz-Signature=");
@@ -47,8 +43,7 @@ class R2ImageStorageTest {
 	}
 
 	@Test
-	@DisplayName("서명 대상 헤더는 Content-Type과 host뿐이다")
-	void uploadUrlSignsOnlyContentTypeAndHost() {
+	void 서명_대상_헤더는_contentType과_host뿐이다() {
 		ImageUploadUrl url = storage.issueUploadUrl(KEY, "image/jpeg");
 
 		// 체크섬 등 다른 헤더가 서명에 끼면 클라이언트가 그 헤더 없이 PUT할 때 R2가 거부한다
@@ -56,32 +51,28 @@ class R2ImageStorageTest {
 	}
 
 	@Test
-	@DisplayName("공개 URL은 공개 도메인 아래의 키 경로다")
-	void publicUrlIsUnderPublicBaseUrl() {
+	void 공개_URL은_공개_도메인_아래의_키_경로다() {
 		ImageUploadUrl url = storage.issueUploadUrl(KEY, "image/jpeg");
 
 		assertThat(url.publicUrl()).isEqualTo(PUBLIC_BASE_URL + "/" + KEY.value());
 	}
 
 	@Test
-	@DisplayName("유효 시간을 초 단위로 알려준다")
-	void expiresInSecondsMatchesValidity() {
+	void 유효_시간을_초_단위로_알려준다() {
 		ImageUploadUrl url = storage.issueUploadUrl(KEY, "image/jpeg");
 
 		assertThat(url.expiresInSeconds()).isEqualTo(600L);
 	}
 
 	@Test
-	@DisplayName("공개 도메인 아래의 URL만 우리 공개 URL로 판별한다")
-	void isPublicUrlChecksPrefix() {
+	void 공개_도메인_아래의_URL만_우리_공개_URL로_판별한다() {
 		assertThat(storage.isPublicUrl(PUBLIC_BASE_URL + "/" + KEY.value())).isTrue();
 		assertThat(storage.isPublicUrl("https://evil.example.com/" + KEY.value())).isFalse();
 		assertThat(storage.isPublicUrl(null)).isFalse();
 	}
 
 	@Test
-	@DisplayName("공개 도메인이 앞부분만 일치하는 다른 도메인은 거부한다")
-	void isPublicUrlRejectsLookAlikeDomain() {
+	void 공개_도메인이_앞부분만_일치하는_다른_도메인은_거부한다() {
 		assertThat(storage.isPublicUrl(PUBLIC_BASE_URL + ".evil.example.com/a.jpg")).isFalse();
 	}
 }
