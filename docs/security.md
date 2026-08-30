@@ -7,10 +7,10 @@
 
 클라이언트가 React Native 앱이므로, 서버가 리다이렉트를 주고받는 OAuth2 인가 코드 흐름을 쓰지 않습니다.
 **서버가 제공자의 REST 키·시크릿을 보관하지 않습니다.** 서버가 아는 제공자 값은 우리 앱을 가리키는 공개 식별자(`aud`)뿐입니다.
-지원 제공자는 카카오(`kakao`)와 애플(`apple`)이며, 둘 다 OIDC id_token을 받습니다.
+지원 제공자는 카카오(`kakao`)·구글(`google`)·애플(`apple`)이며, 모두 OIDC id_token을 받습니다.
 
 ```
-[앱] 제공자 SDK 네이티브 로그인 (카카오 SDK / Sign in with Apple, OIDC)
+[앱] 제공자 SDK 네이티브 로그인 (카카오 SDK / Google Sign-In / Sign in with Apple, OIDC)
   → 제공자 id_token 획득 (애플은 identityToken)
      → POST /api/auth/login/social/{provider}  { "token": "..." }
         → 서버가 id_token 서명·발급자·만료·aud 검증 (캐시된 공개 키로 로컬 검증)
@@ -27,7 +27,7 @@
 id_token의 서명이 유효하다는 것은 "제공자가 발급했다"만 증명하고,
 **"우리 앱에 발급했다"는 증명하지 않습니다.**
 
-검증이 없으면 공격자가 자신의 카카오·애플 앱에서 받은 유효한 토큰을 우리 서버에 제출해
+검증이 없으면 공격자가 자신의 카카오·구글·애플 앱에서 받은 유효한 토큰을 우리 서버에 제출해
 **해당 제공자 사용자로 로그인할 수 있습니다** (confused deputy).
 
 그래서 `OidcIdTokenVerifier`는 id_token의 `aud`가 설정된
@@ -35,7 +35,8 @@ id_token의 서명이 유효하다는 것은 "제공자가 발급했다"만 증�
 (`USER_SOCIAL_TOKEN_APP_MISMATCH`). `aud`가 아예 없는 토큰도 같은 이유로 거부합니다.
 
 `aud`는 플랫폼마다 다릅니다 — 카카오는 **네이티브 앱은 네이티브 앱 키, 웹은 REST API 키**,
-애플은 **iOS 네이티브는 앱 번들 ID, 웹·안드로이드는 Services ID**입니다.
+구글은 **안드로이드·서버 검증은 웹 클라이언트 ID, iOS는 iOS 클라이언트 ID**(안드로이드용 OAuth 클라이언트 ID는
+SHA-1 검증용이라 id_token의 `aud`가 되지 않습니다), 애플은 **iOS 네이티브는 앱 번들 ID, 웹·안드로이드는 Services ID**입니다.
 그래서 단일 값이 아니라 목록으로 받습니다. 여기에는 반드시 우리 앱의 식별자만 넣어야 합니다.
 
 `aud` 검증만 디코더의 `OAuth2TokenValidator` 체인이 아니라 `verify()`에서 직접 합니다.
@@ -246,6 +247,8 @@ OIDC 제공자는 모두 "JWKS 디코더 + `iss` + `exp` + `aud`" 동일 형태�
 | `KAKAO_NATIVE_APP_KEY` | 네이티브 SDK id_token의 `aud`. 시크릿이 아닌 식별자. **빈 값이면 기동 실패** |
 | `KAKAO_REST_API_KEY` | 웹 로그인 id_token의 `aud`. 시크릿이 아닌 식별자. **빈 값이면 기동 실패** |
 | `APPLE_BUNDLE_ID` | Sign in with Apple id_token의 `aud`(iOS 앱 번들 ID). 시크릿이 아닌 식별자. **빈 값이면 기동 실패** |
+| `GOOGLE_WEB_CLIENT_ID` | 구글 id_token의 `aud`(웹 OAuth 클라이언트 ID). 안드로이드 SDK도 이 값을 `aud`로 발급합니다. 시크릿이 아닌 식별자. **빈 값이면 기동 실패** |
+| `GOOGLE_IOS_CLIENT_ID` | 구글 id_token의 `aud`(iOS OAuth 클라이언트 ID). 시크릿이 아닌 식별자. **빈 값이면 기동 실패** |
 
 로컬은 환경 변수로 export하고, 배포는 ECS task definition의 환경변수와 Secrets Manager 참조로 주입합니다.
 테스트는 `src/test/resources/application-test.yml`의 더미 값을 쓰므로 환경 변수가 필요 없습니다.
@@ -257,8 +260,8 @@ dev/prod의 DB 접속 변수(`DB_HOST` 등)는 [profiles.md](profiles.md)를 참
   `https://appleid.apple.com/auth/revoke`로 토큰을 revoke하도록 요구하지만, 서버는 id_token만 검증하고 `.p8` 키·client_secret·
   authorization code 수신 경로가 없어 아직 구현하지 않았습니다. 구현하려면 `APPLE_TEAM_ID`·`APPLE_KEY_ID`·`APPLE_PRIVATE_KEY`로
   ES256 client_secret을 만들고, 클라이언트가 탈퇴 요청에 authorization code를 실어 보내 `/auth/token` 교환 → `/auth/revoke` 순으로
-  호출해야 합니다. 카카오 unlink(`/v1/user/unlink`)도 같은 이유로 미구현입니다. 그동안 사용자 기기의 설정 > Apple ID >
-  Apple로 로그인 목록에는 앱이 남습니다.
+  호출해야 합니다. 카카오 unlink(`/v1/user/unlink`)와 구글 revoke(`https://oauth2.googleapis.com/revoke`)도 같은 이유로
+  미구현입니다. 그동안 사용자 기기의 설정 > Apple ID > Apple로 로그인 목록과 구글 계정의 연결된 앱 목록에는 앱이 남습니다.
 - **탈퇴해도 타 모듈 데이터는 남습니다.** 강아지(`dogs`)·AI 리포트(`ai_reports`)·학습 진도는 옛 `userId`로 남으며, 재가입은 새
   `userId`를 받으므로 도달할 수 없는 고아 행이 됩니다. 삭제용 `provided` 인터페이스나 모듈 이벤트 선례가 없어 MVP에서는 두고,
   필요해지면 `UserWithdrawer`에서 각 모듈의 정리 인터페이스를 호출하도록 넓힙니다.
@@ -280,8 +283,12 @@ dev/prod의 DB 접속 변수(`DB_HOST` 등)는 [profiles.md](profiles.md)를 참
   `@privaterelay.appleid.com` 주소로 오고, 이메일 공유에 동의하지 않으면 클레임 자체가 없습니다.
   카카오와 마찬가지로 `SocialAccount.email`이 nullable이라 동작에는 문제가 없습니다. 이름은 id_token에
   없고 최초 인가 응답에만 실리므로 서버는 받지 않습니다.
-- **애플 id_token의 `nonce`는 검증하지 않습니다.** 서버가 nonce를 발급·보관하는 왕복이 없는 무상태
-  설계라 카카오와 같은 기준을 적용합니다. 재사용 창은 id_token 만료(애플 10분)로 제한됩니다.
+- **애플·구글 id_token의 `nonce`는 검증하지 않습니다.** 서버가 nonce를 발급·보관하는 왕복이 없는 무상태
+  설계라 카카오와 같은 기준을 적용합니다. 재사용 창은 id_token 만료(애플 10분, 구글 1시간)로 제한됩니다.
+- **구글 `iss`는 `https://accounts.google.com` 하나만 허용합니다.** 구글 문서상 `accounts.google.com`(스킴 없음)으로도
+  올 수 있다고 되어 있지만 현행 Google Sign-In SDK는 `https://` 형태로 발급하며, `OidcProviderProperties.issuer`를
+  목록으로 넓히면 카카오·애플 설정과 검증기까지 함께 바뀌어야 해서 단일 값으로 둡니다. 스킴 없는 `iss`가 실제로
+  관측되면 그때 넓힙니다.
 - **공개 키 조회 실패는 여전히 로그인을 막습니다.** 디코더가 JWKS를 캐시하므로 매 로그인이
   제공자에 묶이지는 않지만, 캐시가 비어 있을 때 조회에 실패하면
   `USER_SOCIAL_PROVIDER_UNAVAILABLE`(502)로 토큰 무효(401)와 구분해 응답합니다.
