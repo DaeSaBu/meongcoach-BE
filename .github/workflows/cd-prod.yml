@@ -7,10 +7,6 @@ on:
         description: health check까지 성공한 dev 배포의 commit SHA
         required: true
         type: string
-      release_version:
-        description: 운영 배포 버전(vMAJOR.MINOR.PATCH)
-        required: true
-        type: string
       confirmation:
         description: DEPLOY_PRODUCTION을 입력한다
         required: true
@@ -48,6 +44,8 @@ jobs:
     permissions:
       actions: read
       contents: read
+    outputs:
+      release_version: ${{ steps.release-version.outputs.value }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -56,14 +54,12 @@ jobs:
       - name: 운영 배포 입력 및 dev 승격 검증
         env:
           DEV_COMMIT_SHA: ${{ inputs.dev_commit_sha }}
-          RELEASE_VERSION: ${{ inputs.release_version }}
           CONFIRMATION: ${{ inputs.confirmation }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           test "${GITHUB_REF_NAME}" = "main"
           test "${CONFIRMATION}" = "DEPLOY_PRODUCTION"
           [[ "${DEV_COMMIT_SHA}" =~ ^[0-9a-fA-F]{40}$ ]]
-          [[ "${RELEASE_VERSION}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
 
           DEV_COMMIT_SHA=${DEV_COMMIT_SHA,,}
           git cat-file -e "${DEV_COMMIT_SHA}^{commit}"
@@ -95,14 +91,31 @@ jobs:
             .artifacts | any(.name == $name and .expired == false)
           ' <<< "${ARTIFACTS}" > /dev/null
 
+          ! git tag --points-at "${GITHUB_SHA}" |
+            grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'
+
+      # 배포마다 직전 릴리스의 마이너 버전을 1 올린다. 메이저 버전 변경은 이 워크플로가 다루지 않는다 — 별도로 수동 태깅한다.
+      - name: 다음 운영 버전 계산
+        id: release-version
+        run: |
+          PREVIOUS_RELEASE=$(git tag --list 'v*' --sort=-version:refname |
+            grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' |
+            head -n 1 || true)
+
+          if [ -n "${PREVIOUS_RELEASE}" ]; then
+            IFS='.' read -r MAJOR MINOR _ <<< "${PREVIOUS_RELEASE#v}"
+            RELEASE_VERSION="v${MAJOR}.$((MINOR + 1)).0"
+          else
+            RELEASE_VERSION="v0.1.0"
+          fi
+
           set +e
           git ls-remote --exit-code --tags origin "refs/tags/${RELEASE_VERSION}" > /dev/null
           TAG_STATUS=$?
           set -e
-
           test "${TAG_STATUS}" -eq 2
-          ! git tag --points-at "${GITHUB_SHA}" |
-            grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'
+
+          echo "value=${RELEASE_VERSION}" >> "${GITHUB_OUTPUT}"
 
   deploy:
     needs: release-check
@@ -245,7 +258,7 @@ jobs:
 
       - name: 운영 배포 tag 생성
         env:
-          RELEASE_VERSION: ${{ inputs.release_version }}
+          RELEASE_VERSION: ${{ needs.release-check.outputs.release_version }}
         run: |
           PREVIOUS_RELEASE=$(git tag --list 'v*' --sort=-version:refname |
             grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' |
