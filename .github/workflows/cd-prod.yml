@@ -272,3 +272,49 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git tag --annotate "${RELEASE_VERSION}" --file tag-message.txt "${GITHUB_SHA}"
           git push origin "refs/tags/${RELEASE_VERSION}"
+
+  notify:
+    needs: [gate, ci, release-check, deploy]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: 배포 결과 메시지 구성
+        id: message
+        env:
+          GATE_RESULT: ${{ needs.gate.result }}
+          CI_RESULT: ${{ needs.ci.result }}
+          RELEASE_CHECK_RESULT: ${{ needs.release-check.result }}
+          DEPLOY_RESULT: ${{ needs.deploy.result }}
+          RELEASE_VERSION: ${{ inputs.release_version }}
+        run: |
+          if [ "${DEPLOY_RESULT}" = "success" ]; then
+            STATUS=":white_check_mark: 배포 성공"
+          elif [ "${GATE_RESULT}" != "success" ]; then
+            STATUS=":x: 배포 실패 (gate: ${GATE_RESULT})"
+          elif [ "${CI_RESULT}" != "success" ]; then
+            STATUS=":x: 배포 실패 (ci: ${CI_RESULT})"
+          elif [ "${RELEASE_CHECK_RESULT}" != "success" ]; then
+            STATUS=":x: 배포 실패 (release-check: ${RELEASE_CHECK_RESULT})"
+          else
+            STATUS=":x: 배포 실패 (deploy: ${DEPLOY_RESULT})"
+          fi
+
+          # 검증 전에 실패한 실행도 알림을 보내므로 release_version은 허용 문자만 남긴다.
+          SAFE_RELEASE_VERSION=$(printf '%s' "${RELEASE_VERSION}" | tr -cd 'v0-9.')
+
+          echo "status=${STATUS}" >> "${GITHUB_OUTPUT}"
+          echo "release_version=${SAFE_RELEASE_VERSION}" >> "${GITHUB_OUTPUT}"
+          echo "short_sha=${GITHUB_SHA::7}" >> "${GITHUB_OUTPUT}"
+
+      # SLACK_WEBHOOK_URL은 dev·prod CD가 공유하는 Slack Incoming Webhook URL이다.
+      - name: Slack 알림 전송
+        uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": "[운영 CD] ${{ steps.message.outputs.status }}\n버전: ${{ steps.message.outputs.release_version }}\n저장소: ${{ github.repository }} (${{ github.ref_name }})\ncommit: <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ steps.message.outputs.short_sha }}>\n실행자: ${{ github.actor }}\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|워크플로 실행 보기>"
+            }
