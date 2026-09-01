@@ -92,3 +92,9 @@ meongcoach:
       # id_token의 aud는 iOS 앱의 번들 ID. 웹·안드로이드(Services ID)를 붙이면 쉼표로 나열한다.
       # 다른 앱에서 발급된 토큰을 걸러내는 값이므로 반드시 우리 앱의 식별자만 넣는다
       audiences: ${APPLE_BUNDLE_ID}
+    google:
+      issuer: https://accounts.google.com
+      jwk-set-uri: https://www.googleapis.com/oauth2/v3/certs
+      # id_token의 aud 후보. 안드로이드·서버 검증은 웹 클라이언트 ID, iOS는 iOS 클라이언트 ID라 쉼표로 나열한다.
+      # 다른 앱에서 발급된 토큰을 걸러내는 값이므로 반드시 우리 앱의 클라이언트 ID만 넣는다
+      audiences: ${GOOGLE_WEB_CLIENT_ID},${GOOGLE_IOS_CLIENT_ID}
