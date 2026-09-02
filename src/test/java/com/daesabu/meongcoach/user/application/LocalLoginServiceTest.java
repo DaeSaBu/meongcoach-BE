@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.daesabu.meongcoach.user.application.provided.AuthToken;
 import com.daesabu.meongcoach.user.application.provided.LoginResult;
 import com.daesabu.meongcoach.user.application.required.LocalAccountRepository;
+import com.daesabu.meongcoach.user.application.required.RefreshTokenRepository;
 import com.daesabu.meongcoach.user.application.required.TokenProvider;
 import com.daesabu.meongcoach.user.application.required.UserProfileRepository;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
@@ -18,7 +19,9 @@ import com.daesabu.meongcoach.user.domain.exception.InvalidCredentialsException;
 import com.daesabu.meongcoach.user.domain.exception.InvalidEmailException;
 import com.daesabu.meongcoach.user.domain.exception.WithdrawnUserException;
 import com.daesabu.meongcoach.user.domain.vo.Email;
+import java.time.LocalDateTime;
 import java.util.Set;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +35,7 @@ class LocalLoginServiceTest {
 
 	private static final String EMAIL = "review@meongcoach.com";
 	private static final String PASSWORD = "meongcoach-review";
+	private static final LocalDateTime EXPIRES_AT = LocalDateTime.of(2026, 9, 16, 12, 0);
 
 	// 검증 로직은 해시 강도와 무관하므로 테스트에서는 최소 강도로 해싱 비용을 줄인다
 	private static final PasswordEncoder PASSWORD_ENCODER = new BCryptPasswordEncoder(4);
@@ -46,6 +50,9 @@ class LocalLoginServiceTest {
 	private UserProfileRepository userProfileRepository;
 
 	@Autowired
+	private RefreshTokenRepository refreshTokenRepository;
+
+	@Autowired
 	private TestEntityManager entityManager;
 
 	private LocalLoginService service;
@@ -54,8 +61,8 @@ class LocalLoginServiceTest {
 
 	@BeforeEach
 	void setUp() {
-		service = new LocalLoginService(localAccountRepository, userProfileRepository, new StubTokenProvider(),
-				PASSWORD_ENCODER);
+		service = new LocalLoginService(localAccountRepository, userProfileRepository,
+				new AuthTokenIssueService(new StubTokenProvider(), refreshTokenRepository), PASSWORD_ENCODER);
 		user = userRepository.save(User.registerOnboardingMember());
 		String passwordHash = PASSWORD_ENCODER.encode(PASSWORD);
 		localAccountRepository.save(
@@ -70,6 +77,14 @@ class LocalLoginServiceTest {
 
 		assertThat(result.token().accessToken()).isEqualTo("access-" + user.getId());
 		assertThat(result.needsOnboarding()).isTrue();
+	}
+
+	@Test
+	void 로그인하면_리프레시_토큰이_저장된다() {
+		LoginResult result = service.login(EMAIL, PASSWORD);
+
+		assertThat(refreshTokenRepository.findByTokenId(result.token().refreshTokenId()))
+				.hasValueSatisfying(stored -> assertThat(stored.getUser().getId()).isEqualTo(user.getId()));
 	}
 
 	@Test
@@ -117,11 +132,12 @@ class LocalLoginServiceTest {
 
 		@Override
 		public AuthToken issue(Long userId) {
-			return new AuthToken("access-" + userId, "refresh-" + userId);
+			String tokenId = UUID.randomUUID().toString();
+			return new AuthToken("access-" + userId, "refresh-" + userId, tokenId, EXPIRES_AT);
 		}
 
 		@Override
-		public Long extractUserId(String refreshToken) {
+		public String extractTokenId(String refreshToken) {
 			throw new UnsupportedOperationException();
 		}
 	}
