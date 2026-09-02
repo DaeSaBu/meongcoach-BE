@@ -90,3 +90,4 @@ Swagger UI는 API 서버가 정적 파일로 직접 서빙하며, 노출 범위�
 - 이미 적용된 마이그레이션 파일은 수정하지 않고, 스키마를 더 바꿔야 하면 새 버전 파일을 추가합니다.
 - 엔티티를 변경하면 마이그레이션 파일을 함께 추가합니다. dev/prod는 `validate`라 어긋나면 기동이 실패하지만, local/test는 ddl-auto가 스키마를 대신 만들어 마이그레이션 없이도 동작하므로 리뷰에서 엔티티 변경과 마이그레이션 동반 여부를 확인합니다.
 - 작성한 마이그레이션은 `./gradlew flywayMigrate`로 로컬 postgres(`compose.yml`)에 먼저 적용해 검증합니다.
+- CI의 `schema-check` job이 PR마다 PostgreSQL에 마이그레이션을 적용한 뒤 `ddl-auto: validate`로 엔티티와 대조합니다(`migration/FlywaySchemaValidationTest`). 마이그레이션을 빠뜨리면 dev 배포가 아니라 CI에서 실패합니다.
