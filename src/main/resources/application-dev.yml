@@ -12,8 +12,8 @@ spring:
     password: ${DB_PASSWORD}
   jpa:
     hibernate:
-      # 마이그레이션 도구 도입 전까지 엔티티 변경을 자동 반영한다. 컬럼 삭제·이름 변경은 반영되지 않는다
-      ddl-auto: update
+      # Flyway 마이그레이션이 스키마를 만들고, Hibernate는 엔티티와의 일치만 검증한다
+      ddl-auto: validate
 
 meongcoach:
   # 개발 서버에서는 /swagger-ui/** 문서 페이지를 인증 없이 연다
