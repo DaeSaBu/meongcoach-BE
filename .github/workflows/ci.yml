@@ -19,13 +19,13 @@ jobs:
       postgres:
         image: postgres:18.3
         env:
-          POSTGRES_DB: meongcoach
+          POSTGRES_DB: meongcoach_schema_check
           POSTGRES_USER: meongcoach_ci
           POSTGRES_PASSWORD: meongcoach-ci
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U meongcoach_ci -d meongcoach"
+          --health-cmd "pg_isready -U meongcoach_ci -d meongcoach_schema_check"
           --health-interval 5s
           --health-timeout 3s
           --health-retries 10
@@ -44,7 +44,7 @@ jobs:
 
       - name: 테스트 및 커버리지 검증
         env:
-          SCHEMA_CHECK_DB_URL: jdbc:postgresql://localhost:5432/meongcoach
+          SCHEMA_CHECK_DB_URL: jdbc:postgresql://localhost:5432/meongcoach_schema_check
           SCHEMA_CHECK_DB_USERNAME: meongcoach_ci
           SCHEMA_CHECK_DB_PASSWORD: meongcoach-ci
         run: ./gradlew test jacocoTestCoverageVerification

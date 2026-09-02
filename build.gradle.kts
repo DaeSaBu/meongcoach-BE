@@ -39,8 +39,9 @@ val asciidoctorExt: Configuration by configurations.creating
 
 // `./gradlew flywayMigrate`로 마이그레이션 파일을 로컬 postgres(compose.yml)에 직접 검증할 때 쓴다.
 // 앱 부팅 시 마이그레이션은 dev/prod 프로파일이 spring.flyway.*(DataSource 재사용)로 별도 수행한다.
+// 앱(local 프로파일)의 create-drop과 섞이지 않도록 검증 전용 DB(compose/postgres-init.sql)를 쓴다
 flyway {
-	url = "jdbc:postgresql://localhost:5432/meongcoach"
+	url = "jdbc:postgresql://localhost:5432/meongcoach_schema_check"
 	user = "meongcoach_local"
 	password = "meongcoach-local"
 	locations = arrayOf("filesystem:src/main/resources/db/migration")
