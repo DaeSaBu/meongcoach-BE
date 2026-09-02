@@ -9,6 +9,9 @@ spring:
     driver-class-name: org.postgresql.Driver
     username: ${DB_USERNAME:meongcoach_local}
     password: ${DB_PASSWORD:meongcoach-local}
+  # 로컬은 ddl-auto(create-drop)가 매 기동마다 스키마를 재생성하므로 Flyway를 끈다
+  flyway:
+    enabled: false
   jpa:
     defer-datasource-initialization: true
     hibernate:
