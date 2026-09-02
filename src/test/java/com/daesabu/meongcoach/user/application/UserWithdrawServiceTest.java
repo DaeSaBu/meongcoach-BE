@@ -22,7 +22,6 @@ import com.daesabu.meongcoach.user.domain.command.UserProfileCreateCommand;
 import com.daesabu.meongcoach.user.domain.exception.UserNotFoundException;
 import com.daesabu.meongcoach.user.domain.vo.Email;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -145,9 +144,8 @@ class UserWithdrawServiceTest {
 		User user = persistSocialMember();
 		RefreshToken revoked = RefreshToken.issue(user, "jti-revoked", LocalDateTime.now().plusDays(14));
 		revoked.revoke();
-		// H2 TIMESTAMP는 마이크로초까지만 저장하므로 재조회 값과 같은 정밀도로 맞춘다
-		LocalDateTime firstRevokedAt = revoked.getRevokedAt().truncatedTo(ChronoUnit.MICROS);
 		persistToken(revoked);
+		LocalDateTime firstRevokedAt = refreshTokenRepository.findById(revoked.getId()).orElseThrow().getRevokedAt();
 
 		userWithdrawer.withdraw(user.getId());
 		flushAndClear();

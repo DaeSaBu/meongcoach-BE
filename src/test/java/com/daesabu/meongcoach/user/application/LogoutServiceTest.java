@@ -11,7 +11,6 @@ import com.daesabu.meongcoach.user.domain.RefreshToken;
 import com.daesabu.meongcoach.user.domain.User;
 import com.daesabu.meongcoach.user.domain.exception.InvalidRefreshTokenException;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,9 +58,8 @@ class LogoutServiceTest {
 	void 이미_폐기된_토큰을_로그아웃해도_처음_폐기_시각이_유지된다() {
 		RefreshToken revoked = RefreshToken.issue(user, STORED_TOKEN_ID, LocalDateTime.now().plusDays(14));
 		revoked.revoke();
-		// H2 TIMESTAMP는 마이크로초까지만 저장하므로 재조회 값과 같은 정밀도로 맞춘다
-		LocalDateTime firstRevokedAt = revoked.getRevokedAt().truncatedTo(ChronoUnit.MICROS);
 		persistToken(revoked);
+		LocalDateTime firstRevokedAt = refreshTokenRepository.findById(revoked.getId()).orElseThrow().getRevokedAt();
 
 		service.logout(STORED_TOKEN_ID);
 
