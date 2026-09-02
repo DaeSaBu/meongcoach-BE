@@ -156,7 +156,9 @@ val postProcessOpenApiSpec = tasks.register("postProcessOpenApiSpec") {
 	group = "documentation"
 	description = "openapi3.json에 보안 스킴과 모듈 태그를 주입하고 operationId를 정규화한다"
 	val specFile = layout.buildDirectory.file("api-spec/openapi3.json")
-	val publicPaths = listOf("/api/health", "/api/auth/login/social/{provider}", "/api/auth/login/local", "/api/auth/token/refresh")
+	val publicPaths = listOf(
+		"/api/health", "/api/auth/login/social/{provider}", "/api/auth/login/local", "/api/auth/token/refresh", "/api/auth/logout"
+	)
 	val httpMethods = setOf("get", "post", "put", "patch", "delete", "head", "options")
 	// REST Docs 스니펫 식별자의 모듈 접두어 → Swagger UI 그룹 태그. 선언 순서가 화면 표시 순서다
 	val moduleTags = linkedMapOf(
