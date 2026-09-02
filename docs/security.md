@@ -51,7 +51,7 @@ SHA-1 검증용이라 id_token의 `aud`가 되지 않습니다), 애플은 **iOS
 | 액세스 토큰 | 1시간 |
 | 리프레시 토큰 | 14일 |
 | 클레임 | `iss`, `sub`(회원 ID), `iat`, `exp`, `jti`, `token_type` |
-| 저장 | **하지 않음.** 토큰 자체는 서명·만료·용도로만 검증하고, `sub`가 등록된 회원인지만 DB로 확인 |
+| 저장 | 액세스 토큰은 저장하지 않고 서명·만료·용도로만 검증. 리프레시 토큰은 원문 대신 `jti`·만료·폐기 시각을 `refresh_tokens`에 저장 |
 
 ### 액세스 토큰 검증 순서
 
@@ -82,7 +82,7 @@ SHA-1 검증용이라 id_token의 `aud`가 되지 않습니다), 애플은 **iOS
 
 | 순서 | 경로 | 접근 |
 |---|---|---|
-| 1 | `/api/health`, `/api/auth/login/social/**`, `/api/auth/login/local`, `/api/auth/token/refresh` | permitAll |
+| 1 | `/api/health`, `/api/auth/login/social/**`, `/api/auth/login/local`, `/api/auth/token/refresh`, `/api/auth/logout` | permitAll |
 | 2 | `/swagger-ui/**` | 문서 활성 환경 permitAll, 그 외 denyAll |
 | 3 | `/api/onboarding/**`, `/api/dogs/profile/image` | `MEMBER`, `ONBOARDING_MEMBER` |
 | 4 | `DELETE /api/users/me` | `MEMBER`, `ONBOARDING_MEMBER` |
@@ -108,33 +108,33 @@ SHA-1 검증용이라 id_token의 `aud`가 되지 않습니다), 애플은 **iOS
 `TokenTypeValidator`가 붙어 `token_type` 클레임을 강제하므로, **리프레시 토큰을 `Authorization: Bearer`로
 제출하면 401**입니다. 이 검증이 없으면 리프레시 토큰이 사실상 14일짜리 액세스 토큰이 됩니다.
 
-회원 존재 검증은 액세스 디코더에만 붙습니다. 재발급 경로는 `TokenRefreshService`가 같은 확인을 하고
-`USER_INVALID_REFRESH_TOKEN`(401)으로 응답해, 클라이언트가 재로그인 분기를 그대로 쓸 수 있게 합니다.
+회원 존재 검증은 액세스 디코더에만 붙습니다. 재발급·로그아웃 경로는 리프레시 토큰을 요청 본문으로 받아
+`TokenRefreshService`·`LogoutService`가 저장 이력을 확인하고 `USER_INVALID_REFRESH_TOKEN`(401)으로 응답해,
+클라이언트가 재로그인 분기를 그대로 쓸 수 있게 합니다.
 
-### 무상태 정책의 트레이드오프
+### 리프레시 토큰 영속화와 rotation
 
-리프레시 토큰을 저장하지 않으므로 **강제 로그아웃·토큰 무효화가 불가능합니다.**
-탈취된 리프레시 토큰은 만료(14일)까지 유효합니다.
+리프레시 토큰은 발급할 때마다 `refresh_tokens`에 행을 남깁니다(`AuthTokenIssueService`가 JWT 발급과 저장을 항상 함께 수행).
+저장 키는 토큰 원문이 아니라 JWT의 `jti`라, DB가 유출되어도 토큰 자체는 새어 나가지 않습니다.
 
-회원 존재 검증은 **탈퇴 회원도 미등록으로 취급**합니다(`RegisteredUserCheckService`). 탈퇴(`WITHDRAWN`)는 상태만 바뀌고
-행이 남는 soft delete라 존재 여부만 보면 만료까지 토큰이 통과하기 때문입니다. 액세스 토큰 인증(`UserRoleAuthenticationConverter`)과
-재발급(`TokenRefreshService`)이 모두 이 서비스를 거치므로, 토큰을 저장하지 않고도 탈퇴 즉시 두 경로가 401로 끝납니다.
-이는 특정 회원의 토큰 전부를 거부하는 것이라 토큰 단위 무효화(강제 로그아웃)와는 다릅니다.
+- **재발급(rotation)** — `TokenRefreshService`는 서명이 유효해도 저장 이력이 없거나 이미 폐기·만료된 토큰이면 401을 내고,
+  통과하면 제시된 토큰을 폐기한 뒤 새 토큰 쌍을 발급·저장합니다. 폐기와 발급은 한 트랜잭션이라 중간에 실패하면 기존 토큰이 남습니다.
+- **로그아웃** — `POST /api/auth/logout`은 제시한 토큰 하나만 폐기합니다(기기 단위). 이미 폐기된 토큰도 204입니다.
+- **탈퇴** — `UserWithdrawService`가 회원의 살아 있는 토큰을 전부 폐기합니다.
 
-완화 장치:
-- 액세스 토큰 수명을 1시간으로 짧게 유지
-- 토큰마다 고유 `jti`를 넣어 두어, 나중에 거부 목록을 붙일 수 있게 함
-- 필요 시 `refresh-token-validity` 단축
+폐기는 행 삭제가 아니라 `revoked_at` 기록이라 이력이 남습니다. 액세스 토큰은 여전히 저장하지 않으므로 만료(1시간)까지 유효하며,
+탈퇴 회원의 액세스 토큰은 `RegisteredUserCheckService`가 미등록으로 취급해 막습니다. 탈퇴(`WITHDRAWN`)는 행이 남는 soft delete라
+존재 여부만 보면 통과하기 때문입니다.
 
-강제 로그아웃이 요구사항이 되면 리프레시 토큰 영속화가 필요하며, 이는 정책 변경입니다.
+영속화 이전에 발급된 리프레시 토큰은 저장 이력이 없어 재발급이 401로 끝나므로 클라이언트는 재로그인해야 합니다.
 
 ## 필터 체인 구성
 
 리다이렉트 흐름이 없어 세션이 필요 없으므로 **무상태 체인 하나**를 기본으로 둡니다.
 
-- `csrf` / `formLogin` / `httpBasic` / `logout` 비활성화
+- `csrf` / `formLogin` / `httpBasic` / `logout` 비활성화 (`logout`은 Spring의 세션 로그아웃. 앱 로그아웃은 `POST /api/auth/logout`)
 - `SessionCreationPolicy.STATELESS`
-- permitAll: `/api/health`, `/api/auth/login/social/**`, `/api/auth/login/local`, `/api/auth/token/refresh`
+- permitAll: `/api/health`, `/api/auth/login/social/**`, `/api/auth/login/local`, `/api/auth/token/refresh`, `/api/auth/logout`
   (인증 엔드포인트만 개별 경로로 열고 `/api/auth/**`로 넓히지 않습니다. 이후 추가되는 인증 관련 API가 자동으로 공개되는 것을 막기 위함입니다)
 - 그 외 요청은 역할 기반 인가 (위 "URL 인가 규칙" 참고)
 - `oauth2ResourceServer.jwt()` — Bearer 토큰 파싱·검증은 프레임워크가 담당하므로 커스텀 필터가 없습니다.
@@ -265,6 +265,9 @@ dev/prod의 DB 접속 변수(`DB_HOST` 등)는 [profiles.md](profiles.md)를 참
 - **탈퇴해도 타 모듈 데이터는 남습니다.** 강아지(`dogs`)·AI 리포트(`ai_reports`)·학습 진도는 옛 `userId`로 남으며, 재가입은 새
   `userId`를 받으므로 도달할 수 없는 고아 행이 됩니다. 삭제용 `provided` 인터페이스나 모듈 이벤트 선례가 없어 MVP에서는 두고,
   필요해지면 `UserWithdrawer`에서 각 모듈의 정리 인터페이스를 호출하도록 넓힙니다.
+- **폐기된 리프레시 토큰의 재사용을 감지하지 않습니다.** rotation 후 옛 토큰이 다시 제시되면 탈취 신호로 보고 그 회원의 토큰을
+  전부 폐기하는 것이 일반적이지만, MVP에서는 401로만 응답합니다. 필요해지면 `TokenRefreshService`에서 폐기된 행을 만났을 때
+  `findAllByUserAndRevokedAtIsNull`로 나머지를 폐기하도록 넓힙니다.
 - **이메일 로그인은 응답 시간을 균등화하지 않습니다.** 이메일이 없으면 BCrypt 대조 없이 바로 401이라, 응답 시간으로
   등록 여부를 추정할 수 있습니다. 로컬 계정은 심사용 몇 개뿐이라 MVP에서는 수용하며, 필요해지면 미존재 분기에서도
   더미 해시에 `matches`를 한 번 호출해 균등화합니다.
