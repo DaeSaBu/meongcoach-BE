@@ -13,6 +13,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.daesabu.meongcoach.user.application.provided.AuthToken;
 import com.daesabu.meongcoach.user.application.provided.LocalLogin;
 import com.daesabu.meongcoach.user.application.provided.LoginResult;
+import com.daesabu.meongcoach.user.application.provided.Logout;
 import com.daesabu.meongcoach.user.application.provided.SocialLogin;
 import com.daesabu.meongcoach.user.application.provided.TokenRefresher;
 import com.daesabu.meongcoach.user.domain.exception.InvalidCredentialsException;
@@ -220,6 +221,48 @@ class AuthControllerTest {
 				.andExpect(jsonPath("$.errors[0].field").value("refreshToken"));
 	}
 
+	@Test
+	void 로그아웃하면_204를_반환한다() throws Exception {
+		mockMvc.perform(post("/api/auth/logout")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(refreshBody(VALID_REFRESH_TOKEN)))
+				.andExpect(status().isNoContent())
+				.andDo(document("auth/logout",
+						requestFields(
+								fieldWithPath("refreshToken").description("필수 입력. 폐기할 리프레시 토큰")
+						)
+				));
+	}
+
+	@Test
+	void 유효하지_않은_리프레시_토큰으로_로그아웃하면_401을_반환한다() throws Exception {
+		mockMvc.perform(post("/api/auth/logout")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(refreshBody("invalid")))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.code").value("USER_INVALID_REFRESH_TOKEN"))
+				.andDo(document("auth/logout-error",
+						responseFields(
+								fieldWithPath("title").description("HTTP 상태 이름"),
+								fieldWithPath("status").description("HTTP 상태 코드"),
+								fieldWithPath("detail").description("사람이 읽을 수 있는 에러 설명"),
+								fieldWithPath("instance").description("에러가 발생한 요청 경로"),
+								fieldWithPath("code").description("클라이언트 분기용 에러 코드"),
+								fieldWithPath("timestamp").description("에러 발생 시각(UTC)")
+						)
+				));
+	}
+
+	@Test
+	void 로그아웃_리프레시_토큰이_비어_있으면_검증에_실패한다() throws Exception {
+		mockMvc.perform(post("/api/auth/logout")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(refreshBody("")))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
+				.andExpect(jsonPath("$.errors[0].field").value("refreshToken"));
+	}
+
 	@TestConfiguration
 	static class StubConfig {
 
@@ -250,6 +293,15 @@ class AuthControllerTest {
 					throw new InvalidRefreshTokenException();
 				}
 				return new AuthToken("access-token", "refresh-token", "refresh-token-id", EXPIRES_AT);
+			};
+		}
+
+		@Bean
+		Logout logout() {
+			return refreshToken -> {
+				if (!VALID_REFRESH_TOKEN.equals(refreshToken)) {
+					throw new InvalidRefreshTokenException();
+				}
 			};
 		}
 	}

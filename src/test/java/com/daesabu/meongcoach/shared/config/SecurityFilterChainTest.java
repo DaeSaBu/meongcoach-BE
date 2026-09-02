@@ -82,6 +82,14 @@ class SecurityFilterChainTest {
 	}
 
 	@Test
+	void 로그아웃은_인증_없이_호출할_수_있다() throws Exception {
+		mockMvc.perform(post("/api/auth/logout")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"refreshToken\": \"\"}"))
+				.andExpect(status().isBadRequest());
+	}
+
+	@Test
 	void 잘못된_소셜_토큰을_제출하면_401을_반환한다() throws Exception {
 		AuthToken token = tokenProvider.issue(userId);
 
