@@ -4,7 +4,6 @@ import com.daesabu.meongcoach.user.application.provided.AuthToken;
 import com.daesabu.meongcoach.user.application.provided.LocalLogin;
 import com.daesabu.meongcoach.user.application.provided.LoginResult;
 import com.daesabu.meongcoach.user.application.required.LocalAccountRepository;
-import com.daesabu.meongcoach.user.application.required.TokenProvider;
 import com.daesabu.meongcoach.user.application.required.UserProfileRepository;
 import com.daesabu.meongcoach.user.domain.LocalAccount;
 import com.daesabu.meongcoach.user.domain.User;
@@ -28,10 +27,12 @@ public class LocalLoginService implements LocalLogin {
 
 	private final LocalAccountRepository localAccountRepository;
 	private final UserProfileRepository userProfileRepository;
-	private final TokenProvider tokenProvider;
+	private final AuthTokenIssueService authTokenIssueService;
 	private final PasswordEncoder passwordEncoder;
 
+	// 토큰 발급이 리프레시 토큰 행을 저장하므로 클래스 기본값(readOnly)을 쓰기 트랜잭션으로 덮어쓴다
 	@Override
+	@Transactional
 	public LoginResult login(String email, String password) {
 		LocalAccount account = localAccountRepository.findByEmail(new Email(email))
 				.orElseThrow(InvalidCredentialsException::new);
@@ -44,7 +45,7 @@ public class LocalLoginService implements LocalLogin {
 			throw new WithdrawnUserException();
 		}
 
-		AuthToken token = tokenProvider.issue(user.getId());
+		AuthToken token = authTokenIssueService.issue(user);
 		boolean needsOnboarding = !userProfileRepository.existsById(user.getId());
 		return new LoginResult(token, needsOnboarding);
 	}

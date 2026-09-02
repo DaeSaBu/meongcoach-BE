@@ -4,7 +4,6 @@ import com.daesabu.meongcoach.user.application.provided.AuthToken;
 import com.daesabu.meongcoach.user.application.provided.LoginResult;
 import com.daesabu.meongcoach.user.application.provided.SocialLogin;
 import com.daesabu.meongcoach.user.application.required.SocialProfileReader;
-import com.daesabu.meongcoach.user.application.required.TokenProvider;
 import com.daesabu.meongcoach.user.domain.SocialProvider;
 import com.daesabu.meongcoach.user.domain.User;
 import com.daesabu.meongcoach.user.domain.command.SocialAccountLinkCommand;
@@ -18,22 +17,23 @@ import org.springframework.stereotype.Service;
 /**
  * 소셜 자격증명을 검증하고 회원을 조회·생성한 뒤 우리 서비스 토큰을 발급한다.
  * 제공자 구현체는 스프링이 주입하므로 제공자를 늘려도 이 클래스는 바뀌지 않는다.
- * 제공자 호출과 토큰 발급은 롤백할 것이 없고 커넥션을 잡을 이유도 없으므로,
- * 트랜잭션은 회원 조회·등록을 맡는 SocialUserRegisterService 안에서만 열린다.
+ * 제공자 호출은 롤백할 것이 없고 커넥션을 잡을 이유도 없으므로 이 클래스는 트랜잭션을 열지 않고,
+ * 회원 조회·등록(SocialUserRegisterService)과 토큰 발급·저장(AuthTokenIssueService)이 각자 트랜잭션을 연다.
  */
 @Service
 public class SocialLoginService implements SocialLogin {
 
 	private final Map<SocialProvider, SocialProfileReader> readers;
 	private final SocialUserRegisterService socialUserRegisterService;
-	private final TokenProvider tokenProvider;
+	private final AuthTokenIssueService authTokenIssueService;
 
 	public SocialLoginService(List<SocialProfileReader> readers,
-	                          SocialUserRegisterService socialUserRegisterService, TokenProvider tokenProvider) {
+	                          SocialUserRegisterService socialUserRegisterService,
+	                          AuthTokenIssueService authTokenIssueService) {
 		this.readers = readers.stream()
 				.collect(Collectors.toUnmodifiableMap(SocialProfileReader::provider, Function.identity()));
 		this.socialUserRegisterService = socialUserRegisterService;
-		this.tokenProvider = tokenProvider;
+		this.authTokenIssueService = authTokenIssueService;
 	}
 
 	@Override
@@ -41,7 +41,7 @@ public class SocialLoginService implements SocialLogin {
 		SocialAccountLinkCommand command = getSocialAccountLinkCommand(provider, credential);
 		User user = socialUserRegisterService.findOrRegister(command);
 
-		AuthToken token = tokenProvider.issue(user.getId());
+		AuthToken token = authTokenIssueService.issue(user);
 		boolean needsOnboarding = socialUserRegisterService.needsOnboarding(user.getId());
 
 		return new LoginResult(token, needsOnboarding);
