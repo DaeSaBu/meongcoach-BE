@@ -103,13 +103,8 @@ jq \
 							.name != "S3_ACCESS_KEY_ID" and
 							.name != "S3_SECRET_ACCESS_KEY" and
 							.name != "VIMEO_ACCESS_TOKEN" and
-							# GEMINI_API_KEY는 더 이상 주입하지 않는다. 이미 배포된 태스크 정의에서 걷어내려고 필터만 남긴다
-							.name != "GEMINI_API_KEY" and
 							.name != "SQS_ACCESS_KEY_ID" and
 							.name != "SQS_SECRET_ACCESS_KEY" and
-							# BEDROCK_*은 더 이상 주입하지 않는다. 이미 배포된 태스크 정의에서 걷어내려고 필터만 남긴다
-							.name != "BEDROCK_ACCESS_KEY_ID" and
-							.name != "BEDROCK_SECRET_ACCESS_KEY" and
 							.name != "EVOLINK_API_KEY"
 						))
 					)
@@ -134,17 +129,10 @@ jq \
 								.name != "S3_BUCKET" and
 								.name != "S3_PUBLIC_BASE_URL" and
 								.name != "VIMEO_ACCESS_TOKEN" and
-								# GEMINI_API_KEY는 더 이상 주입하지 않는다. 이미 배포된 태스크 정의에서 걷어내려고 필터만 남긴다
-								.name != "GEMINI_API_KEY" and
 								.name != "SQS_REGION" and
 								.name != "SQS_ACCESS_KEY_ID" and
 								.name != "SQS_SECRET_ACCESS_KEY" and
 								.name != "AI_VIDEO_QUEUE" and
-								# BEDROCK_*은 더 이상 주입하지 않는다. 이미 배포된 태스크 정의에서 걷어내려고 필터만 남긴다
-								.name != "BEDROCK_REGION" and
-								.name != "BEDROCK_ACCESS_KEY_ID" and
-								.name != "BEDROCK_SECRET_ACCESS_KEY" and
-								.name != "BEDROCK_MODEL" and
 								.name != "EVOLINK_API_KEY" and
 								.name != "EVOLINK_BASE_URL" and
 								.name != "EVOLINK_MODEL"
