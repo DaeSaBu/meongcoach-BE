@@ -23,6 +23,8 @@ jobs:
       actions: write
       contents: read
       id-token: write
+    outputs:
+      health_check: ${{ steps.ecs-deploy.outputs.health_check }}
     env:
       AWS_REGION: ap-northeast-2
       ECR_REPOSITORY: meongcoach-dev-ecr
@@ -176,3 +178,41 @@ jobs:
           path: dev-deployment-proof.json
           retention-days: 90
           overwrite: true
+
+  notify:
+    needs: [ci, deploy]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: 배포 결과 메시지 구성
+        id: message
+        env:
+          CI_RESULT: ${{ needs.ci.result }}
+          DEPLOY_RESULT: ${{ needs.deploy.result }}
+          HEALTH_CHECK: ${{ needs.deploy.outputs.health_check }}
+        run: |
+          if [ "${DEPLOY_RESULT}" = "success" ] && [ "${HEALTH_CHECK}" = "false" ]; then
+            STATUS=":warning: bootstrap 배포 성공 (desired count 0, health check 보류)"
+          elif [ "${DEPLOY_RESULT}" = "success" ]; then
+            STATUS=":white_check_mark: 배포 성공"
+          elif [ "${CI_RESULT}" != "success" ]; then
+            STATUS=":x: 배포 실패 (ci: ${CI_RESULT})"
+          else
+            STATUS=":x: 배포 실패 (deploy: ${DEPLOY_RESULT})"
+          fi
+
+          echo "status=${STATUS}" >> "${GITHUB_OUTPUT}"
+          echo "short_sha=${GITHUB_SHA::7}" >> "${GITHUB_OUTPUT}"
+
+      # SLACK_WEBHOOK_URL은 dev·prod CD가 공유하는 Slack Incoming Webhook URL이다.
+      - name: Slack 알림 전송
+        uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": "[개발 CD] ${{ steps.message.outputs.status }}\n저장소: ${{ github.repository }} (${{ github.ref_name }})\ncommit: <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ steps.message.outputs.short_sha }}>\n실행자: ${{ github.actor }}\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|워크플로 실행 보기>"
+            }
