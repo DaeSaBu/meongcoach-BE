@@ -4,6 +4,12 @@ on:
   push:
     branches: [develop]
 
+# 배포가 겹치면 ECS 서비스가 연달아 갱신돼 앞 배포의 안정화 대기가 10분 안에 끝나지 못하고 실패한다.
+# 앞 배포를 취소하지 않고 큐에 세워 한 번에 하나씩만 돌린다. (prod와 같은 규칙)
+concurrency:
+  group: backend-cd-dev-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   ci:
     permissions:
