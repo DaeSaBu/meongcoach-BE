@@ -5,10 +5,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.daesabu.meongcoach.user.application.provided.UserWithdrawer;
 import com.daesabu.meongcoach.user.application.required.LocalAccountRepository;
+import com.daesabu.meongcoach.user.application.required.RefreshTokenRepository;
 import com.daesabu.meongcoach.user.application.required.SocialAccountRepository;
 import com.daesabu.meongcoach.user.application.required.UserProfileRepository;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.LocalAccount;
+import com.daesabu.meongcoach.user.domain.RefreshToken;
 import com.daesabu.meongcoach.user.domain.SocialAccount;
 import com.daesabu.meongcoach.user.domain.SocialProvider;
 import com.daesabu.meongcoach.user.domain.User;
@@ -19,6 +21,7 @@ import com.daesabu.meongcoach.user.domain.command.SocialAccountLinkCommand;
 import com.daesabu.meongcoach.user.domain.command.UserProfileCreateCommand;
 import com.daesabu.meongcoach.user.domain.exception.UserNotFoundException;
 import com.daesabu.meongcoach.user.domain.vo.Email;
+import java.time.LocalDateTime;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,6 +54,9 @@ class UserWithdrawServiceTest {
 
 	@Autowired
 	private UserProfileRepository userProfileRepository;
+
+	@Autowired
+	private RefreshTokenRepository refreshTokenRepository;
 
 	@Autowired
 	private TestEntityManager entityManager;
@@ -121,6 +127,34 @@ class UserWithdrawServiceTest {
 	}
 
 	@Test
+	void 탈퇴하면_회원의_살아있는_리프레시_토큰이_모두_폐기된다() {
+		User user = persistSocialMember();
+		RefreshToken phone = persistToken(RefreshToken.issue(user, "jti-phone", LocalDateTime.now().plusDays(14)));
+		RefreshToken tablet = persistToken(RefreshToken.issue(user, "jti-tablet", LocalDateTime.now().plusDays(14)));
+
+		userWithdrawer.withdraw(user.getId());
+		flushAndClear();
+
+		assertThat(refreshTokenRepository.findById(phone.getId()).orElseThrow().getRevokedAt()).isNotNull();
+		assertThat(refreshTokenRepository.findById(tablet.getId()).orElseThrow().getRevokedAt()).isNotNull();
+	}
+
+	@Test
+	void 탈퇴해도_이미_폐기된_토큰의_폐기_시각은_바뀌지_않는다() {
+		User user = persistSocialMember();
+		RefreshToken revoked = RefreshToken.issue(user, "jti-revoked", LocalDateTime.now().plusDays(14));
+		revoked.revoke();
+		LocalDateTime firstRevokedAt = revoked.getRevokedAt();
+		persistToken(revoked);
+
+		userWithdrawer.withdraw(user.getId());
+		flushAndClear();
+
+		assertThat(refreshTokenRepository.findById(revoked.getId()).orElseThrow().getRevokedAt())
+				.isEqualTo(firstRevokedAt);
+	}
+
+	@Test
 	void 없는_회원_ID로_탈퇴하면_예외를_던진다() {
 		assertThatThrownBy(() -> userWithdrawer.withdraw(UNREGISTERED_USER_ID))
 				.isInstanceOf(UserNotFoundException.class);
@@ -131,6 +165,12 @@ class UserWithdrawServiceTest {
 		socialAccountRepository.save(SocialAccount.link(user, APPLE_ACCOUNT));
 		flushAndClear();
 		return user;
+	}
+
+	private RefreshToken persistToken(RefreshToken token) {
+		entityManager.persistAndFlush(token);
+		entityManager.clear();
+		return token;
 	}
 
 	private UserProfileCreateCommand profileCommand() {
