@@ -5,6 +5,7 @@ import com.daesabu.meongcoach.shared.security.TokenType;
 import com.daesabu.meongcoach.user.application.provided.AuthToken;
 import com.daesabu.meongcoach.user.application.required.TokenProvider;
 import com.daesabu.meongcoach.user.domain.exception.InvalidRefreshTokenException;
+import com.daesabu.meongcoach.user.domain.vo.RefreshTokenId;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -38,18 +39,24 @@ public class JwtTokenProvider implements TokenProvider {
 	@Override
 	public AuthToken issue(Long userId) {
 		Instant issuedAt = Instant.now();
-		String refreshTokenId = newTokenId();
+		RefreshTokenId refreshTokenId = RefreshTokenId.generate();
 		Instant refreshExpiresAt = issuedAt.plus(properties.refreshTokenValidity());
-		String accessToken = encode(userId, issuedAt, TokenType.ACCESS, properties.accessTokenValidity(), newTokenId());
+		String accessToken = encode(userId, issuedAt, TokenType.ACCESS, properties.accessTokenValidity(), accessTokenId());
 		String refreshToken = encode(userId, issuedAt, TokenType.REFRESH, properties.refreshTokenValidity(),
-				refreshTokenId);
+				refreshTokenId.value());
 		// 엔티티의 시각 컬럼이 시스템 존 LocalDateTime이므로 같은 존으로 변환한다
 		LocalDateTime refreshTokenExpiresAt = LocalDateTime.ofInstant(refreshExpiresAt, ZoneId.systemDefault());
 		return new AuthToken(accessToken, refreshToken, refreshTokenId, refreshTokenExpiresAt);
 	}
 
 	@Override
-	public String extractTokenId(String refreshToken) {
+	public RefreshTokenId extractTokenId(String refreshToken) {
+		String tokenId = decodeTokenId(refreshToken);
+		// 형식이 깨진 jti는 값 객체 생성에서 같은 예외로 거부된다
+		return new RefreshTokenId(tokenId);
+	}
+
+	private String decodeTokenId(String refreshToken) {
 		try {
 			return refreshTokenDecoder.decode(refreshToken).getId();
 		} catch (JwtException e) {
@@ -58,7 +65,8 @@ public class JwtTokenProvider implements TokenProvider {
 		}
 	}
 
-	private String newTokenId() {
+	// 액세스 토큰의 jti는 저장하지 않으므로 값 객체 없이 문자열로만 만든다
+	private String accessTokenId() {
 		return UUID.randomUUID().toString();
 	}
 
