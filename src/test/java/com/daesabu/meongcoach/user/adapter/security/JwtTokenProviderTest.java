@@ -11,6 +11,9 @@ import com.daesabu.meongcoach.user.domain.exception.InvalidRefreshTokenException
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import org.junit.jupiter.api.Test;
@@ -45,15 +48,29 @@ class JwtTokenProviderTest {
 		assertThat(access.getClaimAsString("iss")).isEqualTo(ISSUER);
 		assertThat(access.getClaimAsString(TokenType.CLAIM_NAME)).isEqualTo("access");
 		assertThat(refresh.getClaimAsString(TokenType.CLAIM_NAME)).isEqualTo("refresh");
-		assertThat(access.getId()).isNotEqualTo(refresh.getId());
+		assertThat(access.getId()).isNull();
+		assertThat(refresh.getId()).isNotNull();
 	}
 
 	@Test
-	void 리프레시_토큰에서_회원_식별자를_꺼낸다() {
+	void 발급한_리프레시_토큰의_jti와_만료_시각을_함께_돌려준다() {
+		JwtTokenProvider provider = tokenProvider(SECRET, Duration.ofHours(1), Duration.ofDays(14));
+
+		AuthToken token = provider.issue(USER_ID);
+
+		Jwt refresh = decoder(SECRET, TokenType.REFRESH).decode(token.refreshToken());
+		LocalDateTime expiresAt = LocalDateTime.ofInstant(refresh.getExpiresAt(), ZoneId.systemDefault());
+		assertThat(token.refreshTokenId().value()).isEqualTo(refresh.getId());
+		// JWT exp는 초 단위라 발급 시각의 나노초를 버리고 비교한다
+		assertThat(token.refreshTokenExpiresAt().truncatedTo(ChronoUnit.SECONDS)).isEqualTo(expiresAt);
+	}
+
+	@Test
+	void 리프레시_토큰에서_jti를_꺼낸다() {
 		JwtTokenProvider provider = tokenProvider(SECRET, Duration.ofHours(1), Duration.ofDays(14));
 		AuthToken token = provider.issue(USER_ID);
 
-		assertThat(provider.extractUserId(token.refreshToken())).isEqualTo(USER_ID);
+		assertThat(provider.extractTokenId(token.refreshToken())).isEqualTo(token.refreshTokenId());
 	}
 
 	@Test
@@ -61,7 +78,7 @@ class JwtTokenProviderTest {
 		JwtTokenProvider provider = tokenProvider(SECRET, Duration.ofHours(1), Duration.ofDays(14));
 		AuthToken token = provider.issue(USER_ID);
 
-		assertThatThrownBy(() -> provider.extractUserId(token.accessToken()))
+		assertThatThrownBy(() -> provider.extractTokenId(token.accessToken()))
 				.isInstanceOf(InvalidRefreshTokenException.class);
 	}
 
@@ -70,7 +87,7 @@ class JwtTokenProviderTest {
 		AuthToken forged = tokenProvider(OTHER_SECRET, Duration.ofHours(1), Duration.ofDays(14)).issue(USER_ID);
 		JwtTokenProvider provider = tokenProvider(SECRET, Duration.ofHours(1), Duration.ofDays(14));
 
-		assertThatThrownBy(() -> provider.extractUserId(forged.refreshToken()))
+		assertThatThrownBy(() -> provider.extractTokenId(forged.refreshToken()))
 				.isInstanceOf(InvalidRefreshTokenException.class);
 	}
 
@@ -79,7 +96,7 @@ class JwtTokenProviderTest {
 		JwtTokenProvider provider = tokenProvider(SECRET, Duration.ofHours(1), Duration.ofDays(14));
 		String expired = expiredRefreshToken();
 
-		assertThatThrownBy(() -> provider.extractUserId(expired))
+		assertThatThrownBy(() -> provider.extractTokenId(expired))
 				.isInstanceOf(InvalidRefreshTokenException.class);
 	}
 
@@ -88,7 +105,7 @@ class JwtTokenProviderTest {
 		JwtTokenProvider provider = tokenProvider(SECRET, Duration.ofHours(1), Duration.ofDays(14));
 		String tampered = provider.issue(USER_ID).refreshToken() + "tampered";
 
-		assertThatThrownBy(() -> provider.extractUserId(tampered))
+		assertThatThrownBy(() -> provider.extractTokenId(tampered))
 				.isInstanceOf(InvalidRefreshTokenException.class)
 				.hasMessageNotContaining(tampered);
 	}
