@@ -48,7 +48,8 @@ class JwtTokenProviderTest {
 		assertThat(access.getClaimAsString("iss")).isEqualTo(ISSUER);
 		assertThat(access.getClaimAsString(TokenType.CLAIM_NAME)).isEqualTo("access");
 		assertThat(refresh.getClaimAsString(TokenType.CLAIM_NAME)).isEqualTo("refresh");
-		assertThat(access.getId()).isNotEqualTo(refresh.getId());
+		assertThat(access.getId()).isNull();
+		assertThat(refresh.getId()).isNotNull();
 	}
 
 	@Test
