@@ -66,27 +66,6 @@ Swagger UI는 API 서버가 정적 파일로 직접 서빙하며, 노출 범위�
 | `prod` | `false` (명시) | 완전 차단 (denyAll — 유효 토큰으로도 접근 불가) |
 | `test` 등 미설정 | `false` (기본값) | 완전 차단 |
 
-## ddl-auto 정책과 마이그레이션
+## 스키마 마이그레이션
 
-| 프로파일 | 값 | 함의 |
-|---|---|---|
-| `local` | `create-drop` | 애플리케이션 기동 시 엔티티 스키마와 교육 초기 데이터·테스트 계정을 재생성. Flyway는 `spring.flyway.enabled: false`로 꺼 둔다 |
-| `test` | `create-drop` | H2 인메모리 스키마를 테스트마다 재생성. H2는 마이그레이션(PostgreSQL 문법)을 실행할 수 없어 Flyway를 끈다 |
-| `dev`, `prod` | `validate` | 스키마를 자동 변경하지 않음. Flyway 마이그레이션이 스키마를 만들고, 엔티티와 불일치하면 기동 실패 |
-
-스키마는 Flyway가 관리합니다. 마이그레이션 파일은 `src/main/resources/db/migration`에 두며, 초기 스키마는 `V1__init_schema.sql`입니다.
-
-- dev/prod는 애플리케이션 기동 시 `spring.flyway`가 자동으로 실행됩니다. 별도 접속 정보 없이 이미 구성된 DataSource(`DB_HOST`/`DB_NAME`/`DB_USERNAME`/`DB_PASSWORD`)를 그대로 재사용합니다.
-
-### 동작 원리
-
-- 마이그레이션 파일은 버전(`V1`, `V2`, ...) 순서로 실행되며, DB의 `flyway_schema_history` 테이블에 적용 이력을 기록합니다.
-- 애플리케이션 기동 시 이 테이블을 기준으로 아직 적용되지 않은 버전만 순서대로 실행합니다.
-- 이미 적용된 파일은 체크섬으로 무결성을 검증합니다. 적용 후 파일 내용이 바뀌면 체크섬이 어긋나 기동이 실패합니다.
-
-### 새 마이그레이션 추가
-
-- 파일명은 `V{n}__설명.sql`이며, `n`은 기존 마이그레이션 파일의 최댓값 + 1, 설명은 snake_case로 씁니다.
-- 이미 적용된 마이그레이션 파일은 수정하지 않고, 스키마를 더 바꿔야 하면 새 버전 파일을 추가합니다.
-- 엔티티를 변경하면 마이그레이션 파일을 함께 추가합니다. dev/prod는 `validate`라 어긋나면 기동이 실패하지만, local/test는 ddl-auto가 스키마를 대신 만들어 마이그레이션 없이도 동작하므로 리뷰에서 엔티티 변경과 마이그레이션 동반 여부를 확인합니다.
-- 작성한 마이그레이션은 `./gradlew flywayMigrate`로 로컬 postgres(`compose.yml`)에 먼저 적용해 검증합니다.
+마이그레이션 파일 작성과 적용 규칙은 [flyway.md](flyway.md)를 참고하세요.
