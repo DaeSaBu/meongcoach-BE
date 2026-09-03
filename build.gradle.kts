@@ -51,6 +51,8 @@ dependencyManagement {
 		mavenBom("org.springframework.modulith:spring-modulith-bom:2.1.0")
 		// Spring Cloud AWS 4.x가 Spring Boot 4.x 지원 라인이다
 		mavenBom("io.awspring.cloud:spring-cloud-aws-dependencies:4.1.0")
+		// starter와 logback 연동의 버전이 어긋나면 런타임에 깨지므로 BOM으로 묶는다
+		mavenBom("io.sentry:sentry-bom:8.54.0")
 	}
 }
 
@@ -68,8 +70,8 @@ dependencies {
 	// S3 업로드 완료 이벤트를 SQS로 받아 AI 분석을 트리거한다
 	implementation("io.awspring.cloud:spring-cloud-aws-starter-sqs")
 	// 에러 모니터링. starter는 logback 연동을 포함하지 않아 따로 넣는다. error 로그가 Sentry 이벤트가 된다
-	implementation("io.sentry:sentry-spring-boot-4-starter:8.54.0")
-	implementation("io.sentry:sentry-logback:8.54.0")
+	implementation("io.sentry:sentry-spring-boot-4-starter")
+	implementation("io.sentry:sentry-logback")
 	testImplementation("org.springframework.security:spring-security-test")
 	compileOnly("org.projectlombok:lombok")
 	runtimeOnly("com.h2database:h2")
