@@ -8,6 +8,7 @@ import com.daesabu.meongcoach.user.application.required.TokenProvider;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.RefreshToken;
 import com.daesabu.meongcoach.user.domain.User;
+import com.daesabu.meongcoach.user.domain.vo.RefreshTokenId;
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,7 +42,7 @@ class AuthTokenIssueServiceTest {
 
 		RefreshToken stored = refreshTokenRepository.findByTokenId(token.refreshTokenId()).orElseThrow();
 		assertThat(stored.getUser().getId()).isEqualTo(user.getId());
-		assertThat(stored.getTokenId()).isEqualTo("jti-" + user.getId());
+		assertThat(stored.getTokenId()).isEqualTo(token.refreshTokenId());
 		assertThat(stored.getExpiresAt()).isEqualTo(EXPIRES_AT);
 		assertThat(stored.getRevokedAt()).isNull();
 	}
@@ -58,11 +59,11 @@ class AuthTokenIssueServiceTest {
 
 		@Override
 		public AuthToken issue(Long userId) {
-			return new AuthToken("access-" + userId, "refresh-" + userId, "jti-" + userId, EXPIRES_AT);
+			return new AuthToken("access-" + userId, "refresh-" + userId, RefreshTokenId.generate(), EXPIRES_AT);
 		}
 
 		@Override
-		public String extractTokenId(String refreshToken) {
+		public RefreshTokenId extractTokenId(String refreshToken) {
 			throw new UnsupportedOperationException();
 		}
 	}

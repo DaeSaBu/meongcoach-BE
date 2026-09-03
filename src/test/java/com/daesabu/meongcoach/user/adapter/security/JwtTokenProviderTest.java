@@ -59,7 +59,7 @@ class JwtTokenProviderTest {
 
 		Jwt refresh = decoder(SECRET, TokenType.REFRESH).decode(token.refreshToken());
 		LocalDateTime expiresAt = LocalDateTime.ofInstant(refresh.getExpiresAt(), ZoneId.systemDefault());
-		assertThat(token.refreshTokenId()).isEqualTo(refresh.getId());
+		assertThat(token.refreshTokenId().value()).isEqualTo(refresh.getId());
 		// JWT exp는 초 단위라 발급 시각의 나노초를 버리고 비교한다
 		assertThat(token.refreshTokenExpiresAt().truncatedTo(ChronoUnit.SECONDS)).isEqualTo(expiresAt);
 	}

@@ -18,6 +18,7 @@ import com.daesabu.meongcoach.user.application.provided.TokenRefresher;
 import com.daesabu.meongcoach.user.domain.exception.InvalidCredentialsException;
 import com.daesabu.meongcoach.user.domain.exception.InvalidRefreshTokenException;
 import com.daesabu.meongcoach.user.domain.exception.InvalidSocialTokenException;
+import com.daesabu.meongcoach.user.domain.vo.RefreshTokenId;
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +40,7 @@ class AuthControllerTest {
 	private static final String VALID_EMAIL = "review@meongcoach.com";
 	private static final String VALID_PASSWORD = "meongcoach-review";
 	private static final LocalDateTime EXPIRES_AT = LocalDateTime.of(2026, 9, 16, 12, 0);
+	private static final RefreshTokenId REFRESH_TOKEN_ID = new RefreshTokenId("0f8fad5b-d9cb-469f-a165-70867728950e");
 
 	@Autowired
 	private MockMvc mockMvc;
@@ -229,7 +231,7 @@ class AuthControllerTest {
 				if (!VALID_TOKEN.equals(credential)) {
 					throw new InvalidSocialTokenException();
 				}
-				return new LoginResult(new AuthToken("access-token", "refresh-token", "refresh-token-id", EXPIRES_AT), true);
+				return new LoginResult(new AuthToken("access-token", "refresh-token", REFRESH_TOKEN_ID, EXPIRES_AT), true);
 			};
 		}
 
@@ -239,7 +241,7 @@ class AuthControllerTest {
 				if (!VALID_EMAIL.equals(email) || !VALID_PASSWORD.equals(password)) {
 					throw new InvalidCredentialsException();
 				}
-				return new LoginResult(new AuthToken("access-token", "refresh-token", "refresh-token-id", EXPIRES_AT), true);
+				return new LoginResult(new AuthToken("access-token", "refresh-token", REFRESH_TOKEN_ID, EXPIRES_AT), true);
 			};
 		}
 
@@ -249,7 +251,7 @@ class AuthControllerTest {
 				if (!VALID_REFRESH_TOKEN.equals(refreshToken)) {
 					throw new InvalidRefreshTokenException();
 				}
-				return new AuthToken("access-token", "refresh-token", "refresh-token-id", EXPIRES_AT);
+				return new AuthToken("access-token", "refresh-token", REFRESH_TOKEN_ID, EXPIRES_AT);
 			};
 		}
 	}
