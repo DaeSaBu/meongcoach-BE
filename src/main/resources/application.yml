@@ -31,7 +31,7 @@ spring:
         queue-not-found-strategy: fail
 
 sentry:
-  # DSN이 비어 있으면 SDK가 꺼진다. local·test는 주입하지 않는다
+  # DSN이 비어 있으면 SDK가 꺼진다. local은 .env로 dev 프로젝트 DSN을 넣고 test는 주입하지 않는다
   dsn: ${SENTRY_DSN:}
   # 배포 이미지의 커밋 SHA. 이슈를 배포 버전과 잇는다
   release: ${SENTRY_RELEASE:}

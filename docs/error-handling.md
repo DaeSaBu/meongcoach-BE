@@ -70,7 +70,7 @@ Content-Type은 항상 `application/problem+json`입니다.
 `error` 레벨 로그는 Sentry logback 연동이 이벤트로 보냅니다. 위 로깅 정책에 따라 5xx와 fallback만 전송되고 4xx는 전송되지 않으며, SQS 리스너처럼 컨트롤러 밖에서 남긴 `error` 로그도 같은 기준으로 전송됩니다. `info` 이상 로그는 breadcrumb으로 붙습니다.
 
 - Sentry의 예외 해석기는 가장 뒤 순서(`sentry.exception-resolver-order`)로 두어 전역 핸들러가 처리한 예외를 다시 보고하지 않습니다.
-- `SENTRY_DSN`이 없으면 SDK가 꺼집니다. local·test는 주입하지 않고, dev·prod는 CD가 환경별 프로젝트(`meongcoach-{env}-be`)의 DSN과 배포 커밋 SHA(`SENTRY_RELEASE`)를 주입합니다. 환경 태그는 프로파일 파일의 `sentry.environment`가 정합니다.
+- `SENTRY_DSN`이 없으면 SDK가 꺼집니다. local은 dev 프로젝트의 DSN을 `.env`로 넣고 test는 주입하지 않으며, dev·prod는 CD가 환경별 프로젝트(`meongcoach-{env}-be`)의 DSN과 배포 커밋 SHA(`SENTRY_RELEASE`)를 주입합니다. 환경 태그는 프로파일 파일의 `sentry.environment`가 정합니다.
 - `send-default-pii`는 끄므로 요청 IP·사용자 정보는 보내지 않습니다.
 
 ## 핸들러 변경 시
