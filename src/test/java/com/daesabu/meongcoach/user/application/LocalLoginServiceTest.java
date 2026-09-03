@@ -19,9 +19,9 @@ import com.daesabu.meongcoach.user.domain.exception.InvalidCredentialsException;
 import com.daesabu.meongcoach.user.domain.exception.InvalidEmailException;
 import com.daesabu.meongcoach.user.domain.exception.WithdrawnUserException;
 import com.daesabu.meongcoach.user.domain.vo.Email;
+import com.daesabu.meongcoach.user.domain.vo.RefreshTokenId;
 import java.time.LocalDateTime;
 import java.util.Set;
-import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -132,12 +132,12 @@ class LocalLoginServiceTest {
 
 		@Override
 		public AuthToken issue(Long userId) {
-			String tokenId = UUID.randomUUID().toString();
+			RefreshTokenId tokenId = RefreshTokenId.generate();
 			return new AuthToken("access-" + userId, "refresh-" + userId, tokenId, EXPIRES_AT);
 		}
 
 		@Override
-		public String extractTokenId(String refreshToken) {
+		public RefreshTokenId extractTokenId(String refreshToken) {
 			throw new UnsupportedOperationException();
 		}
 	}

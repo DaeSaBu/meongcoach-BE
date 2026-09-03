@@ -10,6 +10,7 @@ import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.RefreshToken;
 import com.daesabu.meongcoach.user.domain.User;
 import com.daesabu.meongcoach.user.domain.exception.InvalidRefreshTokenException;
+import com.daesabu.meongcoach.user.domain.vo.RefreshTokenId;
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,7 +21,8 @@ import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 @DataJpaTest
 class LogoutServiceTest {
 
-	private static final String STORED_TOKEN_ID = "jti-stored";
+	private static final RefreshTokenId STORED_TOKEN_ID = new RefreshTokenId("0f8fad5b-d9cb-469f-a165-70867728950e");
+	private static final RefreshTokenId UNKNOWN_TOKEN_ID = new RefreshTokenId("7c9e6679-7425-40de-944b-e07fc1f90ae7");
 	private static final String INVALID_TOKEN = "invalid";
 
 	@Autowired
@@ -46,7 +48,7 @@ class LogoutServiceTest {
 	void 로그아웃하면_토큰이_폐기된다() {
 		RefreshToken stored = persistToken(RefreshToken.issue(user, STORED_TOKEN_ID, LocalDateTime.now().plusDays(14)));
 
-		service.logout(STORED_TOKEN_ID);
+		service.logout(STORED_TOKEN_ID.value());
 
 		entityManager.flush();
 		entityManager.clear();
@@ -61,7 +63,7 @@ class LogoutServiceTest {
 		persistToken(revoked);
 		LocalDateTime firstRevokedAt = refreshTokenRepository.findById(revoked.getId()).orElseThrow().getRevokedAt();
 
-		service.logout(STORED_TOKEN_ID);
+		service.logout(STORED_TOKEN_ID.value());
 
 		entityManager.flush();
 		entityManager.clear();
@@ -71,7 +73,7 @@ class LogoutServiceTest {
 
 	@Test
 	void 저장되지_않은_토큰이면_로그아웃할_수_없다() {
-		assertThatThrownBy(() -> service.logout("jti-unknown"))
+		assertThatThrownBy(() -> service.logout(UNKNOWN_TOKEN_ID.value()))
 				.isInstanceOf(InvalidRefreshTokenException.class);
 	}
 
@@ -96,11 +98,11 @@ class LogoutServiceTest {
 		}
 
 		@Override
-		public String extractTokenId(String refreshToken) {
+		public RefreshTokenId extractTokenId(String refreshToken) {
 			if (INVALID_TOKEN.equals(refreshToken)) {
 				throw new InvalidRefreshTokenException();
 			}
-			return refreshToken;
+			return new RefreshTokenId(refreshToken);
 		}
 	}
 }

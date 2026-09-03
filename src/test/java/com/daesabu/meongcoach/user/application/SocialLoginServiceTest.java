@@ -19,10 +19,10 @@ import com.daesabu.meongcoach.user.domain.command.SocialAccountLinkCommand;
 import com.daesabu.meongcoach.user.domain.command.UserProfileCreateCommand;
 import com.daesabu.meongcoach.user.domain.exception.UnsupportedSocialProviderException;
 import com.daesabu.meongcoach.user.domain.exception.WithdrawnUserException;
+import com.daesabu.meongcoach.user.domain.vo.RefreshTokenId;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
-import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -153,12 +153,12 @@ class SocialLoginServiceTest {
 		// 같은 회원이 여러 번 로그인해도 jti 유니크 제약에 걸리지 않도록 매번 새 값을 만든다
 		@Override
 		public AuthToken issue(Long userId) {
-			String tokenId = UUID.randomUUID().toString();
+			RefreshTokenId tokenId = RefreshTokenId.generate();
 			return new AuthToken("access-" + userId, "refresh-" + userId, tokenId, EXPIRES_AT);
 		}
 
 		@Override
-		public String extractTokenId(String refreshToken) {
+		public RefreshTokenId extractTokenId(String refreshToken) {
 			throw new UnsupportedOperationException();
 		}
 	}

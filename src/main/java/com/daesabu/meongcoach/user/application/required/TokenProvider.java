@@ -1,6 +1,7 @@
 package com.daesabu.meongcoach.user.application.required;
 
 import com.daesabu.meongcoach.user.application.provided.AuthToken;
+import com.daesabu.meongcoach.user.domain.vo.RefreshTokenId;
 
 public interface TokenProvider {
 
@@ -14,5 +15,5 @@ public interface TokenProvider {
 	 *
 	 * @throws com.daesabu.meongcoach.user.domain.exception.InvalidRefreshTokenException 검증에 실패한 경우
 	 */
-	String extractTokenId(String refreshToken);
+	RefreshTokenId extractTokenId(String refreshToken);
 }

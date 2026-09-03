@@ -8,6 +8,7 @@ import com.daesabu.meongcoach.user.application.required.TokenProvider;
 import com.daesabu.meongcoach.user.domain.RefreshToken;
 import com.daesabu.meongcoach.user.domain.User;
 import com.daesabu.meongcoach.user.domain.exception.InvalidRefreshTokenException;
+import com.daesabu.meongcoach.user.domain.vo.RefreshTokenId;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -31,7 +32,7 @@ public class TokenRefreshService implements TokenRefresher {
 	@Override
 	@Transactional
 	public AuthToken refresh(String refreshToken) {
-		String tokenId = tokenProvider.extractTokenId(refreshToken);
+		RefreshTokenId tokenId = tokenProvider.extractTokenId(refreshToken);
 		RefreshToken stored = refreshTokenRepository.findByTokenId(tokenId)
 				.orElseThrow(InvalidRefreshTokenException::new);
 		LocalDateTime now = LocalDateTime.now();

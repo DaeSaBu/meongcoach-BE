@@ -10,8 +10,8 @@ import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.RefreshToken;
 import com.daesabu.meongcoach.user.domain.User;
 import com.daesabu.meongcoach.user.domain.exception.InvalidRefreshTokenException;
+import com.daesabu.meongcoach.user.domain.vo.RefreshTokenId;
 import java.time.LocalDateTime;
-import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,7 +23,9 @@ import org.springframework.context.annotation.Import;
 @Import(RegisteredUserCheckService.class)
 class TokenRefreshServiceTest {
 
-	private static final String STORED_TOKEN_ID = "jti-stored";
+	// 스텁이 제시된 문자열을 그대로 jti로 취급하므로 값 객체 형식 검증을 통과하는 UUID 문자열이어야 한다
+	private static final RefreshTokenId STORED_TOKEN_ID = new RefreshTokenId("0f8fad5b-d9cb-469f-a165-70867728950e");
+	private static final String UNKNOWN_TOKEN_ID = "7c9e6679-7425-40de-944b-e07fc1f90ae7";
 	private static final String INVALID_TOKEN = "invalid";
 
 	@Autowired
@@ -54,7 +56,7 @@ class TokenRefreshServiceTest {
 	void 저장된_토큰으로_재발급하면_기존_토큰은_폐기되고_새_토큰이_저장된다() {
 		RefreshToken stored = persistToken(user, LocalDateTime.now().plusDays(14));
 
-		AuthToken token = service.refresh(STORED_TOKEN_ID);
+		AuthToken token = service.refresh(STORED_TOKEN_ID.value());
 
 		entityManager.flush();
 		entityManager.clear();
@@ -68,7 +70,7 @@ class TokenRefreshServiceTest {
 
 	@Test
 	void 저장되지_않은_토큰이면_재발급할_수_없다() {
-		assertThatThrownBy(() -> service.refresh("jti-unknown"))
+		assertThatThrownBy(() -> service.refresh(UNKNOWN_TOKEN_ID))
 				.isInstanceOf(InvalidRefreshTokenException.class);
 	}
 
@@ -79,7 +81,7 @@ class TokenRefreshServiceTest {
 		entityManager.persistAndFlush(revoked);
 		entityManager.clear();
 
-		assertThatThrownBy(() -> service.refresh(STORED_TOKEN_ID))
+		assertThatThrownBy(() -> service.refresh(STORED_TOKEN_ID.value()))
 				.isInstanceOf(InvalidRefreshTokenException.class);
 	}
 
@@ -87,7 +89,7 @@ class TokenRefreshServiceTest {
 	void 만료된_토큰이면_재발급할_수_없다() {
 		persistToken(user, LocalDateTime.now().minusMinutes(1));
 
-		assertThatThrownBy(() -> service.refresh(STORED_TOKEN_ID))
+		assertThatThrownBy(() -> service.refresh(STORED_TOKEN_ID.value()))
 				.isInstanceOf(InvalidRefreshTokenException.class);
 	}
 
@@ -99,7 +101,7 @@ class TokenRefreshServiceTest {
 		entityManager.flush();
 		entityManager.clear();
 
-		assertThatThrownBy(() -> service.refresh(STORED_TOKEN_ID))
+		assertThatThrownBy(() -> service.refresh(STORED_TOKEN_ID.value()))
 				.isInstanceOf(InvalidRefreshTokenException.class);
 	}
 
@@ -121,16 +123,16 @@ class TokenRefreshServiceTest {
 
 		@Override
 		public AuthToken issue(Long userId) {
-			String tokenId = UUID.randomUUID().toString();
+			RefreshTokenId tokenId = RefreshTokenId.generate();
 			return new AuthToken("access-" + userId, "refresh-" + userId, tokenId, LocalDateTime.now().plusDays(14));
 		}
 
 		@Override
-		public String extractTokenId(String refreshToken) {
+		public RefreshTokenId extractTokenId(String refreshToken) {
 			if (INVALID_TOKEN.equals(refreshToken)) {
 				throw new InvalidRefreshTokenException();
 			}
-			return refreshToken;
+			return new RefreshTokenId(refreshToken);
 		}
 	}
 }

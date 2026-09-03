@@ -21,6 +21,7 @@ import com.daesabu.meongcoach.user.domain.command.SocialAccountLinkCommand;
 import com.daesabu.meongcoach.user.domain.command.UserProfileCreateCommand;
 import com.daesabu.meongcoach.user.domain.exception.UserNotFoundException;
 import com.daesabu.meongcoach.user.domain.vo.Email;
+import com.daesabu.meongcoach.user.domain.vo.RefreshTokenId;
 import java.time.LocalDateTime;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -129,8 +130,8 @@ class UserWithdrawServiceTest {
 	@Test
 	void 탈퇴하면_회원의_살아있는_리프레시_토큰이_모두_폐기된다() {
 		User user = persistSocialMember();
-		RefreshToken phone = persistToken(RefreshToken.issue(user, "jti-phone", LocalDateTime.now().plusDays(14)));
-		RefreshToken tablet = persistToken(RefreshToken.issue(user, "jti-tablet", LocalDateTime.now().plusDays(14)));
+		RefreshToken phone = persistToken(RefreshToken.issue(user, RefreshTokenId.generate(), LocalDateTime.now().plusDays(14)));
+		RefreshToken tablet = persistToken(RefreshToken.issue(user, RefreshTokenId.generate(), LocalDateTime.now().plusDays(14)));
 
 		userWithdrawer.withdraw(user.getId());
 		flushAndClear();
@@ -142,7 +143,7 @@ class UserWithdrawServiceTest {
 	@Test
 	void 탈퇴해도_이미_폐기된_토큰의_폐기_시각은_바뀌지_않는다() {
 		User user = persistSocialMember();
-		RefreshToken revoked = RefreshToken.issue(user, "jti-revoked", LocalDateTime.now().plusDays(14));
+		RefreshToken revoked = RefreshToken.issue(user, RefreshTokenId.generate(), LocalDateTime.now().plusDays(14));
 		revoked.revoke();
 		persistToken(revoked);
 		LocalDateTime firstRevokedAt = refreshTokenRepository.findById(revoked.getId()).orElseThrow().getRevokedAt();

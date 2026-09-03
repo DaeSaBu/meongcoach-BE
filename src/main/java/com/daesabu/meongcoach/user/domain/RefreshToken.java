@@ -1,7 +1,10 @@
 package com.daesabu.meongcoach.user.domain;
 
 import com.daesabu.meongcoach.shared.domain.BaseEntity;
+import com.daesabu.meongcoach.user.domain.vo.RefreshTokenId;
+import jakarta.persistence.AttributeOverride;
 import jakarta.persistence.Column;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -37,9 +40,10 @@ public class RefreshToken extends BaseEntity {
 	@JoinColumn(name = "user_id", nullable = false)
 	private User user;
 
-	// JWT jti(UUID 문자열 36자). 토큰 원문은 저장하지 않는다
-	@Column(nullable = false, length = 36)
-	private String tokenId;
+	// JWT jti. 토큰 원문은 저장하지 않는다
+	@Embedded
+	@AttributeOverride(name = "value", column = @Column(name = "token_id", nullable = false, length = 36))
+	private RefreshTokenId tokenId;
 
 	@Column(nullable = false)
 	private LocalDateTime expiresAt;
@@ -47,13 +51,13 @@ public class RefreshToken extends BaseEntity {
 	// 무효화되지 않은 토큰은 null
 	private LocalDateTime revokedAt;
 
-	private RefreshToken(User user, String tokenId, LocalDateTime expiresAt) {
+	private RefreshToken(User user, RefreshTokenId tokenId, LocalDateTime expiresAt) {
 		this.user = user;
 		this.tokenId = tokenId;
 		this.expiresAt = expiresAt;
 	}
 
-	public static RefreshToken issue(User user, String tokenId, LocalDateTime expiresAt) {
+	public static RefreshToken issue(User user, RefreshTokenId tokenId, LocalDateTime expiresAt) {
 		return new RefreshToken(user, tokenId, expiresAt);
 	}
 
