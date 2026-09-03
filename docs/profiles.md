@@ -65,7 +65,3 @@ Swagger UI는 API 서버가 정적 파일로 직접 서빙하며, 노출 범위�
 | `local`, `dev` | `true` | 인증 없이 접근 가능 (permitAll) |
 | `prod` | `false` (명시) | 완전 차단 (denyAll — 유효 토큰으로도 접근 불가) |
 | `test` 등 미설정 | `false` (기본값) | 완전 차단 |
-
-## 스키마 마이그레이션
-
-마이그레이션 파일 작성과 적용 규칙은 [flyway.md](flyway.md)를 참고하세요.
