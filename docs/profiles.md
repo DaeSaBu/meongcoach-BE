@@ -68,4 +68,4 @@ Swagger UI는 API 서버가 정적 파일로 직접 서빙하며, 노출 범위�
 
 ## 스키마 마이그레이션
 
-프로파일별 `ddl-auto` 값의 의미와 Flyway 마이그레이션 운영은 [flyway.md](flyway.md)를 참고하세요.
+마이그레이션 파일 작성과 적용 규칙은 [flyway.md](flyway.md)를 참고하세요.

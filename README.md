@@ -49,7 +49,7 @@ Swagger UI 접근 주소와 프로파일별 노출 범위는 [docs/profiles.md](
 
 - [docs/architecture.md](docs/architecture.md) — Spring Modulith 모듈 경계와 계층 구조
 - [docs/profiles.md](docs/profiles.md) — 환경별 프로파일 구성과 활성화 방법
-- [docs/flyway.md](docs/flyway.md) — ddl-auto 정책과 Flyway 스키마 마이그레이션
+- [docs/flyway.md](docs/flyway.md) — Flyway 스키마 마이그레이션 작성과 적용 규칙
 - [docs/security.md](docs/security.md) — 인증·인가와 환경 변수
 - [docs/api-docs.md](docs/api-docs.md) — API 문서 빌드와 확인 방법
 - [docs/error-handling.md](docs/error-handling.md) — Problem Details 에러 응답과 전역 예외 처리
