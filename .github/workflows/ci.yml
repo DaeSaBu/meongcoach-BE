@@ -13,9 +13,10 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
-    # migration/FlywaySchemaValidationTest가 dev/prod 기동 경로(Flyway 적용 → ddl-auto validate)를 재현해
-    # 엔티티와 마이그레이션의 불일치를 머지 전에 잡는다. 나머지 테스트는 H2로 돈다
     services:
+      # migration/FlywaySchemaValidationTest만 PostgreSQL이 필요하다. 나머지 테스트는 H2로 돈다.
+      # 아래 <테스트 및 커버리지 검증>이 SCHEMA_CHECK_DB_* 로 이 컨테이너를 주입해 그 테스트를 켠다.
+      # 마이그레이션이 엔티티와 어긋나면 ddl-auto: validate가 컨텍스트 기동을 깨뜨려 실패한다.
       postgres:
         image: postgres:18.3
         env:
@@ -66,4 +67,3 @@ jobs:
           min-coverage-changed-files: 70
           title: 📊 테스트 커버리지
           update-comment: true
-
