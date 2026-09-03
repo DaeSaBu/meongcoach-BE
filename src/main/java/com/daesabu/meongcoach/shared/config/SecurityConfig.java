@@ -53,7 +53,8 @@ public class SecurityConfig {
 			"/api/health",
 			"/api/auth/login/social/**",
 			"/api/auth/login/local",
-			"/api/auth/token/refresh"
+			"/api/auth/token/refresh",
+			"/api/auth/logout"
 	};
 
 	// 온보딩 중에도 필요한 경로. 이미지 업로드 URL 발급은 /api/onboarding/** 안에 있고, 프로필 이미지 조회만 밖에 있다
