@@ -43,4 +43,15 @@ docker compose --profile app up --build
 Swagger UI 접근 주소와 프로파일별 노출 범위는 [docs/profiles.md](docs/profiles.md)를,
 문서 작성 규칙은 code-convention 스킬의 [references/test-convention.md](.claude/skills/code-convention/references/test-convention.md)를, 빌드·확인 방법은 [docs/api-docs.md](docs/api-docs.md)를 참고하세요.
 
-자세한 규칙은 [AGENTS.md](AGENTS.md)와 [docs/](docs/)를 참고하세요.
+자세한 규칙은 [AGENTS.md](AGENTS.md)를 참고하세요.
+
+## 문서
+
+- [docs/architecture.md](docs/architecture.md) — Spring Modulith 모듈 경계와 계층 구조
+- [docs/profiles.md](docs/profiles.md) — 환경별 프로파일 구성과 활성화 방법
+- [docs/flyway.md](docs/flyway.md) — Flyway 스키마 마이그레이션 작성과 적용 규칙
+- [docs/security.md](docs/security.md) — 인증·인가와 환경 변수
+- [docs/api-docs.md](docs/api-docs.md) — API 문서 빌드와 확인 방법
+- [docs/error-handling.md](docs/error-handling.md) — Problem Details 에러 응답과 전역 예외 처리
+- [docs/ai-pipeline.md](docs/ai-pipeline.md) — 영상 업로드부터 AI 리포트까지의 처리 흐름
+- [docs/media.md](docs/media.md) — presigned URL 기반 미디어 업로드

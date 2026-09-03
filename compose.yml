@@ -16,6 +16,9 @@ services:
       retries: 10
     ports:
       - "5432:5432"
+    volumes:
+      # 마이그레이션 검증 전용 DB(meongcoach_schema_check)를 함께 만든다
+      - ./compose/postgres-init.sql:/docker-entrypoint-initdb.d/postgres-init.sql:ro
     # 로컬 DB는 일회용 — RAM에 두어 컨테이너 정지 시 초기화되고 익명 볼륨 잔여물도 남기지 않는다
     tmpfs:
       - /var/lib/postgresql
