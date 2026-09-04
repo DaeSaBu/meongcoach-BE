@@ -27,3 +27,6 @@ meongcoach:
   cors:
     allowed-origin-patterns:
       - https://app.dev.meongcoach.com
+
+sentry:
+  environment: development

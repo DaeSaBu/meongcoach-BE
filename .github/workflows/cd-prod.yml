@@ -184,6 +184,8 @@ jobs:
           EVOLINK_API_KEY: ${{ secrets.PROD_EVOLINK_API_KEY }}
           EVOLINK_BASE_URL: ${{ secrets.PROD_EVOLINK_BASE_URL }}
           EVOLINK_MODEL: ${{ secrets.PROD_EVOLINK_MODEL }}
+          SENTRY_DSN: ${{ secrets.PROD_SENTRY_DSN }}
+          SENTRY_RELEASE: ${{ github.sha }}
         run: |
           # 최신 인프라 설정을 읽고 GitHub Secrets·이미지를 반영한 등록용 JSON을 만든다.
           aws ecs describe-task-definition \

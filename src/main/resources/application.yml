@@ -30,6 +30,20 @@ spring:
         # 앱이 큐를 만들 이유가 없으므로 GetQueueUrl 조회만 하고, 큐가 없으면 명확히 실패하게 한다
         queue-not-found-strategy: fail
 
+sentry:
+  # DSN이 비어 있으면 SDK가 꺼진다. local은 .env로 dev 프로젝트 DSN을 넣고 test는 주입하지 않는다
+  dsn: ${SENTRY_DSN:}
+  # 배포 이미지의 커밋 SHA. 이슈를 배포 버전과 잇는다
+  release: ${SENTRY_RELEASE:}
+  # 이벤트는 logback 연동이 error 로그에서 만든다. 전역 핸들러가 모든 예외를 응답으로 바꾸므로
+  # 예외 해석기는 가장 뒤로 보내 같은 예외가 두 번 보고되지 않게 한다
+  exception-resolver-order: 2147483647
+  logging:
+    minimum-event-level: error
+    minimum-breadcrumb-level: info
+  # 요청 IP·사용자 정보는 보내지 않는다
+  send-default-pii: false
+
 meongcoach:
   jwt:
     issuer: meongcoach

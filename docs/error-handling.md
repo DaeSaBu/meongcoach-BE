@@ -65,6 +65,14 @@ Content-Type은 항상 `application/problem+json`입니다.
 - **4xx**: `warn` 레벨, 스택트레이스 없이 code/message만 기록
 - **5xx / fallback**: `error` 레벨, 스택트레이스 포함
 
+## Sentry 전송
+
+`error` 레벨 로그는 Sentry logback 연동이 이벤트로 보냅니다. 위 로깅 정책에 따라 5xx와 fallback만 전송되고 4xx는 전송되지 않으며, SQS 리스너처럼 컨트롤러 밖에서 남긴 `error` 로그도 같은 기준으로 전송됩니다. `info` 이상 로그는 breadcrumb으로 붙습니다.
+
+- Sentry의 예외 해석기는 가장 뒤 순서(`sentry.exception-resolver-order`)로 두어 전역 핸들러가 처리한 예외를 다시 보고하지 않습니다.
+- `SENTRY_DSN`이 없으면 SDK가 꺼집니다. local은 dev 프로젝트의 DSN을 `.env`로 넣고 test는 주입하지 않으며, dev·prod는 CD가 환경별 프로젝트(`meongcoach-{env}-be`)의 DSN과 배포 커밋 SHA(`SENTRY_RELEASE`)를 주입합니다. 환경 태그는 프로파일 파일의 `sentry.environment`가 정합니다.
+- `send-default-pii`는 끄므로 요청 IP·사용자 정보는 보내지 않습니다.
+
 ## 핸들러 변경 시
 
 `GlobalExceptionHandler` 자체의 동작을 바꿀 때는 `shared/webapi/GlobalExceptionHandlerTest`에 케이스를 추가합니다. 이 테스트의 픽스처(`TestErrorCode`, `TestNotFoundException`, `ExceptionTriggerController`)가 살아있는 예시 코드 역할도 합니다.
