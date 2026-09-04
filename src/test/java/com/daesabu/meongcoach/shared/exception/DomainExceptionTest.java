@@ -45,7 +45,7 @@ class DomainExceptionTest {
 	}
 
 	@Test
-	void messageDefaultsToErrorCodeMessage() {
+	void 메시지는_기본적으로_에러_코드의_메시지를_사용한다() {
 		DomainException exception = new TestNotFoundException();
 
 		assertThat(exception.getMessage()).isEqualTo("테스트 리소스를 찾을 수 없습니다.");
@@ -53,7 +53,7 @@ class DomainExceptionTest {
 	}
 
 	@Test
-	void messageCanBeOverriddenWithDetail() {
+	void 상세_메시지를_전달하면_메시지를_덮어쓸_수_있다() {
 		DomainException exception = new TestNotFoundException("id가 1인 테스트 리소스를 찾을 수 없습니다.");
 
 		assertThat(exception.getMessage()).isEqualTo("id가 1인 테스트 리소스를 찾을 수 없습니다.");

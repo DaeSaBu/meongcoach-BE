@@ -1,0 +1,226 @@
+name: CD - Dev
+
+on:
+  push:
+    branches: [develop]
+
+# 배포가 겹치면 ECS 서비스가 연달아 갱신돼 앞 배포의 안정화 대기가 10분 안에 끝나지 못하고 실패한다.
+# 앞 배포를 취소하지 않고 큐에 세워 한 번에 하나씩만 돌린다. (prod와 같은 규칙)
+concurrency:
+  group: backend-cd-dev-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  ci:
+    permissions:
+      contents: read
+      pull-requests: write
+    uses: ./.github/workflows/ci.yml
+
+  deploy:
+    needs: ci
+    if: >-
+      github.workflow == 'CD - Dev' &&
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      actions: write
+      contents: read
+      id-token: write
+    outputs:
+      health_check: ${{ steps.ecs-deploy.outputs.health_check }}
+    env:
+      AWS_REGION: ap-northeast-2
+      ECR_REPOSITORY: meongcoach-dev-ecr
+      ECS_CLUSTER: meongcoach-dev-cluster
+      ECS_SERVICE: meongcoach-dev-svc
+      ECS_TASK_DEFINITION: meongcoach-dev-taskdef
+      ECS_CONTAINER: api
+      HEALTH_URL: https://api.dev.meongcoach.com/api/health
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: AWS 자격 증명 설정
+        uses: aws-actions/configure-aws-credentials@451ce2a72e8d729a59ebeaacab82dbce58e7af4c # v6
+        with:
+          role-to-assume: ${{ secrets.DEV_AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: ECR 로그인
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@d539f0932e70871a027e9d5a9d8fc38589180a64 # v2
+
+      - name: Buildx 설정
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4
+
+      - name: 이미지 빌드 및 푸시
+        env:
+          IMAGE_URI: ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+        run: |
+          set +e
+          docker buildx build --platform linux/amd64 --tag "${IMAGE_URI}" --push . 2>&1 | tee image-push.log
+          PUSH_STATUS=${PIPESTATUS[0]}
+          set -e
+
+          if [ "${PUSH_STATUS}" -ne 0 ] &&
+            grep -Eq "already exists.*immutable|cannot be overwritten because.*immutable" image-push.log; then
+            echo "이미 존재하는 커밋 SHA 이미지를 재사용합니다: ${IMAGE_URI}"
+          elif [ "${PUSH_STATUS}" -ne 0 ]; then
+            exit "${PUSH_STATUS}"
+          fi
+
+      - name: 배포용 태스크 정의 생성
+        env:
+          IMAGE_URI: ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+          JWT_SECRET: ${{ secrets.DEV_JWT_SECRET }}
+          KAKAO_NATIVE_APP_KEY: ${{ secrets.DEV_KAKAO_NATIVE_APP_KEY }}
+          KAKAO_REST_API_KEY: ${{ secrets.DEV_KAKAO_REST_API_KEY }}
+          APPLE_BUNDLE_ID: ${{ secrets.DEV_APPLE_BUNDLE_ID }}
+          GOOGLE_WEB_CLIENT_ID: ${{ secrets.DEV_GOOGLE_WEB_CLIENT_ID }}
+          GOOGLE_IOS_CLIENT_ID: ${{ secrets.DEV_GOOGLE_IOS_CLIENT_ID }}
+          R2_ENDPOINT: ${{ secrets.DEV_R2_ENDPOINT }}
+          R2_ACCESS_KEY_ID: ${{ secrets.DEV_R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.DEV_R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ secrets.DEV_R2_BUCKET }}
+          R2_PUBLIC_BASE_URL: ${{ secrets.DEV_R2_PUBLIC_BASE_URL }}
+          S3_REGION: ${{ secrets.DEV_S3_REGION }}
+          S3_ACCESS_KEY_ID: ${{ secrets.DEV_S3_ACCESS_KEY_ID }}
+          S3_SECRET_ACCESS_KEY: ${{ secrets.DEV_S3_SECRET_ACCESS_KEY }}
+          S3_BUCKET: ${{ secrets.DEV_S3_BUCKET }}
+          S3_PUBLIC_BASE_URL: ${{ secrets.DEV_S3_PUBLIC_BASE_URL }}
+          VIMEO_ACCESS_TOKEN: ${{ secrets.DEV_VIMEO_ACCESS_TOKEN }}
+          SQS_REGION: ${{ secrets.DEV_SQS_REGION }}
+          SQS_ACCESS_KEY_ID: ${{ secrets.DEV_SQS_ACCESS_KEY_ID }}
+          SQS_SECRET_ACCESS_KEY: ${{ secrets.DEV_SQS_SECRET_ACCESS_KEY }}
+          AI_VIDEO_QUEUE: ${{ secrets.DEV_AI_VIDEO_QUEUE }}
+          EVOLINK_API_KEY: ${{ secrets.DEV_EVOLINK_API_KEY }}
+          EVOLINK_BASE_URL: ${{ secrets.DEV_EVOLINK_BASE_URL }}
+          EVOLINK_MODEL: ${{ secrets.DEV_EVOLINK_MODEL }}
+          SENTRY_DSN: ${{ secrets.DEV_SENTRY_DSN }}
+          SENTRY_RELEASE: ${{ github.sha }}
+        run: |
+          # 최신 인프라 설정을 읽고 GitHub Secrets·이미지를 반영한 등록용 JSON을 만든다.
+          aws ecs describe-task-definition \
+            --task-definition "${ECS_TASK_DEFINITION}" \
+            --query taskDefinition \
+            --output json > current-task-definition.json
+
+          bash .github/scripts/render-task-definition.sh \
+            current-task-definition.json \
+            "${ECS_CONTAINER}" \
+            "${IMAGE_URI}" > task-definition.json
+
+      # 위 script는 JSON만 만들며, 실제 AWS 변경은 여기서부터 시작한다.
+      - name: 태스크 정의 리비전 등록
+        id: task-definition
+        run: |
+          NEW_TASK_DEFINITION=$(aws ecs register-task-definition \
+            --cli-input-json file://task-definition.json \
+            --query 'taskDefinition.taskDefinitionArn' \
+            --output text)
+
+          echo "arn=${NEW_TASK_DEFINITION}" >> "${GITHUB_OUTPUT}"
+
+      - name: ECS 서비스 갱신
+        env:
+          TASK_DEFINITION_ARN: ${{ steps.task-definition.outputs.arn }}
+        run: |
+          aws ecs update-service \
+            --cluster "${ECS_CLUSTER}" \
+            --service "${ECS_SERVICE}" \
+            --task-definition "${TASK_DEFINITION_ARN}" \
+            --output json > /dev/null
+
+      - name: ECS 서비스 안정화 대기
+        id: ecs-deploy
+        env:
+          TASK_DEFINITION_ARN: ${{ steps.task-definition.outputs.arn }}
+        run: |
+          aws ecs wait services-stable \
+            --cluster "${ECS_CLUSTER}" \
+            --services "${ECS_SERVICE}"
+
+          DEPLOYMENT_STATE=$(aws ecs describe-services \
+            --cluster "${ECS_CLUSTER}" \
+            --services "${ECS_SERVICE}" \
+            --query 'services[0].[taskDefinition,desiredCount,runningCount]' \
+            --output text)
+
+          read -r DEPLOYED_TASK_DEFINITION DESIRED_COUNT RUNNING_COUNT <<< "${DEPLOYMENT_STATE}"
+          test "${DEPLOYED_TASK_DEFINITION}" = "${TASK_DEFINITION_ARN}"
+
+          if [ "${DESIRED_COUNT}" -eq 0 ]; then
+            echo "health_check=false" >> "${GITHUB_OUTPUT}"
+            echo "::warning::bootstrap 배포입니다. ecs_min_capacity를 1로 적용한 뒤 다시 실행해야 합니다."
+            echo "### 개발 bootstrap 배포" >> "${GITHUB_STEP_SUMMARY}"
+            echo "task definition은 갱신됐지만 desired count가 0이라 health check를 보류했습니다." \
+              >> "${GITHUB_STEP_SUMMARY}"
+          else
+            test "${RUNNING_COUNT}" -ge 1
+            echo "health_check=true" >> "${GITHUB_OUTPUT}"
+          fi
+
+      - name: 개발 health check
+        if: steps.ecs-deploy.outputs.health_check == 'true'
+        run: |
+          for _ in {1..30}; do
+            if curl --silent --show-error --fail --max-time 10 "${HEALTH_URL}"; then
+              exit 0
+            fi
+            sleep 10
+          done
+          exit 1
+
+      - name: dev 배포 증명 생성
+        if: steps.ecs-deploy.outputs.health_check == 'true'
+        run: |
+          printf '{"commit_sha":"%s"}\n' "${GITHUB_SHA}" > dev-deployment-proof.json
+
+      - name: dev 배포 증명 업로드
+        if: steps.ecs-deploy.outputs.health_check == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: dev-deployment-${{ github.sha }}
+          path: dev-deployment-proof.json
+          retention-days: 90
+          overwrite: true
+
+  notify:
+    needs: [ci, deploy]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: 배포 결과 메시지 구성
+        id: message
+        env:
+          CI_RESULT: ${{ needs.ci.result }}
+          DEPLOY_RESULT: ${{ needs.deploy.result }}
+          HEALTH_CHECK: ${{ needs.deploy.outputs.health_check }}
+        run: |
+          if [ "${DEPLOY_RESULT}" = "success" ] && [ "${HEALTH_CHECK}" = "false" ]; then
+            STATUS=":warning: bootstrap 배포 성공 (desired count 0, health check 보류)"
+          elif [ "${DEPLOY_RESULT}" = "success" ]; then
+            STATUS=":white_check_mark: 배포 성공"
+          elif [ "${CI_RESULT}" != "success" ]; then
+            STATUS=":x: 배포 실패 (ci: ${CI_RESULT})"
+          else
+            STATUS=":x: 배포 실패 (deploy: ${DEPLOY_RESULT})"
+          fi
+
+          echo "status=${STATUS}" >> "${GITHUB_OUTPUT}"
+          echo "short_sha=${GITHUB_SHA::7}" >> "${GITHUB_OUTPUT}"
+
+      # SLACK_WEBHOOK_URL은 dev·prod CD가 공유하는 Slack Incoming Webhook URL이다.
+      - name: Slack 알림 전송
+        uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": "[개발 CD] ${{ steps.message.outputs.status }}\n저장소: ${{ github.repository }} (${{ github.ref_name }})\ncommit: <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ steps.message.outputs.short_sha }}>\n실행자: ${{ github.actor }}\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|워크플로 실행 보기>"
+            }

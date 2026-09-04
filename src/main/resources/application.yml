@@ -1,3 +1,114 @@
 spring:
   application:
     name: meongcoach
+  profiles:
+    # 프로파일 미지정 시 로컬 개발로 기동한다 — `./gradlew bootRun`만으로 실행 가능
+    default: local
+  jpa:
+    properties:
+      hibernate:
+        format_sql: true
+    # 서비스가 엔티티를 그대로 반환하고 adapter에서 지연 로딩을 허용하기 위해 켠다.
+    # adapter에서 일어나는 지연 로딩은 서비스 트랜잭션 밖이라 요청 끝까지 커넥션을 잡으므로,
+    # 컬렉션이 필요한 조회는 리포지토리에서 @EntityGraph/fetch join으로 미리 로딩한다.
+    open-in-view: true
+  # 로그인 경로에 카카오 공개 키 조회가 끼므로 타임아웃을 반드시 건다 (기본값은 무제한)
+  http:
+    clients:
+      connect-timeout: 2s
+      read-timeout: 3s
+  cloud:
+    aws:
+      # 영상 업로드 이벤트 큐 소비용. S3 presigner와 별개의 자격 증명이라 SQS_ 접두사를 쓴다
+      region:
+        static: ${SQS_REGION}
+      credentials:
+        access-key: ${SQS_ACCESS_KEY_ID}
+        secret-key: ${SQS_SECRET_ACCESS_KEY}
+      sqs:
+        # 기본 전략(CREATE)은 큐가 있어도 sqs:CreateQueue를 호출해 권한 403으로 기동이 죽는다.
+        # 앱이 큐를 만들 이유가 없으므로 GetQueueUrl 조회만 하고, 큐가 없으면 명확히 실패하게 한다
+        queue-not-found-strategy: fail
+
+sentry:
+  # DSN이 비어 있으면 SDK가 꺼진다. local은 .env로 dev 프로젝트 DSN을 넣고 test는 주입하지 않는다
+  dsn: ${SENTRY_DSN:}
+  # 배포 이미지의 커밋 SHA. 이슈를 배포 버전과 잇는다
+  release: ${SENTRY_RELEASE:}
+  # 이벤트는 logback 연동이 error 로그에서 만든다. 전역 핸들러가 모든 예외를 응답으로 바꾸므로
+  # 예외 해석기는 가장 뒤로 보내 같은 예외가 두 번 보고되지 않게 한다
+  exception-resolver-order: 2147483647
+  logging:
+    minimum-event-level: error
+    minimum-breadcrumb-level: info
+  # 요청 IP·사용자 정보는 보내지 않는다
+  send-default-pii: false
+
+meongcoach:
+  jwt:
+    issuer: meongcoach
+    # 기본값을 두지 않아 미주입 시 기동에 실패한다 — 커밋된 키가 배포로 흘러가는 것을 막는다
+    secret: ${JWT_SECRET}
+    access-token-validity: PT1H
+    refresh-token-validity: P14D
+  storage:
+    r2:
+      # R2는 S3 호환 API라 AWS SDK로 presigned URL을 발급한다. 값 미주입 시 기동에 실패한다
+      endpoint: ${R2_ENDPOINT}
+      access-key-id: ${R2_ACCESS_KEY_ID}
+      secret-access-key: ${R2_SECRET_ACCESS_KEY}
+      bucket: ${R2_BUCKET}
+      # 버킷에 연결된 공개 도메인(커스텀 도메인 또는 r2.dev). 클라이언트가 보낸 이미지 URL 검증 기준이 된다
+      public-base-url: ${R2_PUBLIC_BASE_URL}
+      upload-url-validity: PT10M
+    s3:
+      # 훈련 영상은 실제 AWS S3에 올린다. R2와 달리 엔드포인트가 아니라 리전으로 주소가 결정된다
+      region: ${S3_REGION}
+      access-key-id: ${S3_ACCESS_KEY_ID}
+      secret-access-key: ${S3_SECRET_ACCESS_KEY}
+      bucket: ${S3_BUCKET}
+      # 버킷의 공개 도메인(CDN 또는 S3 표준 URL). 비공개 운영 시에도 응답의 publicUrl 조립에 쓰인다
+      public-base-url: ${S3_PUBLIC_BASE_URL}
+      # 영상은 파일 선택·압축 시간이 있어 이미지(PT10M)보다 여유를 둔다
+      upload-url-validity: PT15M
+      # AI 분석기가 이 URL로 영상을 가져가므로 분석 대기·재시도 시간을 감안해 넉넉히 둔다
+      download-url-validity: PT1H
+  ai:
+    # S3 영상 업로드 완료 이벤트가 들어오는 SQS 큐 이름
+    video-queue: ${AI_VIDEO_QUEUE}
+    # 영상 분석에 쓰는 EvoLink 채팅 API(OpenAI 호환) 연동 설정. 영상은 S3 presigned GET URL로 전달한다
+    evolink:
+      # 멀티모달(영상) 호출의 주력 엔드포인트. 텍스트 위주로 바꾸려면 direct.evolink.ai로 교체한다
+      base-url: ${EVOLINK_BASE_URL:https://api.evolink.ai}
+      # 기본값을 두지 않아 미주입 시 기동에 실패한다 — 커밋된 키가 배포로 흘러가는 것을 막는다
+      api-key: ${EVOLINK_API_KEY}
+      model: ${EVOLINK_MODEL:doubao-seed-2.0-pro}
+      # 영상 분석은 수십 초가 걸려 전역 read-timeout(3초)으로는 응답 전에 끊긴다
+      response-timeout: PT5M
+      # 상한에 닿으면 리포트가 문장 중간에서 잘린다. 리포트는 2천 토큰 안팎이지만 여유를 둔다
+      max-tokens: 4096
+      # 영상 분석·유형 분류는 창의성보다 일관성이 중요해 0으로 고정한다
+      temperature: 0
+      # 심층 사고 모드(enabled·disabled·auto). 비용·지연 예측을 위해 끈다
+      thinking: ${EVOLINK_THINKING:disabled}
+      # 영상 프레임 추출 빈도(0.2~5). 높일수록 화면 변화에 민감하지만 토큰 소비가 늘어난다
+      video-fps: 1
+  social:
+    kakao:
+      issuer: https://kauth.kakao.com
+      jwk-set-uri: https://kauth.kakao.com/.well-known/jwks.json
+      # id_token의 aud 후보. 네이티브 앱은 네이티브 앱 키, 웹은 REST API 키라 쉼표로 나열한다.
+      # 다른 앱에서 발급된 토큰을 걸러내는 값이므로 반드시 우리 앱의 키만 넣는다
+      audiences: ${KAKAO_NATIVE_APP_KEY},${KAKAO_REST_API_KEY}
+    apple:
+      issuer: https://appleid.apple.com
+      jwk-set-uri: https://appleid.apple.com/auth/keys
+      # id_token의 aud는 iOS 앱의 번들 ID. 웹·안드로이드(Services ID)를 붙이면 쉼표로 나열한다.
+      # 다른 앱에서 발급된 토큰을 걸러내는 값이므로 반드시 우리 앱의 식별자만 넣는다
+      audiences: ${APPLE_BUNDLE_ID}
+    google:
+      issuer: https://accounts.google.com
+      jwk-set-uri: https://www.googleapis.com/oauth2/v3/certs
+      # id_token의 aud 후보. 안드로이드·서버 검증은 웹 클라이언트 ID, iOS는 iOS 클라이언트 ID라 쉼표로 나열한다.
+      # 다른 앱에서 발급된 토큰을 걸러내는 값이므로 반드시 우리 앱의 클라이언트 ID만 넣는다
+      audiences: ${GOOGLE_WEB_CLIENT_ID},${GOOGLE_IOS_CLIENT_ID}

@@ -1,0 +1,68 @@
+# 테스트 전용 더미 값. 파일명을 application.yml로 만들면 main의 설정을 통째로 가리므로
+# 반드시 프로파일 파일(application-{프로파일}.yml)로 두어 위에 얹히게 한다.
+# datasource는 베이스가 아니라 application-local.yml에 있으므로 테스트용 H2를 명시한다.
+spring:
+  cloud:
+    aws:
+      # 테스트에서는 실제 큐 연결 없이 컨텍스트만 떠야 하므로 SQS를 끈다
+      sqs:
+        enabled: false
+      region:
+        static: ap-northeast-2
+      credentials:
+        access-key: test-access-key
+        secret-key: test-secret-key
+  datasource:
+    url: jdbc:h2:mem:meongcoach-test
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  # 마이그레이션은 PostgreSQL 문법이라 H2로는 실행할 수 없다 — 테스트는 ddl-auto(create-drop)로만 스키마를 만든다
+  flyway:
+    enabled: false
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+  sql:
+    init:
+      mode: never
+
+meongcoach:
+  ai:
+    video-queue: test-video-queue
+    evolink:
+      # 클라이언트 생성에는 네트워크 호출이 없어 더미 값으로도 컨텍스트가 뜬다
+      base-url: https://api.evolink.test
+      api-key: test-evolink-api-key
+      model: doubao-seed-2.0-pro
+      response-timeout: PT5M
+      max-tokens: 4096
+      temperature: 0
+      thinking: disabled
+      video-fps: 1
+  jwt:
+    secret: meongcoach-test-only-jwt-secret-key-32b
+  social:
+    kakao:
+      audiences: test-kakao-native-app-key
+    apple:
+      audiences: test-apple-bundle-id
+    google:
+      audiences: test-google-web-client-id
+  storage:
+    r2:
+      # presign은 로컬 서명 연산이라 더미 자격 증명으로도 실제 URL 생성까지 동작한다
+      endpoint: https://test-account.r2.cloudflarestorage.com
+      access-key-id: test-access-key
+      secret-access-key: test-secret-key
+      bucket: test-bucket
+      public-base-url: https://images.test.meongcoach.com
+      upload-url-validity: PT10M
+    s3:
+      region: ap-northeast-2
+      access-key-id: test-access-key
+      secret-access-key: test-secret-key
+      bucket: test-video-bucket
+      public-base-url: https://videos.test.meongcoach.com
+      upload-url-validity: PT15M
+      download-url-validity: PT1H

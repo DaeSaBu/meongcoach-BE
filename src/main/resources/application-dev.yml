@@ -1,0 +1,32 @@
+# 개발 서버 — PostgreSQL. 접속 정보는 배포 환경 변수로 주입하며 기본값이 없어 미주입 시 기동에 실패한다
+spring:
+  # 로컬에서 dev 프로파일로 실행할 때 compose 지원이 로컬 postgres를 띄워 dev DB 접속 정보를 덮어쓰는 것을 막는다.
+  # 배포 환경에서는 compose 모듈 자체가 jar에 없어(developmentOnly) 이 설정은 무시된다.
+  docker:
+    compose:
+      enabled: false
+  datasource:
+    url: jdbc:postgresql://${DB_HOST}:5432/${DB_NAME}
+    driver-class-name: org.postgresql.Driver
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  flyway:
+    # Flyway 도입 전 ddl-auto가 만든 기존 스키마를 V1 적용 상태로 간주해 이력 테이블을 만든다.
+    # 빈 DB에서는 baseline 없이 V1부터 실행되므로 부작용이 없다
+    baseline-on-migrate: true
+    baseline-version: 1
+  jpa:
+    hibernate:
+      # Flyway 마이그레이션이 스키마를 만들고, Hibernate는 엔티티와의 일치만 검증한다
+      ddl-auto: validate
+
+meongcoach:
+  # 개발 서버에서는 /swagger-ui/** 문서 페이지를 인증 없이 연다
+  api-docs:
+    enabled: true
+  cors:
+    allowed-origin-patterns:
+      - https://app.dev.meongcoach.com
+
+sentry:
+  environment: development

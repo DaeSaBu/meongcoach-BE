@@ -1,6 +1,6 @@
 package com.daesabu.meongcoach.health.adapter.webapi;
 
-import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
+import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.document;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -21,7 +21,7 @@ class HealthControllerTest {
 	private MockMvc mockMvc;
 
 	@Test
-	void checkReturnsUp() throws Exception {
+	void 헬스_체크_시_UP_상태를_반환한다() throws Exception {
 		mockMvc.perform(get("/api/health"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.status").value("UP"))

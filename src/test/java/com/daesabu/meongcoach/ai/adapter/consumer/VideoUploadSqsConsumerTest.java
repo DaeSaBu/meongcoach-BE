@@ -1,0 +1,221 @@
+package com.daesabu.meongcoach.ai.adapter.consumer;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+
+import com.daesabu.meongcoach.ai.application.provided.AiReportGenerator;
+import com.daesabu.meongcoach.media.domain.exception.InvalidVideoObjectKeyException;
+import java.util.ArrayList;
+import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import tools.jackson.databind.json.JsonMapper;
+
+class VideoUploadSqsConsumerTest {
+
+	private RecordingAiReportGenerator aiReportGenerator;
+	private VideoUploadSqsConsumer consumer;
+
+	@BeforeEach
+	void setUp() {
+		aiReportGenerator = new RecordingAiReportGenerator();
+		consumer = new VideoUploadSqsConsumer(aiReportGenerator, JsonMapper.builder().build());
+	}
+
+	private static String s3Event(String eventName, String key) {
+		return """
+				{
+					"Records": [
+						{
+							"eventVersion": "2.1",
+							"eventSource": "aws:s3",
+							"eventName": "%s",
+							"s3": {
+								"bucket": { "name": "test-video-bucket" },
+								"object": { "key": "%s", "size": 1024 }
+							}
+						}
+					]
+				}
+				""".formatted(eventName, key);
+	}
+
+	@Test
+	void 업로드_완료_이벤트의_객체_키로_리포트_생성을_위임한다() throws Exception {
+		consumer.consume(s3Event("ObjectCreated:Put", "videos/training/7/key.mp4"));
+
+		assertThat(aiReportGenerator.objectKeys).containsExactly("videos/training/7/key.mp4");
+	}
+
+	@Test
+	void 실제_S3_이벤트_형식의_업로드_완료_메시지를_처리한다() {
+		consumer.consume("""
+				{
+					"Records": [
+						{
+							"eventVersion": "2.5",
+							"eventSource": "aws:s3",
+							"awsRegion": "ap-northeast-2",
+							"eventTime": "2026-08-02T07:51:20.063Z",
+							"eventName": "ObjectCreated:Put",
+							"userIdentity": { "principalId": "AWS:test-uploader" },
+							"requestParameters": { "sourceIPAddress": "127.0.0.1" },
+							"responseElements": { "x-amz-request-id": "test-request-id" },
+							"s3": {
+								"s3SchemaVersion": "1.0",
+								"configurationId": "meongcoach-dev-video-upload",
+								"bucket": {
+									"name": "meongcoach-dev-s3-files",
+									"ownerIdentity": { "principalId": "test-owner" },
+									"arn": "arn:aws:s3:::meongcoach-dev-s3-files"
+								},
+								"object": {
+									"key": "videos/training/1/771b2834-6213-41ba-a3f0-dde9dcceefd0.mp4",
+									"size": 7217500,
+									"eTag": "test-etag",
+									"sequencer": "006A6EF6F74389E232"
+								}
+							}
+						}
+					]
+				}
+				""");
+
+		assertThat(aiReportGenerator.objectKeys)
+				.containsExactly("videos/training/1/771b2834-6213-41ba-a3f0-dde9dcceefd0.mp4");
+	}
+
+	@Test
+	void URL_인코딩된_객체_키는_디코딩해_위임한다() throws Exception {
+		consumer.consume(s3Event("ObjectCreated:Put", "videos/training/7/my+video%3D1.mp4"));
+
+		// 디코딩된 키여야 presigned URL 발급 시 실제 객체를 가리킨다
+		assertThat(aiReportGenerator.objectKeys).containsExactly("videos/training/7/my video=1.mp4");
+	}
+
+	@Test
+	void 여러_레코드가_오면_각각_위임한다() throws Exception {
+		consumer.consume("""
+				{
+					"Records": [
+						{
+							"eventName": "ObjectCreated:Put",
+							"s3": { "bucket": { "name": "bucket-a" }, "object": { "key": "videos/training/1/a.mp4" } }
+						},
+						{
+							"eventName": "ObjectCreated:Put",
+							"s3": { "bucket": { "name": "bucket-b" }, "object": { "key": "videos/training/2/b.mp4" } }
+						}
+					]
+				}
+				""");
+
+		assertThat(aiReportGenerator.objectKeys)
+				.containsExactly("videos/training/1/a.mp4", "videos/training/2/b.mp4");
+	}
+
+	@Test
+	void Records가_없는_테스트_이벤트는_무시한다() throws Exception {
+		consumer.consume("""
+				{ "Service": "Amazon S3", "Event": "s3:TestEvent", "Bucket": "test-video-bucket" }
+				""");
+
+		assertThat(aiReportGenerator.objectKeys).isEmpty();
+	}
+
+	@Test
+	void 업로드_완료가_아닌_이벤트는_무시한다() throws Exception {
+		consumer.consume(s3Event("ObjectRemoved:Delete", "videos/training/7/key.mp4"));
+
+		assertThat(aiReportGenerator.objectKeys).isEmpty();
+	}
+
+	@Test
+	void S3_이벤트_형식이_아닌_메시지는_버리고_정상_반환한다() {
+		consumer.consume("not-a-json");
+
+		assertThat(aiReportGenerator.objectKeys).isEmpty();
+	}
+
+	@Test
+	void 도메인_검증에_실패한_키는_버리고_정상_반환한다() throws Exception {
+		aiReportGenerator.failure = new InvalidVideoObjectKeyException("images/profile/7/key.png");
+
+		consumer.consume(s3Event("ObjectCreated:Put", "images/profile/7/key.png"));
+		// 예외가 나가지 않아야 SQS가 메시지를 삭제하고 무한 재시도를 하지 않는다
+	}
+
+	@Test
+	void 리포트_생성이_실패해도_예외를_삼키고_정상_반환한다() {
+		// MVP라 재시도를 두지 않는다. 예외가 나가면 SQS가 메시지를 삭제하지 않고 무한 재전달한다
+		aiReportGenerator.failure = new IllegalStateException("모델 호출 실패");
+
+		assertThatCode(() -> consumer.consume(s3Event("ObjectCreated:Put", "videos/training/7/key.mp4")))
+				.doesNotThrowAnyException();
+	}
+
+	@Test
+	void 한_레코드가_실패해도_같은_메시지의_나머지_레코드는_처리한다() {
+		aiReportGenerator.failUntilFirstAttempt = true;
+
+		consumer.consume("""
+				{
+					"Records": [
+						{
+							"eventName": "ObjectCreated:Put",
+							"s3": { "bucket": { "name": "test-video-bucket" }, "object": { "key": "videos/training/1/a.mp4" } }
+						},
+						{
+							"eventName": "ObjectCreated:Put",
+							"s3": { "bucket": { "name": "test-video-bucket" }, "object": { "key": "videos/training/2/b.mp4" } }
+						}
+					]
+				}
+				""");
+
+		assertThat(aiReportGenerator.objectKeys).containsExactly("videos/training/2/b.mp4");
+	}
+
+	@Test
+	void 객체_키가_없는_레코드는_버리고_정상_반환한다() {
+		// 알 수 없는 필드를 무시하는 설정이라 s3·object·key가 빠진 메시지도 그대로 도달한다
+		assertThatCode(() -> consumer.consume("""
+				{
+					"Records": [
+						{ "eventName": "ObjectCreated:Put" },
+						{ "eventName": "ObjectCreated:Put", "s3": {} },
+						{ "eventName": "ObjectCreated:Put", "s3": { "object": {} } }
+					]
+				}
+				""")).doesNotThrowAnyException();
+
+		assertThat(aiReportGenerator.objectKeys).isEmpty();
+	}
+
+	@Test
+	void URL_디코딩할_수_없는_객체_키는_버리고_정상_반환한다() {
+		assertThatCode(() -> consumer.consume(s3Event("ObjectCreated:Put", "videos/training/7/key%ZZ.mp4")))
+				.doesNotThrowAnyException();
+
+		assertThat(aiReportGenerator.objectKeys).isEmpty();
+	}
+
+	private static class RecordingAiReportGenerator implements AiReportGenerator {
+
+		private final List<String> objectKeys = new ArrayList<>();
+		private RuntimeException failure;
+		private boolean failUntilFirstAttempt;
+
+		@Override
+		public void generate(String objectKey) {
+			if (failUntilFirstAttempt) {
+				failUntilFirstAttempt = false;
+				throw new IllegalStateException("첫 레코드 처리 실패");
+			}
+			if (failure != null) {
+				throw failure;
+			}
+			objectKeys.add(objectKey);
+		}
+	}
+}

@@ -1,0 +1,39 @@
+# 로컬 개발 전용 — PostgreSQL 스키마를 재생성한 뒤 정적 교육 초기 데이터를 반영한다
+spring:
+  # IDE/bootRun 실행 시에는 spring-boot-docker-compose가 compose.yml의 postgres를 자동 기동하고
+  # ConnectionDetails로 접속 정보를 주입해 아래 datasource 값을 덮어쓴다.
+  # 플레이스홀더는 compose 지원이 없는 풀 컨테이너 모드(--profile app)에서 compose.yml이 주입하는
+  # DB_HOST=postgres 등을 받기 위한 것으로, 기본값은 로컬 직접 접속용이다.
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:5432/${DB_NAME:meongcoach}
+    driver-class-name: org.postgresql.Driver
+    username: ${DB_USERNAME:meongcoach_local}
+    password: ${DB_PASSWORD:meongcoach-local}
+  # 로컬은 ddl-auto(create-drop)가 매 기동마다 스키마를 재생성하므로 Flyway를 끈다
+  flyway:
+    enabled: false
+  jpa:
+    defer-datasource-initialization: true
+    hibernate:
+      ddl-auto: create-drop
+  sql:
+    init:
+      # 교육 초기 데이터 → 스토어 심사용 테스트 계정 순서로 적재한다
+      data-locations:
+        - classpath:db/local/training-initial-data.sql
+        - classpath:db/local/test-account-data.sql
+      mode: always
+  cloud:
+    aws:
+      # 로컬은 실제 큐 없이 기동한다. 실 큐로 소비를 확인하려면 켜고 SQS_ 환경 변수에 실제 값을 넣는다
+      sqs:
+        enabled: false
+
+meongcoach:
+  # 로컬에서는 /swagger-ui/** 문서 페이지를 인증 없이 연다
+  api-docs:
+    enabled: true
+  cors:
+    allowed-origin-patterns:
+      - http://localhost:*
+      - http://127.0.0.1:*

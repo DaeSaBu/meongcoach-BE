@@ -5,15 +5,12 @@
 :toc: left
 :toclevels: 2
 :sectlinks:
+// 로컬 API 서버가 서빙하는 Swagger UI 주소. 앱이 떠 있지 않으면 링크가 연결되지 않는다
+// window=swagger는 같은 이름의 브라우저 탭을 재사용해 딥링크마다 새 탭이 열리지 않게 한다
+:swagger-ui: http://localhost:8080/swagger-ui/index.html
 
 API 문서는 테스트를 통과한 스니펫으로부터 생성됩니다.
 모듈별로 `== {모듈} API` 섹션을 추가하고, `operation::` 매크로로 스니펫을 포함합니다.
-
-// == User API
-//
-// === 회원 가입
-//
-// operation::user/register[snippets='http-request,path-parameters,request-fields,http-response,response-fields']
 
 == 공통 에러 응답
 
@@ -27,8 +24,432 @@ operation::shared/error[snippets='http-response,response-fields']
 
 operation::shared/error-validation[snippets='http-response,response-fields']
 
+=== 인증 실패
+
+토큰이 없거나 유효하지 않으면 시큐리티 필터 체인에서 401을 반환합니다.
+
+operation::shared/error-unauthorized[snippets='http-response,response-fields']
+
+=== 온보딩 미완료
+
+온보딩을 완료하지 않은 회원이 온보딩 외 API를 호출하면 403을 반환합니다.
+클라이언트는 `code`가 `ONBOARDING_NOT_COMPLETED`이면 온보딩 화면으로 이동시킵니다.
+
+operation::shared/error-onboarding-not-completed[snippets='http-response,response-fields']
+
+== Auth API
+
+앱이 소셜 제공자 SDK로 로그인해 받은 자격증명을 서버가 검증하고, 우리 서비스의 JWT를 발급합니다.
+스토어 심사용 테스트 계정은 이메일 로그인으로 같은 JWT를 발급받습니다.
+인증이 필요한 API는 발급받은 액세스 토큰을 `Authorization: Bearer {accessToken}` 헤더로 전달해 호출합니다.
+인증이 필요한 API에서 사용자를 식별하는 값은 액세스 토큰의 `sub` 클레임(회원 ID)이며, 별도 요청 헤더나 파라미터로 받지 않습니다.
+리프레시 토큰은 서버가 발급 이력을 저장하며, 재발급하면 이전 토큰은 폐기됩니다(rotation). 로그아웃과 회원 탈퇴도 리프레시 토큰을 폐기합니다.
+
+=== 소셜 로그인
+
+link:{swagger-ui}#/Auth/auth-login[▶ Swagger에서 Try it out,window=swagger]
+
+operation::auth/login[snippets='http-request,path-parameters,request-fields,http-response,response-fields']
+
+==== 실패 응답
+
+operation::auth/login-error[snippets='http-response,response-fields']
+
+=== 이메일 로그인
+
+link:{swagger-ui}#/Auth/auth-local-login[▶ Swagger에서 Try it out,window=swagger]
+
+스토어 심사(Google Play·App Store)용 테스트 계정 전용입니다. 회원가입·비밀번호 변경 API는 없으며 계정은 서버에서 직접 등록합니다.
+이메일이 없거나 비밀번호가 틀리면 원인을 구분하지 않고 401(`USER_INVALID_CREDENTIALS`)을 반환합니다.
+응답 형식은 소셜 로그인과 같습니다.
+
+operation::auth/local-login[snippets='http-request,request-fields,http-response,response-fields']
+
+==== 실패 응답
+
+operation::auth/local-login-error[snippets='http-response,response-fields']
+
+=== 토큰 재발급
+
+link:{swagger-ui}#/Auth/auth-token-refresh[▶ Swagger에서 Try it out,window=swagger]
+
+액세스 토큰이 만료되면 리프레시 토큰으로 새 토큰 쌍을 발급받습니다.
+
+operation::auth/token-refresh[snippets='http-request,request-fields,http-response,response-fields']
+
+==== 실패 응답
+
+operation::auth/token-refresh-error[snippets='http-response,response-fields']
+
+=== 로그아웃
+
+link:{swagger-ui}#/Auth/auth-logout[▶ Swagger에서 Try it out,window=swagger]
+
+제시한 리프레시 토큰 하나만 폐기하므로 다른 기기의 로그인은 유지됩니다. 액세스 토큰이 만료된 뒤에도 호출할 수 있도록 인증 없이 리프레시 토큰만 받습니다.
+이미 폐기된 토큰을 다시 보내도 204입니다. 서명·만료 검증에 실패하거나 서버에 발급 이력이 없으면 401(`USER_INVALID_REFRESH_TOKEN`)이지만,
+어느 경우든 클라이언트는 보관 중인 액세스·리프레시 토큰을 버리고 로그인 화면으로 이동하면 됩니다.
+응답 본문은 없습니다.
+
+operation::auth/logout[snippets='http-request,request-fields,http-response']
+
+==== 실패 응답
+
+operation::auth/logout-error[snippets='http-response,response-fields']
+
+== User API
+
+로그인한 회원 자신의 계정을 다룹니다. 대상 회원은 액세스 토큰의 `sub` 클레임으로 식별하므로 경로에 회원 ID를 받지 않습니다.
+
+=== 회원 탈퇴
+
+link:{swagger-ui}#/User/user-withdraw[▶ Swagger에서 Try it out,window=swagger]
+
+스토어 심사 요건(인앱 계정 삭제)을 위한 API입니다. 온보딩을 마치지 않은 회원도 호출할 수 있습니다.
+소셜·이메일 자격증명과 프로필은 삭제되고 회원 행은 탈퇴 상태로만 남습니다. 같은 소셜 계정으로 다시 로그인하면 새 회원으로 가입되어 온보딩부터 다시 진행합니다.
+탈퇴 즉시 기존 액세스 토큰과 리프레시 토큰은 401로 거부되므로 클라이언트는 보관 중인 토큰을 버리고 로그인 화면으로 이동해야 합니다.
+등록한 강아지·AI 리포트·학습 진도는 이 API에서 정리하지 않습니다.
+응답 본문은 없습니다.
+
+operation::user/withdraw[snippets='http-request,http-response']
+
+==== 실패 응답
+
+토큰의 회원이 존재하지 않으면 404(`USER_NOT_FOUND`)를 반환합니다.
+
+operation::user/withdraw-error[snippets='http-response,response-fields']
+
+== Media API
+
+파일을 서버를 거치지 않고 스토리지에 직접 업로드하기 위한 API입니다. 이미지는 Cloudflare R2에 올립니다.
+액세스 토큰 인증이 필요합니다.
+
+AI 리포트용 영상 업로드 URL 발급은 무료 체험 횟수 검증과 함께 <<_ai_api,AI API>>에서 제공합니다.
+
+이미지 업로드는 다음 순서로 진행합니다.
+
+1. 업로드 URL 발급 API를 호출해 `uploadUrl`과 `publicUrl`을 받습니다.
+2. `uploadUrl`로 이미지를 HTTP `PUT` 합니다. 이때 `Content-Type` 헤더는 발급 요청에 보낸 값과 같아야 합니다.
+3. 업로드가 성공하면 `publicUrl`을 온보딩 완료 등 후속 API 요청에 담아 등록합니다.
+
+=== 이미지 업로드 URL 발급
+
+link:{swagger-ui}#/Media/media-image-upload-url[▶ Swagger에서 Try it out,window=swagger]
+
+operation::media/image-upload-url[snippets='http-request,request-fields,http-response,response-fields']
+
+==== 실패 응답
+
+operation::media/image-upload-url-error[snippets='http-response,response-fields']
+
+== Onboarding API
+
+로그인 후 온보딩이 필요한 사용자가 프로필과 강아지를 등록하는 API입니다.
+두 엔드포인트 모두 액세스 토큰 인증이 필요합니다.
+
+=== 온보딩 메타데이터 조회
+
+link:{swagger-ui}#/Onboarding/onboarding-metadata[▶ Swagger에서 Try it out,window=swagger]
+
+온보딩 화면에 필요한 토픽·견종·강아지 성격·MBTI 목록을 한 번에 반환합니다.
+
+operation::onboarding/metadata[snippets='http-request,http-response,response-fields']
+
+=== 온보딩 완료
+
+link:{swagger-ui}#/Onboarding/onboarding-complete[▶ Swagger에서 Try it out,window=swagger]
+
+사용자 프로필, 교육 이력·목표와 강아지들을 하나의 트랜잭션으로 생성합니다.
+교육 토픽 ID는 온보딩 메타데이터 조회 응답의 `topics[].id`를 사용합니다.
+강아지는 최대 5마리까지 등록할 수 있으며, 초과하면 400(`BAD_REQUEST`)을 반환합니다.
+이미 온보딩을 완료한 회원이 다시 호출하면 409를 반환합니다.
+
+operation::onboarding/complete[snippets='http-request,request-fields,http-response,response-fields']
+
+==== 실패 응답
+
+operation::onboarding/complete-error[snippets='http-response,response-fields']
+
 == Health API
 
 === 헬스체크
 
+link:{swagger-ui}#/Health/health-check[▶ Swagger에서 Try it out,window=swagger]
+
 operation::health/check[snippets='http-request,http-response,response-fields']
+
+== Training API
+
+모든 엔드포인트는 액세스 토큰 인증이 필요합니다.
+
+=== 커리큘럼 리스트 조회
+
+link:{swagger-ui}#/Training/training-curriculum-list[▶ Swagger에서 Try it out,window=swagger]
+
+커리큘럼 탭에 표시할 토픽과 그 토픽의 커리큘럼 목록을 진행 상태와 함께 조회합니다.
+대상 토픽은 액세스 토큰으로 식별한 사용자가 마지막으로 진입한 토픽이며,
+진입 기록이 없거나 기록된 토픽이 더 이상 없으면 카테고리·토픽 노출 순서 기준 첫 토픽으로 폴백합니다.
+커리큘럼은 노출 순서(`sortOrder`) 오름차순으로 정렬되며, 이 요청은 어떤 데이터도 저장하지 않습니다.
+
+operation::training/curriculum-list[snippets='http-request,http-response,response-fields']
+
+등록된 토픽이 하나도 없으면 404(`TRAINING_TOPIC_NOT_CONFIGURED`)를 반환합니다.
+
+operation::training/curriculum-list-error[snippets='http-response,response-fields']
+
+=== 커리큘럼 세부 조회
+
+link:{swagger-ui}#/Training/training-curriculum-detail[▶ Swagger에서 Try it out,window=swagger]
+
+커리큘럼 하나와 그 커리큘럼에 속한 레슨 목록을 조회합니다.
+레슨은 노출 순서(`sortOrder`) 오름차순으로 정렬되며, 각 레슨에는 액세스 토큰으로 식별한 사용자의
+반복 완료 횟수(`userLessonProgress.completedCount`)가 함께 내려갑니다.
+진행 기록이 없는 레슨의 완료 횟수는 0이고, 레슨이 없는 커리큘럼은 빈 배열로 내려갑니다.
+
+operation::training/curriculum-detail[snippets='http-request,path-parameters,http-response,response-fields']
+
+존재하지 않는 커리큘럼을 요청하면 404(`TRAINING_CURRICULUM_NOT_FOUND`)를 반환합니다.
+
+operation::training/curriculum-detail-error[snippets='http-response,response-fields']
+
+=== 라이브러리 탭 진입
+
+link:{swagger-ui}#/Training/training-training-categories[▶ Swagger에서 Try it out,window=swagger]
+
+전체 교육 카테고리와 각 카테고리에 속한 토픽을 조회합니다.
+카테고리와 토픽 모두 노출 순서(`sortOrder`) 오름차순으로 정렬되며, 토픽이 없는 카테고리는 빈 배열로 내려갑니다.
+
+operation::training/training-categories[snippets='http-request,http-response,response-fields']
+
+=== 레슨 시작 카드 조회
+
+link:{swagger-ui}#/Training/training-lesson-cards[▶ Swagger에서 Try it out,window=swagger]
+
+레슨에 속한 카드 전체를 페이지네이션 없이 조회합니다.
+카드와 각 카드의 미디어 모두 노출 순서(`sortOrder`) 오름차순으로 정렬되며, 미디어가 없는 카드는 빈 배열로 내려갑니다.
+이 API는 조회만 수행하며 진행 기록을 만들지 않습니다.
+
+operation::training/lesson-cards[snippets='http-request,path-parameters,http-response,response-fields']
+
+존재하지 않는 레슨을 요청하면 404(`TRAINING_LESSON_NOT_FOUND`)를 반환합니다.
+
+operation::training/lesson-cards-error[snippets='http-response,response-fields']
+
+=== 레슨 완료
+
+link:{swagger-ui}#/Training/training-lesson-complete[▶ Swagger에서 Try it out,window=swagger]
+
+레슨을 끝냈을 때 반복 완료 횟수를 1 올리고 갱신된 횟수를 반환합니다.
+액세스 토큰으로 사용자를 식별하며 요청 바디는 받지 않습니다.
+첫 완료 시 진행도가 생성되어 완료 횟수가 1이 되고, 이후 호출할 때마다 1씩 증가합니다.
+
+operation::training/lesson-complete[snippets='http-request,path-parameters,http-response,response-fields']
+
+존재하지 않는 레슨을 요청하면 404(`TRAINING_LESSON_NOT_FOUND`)를 반환하며 진행도는 변경되지 않습니다.
+
+operation::training/lesson-complete-error[snippets='http-response,response-fields']
+
+=== 커리큘럼 화면 변경
+
+link:{swagger-ui}#/Training/training-topic-select[▶ Swagger에서 Try it out,window=swagger]
+
+커리큘럼 탭에 표시할 토픽을 변경합니다.
+액세스 토큰으로 사용자를 식별하며, 같은 토픽을 연속으로 선택해도 진입 기록은 한 건만 유지되는 멱등 요청입니다.
+
+operation::training/topic-select[snippets='http-request,path-parameters,http-response,response-fields']
+
+존재하지 않는 토픽을 요청하면 404(`TRAINING_TOPIC_NOT_FOUND`)를 반환합니다.
+
+operation::training/topic-select-error[snippets='http-response,response-fields']
+
+== AI API
+
+훈련 영상 업로드 URL 발급과, 업로드한 영상을 AI가 분석해 만든 리포트를 조회하는 API입니다.
+모든 엔드포인트에 액세스 토큰 인증이 필요합니다.
+리포트는 업로드 URL을 발급하는 순간 `UPLOADING`(업로드 대기) 상태로 생성되고, 업로드가 끝나면 `PENDING`(분석 중),
+분석이 끝나면 `COMPLETED` 또는 `FAILED_*` 상태로 바뀝니다.
+`COMPLETED`가 아닌 리포트는 `title`과 `content`가 null입니다.
+
+[NOTE]
+.분석 완료 폴링
+====
+클라이언트는 리포트 목록 조회를 폴링하다가 `UPLOADING`·`PENDING`인 리포트가 없으면 멈춥니다.
+리포트는 발급 즉시 목록에 나타나므로 앱이 재시작돼 `objectKey`·`reportId`를 잃어도 목록만으로 진행 중인 분석을 찾을 수 있습니다.
+`uploadUrl` 유효 시간(`expiresInSeconds`) 안에 업로드가 끝나지 않은 리포트는 `FAILED_UPLOAD`로 내려갑니다.
+업로드가 유효 시간을 넘겨 끝난 경우에는 업로드 완료 이벤트가 처리되기까지 잠시 `FAILED_UPLOAD`로 보이다가 `PENDING`으로 바뀔 수 있습니다.
+====
+`videoObjectKey`는 분석한 영상을 가리키는 S3 객체 키이며,
+영상 재생 URL은 내려가지 않습니다.
+
+AI 리포트 생성은 무료 체험으로 사용자당 총 3회까지 가능합니다.
+횟수를 소진하면 영상 업로드 URL 발급이 403으로 거부됩니다.
+
+=== AI 리포트 영상 업로드 URL 발급
+
+link:{swagger-ui}#/AI/ai-video-upload-url[▶ Swagger에서 Try it out,window=swagger]
+
+훈련 영상을 AWS S3에 직접 업로드하기 위한 API입니다. 무료 체험 횟수를 검증한 뒤 URL을 발급합니다.
+최대 50MB(52428800바이트)까지 단일 `PUT`으로 올리며, `video/mp4`(mp4)와 `video/quicktime`(mov) 두 형식만 허용합니다.
+
+발급과 동시에 `UPLOADING` 상태의 리포트가 만들어지고 그 `reportId`가 응답에 내려갑니다.
+`reportId`를 잃어버려도 리포트 목록 조회로 다시 찾을 수 있습니다.
+
+[IMPORTANT]
+====
+`uploadUrl`의 서명에는 `Content-Type`뿐 아니라 **`Content-Length`도 포함**되어 있습니다.
+발급 요청의 `fileSizeBytes`와 정확히 같은 바이트 수로 `PUT`해야 하며,
+`Content-Length` 없이(chunked transfer encoding) 보내면 S3가 403 `SignatureDoesNotMatch`로 거부합니다.
+
+* React Native `fetch`에 `{uri, type, name}` 형태의 body를 넘기면 chunked로 전송되어 실패합니다.
+* `react-native-blob-util`의 `RNFetchBlob.wrap(path)` 또는 Expo의
+  `FileSystem.uploadAsync(url, uri, { httpMethod: 'PUT', uploadType: BINARY_CONTENT })`를 사용하세요.
+* `Content-Length` 헤더를 직접 지정해도 플랫폼이 body 기준으로 덮어씁니다. 길이를 알 수 있는 body를 넘겨야 합니다.
+* `fileSizeBytes`는 실제로 업로드할 파일을 stat해서 구합니다.
+  URL 발급 후 압축·트랜스코딩하면 크기가 달라져 실패하므로 "압축 -> stat -> 발급 -> 즉시 PUT" 순서를 지키세요.
+* `uploadUrl`이 만료되면 발급 API를 다시 호출해 새 URL을 받습니다.
+====
+
+operation::ai/video-upload-url[snippets='http-request,request-fields,http-response,response-fields']
+
+==== 실패 응답
+
+무료 체험 횟수(3회)를 소진하면 403(`AI_REPORT_TRIAL_EXCEEDED`)을 반환합니다.
+파일 크기가 상한을 넘으면 `MEDIA_VIDEO_FILE_SIZE_EXCEEDED`, 0 이하면 `MEDIA_INVALID_VIDEO_FILE_SIZE`,
+지원하지 않는 형식이면 `MEDIA_UNSUPPORTED_VIDEO_TYPE`을 400으로 반환합니다.
+
+operation::ai/video-upload-url-error[snippets='http-response,response-fields']
+
+NOTE: 업로드한 영상의 재생 URL 발급 API는 아직 없습니다. 비공개 버킷 운영을 확정하면 presigned GET 발급과
+`objectKey` 소유자 검증을 함께 추가해야 합니다.
+
+=== AI 리포트 체험 횟수 조회
+
+link:{swagger-ui}#/AI/ai-trial[▶ Swagger에서 Try it out,window=swagger]
+
+액세스 토큰으로 식별한 사용자의 무료 체험 사용 현황을 조회합니다.
+분석이 완료된(`COMPLETED`) 리포트만 사용 횟수로 세며, 없으면 사용 0회로 내려갑니다.
+
+operation::ai/trial[snippets='http-request,http-response,response-fields']
+
+=== AI 리포트 목록 조회
+
+link:{swagger-ui}#/AI/ai-report-list[▶ Swagger에서 Try it out,window=swagger]
+
+액세스 토큰으로 식별한 사용자의 리포트 목록을 생성 시각 내림차순으로 조회합니다.
+분석 중·실패한 리포트도 `status`와 함께 포함되며, 리포트 본문은 상세 조회에서만 내려갑니다.
+리포트가 없으면 빈 배열로 내려갑니다.
+
+operation::ai/report-list[snippets='http-request,http-response,response-fields']
+
+=== AI 리포트 상세 조회
+
+link:{swagger-ui}#/AI/ai-report-detail[▶ Swagger에서 Try it out,window=swagger]
+
+리포트 하나를 본문(`content`)과 함께 조회합니다. `status`가 `COMPLETED`가 아니면 `content`는 null입니다.
+
+operation::ai/report-detail[snippets='http-request,path-parameters,http-response,response-fields']
+
+존재하지 않거나 본인 소유가 아닌 리포트를 요청하면 404(`AI_REPORT_NOT_FOUND`)를 반환합니다.
+
+operation::ai/report-detail-error[snippets='http-response,response-fields']
+
+== Dog API
+
+=== 강아지 등록
+
+link:{swagger-ui}#/Dog/dog-register[▶ Swagger에서 Try it out,window=swagger]
+
+온보딩 이후 강아지를 한 마리 추가로 등록합니다. 입력 항목과 검증 규칙은 온보딩 완료 요청의 `dogs[]` 항목과 같으며,
+견종·성격은 온보딩 메타데이터의 `code`로 보냅니다.
+사용자당 강아지는 **최대 5마리**까지 등록할 수 있습니다(삭제된 강아지는 세지 않음).
+선택된 강아지가 없으면 등록하는 강아지가 선택(`SELECTED`)되고, 이미 있으면 `UNSELECTED`로 등록됩니다.
+응답은 단건 조회와 같은 형태로 등록된 프로필을 201과 함께 내려줍니다.
+
+operation::dog/register[snippets='http-request,request-fields,http-response,response-fields']
+
+==== 실패 응답
+
+강아지가 이미 5마리면 409(`DOG_LIMIT_EXCEEDED`)를 반환하며 강아지는 등록되지 않습니다.
+잘못된 견종·성별·성격 코드는 400(`DOG_INVALID_BREED`, `DOG_INVALID_SEX`, `DOG_INVALID_PERSONALITY`)이며, 필수 입력 누락·형식 오류는 400(`BAD_REQUEST`)에 `errors` 필드로 항목별 원인이 내려갑니다.
+
+operation::dog/register-error[snippets='http-response,response-fields']
+
+=== 보유 강아지 목록 조회
+
+link:{swagger-ui}#/Dog/dog-list[▶ Swagger에서 Try it out,window=swagger]
+
+액세스 토큰으로 식별한 사용자가 보유한 강아지를 등록 순으로 모두 조회합니다. 강아지가 없으면 빈 배열(`[]`)을 반환합니다.
+`status`가 `SELECTED`인 강아지가 현재 선택된 강아지이며, 사용자당 한 마리입니다.
+견종(`breed`)과 성격(`personalities`)은 온보딩 메타데이터와 같은 `code`·`label` 쌍으로 내려가므로,
+수정 화면은 `code`를 선택값으로, 표시 화면은 `label`을 그대로 사용합니다.
+나이 미상 강아지는 `birthDate`·`age`가 `null`이고, 프로필 이미지·기대 사항을 등록하지 않은 강아지는 빈 문자열(`""`)입니다.
+
+operation::dog/list[snippets='http-request,http-response,response-fields']
+
+=== 강아지 단건 조회
+
+link:{swagger-ui}#/Dog/dog-detail[▶ Swagger에서 Try it out,window=swagger]
+
+사용자가 소유한 강아지 한 마리를 ID로 조회합니다. 강아지 정보 수정 화면의 초기값으로 사용합니다.
+응답 필드는 목록 조회의 항목과 같습니다.
+
+operation::dog/detail[snippets='http-request,path-parameters,http-response,response-fields']
+
+==== 실패 응답
+
+존재하지 않거나 본인 소유가 아닌 강아지를 요청하면 404(`DOG_NOT_FOUND`)를 반환합니다.
+
+operation::dog/detail-error[snippets='http-response,response-fields']
+
+=== 강아지 프로필 수정
+
+link:{swagger-ui}#/Dog/dog-update[▶ Swagger에서 Try it out,window=swagger]
+
+사용자가 소유한 강아지 한 마리의 프로필을 요청 본문 값으로 **전체 교체**합니다.
+수정 화면은 단건 조회 응답을 초기값으로 받아 모든 필드를 다시 보내며, 생략하거나 `null`로 보낸 선택 필드(`birthDate`, `personalities`, `profileImageUrl`, `expectation`)는 '값 없음'으로 저장됩니다.
+선택 상태(`status`)는 이 API로 바뀌지 않습니다. 견종·성격은 온보딩 메타데이터의 `code`로 보내고, 응답은 단건 조회와 같은 형태로 수정된 프로필을 내려줍니다.
+
+operation::dog/update[snippets='http-request,path-parameters,request-fields,http-response,response-fields']
+
+==== 실패 응답
+
+존재하지 않거나 본인 소유가 아닌 강아지를 요청하면 404(`DOG_NOT_FOUND`)를 반환합니다.
+잘못된 견종·성별·성격 코드는 400(`DOG_INVALID_BREED`, `DOG_INVALID_SEX`, `DOG_INVALID_PERSONALITY`)이며, 필수 입력 누락·형식 오류는 400(`BAD_REQUEST`)에 `errors` 필드로 항목별 원인이 내려갑니다.
+
+operation::dog/update-error[snippets='http-response,response-fields']
+
+=== 강아지 프로필 삭제
+
+link:{swagger-ui}#/Dog/dog-delete[▶ Swagger에서 Try it out,window=swagger]
+
+사용자가 소유한 강아지 한 마리를 삭제합니다. 소프트 딜리트라 데이터는 남지만 이후 목록·단건·선택 강아지 조회에서 제외되며, 같은 강아지를 다시 삭제하면 404입니다.
+선택 상태(`status`)는 다른 강아지로 넘어가지 않습니다. 선택된 강아지를 삭제하면 선택된 강아지가 없는 상태가 되고, 다음에 등록하는 강아지가 선택됩니다.
+사용자의 강아지가 한 마리뿐이면 삭제할 수 없습니다.
+응답 본문은 없습니다.
+
+operation::dog/delete[snippets='http-request,path-parameters,http-response']
+
+==== 실패 응답
+
+존재하지 않거나 본인 소유가 아니거나 이미 삭제된 강아지를 요청하면 404(`DOG_NOT_FOUND`)를 반환합니다.
+
+operation::dog/delete-error[snippets='http-response,response-fields']
+
+마지막 남은 강아지를 삭제하면 409(`DOG_LAST_DOG_NOT_DELETABLE`)를 반환하며 강아지는 삭제되지 않습니다.
+
+operation::dog/delete-last-dog-error[snippets='http-response,response-fields']
+
+=== 선택된 강아지 프로필 이미지 조회
+
+link:{swagger-ui}#/Dog/dog-profile-image[▶ Swagger에서 Try it out,window=swagger]
+
+액세스 토큰으로 식별한 사용자가 선택한 강아지의 프로필 이미지 공개 URL을 조회합니다.
+선택된 강아지는 사용자당 한 마리이며, 강아지를 처음 등록할 때(온보딩의 첫 강아지) 선택됩니다.
+프로필 이미지를 등록하지 않은 강아지는 빈 문자열(`""`)로 내려가므로, 클라이언트가 기본 이미지를 표시합니다.
+
+operation::dog/profile-image[snippets='http-request,http-response,response-fields']
+
+==== 실패 응답
+
+선택된 강아지가 없으면 404(`DOG_NOT_FOUND`)를 반환합니다. 온보딩을 마치지 않은 사용자가 여기에 해당합니다.
+
+operation::dog/profile-image-error[snippets='http-response,response-fields']
