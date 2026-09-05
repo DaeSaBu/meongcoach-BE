@@ -12,15 +12,12 @@ import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.crypto.ECDSASigner;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
-import java.security.KeyFactory;
-import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
 import java.security.interfaces.ECPrivateKey;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.PKCS8EncodedKeySpec;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Base64;
 import java.util.Date;
+import org.springframework.boot.ssl.pem.PemContent;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
@@ -45,8 +42,6 @@ public class AppleSocialTokenRevoker implements SocialTokenRevoker {
 	private static final String TOKEN_TYPE_HINT = "refresh_token";
 	// Apple이 허용하는 상한은 6개월이지만 요청마다 새로 만들므로 두 요청을 끝낼 만큼만 유효하면 된다
 	private static final Duration CLIENT_SECRET_TTL = Duration.ofMinutes(5);
-	private static final String PEM_HEADER = "-----BEGIN PRIVATE KEY-----";
-	private static final String PEM_FOOTER = "-----END PRIVATE KEY-----";
 
 	private final AppleProperties properties;
 	private final RestClient restClient;
@@ -139,18 +134,21 @@ public class AppleSocialTokenRevoker implements SocialTokenRevoker {
 		return jwt.serialize();
 	}
 
-	// .p8 파일 내용(PKCS#8 PEM)을 그대로 환경 변수로 받으므로 머리말·꼬리말과 줄바꿈(이스케이프된 \n 포함)을 걷어내고 디코딩한다
+	// .p8 파일 내용(PKCS#8 PEM)을 환경 변수로 받는다. 한 줄로 넣기 위해 이스케이프한 \n만 실제 줄바꿈으로 되돌리고 나머지는 Spring Boot PEM 파서에 맡긴다
 	private static ECPrivateKey parsePrivateKey(String pem) {
-		String encoded = pem
-				.replace(PEM_HEADER, "")
-				.replace(PEM_FOOTER, "")
-				.replace("\\n", "")
-				.replaceAll("\\s", "");
+		PrivateKey key = readPrivateKey(pem.replace("\\n", "\n"));
+		if (key instanceof ECPrivateKey ecKey) {
+			return ecKey;
+		}
+		throw new IllegalStateException("Apple 개인 키(APPLE_PRIVATE_KEY)가 EC 키가 아닙니다");
+	}
+
+	private static PrivateKey readPrivateKey(String pem) {
 		try {
-			byte[] der = Base64.getDecoder().decode(encoded);
-			return (ECPrivateKey) KeyFactory.getInstance("EC").generatePrivate(new PKCS8EncodedKeySpec(der));
-		} catch (IllegalArgumentException | InvalidKeySpecException | NoSuchAlgorithmException e) {
-			throw new IllegalStateException("Apple 개인 키(APPLE_PRIVATE_KEY)가 PKCS#8 EC 키가 아닙니다", e);
+			return PemContent.of(pem).getPrivateKey();
+		} catch (IllegalStateException | IllegalArgumentException e) {
+			// 기동 실패 로그에서 어느 환경 변수가 문제인지 바로 찾을 수 있게 변수 이름을 붙인다
+			throw new IllegalStateException("Apple 개인 키(APPLE_PRIVATE_KEY)를 PKCS#8 PEM으로 읽을 수 없습니다", e);
 		}
 	}
 }
