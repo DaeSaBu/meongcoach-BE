@@ -20,7 +20,6 @@ import com.daesabu.meongcoach.user.domain.UserStatus;
 import com.daesabu.meongcoach.user.domain.command.LocalAccountCreateCommand;
 import com.daesabu.meongcoach.user.domain.command.SocialAccountLinkCommand;
 import com.daesabu.meongcoach.user.domain.command.UserProfileCreateCommand;
-import com.daesabu.meongcoach.user.domain.exception.AppleAuthorizationCodeRequiredException;
 import com.daesabu.meongcoach.user.domain.exception.InvalidAppleAuthorizationCodeException;
 import com.daesabu.meongcoach.user.domain.exception.UserNotFoundException;
 import com.daesabu.meongcoach.user.domain.vo.Email;
@@ -55,7 +54,7 @@ class UserWithdrawServiceTest {
 	private UserWithdrawer userWithdrawer;
 
 	@Autowired
-	private RecordingAppleTokenRevoker appleTokenRevoker;
+	private RecordingTokenRevoker tokenRevoker;
 
 	@Autowired
 	private SocialUserRegisterService socialUserRegisterService;
@@ -80,7 +79,7 @@ class UserWithdrawServiceTest {
 
 	@BeforeEach
 	void resetRevoker() {
-		appleTokenRevoker.reset();
+		tokenRevoker.reset();
 	}
 
 	@Test
@@ -184,34 +183,20 @@ class UserWithdrawServiceTest {
 
 	// 애플 심사 지침 5.1.1(v): Sign in with Apple 계정을 삭제할 때는 Apple 토큰을 revoke해야 한다
 	@Test
-	void Apple_회원은_인가_코드로_토큰을_revoke한_뒤_탈퇴한다() {
+	void revoker가_등록된_제공자_계정은_인가_코드로_revoke한_뒤_탈퇴한다() {
 		Long userId = persistSocialMember().getId();
 
 		userWithdrawer.withdraw(userId, APPLE_CODE);
 		flushAndClear();
 
-		assertThat(appleTokenRevoker.revokedCode()).isEqualTo(APPLE_CODE);
+		assertThat(tokenRevoker.revokedCode()).isEqualTo(APPLE_CODE);
 		assertThat(userRepository.findById(userId).orElseThrow().getStatus()).isEqualTo(UserStatus.WITHDRAWN);
 	}
 
 	@Test
-	void Apple_회원이_인가_코드_없이_탈퇴하면_예외를_던지고_아무것도_바꾸지_않는다() {
+	void revoke가_실패하면_탈퇴되지_않는다() {
 		Long userId = persistSocialMember().getId();
-
-		assertThatThrownBy(() -> userWithdrawer.withdraw(userId, " "))
-				.isInstanceOf(AppleAuthorizationCodeRequiredException.class);
-		flushAndClear();
-
-		assertThat(appleTokenRevoker.revokedCode()).isNull();
-		assertThat(userRepository.findById(userId).orElseThrow().getStatus()).isEqualTo(UserStatus.ACTIVE);
-		assertThat(socialAccountRepository.findByProviderAndProviderId(APPLE_ACCOUNT.provider(), APPLE_ACCOUNT.providerId()))
-				.isPresent();
-	}
-
-	@Test
-	void Apple_토큰_revoke가_실패하면_탈퇴되지_않는다() {
-		Long userId = persistSocialMember().getId();
-		appleTokenRevoker.failWith(new InvalidAppleAuthorizationCodeException());
+		tokenRevoker.failWith(new InvalidAppleAuthorizationCodeException());
 
 		assertThatThrownBy(() -> userWithdrawer.withdraw(userId, APPLE_CODE))
 				.isInstanceOf(InvalidAppleAuthorizationCodeException.class);
@@ -223,7 +208,7 @@ class UserWithdrawServiceTest {
 	}
 
 	@Test
-	void Apple_계정이_없는_회원은_인가_코드가_있어도_revoke하지_않고_탈퇴한다() {
+	void revoker가_없는_제공자_계정만_있는_회원은_인가_코드가_있어도_revoke하지_않고_탈퇴한다() {
 		User user = userRepository.save(User.registerOnboardingMember());
 		socialAccountRepository.save(SocialAccount.link(user, KAKAO_ACCOUNT));
 		flushAndClear();
@@ -231,7 +216,7 @@ class UserWithdrawServiceTest {
 		userWithdrawer.withdraw(user.getId(), APPLE_CODE);
 		flushAndClear();
 
-		assertThat(appleTokenRevoker.revokedCode()).isNull();
+		assertThat(tokenRevoker.revokedCode()).isNull();
 		assertThat(userRepository.findById(user.getId()).orElseThrow().getStatus()).isEqualTo(UserStatus.WITHDRAWN);
 	}
 
@@ -261,12 +246,12 @@ class UserWithdrawServiceTest {
 	static class StubConfig {
 
 		@Bean
-		RecordingAppleTokenRevoker appleTokenRevoker() {
-			return new RecordingAppleTokenRevoker();
+		RecordingTokenRevoker tokenRevoker() {
+			return new RecordingTokenRevoker();
 		}
 	}
 
-	static class RecordingAppleTokenRevoker implements SocialTokenRevoker {
+	static class RecordingTokenRevoker implements SocialTokenRevoker {
 
 		private String revokedCode;
 		private RuntimeException failure;

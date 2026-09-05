@@ -11,6 +11,7 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 import com.daesabu.meongcoach.user.domain.SocialProvider;
+import com.daesabu.meongcoach.user.domain.exception.AppleAuthorizationCodeRequiredException;
 import com.daesabu.meongcoach.user.domain.exception.InvalidAppleAuthorizationCodeException;
 import com.daesabu.meongcoach.user.domain.exception.SocialProviderUnavailableException;
 import com.nimbusds.jose.JWSAlgorithm;
@@ -33,6 +34,9 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.mock.http.client.MockClientHttpRequest;
@@ -127,6 +131,15 @@ class AppleSocialTokenRevokerTest {
 		assertThat(claims.getAudience()).containsExactly(ISSUER);
 		assertThat(claims.getExpirationTime()).isAfter(new Date());
 		assertThat(clientSecret.verify(new ECDSAVerifier((ECPublicKey) keyPair.getPublic()))).isTrue();
+	}
+
+	@ParameterizedTest
+	@NullSource
+	@ValueSource(strings = {"", " "})
+	void 인가_코드가_없으면_코드_필수_예외를_던지고_Apple을_호출하지_않는다(String authorizationCode) {
+		assertThatThrownBy(() -> revoker.revoke(authorizationCode))
+				.isInstanceOf(AppleAuthorizationCodeRequiredException.class);
+		server.verify();
 	}
 
 	@Test
