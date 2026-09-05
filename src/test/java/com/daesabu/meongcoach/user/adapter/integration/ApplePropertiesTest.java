@@ -22,6 +22,10 @@ class ApplePropertiesTest {
 	private static final String VALID_ISSUER = "https://appleid.apple.com";
 	private static final String VALID_JWK_SET_URI = "https://appleid.apple.com/auth/keys";
 	private static final List<String> VALID_AUDIENCES = List.of("com.daesabu.meongcoach");
+	private static final String VALID_CLIENT_ID = "com.daesabu.meongcoach";
+	private static final String VALID_TEAM_ID = "TEAMID0001";
+	private static final String VALID_KEY_ID = "KEYID00001";
+	private static final String VALID_PRIVATE_KEY = "-----BEGIN PRIVATE KEY-----\nMIGH...\n-----END PRIVATE KEY-----";
 
 	private static ValidatorFactory validatorFactory;
 	private static Validator validator;
@@ -44,38 +48,75 @@ class ApplePropertiesTest {
 				.collect(Collectors.toSet());
 	}
 
+	private static AppleProperties properties(String issuer, String jwkSetUri, List<String> audiences) {
+		return new AppleProperties(issuer, jwkSetUri, audiences,
+				VALID_CLIENT_ID, VALID_TEAM_ID, VALID_KEY_ID, VALID_PRIVATE_KEY);
+	}
+
 	@Test
 	void 모든_값이_올바르면_위반이_없다() {
-		AppleProperties properties = new AppleProperties(VALID_ISSUER, VALID_JWK_SET_URI, VALID_AUDIENCES);
+		AppleProperties properties = properties(VALID_ISSUER, VALID_JWK_SET_URI, VALID_AUDIENCES);
 
 		assertThat(violatedFields(properties)).isEmpty();
 	}
 
 	@Test
 	void 발급자가_비어_있으면_위반이다() {
-		AppleProperties properties = new AppleProperties(" ", VALID_JWK_SET_URI, VALID_AUDIENCES);
+		AppleProperties properties = properties(" ", VALID_JWK_SET_URI, VALID_AUDIENCES);
 
 		assertThat(violatedFields(properties)).containsExactly("issuer");
 	}
 
 	@Test
 	void 공개_키_주소가_비어_있으면_위반이다() {
-		AppleProperties properties = new AppleProperties(VALID_ISSUER, " ", VALID_AUDIENCES);
+		AppleProperties properties = properties(VALID_ISSUER, " ", VALID_AUDIENCES);
 
 		assertThat(violatedFields(properties)).containsExactly("jwkSetUri");
 	}
 
 	@Test
 	void aud_후보가_비어_있으면_위반이다() {
-		AppleProperties properties = new AppleProperties(VALID_ISSUER, VALID_JWK_SET_URI, List.of());
+		AppleProperties properties = properties(VALID_ISSUER, VALID_JWK_SET_URI, List.of());
 
 		assertThat(violatedFields(properties)).containsExactly("audiences");
 	}
 
 	@Test
 	void aud_후보에_빈_값이_섞이면_위반이다() {
-		AppleProperties properties = new AppleProperties(VALID_ISSUER, VALID_JWK_SET_URI, List.of("bundle-id", " "));
+		AppleProperties properties = properties(VALID_ISSUER, VALID_JWK_SET_URI, List.of("bundle-id", " "));
 
 		assertThat(violatedFields(properties)).containsExactly("audiences[1].<list element>");
+	}
+
+	@Test
+	void revoke용_client_id가_비어_있으면_위반이다() {
+		AppleProperties properties = new AppleProperties(VALID_ISSUER, VALID_JWK_SET_URI, VALID_AUDIENCES,
+				" ", VALID_TEAM_ID, VALID_KEY_ID, VALID_PRIVATE_KEY);
+
+		assertThat(violatedFields(properties)).containsExactly("clientId");
+	}
+
+	@Test
+	void 팀_ID가_비어_있으면_위반이다() {
+		AppleProperties properties = new AppleProperties(VALID_ISSUER, VALID_JWK_SET_URI, VALID_AUDIENCES,
+				VALID_CLIENT_ID, " ", VALID_KEY_ID, VALID_PRIVATE_KEY);
+
+		assertThat(violatedFields(properties)).containsExactly("teamId");
+	}
+
+	@Test
+	void 키_ID가_비어_있으면_위반이다() {
+		AppleProperties properties = new AppleProperties(VALID_ISSUER, VALID_JWK_SET_URI, VALID_AUDIENCES,
+				VALID_CLIENT_ID, VALID_TEAM_ID, " ", VALID_PRIVATE_KEY);
+
+		assertThat(violatedFields(properties)).containsExactly("keyId");
+	}
+
+	@Test
+	void 개인_키가_비어_있으면_위반이다() {
+		AppleProperties properties = new AppleProperties(VALID_ISSUER, VALID_JWK_SET_URI, VALID_AUDIENCES,
+				VALID_CLIENT_ID, VALID_TEAM_ID, VALID_KEY_ID, " ");
+
+		assertThat(violatedFields(properties)).containsExactly("privateKey");
 	}
 }

@@ -24,8 +24,9 @@ class AppleSocialProfileReaderTest {
 	private static final String BUNDLE_ID = "com.daesabu.meongcoach";
 	private static final String SUBJECT = "001234.abcdef0123456789abcdef0123456789.1234";
 
-	private static final AppleProperties PROPERTIES =
-			new AppleProperties(ISSUER, JWK_SET_URI, List.of(BUNDLE_ID));
+	// revoke 설정은 이 리더가 쓰지 않으므로 형식만 맞춘 값을 둔다
+	private static final AppleProperties PROPERTIES = new AppleProperties(ISSUER, JWK_SET_URI, List.of(BUNDLE_ID),
+			BUNDLE_ID, "TEAMID0001", "KEYID00001", "unused-private-key");
 
 	private static IdTokenSigner signer;
 

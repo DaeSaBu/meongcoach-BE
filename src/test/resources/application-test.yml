@@ -47,6 +47,16 @@ meongcoach:
       audiences: test-kakao-native-app-key
     apple:
       audiences: test-apple-bundle-id
+      client-id: test-apple-bundle-id
+      team-id: TESTTEAMID
+      key-id: TESTKEYID
+      # 테스트 전용으로 생성한 P-256 키. 기동 시 PKCS#8 파싱만 통과하면 되고 Apple에 등록된 키가 아니다
+      private-key: |
+        -----BEGIN PRIVATE KEY-----
+        MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgEeI4OUtjbQzgd6iu
+        MCrHZ4z+TzPhPKNv3A0voasCxxyhRANCAARV4aiqKN2zwVoQhmmKnk2eE4p1KELq
+        IPWWP8GOqIfW4zUJRcU/5sVmUD2wfvt+jDBtXeT5WGYiWT+bSJc8RwMM
+        -----END PRIVATE KEY-----
     google:
       audiences: test-google-web-client-id
   storage:
