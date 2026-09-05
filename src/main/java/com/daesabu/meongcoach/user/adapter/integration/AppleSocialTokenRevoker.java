@@ -3,6 +3,7 @@ package com.daesabu.meongcoach.user.adapter.integration;
 import com.daesabu.meongcoach.user.adapter.integration.dto.AppleTokenResponse;
 import com.daesabu.meongcoach.user.application.required.SocialTokenRevoker;
 import com.daesabu.meongcoach.user.domain.SocialProvider;
+import com.daesabu.meongcoach.user.domain.exception.AppleAuthorizationCodeRequiredException;
 import com.daesabu.meongcoach.user.domain.exception.InvalidAppleAuthorizationCodeException;
 import com.daesabu.meongcoach.user.domain.exception.SocialProviderUnavailableException;
 import com.nimbusds.jose.JOSEException;
@@ -64,6 +65,10 @@ public class AppleSocialTokenRevoker implements SocialTokenRevoker {
 
 	@Override
 	public void revoke(String authorizationCode) {
+		// Apple은 서버에 토큰이 없어 코드 없이는 revoke할 수 없으므로 여기서 필수로 요구한다
+		if (authorizationCode == null || authorizationCode.isBlank()) {
+			throw new AppleAuthorizationCodeRequiredException();
+		}
 		String clientSecret = createClientSecret();
 		String refreshToken = exchangeForRefreshToken(authorizationCode, clientSecret);
 		revokeRefreshToken(refreshToken, clientSecret);
