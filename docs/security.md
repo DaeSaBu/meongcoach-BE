@@ -267,7 +267,7 @@ OIDC 제공자는 모두 "JWKS 디코더 + `iss` + `exp` + `aud`" 동일 형태�
 | `APPLE_BUNDLE_ID` | Sign in with Apple id_token의 `aud`(iOS 앱 번들 ID). 시크릿이 아닌 식별자. **빈 값이면 기동 실패** |
 | `APPLE_TEAM_ID` | Apple Developer 계정의 팀 ID. 탈퇴 시 revoke용 `client_secret`의 `iss`. 시크릿이 아닌 식별자. **빈 값이면 기동 실패** |
 | `APPLE_KEY_ID` | Sign in with Apple 키의 키 ID. `client_secret`의 `kid`. 시크릿이 아닌 식별자. **빈 값이면 기동 실패** |
-| `APPLE_PRIVATE_KEY` | 위 키의 `.p8` 파일 내용(PKCS#8 PEM). **시크릿.** 줄바꿈은 그대로 두거나 `\n`으로 이스케이프. **비거나 EC 키가 아니면 기동 실패** |
+| `APPLE_PRIVATE_KEY` | `-----BEGIN PRIVATE KEY-----` 머리말·꼬리말을 포함한 위 키의 `.p8` 파일 내용 전체(PKCS#8 PEM). **시크릿.** 줄바꿈은 그대로 두거나 `\n`으로 이스케이프. **비거나, 머리말이 없거나, EC 키가 아니면 기동 실패** |
 | `GOOGLE_WEB_CLIENT_ID` | 구글 id_token의 `aud`(웹 OAuth 클라이언트 ID). 안드로이드 SDK도 이 값을 `aud`로 발급합니다. 시크릿이 아닌 식별자. **빈 값이면 기동 실패** |
 | `GOOGLE_IOS_CLIENT_ID` | 구글 id_token의 `aud`(iOS OAuth 클라이언트 ID). 시크릿이 아닌 식별자. **빈 값이면 기동 실패** |
 
