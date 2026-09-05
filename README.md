@@ -28,7 +28,7 @@ export GOOGLE_IOS_CLIENT_ID=<구글 클라우드 콘솔의 iOS OAuth 클라이�
 docker compose --profile app up --build
 ```
 
-테스트는 `src/test/resources/application-test.yml`의 더미 값을 쓰므로 환경 변수 없이 실행됩니다.
+테스트는 `src/test/resources/application-test.yml`의 더미 값을 쓰므로 환경 변수 없이 실행됩니다. 단, DB 테스트가 Testcontainers로 PostgreSQL 컨테이너를 띄우므로 Docker 데몬이 실행 중이어야 합니다.
 
 ```bash
 ./gradlew spotlessCheck test jacocoTestCoverageVerification

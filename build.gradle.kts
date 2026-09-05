@@ -58,7 +58,6 @@ dependencyManagement {
 }
 
 dependencies {
-	implementation("org.springframework.boot:spring-boot-h2console")
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 	implementation("org.springframework.boot:spring-boot-starter-webmvc")
 	implementation("org.springframework.boot:spring-boot-starter-validation")
@@ -75,8 +74,9 @@ dependencies {
 	implementation("io.sentry:sentry-logback")
 	testImplementation("org.springframework.security:spring-security-test")
 	compileOnly("org.projectlombok:lombok")
-	runtimeOnly("com.h2database:h2")
 	runtimeOnly("org.postgresql:postgresql")
+	// 테스트 DB. application-test.yml의 jdbc:tc: URL을 Testcontainers JDBC 드라이버가 해석해 PostgreSQL 컨테이너를 띄운다
+	testRuntimeOnly("org.testcontainers:testcontainers-postgresql")
 	// Spring Boot 4는 Flyway 자동 구성이 starter로 분리돼 있어 없으면 기동 시 마이그레이션이 실행되지 않는다
 	implementation("org.springframework.boot:spring-boot-starter-flyway")
 	implementation("org.flywaydb:flyway-database-postgresql")

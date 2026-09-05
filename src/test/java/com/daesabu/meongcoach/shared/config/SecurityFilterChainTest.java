@@ -136,12 +136,6 @@ class SecurityFilterChainTest {
 	}
 
 	@Test
-	void local_프로파일이_아니면_h2_console_경로도_인증이_필요하다() throws Exception {
-		mockMvc.perform(get("/h2-console"))
-				.andExpect(status().isUnauthorized());
-	}
-
-	@Test
 	void 위조된_토큰은_거부된다() throws Exception {
 		mockMvc.perform(get(PROTECTED_PATH).header(HttpHeaders.AUTHORIZATION, "Bearer forged.token.value"))
 				.andExpect(status().isUnauthorized());
