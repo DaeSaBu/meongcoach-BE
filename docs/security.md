@@ -138,7 +138,9 @@ SHA-1 검증용이라 id_token의 `aud`가 되지 않습니다), 애플은 **iOS
 - 두 요청의 `client_secret`은 고정 값이 아니라 `.p8` 개인 키로 서명한 ES256 JWT(`iss`=팀 ID, `sub`=번들 ID, `kid`=키 ID)라
   `APPLE_TEAM_ID`·`APPLE_KEY_ID`·`APPLE_PRIVATE_KEY`가 필요합니다. 개인 키는 기동 시 파싱하므로 잘못 넣으면 배포 시점에 실패합니다.
 - 인가 코드는 **5분 만료·1회용**이라 서버가 저장하지 않으며, 클라이언트도 재사용하지 말고 탈퇴 직전에 새로 받아야 합니다.
-- **revoke가 끝나야 탈퇴가 진행됩니다.** Apple 계정 회원이 코드 없이 요청하면 400(`USER_APPLE_AUTHORIZATION_CODE_REQUIRED`),
+- **revoke가 끝나야 탈퇴가 진행됩니다.** `UserWithdrawService`는 제공자를 가리지 않고 회원의 소셜 계정마다 `SocialTokenRevoker`
+  구현체가 등록돼 있으면 호출하며, 코드가 필수인지는 구현체가 정합니다. Apple 계정 회원이 코드 없이 요청하면 `AppleSocialTokenRevoker`가
+  400(`USER_APPLE_AUTHORIZATION_CODE_REQUIRED`)으로 거절하고,
   Apple이 코드를 거부하면 400(`USER_INVALID_APPLE_AUTHORIZATION_CODE`), Apple과 통신하지 못하면 502(`USER_SOCIAL_PROVIDER_UNAVAILABLE`)로
   끝나고 회원·자격증명은 그대로 남습니다. 사용자가 계정을 지우지 못하는 상태보다 Apple 연결이 남는 상태가 심사 위험이 크다고 봤기 때문에,
   revoke를 소셜 계정 삭제보다 먼저 호출해 실패 시 같은 계정으로 다시 시도할 수 있게 둡니다.
@@ -277,7 +279,7 @@ dev/prod의 DB 접속 변수(`DB_HOST` 등)는 [profiles.md](profiles.md)를 참
 
 - **탈퇴 시 카카오·구글 연결은 끊지 않습니다.** Apple은 심사 요건이라 revoke를 구현했지만(위 "탈퇴 시 Sign in with Apple 토큰 revoke"),
   카카오 unlink(`/v1/user/unlink`)와 구글 revoke(`https://oauth2.googleapis.com/revoke`)는 필수 요건이 아니라 미구현입니다.
-  필요해지면 `SocialTokenRevoker` 구현체를 제공자별로 추가하고 `UserWithdrawService`가 해당 제공자 계정에도 호출하도록 넓힙니다.
+  필요해지면 `SocialTokenRevoker` 구현체를 제공자별로 추가하면 되고, `UserWithdrawService`는 등록된 구현체를 제공자별로 찾아 호출하므로 수정하지 않습니다.
   그동안 구글 계정의 연결된 앱 목록에는 앱이 남습니다.
 - **탈퇴해도 타 모듈 데이터는 남습니다.** 강아지(`dogs`)·AI 리포트(`ai_reports`)·학습 진도는 옛 `userId`로 남으며, 재가입은 새
   `userId`를 받으므로 도달할 수 없는 고아 행이 됩니다. 삭제용 `provided` 인터페이스나 모듈 이벤트 선례가 없어 MVP에서는 두고,
