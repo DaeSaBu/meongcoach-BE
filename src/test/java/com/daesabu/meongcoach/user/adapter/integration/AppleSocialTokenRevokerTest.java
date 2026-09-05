@@ -206,6 +206,26 @@ class AppleSocialTokenRevokerTest {
 				.hasMessageContaining("APPLE_PRIVATE_KEY");
 	}
 
+	@Test
+	void 머리말_없는_Base64_본문만_넣으면_생성_시점에_실패한다() {
+		String bodyOnly = toPem(keyPair)
+				.replace("-----BEGIN PRIVATE KEY-----", "")
+				.replace("-----END PRIVATE KEY-----", "");
+
+		assertThatThrownBy(() -> new AppleSocialTokenRevoker(properties(bodyOnly), RestClient.builder()))
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessageContaining("APPLE_PRIVATE_KEY");
+	}
+
+	@Test
+	void EC가_아닌_PKCS8_키면_생성_시점에_실패한다() throws Exception {
+		KeyPair rsaKeyPair = KeyPairGenerator.getInstance("RSA").generateKeyPair();
+
+		assertThatThrownBy(() -> new AppleSocialTokenRevoker(properties(toPem(rsaKeyPair)), RestClient.builder()))
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessageContaining("APPLE_PRIVATE_KEY");
+	}
+
 	private static AppleProperties properties(String privateKeyPem) {
 		return new AppleProperties(ISSUER, ISSUER + "/auth/keys", List.of(CLIENT_ID),
 				CLIENT_ID, TEAM_ID, KEY_ID, privateKeyPem);
