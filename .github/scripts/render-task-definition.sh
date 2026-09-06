@@ -17,6 +17,9 @@ IMAGE_URI=${3}
 : "${JWT_SECRET:?JWT_SECRET이 필요합니다.}"
 : "${KAKAO_NATIVE_APP_KEY:?KAKAO_NATIVE_APP_KEY가 필요합니다.}"
 : "${APPLE_BUNDLE_ID:?APPLE_BUNDLE_ID가 필요합니다.}"
+: "${APPLE_TEAM_ID:?APPLE_TEAM_ID가 필요합니다.}"
+: "${APPLE_KEY_ID:?APPLE_KEY_ID가 필요합니다.}"
+: "${APPLE_PRIVATE_KEY:?APPLE_PRIVATE_KEY가 필요합니다.}"
 : "${GOOGLE_WEB_CLIENT_ID:?GOOGLE_WEB_CLIENT_ID가 필요합니다.}"
 : "${GOOGLE_IOS_CLIENT_ID:?GOOGLE_IOS_CLIENT_ID가 필요합니다.}"
 : "${R2_ENDPOINT:?R2_ENDPOINT가 필요합니다.}"
@@ -44,6 +47,9 @@ jq \
 	--arg kakao_native_app_key "${KAKAO_NATIVE_APP_KEY:-}" \
 	--arg kakao_rest_api_key "${KAKAO_REST_API_KEY:-}" \
 	--arg apple_bundle_id "${APPLE_BUNDLE_ID:-}" \
+	--arg apple_team_id "${APPLE_TEAM_ID:-}" \
+	--arg apple_key_id "${APPLE_KEY_ID:-}" \
+	--arg apple_private_key "${APPLE_PRIVATE_KEY:-}" \
 	--arg google_web_client_id "${GOOGLE_WEB_CLIENT_ID:-}" \
 	--arg google_ios_client_id "${GOOGLE_IOS_CLIENT_ID:-}" \
 	--arg r2_endpoint "${R2_ENDPOINT:-}" \
@@ -118,6 +124,9 @@ jq \
 								.name != "KAKAO_NATIVE_APP_KEY" and
 								.name != "KAKAO_REST_API_KEY" and
 								.name != "APPLE_BUNDLE_ID" and
+								.name != "APPLE_TEAM_ID" and
+								.name != "APPLE_KEY_ID" and
+								.name != "APPLE_PRIVATE_KEY" and
 								.name != "GOOGLE_WEB_CLIENT_ID" and
 								.name != "GOOGLE_IOS_CLIENT_ID" and
 								.name != "R2_ENDPOINT" and
@@ -146,6 +155,9 @@ jq \
 							{"name": "KAKAO_NATIVE_APP_KEY", "value": $kakao_native_app_key},
 							{"name": "KAKAO_REST_API_KEY", "value": $kakao_rest_api_key},
 							{"name": "APPLE_BUNDLE_ID", "value": $apple_bundle_id},
+							{"name": "APPLE_TEAM_ID", "value": $apple_team_id},
+							{"name": "APPLE_KEY_ID", "value": $apple_key_id},
+							{"name": "APPLE_PRIVATE_KEY", "value": $apple_private_key},
 							{"name": "GOOGLE_WEB_CLIENT_ID", "value": $google_web_client_id},
 							{"name": "GOOGLE_IOS_CLIENT_ID", "value": $google_ios_client_id},
 							{"name": "R2_ENDPOINT", "value": $r2_endpoint},
