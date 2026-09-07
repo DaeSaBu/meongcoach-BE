@@ -4,7 +4,8 @@ import com.daesabu.meongcoach.dog.domain.exception.InvalidBreedException;
 
 /**
  * 강아지 견종.
- * 표시 순서는 BreedFinderService가 한글 라벨 가나다순으로 정하므로, 여기 선언 순서는 화면에 드러나지 않는다.
+ * 표시 순서는 BreedFinderService가 정한다. 믹스견을 맨 앞에 두고 나머지를 한글 라벨 가나다순으로 이으므로,
+ * 여기 선언 순서는 화면에 드러나지 않는다.
  * 상수 이름은 dogs.breed 컬럼에 그대로 저장되는 값이라 한번 정한 뒤에는 바꾸지 않는다.
  * 코드는 30자를 넘지 않아야 한다(dogs.breed 컬럼 길이·온보딩 요청 검증 상한).
  */
