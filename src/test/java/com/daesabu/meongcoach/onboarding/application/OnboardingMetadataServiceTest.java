@@ -52,8 +52,8 @@ class OnboardingMetadataServiceTest {
 				.containsExactly("배변 훈련", "산책 훈련");
 		assertThat(result.breeds()).extracting(BreedInfo::code)
 				.hasSize(31)
-				.startsWith("MALTESE")
-				.endsWith("MIXED");
+				.startsWith("GOLDEN_RETRIEVER")
+				.endsWith("FRENCH_BULLDOG");
 		assertThat(result.personalities()).extracting(PersonalityInfo::code)
 				.containsExactly("TIMID", "LIVELY", "FRIENDLY", "CALM", "FEARFUL", "AFFECTIONATE",
 						"INDEPENDENT", "PLAYFUL", "EXCITABLE", "STUBBORN");
