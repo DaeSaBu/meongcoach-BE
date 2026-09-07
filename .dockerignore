@@ -2,6 +2,8 @@
 .github
 .gradle
 .idea
-build
+# 빌드 컨텍스트에는 배포 jar만 담는다
+build/*
+!build/libs
 docs
 *.iml
