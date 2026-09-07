@@ -1,5 +1,6 @@
 # 로컬 개발용 구성 — IDE/bootRun 실행 시 spring-boot-docker-compose가 postgres만 자동 기동한다.
 # backend는 compose profile "app"으로 게이팅되어 `docker compose --profile app up --build`로만 뜬다.
+# Dockerfile이 build/libs/의 jar를 복사만 하므로 `./gradlew bootJar`를 먼저 실행해야 한다.
 services:
   postgres:
     image: postgres:18.3
