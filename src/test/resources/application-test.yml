@@ -1,6 +1,6 @@
 # 테스트 전용 더미 값. 파일명을 application.yml로 만들면 main의 설정을 통째로 가리므로
 # 반드시 프로파일 파일(application-{프로파일}.yml)로 두어 위에 얹히게 한다.
-# datasource는 베이스가 아니라 application-local.yml에 있으므로 테스트용 H2를 명시한다.
+# datasource는 베이스가 아니라 application-local.yml에 있으므로 테스트용 값을 여기서 명시한다.
 spring:
   cloud:
     aws:
@@ -13,11 +13,18 @@ spring:
         access-key: test-access-key
         secret-key: test-secret-key
   datasource:
-    url: jdbc:h2:mem:meongcoach-test
-    driver-class-name: org.h2.Driver
-    username: sa
-    password: ""
-  # 마이그레이션은 PostgreSQL 문법이라 H2로는 실행할 수 없다 — 테스트는 ddl-auto(create-drop)로만 스키마를 만든다
+    # Testcontainers JDBC 드라이버가 배포 환경과 같은 PostgreSQL 18.3 컨테이너를 띄운다 (Docker 필요).
+    # 같은 URL을 쓰는 모든 테스트 컨텍스트가 컨테이너 하나를 공유하고, TC_DAEMON은 커넥션이 모두 닫혀도
+    # 컨테이너를 JVM 종료까지 유지한다. driver·계정은 dev/prod 프로파일과 함께 활성화될 때 그쪽 값을 덮어쓰기 위해 명시한다
+    url: jdbc:tc:postgresql:18.3:///meongcoach?TC_DAEMON=true
+    driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
+    username: test
+    password: test
+    # 캐시된 테스트 컨텍스트(최대 32개)마다 풀이 살아 있으므로 기본 풀 크기(10)면 PostgreSQL 기본 max_connections(100)를 넘겨
+    # 커넥션 획득이 멈춘다. 테스트는 한 번에 커넥션 하나만 쓰므로 여유 하나만 둔다
+    hikari:
+      maximum-pool-size: 2
+  # 테스트는 ddl-auto(create-drop)로만 스키마를 만든다. 마이그레이션 검증은 migration/FlywaySchemaValidationTest가 별도 DB에서 수행한다
   flyway:
     enabled: false
   jpa:

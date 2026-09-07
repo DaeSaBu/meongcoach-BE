@@ -34,7 +34,7 @@ import org.mockito.stubbing.Answer;
 
 /**
  * 리포지토리까지 mock으로 두는 이유: "n번째 save만 실패" 같은 DB 장애 경로를 재현해야 하는데
- * 실제 H2로는 저장 실패를 주입할 수 없기 때문이다.
+ * 실제 DB로는 저장 실패를 주입할 수 없기 때문이다.
  */
 class AiReportGenerateServiceTest {
 

@@ -13,23 +13,6 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
-    services:
-      # migration/FlywaySchemaValidationTest만 PostgreSQL이 필요하다. 나머지 테스트는 H2로 돈다.
-      # 아래 <테스트 및 커버리지 검증>이 SCHEMA_CHECK_DB_* 로 이 컨테이너를 주입해 그 테스트를 켠다.
-      # 마이그레이션이 엔티티와 어긋나면 ddl-auto: validate가 컨텍스트 기동을 깨뜨려 실패한다.
-      postgres:
-        image: postgres:18.3
-        env:
-          POSTGRES_DB: meongcoach_schema_check
-          POSTGRES_USER: meongcoach_ci
-          POSTGRES_PASSWORD: meongcoach-ci
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U meongcoach_ci -d meongcoach_schema_check"
-          --health-interval 5s
-          --health-timeout 3s
-          --health-retries 10
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
@@ -43,11 +26,8 @@ jobs:
       - name: Spotless 포맷 검사
         run: ./gradlew spotlessCheck
 
+      # DB 테스트는 Testcontainers가 러너의 Docker로 PostgreSQL을 띄운다 (application-test.yml의 jdbc:tc: URL)
       - name: 테스트 및 커버리지 검증
-        env:
-          SCHEMA_CHECK_DB_URL: jdbc:postgresql://localhost:5432/meongcoach_schema_check
-          SCHEMA_CHECK_DB_USERNAME: meongcoach_ci
-          SCHEMA_CHECK_DB_PASSWORD: meongcoach-ci
         run: ./gradlew test jacocoTestCoverageVerification
 
       - name: JaCoCo 리포트 업로드
