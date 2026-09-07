@@ -11,16 +11,16 @@ class BreedFinderServiceTest {
 	private final BreedFinderService service = new BreedFinderService();
 
 	@Test
-	void 모든_견종을_코드와_한글_라벨로_가나다순으로_반환한다() {
+	void 믹스견을_맨_앞에_두고_나머지_견종을_가나다순으로_반환한다() {
 		List<BreedInfo> breeds = service.findAll();
 
 		assertThat(breeds).containsExactly(
+				new BreedInfo("MIXED", "믹스견"),
 				new BreedInfo("GOLDEN_RETRIEVER", "골든 리트리버"),
 				new BreedInfo("DACHSHUND", "닥스훈트"),
 				new BreedInfo("DOBERMANN", "도베르만"),
 				new BreedInfo("LABRADOR_RETRIEVER", "래브라도 리트리버"),
 				new BreedInfo("MALTESE", "말티즈"),
-				new BreedInfo("MIXED", "믹스견"),
 				new BreedInfo("BORDER_COLLIE", "보더 콜리"),
 				new BreedInfo("BOSTON_TERRIER", "보스턴 테리어"),
 				new BreedInfo("BEAGLE", "비글"),
