@@ -1,7 +1,8 @@
 -- 프론트엔드에 노출되는 백엔드 정적 훈련 초기 데이터.
 -- 대상 스키마는 Meongcoach.sql보다 백엔드 JPA 엔티티를 우선한다.
 -- 2026-09-04 dev DB(meongcoach-dev-db)의 training_categories·topics·curriculums·lessons·cards·card_media를 그대로 내보냈다. 시각 컬럼만 CURRENT_TIMESTAMP로 둔다.
--- Counts: categories=5, topics=12, curriculums=57, lessons=133, cards=644, cardMedia=144.
+-- 준비물 카드 이미지(card_media IMAGE)는 dev R2 sample-content/cards/를 가리킨다.
+-- Counts: categories=5, topics=12, curriculums=57, lessons=133, cards=644, cardMedia=174.
 BEGIN;
 
 DELETE FROM "card_branches"
@@ -1023,7 +1024,14 @@ INSERT INTO "card_media" ("id", "card_id", "media_type", "url", "sort_order", "c
 	(109020303, 109020303, 'IMAGE', 'https://pub-200dab84de4e49319ea0390809ad00c1.r2.dev/sample-content/bang/bang3.jpg?v=20260809-jpeg88', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 	(109020304, 109020304, 'IMAGE', 'https://pub-200dab84de4e49319ea0390809ad00c1.r2.dev/sample-content/bang/bang4.jpg?v=20260809-jpeg88', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 	(109020305, 109020305, 'IMAGE', 'https://pub-200dab84de4e49319ea0390809ad00c1.r2.dev/sample-content/bang/bang5.jpg?v=20260809-jpeg88', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+	(1101010101, 1101010101, 'IMAGE', 'https://pub-200dab84de4e49319ea0390809ad00c1.r2.dev/sample-content/cards/clock.png?v=20260911', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+	(1101010102, 1101010102, 'IMAGE', 'https://pub-200dab84de4e49319ea0390809ad00c1.r2.dev/sample-content/cards/treat-piece.png?v=20260911', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+	(1101010103, 1101010103, 'IMAGE', 'https://pub-200dab84de4e49319ea0390809ad00c1.r2.dev/sample-content/cards/kibble.png?v=20260911', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+	(1101010104, 1101010104, 'IMAGE', 'https://pub-200dab84de4e49319ea0390809ad00c1.r2.dev/sample-content/cards/kibble.png?v=20260911', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+	(1101010105, 1101010105, 'IMAGE', 'https://pub-200dab84de4e49319ea0390809ad00c1.r2.dev/sample-content/cards/treat-pouch.png?v=20260911', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+	(1101020101, 1101020101, 'IMAGE', 'https://pub-200dab84de4e49319ea0390809ad00c1.r2.dev/sample-content/cards/tv.png?v=20260911', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 	(1101020102, 1101020102, 'VIDEO', 'https://pub-200dab84de4e49319ea0390809ad00c1.r2.dev/training/kim-dagyeom/sit/R008.mp4', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+	(1101020103, 1101020103, 'IMAGE', 'https://pub-200dab84de4e49319ea0390809ad00c1.r2.dev/sample-content/cards/no-command.png?v=20260911', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 	(1101020104, 1101020104, 'VIDEO', 'https://pub-200dab84de4e49319ea0390809ad00c1.r2.dev/training/kim-dagyeom/sit/R010.mp4', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 	(1101020105, 1101020105, 'VIDEO', 'https://pub-200dab84de4e49319ea0390809ad00c1.r2.dev/training/kim-dagyeom/sit/R011.mp4', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 	(1101020106, 1101020106, 'VIDEO', 'https://pub-200dab84de4e49319ea0390809ad00c1.r2.dev/training/kim-dagyeom/sit/R012.mp4', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
@@ -1031,11 +1039,25 @@ INSERT INTO "card_media" ("id", "card_id", "media_type", "url", "sort_order", "c
 	(1101020108, 1101020108, 'VIDEO', 'https://pub-200dab84de4e49319ea0390809ad00c1.r2.dev/training/kim-dagyeom/sit/R014.mp4', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 	(1101020201, 1101020201, 'VIDEO', 'https://pub-200dab84de4e49319ea0390809ad00c1.r2.dev/training/kim-dagyeom/sit/R015.mp4', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 	(1101020202, 1101020202, 'VIDEO', 'https://pub-200dab84de4e49319ea0390809ad00c1.r2.dev/training/kim-dagyeom/sit/R016.mp4', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+	(1101040204, 1101040204, 'IMAGE', 'https://pub-200dab84de4e49319ea0390809ad00c1.r2.dev/sample-content/cards/hand-signal.png?v=20260911', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+	(1102010101, 1102010101, 'IMAGE', 'https://pub-200dab84de4e49319ea0390809ad00c1.r2.dev/sample-content/cards/clock.png?v=20260911', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+	(1102010102, 1102010102, 'IMAGE', 'https://pub-200dab84de4e49319ea0390809ad00c1.r2.dev/sample-content/cards/treat-piece.png?v=20260911', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+	(1102010103, 1102010103, 'IMAGE', 'https://pub-200dab84de4e49319ea0390809ad00c1.r2.dev/sample-content/cards/kibble.png?v=20260911', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+	(1102010104, 1102010104, 'IMAGE', 'https://pub-200dab84de4e49319ea0390809ad00c1.r2.dev/sample-content/cards/kibble.png?v=20260911', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+	(1102010105, 1102010105, 'IMAGE', 'https://pub-200dab84de4e49319ea0390809ad00c1.r2.dev/sample-content/cards/treat-pouch.png?v=20260911', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+	(1102010106, 1102010106, 'IMAGE', 'https://pub-200dab84de4e49319ea0390809ad00c1.r2.dev/sample-content/cards/chair.png?v=20260911', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+	(1102020101, 1102020101, 'IMAGE', 'https://pub-200dab84de4e49319ea0390809ad00c1.r2.dev/sample-content/cards/no-command.png?v=20260911', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 	(1102020102, 1102020102, 'VIDEO', 'https://pub-200dab84de4e49319ea0390809ad00c1.r2.dev/training/kim-dagyeom/down/R039.mp4', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 	(1102020103, 1102020103, 'VIDEO', 'https://pub-200dab84de4e49319ea0390809ad00c1.r2.dev/training/kim-dagyeom/down/R040.mp4', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 	(1102020104, 1102020104, 'VIDEO', 'https://pub-200dab84de4e49319ea0390809ad00c1.r2.dev/training/kim-dagyeom/down/R041.mp4', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 	(1102020105, 1102020105, 'VIDEO', 'https://pub-200dab84de4e49319ea0390809ad00c1.r2.dev/training/kim-dagyeom/down/R042.mp4', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 	(1102020106, 1102020106, 'VIDEO', 'https://pub-200dab84de4e49319ea0390809ad00c1.r2.dev/training/kim-dagyeom/down/R043.mp4', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+	(1102040204, 1102040204, 'IMAGE', 'https://pub-200dab84de4e49319ea0390809ad00c1.r2.dev/sample-content/cards/hand-signal.png?v=20260911', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+	(1103010101, 1103010101, 'IMAGE', 'https://pub-200dab84de4e49319ea0390809ad00c1.r2.dev/sample-content/cards/clock.png?v=20260911', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+	(1103010102, 1103010102, 'IMAGE', 'https://pub-200dab84de4e49319ea0390809ad00c1.r2.dev/sample-content/cards/treat-piece.png?v=20260911', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+	(1103010103, 1103010103, 'IMAGE', 'https://pub-200dab84de4e49319ea0390809ad00c1.r2.dev/sample-content/cards/kibble.png?v=20260911', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+	(1103010104, 1103010104, 'IMAGE', 'https://pub-200dab84de4e49319ea0390809ad00c1.r2.dev/sample-content/cards/kibble.png?v=20260911', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+	(1103010105, 1103010105, 'IMAGE', 'https://pub-200dab84de4e49319ea0390809ad00c1.r2.dev/sample-content/cards/food-bowl.png?v=20260911', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 	(1103020101, 1103020101, 'VIDEO', 'https://pub-200dab84de4e49319ea0390809ad00c1.r2.dev/training/kim-dagyeom/wait-hand/R071.mp4', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 	(1103020102, 1103020102, 'VIDEO', 'https://pub-200dab84de4e49319ea0390809ad00c1.r2.dev/training/kim-dagyeom/wait-hand/R072.mp4', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 	(1103020103, 1103020103, 'VIDEO', 'https://pub-200dab84de4e49319ea0390809ad00c1.r2.dev/training/kim-dagyeom/wait-hand/R073.mp4', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
@@ -1050,6 +1072,12 @@ INSERT INTO "card_media" ("id", "card_id", "media_type", "url", "sort_order", "c
 	(1103030103, 1103030103, 'VIDEO', 'https://pub-200dab84de4e49319ea0390809ad00c1.r2.dev/training/kim-dagyeom/wait-bowl/R082.mp4', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 	(1103030104, 1103030104, 'VIDEO', 'https://pub-200dab84de4e49319ea0390809ad00c1.r2.dev/training/kim-dagyeom/wait-bowl/R083.mp4', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 	(1103030105, 1103030105, 'VIDEO', 'https://pub-200dab84de4e49319ea0390809ad00c1.r2.dev/training/kim-dagyeom/wait-bowl/R084.mp4', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+	(1103040101, 1103040101, 'IMAGE', 'https://pub-200dab84de4e49319ea0390809ad00c1.r2.dev/sample-content/cards/clock.png?v=20260911', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+	(1103040102, 1103040102, 'IMAGE', 'https://pub-200dab84de4e49319ea0390809ad00c1.r2.dev/sample-content/cards/treat-piece.png?v=20260911', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+	(1103040103, 1103040103, 'IMAGE', 'https://pub-200dab84de4e49319ea0390809ad00c1.r2.dev/sample-content/cards/kibble.png?v=20260911', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+	(1103040104, 1103040104, 'IMAGE', 'https://pub-200dab84de4e49319ea0390809ad00c1.r2.dev/sample-content/cards/kibble.png?v=20260911', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+	(1103040105, 1103040105, 'IMAGE', 'https://pub-200dab84de4e49319ea0390809ad00c1.r2.dev/sample-content/cards/treat-pouch.png?v=20260911', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+	(1103040106, 1103040106, 'IMAGE', 'https://pub-200dab84de4e49319ea0390809ad00c1.r2.dev/sample-content/cards/collar-leash.png?v=20260911', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 	(1103050101, 1103050101, 'VIDEO', 'https://pub-200dab84de4e49319ea0390809ad00c1.r2.dev/training/kim-dagyeom/wait-distance/R091.mp4', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 	(1103050102, 1103050102, 'VIDEO', 'https://pub-200dab84de4e49319ea0390809ad00c1.r2.dev/training/kim-dagyeom/wait-distance/R092.mp4', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 	(1103050103, 1103050103, 'VIDEO', 'https://pub-200dab84de4e49319ea0390809ad00c1.r2.dev/training/kim-dagyeom/wait-distance/R093.mp4', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
@@ -1058,7 +1086,10 @@ INSERT INTO "card_media" ("id", "card_id", "media_type", "url", "sort_order", "c
 	(1103050202, 1103050202, 'VIDEO', 'https://pub-200dab84de4e49319ea0390809ad00c1.r2.dev/training/kim-dagyeom/wait-distance/R096.mp4', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 	(1103050203, 1103050203, 'VIDEO', 'https://pub-200dab84de4e49319ea0390809ad00c1.r2.dev/training/kim-dagyeom/wait-distance/R097.mp4', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 	(1103050301, 1103050301, 'VIDEO', 'https://pub-200dab84de4e49319ea0390809ad00c1.r2.dev/training/kim-dagyeom/wait-distance/R098.mp4', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-	(1103050302, 1103050302, 'VIDEO', 'https://pub-200dab84de4e49319ea0390809ad00c1.r2.dev/training/kim-dagyeom/wait-distance/R099.mp4', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+	(1103050302, 1103050302, 'VIDEO', 'https://pub-200dab84de4e49319ea0390809ad00c1.r2.dev/training/kim-dagyeom/wait-distance/R099.mp4', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+	(11010201022, 1101020102, 'IMAGE', 'https://pub-200dab84de4e49319ea0390809ad00c1.r2.dev/sample-content/cards/hand-holding-treat.png?v=20260911', 2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+	(11010202012, 1101020201, 'IMAGE', 'https://pub-200dab84de4e49319ea0390809ad00c1.r2.dev/sample-content/cards/hand-holding-treat.png?v=20260911', 2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+	(11010202022, 1101020202, 'IMAGE', 'https://pub-200dab84de4e49319ea0390809ad00c1.r2.dev/sample-content/cards/hand-holding-treat.png?v=20260911', 2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 ON CONFLICT ("id") DO UPDATE SET "card_id" = EXCLUDED."card_id", "media_type" = EXCLUDED."media_type", "url" = EXCLUDED."url", "sort_order" = EXCLUDED."sort_order", "updated_at" = CURRENT_TIMESTAMP;
 
 SELECT setval(pg_get_serial_sequence('training_categories', 'id'), (SELECT MAX("id") FROM "training_categories"), true);
