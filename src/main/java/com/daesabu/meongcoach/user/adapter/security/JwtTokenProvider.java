@@ -24,6 +24,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class JwtTokenProvider implements TokenProvider {
 
+	private static final String EMAIL_CLAIM = "email";
+
 	private final JwtEncoder encoder;
 	private final JwtDecoder refreshTokenDecoder;
 	private final JwtProperties properties;
@@ -36,11 +38,16 @@ public class JwtTokenProvider implements TokenProvider {
 	}
 
 	@Override
-	public AuthToken issue(Long userId) {
+	public AuthToken issue(Long userId, String email) {
 		Instant issuedAt = Instant.now();
 		RefreshTokenId refreshTokenId = RefreshTokenId.generate();
 		Instant refreshExpiresAt = issuedAt.plus(properties.refreshTokenValidity());
-		JwtClaimsSet accessClaims = claims(userId, issuedAt, TokenType.ACCESS, properties.accessTokenValidity()).build();
+		JwtClaimsSet.Builder accessClaimsBuilder = claims(userId, issuedAt, TokenType.ACCESS,
+				properties.accessTokenValidity());
+		// email은 클라이언트가 분석 도구에 넘기는 값이라 수명이 1시간인 액세스 토큰에만 싣는다.
+		// 14일을 사는 리프레시 토큰에 넣으면 얻는 것 없이 개인정보 노출 창만 길어진다
+		addEmail(accessClaimsBuilder, email);
+		JwtClaimsSet accessClaims = accessClaimsBuilder.build();
 		// jti는 저장 이력 조회 키라 리프레시 토큰에만 넣는다. 액세스 토큰은 어디에도 저장·조회하지 않는다
 		JwtClaimsSet refreshClaims = claims(userId, issuedAt, TokenType.REFRESH, properties.refreshTokenValidity())
 				.id(refreshTokenId.value())
@@ -75,6 +82,13 @@ public class JwtTokenProvider implements TokenProvider {
 				.issuedAt(issuedAt)
 				.expiresAt(issuedAt.plus(validity))
 				.claim(TokenType.CLAIM_NAME, tokenType.claimValue());
+	}
+
+	private void addEmail(JwtClaimsSet.Builder claims, String email) {
+		if (email == null || email.isBlank()) {
+			return;
+		}
+		claims.claim(EMAIL_CLAIM, email);
 	}
 
 	private String encode(JwtClaimsSet claims) {
