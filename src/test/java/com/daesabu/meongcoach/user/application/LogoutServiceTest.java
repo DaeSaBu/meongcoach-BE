@@ -93,7 +93,7 @@ class LogoutServiceTest {
 	private static class StubTokenProvider implements TokenProvider {
 
 		@Override
-		public AuthToken issue(Long userId) {
+		public AuthToken issue(Long userId, String email) {
 			throw new UnsupportedOperationException();
 		}
 

@@ -4,7 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.daesabu.meongcoach.user.application.provided.AuthToken;
+import com.daesabu.meongcoach.user.application.required.LocalAccountRepository;
 import com.daesabu.meongcoach.user.application.required.RefreshTokenRepository;
+import com.daesabu.meongcoach.user.application.required.SocialAccountRepository;
 import com.daesabu.meongcoach.user.application.required.TokenProvider;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.RefreshToken;
@@ -35,6 +37,12 @@ class TokenRefreshServiceTest {
 	private RefreshTokenRepository refreshTokenRepository;
 
 	@Autowired
+	private SocialAccountRepository socialAccountRepository;
+
+	@Autowired
+	private LocalAccountRepository localAccountRepository;
+
+	@Autowired
 	private RegisteredUserCheckService registeredUserCheckService;
 
 	@Autowired
@@ -48,7 +56,8 @@ class TokenRefreshServiceTest {
 	void setUp() {
 		StubTokenProvider tokenProvider = new StubTokenProvider();
 		service = new TokenRefreshService(tokenProvider, refreshTokenRepository, registeredUserCheckService,
-				new AuthTokenIssueService(tokenProvider, refreshTokenRepository));
+				new AuthTokenIssueService(tokenProvider, refreshTokenRepository, socialAccountRepository,
+						localAccountRepository));
 		user = userRepository.save(User.registerOnboardingMember());
 	}
 
@@ -122,7 +131,7 @@ class TokenRefreshServiceTest {
 	private static class StubTokenProvider implements TokenProvider {
 
 		@Override
-		public AuthToken issue(Long userId) {
+		public AuthToken issue(Long userId, String email) {
 			RefreshTokenId tokenId = RefreshTokenId.generate();
 			return new AuthToken("access-" + userId, "refresh-" + userId, tokenId, LocalDateTime.now().plusDays(14));
 		}

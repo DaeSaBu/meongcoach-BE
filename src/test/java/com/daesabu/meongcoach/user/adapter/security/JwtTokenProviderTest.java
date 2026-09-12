@@ -35,12 +35,13 @@ class JwtTokenProviderTest {
 	private static final String SECRET = "meongcoach-test-only-jwt-secret-key-32b";
 	private static final String OTHER_SECRET = "another-service-jwt-secret-key-32bytes!";
 	private static final Long USER_ID = 42L;
+	private static final String EMAIL = "user@meongcoach.com";
 
 	@Test
 	void 발급하면_액세스_토큰과_리프레시_토큰이_각자의_용도로_만들어진다() {
 		JwtTokenProvider provider = tokenProvider(SECRET, Duration.ofHours(1), Duration.ofDays(14));
 
-		AuthToken token = provider.issue(USER_ID);
+		AuthToken token = provider.issue(USER_ID, EMAIL);
 
 		Jwt access = decoder(SECRET, TokenType.ACCESS).decode(token.accessToken());
 		Jwt refresh = decoder(SECRET, TokenType.REFRESH).decode(token.refreshToken());
@@ -53,10 +54,33 @@ class JwtTokenProviderTest {
 	}
 
 	@Test
+	void 액세스_토큰에만_email_클레임이_실린다() {
+		JwtTokenProvider provider = tokenProvider(SECRET, Duration.ofHours(1), Duration.ofDays(14));
+
+		AuthToken token = provider.issue(USER_ID, EMAIL);
+
+		Jwt access = decoder(SECRET, TokenType.ACCESS).decode(token.accessToken());
+		Jwt refresh = decoder(SECRET, TokenType.REFRESH).decode(token.refreshToken());
+		assertThat(access.getClaimAsString("email")).isEqualTo(EMAIL);
+		// 리프레시 토큰은 14일을 살고 클라이언트가 이메일을 읽을 이유도 없다
+		assertThat(refresh.getClaimAsString("email")).isNull();
+	}
+
+	@Test
+	void 이메일이_null이면_email_클레임을_넣지_않는다() {
+		JwtTokenProvider provider = tokenProvider(SECRET, Duration.ofHours(1), Duration.ofDays(14));
+
+		AuthToken token = provider.issue(USER_ID, null);
+
+		Jwt access = decoder(SECRET, TokenType.ACCESS).decode(token.accessToken());
+		assertThat(access.hasClaim("email")).isFalse();
+	}
+
+	@Test
 	void 발급한_리프레시_토큰의_jti와_만료_시각을_함께_돌려준다() {
 		JwtTokenProvider provider = tokenProvider(SECRET, Duration.ofHours(1), Duration.ofDays(14));
 
-		AuthToken token = provider.issue(USER_ID);
+		AuthToken token = provider.issue(USER_ID, EMAIL);
 
 		Jwt refresh = decoder(SECRET, TokenType.REFRESH).decode(token.refreshToken());
 		LocalDateTime expiresAt = LocalDateTime.ofInstant(refresh.getExpiresAt(), ZoneId.systemDefault());
@@ -68,7 +92,7 @@ class JwtTokenProviderTest {
 	@Test
 	void 리프레시_토큰에서_jti를_꺼낸다() {
 		JwtTokenProvider provider = tokenProvider(SECRET, Duration.ofHours(1), Duration.ofDays(14));
-		AuthToken token = provider.issue(USER_ID);
+		AuthToken token = provider.issue(USER_ID, EMAIL);
 
 		assertThat(provider.extractTokenId(token.refreshToken())).isEqualTo(token.refreshTokenId());
 	}
@@ -76,7 +100,7 @@ class JwtTokenProviderTest {
 	@Test
 	void 액세스_토큰을_리프레시_토큰_자리에_제출하면_실패한다() {
 		JwtTokenProvider provider = tokenProvider(SECRET, Duration.ofHours(1), Duration.ofDays(14));
-		AuthToken token = provider.issue(USER_ID);
+		AuthToken token = provider.issue(USER_ID, EMAIL);
 
 		assertThatThrownBy(() -> provider.extractTokenId(token.accessToken()))
 				.isInstanceOf(InvalidRefreshTokenException.class);
@@ -84,7 +108,7 @@ class JwtTokenProviderTest {
 
 	@Test
 	void 다른_키로_서명된_토큰은_거부된다() {
-		AuthToken forged = tokenProvider(OTHER_SECRET, Duration.ofHours(1), Duration.ofDays(14)).issue(USER_ID);
+		AuthToken forged = tokenProvider(OTHER_SECRET, Duration.ofHours(1), Duration.ofDays(14)).issue(USER_ID, EMAIL);
 		JwtTokenProvider provider = tokenProvider(SECRET, Duration.ofHours(1), Duration.ofDays(14));
 
 		assertThatThrownBy(() -> provider.extractTokenId(forged.refreshToken()))
@@ -103,7 +127,7 @@ class JwtTokenProviderTest {
 	@Test
 	void 검증_실패_응답에_토큰_값이_노출되지_않는다() {
 		JwtTokenProvider provider = tokenProvider(SECRET, Duration.ofHours(1), Duration.ofDays(14));
-		String tampered = provider.issue(USER_ID).refreshToken() + "tampered";
+		String tampered = provider.issue(USER_ID, EMAIL).refreshToken() + "tampered";
 
 		assertThatThrownBy(() -> provider.extractTokenId(tampered))
 				.isInstanceOf(InvalidRefreshTokenException.class)

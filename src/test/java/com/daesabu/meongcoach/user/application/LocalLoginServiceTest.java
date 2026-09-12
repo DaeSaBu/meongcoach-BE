@@ -7,6 +7,7 @@ import com.daesabu.meongcoach.user.application.provided.AuthToken;
 import com.daesabu.meongcoach.user.application.provided.LoginResult;
 import com.daesabu.meongcoach.user.application.required.LocalAccountRepository;
 import com.daesabu.meongcoach.user.application.required.RefreshTokenRepository;
+import com.daesabu.meongcoach.user.application.required.SocialAccountRepository;
 import com.daesabu.meongcoach.user.application.required.TokenProvider;
 import com.daesabu.meongcoach.user.application.required.UserProfileRepository;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
@@ -53,6 +54,9 @@ class LocalLoginServiceTest {
 	private RefreshTokenRepository refreshTokenRepository;
 
 	@Autowired
+	private SocialAccountRepository socialAccountRepository;
+
+	@Autowired
 	private TestEntityManager entityManager;
 
 	private LocalLoginService service;
@@ -62,7 +66,8 @@ class LocalLoginServiceTest {
 	@BeforeEach
 	void setUp() {
 		service = new LocalLoginService(localAccountRepository, userProfileRepository,
-				new AuthTokenIssueService(new StubTokenProvider(), refreshTokenRepository), PASSWORD_ENCODER);
+				new AuthTokenIssueService(new StubTokenProvider(), refreshTokenRepository, socialAccountRepository,
+						localAccountRepository), PASSWORD_ENCODER);
 		user = userRepository.save(User.registerOnboardingMember());
 		String passwordHash = PASSWORD_ENCODER.encode(PASSWORD);
 		localAccountRepository.save(
@@ -131,7 +136,7 @@ class LocalLoginServiceTest {
 	private static class StubTokenProvider implements TokenProvider {
 
 		@Override
-		public AuthToken issue(Long userId) {
+		public AuthToken issue(Long userId, String email) {
 			RefreshTokenId tokenId = RefreshTokenId.generate();
 			return new AuthToken("access-" + userId, "refresh-" + userId, tokenId, EXPIRES_AT);
 		}

@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.daesabu.meongcoach.user.application.provided.AuthToken;
 import com.daesabu.meongcoach.user.application.provided.LoginResult;
+import com.daesabu.meongcoach.user.application.required.LocalAccountRepository;
 import com.daesabu.meongcoach.user.application.required.RefreshTokenRepository;
 import com.daesabu.meongcoach.user.application.required.SocialAccountRepository;
 import com.daesabu.meongcoach.user.application.required.SocialProfileReader;
@@ -47,6 +48,9 @@ class SocialLoginServiceTest {
 
 	@Autowired
 	private RefreshTokenRepository refreshTokenRepository;
+
+	@Autowired
+	private LocalAccountRepository localAccountRepository;
 
 	@Autowired
 	private TestEntityManager entityManager;
@@ -124,7 +128,8 @@ class SocialLoginServiceTest {
 	private SocialLoginService socialLoginService(SocialProfileReader reader) {
 		return new SocialLoginService(List.of(reader),
 				new SocialUserRegisterService(userRepository, socialAccountRepository, userProfileRepository),
-				new AuthTokenIssueService(new StubTokenProvider(), refreshTokenRepository));
+				new AuthTokenIssueService(new StubTokenProvider(), refreshTokenRepository, socialAccountRepository,
+						localAccountRepository));
 	}
 
 	private static class StubSocialProfileReader implements SocialProfileReader {
@@ -152,7 +157,7 @@ class SocialLoginServiceTest {
 
 		// 같은 회원이 여러 번 로그인해도 jti 유니크 제약에 걸리지 않도록 매번 새 값을 만든다
 		@Override
-		public AuthToken issue(Long userId) {
+		public AuthToken issue(Long userId, String email) {
 			RefreshTokenId tokenId = RefreshTokenId.generate();
 			return new AuthToken("access-" + userId, "refresh-" + userId, tokenId, EXPIRES_AT);
 		}
