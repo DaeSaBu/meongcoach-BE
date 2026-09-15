@@ -18,6 +18,7 @@ com.daesabu.meongcoach
 ├── media        ← 이미지·영상 업로드 URL 발급 (R2/S3)
 ├── onboarding   ← 온보딩 흐름 조합
 ├── health       ← 서비스 상태 확인
+├── loadtest     ← 부하 테스트 전용 API (local·dev에서만 활성화)
 └── shared       ← 횡단 관심사 (config / security / webapi / exception / domain)
 ```
 
@@ -34,7 +35,7 @@ com.daesabu.meongcoach
 └── domain                   // 엔티티, 일급 컬렉션, vo/, exception/, 입력 모델(~Command)
 ```
 
-모듈은 필요한 계층만 갖습니다. `dog`·`progress`는 자체 API 없이 `provided` 인터페이스로만 노출되어 `adapter`가 없고, `onboarding`은 다른 모듈을 조합만 하므로 `domain`이 없습니다. 문서나 코드를 생성할 때 없는 계층을 만들어 채우지 않습니다.
+모듈은 필요한 계층만 갖습니다. `dog`·`progress`는 자체 API 없이 `provided` 인터페이스로만 노출되어 `adapter`가 없고, `onboarding`은 다른 모듈을 조합만 하므로 `domain`이 없습니다. `loadtest`는 다른 모듈의 `provided`를 호출하는 컨트롤러와 예외만 있어 `application`이 없습니다. 문서나 코드를 생성할 때 없는 계층을 만들어 채우지 않습니다.
 
 ## 모듈 규칙
 
