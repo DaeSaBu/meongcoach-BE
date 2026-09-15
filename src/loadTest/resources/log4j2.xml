@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- JMeter 기본 로그 레벨(INFO)은 샘플·엔진 로그가 많아 실행 요약만 남긴다. DSL은 JMeter 홈에 log4j2.xml을 복사하지 않으므로 이 파일이 유일한 설정이다 -->
+<Configuration status="WARN">
+	<Appenders>
+		<Console name="Console" target="SYSTEM_OUT">
+			<PatternLayout pattern="%d{HH:mm:ss.SSS} %-5level %logger{36} - %msg%n"/>
+		</Console>
+	</Appenders>
+	<Loggers>
+		<Root level="WARN">
+			<AppenderRef ref="Console"/>
+		</Root>
+		<!-- 실행 중 주기적 요약(샘플 수·오류·응답 시간) -->
+		<Logger name="us.abstracta.jmeter.javadsl.core.engines.TestStatsLogger" level="INFO"/>
+		<Logger name="com.daesabu.meongcoach.loadtest" level="INFO"/>
+	</Loggers>
+</Configuration>
