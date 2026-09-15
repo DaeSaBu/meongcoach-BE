@@ -5,6 +5,7 @@ import com.daesabu.meongcoach.shared.exception.ErrorCode;
 public enum UserErrorCode implements ErrorCode {
 
 	USER_INVALID_EMAIL(400, "이메일 형식이 올바르지 않습니다."),
+	USER_DUPLICATE_EMAIL(409, "이미 등록된 이메일입니다."),
 	USER_INVALID_MBTI(400, "MBTI 값이 올바르지 않습니다."),
 	USER_INVALID_GENDER(400, "성별 값이 올바르지 않습니다."),
 	USER_NOT_FOUND(404, "회원을 찾을 수 없습니다."),

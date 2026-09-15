@@ -13,5 +13,7 @@ public interface LocalAccountRepository extends JpaRepository<LocalAccount, Long
 	@EntityGraph(attributePaths = "user")
 	Optional<LocalAccount> findByEmail(Email email);
 
+	boolean existsByEmail(Email email);
+
 	void deleteByUser(User user);
 }
