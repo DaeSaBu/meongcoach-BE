@@ -27,7 +27,7 @@ MVP 개발 기간을 고려하여 아래 순서로 우선순위를 정해 작성
 
 - 동작을 추가·변경할 때는 테스트를 먼저 작성해 `test` 커밋으로 올리고, 구현은 뒤따르는 커밋으로 올린다. 커밋 분리 규칙은 git-convention 스킬의 "커밋 단위" 참고.
 - 슬라이스 테스트: 컨트롤러는 `@WebMvcTest`, 리포지토리(`application/required`의 Spring Data 인터페이스)는 `@DataJpaTest`를 사용한다.
-- 테스트 DB는 `src/test/resources/application-test.yml`의 `jdbc:tc:` URL로 Testcontainers가 띄우는 PostgreSQL 컨테이너 하나를 테스트 JVM 전체가 공유한다. `@DataJpaTest`에 `@AutoConfigureTestDatabase`를 붙이지 않는다 — Spring Boot는 `jdbc:tc:` URL로 잡힌 DataSource를 임베디드 DB로 교체하지 않는다. 다른 컨텍스트의 `create-drop`과 섞이면 안 되는 스키마 검증은 `migration/FlywaySchemaValidationTest`처럼 DB 이름이 다른 `jdbc:tc:` URL을 지정해 별도 컨테이너를 쓴다.
+- 테스트 DB는 `src/test/resources/application-test.yml`의 `jdbc:tc:` URL로 Testcontainers가 띄우는 PostgreSQL 컨테이너 하나를 테스트 JVM 전체가 공유한다. `@DataJpaTest`에 `@AutoConfigureTestDatabase`를 붙이지 않는다 — Spring Boot는 `jdbc:tc:` URL로 잡힌 DataSource를 임베디드 DB로 교체하지 않는다. 스키마는 `ddl-auto: create`로 컨텍스트 기동 시에만 재생성한다 — `create-drop`이면 컨텍스트 캐시(기본 32개)에서 축출돼 닫히는 컨텍스트가 공유 컨테이너의 테이블을 지워, 살아 있는 다른 컨텍스트의 테스트가 `relation does not exist`로 깨진다. 컨텍스트가 늘어 캐시 상한을 넘기는 순간에만 드러나는 문제라 새 `@SpringBootTest`·`@WebMvcTest` 구성을 추가할 때 유의한다. 다른 컨텍스트의 `create-drop`과 섞이면 안 되는 스키마 검증은 `migration/FlywaySchemaValidationTest`처럼 DB 이름이 다른 `jdbc:tc:` URL을 지정해 별도 컨테이너를 쓴다.
 - `@SpringBootTest` 전체 통합 테스트는 꼭 필요한 시나리오에만 최소한으로 사용한다.
 - 외부 API 연동은 `MockRestServiceServer.bindTo(RestClient.Builder)`로 검증한다. 어댑터가 `RestClient`가 아닌 `RestClient.Builder`를 주입받아야 이 방식이 가능하므로, 생성자 파라미터를 `Builder`로 둔다.
 
