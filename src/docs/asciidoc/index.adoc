@@ -183,6 +183,25 @@ link:{swagger-ui}#/Health/health-check[▶ Swagger에서 Try it out,window=swagg
 
 operation::health/check[snippets='http-request,http-response,response-fields']
 
+== LoadTest API
+
+JMeter INSERT 부하 측정용 임시 API입니다. 액세스 토큰 인증(정회원)이 필요하며, 측정이 끝나면 제거됩니다.
+
+=== 부하 측정 기록 저장
+
+link:{swagger-ui}#/LoadTest/loadtest-record[▶ Swagger에서 Try it out,window=swagger]
+
+요청 본문 없이 호출하면 액세스 토큰으로 식별한 회원 ID와 저장 시각만 담은 행 하나를 INSERT하고 저장된 기록을 반환합니다.
+검증·연관 조회가 없어 순수 INSERT 성능을 측정할 수 있고, 호출할 때마다 행이 누적됩니다.
+
+operation::loadtest/record[snippets='http-request,http-response,response-fields']
+
+==== 실패 응답
+
+액세스 토큰이 없거나 유효하지 않으면 401(`UNAUTHORIZED`)을 반환합니다.
+
+operation::loadtest/record-error[snippets='http-response,response-fields']
+
 == Training API
 
 모든 엔드포인트는 액세스 토큰 인증이 필요합니다.
