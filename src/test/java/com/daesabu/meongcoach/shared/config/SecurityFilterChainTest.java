@@ -274,25 +274,4 @@ class SecurityFilterChainTest {
 						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))
 				.andExpect(status().isForbidden());
 	}
-
-	// test 프로파일은 meongcoach.loadtest.enabled를 두지 않아 기본값(false) 경로가 검증된다.
-	// 비활성 환경에서는 컨트롤러 빈도 없지만, 그보다 앞서 필터 체인이 denyAll로 막아 403이어야 한다
-	@Test
-	void 부하_테스트_비활성_환경에서는_토큰_없이_계정_생성_경로에_접근하면_403을_반환한다() throws Exception {
-		mockMvc.perform(post("/api/loadtest/accounts")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"email\": \"lt@meongcoach.test\", \"password\": \"loadtest-password\"}"))
-				.andExpect(status().isForbidden());
-	}
-
-	@Test
-	void 부하_테스트_비활성_환경에서는_유효한_토큰으로도_계정_생성_경로에_접근할_수_없다() throws Exception {
-		AuthToken token = tokenProvider.issue(userId);
-
-		mockMvc.perform(post("/api/loadtest/accounts")
-						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken())
-						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"email\": \"lt@meongcoach.test\", \"password\": \"loadtest-password\"}"))
-				.andExpect(status().isForbidden());
-	}
 }

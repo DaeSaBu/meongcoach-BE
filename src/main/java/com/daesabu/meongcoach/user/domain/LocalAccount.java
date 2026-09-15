@@ -20,8 +20,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
- * 일반(이메일·비밀번호) 로그인 계정. 앱 회원가입 없이 테스트 계정 시드와 부하 테스트용 계정 생성(loadtest 모듈)으로만
- * 만들어지며, 비밀번호 변경 API가 없으므로 생성 이후 수정되지 않는다.
+ * 일반(이메일·비밀번호) 로그인 계정. 회원가입 API 없이 테스트 계정 시드로만 생성되며,
+ * 가입·비밀번호 변경 API가 없으므로 생성 이후 수정되지 않는다.
  */
 @Getter
 @Entity

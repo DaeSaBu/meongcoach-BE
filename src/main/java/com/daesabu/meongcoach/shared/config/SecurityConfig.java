@@ -70,17 +70,13 @@ public class SecurityConfig {
 	// Swagger UI 정적 파일과 그 안의 openapi3.json이 모두 이 경로 아래에 있다
 	private static final String[] API_DOCS_PATHS = {"/swagger-ui/**"};
 
-	// 부하 테스트 계정 생성처럼 토큰 없이 호출해야 하는 테스트 전용 경로. 컨트롤러 빈 등록도 같은 프로퍼티가 결정한다
-	private static final String[] LOAD_TEST_PATHS = {"/api/loadtest/**"};
-
 	@Bean
 	SecurityFilterChain securityFilterChain(HttpSecurity http, JwtDecoder accessTokenDecoder,
 	                                        Converter<Jwt, AbstractAuthenticationToken> userRoleAuthenticationConverter,
 	                                        AuthenticationEntryPoint authenticationEntryPoint,
 	                                        AccessDeniedHandler accessDeniedHandler,
 	                                        CorsConfigurationSource corsConfigurationSource,
-	                                        @Value("${meongcoach.api-docs.enabled:false}") boolean apiDocsEnabled,
-	                                        @Value("${meongcoach.loadtest.enabled:false}") boolean loadTestEnabled) {
+	                                        @Value("${meongcoach.api-docs.enabled:false}") boolean apiDocsEnabled) {
 		return http
 				.cors(cors -> cors.configurationSource(corsConfigurationSource))
 				.csrf(AbstractHttpConfigurer::disable)
@@ -93,7 +89,6 @@ public class SecurityConfig {
 				.authorizeHttpRequests(auth -> {
 					auth.requestMatchers(PERMIT_ALL_PATHS).permitAll();
 					configureApiDocsAccess(auth, apiDocsEnabled);
-					configureLoadTestAccess(auth, loadTestEnabled);
 					// 먼저 매칭된 규칙이 이기므로 온보딩 허용 경로를 anyRequest보다 앞에 둔다.
 					// 역할 어휘는 AuthorityRole이 단일 원천이다 (user 모듈 UserRole이 같은 어휘로 매핑된다)
 					auth.requestMatchers(ONBOARDING_ALLOWED_PATHS)
@@ -122,17 +117,6 @@ public class SecurityConfig {
 			return;
 		}
 		auth.requestMatchers(API_DOCS_PATHS).denyAll();
-	}
-
-	// 문서와 같은 이유로 비활성 환경(운영)에서는 denyAll로 완전히 막는다. 활성 환경의 키 검사는 컨트롤러가 한다
-	private void configureLoadTestAccess(
-			AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry auth,
-			boolean loadTestEnabled) {
-		if (loadTestEnabled) {
-			auth.requestMatchers(LOAD_TEST_PATHS).permitAll();
-			return;
-		}
-		auth.requestMatchers(LOAD_TEST_PATHS).denyAll();
 	}
 
 	// CORS가 시큐리티 체인 안에서 동작하므로, 필터 체인을 추가하면 그 체인에도 .cors(...)를 걸어야 한다

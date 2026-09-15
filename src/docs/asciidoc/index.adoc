@@ -183,27 +183,6 @@ link:{swagger-ui}#/Health/health-check[▶ Swagger에서 Try it out,window=swagg
 
 operation::health/check[snippets='http-request,http-response,response-fields']
 
-== LoadTest API
-
-부하 테스트 전용 API입니다. `meongcoach.loadtest.enabled`가 `true`인 local·dev에서만 열리고 운영에서는 경로 자체가 차단됩니다(403).
-인증 토큰 대신 공유 키 헤더 `X-Loadtest-Key`(환경 변수 `LOADTEST_API_KEY`)로 보호합니다.
-
-=== 부하 테스트 계정 생성
-
-link:{swagger-ui}#/LoadTest/loadtest-create-account[▶ Swagger에서 Try it out,window=swagger]
-
-이메일·비밀번호 로컬 계정을 만들고 회원 ID를 반환합니다. 회원은 온보딩 전 상태(`ONBOARDING_MEMBER`)로 만들어지므로,
-정회원 전용 API를 부하 테스트하려면 이 계정으로 로그인한 뒤 `POST /api/onboarding`으로 승격해야 합니다.
-
-operation::loadtest/create-account[snippets='http-request,request-headers,request-fields,http-response,response-fields']
-
-==== 실패 응답
-
-키 헤더가 없거나 값이 다르면 403(`LOADTEST_INVALID_KEY`)을 반환합니다. 이미 등록된 이메일이면 409(`USER_DUPLICATE_EMAIL`),
-이메일 형식이 틀리면 400(`USER_INVALID_EMAIL`)입니다.
-
-operation::loadtest/create-account-error[snippets='http-response,response-fields']
-
 == Training API
 
 모든 엔드포인트는 액세스 토큰 인증이 필요합니다.

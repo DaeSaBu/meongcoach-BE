@@ -69,15 +69,3 @@ Swagger UI는 API 서버가 정적 파일로 직접 서빙하며, 노출 범위�
 | `local`, `dev` | `true` | 인증 없이 접근 가능 (permitAll) |
 | `prod` | `false` (명시) | 완전 차단 (denyAll — 유효 토큰으로도 접근 불가) |
 | `test` 등 미설정 | `false` (기본값) | 완전 차단 |
-
-## 부하 테스트 API 노출 (`meongcoach.loadtest.enabled`)
-
-`/api/loadtest/**`는 토큰 없이 테스트 계정을 만드는 경로라 문서와 같은 방식으로 프로파일별로 통제합니다.
-플래그가 `true`면 컨트롤러 빈이 등록되고 시큐리티가 permitAll로 열며, 그 안의 보호는 공유 키 `LOADTEST_API_KEY`가 맡습니다.
-`false`면 빈이 없을 뿐 아니라 denyAll이라 유효 토큰으로도 403입니다. 부하 테스트가 만든 계정은 `load-test/cleanup-loadtest-accounts.sql`로 정리합니다.
-
-| 프로파일 | 값 | `/api/loadtest/**` 동작 |
-|---|---|---|
-| `local` | `true` | 열림. 키 기본값 `local-loadtest-key` |
-| `dev` | `true` | 열림. 키는 배포 환경 변수 `LOADTEST_API_KEY` |
-| `prod`, `test` 등 미설정 | `false` (기본값) | 완전 차단 |

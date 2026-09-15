@@ -71,7 +71,6 @@ jq \
 	--arg sqs_secret_access_key "${SQS_SECRET_ACCESS_KEY:-}" \
 	--arg ai_video_queue "${AI_VIDEO_QUEUE:-}" \
 	--arg sentry_dsn "${SENTRY_DSN:-}" \
-	--arg loadtest_api_key "${LOADTEST_API_KEY:-}" \
 	--arg sentry_release "${SENTRY_RELEASE:-}" '
 	if ([.containerDefinitions[] | select(.name == $container)] | length) != 1 then
 		error("배포 대상 컨테이너는 정확히 하나여야 합니다.")
@@ -149,8 +148,7 @@ jq \
 								.name != "EVOLINK_BASE_URL" and
 								.name != "EVOLINK_MODEL" and
 								.name != "SENTRY_DSN" and
-								.name != "SENTRY_RELEASE" and
-								.name != "LOADTEST_API_KEY"
+								.name != "SENTRY_RELEASE"
 							))) +
 						[
 							{"name": "JWT_SECRET", "value": $jwt_secret},
@@ -202,12 +200,6 @@ jq \
 								{"name": "SENTRY_DSN", "value": $sentry_dsn},
 								{"name": "SENTRY_RELEASE", "value": $sentry_release}
 							]
-						 end) +
-						# 부하 테스트 계정 생성 API의 공유 키. dev에만 두고, 없으면 주입을 생략한다(운영은 프로파일이 경로를 닫는다)
-						(if $loadtest_api_key == "" then
-							[]
-						 else
-							[{"name": "LOADTEST_API_KEY", "value": $loadtest_api_key}]
 						 end)
 					)
 					| .image = $image
