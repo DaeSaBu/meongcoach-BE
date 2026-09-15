@@ -31,7 +31,6 @@
 | [docs/ai-pipeline.md](docs/ai-pipeline.md)                                 | 영상 업로드→SQS→EvoLink 분석→리포트 저장 비동기 흐름 |
 | [docs/media.md](docs/media.md)                                             | R2/S3 presigned URL 발급, 객체 키 소유권 규칙 |
 | [docs/profiles.md](docs/profiles.md)                                       | local/dev/prod 프로파일 구성, DB·ddl-auto 정책 |
-| [docs/load-test.md](docs/load-test.md)                                     | JMeter Java DSL 부하 테스트 실행·파라미터·정리 절차 |
 
 ## 문서 추가 방법
 

@@ -74,7 +74,7 @@ Swagger UI는 API 서버가 정적 파일로 직접 서빙하며, 노출 범위�
 
 `/api/loadtest/**`는 토큰 없이 테스트 계정을 만드는 경로라 문서와 같은 방식으로 프로파일별로 통제합니다.
 플래그가 `true`면 컨트롤러 빈이 등록되고 시큐리티가 permitAll로 열며, 그 안의 보호는 공유 키 `LOADTEST_API_KEY`가 맡습니다.
-`false`면 빈이 없을 뿐 아니라 denyAll이라 유효 토큰으로도 403입니다. 실행 절차는 [load-test.md](load-test.md)를 보세요.
+`false`면 빈이 없을 뿐 아니라 denyAll이라 유효 토큰으로도 403입니다. 부하 테스트가 만든 계정은 `load-test/cleanup-loadtest-accounts.sql`로 정리합니다.
 
 | 프로파일 | 값 | `/api/loadtest/**` 동작 |
 |---|---|---|

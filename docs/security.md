@@ -185,7 +185,7 @@ SHA-1 검증용이라 id_token의 `aud`가 되지 않습니다), 애플은 **iOS
 
 Google Play·App Store 심사자는 소셜 계정을 만들 수 없으므로, 심사용 테스트 계정만 이메일·비밀번호로 로그인합니다.
 **앱용 회원가입·이메일 인증·비밀번호 변경 API는 없습니다.** 계정(`LocalAccount`)은 운영자가 DB에 직접 등록하며 생성 이후 수정되지 않습니다.
-유일한 예외는 부하 테스트용 `POST /api/loadtest/accounts`로, local·dev에서만 열리고 공유 키로 보호됩니다([load-test.md](load-test.md)).
+유일한 예외는 부하 테스트용 `POST /api/loadtest/accounts`로, local·dev에서만 열리고 공유 키로 보호됩니다([profiles.md](profiles.md)).
 
 ```
 [앱] 이메일·비밀번호 입력

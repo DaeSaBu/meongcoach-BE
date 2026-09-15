@@ -186,7 +186,7 @@ operation::health/check[snippets='http-request,http-response,response-fields']
 == LoadTest API
 
 부하 테스트 전용 API입니다. `meongcoach.loadtest.enabled`가 `true`인 local·dev에서만 열리고 운영에서는 경로 자체가 차단됩니다(403).
-인증 토큰 대신 공유 키 헤더 `X-Loadtest-Key`(환경 변수 `LOADTEST_API_KEY`)로 보호합니다. 실행 절차는 docs/load-test.md를 보세요.
+인증 토큰 대신 공유 키 헤더 `X-Loadtest-Key`(환경 변수 `LOADTEST_API_KEY`)로 보호합니다.
 
 === 부하 테스트 계정 생성
 
