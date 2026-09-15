@@ -45,6 +45,10 @@ sentry:
   send-default-pii: false
 
 meongcoach:
+  # 부하 테스트 전용 API(/api/loadtest/**). 기본은 닫혀 있고 local·dev 프로파일만 연다. 키는 LOADTEST_API_KEY로 주입한다
+  loadtest:
+    enabled: false
+    api-key: ${LOADTEST_API_KEY:}
   jwt:
     issuer: meongcoach
     # 기본값을 두지 않아 미주입 시 기동에 실패한다 — 커밋된 키가 배포로 흘러가는 것을 막는다
