@@ -1,6 +1,5 @@
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
-import org.gradle.testing.jacoco.plugins.JacocoTaskExtension
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.Opcodes
 
@@ -133,73 +132,6 @@ tasks.withType<Test> {
 tasks.test {
 	outputs.dir(snippetsDir)
 	finalizedBy(tasks.jacocoTestReport, tasks.asciidoctor)
-}
-
-// ───────── 부하 테스트 (JMeter Java DSL) — docs/load-test.md ─────────
-// test와 분리된 별도 소스셋. main 클래스에 의존하지 않고 HTTP로만 서버를 호출한다.
-// check·test·jacoco·bootJar 어디에도 연결하지 않으므로 CI(`test jacocoTestCoverageVerification bootJar`)에서 실행되지 않는다
-val loadTest: SourceSet by sourceSets.creating
-
-// JMeter 5.6.3이 번들한 Groovy 3.0.20이 Java 23+ 클래스 파일을 읽지 못해(apache/jmeter#6402) Java 25 호환이 검증되지 않았다.
-// 이 소스셋만 JDK 21로 컴파일·실행한다. 실험은 `-PloadTestJava=25`
-val loadTestJavaVersion = JavaLanguageVersion.of((findProperty("loadTestJava") as String?) ?: "21")
-
-dependencies {
-	"loadTestImplementation"("us.abstracta.jmeter:jmeter-java-dsl:2.2.1") {
-		// JMeter 아티팩트가 참조하는 bom pom을 Gradle이 해석하지 못해 DSL 가이드대로 제외한다
-		exclude(group = "org.apache.jmeter", module = "bom")
-		// Boot BOM이 slf4j를 2.x로 올리므로 JMeter가 가져오는 1.7 바인딩을 빼고 아래에서 2.x 바인딩을 넣는다
-		exclude(group = "org.apache.logging.log4j", module = "log4j-slf4j-impl")
-	}
-	"loadTestRuntimeOnly"("org.apache.logging.log4j:log4j-slf4j2-impl")
-	// 계정 준비 헬퍼의 JSON 처리. JMeter가 쓰는 Jackson 2 계열이라 main의 Jackson 3과 다르다
-	"loadTestImplementation"("com.fasterxml.jackson.core:jackson-databind")
-	"loadTestImplementation"("org.junit.jupiter:junit-jupiter")
-	"loadTestImplementation"("org.assertj:assertj-core")
-	"loadTestRuntimeOnly"("org.junit.platform:junit-platform-launcher")
-}
-
-tasks.named<JavaCompile>(loadTest.compileJavaTaskName) {
-	javaCompiler = javaToolchains.compilerFor { languageVersion = loadTestJavaVersion }
-}
-
-val loadTestOutputDir = layout.buildDirectory.dir("load-test")
-
-tasks.register<Test>("loadTest") {
-	group = "verification"
-	description = "JMeter Java DSL 부하 테스트를 실행한다. check에 포함되지 않으며 CI에서 실행하지 않는다"
-	testClassesDirs = loadTest.output.classesDirs
-	classpath = loadTest.runtimeClasspath
-	javaLauncher = javaToolchains.launcherFor { languageVersion = loadTestJavaVersion }
-
-	// jacoco 플러그인은 모든 Test 태스크에 에이전트를 붙인다. 부하 생성기를 느리게 할 뿐이므로 끈다
-	extensions.configure<JacocoTaskExtension> { isEnabled = false }
-
-	// 결과는 매번 새로 만든다
-	outputs.upToDateWhen { false }
-
-	// 실행 파라미터: 커맨드라인 -Dloadtest.* 를 포크된 JVM에 그대로 전달한다. 환경변수(LOADTEST_*)는 포크된 JVM이 상속한다
-	listOf("baseUrl", "apiKey", "threads", "rampUp", "duration", "accounts", "lessonId")
-		.map { "loadtest.$it" }
-		.forEach { key -> providers.systemProperty(key).orNull?.let { systemProperty(key, it) } }
-	systemProperty("loadtest.outputDir", loadTestOutputDir.get().asFile.absolutePath)
-	// DSL이 JMeter 홈을 java.io.tmpdir 아래 임시 디렉터리로 만든다. build 아래로 두어 clean으로 정리되게 한다
-	systemProperty("java.io.tmpdir", loadTestOutputDir.get().dir("tmp").asFile.absolutePath)
-	// JMeter가 user.dir에 남기는 파일이 저장소 루트를 더럽히지 않게 한다
-	workingDir = loadTestOutputDir.get().asFile
-
-	reports.html.outputLocation = loadTestOutputDir.map { it.dir("junit") }
-	reports.junitXml.outputLocation = loadTestOutputDir.map { it.dir("junit-xml") }
-	testLogging {
-		events("passed", "failed", "skipped")
-		showStandardStreams = true
-	}
-
-	doFirst {
-		loadTestOutputDir.get().dir("tmp").asFile.mkdirs()
-		// tasks.withType<Test>가 주입한 값. Spring이 없는 클래스패스라 무해하지만 혼란을 막기 위해 걷어낸다
-		systemProperties.remove("spring.profiles.active")
-	}
 }
 
 // REST Docs 4.0의 asciidoctor 확장은 AsciidoctorJ 3.x를 요구한다
