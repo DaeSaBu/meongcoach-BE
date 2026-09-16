@@ -54,7 +54,9 @@ public class SecurityConfig {
 			"/api/auth/login/social/**",
 			"/api/auth/login/local",
 			"/api/auth/token/refresh",
-			"/api/auth/logout"
+			"/api/auth/logout",
+			// JMeter 부하 측정용 임시 개방. 회원 ID를 파라미터로 받는 ~LoadTestController가 대상이며 측정 후 함께 제거한다
+			"/api/test/**"
 	};
 
 	// 온보딩 중에도 필요한 경로. 이미지 업로드 URL 발급은 /api/onboarding/** 안에 있고, 프로필 이미지 조회만 밖에 있다
