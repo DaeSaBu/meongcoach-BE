@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.daesabu.meongcoach.dog.application.provided.DogProfileDeleter;
 import com.daesabu.meongcoach.dog.application.required.DogRepository;
-import com.daesabu.meongcoach.dog.domain.Breed;
 import com.daesabu.meongcoach.dog.domain.Dog;
 import com.daesabu.meongcoach.dog.domain.DogRegisterCommand;
 import com.daesabu.meongcoach.dog.domain.DogSex;
@@ -14,6 +13,7 @@ import com.daesabu.meongcoach.dog.domain.Dogs;
 import com.daesabu.meongcoach.dog.domain.Personality;
 import com.daesabu.meongcoach.dog.domain.exception.DogNotFoundException;
 import com.daesabu.meongcoach.dog.domain.exception.LastDogNotDeletableException;
+import com.daesabu.meongcoach.dog.domain.shared.Breed;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;

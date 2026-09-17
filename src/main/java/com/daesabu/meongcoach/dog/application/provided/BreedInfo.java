@@ -1,6 +1,6 @@
 package com.daesabu.meongcoach.dog.application.provided;
 
-import com.daesabu.meongcoach.dog.domain.Breed;
+import com.daesabu.meongcoach.dog.domain.shared.Breed;
 
 /**
  * 다른 모듈에 공개하는 강아지 견종 정보.
