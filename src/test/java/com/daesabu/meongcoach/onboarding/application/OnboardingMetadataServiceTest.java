@@ -4,8 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.daesabu.meongcoach.dog.application.BreedFinderService;
 import com.daesabu.meongcoach.dog.application.PersonalityFinderService;
-import com.daesabu.meongcoach.dog.application.provided.PersonalityInfo;
 import com.daesabu.meongcoach.dog.domain.shared.Breed;
+import com.daesabu.meongcoach.dog.domain.shared.Personality;
 import com.daesabu.meongcoach.onboarding.application.provided.OnboardingMetadataResult;
 import com.daesabu.meongcoach.training.application.TopicFinderService;
 import com.daesabu.meongcoach.training.application.provided.TopicSummary;
@@ -54,7 +54,7 @@ class OnboardingMetadataServiceTest {
 				.hasSize(31)
 				.startsWith("MIXED")
 				.endsWith("FRENCH_BULLDOG");
-		assertThat(result.personalities()).extracting(PersonalityInfo::code)
+		assertThat(result.personalities()).extracting(Personality::name)
 				.containsExactly("TIMID", "LIVELY", "FRIENDLY", "CALM", "FEARFUL", "AFFECTIONATE",
 						"INDEPENDENT", "PLAYFUL", "EXCITABLE", "STUBBORN");
 		assertThat(result.mbtis()).hasSize(16).contains("ISTJ", "ENFP");

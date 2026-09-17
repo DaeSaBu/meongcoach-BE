@@ -1,5 +1,6 @@
 package com.daesabu.meongcoach.dog.application.provided;
 
+import com.daesabu.meongcoach.dog.domain.shared.Personality;
 import java.util.List;
 
 /**
@@ -7,5 +8,5 @@ import java.util.List;
  */
 public interface PersonalityFinder {
 
-	List<PersonalityInfo> findAll();
+	List<Personality> findAll();
 }
