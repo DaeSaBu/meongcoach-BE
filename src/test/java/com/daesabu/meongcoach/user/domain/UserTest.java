@@ -1,7 +1,9 @@
 package com.daesabu.meongcoach.user.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.daesabu.meongcoach.user.domain.exception.AlreadyOnboardedException;
 import org.junit.jupiter.api.Test;
 
 class UserTest {
@@ -32,13 +34,27 @@ class UserTest {
 	}
 
 	@Test
-	void 이미_MEMBER여도_승격은_멱등이다() {
+	void 이미_MEMBER면_승격에_실패한다() {
 		User user = User.registerOnboardingMember();
 		user.promoteToMember();
 
+		assertThatThrownBy(user::promoteToMember)
+				.isInstanceOf(AlreadyOnboardedException.class);
+	}
+
+	@Test
+	void 온보딩_회원은_온보딩이_필요하다() {
+		User user = User.registerOnboardingMember();
+
+		assertThat(user.needsOnboarding()).isTrue();
+	}
+
+	@Test
+	void 정회원은_온보딩이_필요하지_않다() {
+		User user = User.registerOnboardingMember();
 		user.promoteToMember();
 
-		assertThat(user.getRole()).isEqualTo(UserRole.MEMBER);
+		assertThat(user.needsOnboarding()).isFalse();
 	}
 
 	// 인가 어휘 매핑이 잘못되면(예: MEMBER에 GUEST 어휘) 인가 규칙 전체가 어긋나므로 선언부를 검증한다

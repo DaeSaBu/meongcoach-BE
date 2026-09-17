@@ -8,20 +8,16 @@ import com.daesabu.meongcoach.user.application.provided.LoginResult;
 import com.daesabu.meongcoach.user.application.required.LocalAccountRepository;
 import com.daesabu.meongcoach.user.application.required.RefreshTokenRepository;
 import com.daesabu.meongcoach.user.application.required.TokenProvider;
-import com.daesabu.meongcoach.user.application.required.UserProfileRepository;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.LocalAccount;
 import com.daesabu.meongcoach.user.domain.User;
-import com.daesabu.meongcoach.user.domain.UserProfile;
 import com.daesabu.meongcoach.user.domain.command.LocalAccountCreateCommand;
-import com.daesabu.meongcoach.user.domain.command.UserProfileCreateCommand;
 import com.daesabu.meongcoach.user.domain.exception.InvalidCredentialsException;
 import com.daesabu.meongcoach.user.domain.exception.InvalidEmailException;
 import com.daesabu.meongcoach.user.domain.exception.WithdrawnUserException;
 import com.daesabu.meongcoach.user.domain.vo.Email;
 import com.daesabu.meongcoach.user.domain.vo.RefreshTokenId;
 import java.time.LocalDateTime;
-import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,9 +43,6 @@ class LocalLoginServiceTest {
 	private LocalAccountRepository localAccountRepository;
 
 	@Autowired
-	private UserProfileRepository userProfileRepository;
-
-	@Autowired
 	private RefreshTokenRepository refreshTokenRepository;
 
 	@Autowired
@@ -61,7 +54,7 @@ class LocalLoginServiceTest {
 
 	@BeforeEach
 	void setUp() {
-		service = new LocalLoginService(localAccountRepository, userProfileRepository,
+		service = new LocalLoginService(localAccountRepository,
 				new AuthTokenIssueService(new StubTokenProvider(), refreshTokenRepository), PASSWORD_ENCODER);
 		user = userRepository.save(User.registerOnboardingMember());
 		String passwordHash = PASSWORD_ENCODER.encode(PASSWORD);
@@ -88,10 +81,10 @@ class LocalLoginServiceTest {
 	}
 
 	@Test
-	void 프로필이_있으면_온보딩이_필요하지_않다() {
-		UserProfile profile = UserProfile.create(user,
-				new UserProfileCreateCommand("멍코치", null, null, "INTJ", "NONE", Set.of(), Set.of()));
-		entityManager.persistAndFlush(profile);
+	void 정회원이면_온보딩이_필요하지_않다() {
+		User member = userRepository.findById(user.getId()).orElseThrow();
+		member.promoteToMember();
+		entityManager.flush();
 		entityManager.clear();
 
 		LoginResult result = service.login(EMAIL, PASSWORD);
