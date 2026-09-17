@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.daesabu.meongcoach.dog.domain.exception.DogLimitExceededException;
 import com.daesabu.meongcoach.dog.domain.exception.DogNotFoundException;
 import com.daesabu.meongcoach.dog.domain.exception.LastDogNotDeletableException;
+import com.daesabu.meongcoach.dog.domain.shared.Breed;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;

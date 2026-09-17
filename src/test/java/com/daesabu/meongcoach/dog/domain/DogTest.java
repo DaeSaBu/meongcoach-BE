@@ -2,6 +2,7 @@ package com.daesabu.meongcoach.dog.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.daesabu.meongcoach.dog.domain.shared.Breed;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Set;
