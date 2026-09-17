@@ -1,6 +1,6 @@
 # 멍코치 Back-End 규칙
 
-멍코치 백엔드 저장소입니다. Spring Boot 4.1 / Java 25 / Gradle(Kotlin DSL) / JPA + H2(테스트)/PostgreSQL(로컬·배포) 기반이며, 팀원 3명이 협업합니다.
+멍코치 백엔드 저장소입니다. Spring Boot 4.1 / Java 25 / Gradle(Kotlin DSL) / JPA + PostgreSQL(테스트는 Testcontainers) 기반이며, 팀원 3명이 협업합니다.
 대응되는 프론트엔드는 ReactNative 기반의 모바일 앱 서비스입니다.
 
 ## 핵심 규칙

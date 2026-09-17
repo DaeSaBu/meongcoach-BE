@@ -33,10 +33,16 @@ class AiReportQueryServiceTest {
 
 	private static final Long OTHER_USER_ID = 99L;
 
-	private static final String CONTENT_JSON = "{\"recommend\":[{\"title\":\"분리불안 교육\","
+	private static final String CONTENT_JSON = "{\"recommend\":[{\"topicId\":106,\"title\":\"분리불안 교육\","
 			+ "\"description\":\"혼자 있는 시간을 편안하게 만드는 교육이라 도움이 돼요.\"}],"
 			+ "\"report\":[{\"subTitle\":\"영상에서 이런 행동이 보여요\",\"description\":\"현관 앞을 서성여요.\"}],"
 			+ "\"solution\":[{\"order\":1,\"title\":\"혼자 있는 연습\",\"description\":\"짧게 자리를 비워 보세요.\"}]}";
+
+	// topicId 도입 전에 저장된 리포트 본문
+	private static final String LEGACY_CONTENT_JSON = "{\"recommend\":[{\"title\":\"분리불안 교육\","
+			+ "\"description\":\"혼자 있는 시간을 편안하게 만드는 교육이라 도움이 돼요.\"}],"
+			+ "\"report\":[{\"subTitle\":\"영상에서 이런 행동이 보여요\",\"description\":\"현관 앞을 서성여요.\"}],"
+			+ "\"solution\":[]}";
 
 	@Autowired
 	private AiReportFinder aiReportFinder;
@@ -120,11 +126,23 @@ class AiReportQueryServiceTest {
 		assertThat(detail.createdAt()).isNotNull();
 		AiReportContent content = detail.content();
 		assertThat(content.recommend()).containsExactly(new AiReportContent.Recommend(
-				"분리불안 교육", "혼자 있는 시간을 편안하게 만드는 교육이라 도움이 돼요."));
+				106L, "분리불안 교육", "혼자 있는 시간을 편안하게 만드는 교육이라 도움이 돼요."));
 		assertThat(content.report()).containsExactly(
 				new AiReportContent.ReportSection("영상에서 이런 행동이 보여요", "현관 앞을 서성여요."));
 		assertThat(content.solution()).containsExactly(
 				new AiReportContent.Solution(1, "혼자 있는 연습", "짧게 자리를 비워 보세요."));
+	}
+
+	@Test
+	void topicId_도입_전에_저장된_리포트는_추천_교육의_topicId가_null이다() {
+		AiReport saved = persistReport(USER_ID, "videos/training/42/legacy.mp4", "분리불안 징후 행동 분석",
+				LEGACY_CONTENT_JSON);
+
+		AiReportDetailResult detail = aiReportFinder.findReport(USER_ID, saved.getId());
+
+		AiReportContent.Recommend recommend = detail.content().recommend().getFirst();
+		assertThat(recommend.topicId()).isNull();
+		assertThat(recommend.title()).isEqualTo("분리불안 교육");
 	}
 
 	@Test
@@ -190,8 +208,12 @@ class AiReportQueryServiceTest {
 	}
 
 	private AiReport persistReport(Long userId, String videoObjectKey, String title) {
+		return persistReport(userId, videoObjectKey, title, CONTENT_JSON);
+	}
+
+	private AiReport persistReport(Long userId, String videoObjectKey, String title, String contentJson) {
 		AiReport report = pendingReport(userId, videoObjectKey);
-		report.complete(title, CONTENT_JSON);
+		report.complete(title, contentJson);
 		return aiReportRepository.saveAndFlush(report);
 	}
 

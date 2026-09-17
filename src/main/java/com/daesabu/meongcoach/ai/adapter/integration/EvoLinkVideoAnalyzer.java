@@ -6,11 +6,15 @@ import com.daesabu.meongcoach.ai.adapter.integration.dto.EvoLinkChatRequest.Cont
 import com.daesabu.meongcoach.ai.adapter.integration.dto.EvoLinkChatRequest.ResponseFormat;
 import com.daesabu.meongcoach.ai.adapter.integration.dto.EvoLinkChatRequest.Thinking;
 import com.daesabu.meongcoach.ai.application.provided.AiReportContent;
+import com.daesabu.meongcoach.ai.application.provided.AiReportContent.Recommend;
 import com.daesabu.meongcoach.ai.application.required.VideoAnalyzer;
 import com.daesabu.meongcoach.ai.domain.exception.VideoAnalysisFailedException;
 import com.daesabu.meongcoach.training.application.provided.TopicFinder;
+import com.daesabu.meongcoach.training.application.provided.TopicSummary;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientException;
@@ -61,30 +65,33 @@ public class EvoLinkVideoAnalyzer implements VideoAnalyzer {
 
 	@Override
 	public String analyze(String videoUrl) {
-		String content = completeOrThrow(videoUrl);
+		// 교육 목록은 기동 시점이 아니라 호출마다 조회한다. 영상 분석은 저빈도 작업이라 쿼리 비용이 무시 가능하고,
+		// 토픽이 바뀌어도 재기동 없이 반영된다. 프롬프트와 topicId 검증이 같은 목록을 보도록 한 번만 조회한다
+		List<TopicSummary> topics = topicFinder.findAllOrdered();
+		String content = completeOrThrow(videoUrl, topics);
 
-		AiReportContent reportContent = parseContent(content, videoUrl);
+		AiReportContent reportContent = parseContent(content, topics, videoUrl);
 		return objectMapper.writeValueAsString(reportContent);
 	}
 
 	// HTTP 오류와 쓸 수 없는 응답을 경계에서 도메인 예외로 번역한다. 그 외 예외는 버그로 보고 그대로 둔다
-	private String completeOrThrow(String videoUrl) {
+	private String completeOrThrow(String videoUrl, List<TopicSummary> topics) {
 		try {
-			return chatClient.complete(buildRequest(videoUrl));
+			return chatClient.complete(buildRequest(videoUrl, topics));
 		}
 		catch (RestClientException | EvoLinkResponseException e) {
 			throw new VideoAnalysisFailedException("영상 분석 모델 호출에 실패했습니다: " + withoutQuery(videoUrl), e);
 		}
 	}
 
-	private EvoLinkChatRequest buildRequest(String videoUrl) {
+	private EvoLinkChatRequest buildRequest(String videoUrl, List<TopicSummary> topics) {
 		return new EvoLinkChatRequest(
 				properties.model(),
 				List.of(
 						ChatMessage.system(systemPrompt),
 						ChatMessage.user(List.of(
 								ContentPart.videoUrl(videoUrl, properties.videoFps()),
-								ContentPart.text(renderUserPrompt())))),
+								ContentPart.text(renderUserPrompt(topics))))),
 				responseFormat,
 				properties.maxTokens(),
 				properties.temperature(),
@@ -92,7 +99,7 @@ public class EvoLinkVideoAnalyzer implements VideoAnalyzer {
 	}
 
 	// json_schema strict가 순수 JSON을 보장하므로 응답을 바로 파싱한다. 어긋나면 예외로 드러낸다
-	private AiReportContent parseContent(String rawText, String videoUrl) {
+	private AiReportContent parseContent(String rawText, List<TopicSummary> topics, String videoUrl) {
 		AiReportContent content;
 		try {
 			content = objectMapper.readValue(rawText, AiReportContent.class);
@@ -104,7 +111,25 @@ public class EvoLinkVideoAnalyzer implements VideoAnalyzer {
 		if (content.report().isEmpty()) {
 			throw new VideoAnalysisFailedException("영상 분석 응답에 report 항목이 없습니다: " + withoutQuery(videoUrl));
 		}
+		requireKnownTopicIds(content, topics, videoUrl);
 		return content;
+	}
+
+	// 스키마는 topicId가 정수인 것만 강제하므로 교육 목록에 실제 있는 id인지는 여기서 검증한다.
+	// HashSet이라 topicId가 null이어도 contains가 false를 돌려줘 같은 경로로 실패한다 (Set.of 계열은 contains(null)에 NPE)
+	private static void requireKnownTopicIds(AiReportContent content, List<TopicSummary> topics, String videoUrl) {
+		Set<Long> knownIds = topics.stream()
+				.map(TopicSummary::id)
+				.collect(Collectors.toCollection(HashSet::new));
+		List<Long> unknownIds = content.recommend().stream()
+				.map(Recommend::topicId)
+				.filter(topicId -> !knownIds.contains(topicId))
+				.toList();
+		if (unknownIds.isEmpty()) {
+			return;
+		}
+		throw new VideoAnalysisFailedException(
+				"영상 분석 응답의 추천 교육 topicId가 교육 목록에 없습니다: " + unknownIds + ", " + withoutQuery(videoUrl));
 	}
 
 	// presigned URL의 쿼리에는 서명이 들어 있어 예외 메시지(로그)에 남기지 않는다
@@ -113,12 +138,15 @@ public class EvoLinkVideoAnalyzer implements VideoAnalyzer {
 		return queryStart < 0 ? url : url.substring(0, queryStart);
 	}
 
-	// 교육 목록은 기동 시점이 아니라 호출마다 조회한다. 영상 분석은 저빈도 작업이라 쿼리 비용이 무시 가능하고,
-	// 토픽이 바뀌어도 재기동 없이 반영된다.
-	private String renderUserPrompt() {
-		String topics = topicFinder.findAllOrdered().stream()
-				.map(topic -> topic.title() + ": " + topic.description())
+	private String renderUserPrompt(List<TopicSummary> topics) {
+		String topicLines = topics.stream()
+				.map(EvoLinkVideoAnalyzer::renderTopicLine)
 				.collect(Collectors.joining("\n"));
-		return userPrompt.replace(TOPICS_PLACEHOLDER, topics);
+		return userPrompt.replace(TOPICS_PLACEHOLDER, topicLines);
+	}
+
+	// 라벨을 응답 키 이름(topicId)과 맞춰 모델이 값을 그대로 복사하게 한다. 형식은 user.md의 ##교육 목록## 설명과 맞춘다
+	private static String renderTopicLine(TopicSummary topic) {
+		return "- topicId: " + topic.id() + ", 교육 이름: " + topic.title() + ", 설명: " + topic.description();
 	}
 }

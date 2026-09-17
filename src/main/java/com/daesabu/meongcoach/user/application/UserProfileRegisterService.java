@@ -6,7 +6,6 @@ import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.User;
 import com.daesabu.meongcoach.user.domain.UserProfile;
 import com.daesabu.meongcoach.user.domain.command.UserProfileCreateCommand;
-import com.daesabu.meongcoach.user.domain.exception.AlreadyOnboardedException;
 import com.daesabu.meongcoach.user.domain.exception.UserNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,19 +25,11 @@ public class UserProfileRegisterService implements UserProfileRegister {
 	@Override
 	@Transactional
 	public void register(Long userId, UserProfileCreateCommand command) {
-		validateUserProfileExisting(userId);
-
 		User user = userRepository.findById(userId)
 				.orElseThrow(() -> new UserNotFoundException(userId));
-		// 인가가 요청마다 DB의 role을 읽으므로 승격이 토큰 재발급 없이 즉시 반영된다
+		// 이미 MEMBER면 여기서 AlreadyOnboardedException. 인가가 요청마다 DB의 role을 읽으므로 승격은 토큰 재발급 없이 즉시 반영된다
 		user.promoteToMember();
 
 		userProfileRepository.save(UserProfile.create(user, command));
-	}
-
-	private void validateUserProfileExisting(Long userId) {
-		if (userProfileRepository.existsById(userId)) {
-			throw new AlreadyOnboardedException();
-		}
 	}
 }

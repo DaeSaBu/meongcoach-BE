@@ -1,13 +1,16 @@
-package com.daesabu.meongcoach.dog.domain;
+package com.daesabu.meongcoach.dog.domain.shared;
 
 import com.daesabu.meongcoach.dog.domain.exception.InvalidBreedException;
+import lombok.Getter;
 
 /**
  * 강아지 견종.
- * 선언 순서가 곧 온보딩 목록의 표시 순서다. 국내 양육 비중 순(KB 2025 반려동물보고서 → 농림축산검역본부
- * 동물등록 상위 품종 → 그 외 국내에서 흔한 견종)으로 두고, 믹스견은 항상 마지막에 둔다.
+ * 표시 순서는 BreedFinderService가 정한다. 믹스견을 맨 앞에 두고 나머지를 한글 라벨 가나다순으로 이으므로,
+ * 여기 선언 순서는 화면에 드러나지 않는다.
+ * 상수 이름은 dogs.breed 컬럼에 그대로 저장되는 값이라 한번 정한 뒤에는 바꾸지 않는다.
  * 코드는 30자를 넘지 않아야 한다(dogs.breed 컬럼 길이·온보딩 요청 검증 상한).
  */
+@Getter
 public enum Breed {
 	MALTESE("말티즈"),
 	POODLE("푸들"),
@@ -46,10 +49,6 @@ public enum Breed {
 
 	Breed(String label) {
 		this.label = label;
-	}
-
-	public String getLabel() {
-		return label;
 	}
 
 	/**

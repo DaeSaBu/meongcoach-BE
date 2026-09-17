@@ -6,10 +6,11 @@
       "items": {
         "type": "object",
         "properties": {
+          "topicId": { "type": "integer" },
           "title": { "type": "string" },
           "description": { "type": "string" }
         },
-        "required": ["title", "description"],
+        "required": ["topicId", "title", "description"],
         "additionalProperties": false
       }
     },

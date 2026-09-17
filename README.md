@@ -17,6 +17,9 @@ export JWT_SECRET=local-dev-secret-key-at-least-32-bytes-long
 export KAKAO_NATIVE_APP_KEY=<카카오 콘솔의 네이티브 앱 키>
 export KAKAO_REST_API_KEY=<카카오 콘솔의 REST API 키>
 export APPLE_BUNDLE_ID=<iOS 앱의 번들 ID>
+export APPLE_TEAM_ID=<Apple Developer 팀 ID>
+export APPLE_KEY_ID=<Sign in with Apple 키 ID>
+export APPLE_PRIVATE_KEY="$(cat AuthKey_XXXXXXXXXX.p8)"
 export GOOGLE_WEB_CLIENT_ID=<구글 클라우드 콘솔의 웹 OAuth 클라이언트 ID>
 export GOOGLE_IOS_CLIENT_ID=<구글 클라우드 콘솔의 iOS OAuth 클라이언트 ID>
 ./gradlew bootRun
@@ -28,7 +31,7 @@ export GOOGLE_IOS_CLIENT_ID=<구글 클라우드 콘솔의 iOS OAuth 클라이�
 docker compose --profile app up --build
 ```
 
-테스트는 `src/test/resources/application-test.yml`의 더미 값을 쓰므로 환경 변수 없이 실행됩니다.
+테스트는 `src/test/resources/application-test.yml`의 더미 값을 쓰므로 환경 변수 없이 실행됩니다. 단, DB 테스트가 Testcontainers로 PostgreSQL 컨테이너를 띄우므로 Docker 데몬이 실행 중이어야 합니다.
 
 ```bash
 ./gradlew spotlessCheck test jacocoTestCoverageVerification

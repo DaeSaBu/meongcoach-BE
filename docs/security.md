@@ -72,6 +72,11 @@ SHA-1 검증용이라 id_token의 `aud`가 되지 않습니다), 애플은 **iOS
 클라이언트가 토큰을 재발급받을 필요도 없습니다. 어차피 5번이 요청당 PK 조회를 하고 있었으므로
 추가 비용도 없습니다.
 
+온보딩 상태의 단일 원천은 `users.role`입니다. 인가뿐 아니라 로그인 응답의 `needsOnboarding`
+(`ONBOARDING_MEMBER`면 true)과 온보딩 완료 요청의 중복 판정(`MEMBER`면 409 `USER_ALREADY_ONBOARDED`)도
+같은 컬럼을 읽습니다. `user_profiles` 행 존재 여부는 판정에 쓰지 않습니다 — 두 곳에서 따로 판단하면
+승격은 됐는데 프로필이 없거나 그 반대인 계정이 생겨 화면 분기와 인가가 어긋나기 때문입니다.
+
 > 함정: 이 컨버터는 `@Component`가 아니라 `UserSecurityConfig`의 `@Bean`으로 등록합니다.
 > `Converter` 구현 컴포넌트는 `@WebMvcTest` 슬라이스의 로드 대상에 포함되어,
 > 모든 컨트롤러 슬라이스 테스트가 회원 조회 의존성을 요구하며 깨지기 때문입니다.
@@ -120,13 +125,31 @@ SHA-1 검증용이라 id_token의 `aud`가 되지 않습니다), 애플은 **iOS
 - **재발급(rotation)** — `TokenRefreshService`는 서명이 유효해도 저장 이력이 없거나 이미 폐기·만료된 토큰이면 401을 내고,
   통과하면 제시된 토큰을 폐기한 뒤 새 토큰 쌍을 발급·저장합니다. 폐기와 발급은 한 트랜잭션이라 중간에 실패하면 기존 토큰이 남습니다.
 - **로그아웃** — `POST /api/auth/logout`은 제시한 토큰 하나만 폐기합니다(기기 단위). 이미 폐기된 토큰도 204입니다.
-- **탈퇴** — `UserWithdrawService`가 회원의 살아 있는 토큰을 전부 폐기합니다.
+- **탈퇴** — `UserWithdrawService`가 회원의 살아 있는 토큰을 전부 폐기합니다. Apple 계정 회원은 그 전에 Apple 토큰부터 revoke합니다(아래 절).
 
 폐기는 행 삭제가 아니라 `revoked_at` 기록이라 이력이 남습니다. 액세스 토큰은 저장·조회하지 않으므로 `jti`를 넣지 않으며 만료(1시간)까지 유효하고,
 탈퇴 회원의 액세스 토큰은 `RegisteredUserCheckService`가 미등록으로 취급해 막습니다. 탈퇴(`WITHDRAWN`)는 행이 남는 soft delete라
 존재 여부만 보면 통과하기 때문입니다.
 
 영속화 이전에 발급된 리프레시 토큰은 저장 이력이 없어 재발급이 401로 끝나므로 클라이언트는 재로그인해야 합니다.
+
+### 탈퇴 시 Sign in with Apple 토큰 revoke
+
+애플 심사 지침 5.1.1(v)은 Sign in with Apple 앱이 계정을 삭제할 때 Apple의 [토큰 revoke API](https://developer.apple.com/documentation/signinwithapplerestapi/revoke_tokens)를
+호출하도록 요구합니다. 서버는 로그인 때 id_token만 검증하고 Apple 토큰을 보관하지 않으므로, 클라이언트가 탈퇴 직전
+`ASAuthorizationController`로 **재인증해 받은 `authorizationCode`를 `DELETE /api/users/me` 본문(`appleAuthorizationCode`)에 실어** 보내야 합니다.
+`AppleSocialTokenRevoker`가 이 코드를 `/auth/token`으로 refresh_token과 교환한 뒤 `/auth/revoke`로 폐기합니다.
+
+- 두 요청의 `client_secret`은 고정 값이 아니라 `.p8` 개인 키로 서명한 ES256 JWT(`iss`=팀 ID, `sub`=번들 ID, `kid`=키 ID)라
+  `APPLE_TEAM_ID`·`APPLE_KEY_ID`·`APPLE_PRIVATE_KEY`가 필요합니다. 개인 키는 기동 시 파싱하므로 잘못 넣으면 배포 시점에 실패합니다.
+- 인가 코드는 **5분 만료·1회용**이라 서버가 저장하지 않으며, 클라이언트도 재사용하지 말고 탈퇴 직전에 새로 받아야 합니다.
+- **revoke가 끝나야 탈퇴가 진행됩니다.** `UserWithdrawService`는 제공자를 가리지 않고 회원의 소셜 계정마다 `SocialTokenRevoker`
+  구현체가 등록돼 있으면 호출하며, 코드가 필수인지는 구현체가 정합니다. Apple 계정 회원이 코드 없이 요청하면 `AppleSocialTokenRevoker`가
+  400(`USER_APPLE_AUTHORIZATION_CODE_REQUIRED`)으로 거절하고,
+  Apple이 코드를 거부하면 400(`USER_INVALID_APPLE_AUTHORIZATION_CODE`), Apple과 통신하지 못하면 502(`USER_SOCIAL_PROVIDER_UNAVAILABLE`)로
+  끝나고 회원·자격증명은 그대로 남습니다. 사용자가 계정을 지우지 못하는 상태보다 Apple 연결이 남는 상태가 심사 위험이 크다고 봤기 때문에,
+  revoke를 소셜 계정 삭제보다 먼저 호출해 실패 시 같은 계정으로 다시 시도할 수 있게 둡니다.
+- 카카오·구글 회원은 이 절차가 없으며 코드를 보내도 무시합니다(아래 "알려진 제약").
 
 ## 필터 체인 구성
 
@@ -171,13 +194,14 @@ Google Play·App Store 심사자는 소셜 계정을 만들 수 없으므로, �
 ```
 [앱] 이메일·비밀번호 입력
   → POST /api/auth/login/local  { "email": "...", "password": "..." }
-     → LocalAccountRepository.findByEmail → PasswordEncoder.matches(BCrypt) → 탈퇴 여부 확인
+     → LocalAccountRepository.findByEmail → LocalAccount.isValidPassword(PasswordMatcher, BCrypt) → 탈퇴 여부 확인
         → 우리 JWT 발급 (소셜 로그인과 동일)
   ← { accessToken, refreshToken, needsOnboarding }
 ```
 
-비밀번호는 `BCryptPasswordEncoder`(빈 정의는 `SecurityConfig`) 해시로만 저장합니다. `domain`은 Spring에 의존할 수 없어
-`LocalAccount`는 해시 문자열만 보관하고, 대조는 `application/LocalLoginService`가 합니다.
+비밀번호는 `BCryptPasswordEncoder`(빈 정의는 `SecurityConfig`) 해시로만 저장합니다. 대조 규칙은 `LocalAccount.isValidPassword`에
+있지만 `domain`은 Spring에 의존할 수 없으므로 순수 인터페이스 `user/domain/PasswordMatcher`만 두고,
+`user/adapter/security/BcryptPasswordMatcher`가 스프링 `PasswordEncoder` 빈을 감싸 구현합니다.
 
 ### 실패 응답 정책
 
@@ -247,6 +271,9 @@ OIDC 제공자는 모두 "JWKS 디코더 + `iss` + `exp` + `aud`" 동일 형태�
 | `KAKAO_NATIVE_APP_KEY` | 네이티브 SDK id_token의 `aud`. 시크릿이 아닌 식별자. **빈 값이면 기동 실패** |
 | `KAKAO_REST_API_KEY` | 웹 로그인 id_token의 `aud`. 시크릿이 아닌 식별자. **빈 값이면 기동 실패** |
 | `APPLE_BUNDLE_ID` | Sign in with Apple id_token의 `aud`(iOS 앱 번들 ID). 시크릿이 아닌 식별자. **빈 값이면 기동 실패** |
+| `APPLE_TEAM_ID` | Apple Developer 계정의 팀 ID. 탈퇴 시 revoke용 `client_secret`의 `iss`. 시크릿이 아닌 식별자. **빈 값이면 기동 실패** |
+| `APPLE_KEY_ID` | Sign in with Apple 키의 키 ID. `client_secret`의 `kid`. 시크릿이 아닌 식별자. **빈 값이면 기동 실패** |
+| `APPLE_PRIVATE_KEY` | `-----BEGIN PRIVATE KEY-----` 머리말·꼬리말을 포함한 위 키의 `.p8` 파일 내용 전체(PKCS#8 PEM). **시크릿.** 줄바꿈은 그대로 두거나 `\n`으로 이스케이프. **비거나, 머리말이 없거나, EC 키가 아니면 기동 실패** |
 | `GOOGLE_WEB_CLIENT_ID` | 구글 id_token의 `aud`(웹 OAuth 클라이언트 ID). 안드로이드 SDK도 이 값을 `aud`로 발급합니다. 시크릿이 아닌 식별자. **빈 값이면 기동 실패** |
 | `GOOGLE_IOS_CLIENT_ID` | 구글 id_token의 `aud`(iOS OAuth 클라이언트 ID). 시크릿이 아닌 식별자. **빈 값이면 기동 실패** |
 
@@ -256,12 +283,10 @@ dev/prod의 DB 접속 변수(`DB_HOST` 등)는 [profiles.md](profiles.md)를 참
 
 ## 알려진 제약
 
-- **탈퇴 시 소셜 제공자 연결을 끊지 않습니다.** 애플 심사 가이드라인 5.1.1(v)은 Sign in with Apple 앱이 계정 삭제 시
-  `https://appleid.apple.com/auth/revoke`로 토큰을 revoke하도록 요구하지만, 서버는 id_token만 검증하고 `.p8` 키·client_secret·
-  authorization code 수신 경로가 없어 아직 구현하지 않았습니다. 구현하려면 `APPLE_TEAM_ID`·`APPLE_KEY_ID`·`APPLE_PRIVATE_KEY`로
-  ES256 client_secret을 만들고, 클라이언트가 탈퇴 요청에 authorization code를 실어 보내 `/auth/token` 교환 → `/auth/revoke` 순으로
-  호출해야 합니다. 카카오 unlink(`/v1/user/unlink`)와 구글 revoke(`https://oauth2.googleapis.com/revoke`)도 같은 이유로
-  미구현입니다. 그동안 사용자 기기의 설정 > Apple ID > Apple로 로그인 목록과 구글 계정의 연결된 앱 목록에는 앱이 남습니다.
+- **탈퇴 시 카카오·구글 연결은 끊지 않습니다.** Apple은 심사 요건이라 revoke를 구현했지만(위 "탈퇴 시 Sign in with Apple 토큰 revoke"),
+  카카오 unlink(`/v1/user/unlink`)와 구글 revoke(`https://oauth2.googleapis.com/revoke`)는 필수 요건이 아니라 미구현입니다.
+  필요해지면 `SocialTokenRevoker` 구현체를 제공자별로 추가하면 되고, `UserWithdrawService`는 등록된 구현체를 제공자별로 찾아 호출하므로 수정하지 않습니다.
+  그동안 구글 계정의 연결된 앱 목록에는 앱이 남습니다.
 - **탈퇴해도 타 모듈 데이터는 남습니다.** 강아지(`dogs`)·AI 리포트(`ai_reports`)·학습 진도는 옛 `userId`로 남으며, 재가입은 새
   `userId`를 받으므로 도달할 수 없는 고아 행이 됩니다. 삭제용 `provided` 인터페이스나 모듈 이벤트 선례가 없어 MVP에서는 두고,
   필요해지면 `UserWithdrawer`에서 각 모듈의 정리 인터페이스를 호출하도록 넓힙니다.
@@ -271,9 +296,10 @@ dev/prod의 DB 접속 변수(`DB_HOST` 등)는 [profiles.md](profiles.md)를 참
 - **이메일 로그인은 응답 시간을 균등화하지 않습니다.** 이메일이 없으면 BCrypt 대조 없이 바로 401이라, 응답 시간으로
   등록 여부를 추정할 수 있습니다. 로컬 계정은 심사용 몇 개뿐이라 MVP에서는 수용하며, 필요해지면 미존재 분기에서도
   더미 해시에 `matches`를 한 번 호출해 균등화합니다.
-- **역할 도입 전 가입자** — `UserRole` 도입 전 `MEMBER`로 만들어진 회원 중 프로필이 없는 계정은
-  온보딩을 마치지 않고도 전 API에 접근할 수 있습니다(`needsOnboarding`은 여전히 true).
-  온보딩을 완료하면 멱등 승격으로 일관성이 회복되므로 MVP에서는 수용합니다.
+- **프로필 없는 `MEMBER` 계정** — `UserRole` 도입 전 `MEMBER`로 만들어진 회원 중 프로필이 없는 계정은
+  온보딩 상태를 role로만 판단하므로 `needsOnboarding`이 false이고, 온보딩 완료 요청도 409로 거부되어
+  프로필을 만들 길이 없습니다. 이런 계정은 마이그레이션으로 정리하지 않았으므로 발견되면 DB에서 직접
+  `role`을 `ONBOARDING_MEMBER`로 되돌려 온보딩을 다시 밟게 합니다.
 - **최초 로그인 동시성** — 같은 신규 계정으로 동시에 두 요청이 오면 `(provider, provider_id)`
   유니크 제약 위반으로 한쪽이 500이 될 수 있습니다. 확률이 낮아 MVP에서는 두고, 필요 시
   제약 위반을 잡아 재조회하도록 보완합니다.

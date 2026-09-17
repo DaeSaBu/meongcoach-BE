@@ -25,10 +25,11 @@ public record AiReportContent(
 	}
 
 	/**
-	 * 추천 교육. title은 교육 목록에 있는 교육 이름 그대로고, description은 이 교육을 추천하는 이유를
-	 * 보호자에게 설명하는 문구다. description 도입 전에 저장된 리포트는 null일 수 있다.
+	 * 추천 교육. topicId는 교육 목록에서 고른 교육의 ID로, 교육 이름이 카테고리 간에 중복될 수 있어 교육을 식별하는 기준이다.
+	 * title은 그 교육의 이름 그대로고, description은 이 교육을 추천하는 이유를 보호자에게 설명하는 문구다.
+	 * topicId·description은 각각 도입 전에 저장된 리포트에서 null일 수 있다.
 	 */
-	public record Recommend(String title, String description) {
+	public record Recommend(Long topicId, String title, String description) {
 	}
 
 	/**

@@ -7,10 +7,10 @@
 
 | 프로파일 | DB | ddl-auto | 용도 | 필요 환경 변수 |
 |---|---|---|---|---|
-| `local` | PostgreSQL 18.3 | `create-drop` | 로컬 개발. 스키마와 교육 초기 데이터 재생성 | `JWT_SECRET`, `KAKAO_NATIVE_APP_KEY`, `KAKAO_REST_API_KEY`, `APPLE_BUNDLE_ID`, `GOOGLE_WEB_CLIENT_ID`, `GOOGLE_IOS_CLIENT_ID` |
-| `dev` | PostgreSQL | `validate` | 개발 서버 | `JWT_SECRET`, `KAKAO_NATIVE_APP_KEY`, `KAKAO_REST_API_KEY`, `APPLE_BUNDLE_ID`, `GOOGLE_WEB_CLIENT_ID`, `GOOGLE_IOS_CLIENT_ID`, `DB_HOST`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD`, `SENTRY_DSN`(선택) |
-| `prod` | PostgreSQL | `validate` | 운영 | `JWT_SECRET`, `KAKAO_NATIVE_APP_KEY`, `KAKAO_REST_API_KEY`, `APPLE_BUNDLE_ID`, `GOOGLE_WEB_CLIENT_ID`, `GOOGLE_IOS_CLIENT_ID`, `DB_HOST`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD`, `SENTRY_DSN`(선택) |
-| `test` | H2 (인메모리) | `create-drop` | 테스트. `build.gradle.kts`가 강제 활성화 | 없음 (더미 값 내장) |
+| `local` | PostgreSQL 18.3 | `create-drop` | 로컬 개발. 스키마와 교육 초기 데이터 재생성 | `JWT_SECRET`, `KAKAO_NATIVE_APP_KEY`, `KAKAO_REST_API_KEY`, `APPLE_BUNDLE_ID`, `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY`, `GOOGLE_WEB_CLIENT_ID`, `GOOGLE_IOS_CLIENT_ID` |
+| `dev` | PostgreSQL | `validate` | 개발 서버 | `JWT_SECRET`, `KAKAO_NATIVE_APP_KEY`, `KAKAO_REST_API_KEY`, `APPLE_BUNDLE_ID`, `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY`, `GOOGLE_WEB_CLIENT_ID`, `GOOGLE_IOS_CLIENT_ID`, `DB_HOST`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD`, `SENTRY_DSN`(선택) |
+| `prod` | PostgreSQL | `validate` | 운영 | `JWT_SECRET`, `KAKAO_NATIVE_APP_KEY`, `KAKAO_REST_API_KEY`, `APPLE_BUNDLE_ID`, `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY`, `GOOGLE_WEB_CLIENT_ID`, `GOOGLE_IOS_CLIENT_ID`, `DB_HOST`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD`, `SENTRY_DSN`(선택) |
+| `test` | PostgreSQL 18.3 (Testcontainers) | `create-drop` | 테스트. `build.gradle.kts`가 강제 활성화 | 없음 (더미 값 내장, Docker 데몬 필요) |
 
 - `DB_HOST`와 `DB_NAME`으로 `jdbc:postgresql://{host}:5432/{database}` URL을 구성합니다.
 - local DB 설정에는 로컬 전용 기본값이 있고, dev/prod 환경 변수에는 기본값이 없습니다. `SENTRY_DSN`만 예외로, 없으면 Sentry SDK가 꺼진 채 기동합니다 ([error-handling.md](error-handling.md) "Sentry 전송").
@@ -24,14 +24,18 @@
   `db/local/test-account-data.sql`에서 자동으로 적재됩니다. (계정 정보는 파일 머리 주석, 등록 방법은 [security.md](security.md) 참고)
   애플리케이션을 기동할 때마다 스키마를 재생성합니다. PostgreSQL 데이터는 `tmpfs`에 저장되어
   컨테이너를 중지하거나 재시작하면 초기화됩니다.
-  백엔드까지 컨테이너로 실행할 때는 `.env`를 준비하고
-  `docker compose --profile app up --build`를 사용합니다. 이 모드에서는 compose 지원이 없으므로
+  백엔드까지 컨테이너로 실행할 때는 `.env`를 준비하고 `./gradlew bootJar`로 jar를 먼저 만든 뒤
+  `docker compose --profile app up --build`를 사용합니다. (Dockerfile은 `build/libs/`의 jar를 복사만 합니다.) 이 모드에서는 compose 지원이 없으므로
   `compose.yml`이 주입하는 `DB_HOST` 환경 변수로 접속합니다.
   compose 자동 기동은 local 전용입니다 — dev/prod 프로파일은 `spring.docker.compose.enabled: false`로
   꺼 두어, 로컬에서 dev/prod 프로파일로 실행해도 로컬 postgres가 접속 정보를 덮어쓰지 않습니다.
 - **배포**: 환경별 Terraform task definition이 `SPRING_PROFILES_ACTIVE=dev` 또는 `prod`를 고정합니다. CD는 이 값과 DB 설정을 보존하고 GitHub Secrets의 애플리케이션 설정과 이미지를 반영합니다.
 - **테스트**: `build.gradle.kts`의 `tasks.withType<Test>`가 `spring.profiles.active=test`를
-  강제하므로 별도 설정이 필요 없습니다.
+  강제하므로 별도 설정이 필요 없습니다. DB는 `application-test.yml`의 `jdbc:tc:` URL을 Testcontainers JDBC
+  드라이버가 해석해 배포 환경과 같은 PostgreSQL 18.3 컨테이너를 띄우므로 Docker 데몬이 실행 중이어야 합니다.
+  테스트 JVM 하나가 컨테이너 하나를 공유하고 JVM이 끝나면 정리됩니다. `bootJar`도 API 스펙 생성을 위해 `test`를
+  거치므로 jar 빌드에도 Docker가 필요합니다. 그래서 이미지 빌드(Dockerfile) 안에서는 jar를 만들지 않고, CI가 만든
+  jar를 CD가 artifact로 내려받아 복사만 합니다.
 
 ### 배포 프로파일 전달 흐름
 

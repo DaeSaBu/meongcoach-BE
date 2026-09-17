@@ -36,6 +36,7 @@ VideoUploadSqsConsumer                      (ai/adapter/consumer)
 - **`ai_reports` 스키마 변경(status 컬럼, content NOT NULL 해제, upload_expires_at 컬럼)은 dev·prod에 수동 DDL로 반영합니다.** 정책과 이유는 [profiles.md](profiles.md)의 ddl-auto 절이 원천입니다.
 - **중복 분석은 발급 row의 상태로 막습니다.** SQS는 at-least-once 전달이라 같은 이벤트가 두 번 올 수 있습니다. 컨슈머는 `findByVideoObjectKey`로 찾은 row가 UPLOADING일 때만 분석을 시작하므로 PENDING·COMPLETED·FAILED row는 재분석되지 않습니다. 따라서 분석 도중 서버가 죽으면 row가 PENDING으로 남고 재전달 메시지는 스킵됩니다 — 재시도를 도입할 때 함께 풀어야 할 한계입니다.
 - **제목 200자 규칙은 `AiReport` 도메인이 단일 소유합니다** (`TITLE_MAX_LENGTH`). 프롬프트나 어댑터에서 길이를 중복 강제하지 않습니다. 제목 생성 실패는 부가 정보 실패라 리포트 저장을 막지 않습니다.
+- **추천 교육은 모델이 `topicId`를 돌려주고 서버가 교육 목록에 있는 id인지 검증합니다.** 교육 이름은 카테고리 간에 중복되므로("앉아"가 101·1101) 이름→id 역매핑이 불가능합니다. 그래서 프롬프트의 교육 목록에 id를 함께 넣고 응답 스키마에 `topicId`를 required로 둡니다. 목록에 없는 id는 `VideoAnalysisFailedException`(→ `FAILED_ANALYSIS`)이고, 도입 전에 저장된 리포트의 `topicId`는 null입니다.
 
 ## EvoLink 연동 (ai/adapter/integration)
 

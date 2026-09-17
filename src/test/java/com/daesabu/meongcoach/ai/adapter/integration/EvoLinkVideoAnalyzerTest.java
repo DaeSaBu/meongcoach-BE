@@ -6,6 +6,8 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.jsonPath;
@@ -39,8 +41,12 @@ class EvoLinkVideoAnalyzerTest {
 	private static final String MODEL = "doubao-seed-2.0-pro";
 	private static final String VIDEO_URL =
 			"https://test-video-bucket.s3.amazonaws.com/videos/training/7/key.mp4?X-Amz-Signature=abc";
-	// 정규화 재직렬화 결과와 비교할 수 있도록 record 컴포넌트 순서(recommend, report, solution)와 맞춘 JSON
-	private static final String VALID_CONTENT_JSON = "{\"recommend\":[{\"title\":\"입질 교정\","
+	// 프롬프트에 넣고 응답 topicId를 검증하는 교육 목록. 응답 예시의 topicId(104)가 여기 있어야 검증을 통과한다
+	private static final List<TopicSummary> TOPICS = List.of(
+			new TopicSummary(104L, "입질", "무는 습관 교정하기"),
+			new TopicSummary(106L, "분리불안", "혼자서도 편안하게"));
+	// 정규화 재직렬화 결과와 비교할 수 있도록 record 컴포넌트 순서(recommend, report, solution / topicId, title, description)와 맞춘 JSON
+	private static final String VALID_CONTENT_JSON = "{\"recommend\":[{\"topicId\":104,\"title\":\"입질\","
 			+ "\"description\":\"물건을 무는 습관을 줄이는 교육이라 도움이 돼요.\"}],"
 			+ "\"report\":[{\"subTitle\":\"영상에서 이런 행동이 보여요\",\"description\":\"슬리퍼를 물고 달려요.\"}],"
 			+ "\"solution\":[{\"order\":1,\"title\":\"교환 놀이 연습하기\",\"description\":\"간식과 바꿔 주세요.\"}]}";
@@ -54,6 +60,7 @@ class EvoLinkVideoAnalyzerTest {
 		RestClient.Builder builder = RestClient.builder();
 		server = MockRestServiceServer.bindTo(builder).build();
 		topicFinder = mock(TopicFinder.class);
+		when(topicFinder.findAllOrdered()).thenReturn(TOPICS);
 		EvoLinkProperties properties = new EvoLinkProperties(BASE_URL, "test-evolink-api-key", MODEL,
 				Duration.ofMinutes(5), 4096, 0.0, "disabled", 1.0);
 		analyzer = new EvoLinkVideoAnalyzer(new EvoLinkChatClient(properties, builder.build()),
@@ -178,6 +185,10 @@ class EvoLinkVideoAnalyzerTest {
 				.andExpect(jsonPath("$.response_format.json_schema.schema.type").value("object"))
 				.andExpect(jsonPath("$.response_format.json_schema.schema.required",
 						contains("recommend", "report", "solution")))
+				.andExpect(jsonPath("$.response_format.json_schema.schema.properties.recommend.items.required",
+						contains("topicId", "title", "description")))
+				.andExpect(jsonPath("$.response_format.json_schema.schema.properties.recommend.items.properties.topicId.type")
+						.value("integer"))
 				.andRespond(withSuccess(chatResponseJson(VALID_CONTENT_JSON), MediaType.APPLICATION_JSON));
 
 		analyzer.analyze(VIDEO_URL);
@@ -234,18 +245,58 @@ class EvoLinkVideoAnalyzerTest {
 	}
 
 	@Test
-	void 사용자_프롬프트에_교육_목록을_치환해_보낸다() {
-		when(topicFinder.findAllOrdered()).thenReturn(List.of(
-				new TopicSummary(1L, "배변", "편안한 배변 습관 만들기"),
-				new TopicSummary(2L, "분리불안", "혼자서도 편안하게")));
+	void 사용자_프롬프트에_교육_목록을_topicId와_함께_치환해_보낸다() {
+		// 라벨을 응답 키 이름(topicId)과 맞춰 모델이 값을 그대로 복사하게 한다
 		expectChatRequest()
-				.andExpect(jsonPath("$.messages[1].content[1].text", containsString("배변: 편안한 배변 습관 만들기")))
-				.andExpect(jsonPath("$.messages[1].content[1].text", containsString("분리불안: 혼자서도 편안하게")))
+				.andExpect(jsonPath("$.messages[1].content[1].text",
+						containsString("- topicId: 104, 교육 이름: 입질, 설명: 무는 습관 교정하기")))
+				.andExpect(jsonPath("$.messages[1].content[1].text",
+						containsString("- topicId: 106, 교육 이름: 분리불안, 설명: 혼자서도 편안하게")))
 				.andExpect(jsonPath("$.messages[1].content[1].text", not(containsString("{{topics}}"))))
 				.andRespond(withSuccess(chatResponseJson(VALID_CONTENT_JSON), MediaType.APPLICATION_JSON));
 
 		analyzer.analyze(VIDEO_URL);
 
 		server.verify();
+	}
+
+	@Test
+	void 교육_목록을_호출당_한_번만_조회한다() {
+		// 프롬프트와 topicId 검증이 같은 목록을 봐야 하므로 두 번 조회하지 않는다
+		givenModelResponds(VALID_CONTENT_JSON);
+
+		analyzer.analyze(VIDEO_URL);
+
+		verify(topicFinder, times(1)).findAllOrdered();
+	}
+
+	@Test
+	void 추천_교육의_topicId가_교육_목록에_없으면_분석에_실패한다() {
+		// 스키마는 정수 타입만 강제하므로 목록에 실재하는 id인지는 어댑터가 검증한다
+		givenModelResponds(VALID_CONTENT_JSON.replace("\"topicId\":104", "\"topicId\":999"));
+
+		assertThatThrownBy(() -> analyzer.analyze(VIDEO_URL))
+				.isInstanceOf(VideoAnalysisFailedException.class)
+				.hasMessageContaining("999")
+				.hasMessageNotContaining("X-Amz-Signature");
+	}
+
+	@Test
+	void 추천_교육의_topicId가_null이면_분석에_실패한다() {
+		givenModelResponds(VALID_CONTENT_JSON.replace("\"topicId\":104", "\"topicId\":null"));
+
+		assertThatThrownBy(() -> analyzer.analyze(VIDEO_URL))
+				.isInstanceOf(VideoAnalysisFailedException.class);
+	}
+
+	@Test
+	void 추천_교육이_없으면_topicId_검증_없이_통과한다() {
+		String normalVideoContent = "{\"recommend\":[],\"report\":[{\"subTitle\":\"정상 행동으로 볼 수 있어요\","
+				+ "\"description\":\"산책 중 냄새를 맡아요.\"}],\"solution\":[]}";
+		givenModelResponds(normalVideoContent);
+
+		String content = analyzer.analyze(VIDEO_URL);
+
+		assertThat(content).isEqualTo(normalVideoContent);
 	}
 }

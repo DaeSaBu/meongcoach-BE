@@ -42,6 +42,12 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
+      - name: 배포 jar 다운로드
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: boot-jar
+          path: build/libs
+
       - name: AWS 자격 증명 설정
         uses: aws-actions/configure-aws-credentials@451ce2a72e8d729a59ebeaacab82dbce58e7af4c # v6
         with:
@@ -78,6 +84,9 @@ jobs:
           KAKAO_NATIVE_APP_KEY: ${{ secrets.DEV_KAKAO_NATIVE_APP_KEY }}
           KAKAO_REST_API_KEY: ${{ secrets.DEV_KAKAO_REST_API_KEY }}
           APPLE_BUNDLE_ID: ${{ secrets.DEV_APPLE_BUNDLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.DEV_APPLE_TEAM_ID }}
+          APPLE_KEY_ID: ${{ secrets.DEV_APPLE_KEY_ID }}
+          APPLE_PRIVATE_KEY: ${{ secrets.DEV_APPLE_PRIVATE_KEY }}
           GOOGLE_WEB_CLIENT_ID: ${{ secrets.DEV_GOOGLE_WEB_CLIENT_ID }}
           GOOGLE_IOS_CLIENT_ID: ${{ secrets.DEV_GOOGLE_IOS_CLIENT_ID }}
           R2_ENDPOINT: ${{ secrets.DEV_R2_ENDPOINT }}

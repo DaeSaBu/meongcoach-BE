@@ -1,11 +1,9 @@
 package com.daesabu.meongcoach.user.application;
 
 import com.daesabu.meongcoach.user.application.required.SocialAccountRepository;
-import com.daesabu.meongcoach.user.application.required.UserProfileRepository;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.SocialAccount;
 import com.daesabu.meongcoach.user.domain.User;
-import com.daesabu.meongcoach.user.domain.UserStatus;
 import com.daesabu.meongcoach.user.domain.command.SocialAccountLinkCommand;
 import com.daesabu.meongcoach.user.domain.exception.WithdrawnUserException;
 import lombok.RequiredArgsConstructor;
@@ -23,23 +21,22 @@ public class SocialUserRegisterService {
 
 	private final UserRepository userRepository;
 	private final SocialAccountRepository socialAccountRepository;
-	private final UserProfileRepository userProfileRepository;
 
 	/**
 	 * User는 연관관계가 없는 엔티티라 트랜잭션 밖에서 읽어도 지연 로딩이 일어나지 않는다.
 	 */
 	public User findOrRegister(SocialAccountLinkCommand command) {
 		User user = findOrRegisterUser(command);
-		if (user.getStatus() == UserStatus.WITHDRAWN) {
-			throw new WithdrawnUserException();
-		}
+
+		validateWithdrawnUser(user);
+
 		return user;
 	}
 
-	// 온보딩 완료 여부는 별도 플래그 없이 프로필 행 존재 여부로 판단한다
-	@Transactional(readOnly = true)
-	public boolean needsOnboarding(Long userId) {
-		return !userProfileRepository.existsById(userId);
+	private static void validateWithdrawnUser(User user) {
+		if (user.isWithdrawn()) {
+			throw new WithdrawnUserException();
+		}
 	}
 
 	// 회원 생성과 소셜 계정 연동은 같은 트랜잭션에서 일어나야 한다

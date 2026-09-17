@@ -1,5 +1,6 @@
 package com.daesabu.meongcoach.dog.application.provided;
 
+import com.daesabu.meongcoach.dog.domain.shared.Breed;
 import java.util.List;
 
 /**
@@ -7,5 +8,5 @@ import java.util.List;
  */
 public interface BreedFinder {
 
-	List<BreedInfo> findAll();
+	List<Breed> findAll();
 }

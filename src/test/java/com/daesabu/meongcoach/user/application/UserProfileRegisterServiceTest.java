@@ -116,13 +116,15 @@ class UserProfileRegisterServiceTest {
 		assertThat(user.getRole()).isEqualTo(UserRole.MEMBER);
 	}
 
+	// 프로필 행이 없어도 role이 MEMBER면 온보딩 완료로 본다 — 온보딩 상태의 원천은 role 하나다
 	@Test
-	void 이미_프로필이_있으면_등록에_실패한다() {
-		service.register(userId,
-				command("멍멍이집사", null, VALID_MBTI, VALID_GENDER, null));
+	void 이미_정회원이면_등록에_실패한다() {
+		User member = User.registerOnboardingMember();
+		member.promoteToMember();
+		Long memberId = userRepository.save(member).getId();
 
-		assertThatThrownBy(() -> service.register(userId,
-				command("다른닉네임", null, VALID_MBTI, VALID_GENDER, null)))
+		assertThatThrownBy(() -> service.register(memberId,
+				command("멍멍이집사", null, VALID_MBTI, VALID_GENDER, null)))
 				.isInstanceOf(AlreadyOnboardedException.class);
 	}
 
