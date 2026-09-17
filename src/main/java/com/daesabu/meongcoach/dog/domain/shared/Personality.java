@@ -1,13 +1,15 @@
-package com.daesabu.meongcoach.dog.domain;
+package com.daesabu.meongcoach.dog.domain.shared;
 
 import com.daesabu.meongcoach.dog.domain.exception.InvalidPersonalityException;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.Getter;
 
 /**
  * 강아지 성격 특성. 보호자가 관찰한 특성을 중복 선택하는 평면 목록이며,
  * 서로 반대되는 항목(활발함/차분함 등)의 동시 선택은 막지 않는다.
  */
+@Getter
 public enum Personality {
 	TIMID("소심함"),
 	LIVELY("활발함"),
@@ -25,10 +27,6 @@ public enum Personality {
 
 	Personality(String label) {
 		this.label = label;
-	}
-
-	public String getLabel() {
-		return label;
 	}
 
 	/**
