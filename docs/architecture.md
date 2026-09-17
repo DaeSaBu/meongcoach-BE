@@ -40,7 +40,10 @@ com.daesabu.meongcoach
 
 - **최상위 패키지 1개 = 모듈 1개 = MSA 분리 단위.** 새 기능 영역은 새 최상위 패키지(모듈)로 추가합니다.
 - 각 모듈 루트에 `package-info.java`를 두고 `@ApplicationModule`을 선언합니다.
-- **모듈 간 접근은 `application/provided`의 인터페이스로만 합니다.** 다른 모듈의 서비스 구현체, `required` 인터페이스, 도메인 내부에 직접 접근하지 않습니다. `verify()`는 provided 패키지에 **물리적으로 존재하는 타입만** 노출로 인정하며, 인터페이스 시그니처에 등장하는 도메인 타입은 전파되지 않습니다. 따라서 모듈 경계를 넘나드는 값은 provided 패키지의 record로 정의해야 합니다. (선례: `DogRegisterInfo`, `TopicSummary`, `VideoUploadUrlResult`)
+- **모듈 간 호출은 `application/provided`의 인터페이스로만 합니다.** 다른 모듈의 서비스 구현체, `required` 인터페이스, 도메인 내부에 직접 접근하지 않습니다. `verify()`는 `@NamedInterface` 패키지에 **물리적으로 존재하는 타입만** 노출로 인정하며, 인터페이스 시그니처에 등장하는 타입은 전파되지 않습니다. named interface는 모듈당 여러 개 둘 수 있습니다.
+- **모듈 경계를 넘는 값은 두 가지로만 둡니다.** 도메인 타입을 1:1로 옮겨 담는 record는 만들지 않습니다.
+  - enum·값 객체 같은 **도메인 타입은 `domain/shared`에 두고 `package-info.java`에 `@NamedInterface("shared")`를 선언해 그대로 노출**합니다. (선례: `dog/domain/shared`의 `Breed`) `DomainPurityTest`가 `domain`의 스프링 의존을 막으므로 타입에 직접 `@NamedInterface`를 붙일 수 없고 package-info로만 선언합니다. 엔티티·일급 컬렉션은 영속 상태에 묶이므로 노출하지 않습니다.
+  - projection·집계·여러 애그리거트 조합처럼 **도메인 타입 하나로 표현할 수 없는 값만 provided 패키지의 `~Result` record**로 둡니다. (선례: `TopicSummary`, `VideoUploadUrlResult`)
 - **`application/provided`에는 `package-info.java`로 `@NamedInterface("provided")`를 선언합니다.** 선언하지 않으면 Modulith가 이 패키지를 모듈 내부로 취급해 다른 모듈에서의 호출이 `verify()`에서 실패합니다.
 - `shared`는 보안·설정 등 횡단 관심사만 담습니다. 모든 모듈이 `shared`를 참조할 수 있지만, `shared`는 어떤 모듈도 참조하지 않습니다.
 
