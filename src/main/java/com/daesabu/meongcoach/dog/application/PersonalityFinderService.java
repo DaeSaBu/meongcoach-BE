@@ -2,7 +2,7 @@ package com.daesabu.meongcoach.dog.application;
 
 import com.daesabu.meongcoach.dog.application.provided.PersonalityFinder;
 import com.daesabu.meongcoach.dog.application.provided.PersonalityInfo;
-import com.daesabu.meongcoach.dog.domain.Personality;
+import com.daesabu.meongcoach.dog.domain.shared.Personality;
 import java.util.Arrays;
 import java.util.List;
 import org.springframework.stereotype.Service;
