@@ -1,6 +1,7 @@
 package com.daesabu.meongcoach.dog.domain.shared;
 
 import com.daesabu.meongcoach.dog.domain.exception.InvalidBreedException;
+import lombok.Getter;
 
 /**
  * 강아지 견종.
@@ -9,6 +10,7 @@ import com.daesabu.meongcoach.dog.domain.exception.InvalidBreedException;
  * 상수 이름은 dogs.breed 컬럼에 그대로 저장되는 값이라 한번 정한 뒤에는 바꾸지 않는다.
  * 코드는 30자를 넘지 않아야 한다(dogs.breed 컬럼 길이·온보딩 요청 검증 상한).
  */
+@Getter
 public enum Breed {
 	MALTESE("말티즈"),
 	POODLE("푸들"),
@@ -47,10 +49,6 @@ public enum Breed {
 
 	Breed(String label) {
 		this.label = label;
-	}
-
-	public String getLabel() {
-		return label;
 	}
 
 	/**
