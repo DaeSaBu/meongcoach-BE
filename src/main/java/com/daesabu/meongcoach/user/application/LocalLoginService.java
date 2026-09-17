@@ -6,7 +6,6 @@ import com.daesabu.meongcoach.user.application.provided.LoginResult;
 import com.daesabu.meongcoach.user.application.required.LocalAccountRepository;
 import com.daesabu.meongcoach.user.domain.LocalAccount;
 import com.daesabu.meongcoach.user.domain.User;
-import com.daesabu.meongcoach.user.domain.UserStatus;
 import com.daesabu.meongcoach.user.domain.exception.InvalidCredentialsException;
 import com.daesabu.meongcoach.user.domain.exception.WithdrawnUserException;
 import com.daesabu.meongcoach.user.domain.vo.Email;
@@ -37,14 +36,21 @@ public class LocalLoginService implements LocalLogin {
 		if (!passwordEncoder.matches(password, account.getPasswordHash())) {
 			throw new InvalidCredentialsException();
 		}
-		// 비밀번호 대조 뒤에 확인해야 탈퇴 여부가 비밀번호를 모르는 쪽에 드러나지 않는다
+
 		User user = account.getUser();
-		if (user.getStatus() == UserStatus.WITHDRAWN) {
-			throw new WithdrawnUserException();
-		}
+		// 비밀번호 대조 뒤에 확인해야 탈퇴 여부가 비밀번호를 모르는 쪽에 드러나지 않는다
+		validateWithdrawnUser(user);
 
 		AuthToken token = authTokenIssueService.issue(user);
-		boolean needsOnboarding = user.needsOnboarding();
+
+		boolean needsOnboarding = user.isOnboarding();
+
 		return new LoginResult(token, needsOnboarding);
+	}
+
+	private static void validateWithdrawnUser(User user) {
+		if (user.isWithdrawn()) {
+			throw new WithdrawnUserException();
+		}
 	}
 }

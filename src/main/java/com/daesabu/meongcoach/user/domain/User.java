@@ -64,11 +64,15 @@ public class User extends BaseEntity {
 	}
 
 	// GUEST는 온보딩 흐름의 대상이 아니므로 "MEMBER가 아니면"이 아니라 온보딩 회원인지로 판단한다
-	public boolean needsOnboarding() {
+	public boolean isOnboarding() {
 		return this.role == UserRole.ONBOARDING_MEMBER;
 	}
 
 	public void withdraw() {
 		this.status = UserStatus.WITHDRAWN;
+	}
+
+	public boolean isWithdrawn() {
+		return status == UserStatus.WITHDRAWN;
 	}
 }

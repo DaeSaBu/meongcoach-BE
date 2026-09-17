@@ -39,10 +39,12 @@ public class SocialLoginService implements SocialLogin {
 	@Override
 	public LoginResult login(SocialProvider provider, String credential) {
 		SocialAccountLinkCommand command = getSocialAccountLinkCommand(provider, credential);
+
 		User user = socialUserRegisterService.findOrRegister(command);
 
 		AuthToken token = authTokenIssueService.issue(user);
-		boolean needsOnboarding = user.needsOnboarding();
+
+		boolean needsOnboarding = user.isOnboarding();
 
 		return new LoginResult(token, needsOnboarding);
 	}
