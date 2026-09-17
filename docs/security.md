@@ -194,13 +194,14 @@ Google Play·App Store 심사자는 소셜 계정을 만들 수 없으므로, �
 ```
 [앱] 이메일·비밀번호 입력
   → POST /api/auth/login/local  { "email": "...", "password": "..." }
-     → LocalAccountRepository.findByEmail → PasswordEncoder.matches(BCrypt) → 탈퇴 여부 확인
+     → LocalAccountRepository.findByEmail → LocalAccount.isValidPassword(PasswordMatcher, BCrypt) → 탈퇴 여부 확인
         → 우리 JWT 발급 (소셜 로그인과 동일)
   ← { accessToken, refreshToken, needsOnboarding }
 ```
 
-비밀번호는 `BCryptPasswordEncoder`(빈 정의는 `SecurityConfig`) 해시로만 저장합니다. `domain`은 Spring에 의존할 수 없어
-`LocalAccount`는 해시 문자열만 보관하고, 대조는 `application/LocalLoginService`가 합니다.
+비밀번호는 `BCryptPasswordEncoder`(빈 정의는 `SecurityConfig`) 해시로만 저장합니다. 대조 규칙은 `LocalAccount.isValidPassword`에
+있지만 `domain`은 Spring에 의존할 수 없으므로 순수 인터페이스 `user/domain/PasswordMatcher`만 두고,
+`user/adapter/security/BcryptPasswordMatcher`가 스프링 `PasswordEncoder` 빈을 감싸 구현합니다.
 
 ### 실패 응답 정책
 
