@@ -5,12 +5,12 @@ import com.daesabu.meongcoach.user.application.provided.LocalLogin;
 import com.daesabu.meongcoach.user.application.provided.LoginResult;
 import com.daesabu.meongcoach.user.application.required.LocalAccountRepository;
 import com.daesabu.meongcoach.user.domain.LocalAccount;
+import com.daesabu.meongcoach.user.domain.PasswordMatcher;
 import com.daesabu.meongcoach.user.domain.User;
 import com.daesabu.meongcoach.user.domain.exception.InvalidCredentialsException;
 import com.daesabu.meongcoach.user.domain.exception.WithdrawnUserException;
 import com.daesabu.meongcoach.user.domain.vo.Email;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,17 +25,14 @@ public class LocalLoginService implements LocalLogin {
 
 	private final LocalAccountRepository localAccountRepository;
 	private final AuthTokenIssueService authTokenIssueService;
-	private final PasswordEncoder passwordEncoder;
+	private final PasswordMatcher passwordMatcher;
 
 	// 토큰 발급이 리프레시 토큰 행을 저장하므로 클래스 기본값(readOnly)을 쓰기 트랜잭션으로 덮어쓴다
 	@Override
 	@Transactional
 	public LoginResult login(String email, String password) {
-		LocalAccount account = localAccountRepository.findByEmail(new Email(email))
-				.orElseThrow(InvalidCredentialsException::new);
-		if (!passwordEncoder.matches(password, account.getPasswordHash())) {
-			throw new InvalidCredentialsException();
-		}
+		LocalAccount account = findAccount(email);
+		validatePassword(password, account);
 
 		User user = account.getUser();
 		// 비밀번호 대조 뒤에 확인해야 탈퇴 여부가 비밀번호를 모르는 쪽에 드러나지 않는다
@@ -46,6 +43,17 @@ public class LocalLoginService implements LocalLogin {
 		boolean needsOnboarding = user.isOnboarding();
 
 		return new LoginResult(token, needsOnboarding);
+	}
+
+	private LocalAccount findAccount(String email) {
+		return localAccountRepository.findByEmail(new Email(email))
+				.orElseThrow(InvalidCredentialsException::new);
+	}
+
+	private void validatePassword(String password, LocalAccount account) {
+		if (!account.isValidPassword(password, passwordMatcher)) {
+			throw new InvalidCredentialsException();
+		}
 	}
 
 	private static void validateWithdrawnUser(User user) {
