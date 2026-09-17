@@ -46,7 +46,7 @@ class UserTest {
 	void 온보딩_회원은_온보딩이_필요하다() {
 		User user = User.registerOnboardingMember();
 
-		assertThat(user.needsOnboarding()).isTrue();
+		assertThat(user.isOnboarding()).isTrue();
 	}
 
 	@Test
@@ -54,7 +54,7 @@ class UserTest {
 		User user = User.registerOnboardingMember();
 		user.promoteToMember();
 
-		assertThat(user.needsOnboarding()).isFalse();
+		assertThat(user.isOnboarding()).isFalse();
 	}
 
 	// 인가 어휘 매핑이 잘못되면(예: MEMBER에 GUEST 어휘) 인가 규칙 전체가 어긋나므로 선언부를 검증한다
@@ -72,5 +72,13 @@ class UserTest {
 		user.withdraw();
 
 		assertThat(user.getStatus()).isEqualTo(UserStatus.WITHDRAWN);
+		assertThat(user.isWithdrawn()).isTrue();
+	}
+
+	@Test
+	void 등록_직후에는_탈퇴_상태가_아니다() {
+		User user = User.registerOnboardingMember();
+
+		assertThat(user.isWithdrawn()).isFalse();
 	}
 }
