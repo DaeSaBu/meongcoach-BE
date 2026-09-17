@@ -41,7 +41,7 @@ public class LocalAccount extends BaseEntity {
 	@AttributeOverride(name = "address", column = @Column(name = "email", nullable = false, length = 255, unique = true))
 	private Email email;
 
-	// 해싱은 application 계층 책임 — 도메인은 해시된 값만 보관한다
+	// 해싱은 시드 SQL에서, 대조는 PasswordMatcher가 맡는다 — 도메인은 해시된 값만 보관한다
 	@Column(nullable = false, length = 255)
 	private String passwordHash;
 
@@ -53,5 +53,9 @@ public class LocalAccount extends BaseEntity {
 
 	public static LocalAccount create(User user, LocalAccountCreateCommand command) {
 		return new LocalAccount(user, command);
+	}
+
+	public boolean isValidPassword(String password, PasswordMatcher matcher) {
+		return matcher.matches(password, this.passwordHash);
 	}
 }

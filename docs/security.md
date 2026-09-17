@@ -72,6 +72,11 @@ SHA-1 검증용이라 id_token의 `aud`가 되지 않습니다), 애플은 **iOS
 클라이언트가 토큰을 재발급받을 필요도 없습니다. 어차피 5번이 요청당 PK 조회를 하고 있었으므로
 추가 비용도 없습니다.
 
+온보딩 상태의 단일 원천은 `users.role`입니다. 인가뿐 아니라 로그인 응답의 `needsOnboarding`
+(`ONBOARDING_MEMBER`면 true)과 온보딩 완료 요청의 중복 판정(`MEMBER`면 409 `USER_ALREADY_ONBOARDED`)도
+같은 컬럼을 읽습니다. `user_profiles` 행 존재 여부는 판정에 쓰지 않습니다 — 두 곳에서 따로 판단하면
+승격은 됐는데 프로필이 없거나 그 반대인 계정이 생겨 화면 분기와 인가가 어긋나기 때문입니다.
+
 > 함정: 이 컨버터는 `@Component`가 아니라 `UserSecurityConfig`의 `@Bean`으로 등록합니다.
 > `Converter` 구현 컴포넌트는 `@WebMvcTest` 슬라이스의 로드 대상에 포함되어,
 > 모든 컨트롤러 슬라이스 테스트가 회원 조회 의존성을 요구하며 깨지기 때문입니다.
@@ -189,13 +194,14 @@ Google Play·App Store 심사자는 소셜 계정을 만들 수 없으므로, �
 ```
 [앱] 이메일·비밀번호 입력
   → POST /api/auth/login/local  { "email": "...", "password": "..." }
-     → LocalAccountRepository.findByEmail → PasswordEncoder.matches(BCrypt) → 탈퇴 여부 확인
+     → LocalAccountRepository.findByEmail → LocalAccount.isValidPassword(PasswordMatcher, BCrypt) → 탈퇴 여부 확인
         → 우리 JWT 발급 (소셜 로그인과 동일)
   ← { accessToken, refreshToken, needsOnboarding }
 ```
 
-비밀번호는 `BCryptPasswordEncoder`(빈 정의는 `SecurityConfig`) 해시로만 저장합니다. `domain`은 Spring에 의존할 수 없어
-`LocalAccount`는 해시 문자열만 보관하고, 대조는 `application/LocalLoginService`가 합니다.
+비밀번호는 `BCryptPasswordEncoder`(빈 정의는 `SecurityConfig`) 해시로만 저장합니다. 대조 규칙은 `LocalAccount.isValidPassword`에
+있지만 `domain`은 Spring에 의존할 수 없으므로 순수 인터페이스 `user/domain/PasswordMatcher`만 두고,
+`user/adapter/security/BcryptPasswordMatcher`가 스프링 `PasswordEncoder` 빈을 감싸 구현합니다.
 
 ### 실패 응답 정책
 
@@ -290,9 +296,10 @@ dev/prod의 DB 접속 변수(`DB_HOST` 등)는 [profiles.md](profiles.md)를 참
 - **이메일 로그인은 응답 시간을 균등화하지 않습니다.** 이메일이 없으면 BCrypt 대조 없이 바로 401이라, 응답 시간으로
   등록 여부를 추정할 수 있습니다. 로컬 계정은 심사용 몇 개뿐이라 MVP에서는 수용하며, 필요해지면 미존재 분기에서도
   더미 해시에 `matches`를 한 번 호출해 균등화합니다.
-- **역할 도입 전 가입자** — `UserRole` 도입 전 `MEMBER`로 만들어진 회원 중 프로필이 없는 계정은
-  온보딩을 마치지 않고도 전 API에 접근할 수 있습니다(`needsOnboarding`은 여전히 true).
-  온보딩을 완료하면 멱등 승격으로 일관성이 회복되므로 MVP에서는 수용합니다.
+- **프로필 없는 `MEMBER` 계정** — `UserRole` 도입 전 `MEMBER`로 만들어진 회원 중 프로필이 없는 계정은
+  온보딩 상태를 role로만 판단하므로 `needsOnboarding`이 false이고, 온보딩 완료 요청도 409로 거부되어
+  프로필을 만들 길이 없습니다. 이런 계정은 마이그레이션으로 정리하지 않았으므로 발견되면 DB에서 직접
+  `role`을 `ONBOARDING_MEMBER`로 되돌려 온보딩을 다시 밟게 합니다.
 - **최초 로그인 동시성** — 같은 신규 계정으로 동시에 두 요청이 오면 `(provider, provider_id)`
   유니크 제약 위반으로 한쪽이 500이 될 수 있습니다. 확률이 낮아 MVP에서는 두고, 필요 시
   제약 위반을 잡아 재조회하도록 보완합니다.

@@ -9,20 +9,16 @@ import com.daesabu.meongcoach.user.application.required.RefreshTokenRepository;
 import com.daesabu.meongcoach.user.application.required.SocialAccountRepository;
 import com.daesabu.meongcoach.user.application.required.SocialProfileReader;
 import com.daesabu.meongcoach.user.application.required.TokenProvider;
-import com.daesabu.meongcoach.user.application.required.UserProfileRepository;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.SocialProvider;
 import com.daesabu.meongcoach.user.domain.User;
-import com.daesabu.meongcoach.user.domain.UserProfile;
 import com.daesabu.meongcoach.user.domain.UserStatus;
 import com.daesabu.meongcoach.user.domain.command.SocialAccountLinkCommand;
-import com.daesabu.meongcoach.user.domain.command.UserProfileCreateCommand;
 import com.daesabu.meongcoach.user.domain.exception.UnsupportedSocialProviderException;
 import com.daesabu.meongcoach.user.domain.exception.WithdrawnUserException;
 import com.daesabu.meongcoach.user.domain.vo.RefreshTokenId;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,9 +37,6 @@ class SocialLoginServiceTest {
 
 	@Autowired
 	private SocialAccountRepository socialAccountRepository;
-
-	@Autowired
-	private UserProfileRepository userProfileRepository;
 
 	@Autowired
 	private RefreshTokenRepository refreshTokenRepository;
@@ -80,12 +73,11 @@ class SocialLoginServiceTest {
 	}
 
 	@Test
-	void 프로필이_있으면_온보딩이_필요하지_않다() {
+	void 정회원이면_온보딩이_필요하지_않다() {
 		service.login(SocialProvider.KAKAO, CREDENTIAL);
 		User user = userRepository.findAll().getFirst();
-		UserProfile profile = UserProfile.create(user,
-				new UserProfileCreateCommand("멍코치", null, null, "INTJ", "NONE", Set.of(), Set.of()));
-		entityManager.persistAndFlush(profile);
+		user.promoteToMember();
+		entityManager.flush();
 		entityManager.clear();
 
 		LoginResult result = service.login(SocialProvider.KAKAO, CREDENTIAL);
@@ -123,7 +115,7 @@ class SocialLoginServiceTest {
 
 	private SocialLoginService socialLoginService(SocialProfileReader reader) {
 		return new SocialLoginService(List.of(reader),
-				new SocialUserRegisterService(userRepository, socialAccountRepository, userProfileRepository),
+				new SocialUserRegisterService(userRepository, socialAccountRepository),
 				new AuthTokenIssueService(new StubTokenProvider(), refreshTokenRepository));
 	}
 

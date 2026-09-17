@@ -132,8 +132,8 @@ public class SecurityConfig {
 		return source;
 	}
 
-	// 이메일 로그인(스토어 심사용 테스트 계정)의 비밀번호 대조에 쓴다. domain은 Spring에 의존할 수 없어 해시 문자열만 보관하고,
-	// 해싱·대조는 application이 이 빈으로 수행한다
+	// 이메일 로그인(스토어 심사용 테스트 계정)의 비밀번호 대조에 쓴다. domain은 Spring에 의존할 수 없으므로
+	// user 모듈의 BcryptPasswordMatcher가 이 빈을 감싸 도메인 PasswordMatcher로 제공한다
 	@Bean
 	PasswordEncoder passwordEncoder() {
 		return new BCryptPasswordEncoder();
