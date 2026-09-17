@@ -42,7 +42,7 @@ public class SocialLoginService implements SocialLogin {
 		User user = socialUserRegisterService.findOrRegister(command);
 
 		AuthToken token = authTokenIssueService.issue(user);
-		boolean needsOnboarding = socialUserRegisterService.needsOnboarding(user.getId());
+		boolean needsOnboarding = user.needsOnboarding();
 
 		return new LoginResult(token, needsOnboarding);
 	}

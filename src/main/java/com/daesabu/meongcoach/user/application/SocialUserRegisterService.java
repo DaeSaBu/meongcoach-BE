@@ -1,7 +1,6 @@
 package com.daesabu.meongcoach.user.application;
 
 import com.daesabu.meongcoach.user.application.required.SocialAccountRepository;
-import com.daesabu.meongcoach.user.application.required.UserProfileRepository;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.SocialAccount;
 import com.daesabu.meongcoach.user.domain.User;
@@ -23,7 +22,6 @@ public class SocialUserRegisterService {
 
 	private final UserRepository userRepository;
 	private final SocialAccountRepository socialAccountRepository;
-	private final UserProfileRepository userProfileRepository;
 
 	/**
 	 * User는 연관관계가 없는 엔티티라 트랜잭션 밖에서 읽어도 지연 로딩이 일어나지 않는다.
@@ -34,12 +32,6 @@ public class SocialUserRegisterService {
 			throw new WithdrawnUserException();
 		}
 		return user;
-	}
-
-	// 온보딩 완료 여부는 별도 플래그 없이 프로필 행 존재 여부로 판단한다
-	@Transactional(readOnly = true)
-	public boolean needsOnboarding(Long userId) {
-		return !userProfileRepository.existsById(userId);
 	}
 
 	// 회원 생성과 소셜 계정 연동은 같은 트랜잭션에서 일어나야 한다

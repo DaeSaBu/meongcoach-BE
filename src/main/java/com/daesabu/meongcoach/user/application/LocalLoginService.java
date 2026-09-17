@@ -4,7 +4,6 @@ import com.daesabu.meongcoach.user.application.provided.AuthToken;
 import com.daesabu.meongcoach.user.application.provided.LocalLogin;
 import com.daesabu.meongcoach.user.application.provided.LoginResult;
 import com.daesabu.meongcoach.user.application.required.LocalAccountRepository;
-import com.daesabu.meongcoach.user.application.required.UserProfileRepository;
 import com.daesabu.meongcoach.user.domain.LocalAccount;
 import com.daesabu.meongcoach.user.domain.User;
 import com.daesabu.meongcoach.user.domain.UserStatus;
@@ -26,7 +25,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class LocalLoginService implements LocalLogin {
 
 	private final LocalAccountRepository localAccountRepository;
-	private final UserProfileRepository userProfileRepository;
 	private final AuthTokenIssueService authTokenIssueService;
 	private final PasswordEncoder passwordEncoder;
 
@@ -46,7 +44,7 @@ public class LocalLoginService implements LocalLogin {
 		}
 
 		AuthToken token = authTokenIssueService.issue(user);
-		boolean needsOnboarding = !userProfileRepository.existsById(user.getId());
+		boolean needsOnboarding = user.needsOnboarding();
 		return new LoginResult(token, needsOnboarding);
 	}
 }

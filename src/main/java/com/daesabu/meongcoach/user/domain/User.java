@@ -1,6 +1,7 @@
 package com.daesabu.meongcoach.user.domain;
 
 import com.daesabu.meongcoach.shared.domain.BaseEntity;
+import com.daesabu.meongcoach.user.domain.exception.AlreadyOnboardedException;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -53,9 +54,18 @@ public class User extends BaseEntity {
 
 	/**
 	 * 온보딩 완료 시 호출한다. 프로필 생성과 같은 트랜잭션에서 불러야 role과 프로필이 함께 커밋된다.
+	 * 온보딩 완료 여부의 원천은 role 하나이므로, 이미 MEMBER인 회원의 재승격은 온보딩 중복으로 거부한다.
 	 */
 	public void promoteToMember() {
+		if (this.role == UserRole.MEMBER) {
+			throw new AlreadyOnboardedException();
+		}
 		this.role = UserRole.MEMBER;
+	}
+
+	// GUEST는 온보딩 흐름의 대상이 아니므로 "MEMBER가 아니면"이 아니라 온보딩 회원인지로 판단한다
+	public boolean needsOnboarding() {
+		return this.role == UserRole.ONBOARDING_MEMBER;
 	}
 
 	public void withdraw() {
