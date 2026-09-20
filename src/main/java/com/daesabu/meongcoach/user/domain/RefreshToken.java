@@ -1,7 +1,6 @@
 package com.daesabu.meongcoach.user.domain;
 
 import com.daesabu.meongcoach.shared.domain.BaseEntity;
-import jakarta.persistence.AttributeOverride;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
@@ -41,7 +40,6 @@ public class RefreshToken extends BaseEntity {
 
 	// JWT jti. 토큰 원문은 저장하지 않는다
 	@Embedded
-	@AttributeOverride(name = "value", column = @Column(name = "token_id", nullable = false, length = 36))
 	private RefreshTokenId tokenId;
 
 	@Column(nullable = false)

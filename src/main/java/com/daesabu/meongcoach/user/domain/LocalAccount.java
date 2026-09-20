@@ -4,7 +4,6 @@ import com.daesabu.meongcoach.shared.domain.BaseEntity;
 import com.daesabu.meongcoach.user.domain.command.LocalAccountCreateCommand;
 import com.daesabu.meongcoach.user.domain.shared.Email;
 
-import jakarta.persistence.AttributeOverride;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
@@ -15,6 +14,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -25,7 +25,10 @@ import lombok.NoArgsConstructor;
  */
 @Getter
 @Entity
-@Table(name = "local_accounts")
+@Table(
+		name = "local_accounts",
+		uniqueConstraints = @UniqueConstraint(columnNames = "email")
+)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class LocalAccount extends BaseEntity {
 
@@ -38,7 +41,6 @@ public class LocalAccount extends BaseEntity {
 	private User user;
 
 	@Embedded
-	@AttributeOverride(name = "address", column = @Column(name = "email", nullable = false, length = 255, unique = true))
 	private Email email;
 
 	// 해싱은 시드 SQL에서, 대조는 PasswordMatcher가 맡는다 — 도메인은 해시된 값만 보관한다
