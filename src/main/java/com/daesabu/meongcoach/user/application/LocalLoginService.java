@@ -30,7 +30,7 @@ public class LocalLoginService implements LocalLogin {
 	// 토큰 발급이 리프레시 토큰 행을 저장하므로 클래스 기본값(readOnly)을 쓰기 트랜잭션으로 덮어쓴다
 	@Override
 	@Transactional
-	public LoginResult login(String email, String password) {
+	public LoginResult login(Email email, String password) {
 		LocalAccount account = findAccount(email);
 		validatePassword(password, account);
 
@@ -45,8 +45,8 @@ public class LocalLoginService implements LocalLogin {
 		return new LoginResult(token, needsOnboarding);
 	}
 
-	private LocalAccount findAccount(String email) {
-		return localAccountRepository.findByEmail(new Email(email))
+	private LocalAccount findAccount(Email email) {
+		return localAccountRepository.findByEmail(email)
 				.orElseThrow(InvalidCredentialsException::new);
 	}
 

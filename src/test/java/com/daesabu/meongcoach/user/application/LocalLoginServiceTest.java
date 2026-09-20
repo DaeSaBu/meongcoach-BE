@@ -14,7 +14,6 @@ import com.daesabu.meongcoach.user.domain.RefreshTokenId;
 import com.daesabu.meongcoach.user.domain.User;
 import com.daesabu.meongcoach.user.domain.command.LocalAccountCreateCommand;
 import com.daesabu.meongcoach.user.domain.exception.InvalidCredentialsException;
-import com.daesabu.meongcoach.user.domain.exception.InvalidEmailException;
 import com.daesabu.meongcoach.user.domain.exception.WithdrawnUserException;
 import com.daesabu.meongcoach.user.domain.shared.Email;
 import java.time.LocalDateTime;
@@ -29,7 +28,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @DataJpaTest
 class LocalLoginServiceTest {
 
-	private static final String EMAIL = "review@meongcoach.com";
+	private static final Email EMAIL = new Email("review@meongcoach.com");
 	private static final String PASSWORD = "meongcoach-review";
 	private static final LocalDateTime EXPIRES_AT = LocalDateTime.of(2026, 9, 16, 12, 0);
 
@@ -59,7 +58,7 @@ class LocalLoginServiceTest {
 		user = userRepository.save(User.registerOnboardingMember());
 		String passwordHash = PASSWORD_ENCODER.encode(PASSWORD);
 		localAccountRepository.save(
-				LocalAccount.create(user, new LocalAccountCreateCommand(new Email(EMAIL), passwordHash)));
+				LocalAccount.create(user, new LocalAccountCreateCommand(EMAIL, passwordHash)));
 		entityManager.flush();
 		entityManager.clear();
 	}
@@ -94,7 +93,7 @@ class LocalLoginServiceTest {
 
 	@Test
 	void 등록되지_않은_이메일이면_자격증명_오류를_던진다() {
-		assertThatThrownBy(() -> service.login("nobody@meongcoach.com", PASSWORD))
+		assertThatThrownBy(() -> service.login(new Email("nobody@meongcoach.com"), PASSWORD))
 				.isInstanceOf(InvalidCredentialsException.class);
 	}
 
@@ -102,12 +101,6 @@ class LocalLoginServiceTest {
 	void 비밀번호가_틀리면_자격증명_오류를_던진다() {
 		assertThatThrownBy(() -> service.login(EMAIL, "wrong-password"))
 				.isInstanceOf(InvalidCredentialsException.class);
-	}
-
-	@Test
-	void 이메일_형식이_올바르지_않으면_InvalidEmailException을_던진다() {
-		assertThatThrownBy(() -> service.login("not-an-email", PASSWORD))
-				.isInstanceOf(InvalidEmailException.class);
 	}
 
 	@Test

@@ -164,6 +164,15 @@ class AuthControllerTest {
 	}
 
 	@Test
+	void 이메일_형식이_올바르지_않으면_400을_반환한다() throws Exception {
+		mockMvc.perform(post("/api/auth/login/local")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(localLoginBody("not-an-email", VALID_PASSWORD)))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("USER_INVALID_EMAIL"));
+	}
+
+	@Test
 	void 이메일이_비어_있으면_검증에_실패한다() throws Exception {
 		mockMvc.perform(post("/api/auth/login/local")
 						.contentType(MediaType.APPLICATION_JSON)
@@ -281,7 +290,7 @@ class AuthControllerTest {
 		@Bean
 		LocalLogin localLogin() {
 			return (email, password) -> {
-				if (!VALID_EMAIL.equals(email) || !VALID_PASSWORD.equals(password)) {
+				if (!VALID_EMAIL.equals(email.address()) || !VALID_PASSWORD.equals(password)) {
 					throw new InvalidCredentialsException();
 				}
 				return new LoginResult(new AuthToken("access-token", "refresh-token", REFRESH_TOKEN_ID, EXPIRES_AT), true);
