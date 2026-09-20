@@ -9,6 +9,7 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 import com.daesabu.meongcoach.user.domain.exception.InvalidSocialTokenException;
 import com.daesabu.meongcoach.user.domain.exception.SocialProviderUnavailableException;
 import com.daesabu.meongcoach.user.domain.exception.SocialTokenAppMismatchException;
+import com.daesabu.meongcoach.user.domain.exception.UserErrorCode;
 import com.nimbusds.jwt.JWTClaimsSet;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -17,7 +18,9 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.oauth2.jwt.BadJwtException;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.test.web.client.ExpectedCount;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.test.web.client.ResponseCreator;
@@ -89,7 +92,9 @@ class OidcIdTokenVerifierTest {
 		String idToken = signer.sign(claims().subject(null).build());
 
 		assertThatThrownBy(() -> verifier.verify(idToken))
-				.isInstanceOf(InvalidSocialTokenException.class);
+				.isInstanceOf(InvalidSocialTokenException.class)
+				.hasMessage(UserErrorCode.USER_INVALID_SOCIAL_TOKEN.message())
+				.hasNoCause();
 	}
 
 	@Test
@@ -97,7 +102,9 @@ class OidcIdTokenVerifierTest {
 		String idToken = signer.signByAttacker(claims().build());
 
 		assertThatThrownBy(() -> verifier.verify(idToken))
-				.isInstanceOf(InvalidSocialTokenException.class);
+				.isInstanceOf(InvalidSocialTokenException.class)
+				.hasMessage(UserErrorCode.USER_INVALID_SOCIAL_TOKEN.message())
+				.hasCauseInstanceOf(BadJwtException.class);
 	}
 
 	@Test
@@ -105,7 +112,9 @@ class OidcIdTokenVerifierTest {
 		String idToken = signer.sign(claims().issuer("https://evil.example.com").build());
 
 		assertThatThrownBy(() -> verifier.verify(idToken))
-				.isInstanceOf(InvalidSocialTokenException.class);
+				.isInstanceOf(InvalidSocialTokenException.class)
+				.hasMessage(UserErrorCode.USER_INVALID_SOCIAL_TOKEN.message())
+				.hasCauseInstanceOf(BadJwtException.class);
 	}
 
 	@Test
@@ -117,13 +126,17 @@ class OidcIdTokenVerifierTest {
 				.build());
 
 		assertThatThrownBy(() -> verifier.verify(idToken))
-				.isInstanceOf(InvalidSocialTokenException.class);
+				.isInstanceOf(InvalidSocialTokenException.class)
+				.hasMessage(UserErrorCode.USER_INVALID_SOCIAL_TOKEN.message())
+				.hasCauseInstanceOf(BadJwtException.class);
 	}
 
 	@Test
 	void JWT_형식이_아니면_유효하지_않은_토큰으로_처리한다() {
 		assertThatThrownBy(() -> verifier.verify("not-a-jwt"))
-				.isInstanceOf(InvalidSocialTokenException.class);
+				.isInstanceOf(InvalidSocialTokenException.class)
+				.hasMessage(UserErrorCode.USER_INVALID_SOCIAL_TOKEN.message())
+				.hasCauseInstanceOf(BadJwtException.class);
 	}
 
 	@Test
@@ -132,7 +145,9 @@ class OidcIdTokenVerifierTest {
 		String idToken = signer.sign(claims().build());
 
 		assertThatThrownBy(() -> verifier.verify(idToken))
-				.isInstanceOf(SocialProviderUnavailableException.class);
+				.isInstanceOf(SocialProviderUnavailableException.class)
+				.hasMessage(UserErrorCode.USER_SOCIAL_PROVIDER_UNAVAILABLE.message())
+				.hasCauseInstanceOf(JwtException.class);
 	}
 
 	private OidcIdTokenVerifier verifierServing(ExpectedCount count, ResponseCreator response) {
