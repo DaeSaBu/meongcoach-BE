@@ -38,7 +38,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 	private static final String UNAUTHORIZED_MESSAGE = "인증이 필요합니다.";
 	private static final String FORBIDDEN_MESSAGE = "접근 권한이 없습니다.";
 	// 역할 어휘는 AuthorityRole이 단일 원천이다 (user 모듈 UserRole·SecurityConfig가 같은 어휘를 쓴다)
-	private static final String ROLE_ONBOARDING_MEMBER = AuthorityRole.ONBOARDING_MEMBER.authority();
+	private static final String ROLE_ONBOARDING_USER = AuthorityRole.ONBOARDING_USER.authority();
 	private static final String ONBOARDING_NOT_COMPLETED_CODE = "ONBOARDING_NOT_COMPLETED";
 	private static final String ONBOARDING_NOT_COMPLETED_MESSAGE = "온보딩을 완료해야 이용할 수 있는 기능입니다.";
 
@@ -68,7 +68,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 	ProblemDetail handleAccessDeniedException(AccessDeniedException e) {
 		// 필터 체인이 던진 예외는 SecurityExceptionTranslator가 같은 스레드에서 되돌려 보내므로
 		// 인증을 통과한 요청이라면 SecurityContext가 아직 살아 있다
-		if (hasAuthority(ROLE_ONBOARDING_MEMBER)) {
+		if (hasAuthority(ROLE_ONBOARDING_USER)) {
 			log.warn("온보딩 미완료 회원의 접근: message={}", e.getMessage());
 			return problemDetail(HttpStatus.FORBIDDEN,
 					ONBOARDING_NOT_COMPLETED_CODE, ONBOARDING_NOT_COMPLETED_MESSAGE);

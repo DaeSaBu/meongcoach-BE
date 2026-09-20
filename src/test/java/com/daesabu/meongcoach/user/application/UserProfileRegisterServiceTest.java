@@ -45,7 +45,7 @@ class UserProfileRegisterServiceTest {
 	@BeforeEach
 	void setUp() {
 		service = new UserProfileRegisterService(userRepository, userProfileRepository);
-		userId = userRepository.save(User.registerOnboardingMember()).getId();
+		userId = userRepository.save(User.registerOnboardingUser()).getId();
 	}
 
 	@Test
@@ -113,17 +113,17 @@ class UserProfileRegisterServiceTest {
 		entityManager.flush();
 		entityManager.clear();
 		User user = userRepository.findById(userId).orElseThrow();
-		assertThat(user.getRole()).isEqualTo(UserRole.MEMBER);
+		assertThat(user.getRole()).isEqualTo(UserRole.USER);
 	}
 
-	// 프로필 행이 없어도 role이 MEMBER면 온보딩 완료로 본다 — 온보딩 상태의 원천은 role 하나다
+	// 프로필 행이 없어도 role이 USER면 온보딩 완료로 본다 — 온보딩 상태의 원천은 role 하나다
 	@Test
 	void 이미_정회원이면_등록에_실패한다() {
-		User member = User.registerOnboardingMember();
-		member.promoteToMember();
-		Long memberId = userRepository.save(member).getId();
+		User promoted = User.registerOnboardingUser();
+		promoted.promoteToUser();
+		Long promotedId = userRepository.save(promoted).getId();
 
-		assertThatThrownBy(() -> service.register(memberId,
+		assertThatThrownBy(() -> service.register(promotedId,
 				command("멍멍이집사", null, VALID_MBTI, VALID_GENDER, null)))
 				.isInstanceOf(AlreadyOnboardedException.class);
 	}

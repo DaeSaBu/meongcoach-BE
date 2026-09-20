@@ -10,7 +10,7 @@ class LocalAccountTest {
 
 	@Test
 	void 생성하면_자격_증명이_담긴_계정이_초기화된다() {
-		User user = User.registerOnboardingMember();
+		User user = User.registerOnboardingUser();
 		Email email = new Email("test1@meongcoach.com");
 
 		LocalAccount account = LocalAccount.create(user, new LocalAccountCreateCommand(email, "hashed-password"));
@@ -38,7 +38,7 @@ class LocalAccountTest {
 	private static final PasswordMatcher HASH_PREFIX_MATCHER = (raw, hash) -> hash.equals("hashed-" + raw);
 
 	private static LocalAccount account(String passwordHash) {
-		User user = User.registerOnboardingMember();
+		User user = User.registerOnboardingUser();
 		Email email = new Email("test1@meongcoach.com");
 		return LocalAccount.create(user, new LocalAccountCreateCommand(email, passwordHash));
 	}

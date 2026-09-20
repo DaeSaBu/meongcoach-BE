@@ -27,8 +27,8 @@ public class UserProfileRegisterService implements UserProfileRegister {
 	public void register(Long userId, UserProfileCreateCommand command) {
 		User user = userRepository.findById(userId)
 				.orElseThrow(() -> new UserNotFoundException(userId));
-		// 이미 MEMBER면 여기서 AlreadyOnboardedException. 인가가 요청마다 DB의 role을 읽으므로 승격은 토큰 재발급 없이 즉시 반영된다
-		user.promoteToMember();
+		// 이미 USER면 여기서 AlreadyOnboardedException. 인가가 요청마다 DB의 role을 읽으므로 승격은 토큰 재발급 없이 즉시 반영된다
+		user.promoteToUser();
 
 		userProfileRepository.save(UserProfile.create(user, command));
 	}

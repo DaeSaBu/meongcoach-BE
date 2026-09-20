@@ -92,10 +92,10 @@ public class SecurityConfig {
 					// 먼저 매칭된 규칙이 이기므로 온보딩 허용 경로를 anyRequest보다 앞에 둔다.
 					// 역할 어휘는 AuthorityRole이 단일 원천이다 (user 모듈 UserRole이 같은 어휘로 매핑된다)
 					auth.requestMatchers(ONBOARDING_ALLOWED_PATHS)
-							.hasAnyRole(AuthorityRole.MEMBER.name(), AuthorityRole.ONBOARDING_MEMBER.name());
+							.hasAnyRole(AuthorityRole.USER.name(), AuthorityRole.ONBOARDING_USER.name());
 					auth.requestMatchers(HttpMethod.DELETE, WITHDRAW_PATH)
-							.hasAnyRole(AuthorityRole.MEMBER.name(), AuthorityRole.ONBOARDING_MEMBER.name());
-					auth.anyRequest().hasRole(AuthorityRole.MEMBER.name());
+							.hasAnyRole(AuthorityRole.USER.name(), AuthorityRole.ONBOARDING_USER.name());
+					auth.anyRequest().hasRole(AuthorityRole.USER.name());
 				})
 				.oauth2ResourceServer(oauth2 -> oauth2
 						.jwt(jwt -> jwt.decoder(accessTokenDecoder)
