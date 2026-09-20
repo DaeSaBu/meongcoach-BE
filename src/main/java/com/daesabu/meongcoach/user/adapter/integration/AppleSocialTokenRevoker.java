@@ -104,12 +104,12 @@ public class AppleSocialTokenRevoker implements SocialTokenRevoker {
 		} catch (RestClientResponseException e) {
 			// 4xx는 코드 만료·재사용·다른 앱 발급 등 요청 자체가 거부된 것이라 새 코드로 다시 시도해야 한다
 			if (e.getStatusCode().is4xxClientError()) {
-				throw new InvalidAppleAuthorizationCodeException();
+				throw new InvalidAppleAuthorizationCodeException(e);
 			}
-			throw new SocialProviderUnavailableException();
+			throw new SocialProviderUnavailableException(e);
 		} catch (RestClientException e) {
 			// 연결·타임아웃 실패다. 코드 무효와 구분해야 클라이언트가 같은 코드로 재시도할 수 있다
-			throw new SocialProviderUnavailableException();
+			throw new SocialProviderUnavailableException(e);
 		}
 	}
 
