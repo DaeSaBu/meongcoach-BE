@@ -47,7 +47,7 @@ Content-Type은 항상 `application/problem+json`입니다.
 | `HttpRequestMethodNotSupportedException` | 405 | `METHOD_NOT_ALLOWED` | 미지원 HTTP 메서드 |
 | `HttpMediaTypeNotSupportedException` | 415 | `UNSUPPORTED_MEDIA_TYPE` | 미지원 Content-Type |
 | `AuthenticationException` | 401 | `UNAUTHORIZED` | 인증 실패. 원인을 detail에 노출하지 않음 |
-| `AccessDeniedException` | 403 | `FORBIDDEN` 또는 `ONBOARDING_NOT_COMPLETED` | 권한 부족. 요청 주체가 `ROLE_ONBOARDING_MEMBER`면 온보딩 화면 분기용 코드로 구분 |
+| `AccessDeniedException` | 403 | `FORBIDDEN` 또는 `ONBOARDING_NOT_COMPLETED` | 권한 부족. 요청 주체가 `ROLE_ONBOARDING_USER`면 온보딩 화면 분기용 코드로 구분 |
 | 그 외 모든 `Exception` (fallback) | 500 | `INTERNAL_SERVER_ERROR` | detail에 내부 정보를 노출하지 않음 |
 
 프레임워크 예외는 `ResponseEntityExceptionHandler` 상속으로 처리되므로 위 표에 없는 Spring MVC 예외도 자동으로 Problem Details 형식이 됩니다.
