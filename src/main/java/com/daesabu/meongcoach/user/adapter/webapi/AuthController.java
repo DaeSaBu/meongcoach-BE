@@ -45,7 +45,7 @@ public class AuthController {
 	// 스토어 심사용 테스트 계정 전용. 가입 API가 없으므로 시드된 계정만 로그인할 수 있다
 	@PostMapping("/login/local")
 	public LoginResponse loginLocal(@Valid @RequestBody LocalLoginRequest request) {
-		Email email = request.toEmail();
+		Email email = new Email(request.email());
 		LoginResult result = localLogin.login(email, request.password());
 		return LoginResponse.from(result);
 	}
