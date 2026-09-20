@@ -47,7 +47,7 @@ public class SocialUserRegisterService {
 	}
 
 	private User register(SocialAccountLinkCommand command) {
-		User user = userRepository.save(User.registerOnboardingUser());
+		User user = userRepository.save(User.registerUser());
 		socialAccountRepository.save(SocialAccount.link(user, command));
 		return user;
 	}

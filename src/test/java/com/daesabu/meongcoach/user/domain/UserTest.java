@@ -10,7 +10,7 @@ class UserTest {
 
 	@Test
 	void 온보딩_회원으로_등록하면_ACTIVE_상태의_ONBOARDING_USER가_생성된다() {
-		User user = User.registerOnboardingUser();
+		User user = User.registerUser();
 
 		assertThat(user.getRole()).isEqualTo(UserRole.ONBOARDING_USER);
 		assertThat(user.getStatus()).isEqualTo(UserStatus.ACTIVE);
@@ -18,7 +18,7 @@ class UserTest {
 
 	@Test
 	void 온보딩_회원을_승격하면_USER가_된다() {
-		User user = User.registerOnboardingUser();
+		User user = User.registerUser();
 
 		user.promoteToUser();
 
@@ -27,7 +27,7 @@ class UserTest {
 
 	@Test
 	void 이미_USER면_승격에_실패한다() {
-		User user = User.registerOnboardingUser();
+		User user = User.registerUser();
 		user.promoteToUser();
 
 		assertThatThrownBy(user::promoteToUser)
@@ -36,14 +36,14 @@ class UserTest {
 
 	@Test
 	void 온보딩_회원은_온보딩이_필요하다() {
-		User user = User.registerOnboardingUser();
+		User user = User.registerUser();
 
 		assertThat(user.isOnboarding()).isTrue();
 	}
 
 	@Test
 	void 정회원은_온보딩이_필요하지_않다() {
-		User user = User.registerOnboardingUser();
+		User user = User.registerUser();
 		user.promoteToUser();
 
 		assertThat(user.isOnboarding()).isFalse();
@@ -59,7 +59,7 @@ class UserTest {
 
 	@Test
 	void 탈퇴하면_상태가_WITHDRAWN으로_변경된다() {
-		User user = User.registerOnboardingUser();
+		User user = User.registerUser();
 
 		user.withdraw();
 
@@ -69,7 +69,7 @@ class UserTest {
 
 	@Test
 	void 등록_직후에는_탈퇴_상태가_아니다() {
-		User user = User.registerOnboardingUser();
+		User user = User.registerUser();
 
 		assertThat(user.isWithdrawn()).isFalse();
 	}

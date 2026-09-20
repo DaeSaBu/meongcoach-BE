@@ -55,7 +55,7 @@ class LocalLoginServiceTest {
 	void setUp() {
 		service = new LocalLoginService(localAccountRepository,
 				new AuthTokenIssueService(new StubTokenProvider(), refreshTokenRepository), PASSWORD_ENCODER::matches);
-		user = userRepository.save(User.registerOnboardingUser());
+		user = userRepository.save(User.registerUser());
 		String passwordHash = PASSWORD_ENCODER.encode(PASSWORD);
 		localAccountRepository.save(
 				LocalAccount.create(user, new LocalAccountCreateCommand(EMAIL, passwordHash)));

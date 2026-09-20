@@ -49,7 +49,7 @@ class TokenRefreshServiceTest {
 		StubTokenProvider tokenProvider = new StubTokenProvider();
 		service = new TokenRefreshService(tokenProvider, refreshTokenRepository, registeredUserCheckService,
 				new AuthTokenIssueService(tokenProvider, refreshTokenRepository));
-		user = userRepository.save(User.registerOnboardingUser());
+		user = userRepository.save(User.registerUser());
 	}
 
 	@Test

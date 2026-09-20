@@ -10,7 +10,7 @@ class SocialAccountTest {
 
 	@Test
 	void 연동하면_제공자_정보가_담긴_계정이_생성된다() {
-		User user = User.registerOnboardingUser();
+		User user = User.registerUser();
 
 		SocialAccount account = SocialAccount.link(user,
 				new SocialAccountLinkCommand(SocialProvider.KAKAO, "kakao-123", new Email("test@kakao.com")));

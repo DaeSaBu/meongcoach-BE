@@ -33,21 +33,15 @@ public class User extends BaseEntity {
 	@Column(nullable = false, length = 20)
 	private UserStatus status;
 
-	/**
-	 * 회원 가입은 첫 소셜 로그인 또는 테스트 계정 시드에서만 일어난다.
-	 * 반드시 자격증명(SocialAccount/LocalAccount) 생성과 같은 트랜잭션에서 호출해야 한다.
-	 */
-	public static User registerOnboardingUser() {
+	public static User registerUser() {
 		User user = new User();
+
 		user.role = UserRole.ONBOARDING_USER;
 		user.status = UserStatus.ACTIVE;
+
 		return user;
 	}
 
-	/**
-	 * 온보딩 완료 시 호출한다. 프로필 생성과 같은 트랜잭션에서 불러야 role과 프로필이 함께 커밋된다.
-	 * 온보딩 완료 여부의 원천은 role 하나이므로, 이미 USER인 회원의 재승격은 온보딩 중복으로 거부한다.
-	 */
 	public void promoteToUser() {
 		if (this.role == UserRole.USER) {
 			throw new AlreadyOnboardedException();

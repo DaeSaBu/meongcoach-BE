@@ -55,7 +55,7 @@ class OnboardingCompleteServiceTest {
 				new UserProfileRegisterService(userRepository, userProfileRepository),
 				new DogRegisterService(dogRepository),
 				prefixValidator());
-		userId = userRepository.save(User.registerOnboardingUser()).getId();
+		userId = userRepository.save(User.registerUser()).getId();
 	}
 
 	// 미설정(null·빈 문자열)은 통과하고

@@ -109,7 +109,7 @@ class UserWithdrawServiceTest {
 
 	@Test
 	void 탈퇴하면_로컬_계정_행이_삭제된다() {
-		User user = userRepository.save(User.registerOnboardingUser());
+		User user = userRepository.save(User.registerUser());
 		Email email = new Email("review@meongcoach.com");
 		localAccountRepository.save(LocalAccount.create(user, new LocalAccountCreateCommand(email, "hashed")));
 		flushAndClear();
@@ -209,7 +209,7 @@ class UserWithdrawServiceTest {
 
 	@Test
 	void revoker가_없는_제공자_계정만_있는_회원은_인가_코드가_있어도_revoke하지_않고_탈퇴한다() {
-		User user = userRepository.save(User.registerOnboardingUser());
+		User user = userRepository.save(User.registerUser());
 		socialAccountRepository.save(SocialAccount.link(user, KAKAO_ACCOUNT));
 		flushAndClear();
 
@@ -221,7 +221,7 @@ class UserWithdrawServiceTest {
 	}
 
 	private User persistSocialUser() {
-		User user = userRepository.save(User.registerOnboardingUser());
+		User user = userRepository.save(User.registerUser());
 		socialAccountRepository.save(SocialAccount.link(user, APPLE_ACCOUNT));
 		flushAndClear();
 		return user;

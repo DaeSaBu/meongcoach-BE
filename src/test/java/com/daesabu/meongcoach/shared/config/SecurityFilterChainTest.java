@@ -57,12 +57,12 @@ class SecurityFilterChainTest {
 	@BeforeEach
 	void setUp() {
 		userId = userRepository.save(promotedUser()).getId();
-		onboardingUserId = userRepository.save(User.registerOnboardingUser()).getId();
+		onboardingUserId = userRepository.save(User.registerUser()).getId();
 	}
 
 	// 정회원은 프로덕션과 동일하게 온보딩 회원 승격 경로로 만든다
 	private User promotedUser() {
-		User user = User.registerOnboardingUser();
+		User user = User.registerUser();
 		user.promoteToUser();
 		return user;
 	}
