@@ -43,4 +43,20 @@ class EmailTest {
 		assertThatThrownBy(() -> new Email(longAddress))
 				.isInstanceOf(InvalidEmailException.class);
 	}
+
+	@Test
+	void ofNullable은_주소가_null이면_null을_반환한다() {
+		assertThat(Email.ofNullable(null)).isNull();
+	}
+
+	@Test
+	void ofNullable은_주소가_있으면_Email을_생성한다() {
+		assertThat(Email.ofNullable("test@kakao.com")).isEqualTo(new Email("test@kakao.com"));
+	}
+
+	@Test
+	void ofNullable도_주소_형식이_잘못되면_생성에_실패한다() {
+		assertThatThrownBy(() -> Email.ofNullable("invalid"))
+				.isInstanceOf(InvalidEmailException.class);
+	}
 }
