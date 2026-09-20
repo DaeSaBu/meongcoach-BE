@@ -8,8 +8,7 @@ package com.daesabu.meongcoach.shared.security;
  */
 public enum AuthorityRole {
 	MEMBER,
-	ONBOARDING_MEMBER,
-	GUEST;
+	ONBOARDING_MEMBER;
 
 	private static final String AUTHORITY_PREFIX = "ROLE_";
 

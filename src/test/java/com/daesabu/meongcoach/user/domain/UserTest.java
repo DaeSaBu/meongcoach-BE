@@ -17,14 +17,6 @@ class UserTest {
 	}
 
 	@Test
-	void 게스트로_등록하면_ACTIVE_상태의_GUEST가_생성된다() {
-		User user = User.registerGuest();
-
-		assertThat(user.getRole()).isEqualTo(UserRole.GUEST);
-		assertThat(user.getStatus()).isEqualTo(UserStatus.ACTIVE);
-	}
-
-	@Test
 	void 온보딩_회원을_승격하면_MEMBER가_된다() {
 		User user = User.registerOnboardingMember();
 
@@ -57,7 +49,7 @@ class UserTest {
 		assertThat(user.isOnboarding()).isFalse();
 	}
 
-	// 인가 어휘 매핑이 잘못되면(예: MEMBER에 GUEST 어휘) 인가 규칙 전체가 어긋나므로 선언부를 검증한다
+	// 인가 어휘 매핑이 잘못되면(예: MEMBER에 ONBOARDING_MEMBER 어휘) 인가 규칙 전체가 어긋나므로 선언부를 검증한다
 	@Test
 	void 모든_역할은_같은_이름의_인가_어휘로_매핑된다() {
 		for (UserRole role : UserRole.values()) {

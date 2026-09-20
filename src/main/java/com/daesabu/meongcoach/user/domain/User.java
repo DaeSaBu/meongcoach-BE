@@ -38,16 +38,8 @@ public class User extends BaseEntity {
 	 * 반드시 자격증명(SocialAccount/LocalAccount) 생성과 같은 트랜잭션에서 호출해야 한다.
 	 */
 	public static User registerOnboardingMember() {
-		return create(UserRole.ONBOARDING_MEMBER);
-	}
-
-	public static User registerGuest() {
-		return create(UserRole.GUEST);
-	}
-
-	private static User create(UserRole role) {
 		User user = new User();
-		user.role = role;
+		user.role = UserRole.ONBOARDING_MEMBER;
 		user.status = UserStatus.ACTIVE;
 		return user;
 	}
@@ -63,7 +55,6 @@ public class User extends BaseEntity {
 		this.role = UserRole.MEMBER;
 	}
 
-	// GUEST는 온보딩 흐름의 대상이 아니므로 "MEMBER가 아니면"이 아니라 온보딩 회원인지로 판단한다
 	public boolean isOnboarding() {
 		return this.role == UserRole.ONBOARDING_MEMBER;
 	}
