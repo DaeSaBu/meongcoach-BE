@@ -14,6 +14,7 @@ import com.daesabu.meongcoach.user.domain.SocialProvider;
 import com.daesabu.meongcoach.user.domain.exception.AppleAuthorizationCodeRequiredException;
 import com.daesabu.meongcoach.user.domain.exception.InvalidAppleAuthorizationCodeException;
 import com.daesabu.meongcoach.user.domain.exception.SocialProviderUnavailableException;
+import com.daesabu.meongcoach.user.domain.exception.UserErrorCode;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.crypto.ECDSAVerifier;
 import com.nimbusds.jwt.JWTClaimsSet;
@@ -42,7 +43,9 @@ import org.springframework.http.MediaType;
 import org.springframework.mock.http.client.MockClientHttpRequest;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.test.web.client.RequestMatcher;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientResponseException;
 
 /**
  * HTTP 호출은 MockRestServiceServer로 가로채고, Apple 문서가 요구하는 두 요청(/auth/token → /auth/revoke)의
@@ -148,7 +151,9 @@ class AppleSocialTokenRevokerTest {
 				.andRespond(withBadRequest().body("{\"error\":\"invalid_grant\"}").contentType(MediaType.APPLICATION_JSON));
 
 		assertThatThrownBy(() -> revoker.revoke(AUTHORIZATION_CODE))
-				.isInstanceOf(InvalidAppleAuthorizationCodeException.class);
+				.isInstanceOf(InvalidAppleAuthorizationCodeException.class)
+				.hasMessage(UserErrorCode.USER_INVALID_APPLE_AUTHORIZATION_CODE.message())
+				.hasCauseInstanceOf(RestClientResponseException.class);
 		server.verify();
 	}
 
@@ -158,7 +163,9 @@ class AppleSocialTokenRevokerTest {
 				.andRespond(withSuccess("{\"access_token\":\"a1\"}", MediaType.APPLICATION_JSON));
 
 		assertThatThrownBy(() -> revoker.revoke(AUTHORIZATION_CODE))
-				.isInstanceOf(InvalidAppleAuthorizationCodeException.class);
+				.isInstanceOf(InvalidAppleAuthorizationCodeException.class)
+				.hasMessage(UserErrorCode.USER_INVALID_APPLE_AUTHORIZATION_CODE.message())
+				.hasNoCause();
 		server.verify();
 	}
 
@@ -170,7 +177,9 @@ class AppleSocialTokenRevokerTest {
 				.andRespond(withBadRequest().body("{\"error\":\"invalid_client\"}").contentType(MediaType.APPLICATION_JSON));
 
 		assertThatThrownBy(() -> revoker.revoke(AUTHORIZATION_CODE))
-				.isInstanceOf(InvalidAppleAuthorizationCodeException.class);
+				.isInstanceOf(InvalidAppleAuthorizationCodeException.class)
+				.hasMessage(UserErrorCode.USER_INVALID_APPLE_AUTHORIZATION_CODE.message())
+				.hasCauseInstanceOf(RestClientResponseException.class);
 		server.verify();
 	}
 
@@ -179,15 +188,21 @@ class AppleSocialTokenRevokerTest {
 		server.expect(requestTo(TOKEN_URL)).andRespond(withServerError());
 
 		assertThatThrownBy(() -> revoker.revoke(AUTHORIZATION_CODE))
-				.isInstanceOf(SocialProviderUnavailableException.class);
+				.isInstanceOf(SocialProviderUnavailableException.class)
+				.hasMessage(UserErrorCode.USER_SOCIAL_PROVIDER_UNAVAILABLE.message())
+				.hasCauseInstanceOf(RestClientResponseException.class);
 	}
 
 	@Test
 	void 연결_자체가_실패하면_제공자_통신_실패_예외를_던진다() {
-		server.expect(requestTo(TOKEN_URL)).andRespond(withException(new IOException("connection reset")));
+		IOException cause = new IOException("connection reset");
+		server.expect(requestTo(TOKEN_URL)).andRespond(withException(cause));
 
 		assertThatThrownBy(() -> revoker.revoke(AUTHORIZATION_CODE))
-				.isInstanceOf(SocialProviderUnavailableException.class);
+				.isInstanceOf(SocialProviderUnavailableException.class)
+				.hasMessage(UserErrorCode.USER_SOCIAL_PROVIDER_UNAVAILABLE.message())
+				.hasCauseInstanceOf(ResourceAccessException.class)
+				.hasRootCause(cause);
 	}
 
 	@Test
