@@ -1,4 +1,4 @@
-package com.daesabu.meongcoach.user.domain.vo;
+package com.daesabu.meongcoach.user.domain;
 
 import com.daesabu.meongcoach.user.domain.exception.InvalidRefreshTokenException;
 import jakarta.persistence.Embeddable;

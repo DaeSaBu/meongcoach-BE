@@ -1,7 +1,6 @@
 package com.daesabu.meongcoach.user.domain;
 
 import com.daesabu.meongcoach.shared.domain.BaseEntity;
-import com.daesabu.meongcoach.user.domain.vo.RefreshTokenId;
 import jakarta.persistence.AttributeOverride;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embedded;

@@ -1,6 +1,6 @@
 package com.daesabu.meongcoach.user.application.provided;
 
-import com.daesabu.meongcoach.user.domain.vo.RefreshTokenId;
+import com.daesabu.meongcoach.user.domain.RefreshTokenId;
 import java.time.LocalDateTime;
 
 /**

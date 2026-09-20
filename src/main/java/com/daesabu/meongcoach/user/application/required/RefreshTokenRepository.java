@@ -1,8 +1,8 @@
 package com.daesabu.meongcoach.user.application.required;
 
 import com.daesabu.meongcoach.user.domain.RefreshToken;
+import com.daesabu.meongcoach.user.domain.RefreshTokenId;
 import com.daesabu.meongcoach.user.domain.User;
-import com.daesabu.meongcoach.user.domain.vo.RefreshTokenId;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;

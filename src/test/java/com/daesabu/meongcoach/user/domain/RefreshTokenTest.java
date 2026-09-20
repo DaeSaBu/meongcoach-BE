@@ -2,7 +2,6 @@ package com.daesabu.meongcoach.user.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.daesabu.meongcoach.user.domain.vo.RefreshTokenId;
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.Test;
 
