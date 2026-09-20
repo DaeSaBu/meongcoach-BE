@@ -17,6 +17,7 @@ import com.daesabu.meongcoach.user.domain.UserStatus;
 import com.daesabu.meongcoach.user.domain.command.SocialAccountLinkCommand;
 import com.daesabu.meongcoach.user.domain.exception.UnsupportedSocialProviderException;
 import com.daesabu.meongcoach.user.domain.exception.WithdrawnUserException;
+import com.daesabu.meongcoach.user.domain.shared.Email;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -48,7 +49,7 @@ class SocialLoginServiceTest {
 
 	@BeforeEach
 	void setUp() {
-		service = socialLoginService(new StubSocialProfileReader(PROVIDER_ID, "a@b.com"));
+		service = socialLoginService(new StubSocialProfileReader(PROVIDER_ID, new Email("a@b.com")));
 	}
 
 	@Test
@@ -122,9 +123,9 @@ class SocialLoginServiceTest {
 	private static class StubSocialProfileReader implements SocialProfileReader {
 
 		private final String providerId;
-		private final String email;
+		private final Email email;
 
-		StubSocialProfileReader(String providerId, String email) {
+		StubSocialProfileReader(String providerId, Email email) {
 			this.providerId = providerId;
 			this.email = email;
 		}

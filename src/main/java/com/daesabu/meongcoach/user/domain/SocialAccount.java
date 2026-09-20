@@ -2,7 +2,10 @@ package com.daesabu.meongcoach.user.domain;
 
 import com.daesabu.meongcoach.shared.domain.BaseEntity;
 import com.daesabu.meongcoach.user.domain.command.SocialAccountLinkCommand;
+import com.daesabu.meongcoach.user.domain.shared.Email;
+import jakarta.persistence.AttributeOverride;
 import jakarta.persistence.Column;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -43,8 +46,9 @@ public class SocialAccount extends BaseEntity {
 	private String providerId;
 
 	// 소셜 제공자가 이메일을 내려주지 않을 수 있으므로 nullable
-	@Column(length = 255)
-	private String email;
+	@Embedded
+	@AttributeOverride(name = "address", column = @Column(name = "email", length = 255))
+	private Email email;
 
 	private SocialAccount(User user, SocialAccountLinkCommand command) {
 		this.user = user;

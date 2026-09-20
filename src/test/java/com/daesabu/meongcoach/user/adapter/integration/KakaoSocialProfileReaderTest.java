@@ -6,7 +6,9 @@ import static org.springframework.test.web.client.ExpectedCount.manyTimes;
 
 import com.daesabu.meongcoach.user.domain.SocialProvider;
 import com.daesabu.meongcoach.user.domain.command.SocialAccountLinkCommand;
+import com.daesabu.meongcoach.user.domain.exception.InvalidEmailException;
 import com.daesabu.meongcoach.user.domain.exception.InvalidSocialTokenException;
+import com.daesabu.meongcoach.user.domain.shared.Email;
 import com.nimbusds.jwt.JWTClaimsSet;
 import java.util.List;
 import org.junit.jupiter.api.BeforeAll;
@@ -55,7 +57,7 @@ class KakaoSocialProfileReaderTest {
 
 		assertThat(command.provider()).isEqualTo(SocialProvider.KAKAO);
 		assertThat(command.providerId()).isEqualTo(SUBJECT);
-		assertThat(command.email()).isEqualTo("a@b.com");
+		assertThat(command.email()).isEqualTo(new Email("a@b.com"));
 	}
 
 	@Test
@@ -64,6 +66,14 @@ class KakaoSocialProfileReaderTest {
 
 		assertThat(command.providerId()).isEqualTo(SUBJECT);
 		assertThat(command.email()).isNull();
+	}
+
+	@Test
+	void 이메일_형식이_올바르지_않으면_InvalidEmailException을_던진다() {
+		String idToken = signer.sign(claims().claim("email", "not-an-email").build());
+
+		assertThatThrownBy(() -> reader.read(idToken))
+				.isInstanceOf(InvalidEmailException.class);
 	}
 
 	@Test

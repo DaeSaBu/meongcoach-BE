@@ -46,9 +46,9 @@ class UserWithdrawServiceTest {
 	private static final Long UNREGISTERED_USER_ID = 999L;
 	private static final String APPLE_CODE = "c1a2b3.0.abcd.efgh";
 	private static final SocialAccountLinkCommand APPLE_ACCOUNT =
-			new SocialAccountLinkCommand(SocialProvider.APPLE, "001234.abcdef", "a@privaterelay.appleid.com");
+			new SocialAccountLinkCommand(SocialProvider.APPLE, "001234.abcdef", new Email("a@privaterelay.appleid.com"));
 	private static final SocialAccountLinkCommand KAKAO_ACCOUNT =
-			new SocialAccountLinkCommand(SocialProvider.KAKAO, "3812345678", "k@kakao.com");
+			new SocialAccountLinkCommand(SocialProvider.KAKAO, "3812345678", new Email("k@kakao.com"));
 
 	@Autowired
 	private UserWithdrawer userWithdrawer;

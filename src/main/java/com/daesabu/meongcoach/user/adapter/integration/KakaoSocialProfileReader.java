@@ -3,6 +3,7 @@ package com.daesabu.meongcoach.user.adapter.integration;
 import com.daesabu.meongcoach.user.application.required.SocialProfileReader;
 import com.daesabu.meongcoach.user.domain.SocialProvider;
 import com.daesabu.meongcoach.user.domain.command.SocialAccountLinkCommand;
+import com.daesabu.meongcoach.user.domain.shared.Email;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restclient.RestTemplateBuilder;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -39,7 +40,7 @@ public class KakaoSocialProfileReader implements SocialProfileReader {
 	@Override
 	public SocialAccountLinkCommand read(String credential) {
 		Jwt idToken = verifier.verify(credential);
-		return new SocialAccountLinkCommand(SocialProvider.KAKAO, idToken.getSubject(),
-				idToken.getClaimAsString(EMAIL_CLAIM));
+		Email email = Email.ofNullable(idToken.getClaimAsString(EMAIL_CLAIM));
+		return new SocialAccountLinkCommand(SocialProvider.KAKAO, idToken.getSubject(), email);
 	}
 }

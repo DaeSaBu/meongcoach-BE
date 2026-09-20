@@ -7,6 +7,7 @@ import static org.springframework.test.web.client.ExpectedCount.manyTimes;
 import com.daesabu.meongcoach.user.domain.SocialProvider;
 import com.daesabu.meongcoach.user.domain.command.SocialAccountLinkCommand;
 import com.daesabu.meongcoach.user.domain.exception.InvalidSocialTokenException;
+import com.daesabu.meongcoach.user.domain.shared.Email;
 import com.nimbusds.jwt.JWTClaimsSet;
 import java.util.List;
 import org.junit.jupiter.api.BeforeAll;
@@ -56,7 +57,7 @@ class AppleSocialProfileReaderTest {
 
 		assertThat(command.provider()).isEqualTo(SocialProvider.APPLE);
 		assertThat(command.providerId()).isEqualTo(SUBJECT);
-		assertThat(command.email()).isEqualTo("abc123@privaterelay.appleid.com");
+		assertThat(command.email()).isEqualTo(new Email("abc123@privaterelay.appleid.com"));
 	}
 
 	@Test

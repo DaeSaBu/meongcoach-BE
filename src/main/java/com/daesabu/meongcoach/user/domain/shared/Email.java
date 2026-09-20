@@ -21,4 +21,12 @@ public record Email(String address) {
 			throw new InvalidEmailException(address);
 		}
 	}
+
+	// 소셜 제공자처럼 이메일이 아예 없을 수 있는 출처용. 값이 있는데 형식이 틀리면 생성자와 똑같이 실패한다
+	public static Email ofNullable(String address) {
+		if (address == null) {
+			return null;
+		}
+		return new Email(address);
+	}
 }
