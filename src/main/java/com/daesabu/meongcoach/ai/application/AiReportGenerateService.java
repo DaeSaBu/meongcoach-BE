@@ -67,8 +67,12 @@ public class AiReportGenerateService implements AiReportGenerator {
 			return;
 		}
 
-		String content = analyzeOrNull(report.getVideoObjectKey(), downloadUrl);
-		if (content == null) {
+		String content;
+		try {
+			content = videoAnalyzer.analyze(downloadUrl);
+		}
+		catch (VideoAnalysisFailedException e) {
+			log.error("영상 분석에 실패해 리포트 생성을 건너뛴다: {}", report.getVideoObjectKey(), e);
 			recordFailure(report, AiReport::failByAnalysis);
 			return;
 		}
@@ -85,16 +89,6 @@ public class AiReportGenerateService implements AiReportGenerator {
 		String title = generateTitleOrNull(report.getVideoObjectKey(), content);
 		report.complete(title, content);
 		aiReportRepository.save(report);
-	}
-
-	private String analyzeOrNull(String objectKey, String downloadUrl) {
-		try {
-			return videoAnalyzer.analyze(downloadUrl);
-		}
-		catch (VideoAnalysisFailedException e) {
-			log.error("영상 분석에 실패해 리포트 생성을 건너뛴다: {}", objectKey, e);
-			return null;
-		}
 	}
 
 	private String generateTitleOrNull(String objectKey, String content) {
