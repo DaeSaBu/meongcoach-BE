@@ -1,6 +1,6 @@
 package com.daesabu.meongcoach.ai.application.provided;
 
-import com.daesabu.meongcoach.ai.domain.vo.AiTrial;
+import com.daesabu.meongcoach.ai.domain.AiTrial;
 
 /**
  * AI 리포트 무료 체험 횟수 조회 능력.
