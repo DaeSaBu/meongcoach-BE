@@ -11,4 +11,9 @@ public class InvalidAppleAuthorizationCodeException extends DomainException {
 	public InvalidAppleAuthorizationCodeException() {
 		super(UserErrorCode.USER_INVALID_APPLE_AUTHORIZATION_CODE);
 	}
+
+	public InvalidAppleAuthorizationCodeException(Throwable cause) {
+		super(UserErrorCode.USER_INVALID_APPLE_AUTHORIZATION_CODE,
+				UserErrorCode.USER_INVALID_APPLE_AUTHORIZATION_CODE.message(), cause);
+	}
 }

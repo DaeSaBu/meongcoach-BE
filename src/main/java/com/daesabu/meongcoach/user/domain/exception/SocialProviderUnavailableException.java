@@ -11,4 +11,9 @@ public class SocialProviderUnavailableException extends DomainException {
 	public SocialProviderUnavailableException() {
 		super(UserErrorCode.USER_SOCIAL_PROVIDER_UNAVAILABLE);
 	}
+
+	public SocialProviderUnavailableException(Throwable cause) {
+		super(UserErrorCode.USER_SOCIAL_PROVIDER_UNAVAILABLE,
+				UserErrorCode.USER_SOCIAL_PROVIDER_UNAVAILABLE.message(), cause);
+	}
 }
