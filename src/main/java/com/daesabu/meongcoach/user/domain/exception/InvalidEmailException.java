@@ -4,7 +4,8 @@ import com.daesabu.meongcoach.shared.exception.DomainException;
 
 public class InvalidEmailException extends DomainException {
 
-	public InvalidEmailException(String address) {
-		super(UserErrorCode.USER_INVALID_EMAIL, "이메일 형식이 올바르지 않습니다: " + address);
+	// detail은 응답에 그대로 노출되므로 입력한 주소를 싣지 않는다
+	public InvalidEmailException() {
+		super(UserErrorCode.USER_INVALID_EMAIL);
 	}
 }

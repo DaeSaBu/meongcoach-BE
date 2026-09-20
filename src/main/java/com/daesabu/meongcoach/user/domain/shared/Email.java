@@ -15,10 +15,10 @@ public record Email(String address) {
 
 	public Email {
 		if (address == null || address.isBlank()) {
-			throw new InvalidEmailException(address);
+			throw new InvalidEmailException();
 		}
 		if (address.length() > MAX_LENGTH || !FORMAT.matcher(address).matches()) {
-			throw new InvalidEmailException(address);
+			throw new InvalidEmailException();
 		}
 	}
 
