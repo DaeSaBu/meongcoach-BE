@@ -54,11 +54,7 @@ public class EvoLinkReportTitleGenerator implements ReportTitleGenerator {
 	public String generateTitle(String reportContentJson) {
 		String content = completeOrThrow(reportContentJson);
 
-		String title = parseTitle(content);
-		if (title.isBlank()) {
-			throw new ReportTitleGenerationFailedException("리포트 제목 생성 결과가 비어 있습니다");
-		}
-		return title;
+		return parseTitle(content);
 	}
 
 	// HTTP 오류와 쓸 수 없는 응답을 경계에서 도메인 예외로 번역한다. 그 외 예외는 버그로 보고 그대로 둔다
@@ -92,10 +88,14 @@ public class EvoLinkReportTitleGenerator implements ReportTitleGenerator {
 		catch (JacksonException e) {
 			throw new ReportTitleGenerationFailedException("리포트 제목 응답이 JSON 형식이 아닙니다", e);
 		}
-		if (titleContent.title() == null) {
+		if (titleContent == null || titleContent.title() == null) {
 			throw new ReportTitleGenerationFailedException("리포트 제목 응답에 title 항목이 없습니다");
 		}
-		return titleContent.title().strip();
+		String title = titleContent.title().strip();
+		if (title.isBlank()) {
+			throw new ReportTitleGenerationFailedException("리포트 제목 생성 결과가 비어 있습니다");
+		}
+		return title;
 	}
 
 	@JsonIgnoreProperties(ignoreUnknown = true)

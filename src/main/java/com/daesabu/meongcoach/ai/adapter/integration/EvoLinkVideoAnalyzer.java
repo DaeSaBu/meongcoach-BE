@@ -108,7 +108,7 @@ public class EvoLinkVideoAnalyzer implements VideoAnalyzer {
 			throw new VideoAnalysisFailedException("영상 분석 응답이 JSON 형식이 아닙니다: " + withoutQuery(videoUrl), e);
 		}
 		// 스키마는 필드 구조만 강제하고 빈 배열은 막지 못하므로 핵심 항목 유무는 여기서 검증한다
-		if (content.report().isEmpty()) {
+		if (content == null || content.report().isEmpty()) {
 			throw new VideoAnalysisFailedException("영상 분석 응답에 report 항목이 없습니다: " + withoutQuery(videoUrl));
 		}
 		requireKnownTopicIds(content, topics, videoUrl);
