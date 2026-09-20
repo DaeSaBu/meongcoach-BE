@@ -1,4 +1,4 @@
-package com.daesabu.meongcoach.user.domain.vo;
+package com.daesabu.meongcoach.user.domain.shared;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

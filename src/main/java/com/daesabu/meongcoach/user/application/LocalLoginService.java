@@ -9,7 +9,7 @@ import com.daesabu.meongcoach.user.domain.PasswordMatcher;
 import com.daesabu.meongcoach.user.domain.User;
 import com.daesabu.meongcoach.user.domain.exception.InvalidCredentialsException;
 import com.daesabu.meongcoach.user.domain.exception.WithdrawnUserException;
-import com.daesabu.meongcoach.user.domain.vo.Email;
+import com.daesabu.meongcoach.user.domain.shared.Email;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

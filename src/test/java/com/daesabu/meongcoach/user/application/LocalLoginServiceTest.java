@@ -15,7 +15,7 @@ import com.daesabu.meongcoach.user.domain.command.LocalAccountCreateCommand;
 import com.daesabu.meongcoach.user.domain.exception.InvalidCredentialsException;
 import com.daesabu.meongcoach.user.domain.exception.InvalidEmailException;
 import com.daesabu.meongcoach.user.domain.exception.WithdrawnUserException;
-import com.daesabu.meongcoach.user.domain.vo.Email;
+import com.daesabu.meongcoach.user.domain.shared.Email;
 import com.daesabu.meongcoach.user.domain.vo.RefreshTokenId;
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.BeforeEach;

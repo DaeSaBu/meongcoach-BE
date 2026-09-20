@@ -1,4 +1,4 @@
-package com.daesabu.meongcoach.user.domain.vo;
+package com.daesabu.meongcoach.user.domain.shared;
 
 import com.daesabu.meongcoach.user.domain.exception.InvalidEmailException;
 import jakarta.persistence.Embeddable;

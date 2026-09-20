@@ -22,7 +22,7 @@ import com.daesabu.meongcoach.user.domain.command.SocialAccountLinkCommand;
 import com.daesabu.meongcoach.user.domain.command.UserProfileCreateCommand;
 import com.daesabu.meongcoach.user.domain.exception.InvalidAppleAuthorizationCodeException;
 import com.daesabu.meongcoach.user.domain.exception.UserNotFoundException;
-import com.daesabu.meongcoach.user.domain.vo.Email;
+import com.daesabu.meongcoach.user.domain.shared.Email;
 import com.daesabu.meongcoach.user.domain.vo.RefreshTokenId;
 import java.time.LocalDateTime;
 import java.util.Set;
