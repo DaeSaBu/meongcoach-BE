@@ -18,7 +18,6 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.LoggerFactory;
 import tools.jackson.databind.json.JsonMapper;
@@ -216,7 +215,7 @@ class VideoUploadSqsConsumerTest {
 
 	@ParameterizedTest
 	@MethodSource("domainFailures")
-	void 도메인_실패의_상태에_맞는_수준으로_객체_키와_코드와_원인을_기록한다(DomainException failure, Level level) {
+	void 도메인_실패는_warn으로_객체_키와_코드와_원인을_기록한다(DomainException failure) {
 		String objectKey = "videos/training/7/key.mp4";
 		aiReportGenerator.failure = failure;
 		Logger logger = (Logger) LoggerFactory.getLogger(VideoUploadSqsConsumer.class);
@@ -228,7 +227,7 @@ class VideoUploadSqsConsumerTest {
 					.doesNotThrowAnyException();
 
 			assertThat(appender.list).singleElement().satisfies(event -> {
-				assertThat(event.getLevel()).isEqualTo(level);
+				assertThat(event.getLevel()).isEqualTo(Level.WARN);
 				assertThat(event.getFormattedMessage())
 						.contains("objectKey=" + objectKey, "code=" + failure.getErrorCode().code())
 						.doesNotContain("처리할 수 없는 S3 객체 키");
@@ -241,10 +240,10 @@ class VideoUploadSqsConsumerTest {
 		}
 	}
 
-	private static Stream<Arguments> domainFailures() {
+	private static Stream<DomainException> domainFailures() {
 		return Stream.of(
-				Arguments.of(new InvalidVideoObjectKeyException("invalid-key"), Level.WARN),
-				Arguments.of(new VideoAnalysisFailedException("분석 실패"), Level.ERROR));
+				new InvalidVideoObjectKeyException("invalid-key"),
+				new VideoAnalysisFailedException("분석 실패"));
 	}
 
 	private static Stream<RuntimeException> recordFailures() {
