@@ -68,10 +68,20 @@ public class VideoUploadSqsConsumer {
 		try {
 			aiReportGenerator.generate(objectKey);
 		} catch (DomainException e) {
-			log.warn("처리할 수 없는 S3 객체 키라 리포트 생성을 건너뛴다: {}", objectKey, e);
+			logDomainFailure(objectKey, e);
 		} catch (Exception e) {
 			log.error("리포트 생성에 실패했지만 SQS 무한 재전달을 막기 위해 메시지를 버린다: {}", objectKey, e);
 		}
+	}
+
+	private void logDomainFailure(String objectKey, DomainException e) {
+		int status = e.getErrorCode().status();
+		String code = e.getErrorCode().code();
+		if (status >= 500 && status < 600) {
+			log.error("리포트 생성 실패로 레코드 처리를 건너뛴다: objectKey={}, code={}", objectKey, code, e);
+			return;
+		}
+		log.warn("리포트 생성 실패로 레코드 처리를 건너뛴다: objectKey={}, code={}", objectKey, code, e);
 	}
 
 	/**
