@@ -22,7 +22,7 @@ VideoUploadSqsConsumer                      (ai/adapter/consumer)
 
 앱은 `GET /api/ai/reports`를 폴링하다가 `UPLOADING`·`PENDING`인 리포트가 없으면 멈춥니다. 사용자 ID만으로 묻는 조회라 앱이 재시작돼 객체 키·리포트 ID를 잃어도 폴링을 이어갈 수 있습니다 — 그래서 row를 업로드 완료가 아니라 **발급 시점**에 만듭니다.
 
-소유자 식별은 객체 키 경로에 인코딩되어 있습니다 — `videos/{대상}/{userId}/{UUID}.{확장자}` 규칙은 `media/domain/vo/VideoObjectKey`가 단일 소유합니다. 리포트의 소유자는 발급 시 row에 기록한 `userId`가 원천입니다.
+소유자 식별은 객체 키 경로에 인코딩되어 있습니다 — `videos/{대상}/{userId}/{UUID}.{확장자}` 규칙은 `media/domain/VideoObjectKey`가 단일 소유합니다. 리포트의 소유자는 발급 시 row에 기록한 `userId`가 원천입니다.
 
 ## 설계 결정과 함정
 

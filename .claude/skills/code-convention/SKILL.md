@@ -35,11 +35,11 @@ user-invocable: true
 | 도메인 모델 | `domain` | 개념 이름 그대로 | `User` |
 | 도메인 입력 모델 | `domain` | `~Command` (record) | `DogRegisterCommand` |
 | 일급 컬렉션 | `domain` | 엔티티 이름의 복수형 | `Dogs` |
-| 다른 모듈에 노출하는 도메인 타입 | `domain/shared` | 개념 이름 그대로. `package-info.java`에 `@NamedInterface("shared")` 선언 | `Breed` |
-| 값 객체 | `domain/vo` | 개념 이름 그대로 | `Email` |
+| 다른 모듈에 노출하는 도메인 타입 | `domain/shared` | 개념 이름 그대로. `package-info.java`에 `@NamedInterface("shared")` 선언 | `Breed`, `Email` |
+| 값 객체 | `domain` | 개념 이름 그대로 | `RefreshTokenId`, `VideoObjectKey` |
 | 도메인 예외·에러코드 | `domain/exception` | `{모듈}ErrorCode`, `~Exception` | `UserErrorCode`, `InvalidEmailException` |
 
-- `domain` 루트에는 엔티티·enum·일급 컬렉션을 두고, 값 객체는 `domain/vo`, 예외·에러코드는 `domain/exception`으로 분리한다.
+- `domain` 루트에는 엔티티·enum·일급 컬렉션·값 객체를 두고, 예외·에러코드는 `domain/exception`으로 분리한다. 값 객체용 하위 패키지(`vo`)는 만들지 않으며, 다른 모듈에 노출하는 값 객체만 `domain/shared`에 둔다.
 - 일급 컬렉션은 엔티티 하나로는 판단할 수 없는 규칙(마리 수 상한, 마지막 한 마리 삭제 금지처럼 한 사용자 소유 목록 전체를 봐야 하는 규칙)을 담을 때만 둔다. 영속화 단위가 아니라 application이 리포지토리로 조회한 목록을 생성자로 넘겨 만들며, 리포지토리를 참조하지 않는다. 규칙은 Spring 없는 단위 테스트로 검증한다. (살아있는 예시: `dog/domain/Dogs`)
 - 일급 컬렉션의 규칙을 거쳐야만 호출할 수 있는 엔티티 메서드는 package-private으로 두어 application이 우회하지 못하게 한다. 같은 패키지의 도메인 단위 테스트는 그대로 호출하고, application 테스트는 일급 컬렉션을 경유해 상태를 만든다. (살아있는 예시: `Dog.delete()`)
 

@@ -31,7 +31,7 @@ com.daesabu.meongcoach
 │   ├── provided/            // 모듈 공개 API (@NamedInterface("provided"))
 │   ├── required/            // 모듈이 필요로 하는 자원 인터페이스
 │   └── ~Service             // 유스케이스 구현
-└── domain                   // 엔티티, 일급 컬렉션, vo/, exception/, 입력 모델(~Command)
+└── domain                   // 엔티티, 일급 컬렉션, 값 객체, exception/, 입력 모델(~Command)
 ```
 
 모듈은 필요한 계층만 갖습니다. `dog`·`progress`는 자체 API 없이 `provided` 인터페이스로만 노출되어 `adapter`가 없고, `onboarding`은 다른 모듈을 조합만 하므로 `domain`이 없습니다. 문서나 코드를 생성할 때 없는 계층을 만들어 채우지 않습니다.
@@ -42,7 +42,7 @@ com.daesabu.meongcoach
 - 각 모듈 루트에 `package-info.java`를 두고 `@ApplicationModule`을 선언합니다.
 - **모듈 간 호출은 `application/provided`의 인터페이스로만 합니다.** 다른 모듈의 서비스 구현체, `required` 인터페이스, 도메인 내부에 직접 접근하지 않습니다. `verify()`는 `@NamedInterface` 패키지에 **물리적으로 존재하는 타입만** 노출로 인정하며, 인터페이스 시그니처에 등장하는 타입은 전파되지 않습니다. named interface는 모듈당 여러 개 둘 수 있습니다.
 - **모듈 경계를 넘는 값은 두 가지로만 둡니다.** 도메인 타입을 1:1로 옮겨 담는 record는 만들지 않습니다.
-  - enum·값 객체 같은 **도메인 타입은 `domain/shared`에 두고 `package-info.java`에 `@NamedInterface("shared")`를 선언해 그대로 노출**합니다. (선례: `dog/domain/shared`의 `Breed`) `DomainPurityTest`가 `domain`의 스프링 의존을 막으므로 타입에 직접 `@NamedInterface`를 붙일 수 없고 package-info로만 선언합니다. 엔티티·일급 컬렉션은 영속 상태에 묶이므로 노출하지 않습니다.
+  - enum·값 객체 같은 **도메인 타입은 `domain/shared`에 두고 `package-info.java`에 `@NamedInterface("shared")`를 선언해 그대로 노출**합니다. (선례: `dog/domain/shared`의 `Breed`, `user/domain/shared`의 `Email`) `DomainPurityTest`가 `domain`의 스프링 의존을 막으므로 타입에 직접 `@NamedInterface`를 붙일 수 없고 package-info로만 선언합니다. 엔티티·일급 컬렉션은 영속 상태에 묶이므로 노출하지 않습니다.
   - projection·집계·여러 애그리거트 조합처럼 **도메인 타입 하나로 표현할 수 없는 값만 provided 패키지의 `~Result` record**로 둡니다. (선례: `TopicSummary`, `VideoUploadUrlResult`)
 - **`application/provided`에는 `package-info.java`로 `@NamedInterface("provided")`를 선언합니다.** 선언하지 않으면 Modulith가 이 패키지를 모듈 내부로 취급해 다른 모듈에서의 호출이 `verify()`에서 실패합니다.
 - `shared`는 보안·설정 등 횡단 관심사만 담습니다. 모든 모듈이 `shared`를 참조할 수 있지만, `shared`는 어떤 모듈도 참조하지 않습니다.
@@ -53,7 +53,7 @@ com.daesabu.meongcoach
 |---|---|---|
 | `adapter` | 외부 세계와의 연결 | `webapi/` — 컨트롤러, 웹 요청/응답 DTO. `integration/` — 외부 API 호출 구현과 응답 DTO. `security/` — Spring Security 연동 지점. `consumer/` — 메시지 큐 컨슈머(예: `ai/adapter/consumer/VideoUploadSqsConsumer`). 기술 의존은 여기에만 둔다 |
 | `application` | 유스케이스 | `provided/` — 모듈이 외부에 공개하는 인터페이스, `required/` — 모듈이 필요로 하는 자원 인터페이스(리포지토리, 메일 등), 그리고 이를 구현·사용하는 서비스 |
-| `domain` | 도메인 모델·로직 | 엔티티(`User`), 일급 컬렉션(`Dogs` — 엔티티 하나로 판단할 수 없는 사용자 단위 규칙), 값 객체(`vo/`), 예외(`exception/`), 도메인 입력 모델(`~Command`) |
+| `domain` | 도메인 모델·로직 | 엔티티(`User`), 일급 컬렉션(`Dogs` — 엔티티 하나로 판단할 수 없는 사용자 단위 규칙), 값 객체(`RefreshTokenId`), 예외(`exception/`), 도메인 입력 모델(`~Command`) |
 
 ### 계층 의존 방향
 
