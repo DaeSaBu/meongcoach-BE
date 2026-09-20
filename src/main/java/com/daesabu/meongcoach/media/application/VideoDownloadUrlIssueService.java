@@ -4,7 +4,7 @@ import com.daesabu.meongcoach.media.application.provided.VideoDownloadUrlIssuer;
 import com.daesabu.meongcoach.media.application.provided.VideoDownloadUrlResult;
 import com.daesabu.meongcoach.media.application.required.VideoDownloadUrl;
 import com.daesabu.meongcoach.media.application.required.VideoStorage;
-import com.daesabu.meongcoach.media.domain.vo.VideoObjectKey;
+import com.daesabu.meongcoach.media.domain.VideoObjectKey;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

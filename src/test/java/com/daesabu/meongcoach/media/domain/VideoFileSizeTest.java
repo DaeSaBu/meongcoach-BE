@@ -1,4 +1,4 @@
-package com.daesabu.meongcoach.media.domain.vo;
+package com.daesabu.meongcoach.media.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;

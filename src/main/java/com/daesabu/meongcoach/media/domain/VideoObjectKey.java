@@ -1,7 +1,5 @@
-package com.daesabu.meongcoach.media.domain.vo;
+package com.daesabu.meongcoach.media.domain;
 
-import com.daesabu.meongcoach.media.domain.VideoType;
-import com.daesabu.meongcoach.media.domain.VideoUploadTarget;
 import com.daesabu.meongcoach.media.domain.exception.InvalidVideoObjectKeyException;
 import java.util.UUID;
 import java.util.regex.Pattern;
