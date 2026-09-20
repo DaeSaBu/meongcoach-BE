@@ -3,12 +3,24 @@ package com.daesabu.meongcoach.ai.adapter.consumer;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.classic.spi.ThrowableProxy;
+import ch.qos.logback.core.read.ListAppender;
 import com.daesabu.meongcoach.ai.application.provided.AiReportGenerator;
+import com.daesabu.meongcoach.ai.domain.exception.VideoAnalysisFailedException;
 import com.daesabu.meongcoach.media.domain.exception.InvalidVideoObjectKeyException;
+import com.daesabu.meongcoach.shared.exception.DomainException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.slf4j.LoggerFactory;
 import tools.jackson.databind.json.JsonMapper;
 
 class VideoUploadSqsConsumerTest {
@@ -154,8 +166,10 @@ class VideoUploadSqsConsumerTest {
 				.doesNotThrowAnyException();
 	}
 
-	@Test
-	void 한_레코드가_실패해도_같은_메시지의_나머지_레코드는_처리한다() {
+	@ParameterizedTest
+	@MethodSource("recordFailures")
+	void 한_레코드가_실패해도_같은_메시지의_나머지_레코드는_처리한다(RuntimeException failure) {
+		aiReportGenerator.failure = failure;
 		aiReportGenerator.failUntilFirstAttempt = true;
 
 		consumer.consume("""
@@ -200,6 +214,46 @@ class VideoUploadSqsConsumerTest {
 		assertThat(aiReportGenerator.objectKeys).isEmpty();
 	}
 
+	@ParameterizedTest
+	@MethodSource("domainFailures")
+	void 도메인_실패의_상태에_맞는_수준으로_객체_키와_코드와_원인을_기록한다(DomainException failure, Level level) {
+		String objectKey = "videos/training/7/key.mp4";
+		aiReportGenerator.failure = failure;
+		Logger logger = (Logger) LoggerFactory.getLogger(VideoUploadSqsConsumer.class);
+		ListAppender<ILoggingEvent> appender = new ListAppender<>();
+		appender.start();
+		logger.addAppender(appender);
+		try {
+			assertThatCode(() -> consumer.consume(s3Event("ObjectCreated:Put", objectKey)))
+					.doesNotThrowAnyException();
+
+			assertThat(appender.list).singleElement().satisfies(event -> {
+				assertThat(event.getLevel()).isEqualTo(level);
+				assertThat(event.getFormattedMessage())
+						.contains("objectKey=" + objectKey, "code=" + failure.getErrorCode().code())
+						.doesNotContain("처리할 수 없는 S3 객체 키");
+				ThrowableProxy throwable = (ThrowableProxy) event.getThrowableProxy();
+				assertThat(throwable.getThrowable()).isSameAs(failure);
+			});
+		} finally {
+			logger.detachAppender(appender);
+			appender.stop();
+		}
+	}
+
+	private static Stream<Arguments> domainFailures() {
+		return Stream.of(
+				Arguments.of(new InvalidVideoObjectKeyException("invalid-key"), Level.WARN),
+				Arguments.of(new VideoAnalysisFailedException("분석 실패"), Level.ERROR));
+	}
+
+	private static Stream<RuntimeException> recordFailures() {
+		return Stream.of(
+				new InvalidVideoObjectKeyException("invalid-key"),
+				new VideoAnalysisFailedException("분석 실패"),
+				new IllegalStateException("첫 레코드 처리 실패"));
+	}
+
 	private static class RecordingAiReportGenerator implements AiReportGenerator {
 
 		private final List<String> objectKeys = new ArrayList<>();
@@ -210,7 +264,9 @@ class VideoUploadSqsConsumerTest {
 		public void generate(String objectKey) {
 			if (failUntilFirstAttempt) {
 				failUntilFirstAttempt = false;
-				throw new IllegalStateException("첫 레코드 처리 실패");
+				RuntimeException firstFailure = failure;
+				failure = null;
+				throw firstFailure;
 			}
 			if (failure != null) {
 				throw failure;
