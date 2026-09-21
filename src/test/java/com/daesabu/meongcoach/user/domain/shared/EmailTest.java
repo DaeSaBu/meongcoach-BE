@@ -1,4 +1,4 @@
-package com.daesabu.meongcoach.user.domain.vo;
+package com.daesabu.meongcoach.user.domain.shared;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -42,5 +42,13 @@ class EmailTest {
 
 		assertThatThrownBy(() -> new Email(longAddress))
 				.isInstanceOf(InvalidEmailException.class);
+	}
+
+	// 예외 메시지는 응답 detail로 그대로 나가므로 입력한 주소가 실리면 안 된다
+	@Test
+	void 생성_실패_메시지에_입력한_주소를_담지_않는다() {
+		assertThatThrownBy(() -> new Email("secret-user@invalid"))
+				.isInstanceOf(InvalidEmailException.class)
+				.hasMessageNotContaining("secret-user");
 	}
 }

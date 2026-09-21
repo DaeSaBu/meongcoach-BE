@@ -2,7 +2,7 @@ package com.daesabu.meongcoach.user.application.required;
 
 import com.daesabu.meongcoach.user.domain.LocalAccount;
 import com.daesabu.meongcoach.user.domain.User;
-import com.daesabu.meongcoach.user.domain.vo.Email;
+import com.daesabu.meongcoach.user.domain.shared.Email;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;

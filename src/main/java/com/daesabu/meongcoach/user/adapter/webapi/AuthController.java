@@ -13,6 +13,7 @@ import com.daesabu.meongcoach.user.application.provided.Logout;
 import com.daesabu.meongcoach.user.application.provided.SocialLogin;
 import com.daesabu.meongcoach.user.application.provided.TokenRefresher;
 import com.daesabu.meongcoach.user.domain.SocialProvider;
+import com.daesabu.meongcoach.user.domain.shared.Email;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -44,7 +45,8 @@ public class AuthController {
 	// 스토어 심사용 테스트 계정 전용. 가입 API가 없으므로 시드된 계정만 로그인할 수 있다
 	@PostMapping("/login/local")
 	public LoginResponse loginLocal(@Valid @RequestBody LocalLoginRequest request) {
-		LoginResult result = localLogin.login(request.email(), request.password());
+		Email email = new Email(request.email());
+		LoginResult result = localLogin.login(email, request.password());
 		return LoginResponse.from(result);
 	}
 

@@ -3,6 +3,8 @@ package com.daesabu.meongcoach.user.adapter.integration;
 import com.daesabu.meongcoach.user.application.required.SocialProfileReader;
 import com.daesabu.meongcoach.user.domain.SocialProvider;
 import com.daesabu.meongcoach.user.domain.command.SocialAccountLinkCommand;
+import com.daesabu.meongcoach.user.domain.exception.SocialEmailRequiredException;
+import com.daesabu.meongcoach.user.domain.shared.Email;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restclient.RestTemplateBuilder;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -40,7 +42,11 @@ public class AppleSocialProfileReader implements SocialProfileReader {
 	@Override
 	public SocialAccountLinkCommand read(String credential) {
 		Jwt idToken = verifier.verify(credential);
-		return new SocialAccountLinkCommand(SocialProvider.APPLE, idToken.getSubject(),
-				idToken.getClaimAsString(EMAIL_CLAIM));
+		String address = idToken.getClaimAsString(EMAIL_CLAIM);
+		if (address == null) {
+			throw new SocialEmailRequiredException();
+		}
+		Email email = new Email(address);
+		return new SocialAccountLinkCommand(SocialProvider.APPLE, idToken.getSubject(), email);
 	}
 }

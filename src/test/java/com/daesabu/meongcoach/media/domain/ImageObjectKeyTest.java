@@ -1,9 +1,7 @@
-package com.daesabu.meongcoach.media.domain.vo;
+package com.daesabu.meongcoach.media.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.daesabu.meongcoach.media.domain.ImageType;
-import com.daesabu.meongcoach.media.domain.ImageUploadTarget;
 import org.junit.jupiter.api.Test;
 
 class ImageObjectKeyTest {

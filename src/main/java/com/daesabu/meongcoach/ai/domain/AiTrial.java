@@ -1,4 +1,4 @@
-package com.daesabu.meongcoach.ai.domain.vo;
+package com.daesabu.meongcoach.ai.domain;
 
 /**
  * AI 리포트 무료 체험 사용 현황 값 객체.

@@ -7,6 +7,8 @@ import static org.springframework.test.web.client.ExpectedCount.manyTimes;
 import com.daesabu.meongcoach.user.domain.SocialProvider;
 import com.daesabu.meongcoach.user.domain.command.SocialAccountLinkCommand;
 import com.daesabu.meongcoach.user.domain.exception.InvalidSocialTokenException;
+import com.daesabu.meongcoach.user.domain.exception.SocialEmailRequiredException;
+import com.daesabu.meongcoach.user.domain.shared.Email;
 import com.nimbusds.jwt.JWTClaimsSet;
 import java.util.List;
 import org.junit.jupiter.api.BeforeAll;
@@ -56,15 +58,15 @@ class AppleSocialProfileReaderTest {
 
 		assertThat(command.provider()).isEqualTo(SocialProvider.APPLE);
 		assertThat(command.providerId()).isEqualTo(SUBJECT);
-		assertThat(command.email()).isEqualTo("abc123@privaterelay.appleid.com");
+		assertThat(command.email()).isEqualTo(new Email("abc123@privaterelay.appleid.com"));
 	}
 
 	@Test
-	void 이메일_동의를_받지_못하면_이메일_없이_읽는다() {
-		SocialAccountLinkCommand command = reader.read(signer.sign(claims().build()));
+	void 이메일_클레임이_없으면_SocialEmailRequiredException을_던진다() {
+		String idToken = signer.sign(claims().build());
 
-		assertThat(command.providerId()).isEqualTo(SUBJECT);
-		assertThat(command.email()).isNull();
+		assertThatThrownBy(() -> reader.read(idToken))
+				.isInstanceOf(SocialEmailRequiredException.class);
 	}
 
 	@Test

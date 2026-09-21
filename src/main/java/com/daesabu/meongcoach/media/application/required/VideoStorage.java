@@ -1,6 +1,6 @@
 package com.daesabu.meongcoach.media.application.required;
 
-import com.daesabu.meongcoach.media.domain.vo.VideoObjectKey;
+import com.daesabu.meongcoach.media.domain.VideoObjectKey;
 
 /**
  * 영상 스토리지 연동 지점. 구현은 adapter/integration의 S3 어댑터가 담당한다.

@@ -1,7 +1,7 @@
 package com.daesabu.meongcoach.user.application.required;
 
 import com.daesabu.meongcoach.user.application.provided.AuthToken;
-import com.daesabu.meongcoach.user.domain.vo.RefreshTokenId;
+import com.daesabu.meongcoach.user.domain.RefreshTokenId;
 
 public interface TokenProvider {
 

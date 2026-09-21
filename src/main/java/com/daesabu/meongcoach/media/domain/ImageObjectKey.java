@@ -1,7 +1,5 @@
-package com.daesabu.meongcoach.media.domain.vo;
+package com.daesabu.meongcoach.media.domain;
 
-import com.daesabu.meongcoach.media.domain.ImageType;
-import com.daesabu.meongcoach.media.domain.ImageUploadTarget;
 import java.util.UUID;
 
 /**

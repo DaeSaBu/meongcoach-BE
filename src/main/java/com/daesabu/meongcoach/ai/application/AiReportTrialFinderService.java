@@ -3,7 +3,7 @@ package com.daesabu.meongcoach.ai.application;
 import com.daesabu.meongcoach.ai.application.provided.AiTrialFinder;
 import com.daesabu.meongcoach.ai.application.required.AiReportRepository;
 import com.daesabu.meongcoach.ai.domain.AiReportStatus;
-import com.daesabu.meongcoach.ai.domain.vo.AiTrial;
+import com.daesabu.meongcoach.ai.domain.AiTrial;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

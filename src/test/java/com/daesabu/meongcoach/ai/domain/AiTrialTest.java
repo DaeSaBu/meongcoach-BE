@@ -1,4 +1,4 @@
-package com.daesabu.meongcoach.ai.domain.vo;
+package com.daesabu.meongcoach.ai.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

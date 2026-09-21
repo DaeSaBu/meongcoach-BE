@@ -12,6 +12,7 @@ import com.daesabu.meongcoach.user.application.required.UserProfileRepository;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.LocalAccount;
 import com.daesabu.meongcoach.user.domain.RefreshToken;
+import com.daesabu.meongcoach.user.domain.RefreshTokenId;
 import com.daesabu.meongcoach.user.domain.SocialAccount;
 import com.daesabu.meongcoach.user.domain.SocialProvider;
 import com.daesabu.meongcoach.user.domain.User;
@@ -22,8 +23,7 @@ import com.daesabu.meongcoach.user.domain.command.SocialAccountLinkCommand;
 import com.daesabu.meongcoach.user.domain.command.UserProfileCreateCommand;
 import com.daesabu.meongcoach.user.domain.exception.InvalidAppleAuthorizationCodeException;
 import com.daesabu.meongcoach.user.domain.exception.UserNotFoundException;
-import com.daesabu.meongcoach.user.domain.vo.Email;
-import com.daesabu.meongcoach.user.domain.vo.RefreshTokenId;
+import com.daesabu.meongcoach.user.domain.shared.Email;
 import java.time.LocalDateTime;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,9 +46,9 @@ class UserWithdrawServiceTest {
 	private static final Long UNREGISTERED_USER_ID = 999L;
 	private static final String APPLE_CODE = "c1a2b3.0.abcd.efgh";
 	private static final SocialAccountLinkCommand APPLE_ACCOUNT =
-			new SocialAccountLinkCommand(SocialProvider.APPLE, "001234.abcdef", "a@privaterelay.appleid.com");
+			new SocialAccountLinkCommand(SocialProvider.APPLE, "001234.abcdef", new Email("a@privaterelay.appleid.com"));
 	private static final SocialAccountLinkCommand KAKAO_ACCOUNT =
-			new SocialAccountLinkCommand(SocialProvider.KAKAO, "3812345678", "k@kakao.com");
+			new SocialAccountLinkCommand(SocialProvider.KAKAO, "3812345678", new Email("k@kakao.com"));
 
 	@Autowired
 	private UserWithdrawer userWithdrawer;

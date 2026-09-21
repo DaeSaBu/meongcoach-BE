@@ -1,6 +1,7 @@
-package com.daesabu.meongcoach.user.domain.vo;
+package com.daesabu.meongcoach.user.domain;
 
 import com.daesabu.meongcoach.user.domain.exception.InvalidRefreshTokenException;
+import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import java.util.UUID;
 import java.util.regex.Pattern;
@@ -10,7 +11,7 @@ import java.util.regex.Pattern;
  * 새 값은 generate로만 만들고, JWT에서 꺼낸 문자열은 생성자로 감싸 검증한다.
  */
 @Embeddable
-public record RefreshTokenId(String value) {
+public record RefreshTokenId(@Column(name = "token_id", nullable = false, length = 36) String value) {
 
 	// UUID.fromString은 비정규 형식도 받아들여 36자 컬럼 제약과 어긋나므로 canonical 형식만 허용한다
 	private static final Pattern FORMAT = Pattern.compile(
