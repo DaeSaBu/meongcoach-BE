@@ -10,14 +10,11 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.time.LocalDateTime;
+import java.util.Objects;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-/**
- * 발급한 리프레시 토큰의 기록. 토큰 원문 대신 JWT의 jti를 저장해 재발급 시 발급 이력이 있는 토큰인지 확인하고,
- * 탈퇴 등으로 더 이상 쓸 수 없게 된 토큰은 행을 지우지 않고 revokedAt으로 표시해 이력을 남긴다.
- */
 @Getter
 @Entity
 @Table(
@@ -45,14 +42,14 @@ public class RefreshToken extends BaseEntity {
 	// 무효화되지 않은 토큰은 null
 	private LocalDateTime revokedAt;
 
-	private RefreshToken(Long userId, RefreshTokenId tokenId, LocalDateTime expiresAt) {
-		this.userId = userId;
-		this.tokenId = tokenId;
-		this.expiresAt = expiresAt;
-	}
+	public static RefreshToken register(Long userId, RefreshTokenRegisterCommand command) {
+		RefreshToken refreshToken = new RefreshToken();
 
-	public static RefreshToken issue(Long userId, RefreshTokenId tokenId, LocalDateTime expiresAt) {
-		return new RefreshToken(userId, tokenId, expiresAt);
+		refreshToken.userId = Objects.requireNonNull(userId);
+		refreshToken.tokenId = command.tokenId();
+		refreshToken.expiresAt = Objects.requireNonNull(command.expiresAt());
+
+		return refreshToken;
 	}
 
 	public void revoke() {

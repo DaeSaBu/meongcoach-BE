@@ -2,7 +2,7 @@ package com.daesabu.meongcoach.auth.adapter.integration;
 
 import com.daesabu.meongcoach.auth.application.required.SocialProfileReader;
 import com.daesabu.meongcoach.auth.domain.Email;
-import com.daesabu.meongcoach.auth.domain.SocialAccountLinkCommand;
+import com.daesabu.meongcoach.auth.domain.SocialProfile;
 import com.daesabu.meongcoach.auth.domain.SocialProvider;
 import com.daesabu.meongcoach.auth.domain.exception.SocialEmailRequiredException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,13 +39,12 @@ public class KakaoSocialProfileReader implements SocialProfileReader {
 	}
 
 	@Override
-	public SocialAccountLinkCommand read(String credential) {
+	public SocialProfile read(String credential) {
 		Jwt idToken = verifier.verify(credential);
 		String address = idToken.getClaimAsString(EMAIL_CLAIM);
 		if (address == null) {
 			throw new SocialEmailRequiredException();
 		}
-		Email email = new Email(address);
-		return new SocialAccountLinkCommand(SocialProvider.KAKAO, idToken.getSubject(), email);
+		return new SocialProfile(SocialProvider.KAKAO, idToken.getSubject(), new Email(address));
 	}
 }

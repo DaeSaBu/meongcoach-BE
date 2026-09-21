@@ -11,6 +11,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import java.util.Objects;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -41,14 +42,14 @@ public class SocialAccount extends BaseEntity {
 	@Embedded
 	private Email email;
 
-	private SocialAccount(Long userId, SocialAccountLinkCommand command) {
-		this.userId = userId;
-		this.provider = command.provider();
-		this.providerId = command.providerId();
-		this.email = command.email();
-	}
+	public static SocialAccount register(Long userId, SocialAccountRegisterCommand command) {
+		SocialAccount socialAccount = new SocialAccount();
 
-	public static SocialAccount link(Long userId, SocialAccountLinkCommand command) {
-		return new SocialAccount(userId, command);
+		socialAccount.userId = Objects.requireNonNull(userId);
+		socialAccount.provider = Objects.requireNonNull(command.provider());
+		socialAccount.providerId = Objects.requireNonNull(command.providerId());
+		socialAccount.email = command.email();
+
+		return socialAccount;
 	}
 }

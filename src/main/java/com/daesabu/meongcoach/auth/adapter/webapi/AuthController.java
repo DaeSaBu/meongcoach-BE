@@ -1,23 +1,18 @@
 package com.daesabu.meongcoach.auth.adapter.webapi;
 
-import com.daesabu.meongcoach.auth.adapter.webapi.dto.LocalLoginRequest;
-import com.daesabu.meongcoach.auth.adapter.webapi.dto.LoginResponse;
-import com.daesabu.meongcoach.auth.adapter.webapi.dto.LogoutRequest;
-import com.daesabu.meongcoach.auth.adapter.webapi.dto.SocialLoginRequest;
-import com.daesabu.meongcoach.auth.adapter.webapi.dto.TokenRefreshRequest;
-import com.daesabu.meongcoach.auth.adapter.webapi.dto.TokenRefreshResponse;
-import com.daesabu.meongcoach.auth.application.provided.AuthToken;
-import com.daesabu.meongcoach.auth.application.provided.LocalLogin;
-import com.daesabu.meongcoach.auth.application.provided.LoginResult;
-import com.daesabu.meongcoach.auth.application.provided.Logout;
-import com.daesabu.meongcoach.auth.application.provided.SocialLogin;
-import com.daesabu.meongcoach.auth.application.provided.TokenRefresher;
-import com.daesabu.meongcoach.auth.domain.Email;
-import com.daesabu.meongcoach.auth.domain.SocialProvider;
+import com.daesabu.meongcoach.auth.adapter.webapi.dto.TokenResponse;
+import com.daesabu.meongcoach.auth.application.provided.Authenticator;
+import com.daesabu.meongcoach.auth.application.provided.dto.EmailLoginRequest;
+import com.daesabu.meongcoach.auth.application.provided.dto.LogoutRequest;
+import com.daesabu.meongcoach.auth.application.provided.dto.SocialLoginRequest;
+import com.daesabu.meongcoach.auth.application.provided.dto.TokenRefreshRequest;
+import com.daesabu.meongcoach.auth.application.provided.dto.WithdrawRequest;
+import com.daesabu.meongcoach.auth.domain.AuthToken;
+import com.daesabu.meongcoach.shared.security.CurrentUserId;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -29,38 +24,35 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class AuthController {
 
-	private final SocialLogin socialLogin;
-	private final LocalLogin localLogin;
-	private final TokenRefresher tokenRefresher;
-	private final Logout logout;
+	private final Authenticator authenticator;
 
-	// 소셜 로그인의 회원 조회·생성은 클라이언트가 관찰할 수 없는 부수 효과이므로 계약은 로그인(토큰 발급)으로 유지한다
-	// 제공자는 경로 변수로 받아 구글·애플이 추가돼도 요청 본문 계약이 바뀌지 않게 한다
-	@PostMapping("/login/social/{provider}")
-	public LoginResponse login(@PathVariable String provider, @Valid @RequestBody SocialLoginRequest request) {
-		LoginResult result = socialLogin.login(SocialProvider.from(provider), request.token());
-		return LoginResponse.from(result);
+	@PostMapping("/login/social")
+	public TokenResponse loginSocialAccount(@Valid @RequestBody SocialLoginRequest request) {
+		AuthToken authToken = authenticator.socialLogin(request);
+		return TokenResponse.from(authToken);
 	}
 
-	// 스토어 심사용 테스트 계정 전용. 가입 API가 없으므로 시드된 계정만 로그인할 수 있다
-	@PostMapping("/login/local")
-	public LoginResponse loginLocal(@Valid @RequestBody LocalLoginRequest request) {
-		Email email = new Email(request.email());
-		LoginResult result = localLogin.login(email, request.password());
-		return LoginResponse.from(result);
+	@PostMapping("/login/email")
+	public TokenResponse loginEmailAccount(@Valid @RequestBody EmailLoginRequest request) {
+		AuthToken authToken = authenticator.emailLogin(request);
+		return TokenResponse.from(authToken);
 	}
 
 	@PostMapping("/token/refresh")
-	public TokenRefreshResponse refresh(@Valid @RequestBody TokenRefreshRequest request) {
-		AuthToken token = tokenRefresher.refresh(request.refreshToken());
-		return TokenRefreshResponse.from(token);
+	public TokenResponse refresh(@Valid @RequestBody TokenRefreshRequest request) {
+		AuthToken authToken = authenticator.refresh(request);
+		return TokenResponse.from(authToken);
 	}
 
-	// 액세스 토큰이 만료된 뒤에도 로그아웃할 수 있어야 하므로 재발급과 같이 인증 없이 리프레시 토큰만 받는다.
-	// 폐기된 토큰을 다시 보내도 204라 클라이언트는 응답과 무관하게 보관 중인 토큰을 버리면 된다
 	@PostMapping("/logout")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public void logout(@Valid @RequestBody LogoutRequest request) {
-		logout.logout(request.refreshToken());
+		authenticator.logout(request);
+	}
+
+	@DeleteMapping("/me")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public void withdraw(@CurrentUserId Long userId, @RequestBody(required = false) WithdrawRequest request) {
+		authenticator.withdraw(userId, request);
 	}
 }

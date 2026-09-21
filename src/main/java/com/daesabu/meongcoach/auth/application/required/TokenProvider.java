@@ -1,6 +1,6 @@
 package com.daesabu.meongcoach.auth.application.required;
 
-import com.daesabu.meongcoach.auth.application.provided.AuthToken;
+import com.daesabu.meongcoach.auth.domain.AuthToken;
 import com.daesabu.meongcoach.auth.domain.RefreshTokenId;
 
 public interface TokenProvider {

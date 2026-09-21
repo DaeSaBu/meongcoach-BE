@@ -2,7 +2,7 @@ package com.daesabu.meongcoach.auth.adapter.integration;
 
 import com.daesabu.meongcoach.auth.application.required.SocialProfileReader;
 import com.daesabu.meongcoach.auth.domain.Email;
-import com.daesabu.meongcoach.auth.domain.SocialAccountLinkCommand;
+import com.daesabu.meongcoach.auth.domain.SocialProfile;
 import com.daesabu.meongcoach.auth.domain.SocialProvider;
 import com.daesabu.meongcoach.auth.domain.exception.SocialEmailRequiredException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,8 +12,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestOperations;
 
 /**
- * 앱이 Google Sign-In SDK로 받은 OIDC id_token을 검증하고 회원 식별자·이메일을 읽는다.
- * 검증 자체는 {@link OidcIdTokenVerifier}가 맡고, 토큰은 로그인 시점에만 쓰고 저장하지 않는다.
+ * 앱이 Google Sign-In SDK로 받은 OIDC id_token을 검증하고 회원 식별자·이메일을 읽는다. 검증 자체는 {@link OidcIdTokenVerifier}가 맡고, 토큰은 로그인 시점에만
+ * 쓰고 저장하지 않는다.
  */
 @Component
 public class GoogleSocialProfileReader implements SocialProfileReader {
@@ -39,13 +39,12 @@ public class GoogleSocialProfileReader implements SocialProfileReader {
 	}
 
 	@Override
-	public SocialAccountLinkCommand read(String credential) {
+	public SocialProfile read(String credential) {
 		Jwt idToken = verifier.verify(credential);
 		String address = idToken.getClaimAsString(EMAIL_CLAIM);
 		if (address == null) {
 			throw new SocialEmailRequiredException();
 		}
-		Email email = new Email(address);
-		return new SocialAccountLinkCommand(SocialProvider.GOOGLE, idToken.getSubject(), email);
+		return new SocialProfile(SocialProvider.GOOGLE, idToken.getSubject(), new Email(address));
 	}
 }

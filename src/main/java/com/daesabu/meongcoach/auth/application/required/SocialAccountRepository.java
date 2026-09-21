@@ -12,4 +12,6 @@ public interface SocialAccountRepository extends JpaRepository<SocialAccount, Lo
 
 	// 회원당 소셜 계정은 제공자 수만큼이라 탈퇴 시 조회한 목록을 그대로 revoke·삭제에 쓴다
 	List<SocialAccount> findAllByUserId(Long userId);
+
+	void deleteAllByUserId(Long userId);
 }

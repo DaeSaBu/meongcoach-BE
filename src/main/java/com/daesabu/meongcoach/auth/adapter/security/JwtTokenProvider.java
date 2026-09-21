@@ -1,7 +1,7 @@
 package com.daesabu.meongcoach.auth.adapter.security;
 
-import com.daesabu.meongcoach.auth.application.provided.AuthToken;
 import com.daesabu.meongcoach.auth.application.required.TokenProvider;
+import com.daesabu.meongcoach.auth.domain.AuthToken;
 import com.daesabu.meongcoach.auth.domain.RefreshTokenId;
 import com.daesabu.meongcoach.auth.domain.exception.InvalidRefreshTokenException;
 import com.daesabu.meongcoach.shared.security.JwtProperties;

@@ -1,35 +1,27 @@
 package com.daesabu.meongcoach.user.application;
 
 import com.daesabu.meongcoach.user.application.provided.UserFinder;
-import com.daesabu.meongcoach.user.application.provided.UserRegister;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.User;
+import com.daesabu.meongcoach.user.domain.UserStatus;
+import com.daesabu.meongcoach.user.domain.exception.UserNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class UserRegisterService implements UserRegister {
-	private final UserFinder userFinder;
+@RequiredArgsConstructor
+public class UserQueryService implements UserFinder {
 	private final UserRepository userRepository;
 
 	@Override
-	@Transactional
-	public Long register() {
-		User user = userRepository.save(User.registerUser());
-
-		return user.getId();
+	public boolean isRegistered(Long userId) {
+		return userRepository.existsByIdAndStatusNot(userId, UserStatus.WITHDRAWN);
 	}
 
 	@Override
-	@Transactional
-	public void withdraw(Long userId) {
-		User user = userFinder.findById(userId);
-
-		user.withdraw();
-
-		userRepository.save(user);
+	public User findById(Long userId) {
+		return userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException(userId));
 	}
 }
