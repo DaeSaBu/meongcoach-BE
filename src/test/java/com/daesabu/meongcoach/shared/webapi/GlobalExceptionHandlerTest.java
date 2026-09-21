@@ -161,7 +161,7 @@ class GlobalExceptionHandlerTest {
 	@Test
 	void 온보딩_미완료_회원의_권한_부족은_ONBOARDING_NOT_COMPLETED를_반환한다() throws Exception {
 		SecurityContextHolder.getContext().setAuthentication(
-				new TestingAuthenticationToken("1", null, "ROLE_ONBOARDING_MEMBER"));
+				new TestingAuthenticationToken("1", null, "ROLE_ONBOARDING_USER"));
 
 		mockMvc.perform(get("/test/access-denied"))
 				.andExpect(status().isForbidden())

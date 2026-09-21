@@ -41,7 +41,7 @@ class LogoutServiceTest {
 	@BeforeEach
 	void setUp() {
 		service = new LogoutService(new StubTokenProvider(), refreshTokenRepository);
-		user = userRepository.save(User.registerOnboardingMember());
+		user = userRepository.save(User.registerUser());
 	}
 
 	@Test

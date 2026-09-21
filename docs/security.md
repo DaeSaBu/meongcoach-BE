@@ -67,13 +67,13 @@ SHA-1 검증용이라 id_token의 `aud`가 되지 않습니다), 애플은 **iOS
 `shared`가 `user`를 참조하면 순환 의존이 되므로 `SecurityConfig`는 `Converter<Jwt, AbstractAuthenticationToken>`
 타입으로만 받습니다. 비용은 인증 요청당 PK 조회 한 번입니다.
 
-역할을 JWT 클레임이 아니라 요청마다 DB에서 읽는 이유: 온보딩 완료로 `ONBOARDING_MEMBER → MEMBER`
+역할을 JWT 클레임이 아니라 요청마다 DB에서 읽는 이유: 온보딩 완료로 `ONBOARDING_USER → USER`
 승격이 일어나도 이미 발급된 액세스 토큰이 최대 1시간 낡은 역할을 들고 다니는 문제가 없고,
 클라이언트가 토큰을 재발급받을 필요도 없습니다. 어차피 5번이 요청당 PK 조회를 하고 있었으므로
 추가 비용도 없습니다.
 
 온보딩 상태의 단일 원천은 `users.role`입니다. 인가뿐 아니라 로그인 응답의 `needsOnboarding`
-(`ONBOARDING_MEMBER`면 true)과 온보딩 완료 요청의 중복 판정(`MEMBER`면 409 `USER_ALREADY_ONBOARDED`)도
+(`ONBOARDING_USER`면 true)과 온보딩 완료 요청의 중복 판정(`USER`면 409 `USER_ALREADY_ONBOARDED`)도
 같은 컬럼을 읽습니다. `user_profiles` 행 존재 여부는 판정에 쓰지 않습니다 — 두 곳에서 따로 판단하면
 승격은 됐는데 프로필이 없거나 그 반대인 계정이 생겨 화면 분기와 인가가 어긋나기 때문입니다.
 
@@ -89,14 +89,13 @@ SHA-1 검증용이라 id_token의 `aud`가 되지 않습니다), 애플은 **iOS
 |---|---|---|
 | 1 | `/api/health`, `/api/auth/login/social/**`, `/api/auth/login/local`, `/api/auth/token/refresh`, `/api/auth/logout` | permitAll |
 | 2 | `/swagger-ui/**` | 문서 활성 환경 permitAll, 그 외 denyAll |
-| 3 | `/api/onboarding/**`, `/api/dogs/profile/image` | `MEMBER`, `ONBOARDING_MEMBER` |
-| 4 | `DELETE /api/users/me` | `MEMBER`, `ONBOARDING_MEMBER` |
-| 5 | 그 외 전부 | `MEMBER` |
+| 3 | `/api/onboarding/**`, `/api/dogs/profile/image` | `USER`, `ONBOARDING_USER` |
+| 4 | `DELETE /api/users/me` | `USER`, `ONBOARDING_USER` |
+| 5 | 그 외 전부 | `USER` |
 
 3번은 온보딩 화면에 필요한 경로입니다 — 온보딩 완료 요청에 프로필 이미지 URL이 들어가므로
 기본 프로필 이미지 조회는 온보딩 중에도 열려 있어야 합니다. 이미지 업로드 presigned URL 발급은
 `POST /api/onboarding/presigned-urls`라 `/api/onboarding/**`에 이미 포함됩니다.
-`GUEST`는 어떤 규칙에도 매칭되지 않아 모든 보호 경로에서 403이며, 아직 발급 경로가 없습니다.
 
 4번은 스토어 심사관이 온보딩을 마치지 않은 채 탈퇴를 시험할 수 있어서 둔 예외입니다. `DELETE` 메서드만 열어,
 같은 경로에 나중에 생길 회원 조회·수정이 온보딩 회원에게 함께 열리지 않게 합니다.
@@ -177,7 +176,7 @@ SHA-1 검증용이라 id_token의 `aud`가 되지 않습니다), 애플은 **iOS
 에러 코드는 `UNAUTHORIZED` / `FORBIDDEN` — "프레임워크 예외는 HTTP 상태 enum 이름" 규칙 그대로입니다.
 인증 실패 원인은 공격자에게 힌트가 되므로 `detail`에 일반화된 문구만 담습니다.
 
-예외가 하나 있습니다: 온보딩 미완료 회원(`ONBOARDING_MEMBER`)이 정회원 전용 경로에 접근해 생긴
+예외가 하나 있습니다: 온보딩 미완료 회원(`ONBOARDING_USER`)이 정회원 전용 경로에 접근해 생긴
 403은 클라이언트가 온보딩 화면으로 분기해야 하므로, `GlobalExceptionHandler`가 `SecurityContext`의
 권한을 보고 `ONBOARDING_NOT_COMPLETED` 코드로 구분해 응답합니다. `SecurityExceptionTranslator`의
 재디스패치가 같은 스레드에서 일어나 `SecurityContext`가 살아 있기에 가능한 방식입니다 —
@@ -214,7 +213,7 @@ Google Play·App Store 심사자는 소셜 계정을 만들 수 없으므로, �
 ### 테스트 계정 등록
 
 **local**은 `src/main/resources/db/local/test-account-data.sql`이 기동마다 적재합니다(이메일·비밀번호는 파일 머리 주석 참고).
-온보딩 전 상태(`ONBOARDING_MEMBER`, 프로필 없음)로 두어 심사자가 앱에서 온보딩까지 직접 진행합니다.
+온보딩 전 상태(`ONBOARDING_USER`, 프로필 없음)로 두어 심사자가 앱에서 온보딩까지 직접 진행합니다.
 
 **dev/prod**는 마이그레이션 도구가 없어 psql로 직접 등록합니다. 먼저 BCrypt 해시를 만듭니다.
 
@@ -228,7 +227,7 @@ htpasswd -bnBC 10 "" '비밀번호' | tr -d ':\n'   # macOS 기본 제공. $2y$ 
 BEGIN;
 WITH new_user AS (
 	INSERT INTO users (role, status, created_at, updated_at)
-	VALUES ('ONBOARDING_MEMBER', 'ACTIVE', now(), now()) RETURNING id
+	VALUES ('ONBOARDING_USER', 'ACTIVE', now(), now()) RETURNING id
 )
 INSERT INTO local_accounts (user_id, email, password_hash, created_at, updated_at)
 SELECT id, 'review@example.com', '$2y$10$...', now(), now() FROM new_user;
@@ -296,10 +295,10 @@ dev/prod의 DB 접속 변수(`DB_HOST` 등)는 [profiles.md](profiles.md)를 참
 - **이메일 로그인은 응답 시간을 균등화하지 않습니다.** 이메일이 없으면 BCrypt 대조 없이 바로 401이라, 응답 시간으로
   등록 여부를 추정할 수 있습니다. 로컬 계정은 심사용 몇 개뿐이라 MVP에서는 수용하며, 필요해지면 미존재 분기에서도
   더미 해시에 `matches`를 한 번 호출해 균등화합니다.
-- **프로필 없는 `MEMBER` 계정** — `UserRole` 도입 전 `MEMBER`로 만들어진 회원 중 프로필이 없는 계정은
+- **프로필 없는 `USER` 계정** — `UserRole` 도입 전 `USER`로 만들어진 회원 중 프로필이 없는 계정은
   온보딩 상태를 role로만 판단하므로 `needsOnboarding`이 false이고, 온보딩 완료 요청도 409로 거부되어
   프로필을 만들 길이 없습니다. 이런 계정은 마이그레이션으로 정리하지 않았으므로 발견되면 DB에서 직접
-  `role`을 `ONBOARDING_MEMBER`로 되돌려 온보딩을 다시 밟게 합니다.
+  `role`을 `ONBOARDING_USER`로 되돌려 온보딩을 다시 밟게 합니다.
 - **최초 로그인 동시성** — 같은 신규 계정으로 동시에 두 요청이 오면 `(provider, provider_id)`
   유니크 제약 위반으로 한쪽이 500이 될 수 있습니다. 확률이 낮아 MVP에서는 두고, 필요 시
   제약 위반을 잡아 재조회하도록 보완합니다.

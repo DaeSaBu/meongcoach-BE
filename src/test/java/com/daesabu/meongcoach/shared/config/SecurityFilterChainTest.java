@@ -28,7 +28,7 @@ import org.springframework.test.web.servlet.MockMvc;
 @AutoConfigureMockMvc
 class SecurityFilterChainTest {
 
-	// MEMBER 역할만 허용되는 보호 경로. 인증 없으면 401, 인증되면 보유 강아지가 없어 빈 목록과 200이 나온다
+	// USER 역할만 허용되는 보호 경로. 인증 없으면 401, 인증되면 보유 강아지가 없어 빈 목록과 200이 나온다
 	private static final String PROTECTED_PATH = "/api/dogs";
 
 	// @CurrentUserId를 받는 보호 경로. 없는 토픽을 골라 두어 토픽 조회 단계에서 404로 끝난다
@@ -56,14 +56,14 @@ class SecurityFilterChainTest {
 
 	@BeforeEach
 	void setUp() {
-		userId = userRepository.save(promotedMember()).getId();
-		onboardingUserId = userRepository.save(User.registerOnboardingMember()).getId();
+		userId = userRepository.save(promotedUser()).getId();
+		onboardingUserId = userRepository.save(User.registerUser()).getId();
 	}
 
 	// 정회원은 프로덕션과 동일하게 온보딩 회원 승격 경로로 만든다
-	private User promotedMember() {
-		User user = User.registerOnboardingMember();
-		user.promoteToMember();
+	private User promotedUser() {
+		User user = User.registerUser();
+		user.promoteToUser();
 		return user;
 	}
 

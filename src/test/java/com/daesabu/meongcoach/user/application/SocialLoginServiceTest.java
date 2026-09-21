@@ -77,7 +77,7 @@ class SocialLoginServiceTest {
 	void 정회원이면_온보딩이_필요하지_않다() {
 		service.login(SocialProvider.KAKAO, CREDENTIAL);
 		User user = userRepository.findAll().getFirst();
-		user.promoteToMember();
+		user.promoteToUser();
 		entityManager.flush();
 		entityManager.clear();
 

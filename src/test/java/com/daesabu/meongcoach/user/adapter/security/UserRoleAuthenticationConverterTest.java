@@ -20,27 +20,27 @@ class UserRoleAuthenticationConverterTest {
 	private static final Long USER_ID = 42L;
 
 	@Test
-	void 정회원_토큰에는_ROLE_MEMBER_권한을_부여한다() {
-		AbstractAuthenticationToken authentication = convert(AuthorityRole.MEMBER, String.valueOf(USER_ID));
+	void 정회원_토큰에는_ROLE_USER_권한을_부여한다() {
+		AbstractAuthenticationToken authentication = convert(AuthorityRole.USER, String.valueOf(USER_ID));
 
 		assertThat(authentication.getAuthorities())
 				.extracting(GrantedAuthority::getAuthority)
-				.containsExactly("ROLE_MEMBER");
+				.containsExactly("ROLE_USER");
 	}
 
 	@Test
-	void 온보딩_회원_토큰에는_ROLE_ONBOARDING_MEMBER_권한을_부여한다() {
-		AbstractAuthenticationToken authentication = convert(AuthorityRole.ONBOARDING_MEMBER, String.valueOf(USER_ID));
+	void 온보딩_회원_토큰에는_ROLE_ONBOARDING_USER_권한을_부여한다() {
+		AbstractAuthenticationToken authentication = convert(AuthorityRole.ONBOARDING_USER, String.valueOf(USER_ID));
 
 		assertThat(authentication.getAuthorities())
 				.extracting(GrantedAuthority::getAuthority)
-				.containsExactly("ROLE_ONBOARDING_MEMBER");
+				.containsExactly("ROLE_ONBOARDING_USER");
 	}
 
 	// CurrentUserIdArgumentResolver가 인증 주체 이름을 회원 ID로 해석하므로 sub가 유지되어야 한다
 	@Test
 	void 인증_주체_이름은_토큰의_sub를_그대로_쓴다() {
-		AbstractAuthenticationToken authentication = convert(AuthorityRole.MEMBER, String.valueOf(USER_ID));
+		AbstractAuthenticationToken authentication = convert(AuthorityRole.USER, String.valueOf(USER_ID));
 
 		assertThat(authentication.getName()).isEqualTo(String.valueOf(USER_ID));
 	}
@@ -55,7 +55,7 @@ class UserRoleAuthenticationConverterTest {
 
 	@Test
 	void sub가_회원_ID_형식이_아니면_인증_예외로_거부한다() {
-		assertThatThrownBy(() -> convert(AuthorityRole.MEMBER, "not-a-user-id"))
+		assertThatThrownBy(() -> convert(AuthorityRole.USER, "not-a-user-id"))
 				.isInstanceOf(InvalidBearerTokenException.class);
 	}
 

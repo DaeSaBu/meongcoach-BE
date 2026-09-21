@@ -7,9 +7,8 @@ package com.daesabu.meongcoach.shared.security;
  * shared가 user를 참조할 수 없으므로 어휘의 원천을 shared에 두고 user가 참조하는 방향으로 역전했다.
  */
 public enum AuthorityRole {
-	MEMBER,
-	ONBOARDING_MEMBER,
-	GUEST;
+	USER,
+	ONBOARDING_USER;
 
 	private static final String AUTHORITY_PREFIX = "ROLE_";
 

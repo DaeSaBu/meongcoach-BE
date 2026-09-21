@@ -33,7 +33,7 @@ class AuthTokenIssueServiceTest {
 	@BeforeEach
 	void setUp() {
 		service = new AuthTokenIssueService(new StubTokenProvider(), refreshTokenRepository);
-		user = userRepository.save(User.registerOnboardingMember());
+		user = userRepository.save(User.registerUser());
 	}
 
 	@Test

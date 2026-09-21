@@ -55,7 +55,7 @@ class OnboardingCompleteServiceTest {
 				new UserProfileRegisterService(userRepository, userProfileRepository),
 				new DogRegisterService(dogRepository),
 				prefixValidator());
-		userId = userRepository.save(User.registerOnboardingMember()).getId();
+		userId = userRepository.save(User.registerUser()).getId();
 	}
 
 	// 미설정(null·빈 문자열)은 통과하고
@@ -177,7 +177,7 @@ class OnboardingCompleteServiceTest {
 		service.complete(userId, completeInfo());
 
 		User user = userRepository.findById(userId).orElseThrow();
-		assertThat(user.getRole()).isEqualTo(UserRole.MEMBER);
+		assertThat(user.getRole()).isEqualTo(UserRole.USER);
 	}
 
 	@Test

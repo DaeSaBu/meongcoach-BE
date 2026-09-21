@@ -55,7 +55,7 @@ class LocalLoginServiceTest {
 	void setUp() {
 		service = new LocalLoginService(localAccountRepository,
 				new AuthTokenIssueService(new StubTokenProvider(), refreshTokenRepository), PASSWORD_ENCODER::matches);
-		user = userRepository.save(User.registerOnboardingMember());
+		user = userRepository.save(User.registerUser());
 		String passwordHash = PASSWORD_ENCODER.encode(PASSWORD);
 		localAccountRepository.save(
 				LocalAccount.create(user, new LocalAccountCreateCommand(EMAIL, passwordHash)));
@@ -81,8 +81,8 @@ class LocalLoginServiceTest {
 
 	@Test
 	void 정회원이면_온보딩이_필요하지_않다() {
-		User member = userRepository.findById(user.getId()).orElseThrow();
-		member.promoteToMember();
+		User promoted = userRepository.findById(user.getId()).orElseThrow();
+		promoted.promoteToUser();
 		entityManager.flush();
 		entityManager.clear();
 

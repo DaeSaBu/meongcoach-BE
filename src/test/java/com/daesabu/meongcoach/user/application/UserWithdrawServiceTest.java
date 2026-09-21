@@ -84,7 +84,7 @@ class UserWithdrawServiceTest {
 
 	@Test
 	void 탈퇴하면_회원_상태가_WITHDRAWN이_되고_행은_남는다() {
-		Long userId = persistSocialMember().getId();
+		Long userId = persistSocialUser().getId();
 
 		userWithdrawer.withdraw(userId, APPLE_CODE);
 		flushAndClear();
@@ -95,7 +95,7 @@ class UserWithdrawServiceTest {
 
 	@Test
 	void 탈퇴하면_소셜_계정과_프로필_행이_삭제된다() {
-		User user = persistSocialMember();
+		User user = persistSocialUser();
 		userProfileRepository.save(UserProfile.create(user, profileCommand()));
 		flushAndClear();
 
@@ -109,7 +109,7 @@ class UserWithdrawServiceTest {
 
 	@Test
 	void 탈퇴하면_로컬_계정_행이_삭제된다() {
-		User user = userRepository.save(User.registerOnboardingMember());
+		User user = userRepository.save(User.registerUser());
 		Email email = new Email("review@meongcoach.com");
 		localAccountRepository.save(LocalAccount.create(user, new LocalAccountCreateCommand(email, "hashed")));
 		flushAndClear();
@@ -123,7 +123,7 @@ class UserWithdrawServiceTest {
 
 	@Test
 	void 온보딩_미완료_회원도_탈퇴할_수_있다() {
-		Long userId = persistSocialMember().getId();
+		Long userId = persistSocialUser().getId();
 
 		userWithdrawer.withdraw(userId, APPLE_CODE);
 		flushAndClear();
@@ -136,7 +136,7 @@ class UserWithdrawServiceTest {
 	// 애플 심사 요건: 탈퇴 후 같은 계정으로 다시 가입할 수 있어야 한다
 	@Test
 	void 탈퇴한_소셜_계정으로_다시_로그인하면_새_회원으로_가입된다() {
-		Long withdrawnUserId = persistSocialMember().getId();
+		Long withdrawnUserId = persistSocialUser().getId();
 		userWithdrawer.withdraw(withdrawnUserId, APPLE_CODE);
 		flushAndClear();
 
@@ -149,7 +149,7 @@ class UserWithdrawServiceTest {
 
 	@Test
 	void 탈퇴하면_회원의_살아있는_리프레시_토큰이_모두_폐기된다() {
-		User user = persistSocialMember();
+		User user = persistSocialUser();
 		RefreshToken phone = persistToken(RefreshToken.issue(user, RefreshTokenId.generate(), LocalDateTime.now().plusDays(14)));
 		RefreshToken tablet = persistToken(RefreshToken.issue(user, RefreshTokenId.generate(), LocalDateTime.now().plusDays(14)));
 
@@ -162,7 +162,7 @@ class UserWithdrawServiceTest {
 
 	@Test
 	void 탈퇴해도_이미_폐기된_토큰의_폐기_시각은_바뀌지_않는다() {
-		User user = persistSocialMember();
+		User user = persistSocialUser();
 		RefreshToken revoked = RefreshToken.issue(user, RefreshTokenId.generate(), LocalDateTime.now().plusDays(14));
 		revoked.revoke();
 		persistToken(revoked);
@@ -184,7 +184,7 @@ class UserWithdrawServiceTest {
 	// 애플 심사 지침 5.1.1(v): Sign in with Apple 계정을 삭제할 때는 Apple 토큰을 revoke해야 한다
 	@Test
 	void revoker가_등록된_제공자_계정은_인가_코드로_revoke한_뒤_탈퇴한다() {
-		Long userId = persistSocialMember().getId();
+		Long userId = persistSocialUser().getId();
 
 		userWithdrawer.withdraw(userId, APPLE_CODE);
 		flushAndClear();
@@ -195,7 +195,7 @@ class UserWithdrawServiceTest {
 
 	@Test
 	void revoke가_실패하면_탈퇴되지_않는다() {
-		Long userId = persistSocialMember().getId();
+		Long userId = persistSocialUser().getId();
 		tokenRevoker.failWith(new InvalidAppleAuthorizationCodeException());
 
 		assertThatThrownBy(() -> userWithdrawer.withdraw(userId, APPLE_CODE))
@@ -209,7 +209,7 @@ class UserWithdrawServiceTest {
 
 	@Test
 	void revoker가_없는_제공자_계정만_있는_회원은_인가_코드가_있어도_revoke하지_않고_탈퇴한다() {
-		User user = userRepository.save(User.registerOnboardingMember());
+		User user = userRepository.save(User.registerUser());
 		socialAccountRepository.save(SocialAccount.link(user, KAKAO_ACCOUNT));
 		flushAndClear();
 
@@ -220,8 +220,8 @@ class UserWithdrawServiceTest {
 		assertThat(userRepository.findById(user.getId()).orElseThrow().getStatus()).isEqualTo(UserStatus.WITHDRAWN);
 	}
 
-	private User persistSocialMember() {
-		User user = userRepository.save(User.registerOnboardingMember());
+	private User persistSocialUser() {
+		User user = userRepository.save(User.registerUser());
 		socialAccountRepository.save(SocialAccount.link(user, APPLE_ACCOUNT));
 		flushAndClear();
 		return user;
