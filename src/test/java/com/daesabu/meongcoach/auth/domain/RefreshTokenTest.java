@@ -13,7 +13,7 @@ class RefreshTokenTest {
 
 	@Test
 	void 발급하면_회원과_jti와_만료_시각이_담기고_무효화되지_않은_상태다() {
-		RefreshToken token = RefreshToken.issue(USER_ID, TOKEN_ID, EXPIRES_AT);
+		RefreshToken token = RefreshToken.register(USER_ID, new RefreshTokenRegisterCommand(TOKEN_ID, EXPIRES_AT));
 
 		assertThat(token.getUserId()).isEqualTo(USER_ID);
 		assertThat(token.getTokenId()).isEqualTo(TOKEN_ID);
@@ -23,7 +23,7 @@ class RefreshTokenTest {
 
 	@Test
 	void 무효화하면_revokedAt이_기록된다() {
-		RefreshToken token = RefreshToken.issue(USER_ID, TOKEN_ID, EXPIRES_AT);
+		RefreshToken token = RefreshToken.register(USER_ID, new RefreshTokenRegisterCommand(TOKEN_ID, EXPIRES_AT));
 
 		token.revoke();
 
@@ -32,7 +32,7 @@ class RefreshTokenTest {
 
 	@Test
 	void 이미_무효화된_토큰을_다시_무효화해도_처음_시각이_유지된다() {
-		RefreshToken token = RefreshToken.issue(USER_ID, TOKEN_ID, EXPIRES_AT);
+		RefreshToken token = RefreshToken.register(USER_ID, new RefreshTokenRegisterCommand(TOKEN_ID, EXPIRES_AT));
 		token.revoke();
 		LocalDateTime firstRevokedAt = token.getRevokedAt();
 
@@ -43,7 +43,7 @@ class RefreshTokenTest {
 
 	@Test
 	void 무효화된_토큰은_사용할_수_없다() {
-		RefreshToken token = RefreshToken.issue(USER_ID, TOKEN_ID, EXPIRES_AT);
+		RefreshToken token = RefreshToken.register(USER_ID, new RefreshTokenRegisterCommand(TOKEN_ID, EXPIRES_AT));
 		token.revoke();
 
 		boolean usable = token.isUsable(EXPIRES_AT.minusDays(1));
@@ -53,7 +53,7 @@ class RefreshTokenTest {
 
 	@Test
 	void 만료_시각이_지난_토큰은_사용할_수_없다() {
-		RefreshToken token = RefreshToken.issue(USER_ID, TOKEN_ID, EXPIRES_AT);
+		RefreshToken token = RefreshToken.register(USER_ID, new RefreshTokenRegisterCommand(TOKEN_ID, EXPIRES_AT));
 
 		boolean usable = token.isUsable(EXPIRES_AT.plusSeconds(1));
 
@@ -62,7 +62,7 @@ class RefreshTokenTest {
 
 	@Test
 	void 만료_전이고_무효화되지_않은_토큰은_사용할_수_있다() {
-		RefreshToken token = RefreshToken.issue(USER_ID, TOKEN_ID, EXPIRES_AT);
+		RefreshToken token = RefreshToken.register(USER_ID, new RefreshTokenRegisterCommand(TOKEN_ID, EXPIRES_AT));
 
 		boolean usable = token.isUsable(EXPIRES_AT.minusDays(1));
 

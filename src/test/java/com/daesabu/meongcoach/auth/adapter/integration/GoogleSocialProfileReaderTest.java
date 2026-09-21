@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.client.ExpectedCount.manyTimes;
 
 import com.daesabu.meongcoach.auth.domain.Email;
-import com.daesabu.meongcoach.auth.domain.SocialAccountLinkCommand;
+import com.daesabu.meongcoach.auth.domain.SocialProfile;
 import com.daesabu.meongcoach.auth.domain.SocialProvider;
 import com.daesabu.meongcoach.auth.domain.exception.InvalidSocialTokenException;
 import com.daesabu.meongcoach.auth.domain.exception.SocialEmailRequiredException;
@@ -53,7 +53,7 @@ class GoogleSocialProfileReaderTest {
 	void 유효한_id_token이면_회원_식별자와_이메일을_읽는다() {
 		String idToken = signer.sign(claims().claim("email", "a@gmail.com").build());
 
-		SocialAccountLinkCommand command = reader.read(idToken);
+		SocialProfile command = reader.read(idToken);
 
 		assertThat(command.provider()).isEqualTo(SocialProvider.GOOGLE);
 		assertThat(command.providerId()).isEqualTo(SUBJECT);

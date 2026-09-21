@@ -2,9 +2,9 @@ package com.daesabu.meongcoach.auth.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.daesabu.meongcoach.auth.application.provided.AuthToken;
 import com.daesabu.meongcoach.auth.application.required.RefreshTokenRepository;
 import com.daesabu.meongcoach.auth.application.required.TokenProvider;
+import com.daesabu.meongcoach.auth.domain.AuthToken;
 import com.daesabu.meongcoach.auth.domain.RefreshToken;
 import com.daesabu.meongcoach.auth.domain.RefreshTokenId;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
@@ -16,7 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 
 @DataJpaTest
-class AuthTokenIssueServiceTest {
+class AuthTokenProvideServiceTest {
 
 	private static final LocalDateTime EXPIRES_AT = LocalDateTime.of(2026, 9, 16, 12, 0);
 
@@ -26,13 +26,16 @@ class AuthTokenIssueServiceTest {
 	@Autowired
 	private RefreshTokenRepository refreshTokenRepository;
 
-	private AuthTokenIssueService service;
+	private AuthTokenProvideService service;
 
 	private User user;
 
 	@BeforeEach
 	void setUp() {
-		service = new AuthTokenIssueService(new StubTokenProvider(), refreshTokenRepository);
+		StubTokenProvider tokenProvider = new StubTokenProvider();
+		RefreshTokenModifyService refreshTokenRegister = new RefreshTokenModifyService(refreshTokenRepository,
+				tokenProvider, new RefreshTokenQueryService(refreshTokenRepository));
+		service = new AuthTokenProvideService(tokenProvider, refreshTokenRegister);
 		user = userRepository.save(User.registerUser());
 	}
 

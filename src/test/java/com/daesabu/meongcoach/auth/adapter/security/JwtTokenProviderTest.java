@@ -3,7 +3,7 @@ package com.daesabu.meongcoach.auth.adapter.security;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.daesabu.meongcoach.auth.application.provided.AuthToken;
+import com.daesabu.meongcoach.auth.domain.AuthToken;
 import com.daesabu.meongcoach.auth.domain.exception.InvalidRefreshTokenException;
 import com.daesabu.meongcoach.shared.security.JwtProperties;
 import com.daesabu.meongcoach.shared.security.TokenType;
