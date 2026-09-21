@@ -105,7 +105,7 @@ class SecurityFilterChainTest {
 	void 애플_로그인_경로도_인증_없이_열려_있고_잘못된_토큰이면_401을_반환한다() throws Exception {
 		mockMvc.perform(post("/api/auth/login/social")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"socialProvider\": \"APPLE\", \"idToken\": \"invalid\"}"))
+						.content("{\"socialProvider\": \"apple\", \"idToken\": \"invalid\"}"))
 				.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.code").value("AUTH_INVALID_SOCIAL_TOKEN"));
 	}

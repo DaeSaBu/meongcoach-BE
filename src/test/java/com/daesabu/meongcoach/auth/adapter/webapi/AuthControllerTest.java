@@ -21,12 +21,12 @@ import com.daesabu.meongcoach.auth.application.provided.dto.TokenRefreshRequest;
 import com.daesabu.meongcoach.auth.application.provided.dto.WithdrawRequest;
 import com.daesabu.meongcoach.auth.domain.AuthToken;
 import com.daesabu.meongcoach.auth.domain.RefreshTokenId;
-import com.daesabu.meongcoach.auth.domain.SocialProvider;
 import com.daesabu.meongcoach.auth.domain.exception.AppleAuthorizationCodeRequiredException;
 import com.daesabu.meongcoach.auth.domain.exception.InvalidCredentialsException;
 import com.daesabu.meongcoach.auth.domain.exception.InvalidEmailException;
 import com.daesabu.meongcoach.auth.domain.exception.InvalidRefreshTokenException;
 import com.daesabu.meongcoach.auth.domain.exception.InvalidSocialTokenException;
+import com.daesabu.meongcoach.auth.domain.exception.UnsupportedSocialProviderException;
 import com.daesabu.meongcoach.user.domain.exception.UserNotFoundException;
 import java.security.Principal;
 import java.time.LocalDateTime;
@@ -77,11 +77,11 @@ class AuthControllerTest {
 
 	@Test
 	void 소셜_로그인하면_토큰을_반환한다() throws Exception {
-		given(authenticator.socialLogin(new SocialLoginRequest(SocialProvider.KAKAO, ID_TOKEN))).willReturn(AUTH_TOKEN);
+		given(authenticator.socialLogin(new SocialLoginRequest("kakao", ID_TOKEN))).willReturn(AUTH_TOKEN);
 
 		mockMvc.perform(post("/api/auth/login/social")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content(socialLoginBody("KAKAO", ID_TOKEN)))
+						.content(socialLoginBody("kakao", ID_TOKEN)))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.accessToken").value("access-token"))
 				.andExpect(jsonPath("$.refreshToken").value("refresh-token"))
@@ -89,7 +89,7 @@ class AuthControllerTest {
 				.andDo(document("auth/login",
 						requestFields(
 								fieldWithPath("socialProvider").description(
-										"필수 입력. 소셜 로그인 제공자. `KAKAO`, `GOOGLE`, `APPLE` 지원(대문자)"),
+										"필수 입력. 소셜 로그인 제공자. `kakao`, `google`, `apple` 지원(대소문자 무시)"),
 								fieldWithPath("idToken").description(
 										"필수 입력. 앱이 제공자 SDK로 받은 OIDC ID 토큰(애플은 identityToken)")
 						),
@@ -123,12 +123,23 @@ class AuthControllerTest {
 
 	@Test
 	void 지원하지_않는_제공자면_400을_반환한다() throws Exception {
+		given(authenticator.socialLogin(any())).willThrow(new UnsupportedSocialProviderException("naver"));
+
 		mockMvc.perform(post("/api/auth/login/social")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content(socialLoginBody("NAVER", ID_TOKEN)))
-				.andExpect(status().isBadRequest());
+						.content(socialLoginBody("naver", ID_TOKEN)))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("AUTH_UNSUPPORTED_SOCIAL_PROVIDER"));
+	}
 
-		then(authenticator).shouldHaveNoInteractions();
+	@Test
+	void 제공자가_비어_있으면_검증에_실패한다() throws Exception {
+		mockMvc.perform(post("/api/auth/login/social")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(socialLoginBody("", ID_TOKEN)))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
+				.andExpect(jsonPath("$.errors[0].field").value("socialProvider"));
 	}
 
 	@Test

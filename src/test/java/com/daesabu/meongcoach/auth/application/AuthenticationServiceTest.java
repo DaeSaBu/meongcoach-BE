@@ -28,6 +28,7 @@ import com.daesabu.meongcoach.auth.domain.exception.InvalidAppleAuthorizationCod
 import com.daesabu.meongcoach.auth.domain.exception.InvalidCredentialsException;
 import com.daesabu.meongcoach.auth.domain.exception.InvalidEmailException;
 import com.daesabu.meongcoach.auth.domain.exception.InvalidRefreshTokenException;
+import com.daesabu.meongcoach.auth.domain.exception.UnsupportedSocialProviderException;
 import com.daesabu.meongcoach.auth.domain.exception.WithdrawnUserException;
 import com.daesabu.meongcoach.user.application.UserQueryService;
 import com.daesabu.meongcoach.user.application.UserRegisterService;
@@ -56,7 +57,7 @@ class AuthenticationServiceTest {
 	private static final Long UNREGISTERED_USER_ID = 999L;
 	private static final String KAKAO_PROVIDER_ID = "3812345678";
 	private static final String ID_TOKEN = "kakao-id-token";
-	private static final SocialLoginRequest KAKAO_LOGIN = new SocialLoginRequest(SocialProvider.KAKAO, ID_TOKEN);
+	private static final SocialLoginRequest KAKAO_LOGIN = new SocialLoginRequest("KAKAO", ID_TOKEN);
 
 	private static final Email EMAIL = new Email("review@meongcoach.com");
 	private static final String PASSWORD = "meongcoach-review";
@@ -132,6 +133,23 @@ class AuthenticationServiceTest {
 		assertThat(userRepository.count()).isEqualTo(1);
 		assertThat(socialAccountRepository.count()).isEqualTo(1);
 		assertThat(second.accessToken()).isEqualTo(first.accessToken());
+	}
+
+	// 클라이언트가 제공자 표기의 대소문자를 맞추지 않아도 되게 한다
+	@Test
+	void 제공자를_소문자로_보내도_로그인된다() {
+		AuthToken token = service.socialLogin(new SocialLoginRequest("kakao", ID_TOKEN));
+
+		assertThat(token.accessToken()).isNotBlank();
+		assertThat(socialAccountRepository.findByProviderAndProviderId(SocialProvider.KAKAO, KAKAO_PROVIDER_ID))
+				.isPresent();
+	}
+
+	@Test
+	void 지원하지_않는_제공자면_로그인할_수_없다() {
+		assertThatThrownBy(() -> service.socialLogin(new SocialLoginRequest("naver", ID_TOKEN)))
+				.isInstanceOf(UnsupportedSocialProviderException.class);
+		assertThat(userRepository.count()).isZero();
 	}
 
 	@Test
