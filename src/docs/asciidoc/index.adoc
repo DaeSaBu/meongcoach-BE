@@ -49,7 +49,7 @@ operation::shared/error-onboarding-not-completed[snippets='http-response,respons
 
 link:{swagger-ui}#/Auth/auth-login[▶ Swagger에서 Try it out,window=swagger]
 
-operation::auth/login[snippets='http-request,path-parameters,request-fields,http-response,response-fields']
+operation::auth/login[snippets='http-request,request-fields,http-response,response-fields']
 
 ==== 실패 응답
 
@@ -57,17 +57,17 @@ operation::auth/login-error[snippets='http-response,response-fields']
 
 === 이메일 로그인
 
-link:{swagger-ui}#/Auth/auth-local-login[▶ Swagger에서 Try it out,window=swagger]
+link:{swagger-ui}#/Auth/auth-email-login[▶ Swagger에서 Try it out,window=swagger]
 
 스토어 심사(Google Play·App Store)용 테스트 계정 전용입니다. 회원가입·비밀번호 변경 API는 없으며 계정은 서버에서 직접 등록합니다.
 이메일이 없거나 비밀번호가 틀리면 원인을 구분하지 않고 401(`AUTH_INVALID_CREDENTIALS`)을 반환합니다.
 응답 형식은 소셜 로그인과 같습니다.
 
-operation::auth/local-login[snippets='http-request,request-fields,http-response,response-fields']
+operation::auth/email-login[snippets='http-request,request-fields,http-response,response-fields']
 
 ==== 실패 응답
 
-operation::auth/local-login-error[snippets='http-response,response-fields']
+operation::auth/email-login-error[snippets='http-response,response-fields']
 
 === 토큰 재발급
 
@@ -119,6 +119,21 @@ Apple 계정 회원이 `appleAuthorizationCode` 없이 요청하면 400(`AUTH_AP
 Apple이 코드를 거부하면 400(`AUTH_INVALID_APPLE_AUTHORIZATION_CODE`), Apple과 통신하지 못하면 502(`AUTH_SOCIAL_PROVIDER_UNAVAILABLE`)를 반환합니다.
 
 operation::auth/withdraw-error[snippets='http-response,response-fields']
+
+== User API
+
+=== 내 정보 조회
+
+link:{swagger-ui}#/User/user-me[▶ Swagger에서 Try it out,window=swagger]
+
+로그인 응답은 토큰만 내려주므로, 클라이언트는 로그인 직후 이 API의 `needsOnboarding`으로 온보딩 화면 진입 여부를 정합니다.
+온보딩을 마치지 않은 회원도 호출할 수 있습니다.
+
+operation::user/me[snippets='http-request,http-response,response-fields']
+
+==== 실패 응답
+
+operation::user/me-error[snippets='http-response,response-fields']
 
 == Media API
 
