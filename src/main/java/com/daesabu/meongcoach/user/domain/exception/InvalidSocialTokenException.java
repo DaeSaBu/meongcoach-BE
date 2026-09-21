@@ -10,4 +10,9 @@ public class InvalidSocialTokenException extends DomainException {
 	public InvalidSocialTokenException() {
 		super(UserErrorCode.USER_INVALID_SOCIAL_TOKEN);
 	}
+
+	public InvalidSocialTokenException(Throwable cause) {
+		super(UserErrorCode.USER_INVALID_SOCIAL_TOKEN,
+				UserErrorCode.USER_INVALID_SOCIAL_TOKEN.message(), cause);
+	}
 }

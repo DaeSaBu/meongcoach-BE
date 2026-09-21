@@ -52,10 +52,10 @@ final class OidcIdTokenVerifier {
 			return decoder.decode(credential);
 		} catch (BadJwtException e) {
 			// 형식·서명·발급자·만료 위반은 토큰 자체가 잘못된 것이다
-			throw new InvalidSocialTokenException();
+			throw new InvalidSocialTokenException(e);
 		} catch (JwtException e) {
 			// 공개 키를 가져오지 못한 경우다. 토큰 무효와 구분해야 클라이언트가 재시도할 수 있다
-			throw new SocialProviderUnavailableException();
+			throw new SocialProviderUnavailableException(e);
 		}
 	}
 
