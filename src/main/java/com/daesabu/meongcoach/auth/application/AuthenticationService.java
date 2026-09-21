@@ -33,6 +33,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
@@ -53,8 +54,10 @@ public class AuthenticationService implements Authenticator {
 	private final UserFinder userFinder;
 	private final UserRegister userRegister;
 
+	// 제공자 호출은 롤백할 것이 없고 그동안 커넥션을 잡을 이유도 없으므로 클래스 기본 트랜잭션을 끈다.
+	// 계정 등록(AccountRegister)과 토큰 발급·저장(AuthTokenProvider)은 각자 트랜잭션을 연다
 	@Override
-	@Transactional
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
 	public AuthToken socialLogin(SocialLoginRequest socialLoginRequest) {
 		SocialProfile socialProfile = readSocialProfile(socialLoginRequest);
 
