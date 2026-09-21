@@ -62,7 +62,6 @@ jq \
 	--arg s3_secret_access_key "${S3_SECRET_ACCESS_KEY:-}" \
 	--arg s3_bucket "${S3_BUCKET:-}" \
 	--arg s3_public_base_url "${S3_PUBLIC_BASE_URL:-}" \
-	--arg vimeo_access_token "${VIMEO_ACCESS_TOKEN:-}" \
 	--arg evolink_api_key "${EVOLINK_API_KEY:-}" \
 	--arg evolink_base_url "${EVOLINK_BASE_URL:-}" \
 	--arg evolink_model "${EVOLINK_MODEL:-}" \
@@ -110,7 +109,6 @@ jq \
 							.name != "R2_SECRET_ACCESS_KEY" and
 							.name != "S3_ACCESS_KEY_ID" and
 							.name != "S3_SECRET_ACCESS_KEY" and
-							.name != "VIMEO_ACCESS_TOKEN" and
 							.name != "SQS_ACCESS_KEY_ID" and
 							.name != "SQS_SECRET_ACCESS_KEY" and
 							.name != "EVOLINK_API_KEY"
@@ -139,6 +137,7 @@ jq \
 								.name != "S3_SECRET_ACCESS_KEY" and
 								.name != "S3_BUCKET" and
 								.name != "S3_PUBLIC_BASE_URL" and
+								# 기존 task definition에 남은 값을 걸러내는 임시 필터다. dev·prod 배포로 제거된 뒤 이 줄도 지운다.
 								.name != "VIMEO_ACCESS_TOKEN" and
 								.name != "SQS_REGION" and
 								.name != "SQS_ACCESS_KEY_ID" and
@@ -176,11 +175,6 @@ jq \
 							{"name": "AI_VIDEO_QUEUE", "value": $ai_video_queue},
 							{"name": "EVOLINK_API_KEY", "value": $evolink_api_key}
 						] +
-						(if $vimeo_access_token == "" then
-							[]
-						 else
-							[{"name": "VIMEO_ACCESS_TOKEN", "value": $vimeo_access_token}]
-						 end) +
 						# 미설정 시 application.yml의 기본값을 쓰도록 주입 자체를 생략한다
 						(if $evolink_base_url == "" then
 							[]

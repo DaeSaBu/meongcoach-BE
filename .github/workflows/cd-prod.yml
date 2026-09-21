@@ -135,7 +135,6 @@ jobs:
           S3_SECRET_ACCESS_KEY: ${{ secrets.PROD_S3_SECRET_ACCESS_KEY }}
           S3_BUCKET: ${{ secrets.PROD_S3_BUCKET }}
           S3_PUBLIC_BASE_URL: ${{ secrets.PROD_S3_PUBLIC_BASE_URL }}
-          VIMEO_ACCESS_TOKEN: ${{ secrets.PROD_VIMEO_ACCESS_TOKEN }}
           SQS_REGION: ${{ secrets.PROD_SQS_REGION }}
           SQS_ACCESS_KEY_ID: ${{ secrets.PROD_SQS_ACCESS_KEY_ID }}
           SQS_SECRET_ACCESS_KEY: ${{ secrets.PROD_SQS_SECRET_ACCESS_KEY }}
