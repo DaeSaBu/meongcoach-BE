@@ -5,7 +5,6 @@ import com.daesabu.meongcoach.shared.exception.ErrorCode;
 public enum AuthErrorCode implements ErrorCode {
 
 	AUTH_INVALID_EMAIL(400, "이메일 형식이 올바르지 않습니다."),
-	AUTH_UNSUPPORTED_SOCIAL_PROVIDER(400, "지원하지 않는 소셜 로그인 제공자입니다."),
 	AUTH_INVALID_SOCIAL_TOKEN(401, "소셜 로그인 토큰이 유효하지 않습니다."),
 	AUTH_SOCIAL_EMAIL_REQUIRED(400, "소셜 계정의 이메일 제공 동의가 필요합니다."),
 	AUTH_SOCIAL_TOKEN_APP_MISMATCH(401, "다른 애플리케이션에서 발급된 소셜 로그인 토큰입니다."),
