@@ -67,6 +67,10 @@ public class SecurityConfig {
 	// 메서드를 한정해 같은 경로에 나중에 생길 회원 조회·수정이 온보딩 회원에게 열리지 않게 한다
 	private static final String WITHDRAW_PATH = "/api/auth/me";
 
+	// 로그인 응답에 온보딩 여부가 없어 클라이언트가 로그인 직후 이 경로로 화면을 분기하므로 온보딩 중에도 연다.
+	// 탈퇴와 같은 이유로 메서드를 한정한다
+	private static final String MY_INFO_PATH = "/api/users/me";
+
 	// Swagger UI 정적 파일과 그 안의 openapi3.json이 모두 이 경로 아래에 있다
 	private static final String[] API_DOCS_PATHS = {"/swagger-ui/**"};
 
@@ -94,6 +98,8 @@ public class SecurityConfig {
 					auth.requestMatchers(ONBOARDING_ALLOWED_PATHS)
 							.hasAnyRole(AuthorityRole.USER.name(), AuthorityRole.ONBOARDING_USER.name());
 					auth.requestMatchers(HttpMethod.DELETE, WITHDRAW_PATH)
+							.hasAnyRole(AuthorityRole.USER.name(), AuthorityRole.ONBOARDING_USER.name());
+					auth.requestMatchers(HttpMethod.GET, MY_INFO_PATH)
 							.hasAnyRole(AuthorityRole.USER.name(), AuthorityRole.ONBOARDING_USER.name());
 					auth.anyRequest().hasRole(AuthorityRole.USER.name());
 				})
