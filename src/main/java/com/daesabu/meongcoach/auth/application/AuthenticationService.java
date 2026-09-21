@@ -24,6 +24,7 @@ import com.daesabu.meongcoach.auth.domain.RefreshToken;
 import com.daesabu.meongcoach.auth.domain.RefreshTokenId;
 import com.daesabu.meongcoach.auth.domain.SocialAccount;
 import com.daesabu.meongcoach.auth.domain.SocialProfile;
+import com.daesabu.meongcoach.auth.domain.SocialProvider;
 import com.daesabu.meongcoach.auth.domain.exception.InvalidCredentialsException;
 import com.daesabu.meongcoach.auth.domain.exception.InvalidRefreshTokenException;
 import com.daesabu.meongcoach.auth.domain.exception.WithdrawnUserException;
@@ -163,8 +164,9 @@ public class AuthenticationService implements Authenticator {
 	}
 
 	private SocialProfile readSocialProfile(SocialLoginRequest socialLoginRequest) {
-		return socialProfileReaders.read(socialLoginRequest.socialProvider(),
-				socialLoginRequest.idToken());
+		SocialProvider provider = SocialProvider.from(socialLoginRequest.socialProvider());
+
+		return socialProfileReaders.read(provider, socialLoginRequest.idToken());
 	}
 
 	private Long upsertSocialAccount(SocialProfile socialProfile) {
