@@ -8,8 +8,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.daesabu.meongcoach.auth.application.provided.AuthToken;
 import com.daesabu.meongcoach.auth.application.required.TokenProvider;
+import com.daesabu.meongcoach.auth.domain.AuthToken;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.User;
 import org.junit.jupiter.api.BeforeEach;
@@ -93,19 +93,19 @@ class SecurityFilterChainTest {
 	void 잘못된_소셜_토큰을_제출하면_401을_반환한다() throws Exception {
 		AuthToken token = tokenProvider.issue(userId);
 
-		mockMvc.perform(post("/api/auth/login/social/kakao")
+		mockMvc.perform(post("/api/auth/login/social")
 						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken())
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"token\": \"invalid\"}"))
+						.content("{\"socialProvider\": \"KAKAO\", \"idToken\": \"invalid\"}"))
 				.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.code").value("AUTH_INVALID_SOCIAL_TOKEN"));
 	}
 
 	@Test
 	void 애플_로그인_경로도_인증_없이_열려_있고_잘못된_토큰이면_401을_반환한다() throws Exception {
-		mockMvc.perform(post("/api/auth/login/social/apple")
+		mockMvc.perform(post("/api/auth/login/social")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"token\": \"invalid\"}"))
+						.content("{\"socialProvider\": \"APPLE\", \"idToken\": \"invalid\"}"))
 				.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.code").value("AUTH_INVALID_SOCIAL_TOKEN"));
 	}
@@ -113,7 +113,7 @@ class SecurityFilterChainTest {
 	// 필터 체인이 막았다면 코드가 UNAUTHORIZED다. 도메인 에러 코드가 나오면 컨트롤러까지 도달한 것이다
 	@Test
 	void 이메일_로그인_경로는_인증_없이_열려_있고_자격증명이_틀리면_401을_반환한다() throws Exception {
-		mockMvc.perform(post("/api/auth/login/local")
+		mockMvc.perform(post("/api/auth/login/email")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"email\": \"nobody@meongcoach.com\", \"password\": \"wrong-password\"}"))
 				.andExpect(status().isUnauthorized())
@@ -227,7 +227,7 @@ class SecurityFilterChainTest {
 	void 온보딩_미완료_회원도_탈퇴할_수_있고_탈퇴_후_같은_토큰은_거부된다() throws Exception {
 		AuthToken token = tokenProvider.issue(onboardingUserId);
 
-		mockMvc.perform(delete("/api/users/me")
+		mockMvc.perform(delete("/api/auth/me")
 						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))
 				.andExpect(status().isNoContent());
 
@@ -236,12 +236,27 @@ class SecurityFilterChainTest {
 				.andExpect(status().isUnauthorized());
 	}
 
-	// 탈퇴는 DELETE만 열었으므로 같은 경로의 다른 메서드는 정회원 규칙을 그대로 따른다
+	// 로그인 응답에 온보딩 여부가 없으므로 온보딩 미완료 회원도 자기 상태를 조회할 수 있어야 한다
 	@Test
-	void 온보딩_미완료_회원은_탈퇴_외의_회원_경로에_접근할_수_없다() throws Exception {
+	void 온보딩_미완료_회원도_내_정보를_조회할_수_있다() throws Exception {
 		AuthToken token = tokenProvider.issue(onboardingUserId);
 
 		mockMvc.perform(get("/api/users/me")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.needsOnboarding").value(true));
+	}
+
+	// 내 정보는 GET만, 탈퇴는 DELETE만 열었으므로 같은 경로의 다른 메서드는 정회원 규칙을 그대로 따른다
+	@Test
+	void 온보딩_미완료_회원은_허용된_메서드_외에는_회원_경로에_접근할_수_없다() throws Exception {
+		AuthToken token = tokenProvider.issue(onboardingUserId);
+
+		mockMvc.perform(put("/api/users/me")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.code").value("ONBOARDING_NOT_COMPLETED"));
+		mockMvc.perform(get("/api/auth/me")
 						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))
 				.andExpect(status().isForbidden())
 				.andExpect(jsonPath("$.code").value("ONBOARDING_NOT_COMPLETED"));
