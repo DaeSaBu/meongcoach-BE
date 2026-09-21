@@ -152,7 +152,7 @@ class AppleSocialTokenRevokerTest {
 
 		assertThatThrownBy(() -> revoker.revoke(AUTHORIZATION_CODE))
 				.isInstanceOf(InvalidAppleAuthorizationCodeException.class)
-				.hasMessage(AuthErrorCode.USER_INVALID_APPLE_AUTHORIZATION_CODE.message())
+				.hasMessage(AuthErrorCode.AUTH_INVALID_APPLE_AUTHORIZATION_CODE.message())
 				.hasCauseInstanceOf(RestClientResponseException.class);
 		server.verify();
 	}
@@ -164,7 +164,7 @@ class AppleSocialTokenRevokerTest {
 
 		assertThatThrownBy(() -> revoker.revoke(AUTHORIZATION_CODE))
 				.isInstanceOf(InvalidAppleAuthorizationCodeException.class)
-				.hasMessage(AuthErrorCode.USER_INVALID_APPLE_AUTHORIZATION_CODE.message())
+				.hasMessage(AuthErrorCode.AUTH_INVALID_APPLE_AUTHORIZATION_CODE.message())
 				.hasNoCause();
 		server.verify();
 	}
@@ -178,7 +178,7 @@ class AppleSocialTokenRevokerTest {
 
 		assertThatThrownBy(() -> revoker.revoke(AUTHORIZATION_CODE))
 				.isInstanceOf(InvalidAppleAuthorizationCodeException.class)
-				.hasMessage(AuthErrorCode.USER_INVALID_APPLE_AUTHORIZATION_CODE.message())
+				.hasMessage(AuthErrorCode.AUTH_INVALID_APPLE_AUTHORIZATION_CODE.message())
 				.hasCauseInstanceOf(RestClientResponseException.class);
 		server.verify();
 	}
@@ -189,7 +189,7 @@ class AppleSocialTokenRevokerTest {
 
 		assertThatThrownBy(() -> revoker.revoke(AUTHORIZATION_CODE))
 				.isInstanceOf(SocialProviderUnavailableException.class)
-				.hasMessage(AuthErrorCode.USER_SOCIAL_PROVIDER_UNAVAILABLE.message())
+				.hasMessage(AuthErrorCode.AUTH_SOCIAL_PROVIDER_UNAVAILABLE.message())
 				.hasCauseInstanceOf(RestClientResponseException.class);
 	}
 
@@ -200,7 +200,7 @@ class AppleSocialTokenRevokerTest {
 
 		assertThatThrownBy(() -> revoker.revoke(AUTHORIZATION_CODE))
 				.isInstanceOf(SocialProviderUnavailableException.class)
-				.hasMessage(AuthErrorCode.USER_SOCIAL_PROVIDER_UNAVAILABLE.message())
+				.hasMessage(AuthErrorCode.AUTH_SOCIAL_PROVIDER_UNAVAILABLE.message())
 				.hasCauseInstanceOf(ResourceAccessException.class)
 				.hasRootCause(cause);
 	}

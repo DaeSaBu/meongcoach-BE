@@ -93,7 +93,7 @@ class OidcIdTokenVerifierTest {
 
 		assertThatThrownBy(() -> verifier.verify(idToken))
 				.isInstanceOf(InvalidSocialTokenException.class)
-				.hasMessage(AuthErrorCode.USER_INVALID_SOCIAL_TOKEN.message())
+				.hasMessage(AuthErrorCode.AUTH_INVALID_SOCIAL_TOKEN.message())
 				.hasNoCause();
 	}
 
@@ -103,7 +103,7 @@ class OidcIdTokenVerifierTest {
 
 		assertThatThrownBy(() -> verifier.verify(idToken))
 				.isInstanceOf(InvalidSocialTokenException.class)
-				.hasMessage(AuthErrorCode.USER_INVALID_SOCIAL_TOKEN.message())
+				.hasMessage(AuthErrorCode.AUTH_INVALID_SOCIAL_TOKEN.message())
 				.hasCauseInstanceOf(BadJwtException.class);
 	}
 
@@ -113,7 +113,7 @@ class OidcIdTokenVerifierTest {
 
 		assertThatThrownBy(() -> verifier.verify(idToken))
 				.isInstanceOf(InvalidSocialTokenException.class)
-				.hasMessage(AuthErrorCode.USER_INVALID_SOCIAL_TOKEN.message())
+				.hasMessage(AuthErrorCode.AUTH_INVALID_SOCIAL_TOKEN.message())
 				.hasCauseInstanceOf(BadJwtException.class);
 	}
 
@@ -127,7 +127,7 @@ class OidcIdTokenVerifierTest {
 
 		assertThatThrownBy(() -> verifier.verify(idToken))
 				.isInstanceOf(InvalidSocialTokenException.class)
-				.hasMessage(AuthErrorCode.USER_INVALID_SOCIAL_TOKEN.message())
+				.hasMessage(AuthErrorCode.AUTH_INVALID_SOCIAL_TOKEN.message())
 				.hasCauseInstanceOf(BadJwtException.class);
 	}
 
@@ -135,7 +135,7 @@ class OidcIdTokenVerifierTest {
 	void JWT_형식이_아니면_유효하지_않은_토큰으로_처리한다() {
 		assertThatThrownBy(() -> verifier.verify("not-a-jwt"))
 				.isInstanceOf(InvalidSocialTokenException.class)
-				.hasMessage(AuthErrorCode.USER_INVALID_SOCIAL_TOKEN.message())
+				.hasMessage(AuthErrorCode.AUTH_INVALID_SOCIAL_TOKEN.message())
 				.hasCauseInstanceOf(BadJwtException.class);
 	}
 
@@ -146,7 +146,7 @@ class OidcIdTokenVerifierTest {
 
 		assertThatThrownBy(() -> verifier.verify(idToken))
 				.isInstanceOf(SocialProviderUnavailableException.class)
-				.hasMessage(AuthErrorCode.USER_SOCIAL_PROVIDER_UNAVAILABLE.message())
+				.hasMessage(AuthErrorCode.AUTH_SOCIAL_PROVIDER_UNAVAILABLE.message())
 				.hasCauseInstanceOf(JwtException.class);
 	}
 

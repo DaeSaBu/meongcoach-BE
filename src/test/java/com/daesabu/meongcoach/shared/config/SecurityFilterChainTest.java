@@ -98,7 +98,7 @@ class SecurityFilterChainTest {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"token\": \"invalid\"}"))
 				.andExpect(status().isUnauthorized())
-				.andExpect(jsonPath("$.code").value("USER_INVALID_SOCIAL_TOKEN"));
+				.andExpect(jsonPath("$.code").value("AUTH_INVALID_SOCIAL_TOKEN"));
 	}
 
 	@Test
@@ -107,7 +107,7 @@ class SecurityFilterChainTest {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"token\": \"invalid\"}"))
 				.andExpect(status().isUnauthorized())
-				.andExpect(jsonPath("$.code").value("USER_INVALID_SOCIAL_TOKEN"));
+				.andExpect(jsonPath("$.code").value("AUTH_INVALID_SOCIAL_TOKEN"));
 	}
 
 	// 필터 체인이 막았다면 코드가 UNAUTHORIZED다. 도메인 에러 코드가 나오면 컨트롤러까지 도달한 것이다
@@ -117,7 +117,7 @@ class SecurityFilterChainTest {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"email\": \"nobody@meongcoach.com\", \"password\": \"wrong-password\"}"))
 				.andExpect(status().isUnauthorized())
-				.andExpect(jsonPath("$.code").value("USER_INVALID_CREDENTIALS"));
+				.andExpect(jsonPath("$.code").value("AUTH_INVALID_CREDENTIALS"));
 	}
 
 	@Test

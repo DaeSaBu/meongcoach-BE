@@ -89,7 +89,7 @@ class AuthControllerTest {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(loginBody("invalid")))
 				.andExpect(status().isUnauthorized())
-				.andExpect(jsonPath("$.code").value("USER_INVALID_SOCIAL_TOKEN"))
+				.andExpect(jsonPath("$.code").value("AUTH_INVALID_SOCIAL_TOKEN"))
 				.andDo(document("auth/login-error",
 						responseFields(
 								fieldWithPath("title").description("HTTP 상태 이름"),
@@ -108,7 +108,7 @@ class AuthControllerTest {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(loginBody(VALID_TOKEN)))
 				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.code").value("USER_UNSUPPORTED_SOCIAL_PROVIDER"));
+				.andExpect(jsonPath("$.code").value("AUTH_UNSUPPORTED_SOCIAL_PROVIDER"));
 	}
 
 	@Test
@@ -150,7 +150,7 @@ class AuthControllerTest {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(localLoginBody(VALID_EMAIL, "wrong-password")))
 				.andExpect(status().isUnauthorized())
-				.andExpect(jsonPath("$.code").value("USER_INVALID_CREDENTIALS"))
+				.andExpect(jsonPath("$.code").value("AUTH_INVALID_CREDENTIALS"))
 				.andDo(document("auth/local-login-error",
 						responseFields(
 								fieldWithPath("title").description("HTTP 상태 이름"),
@@ -169,7 +169,7 @@ class AuthControllerTest {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(localLoginBody("not-an-email", VALID_PASSWORD)))
 				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.code").value("USER_INVALID_EMAIL"));
+				.andExpect(jsonPath("$.code").value("AUTH_INVALID_EMAIL"));
 	}
 
 	@Test
@@ -209,7 +209,7 @@ class AuthControllerTest {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(refreshBody("invalid")))
 				.andExpect(status().isUnauthorized())
-				.andExpect(jsonPath("$.code").value("USER_INVALID_REFRESH_TOKEN"))
+				.andExpect(jsonPath("$.code").value("AUTH_INVALID_REFRESH_TOKEN"))
 				.andDo(document("auth/token-refresh-error",
 						responseFields(
 								fieldWithPath("title").description("HTTP 상태 이름"),
@@ -251,7 +251,7 @@ class AuthControllerTest {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(refreshBody("invalid")))
 				.andExpect(status().isUnauthorized())
-				.andExpect(jsonPath("$.code").value("USER_INVALID_REFRESH_TOKEN"))
+				.andExpect(jsonPath("$.code").value("AUTH_INVALID_REFRESH_TOKEN"))
 				.andDo(document("auth/logout-error",
 						responseFields(
 								fieldWithPath("title").description("HTTP 상태 이름"),

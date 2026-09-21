@@ -79,7 +79,7 @@ class WithdrawControllerTest {
 
 		mockMvc.perform(delete("/api/users/me").principal(CURRENT_USER))
 				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.code").value("USER_APPLE_AUTHORIZATION_CODE_REQUIRED"));
+				.andExpect(jsonPath("$.code").value("AUTH_APPLE_AUTHORIZATION_CODE_REQUIRED"));
 	}
 
 	@Test
