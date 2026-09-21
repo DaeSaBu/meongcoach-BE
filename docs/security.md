@@ -7,12 +7,12 @@
 
 클라이언트가 React Native 앱이므로, 서버가 리다이렉트를 주고받는 OAuth2 인가 코드 흐름을 쓰지 않습니다.
 **서버가 제공자의 REST 키·시크릿을 보관하지 않습니다.** 서버가 아는 제공자 값은 우리 앱을 가리키는 공개 식별자(`aud`)뿐입니다.
-지원 제공자는 카카오(`KAKAO`)·구글(`GOOGLE`)·애플(`APPLE`)이며, 모두 OIDC id_token을 받습니다.
+지원 제공자는 카카오(`kakao`)·구글(`google`)·애플(`apple`)이며(대소문자 무시, 그 외 값은 400 `AUTH_UNSUPPORTED_SOCIAL_PROVIDER`), 모두 OIDC id_token을 받습니다.
 
 ```
 [앱] 제공자 SDK 네이티브 로그인 (카카오 SDK / Google Sign-In / Sign in with Apple, OIDC)
   → 제공자 id_token 획득 (애플은 identityToken)
-     → POST /api/auth/login/social  { "socialProvider": "KAKAO", "idToken": "..." }
+     → POST /api/auth/login/social  { "socialProvider": "kakao", "idToken": "..." }
         → 서버가 id_token 서명·발급자·만료·aud 검증 (캐시된 공개 키로 로컬 검증)
            → 회원 조회·생성 (User + SocialAccount)
               → 우리 JWT 발급
