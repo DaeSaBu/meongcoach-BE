@@ -97,7 +97,7 @@ public class AuthenticationService implements Authenticator {
 		validateRefreshTokenExpireAt(refreshToken);
 
 		Long userId = refreshToken.getUserId();
-		validateRegisteredUser(userId);
+		validateActiveUser(userId);
 
 		refreshToken.revoke();
 
@@ -130,14 +130,14 @@ public class AuthenticationService implements Authenticator {
 
 	// 탈퇴는 자격증명을 지우지만, 자격증명이 남은 탈퇴 회원에게도 토큰을 내주지 않는다
 	private void validateNotWithdrawn(Long userId) {
-		if (userFinder.isRegistered(userId)) {
+		if (userFinder.isActiveUser(userId)) {
 			return;
 		}
 		throw new WithdrawnUserException();
 	}
 
-	private void validateRegisteredUser(Long userId) {
-		if (userFinder.isRegistered(userId)) {
+	private void validateActiveUser(Long userId) {
+		if (userFinder.isActiveUser(userId)) {
 			return;
 		}
 		throw new InvalidRefreshTokenException();

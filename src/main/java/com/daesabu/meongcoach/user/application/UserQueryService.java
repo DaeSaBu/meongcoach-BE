@@ -16,8 +16,8 @@ public class UserQueryService implements UserFinder {
 	private final UserRepository userRepository;
 
 	@Override
-	public boolean isRegistered(Long userId) {
-		return userRepository.existsByIdAndStatusNot(userId, UserStatus.WITHDRAWN);
+	public boolean isActiveUser(Long userId) {
+		return userRepository.existsByIdAndStatus(userId, UserStatus.ACTIVE);
 	}
 
 	@Override

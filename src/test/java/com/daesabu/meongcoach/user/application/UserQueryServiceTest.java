@@ -28,25 +28,25 @@ class UserQueryServiceTest {
 	private TestEntityManager entityManager;
 
 	@Test
-	void 활성_회원은_등록된_회원이다() {
+	void 활성_회원이면_true를_반환한다() {
 		Long userId = userRepository.save(User.registerUser()).getId();
 
-		assertThat(userQueryService.isRegistered(userId)).isTrue();
+		assertThat(userQueryService.isActiveUser(userId)).isTrue();
 	}
 
 	@Test
-	void 탈퇴한_회원은_등록되지_않은_회원으로_취급한다() {
+	void 탈퇴한_회원이면_false를_반환한다() {
 		User user = userRepository.save(User.registerUser());
 		user.withdraw();
 		entityManager.flush();
 		entityManager.clear();
 
-		assertThat(userQueryService.isRegistered(user.getId())).isFalse();
+		assertThat(userQueryService.isActiveUser(user.getId())).isFalse();
 	}
 
 	@Test
-	void 없는_회원_ID는_등록되지_않은_회원이다() {
-		assertThat(userQueryService.isRegistered(UNREGISTERED_USER_ID)).isFalse();
+	void 없는_회원_ID면_false를_반환한다() {
+		assertThat(userQueryService.isActiveUser(UNREGISTERED_USER_ID)).isFalse();
 	}
 
 	@Test
