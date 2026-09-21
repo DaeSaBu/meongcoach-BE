@@ -9,6 +9,6 @@ import com.daesabu.meongcoach.shared.exception.DomainException;
 public class InvalidRefreshTokenException extends DomainException {
 
 	public InvalidRefreshTokenException() {
-		super(AuthErrorCode.USER_INVALID_REFRESH_TOKEN);
+		super(AuthErrorCode.AUTH_INVALID_REFRESH_TOKEN);
 	}
 }

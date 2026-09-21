@@ -9,6 +9,6 @@ import com.daesabu.meongcoach.shared.exception.DomainException;
 public class InvalidCredentialsException extends DomainException {
 
 	public InvalidCredentialsException() {
-		super(AuthErrorCode.USER_INVALID_CREDENTIALS);
+		super(AuthErrorCode.AUTH_INVALID_CREDENTIALS);
 	}
 }

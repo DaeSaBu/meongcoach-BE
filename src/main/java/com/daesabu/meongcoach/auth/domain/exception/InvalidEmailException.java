@@ -6,6 +6,6 @@ public class InvalidEmailException extends DomainException {
 
 	// detail은 응답에 그대로 노출되므로 입력한 주소를 싣지 않는다
 	public InvalidEmailException() {
-		super(AuthErrorCode.USER_INVALID_EMAIL);
+		super(AuthErrorCode.AUTH_INVALID_EMAIL);
 	}
 }

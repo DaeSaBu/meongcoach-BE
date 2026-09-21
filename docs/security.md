@@ -32,7 +32,7 @@ id_token의 서명이 유효하다는 것은 "제공자가 발급했다"만 증�
 
 그래서 `OidcIdTokenVerifier`는 id_token의 `aud`가 설정된
 `meongcoach.social.{provider}.audiences`에 포함되는지 대조하고, 아니면 거부합니다
-(`USER_SOCIAL_TOKEN_APP_MISMATCH`). `aud`가 아예 없는 토큰도 같은 이유로 거부합니다.
+(`AUTH_SOCIAL_TOKEN_APP_MISMATCH`). `aud`가 아예 없는 토큰도 같은 이유로 거부합니다.
 
 `aud`는 플랫폼마다 다릅니다 — 카카오는 **네이티브 앱은 네이티브 앱 키, 웹은 REST API 키**,
 구글은 **안드로이드·서버 검증은 웹 클라이언트 ID, iOS는 iOS 클라이언트 ID**(안드로이드용 OAuth 클라이언트 ID는
@@ -41,7 +41,7 @@ SHA-1 검증용이라 id_token의 `aud`가 되지 않습니다), 애플은 **iOS
 
 `aud` 검증만 디코더의 `OAuth2TokenValidator` 체인이 아니라 `verify()`에서 직접 합니다.
 검증기에 넣으면 서명 실패와 같은 `JwtValidationException`으로 뭉개져
-`USER_INVALID_SOCIAL_TOKEN`과 구분할 수 없기 때문입니다. 이 검증은 별도 에러 코드를 유지할 값어치가 있습니다.
+`AUTH_INVALID_SOCIAL_TOKEN`과 구분할 수 없기 때문입니다. 이 검증은 별도 에러 코드를 유지할 값어치가 있습니다.
 
 ## 토큰 정책
 
@@ -113,7 +113,7 @@ SHA-1 검증용이라 id_token의 `aud`가 되지 않습니다), 애플은 **iOS
 제출하면 401**입니다. 이 검증이 없으면 리프레시 토큰이 사실상 14일짜리 액세스 토큰이 됩니다.
 
 회원 존재 검증은 액세스 디코더에만 붙습니다. 재발급·로그아웃 경로는 리프레시 토큰을 요청 본문으로 받아
-`TokenRefreshService`·`LogoutService`가 저장 이력을 확인하고 `USER_INVALID_REFRESH_TOKEN`(401)으로 응답해,
+`TokenRefreshService`·`LogoutService`가 저장 이력을 확인하고 `AUTH_INVALID_REFRESH_TOKEN`(401)으로 응답해,
 클라이언트가 재로그인 분기를 그대로 쓸 수 있게 합니다.
 
 ### 리프레시 토큰 영속화와 rotation
@@ -144,8 +144,8 @@ SHA-1 검증용이라 id_token의 `aud`가 되지 않습니다), 애플은 **iOS
 - 인가 코드는 **5분 만료·1회용**이라 서버가 저장하지 않으며, 클라이언트도 재사용하지 말고 탈퇴 직전에 새로 받아야 합니다.
 - **revoke가 끝나야 탈퇴가 진행됩니다.** `UserWithdrawService`는 제공자를 가리지 않고 회원의 소셜 계정마다 `SocialTokenRevoker`
   구현체가 등록돼 있으면 호출하며, 코드가 필수인지는 구현체가 정합니다. Apple 계정 회원이 코드 없이 요청하면 `AppleSocialTokenRevoker`가
-  400(`USER_APPLE_AUTHORIZATION_CODE_REQUIRED`)으로 거절하고,
-  Apple이 코드를 거부하면 400(`USER_INVALID_APPLE_AUTHORIZATION_CODE`), Apple과 통신하지 못하면 502(`USER_SOCIAL_PROVIDER_UNAVAILABLE`)로
+  400(`AUTH_APPLE_AUTHORIZATION_CODE_REQUIRED`)으로 거절하고,
+  Apple이 코드를 거부하면 400(`AUTH_INVALID_APPLE_AUTHORIZATION_CODE`), Apple과 통신하지 못하면 502(`AUTH_SOCIAL_PROVIDER_UNAVAILABLE`)로
   끝나고 회원·자격증명은 그대로 남습니다. 사용자가 계정을 지우지 못하는 상태보다 Apple 연결이 남는 상태가 심사 위험이 크다고 봤기 때문에,
   revoke를 소셜 계정 삭제보다 먼저 호출해 실패 시 같은 계정으로 다시 시도할 수 있게 둡니다.
 - 카카오·구글 회원은 이 절차가 없으며 코드를 보내도 무시합니다(아래 "알려진 제약").
@@ -206,9 +206,9 @@ Google Play·App Store 심사자는 소셜 계정을 만들 수 없으므로, �
 
 | 상황 | 응답 |
 |---|---|
-| 이메일 미등록 **또는** 비밀번호 불일치 | 401 `USER_INVALID_CREDENTIALS` — 어느 쪽인지 구분하지 않습니다. 구분하면 계정 존재 여부가 드러납니다 |
-| 이메일 형식 오류 | 400 `USER_INVALID_EMAIL` — 계정 존재와 무관한 입력 형식 검증이라 정보가 새지 않습니다. 형식 규칙은 `Email` 값 객체 한 곳에만 두고, 컨트롤러가 `new Email(...)`로 변환합니다 |
-| 탈퇴한 회원 | 403 `USER_WITHDRAWN` — **비밀번호 대조를 통과한 뒤에만** 확인해, 비밀번호를 모르는 쪽에 탈퇴 여부가 드러나지 않게 합니다 |
+| 이메일 미등록 **또는** 비밀번호 불일치 | 401 `AUTH_INVALID_CREDENTIALS` — 어느 쪽인지 구분하지 않습니다. 구분하면 계정 존재 여부가 드러납니다 |
+| 이메일 형식 오류 | 400 `AUTH_INVALID_EMAIL` — 계정 존재와 무관한 입력 형식 검증이라 정보가 새지 않습니다. 형식 규칙은 `Email` 값 객체 한 곳에만 두고, 컨트롤러가 `new Email(...)`로 변환합니다 |
+| 탈퇴한 회원 | 403 `AUTH_WITHDRAWN` — **비밀번호 대조를 통과한 뒤에만** 확인해, 비밀번호를 모르는 쪽에 탈퇴 여부가 드러나지 않게 합니다 |
 
 ### 테스트 계정 등록
 
@@ -303,17 +303,17 @@ dev/prod의 DB 접속 변수(`DB_HOST` 등)는 [profiles.md](profiles.md)를 참
   유니크 제약 위반으로 한쪽이 500이 될 수 있습니다. 확률이 낮아 MVP에서는 두고, 필요 시
   제약 위반을 잡아 재조회하도록 보완합니다.
 - **소셜 이메일은 필수입니다.** `Email` 값 객체의 컬럼이 전역 NOT NULL이라, id_token에 `email` 클레임이
-  없으면 400 `USER_SOCIAL_EMAIL_REQUIRED`로 **로그인 자체가 거절됩니다.** 카카오는 `account_email` 동의 항목에
+  없으면 400 `AUTH_SOCIAL_EMAIL_REQUIRED`로 **로그인 자체가 거절됩니다.** 카카오는 `account_email` 동의 항목에
   비즈니스 앱 심사가 필요하고 사용자가 동의를 거부할 수도 있으므로, 동의 항목을 켜지 않으면 카카오 로그인이
   전부 막힙니다. 앱은 이 코드를 받으면 이메일 제공 동의를 안내합니다.
 - **소셜 이메일도 `Email` 값 객체로 검증합니다.** 형식 규칙(ASCII 정규식·255자)을 통과하지 못하면
-  400 `USER_INVALID_EMAIL`로 로그인이 거절됩니다. 소셜 이메일은 저장만 하고 조회·인증에 쓰지 않으므로,
+  400 `AUTH_INVALID_EMAIL`로 로그인이 거절됩니다. 소셜 이메일은 저장만 하고 조회·인증에 쓰지 않으므로,
   정상 계정이 이 검증에 막히는 사례가 나오면 규칙을 넓히는 쪽을 검토합니다. 예외 detail에는 주소를 싣지 않습니다.
 - **앱이 OIDC를 켜야 합니다.** 카카오 개발자 콘솔에서 OpenID Connect를 활성화하고 앱이 `openid`
-  스코프로 로그인해야 id_token이 내려옵니다. 액세스 토큰만 보내면 `USER_INVALID_SOCIAL_TOKEN`입니다.
+  스코프로 로그인해야 id_token이 내려옵니다. 액세스 토큰만 보내면 `AUTH_INVALID_SOCIAL_TOKEN`입니다.
 - **애플 이메일은 비공개 릴레이 주소일 수 있습니다.** 사용자가 "이메일 가리기"를 고르면 `email`이
   `@privaterelay.appleid.com` 주소로 오고, 이메일 공유에 동의하지 않으면 클레임 자체가 없어
-  카카오와 마찬가지로 `USER_SOCIAL_EMAIL_REQUIRED`로 거절됩니다. 이름은 id_token에
+  카카오와 마찬가지로 `AUTH_SOCIAL_EMAIL_REQUIRED`로 거절됩니다. 이름은 id_token에
   없고 최초 인가 응답에만 실리므로 서버는 받지 않습니다.
 - **애플·구글 id_token의 `nonce`는 검증하지 않습니다.** 서버가 nonce를 발급·보관하는 왕복이 없는 무상태
   설계라 카카오와 같은 기준을 적용합니다. 재사용 창은 id_token 만료(애플 10분, 구글 1시간)로 제한됩니다.
@@ -323,5 +323,5 @@ dev/prod의 DB 접속 변수(`DB_HOST` 등)는 [profiles.md](profiles.md)를 참
   관측되면 그때 넓힙니다.
 - **공개 키 조회 실패는 여전히 로그인을 막습니다.** 디코더가 JWKS를 캐시하므로 매 로그인이
   제공자에 묶이지는 않지만, 캐시가 비어 있을 때 조회에 실패하면
-  `USER_SOCIAL_PROVIDER_UNAVAILABLE`(502)로 토큰 무효(401)와 구분해 응답합니다.
+  `AUTH_SOCIAL_PROVIDER_UNAVAILABLE`(502)로 토큰 무효(401)와 구분해 응답합니다.
   `spring.http.clients.read-timeout`(3초)이 최후 방어선입니다.

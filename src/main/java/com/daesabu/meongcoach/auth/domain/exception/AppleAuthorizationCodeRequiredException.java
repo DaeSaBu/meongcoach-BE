@@ -9,6 +9,6 @@ import com.daesabu.meongcoach.shared.exception.DomainException;
 public class AppleAuthorizationCodeRequiredException extends DomainException {
 
 	public AppleAuthorizationCodeRequiredException() {
-		super(AuthErrorCode.USER_APPLE_AUTHORIZATION_CODE_REQUIRED);
+		super(AuthErrorCode.AUTH_APPLE_AUTHORIZATION_CODE_REQUIRED);
 	}
 }

@@ -8,11 +8,11 @@ import com.daesabu.meongcoach.shared.exception.DomainException;
 public class InvalidSocialTokenException extends DomainException {
 
 	public InvalidSocialTokenException() {
-		super(AuthErrorCode.USER_INVALID_SOCIAL_TOKEN);
+		super(AuthErrorCode.AUTH_INVALID_SOCIAL_TOKEN);
 	}
 
 	public InvalidSocialTokenException(Throwable cause) {
-		super(AuthErrorCode.USER_INVALID_SOCIAL_TOKEN,
-				AuthErrorCode.USER_INVALID_SOCIAL_TOKEN.message(), cause);
+		super(AuthErrorCode.AUTH_INVALID_SOCIAL_TOKEN,
+				AuthErrorCode.AUTH_INVALID_SOCIAL_TOKEN.message(), cause);
 	}
 }

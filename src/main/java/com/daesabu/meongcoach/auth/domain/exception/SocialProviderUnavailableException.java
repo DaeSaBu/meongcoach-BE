@@ -9,11 +9,11 @@ import com.daesabu.meongcoach.shared.exception.DomainException;
 public class SocialProviderUnavailableException extends DomainException {
 
 	public SocialProviderUnavailableException() {
-		super(AuthErrorCode.USER_SOCIAL_PROVIDER_UNAVAILABLE);
+		super(AuthErrorCode.AUTH_SOCIAL_PROVIDER_UNAVAILABLE);
 	}
 
 	public SocialProviderUnavailableException(Throwable cause) {
-		super(AuthErrorCode.USER_SOCIAL_PROVIDER_UNAVAILABLE,
-				AuthErrorCode.USER_SOCIAL_PROVIDER_UNAVAILABLE.message(), cause);
+		super(AuthErrorCode.AUTH_SOCIAL_PROVIDER_UNAVAILABLE,
+				AuthErrorCode.AUTH_SOCIAL_PROVIDER_UNAVAILABLE.message(), cause);
 	}
 }

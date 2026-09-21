@@ -5,6 +5,6 @@ import com.daesabu.meongcoach.shared.exception.DomainException;
 public class WithdrawnUserException extends DomainException {
 
 	public WithdrawnUserException() {
-		super(AuthErrorCode.USER_WITHDRAWN);
+		super(AuthErrorCode.AUTH_WITHDRAWN);
 	}
 }

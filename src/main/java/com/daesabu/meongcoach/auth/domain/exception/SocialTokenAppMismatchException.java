@@ -10,6 +10,6 @@ import com.daesabu.meongcoach.shared.exception.DomainException;
 public class SocialTokenAppMismatchException extends DomainException {
 
 	public SocialTokenAppMismatchException() {
-		super(AuthErrorCode.USER_SOCIAL_TOKEN_APP_MISMATCH);
+		super(AuthErrorCode.AUTH_SOCIAL_TOKEN_APP_MISMATCH);
 	}
 }

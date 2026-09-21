@@ -9,11 +9,11 @@ import com.daesabu.meongcoach.shared.exception.DomainException;
 public class InvalidAppleAuthorizationCodeException extends DomainException {
 
 	public InvalidAppleAuthorizationCodeException() {
-		super(AuthErrorCode.USER_INVALID_APPLE_AUTHORIZATION_CODE);
+		super(AuthErrorCode.AUTH_INVALID_APPLE_AUTHORIZATION_CODE);
 	}
 
 	public InvalidAppleAuthorizationCodeException(Throwable cause) {
-		super(AuthErrorCode.USER_INVALID_APPLE_AUTHORIZATION_CODE,
-				AuthErrorCode.USER_INVALID_APPLE_AUTHORIZATION_CODE.message(), cause);
+		super(AuthErrorCode.AUTH_INVALID_APPLE_AUTHORIZATION_CODE,
+				AuthErrorCode.AUTH_INVALID_APPLE_AUTHORIZATION_CODE.message(), cause);
 	}
 }
