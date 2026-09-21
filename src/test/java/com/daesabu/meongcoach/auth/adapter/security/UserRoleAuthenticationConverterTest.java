@@ -73,11 +73,6 @@ class UserRoleAuthenticationConverterTest {
 	private RegisteredUserChecker checkerWithRole(AuthorityRole role) {
 		return new RegisteredUserChecker() {
 			@Override
-			public boolean isRegistered(Long userId) {
-				return role != null;
-			}
-
-			@Override
 			public Optional<AuthorityRole> findRole(Long userId) {
 				return Optional.ofNullable(role);
 			}
