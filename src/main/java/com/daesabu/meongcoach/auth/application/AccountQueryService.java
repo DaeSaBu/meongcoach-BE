@@ -6,7 +6,7 @@ import com.daesabu.meongcoach.auth.application.required.EmailAccountRepository;
 import com.daesabu.meongcoach.auth.application.required.SocialAccountRepository;
 import com.daesabu.meongcoach.auth.domain.EmailAccount;
 import com.daesabu.meongcoach.auth.domain.SocialAccount;
-import com.daesabu.meongcoach.auth.domain.exception.InvalidEmailException;
+import com.daesabu.meongcoach.auth.domain.exception.InvalidCredentialsException;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -21,10 +21,11 @@ public class AccountQueryService implements AccountFinder {
 	private final EmailAccountRepository emailAccountRepository;
 	private final SocialAccountRepository socialAccountRepository;
 
+	// 이메일 미존재를 비밀번호 불일치와 같은 예외로 응답해 계정 존재 여부를 드러내지 않는다
 	@Override
 	public EmailAccount findEmailAccount(EmailAccountFindRequest emailAccountFindRequest) {
 		return emailAccountRepository.findByEmail(emailAccountFindRequest.email())
-				.orElseThrow(InvalidEmailException::new);
+				.orElseThrow(InvalidCredentialsException::new);
 	}
 
 	@Override

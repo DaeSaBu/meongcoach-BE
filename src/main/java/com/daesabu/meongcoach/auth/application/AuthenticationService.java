@@ -26,6 +26,7 @@ import com.daesabu.meongcoach.auth.domain.SocialAccount;
 import com.daesabu.meongcoach.auth.domain.SocialProfile;
 import com.daesabu.meongcoach.auth.domain.exception.InvalidCredentialsException;
 import com.daesabu.meongcoach.auth.domain.exception.InvalidRefreshTokenException;
+import com.daesabu.meongcoach.auth.domain.exception.WithdrawnUserException;
 import com.daesabu.meongcoach.user.application.provided.UserFinder;
 import com.daesabu.meongcoach.user.application.provided.UserRegister;
 import java.time.LocalDateTime;
@@ -58,6 +59,7 @@ public class AuthenticationService implements Authenticator {
 		SocialProfile socialProfile = readSocialProfile(socialLoginRequest);
 
 		Long userId = upsertSocialAccount(socialProfile);
+		validateNotWithdrawn(userId);
 
 		return authTokenProvider.issue(userId);
 	}
@@ -70,7 +72,9 @@ public class AuthenticationService implements Authenticator {
 
 		validatePassword(emailAccount, emailLoginRequest.password());
 
+		// 비밀번호 대조 뒤에 확인해야 탈퇴 여부가 비밀번호를 모르는 쪽에 드러나지 않는다
 		Long userId = emailAccount.getUserId();
+		validateNotWithdrawn(userId);
 
 		return authTokenProvider.issue(userId);
 	}
@@ -108,6 +112,14 @@ public class AuthenticationService implements Authenticator {
 		accountRegister.deleteAllEmailAccounts(userId);
 		refreshTokenRegister.revokeAllByUserId(userId);
 		userRegister.withdraw(userId);
+	}
+
+	// 탈퇴는 자격증명을 지우지만, 자격증명이 남은 탈퇴 회원에게도 토큰을 내주지 않는다
+	private void validateNotWithdrawn(Long userId) {
+		if (userFinder.isRegistered(userId)) {
+			return;
+		}
+		throw new WithdrawnUserException();
 	}
 
 	private void validateRegisteredUser(Long userId) {
