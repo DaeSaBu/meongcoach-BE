@@ -27,7 +27,7 @@ user-invocable: true
 | --- | --- | --- | --- |
 | 모듈 공개 API 인터페이스 | `application/provided` | 능력을 나타내는 이름, `~Service` 접미사 없음 | `DogRegister`, `MbtiFinder` |
 | 애플리케이션 조회 결과 래퍼 | `application/provided` | `~Result` (record) — 도메인 타입만으로 부족할 때만 | `VideoUploadUrlResult`, `OnboardingMetadataResult` |
-| 모듈 경계 입력 | `application/provided` | `~Request` (record). `toCommand()`로 도메인 입력 모델로 변환 | `UserProfileRegisterRequest` |
+| 서비스 입력(웹 요청·모듈 경계 공통) | `application/provided/dto` | `~Request` (record). 도메인 입력이 필요하면 `toCommand()`로 변환 | `SocialLoginRequest`, `SocialAccountRegisterRequest` |
 | 필요 자원 인터페이스 | `application/required` | 자원 이름 그대로 | `UserRepository`, `VideoStorage` |
 | 애플리케이션 서비스 | `application` | `~Service` | `AuthenticationService`, `CurriculumQueryService` |
 | 컨트롤러 | `adapter/webapi` | `~Controller` | `AuthController` |
@@ -67,8 +67,12 @@ user-invocable: true
 ## DTO
 
 - 요청/응답 DTO는 Java `record`로 작성한다.
-- 웹 요청/응답 DTO는 `adapter/webapi/dto`에 두고, 접미사는 요청 `~Request`, 응답 `~Response`를 사용한다. (예: `SocialLoginRequest`, `SocialLoginResponse`)
-- 다른 모듈이 조립해 넘기는 입력은 `application/provided`에 `~Request` record로 두고, `toCommand()`로 도메인 `~Command`로 변환한다. `domain`의 Command는 모듈 밖에 노출하지 않는다. (예: `UserProfileRegisterRequest`)
+- 요청 DTO(`~Request`)는 `application/provided/dto`에 두고, 컨트롤러가 `@Valid @RequestBody`로 받아 **그대로** provided 인터페이스에 넘긴다. 컨트롤러에서 값을 풀어 인자로 나눠 넘기거나 웹 전용 요청 DTO를 따로 만들지 않는다. (살아있는 예시: `auth/application/provided/dto`, `AuthController`)
+	- 제약 어노테이션(`@NotBlank`, `@NotNull`)은 이 record에 한 번만 선언한다. provided 인터페이스 파라미터에 `@Valid`를, 서비스 구현 클래스에 `@Validated`를 붙여 다른 모듈·서비스가 호출하는 경로도 같은 제약으로 검증한다. 제약은 대상 타입에 맞는 것을 쓴다 — `@NotBlank`는 문자열 전용이라 값 객체·`LocalDateTime`에 붙이면 런타임에 `UnexpectedTypeException`이 난다.
+	- 필드는 JSON에서 바로 역직렬화되는 타입(문자열·숫자·enum)으로 두고, 값 객체 변환(`new Email(...)`)은 서비스에서 한다. 단일 컴포넌트 record 값 객체를 필드로 두면 JSON이 `{"email": {"address": "..."}}` 형태를 요구한다.
+	- 도메인 입력이 필요하면 `toCommand()`로 `~Command`를 만든다. `domain`의 Command는 모듈 밖에 노출하지 않는다. (예: `SocialAccountRegisterRequest.toCommand()`)
+	- 이 규칙 이전에 만든 모듈(`dog`, `onboarding`, `training`, `ai`)의 요청 DTO는 아직 `adapter/webapi/dto`에 있다. 일괄 이동하지 않고 해당 API를 수정할 때 옮긴다.
+- 응답 DTO(`~Response`)는 `adapter/webapi/dto`에 둔다. 웹 노출 형태는 `adapter`의 관심사다. (예: `TokenResponse`)
 - 외부 API 응답 DTO는 `adapter/integration/dto`에 `~Response` record로 두고, 필드 매핑은 `@JsonProperty`로 지정한다. 전역 네이밍 전략(`spring.jackson.property-naming-strategy`)을 바꾸면 우리 API 응답까지 영향을 받으므로 쓰지 않는다.
 - 도메인 입력 모델은 `~Command` 접미사의 record로 `domain`에 두며, 웹 DTO와 별개로 유지한다. (예: `DogRegisterCommand`)
 	- 엔티티 정적 팩토리의 순수 값 파라미터가 3개 이상이면 Command로 묶고, 팩토리는 Command를 받아 생성자에 전달한다.
