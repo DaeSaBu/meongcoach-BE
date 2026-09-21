@@ -108,13 +108,23 @@ public class AuthenticationService implements Authenticator {
 	public void withdraw(Long userId, WithdrawRequest withdrawRequest) {
 		List<SocialAccount> socialAccounts = accountFinder.findAllSocialAccount(userId);
 
-		socialAccounts.forEach(account -> socialTokenRevokers.revokeIfSupported(account.getProvider(),
-				withdrawRequest.appleAuthorizationCode()));
+		// 소셜 계정을 지우기 전에 revoke해야 실패했을 때 자격증명이 남아 새 코드로 다시 시도할 수 있다
+		String authorizationCode = authorizationCode(withdrawRequest);
+		socialAccounts.forEach(account ->
+				socialTokenRevokers.revokeIfSupported(account.getProvider(), authorizationCode));
 
 		accountRegister.deleteAllSocialAccounts(userId);
 		accountRegister.deleteAllEmailAccounts(userId);
 		refreshTokenRegister.revokeAllByUserId(userId);
 		userRegister.withdraw(userId);
+	}
+
+	// Apple 계정 회원만 본문을 보내므로 나머지 회원의 탈퇴 요청에는 본문이 없다
+	private String authorizationCode(WithdrawRequest withdrawRequest) {
+		if (withdrawRequest == null) {
+			return null;
+		}
+		return withdrawRequest.appleAuthorizationCode();
 	}
 
 	// 탈퇴는 자격증명을 지우지만, 자격증명이 남은 탈퇴 회원에게도 토큰을 내주지 않는다
