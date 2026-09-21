@@ -44,7 +44,7 @@ class UserProfileRegisterServiceTest {
 
 	@BeforeEach
 	void setUp() {
-		service = new UserProfileRegisterService(userRepository, userProfileRepository);
+		service = new UserProfileRegisterService(new UserQueryService(userRepository), userProfileRepository);
 		userId = userRepository.save(User.registerUser()).getId();
 	}
 

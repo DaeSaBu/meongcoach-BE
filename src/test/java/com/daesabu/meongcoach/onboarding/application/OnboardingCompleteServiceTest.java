@@ -14,6 +14,7 @@ import com.daesabu.meongcoach.media.application.provided.StoredImageUrlValidator
 import com.daesabu.meongcoach.media.domain.exception.InvalidImageUrlException;
 import com.daesabu.meongcoach.onboarding.application.provided.OnboardingCompleteInfo;
 import com.daesabu.meongcoach.user.application.UserProfileRegisterService;
+import com.daesabu.meongcoach.user.application.UserQueryService;
 import com.daesabu.meongcoach.user.application.required.UserProfileRepository;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.User;
@@ -52,7 +53,7 @@ class OnboardingCompleteServiceTest {
 	@BeforeEach
 	void setUp() {
 		service = new OnboardingCompleteService(
-				new UserProfileRegisterService(userRepository, userProfileRepository),
+				new UserProfileRegisterService(new UserQueryService(userRepository), userProfileRepository),
 				new DogRegisterService(dogRepository),
 				prefixValidator());
 		userId = userRepository.save(User.registerUser()).getId();
