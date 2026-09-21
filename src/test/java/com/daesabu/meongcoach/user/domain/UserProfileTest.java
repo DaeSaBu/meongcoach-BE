@@ -3,7 +3,6 @@ package com.daesabu.meongcoach.user.domain;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.daesabu.meongcoach.user.domain.command.UserProfileCreateCommand;
 import com.daesabu.meongcoach.user.domain.exception.InvalidGenderException;
 import com.daesabu.meongcoach.user.domain.exception.InvalidMbtiException;
 import java.time.LocalDate;

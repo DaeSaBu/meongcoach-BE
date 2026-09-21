@@ -133,7 +133,7 @@ public class SecurityConfig {
 	}
 
 	// 이메일 로그인(스토어 심사용 테스트 계정)의 비밀번호 대조에 쓴다. domain은 Spring에 의존할 수 없으므로
-	// user 모듈의 BcryptPasswordMatcher가 이 빈을 감싸 도메인 PasswordMatcher로 제공한다
+	// auth 모듈의 BcryptPasswordMatcher가 이 빈을 감싸 도메인 PasswordMatcher로 제공한다
 	@Bean
 	PasswordEncoder passwordEncoder() {
 		return new BCryptPasswordEncoder();
@@ -145,7 +145,7 @@ public class SecurityConfig {
 	}
 
 	// 액세스·리프레시 디코더를 분리해 각자 용도를 강제한다. @Primary를 두지 않고 주입 지점마다 명시한다.
-	// 회원 등록 여부 확인은 역할 부여 컨버터(user 모듈 구현)가 겸하므로 디코더에는 검증기를 붙이지 않는다
+	// 회원 등록 여부 확인은 역할 부여 컨버터(auth 모듈 구현)가 겸하므로 디코더에는 검증기를 붙이지 않는다
 	@Bean
 	JwtDecoder accessTokenDecoder(JwtProperties properties) {
 		return tokenDecoder(properties, TokenType.ACCESS, List.of());

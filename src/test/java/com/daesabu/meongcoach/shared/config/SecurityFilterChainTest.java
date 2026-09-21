@@ -8,8 +8,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.daesabu.meongcoach.user.application.provided.AuthToken;
-import com.daesabu.meongcoach.user.application.required.TokenProvider;
+import com.daesabu.meongcoach.auth.application.provided.AuthToken;
+import com.daesabu.meongcoach.auth.application.required.TokenProvider;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.User;
 import org.junit.jupiter.api.BeforeEach;
