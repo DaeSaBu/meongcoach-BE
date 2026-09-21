@@ -51,8 +51,8 @@ public class SecurityConfig {
 	// 토큰을 아직 받지 못한 요청만 열어둔다. `/api/auth/**`로 넓히면 이후 추가될 인증 API까지 공개된다
 	private static final String[] PERMIT_ALL_PATHS = {
 			"/api/health",
-			"/api/auth/login/social/**",
-			"/api/auth/login/local",
+			"/api/auth/login/social",
+			"/api/auth/login/email",
 			"/api/auth/token/refresh",
 			"/api/auth/logout"
 	};
@@ -65,7 +65,7 @@ public class SecurityConfig {
 
 	// 스토어 심사관이 온보딩을 마치지 않고 탈퇴할 수 있으므로 탈퇴만 온보딩 중에도 연다.
 	// 메서드를 한정해 같은 경로에 나중에 생길 회원 조회·수정이 온보딩 회원에게 열리지 않게 한다
-	private static final String WITHDRAW_PATH = "/api/users/me";
+	private static final String WITHDRAW_PATH = "/api/auth/me";
 
 	// Swagger UI 정적 파일과 그 안의 openapi3.json이 모두 이 경로 아래에 있다
 	private static final String[] API_DOCS_PATHS = {"/swagger-ui/**"};
