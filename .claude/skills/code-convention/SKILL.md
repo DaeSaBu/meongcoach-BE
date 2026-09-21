@@ -27,6 +27,7 @@ user-invocable: true
 | --- | --- | --- | --- |
 | 모듈 공개 API 인터페이스 | `application/provided` | 능력을 나타내는 이름, `~Service` 접미사 없음 | `DogRegister`, `MbtiFinder` |
 | 애플리케이션 조회 결과 래퍼 | `application/provided` | `~Result` (record) — 도메인 타입만으로 부족할 때만 | `VideoUploadUrlResult`, `LoginResult` |
+| 모듈 경계 입력 | `application/provided` | `~Request` (record). `toCommand()`로 도메인 입력 모델로 변환 | `UserProfileRegisterRequest` |
 | 필요 자원 인터페이스 | `application/required` | 자원 이름 그대로 | `UserRepository`, `VideoStorage` |
 | 애플리케이션 서비스 | `application` | `~Service` | `SocialLoginService`, `CurriculumQueryService` |
 | 컨트롤러 | `adapter/webapi` | `~Controller` | `AuthController` |
@@ -35,9 +36,9 @@ user-invocable: true
 | 도메인 모델 | `domain` | 개념 이름 그대로 | `User` |
 | 도메인 입력 모델 | `domain` | `~Command` (record) | `DogRegisterCommand` |
 | 일급 컬렉션 | `domain` | 엔티티 이름의 복수형 | `Dogs` |
-| 다른 모듈에 노출하는 도메인 타입 | `domain/shared` | 개념 이름 그대로. `package-info.java`에 `@NamedInterface("shared")` 선언 | `Breed`, `Email` |
+| 다른 모듈에 노출하는 도메인 타입 | `domain/shared` | 개념 이름 그대로. `package-info.java`에 `@NamedInterface("shared")` 선언 | `Breed` |
 | 값 객체 | `domain` | 개념 이름 그대로 | `RefreshTokenId`, `VideoObjectKey` |
-| 도메인 예외·에러코드 | `domain/exception` | `{모듈}ErrorCode`, `~Exception` | `UserErrorCode`, `InvalidEmailException` |
+| 도메인 예외·에러코드 | `domain/exception` | `{모듈}ErrorCode`, `~Exception` | `AuthErrorCode`, `InvalidEmailException` |
 
 - `domain` 루트에는 엔티티·enum·일급 컬렉션·값 객체를 두고, 예외·에러코드는 `domain/exception`으로 분리한다. 값 객체용 하위 패키지(`vo`)는 만들지 않으며, 다른 모듈에 노출하는 값 객체만 `domain/shared`에 둔다.
 - 일급 컬렉션은 엔티티 하나로는 판단할 수 없는 규칙(마리 수 상한, 마지막 한 마리 삭제 금지처럼 한 사용자 소유 목록 전체를 봐야 하는 규칙)을 담을 때만 둔다. 영속화 단위가 아니라 application이 리포지토리로 조회한 목록을 생성자로 넘겨 만들며, 리포지토리를 참조하지 않는다. 규칙은 Spring 없는 단위 테스트로 검증한다. (살아있는 예시: `dog/domain/Dogs`)
@@ -67,6 +68,7 @@ user-invocable: true
 
 - 요청/응답 DTO는 Java `record`로 작성한다.
 - 웹 요청/응답 DTO는 `adapter/webapi/dto`에 두고, 접미사는 요청 `~Request`, 응답 `~Response`를 사용한다. (예: `SocialLoginRequest`, `SocialLoginResponse`)
+- 다른 모듈이 조립해 넘기는 입력은 `application/provided`에 `~Request` record로 두고, `toCommand()`로 도메인 `~Command`로 변환한다. `domain`의 Command는 모듈 밖에 노출하지 않는다. (예: `UserProfileRegisterRequest`)
 - 외부 API 응답 DTO는 `adapter/integration/dto`에 `~Response` record로 두고, 필드 매핑은 `@JsonProperty`로 지정한다. 전역 네이밍 전략(`spring.jackson.property-naming-strategy`)을 바꾸면 우리 API 응답까지 영향을 받으므로 쓰지 않는다.
 - 도메인 입력 모델은 `~Command` 접미사의 record로 `domain`에 두며, 웹 DTO와 별개로 유지한다. (예: `DogRegisterCommand`)
 	- 엔티티 정적 팩토리의 순수 값 파라미터가 3개 이상이면 Command로 묶고, 팩토리는 Command를 받아 생성자에 전달한다.
@@ -83,7 +85,7 @@ user-invocable: true
 
 ## 예외
 
-예외는 각 모듈이 자기 도메인에 맞게 정의해 **던지기만** 하고, HTTP 에러 응답 변환은 `shared/webapi/GlobalExceptionHandler`가 RFC 9457 Problem Details 형식으로 전담한다. 응답 형식·전역 핸들러 처리 범위·시큐리티 필터 체인 예외 번역은 [docs/error-handling.md](../../../docs/error-handling.md) 참고. 살아있는 예시는 `user/domain/exception`.
+예외는 각 모듈이 자기 도메인에 맞게 정의해 **던지기만** 하고, HTTP 에러 응답 변환은 `shared/webapi/GlobalExceptionHandler`가 RFC 9457 Problem Details 형식으로 전담한다. 응답 형식·전역 핸들러 처리 범위·시큐리티 필터 체인 예외 번역은 [docs/error-handling.md](../../../docs/error-handling.md) 참고. 살아있는 예시는 `auth/domain/exception`.
 
 - 컨트롤러/서비스에 개별 `@ExceptionHandler`를 만들지 않고, 예외를 catch해서 에러 DTO를 직접 조립해 반환하지 않는다. 예상치 못한 예외도 전역 핸들러 fallback이 500으로 변환하므로 별도 방어 코드를 두지 않는다.
 - `domain/exception`에 모듈당 1개 `{모듈}ErrorCode` enum을 `ErrorCode` 구현으로 두고, 상수 이름은 `{모듈}_{원인}` 형식의 UPPER_SNAKE_CASE로 전역에서 유일하게 짓는다. `code()`가 `name()`을 반환하므로 상수 이름이 곧 클라이언트 분기용 에러 코드다.

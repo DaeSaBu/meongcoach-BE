@@ -63,8 +63,8 @@ SHA-1 검증용이라 id_token의 `aud`가 되지 않습니다), 애플은 **iOS
 
 5번이 없으면 회원 행이 사라진 뒤에도(예: DB 초기화) 남아 있는 토큰이 만료 전까지 그대로 통과하고,
 각 모듈이 존재하지 않는 `userId`로 조회·저장을 시도하게 됩니다. 회원 조회가 필요해 이 컨버터만
-`shared`가 아니라 `user` 모듈(`user/adapter/security/UserRoleAuthenticationConverter`)에 둡니다 —
-`shared`가 `user`를 참조하면 순환 의존이 되므로 `SecurityConfig`는 `Converter<Jwt, AbstractAuthenticationToken>`
+`shared`가 아니라 `auth` 모듈(`auth/adapter/security/UserRoleAuthenticationConverter`)에 두고 `user`의 `RegisteredUserChecker`로 조회합니다 —
+`shared`가 모듈을 참조하면 순환 의존이 되므로 `SecurityConfig`는 `Converter<Jwt, AbstractAuthenticationToken>`
 타입으로만 받습니다. 비용은 인증 요청당 PK 조회 한 번입니다.
 
 역할을 JWT 클레임이 아니라 요청마다 DB에서 읽는 이유: 온보딩 완료로 `ONBOARDING_USER → USER`
@@ -199,8 +199,8 @@ Google Play·App Store 심사자는 소셜 계정을 만들 수 없으므로, �
 ```
 
 비밀번호는 `BCryptPasswordEncoder`(빈 정의는 `SecurityConfig`) 해시로만 저장합니다. 대조 규칙은 `LocalAccount.isValidPassword`에
-있지만 `domain`은 Spring에 의존할 수 없으므로 순수 인터페이스 `user/domain/PasswordMatcher`만 두고,
-`user/adapter/security/BcryptPasswordMatcher`가 스프링 `PasswordEncoder` 빈을 감싸 구현합니다.
+있지만 `domain`은 Spring에 의존할 수 없으므로 순수 인터페이스 `auth/domain/PasswordMatcher`만 두고,
+`auth/adapter/security/BcryptPasswordMatcher`가 스프링 `PasswordEncoder` 빈을 감싸 구현합니다.
 
 ### 실패 응답 정책
 
@@ -256,7 +256,7 @@ public interface SocialProfileReader {
 `SocialLoginService`가 `List<SocialProfileReader>`를 주입받아 `provider()` 기준 맵으로 만듭니다.
 **제공자 추가 = `{제공자}Properties` record + `{제공자}SocialProfileReader` `@Component` + 설정 블록. 기존 클래스 수정은 없습니다.**
 
-OIDC 제공자는 모두 "JWKS 디코더 + `iss` + `exp` + `aud`" 동일 형태라, 검증은 `user/adapter/integration/OidcIdTokenVerifier`
+OIDC 제공자는 모두 "JWKS 디코더 + `iss` + `exp` + `aud`" 동일 형태라, 검증은 `auth/adapter/integration/OidcIdTokenVerifier`
 하나가 맡고 제공자별 리더는 설정 배선과 클레임 매핑만 합니다. `{제공자}Properties`가 `OidcProviderProperties`
 (`issuer`, `jwkSetUri`, `audiences`)를 구현하면 검증기에 그대로 넘길 수 있습니다. 살아있는 예시는 `AppleSocialProfileReader`.
 
@@ -284,14 +284,14 @@ dev/prod의 DB 접속 변수(`DB_HOST` 등)는 [profiles.md](profiles.md)를 참
 
 - **탈퇴 시 카카오·구글 연결은 끊지 않습니다.** Apple은 심사 요건이라 revoke를 구현했지만(위 "탈퇴 시 Sign in with Apple 토큰 revoke"),
   카카오 unlink(`/v1/user/unlink`)와 구글 revoke(`https://oauth2.googleapis.com/revoke`)는 필수 요건이 아니라 미구현입니다.
-  필요해지면 `SocialTokenRevoker` 구현체를 제공자별로 추가하면 되고, `UserWithdrawService`는 등록된 구현체를 제공자별로 찾아 호출하므로 수정하지 않습니다.
+  필요해지면 `SocialTokenRevoker` 구현체를 제공자별로 추가하면 되고, `AccountWithdrawService`는 등록된 구현체를 제공자별로 찾아 호출하므로 수정하지 않습니다.
   그동안 구글 계정의 연결된 앱 목록에는 앱이 남습니다.
 - **탈퇴해도 타 모듈 데이터는 남습니다.** 강아지(`dogs`)·AI 리포트(`ai_reports`)·학습 진도는 옛 `userId`로 남으며, 재가입은 새
   `userId`를 받으므로 도달할 수 없는 고아 행이 됩니다. 삭제용 `provided` 인터페이스나 모듈 이벤트 선례가 없어 MVP에서는 두고,
-  필요해지면 `UserWithdrawer`에서 각 모듈의 정리 인터페이스를 호출하도록 넓힙니다.
+  필요해지면 `AccountWithdrawService`에서 각 모듈의 정리 인터페이스를 호출하도록 넓힙니다.
 - **폐기된 리프레시 토큰의 재사용을 감지하지 않습니다.** rotation 후 옛 토큰이 다시 제시되면 탈취 신호로 보고 그 회원의 토큰을
   전부 폐기하는 것이 일반적이지만, MVP에서는 401로만 응답합니다. 필요해지면 `TokenRefreshService`에서 폐기된 행을 만났을 때
-  `findAllByUserAndRevokedAtIsNull`로 나머지를 폐기하도록 넓힙니다.
+  `findAllByUserIdAndRevokedAtIsNull`로 나머지를 폐기하도록 넓힙니다.
 - **이메일 로그인은 응답 시간을 균등화하지 않습니다.** 이메일이 없으면 BCrypt 대조 없이 바로 401이라, 응답 시간으로
   등록 여부를 추정할 수 있습니다. 로컬 계정은 심사용 몇 개뿐이라 MVP에서는 수용하며, 필요해지면 미존재 분기에서도
   더미 해시에 `matches`를 한 번 호출해 균등화합니다.

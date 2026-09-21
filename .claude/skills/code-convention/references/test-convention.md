@@ -52,7 +52,7 @@ void 인증_주체에서_읽은_사용자로_조회를_위임한다() throws Exc
 
 ## 컨트롤러 테스트와 API 문서화
 
-API 문서는 컨트롤러 테스트가 생성하는 Spring REST Docs 스니펫으로 만든다. 산출물 빌드·확인 방법은 [docs/api-docs.md](../../../../docs/api-docs.md)를 본다. 살아있는 예시는 `user/adapter/webapi/AuthControllerTest`.
+API 문서는 컨트롤러 테스트가 생성하는 Spring REST Docs 스니펫으로 만든다. 산출물 빌드·확인 방법은 [docs/api-docs.md](../../../../docs/api-docs.md)를 본다. 살아있는 예시는 `auth/adapter/webapi/AuthControllerTest`.
 
 - `@WebMvcTest` + `@AutoConfigureRestDocs` 조합으로 작성하고, 테스트에 `document(...)` 호출을 포함한다.
 - snippet identifier는 `{모듈}/{행위}` 형식을 쓴다. (예: `user/register`, `dog/register`) 실패 응답은 `{모듈}/{행위}-error`.
