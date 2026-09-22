@@ -120,6 +120,51 @@ Apple이 코드를 거부하면 400(`AUTH_INVALID_APPLE_AUTHORIZATION_CODE`), Ap
 
 operation::auth/withdraw-error[snippets='http-response,response-fields']
 
+== 구 클라이언트 호환 API (삭제 예정)
+
+신 인증 계약(소셜 로그인 경로·본문 변경, 로그인 응답에서 `needsOnboarding` 분리, 탈퇴 경로 `DELETE /api/auth/me`, 에러 코드 `AUTH_` 접두어) 이전에 배포된 앱이 호출하는 경로입니다.
+서버는 같은 구현 위에서 두 계약을 함께 서비스하며, 새 앱은 이 절의 경로를 쓰지 않습니다.
+신 계약을 쓰는 앱 빌드가 배포되고 구 빌드 사용이 끝나면 이 절과 `auth/adapter/webapi/legacy` 패키지를 함께 삭제합니다.
+
+이 절의 경로에서만 에러 응답의 `code`가 구 클라이언트가 분기하는 `USER_` 접두어로 내려갑니다(예: `AUTH_INVALID_CREDENTIALS` → `USER_INVALID_CREDENTIALS`).
+토큰 재발급·로그아웃은 계약이 바뀌지 않아 위 Auth API 절의 경로를 그대로 씁니다.
+
+=== 소셜 로그인 (구)
+
+link:{swagger-ui}#/Auth/auth-legacy-social-login[▶ Swagger에서 Try it out,window=swagger]
+
+제공자를 경로 변수로, ID 토큰을 `token` 필드로 받습니다. 응답에 `needsOnboarding`이 포함됩니다.
+
+operation::auth/legacy-social-login[snippets='http-request,path-parameters,request-fields,http-response,response-fields']
+
+==== 실패 응답
+
+operation::auth/legacy-social-login-error[snippets='http-response,response-fields']
+
+=== 이메일 로그인 (구)
+
+link:{swagger-ui}#/Auth/auth-legacy-email-login[▶ Swagger에서 Try it out,window=swagger]
+
+operation::auth/legacy-email-login[snippets='http-request,request-fields,http-response,response-fields']
+
+==== 실패 응답
+
+operation::auth/legacy-email-login-error[snippets='http-response,response-fields']
+
+=== 회원 탈퇴 (구)
+
+link:{swagger-ui}#/Auth/auth-legacy-withdraw[▶ Swagger에서 Try it out,window=swagger]
+
+동작과 본문은 위 회원 탈퇴와 같고 경로만 다릅니다. 온보딩을 마치지 않은 회원도 호출할 수 있습니다.
+
+operation::auth/legacy-withdraw[snippets='http-request,request-fields,http-response']
+
+==== 실패 응답
+
+Apple 계정 회원이 `appleAuthorizationCode` 없이 요청하면 400(`USER_APPLE_AUTHORIZATION_CODE_REQUIRED`)을 반환합니다.
+
+operation::auth/legacy-withdraw-error[snippets='http-response,response-fields']
+
 == User API
 
 === 내 정보 조회

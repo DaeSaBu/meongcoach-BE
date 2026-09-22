@@ -88,10 +88,10 @@ SHA-1 검증용이라 id_token의 `aud`가 되지 않습니다), 애플은 **iOS
 
 | 순서 | 경로 | 접근 |
 |---|---|---|
-| 1 | `/api/health`, `/api/auth/login/social`, `/api/auth/login/email`, `/api/auth/token/refresh`, `/api/auth/logout` | permitAll |
+| 1 | `/api/health`, `/api/auth/login/social`, `/api/auth/login/email`, `/api/auth/token/refresh`, `/api/auth/logout`, 구 클라이언트 호환(삭제 예정) `/api/auth/login/social/*`, `/api/auth/login/local` | permitAll |
 | 2 | `/swagger-ui/**` | 문서 활성 환경 permitAll, 그 외 denyAll |
 | 3 | `/api/onboarding/**`, `/api/dogs/profile/image` | `USER`, `ONBOARDING_USER` |
-| 4 | `DELETE /api/auth/me`, `GET /api/users/me` | `USER`, `ONBOARDING_USER` |
+| 4 | `DELETE /api/auth/me`, `GET /api/users/me`, 구 클라이언트 호환(삭제 예정) `DELETE /api/users/me` | `USER`, `ONBOARDING_USER` |
 | 5 | 그 외 전부 | `USER` |
 
 3번은 온보딩 화면에 필요한 경로입니다 — 온보딩 완료 요청에 프로필 이미지 URL이 들어가므로
@@ -159,6 +159,8 @@ SHA-1 검증용이라 id_token의 `aud`가 되지 않습니다), 애플은 **iOS
 - `SessionCreationPolicy.STATELESS`
 - permitAll: `/api/health`, `/api/auth/login/social`, `/api/auth/login/email`, `/api/auth/token/refresh`, `/api/auth/logout`
   (인증 엔드포인트만 개별 경로로 열고 `/api/auth/**`로 넓히지 않습니다. 이후 추가되는 인증 관련 API가 자동으로 공개되는 것을 막기 위함입니다)
+  - 구 클라이언트 호환 경로 `/api/auth/login/social/*`, `/api/auth/login/local`과 온보딩 중 허용 `DELETE /api/users/me`는
+    `auth/adapter/webapi/legacy`(신 계약 이전 앱용)와 함께 삭제합니다. 구 경로의 에러 코드는 `USER_` 접두어로 내려갑니다 ([error-handling.md](error-handling.md))
 - 그 외 요청은 역할 기반 인가 (위 "URL 인가 규칙" 참고)
 - `oauth2ResourceServer.jwt()` — Bearer 토큰 파싱·검증은 프레임워크가 담당하므로 커스텀 필터가 없습니다.
   회원 존재 확인·권한 부여도 커스텀 필터가 아니라 디코더 뒤의 컨버터에 얹습니다 (위 "액세스 토큰 검증 순서" 참고)

@@ -35,6 +35,7 @@ Content-Type은 항상 `application/problem+json`입니다.
 | `shared/exception` | `ErrorCode` 인터페이스 | 모듈별 에러 코드 enum이 구현하는 계약 (`code()`, `message()`, `status()`) |
 | `shared/exception` | `DomainException` 추상 클래스 | 모든 도메인 예외의 최상위 타입 |
 | `shared/webapi` | `GlobalExceptionHandler` | 모든 예외 → Problem Details 변환 + 로깅 |
+| `auth/adapter/webapi/legacy` | `LegacyAuthErrorCodeHandler` | 구 클라이언트 호환 경로(`LegacyAuthController`) 한정. 전역 핸들러 응답의 `code`만 `AUTH_`→`USER_`로 치환. 구 앱 지원 종료 시 삭제 |
 
 ## 전역 핸들러 처리 범위
 
