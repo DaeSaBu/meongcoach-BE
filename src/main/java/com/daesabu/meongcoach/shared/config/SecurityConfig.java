@@ -54,7 +54,10 @@ public class SecurityConfig {
 			"/api/auth/login/social",
 			"/api/auth/login/email",
 			"/api/auth/token/refresh",
-			"/api/auth/logout"
+			"/api/auth/logout",
+			// 구 클라이언트 호환 경로. 구 앱 지원이 끝나면 auth/adapter/webapi/legacy와 함께 삭제한다
+			"/api/auth/login/social/*",
+			"/api/auth/login/local"
 	};
 
 	// 온보딩 중에도 필요한 경로. 이미지 업로드 URL 발급은 /api/onboarding/** 안에 있고, 프로필 이미지 조회만 밖에 있다
@@ -66,6 +69,9 @@ public class SecurityConfig {
 	// 스토어 심사관이 온보딩을 마치지 않고 탈퇴할 수 있으므로 탈퇴만 온보딩 중에도 연다.
 	// 메서드를 한정해 같은 경로에 나중에 생길 회원 조회·수정이 온보딩 회원에게 열리지 않게 한다
 	private static final String WITHDRAW_PATH = "/api/auth/me";
+
+	// 구 클라이언트의 탈퇴 경로. 구 앱 지원이 끝나면 auth/adapter/webapi/legacy와 함께 삭제한다
+	private static final String LEGACY_WITHDRAW_PATH = "/api/users/me";
 
 	// 로그인 응답에 온보딩 여부가 없어 클라이언트가 로그인 직후 이 경로로 화면을 분기하므로 온보딩 중에도 연다.
 	// 탈퇴와 같은 이유로 메서드를 한정한다
@@ -98,6 +104,8 @@ public class SecurityConfig {
 					auth.requestMatchers(ONBOARDING_ALLOWED_PATHS)
 							.hasAnyRole(AuthorityRole.USER.name(), AuthorityRole.ONBOARDING_USER.name());
 					auth.requestMatchers(HttpMethod.DELETE, WITHDRAW_PATH)
+							.hasAnyRole(AuthorityRole.USER.name(), AuthorityRole.ONBOARDING_USER.name());
+					auth.requestMatchers(HttpMethod.DELETE, LEGACY_WITHDRAW_PATH)
 							.hasAnyRole(AuthorityRole.USER.name(), AuthorityRole.ONBOARDING_USER.name());
 					auth.requestMatchers(HttpMethod.GET, MY_INFO_PATH)
 							.hasAnyRole(AuthorityRole.USER.name(), AuthorityRole.ONBOARDING_USER.name());

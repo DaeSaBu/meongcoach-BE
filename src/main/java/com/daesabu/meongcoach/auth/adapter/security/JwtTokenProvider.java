@@ -49,7 +49,7 @@ public class JwtTokenProvider implements TokenProvider {
 		String refreshToken = encode(refreshClaims);
 		// 엔티티의 시각 컬럼이 시스템 존 LocalDateTime이므로 같은 존으로 변환한다
 		LocalDateTime refreshTokenExpiresAt = LocalDateTime.ofInstant(refreshExpiresAt, ZoneId.systemDefault());
-		return new AuthToken(accessToken, refreshToken, refreshTokenId, refreshTokenExpiresAt);
+		return new AuthToken(userId, accessToken, refreshToken, refreshTokenId, refreshTokenExpiresAt);
 	}
 
 	@Override

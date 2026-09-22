@@ -42,8 +42,9 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 	private static final String ONBOARDING_NOT_COMPLETED_CODE = "ONBOARDING_NOT_COMPLETED";
 	private static final String ONBOARDING_NOT_COMPLETED_MESSAGE = "온보딩을 완료해야 이용할 수 있는 기능입니다.";
 
+	// public인 이유: 구 클라이언트 호환 핸들러(auth/adapter/webapi/legacy)가 여기서 만든 응답의 code만 바꿔 쓴다
 	@ExceptionHandler(DomainException.class)
-	ProblemDetail handleDomainException(DomainException e) {
+	public ProblemDetail handleDomainException(DomainException e) {
 		HttpStatus status = HttpStatus.valueOf(e.getErrorCode().status());
 		logDomainException(e, status);
 		return problemDetail(status, e.getErrorCode().code(), e.getMessage());

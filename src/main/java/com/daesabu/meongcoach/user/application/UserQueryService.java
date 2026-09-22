@@ -20,6 +20,13 @@ public class UserQueryService implements UserFinder {
 		return userRepository.existsByIdAndStatus(userId, UserStatus.ACTIVE);
 	}
 
+	// 온보딩 상태의 단일 원천은 users.role이다. 다른 모듈은 User 엔티티를 볼 수 없으므로 판정 결과만 내준다
+	@Override
+	public boolean isOnboardingUser(Long userId) {
+		User user = findById(userId);
+		return user.isOnboarding();
+	}
+
 	@Override
 	public User findById(Long userId) {
 		return userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException(userId));
