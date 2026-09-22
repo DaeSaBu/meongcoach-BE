@@ -120,6 +120,25 @@ class SecurityFilterChainTest {
 				.andExpect(jsonPath("$.code").value("AUTH_INVALID_CREDENTIALS"));
 	}
 
+	// 구 클라이언트 호환 경로. 구 앱 지원이 끝나면 LegacyAuthController와 함께 삭제한다
+	@Test
+	void 구_소셜_로그인_경로는_인증_없이_열려_있고_USER_접두어_에러_코드를_반환한다() throws Exception {
+		mockMvc.perform(post("/api/auth/login/social/kakao")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"token\": \"invalid\"}"))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.code").value("USER_INVALID_SOCIAL_TOKEN"));
+	}
+
+	@Test
+	void 구_이메일_로그인_경로는_인증_없이_열려_있고_USER_접두어_에러_코드를_반환한다() throws Exception {
+		mockMvc.perform(post("/api/auth/login/local")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"email\": \"nobody@meongcoach.com\", \"password\": \"wrong-password\"}"))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.code").value("USER_INVALID_CREDENTIALS"));
+	}
+
 	@Test
 	void 회원_경로는_인증이_필요하다() throws Exception {
 		mockMvc.perform(get("/api/users/me"))
@@ -228,6 +247,20 @@ class SecurityFilterChainTest {
 		AuthToken token = tokenProvider.issue(onboardingUserId);
 
 		mockMvc.perform(delete("/api/auth/me")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))
+				.andExpect(status().isNoContent());
+
+		mockMvc.perform(get("/api/onboarding/metadata")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))
+				.andExpect(status().isUnauthorized());
+	}
+
+	// 구 앱은 탈퇴를 DELETE /api/users/me로 호출하므로 신 경로와 같은 규칙으로 온보딩 미완료 회원에게도 연다
+	@Test
+	void 온보딩_미완료_회원도_구_탈퇴_경로로_탈퇴할_수_있다() throws Exception {
+		AuthToken token = tokenProvider.issue(onboardingUserId);
+
+		mockMvc.perform(delete("/api/users/me")
 						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))
 				.andExpect(status().isNoContent());
 

@@ -62,7 +62,7 @@ class AuthTokenProvideServiceTest {
 
 		@Override
 		public AuthToken issue(Long userId) {
-			return new AuthToken("access-" + userId, "refresh-" + userId, RefreshTokenId.generate(), EXPIRES_AT);
+			return new AuthToken(userId, "access-" + userId, "refresh-" + userId, RefreshTokenId.generate(), EXPIRES_AT);
 		}
 
 		@Override

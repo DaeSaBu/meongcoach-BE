@@ -50,6 +50,28 @@ class UserQueryServiceTest {
 	}
 
 	@Test
+	void 온보딩_중인_회원이면_온보딩이_필요하다() {
+		Long userId = userRepository.save(User.registerUser()).getId();
+
+		assertThat(userQueryService.isOnboardingUser(userId)).isTrue();
+	}
+
+	@Test
+	void 정회원이면_온보딩이_필요하지_않다() {
+		User user = User.registerUser();
+		user.promoteToUser();
+		Long userId = userRepository.save(user).getId();
+
+		assertThat(userQueryService.isOnboardingUser(userId)).isFalse();
+	}
+
+	@Test
+	void 없는_회원_ID로_온보딩_여부를_조회하면_예외를_던진다() {
+		assertThatThrownBy(() -> userQueryService.isOnboardingUser(UNREGISTERED_USER_ID))
+				.isInstanceOf(UserNotFoundException.class);
+	}
+
+	@Test
 	void ID로_회원을_조회한다() {
 		Long userId = userRepository.save(User.registerUser()).getId();
 

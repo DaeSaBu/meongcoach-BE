@@ -50,7 +50,7 @@ class AuthControllerTest {
 	private static final String EMAIL = "review@meongcoach.com";
 	private static final String PASSWORD = "meongcoach-review";
 	private static final String APPLE_CODE = "c1a2b3.0.abcd.efgh";
-	private static final AuthToken AUTH_TOKEN = new AuthToken("access-token", "refresh-token",
+	private static final AuthToken AUTH_TOKEN = new AuthToken(42L, "access-token", "refresh-token",
 			new RefreshTokenId("0f8fad5b-d9cb-469f-a165-70867728950e"), LocalDateTime.of(2026, 9, 16, 12, 0));
 
 	@Autowired

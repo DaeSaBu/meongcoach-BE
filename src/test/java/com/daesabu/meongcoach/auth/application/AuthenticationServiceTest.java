@@ -462,7 +462,8 @@ class AuthenticationServiceTest {
 		@Override
 		public AuthToken issue(Long userId) {
 			RefreshTokenId tokenId = RefreshTokenId.generate();
-			return new AuthToken("access-" + userId, "refresh-" + userId, tokenId, LocalDateTime.now().plusDays(14));
+			return new AuthToken(userId, "access-" + userId, "refresh-" + userId, tokenId,
+					LocalDateTime.now().plusDays(14));
 		}
 
 		@Override
