@@ -7,16 +7,17 @@
 
 클라이언트가 React Native 앱이므로, 서버가 리다이렉트를 주고받는 OAuth2 인가 코드 흐름을 쓰지 않습니다.
 **서버가 제공자의 REST 키·시크릿을 보관하지 않습니다.** 서버가 아는 제공자 값은 우리 앱을 가리키는 공개 식별자(`aud`)뿐입니다.
-지원 제공자는 카카오(`kakao`)·구글(`google`)·애플(`apple`)이며, 모두 OIDC id_token을 받습니다.
+지원 제공자는 카카오(`kakao`)·구글(`google`)·애플(`apple`)이며(대소문자 무시, 그 외 값은 400 `AUTH_UNSUPPORTED_SOCIAL_PROVIDER`), 모두 OIDC id_token을 받습니다.
 
 ```
 [앱] 제공자 SDK 네이티브 로그인 (카카오 SDK / Google Sign-In / Sign in with Apple, OIDC)
   → 제공자 id_token 획득 (애플은 identityToken)
-     → POST /api/auth/login/social/{provider}  { "token": "..." }
+     → POST /api/auth/login/social  { "socialProvider": "kakao", "idToken": "..." }
         → 서버가 id_token 서명·발급자·만료·aud 검증 (캐시된 공개 키로 로컬 검증)
            → 회원 조회·생성 (User + SocialAccount)
               → 우리 JWT 발급
-        ← { accessToken, refreshToken, needsOnboarding }
+        ← { accessToken, refreshToken }
+           → GET /api/users/me  ← { needsOnboarding }  (로그인 직후 화면 분기)
 ```
 
 제공자가 발급한 토큰은 **로그인 시점에만 쓰고 버립니다.** 이후 인가는 전적으로 우리 JWT로 합니다.
@@ -32,7 +33,7 @@ id_token의 서명이 유효하다는 것은 "제공자가 발급했다"만 증�
 
 그래서 `OidcIdTokenVerifier`는 id_token의 `aud`가 설정된
 `meongcoach.social.{provider}.audiences`에 포함되는지 대조하고, 아니면 거부합니다
-(`USER_SOCIAL_TOKEN_APP_MISMATCH`). `aud`가 아예 없는 토큰도 같은 이유로 거부합니다.
+(`AUTH_SOCIAL_TOKEN_APP_MISMATCH`). `aud`가 아예 없는 토큰도 같은 이유로 거부합니다.
 
 `aud`는 플랫폼마다 다릅니다 — 카카오는 **네이티브 앱은 네이티브 앱 키, 웹은 REST API 키**,
 구글은 **안드로이드·서버 검증은 웹 클라이언트 ID, iOS는 iOS 클라이언트 ID**(안드로이드용 OAuth 클라이언트 ID는
@@ -41,7 +42,7 @@ SHA-1 검증용이라 id_token의 `aud`가 되지 않습니다), 애플은 **iOS
 
 `aud` 검증만 디코더의 `OAuth2TokenValidator` 체인이 아니라 `verify()`에서 직접 합니다.
 검증기에 넣으면 서명 실패와 같은 `JwtValidationException`으로 뭉개져
-`USER_INVALID_SOCIAL_TOKEN`과 구분할 수 없기 때문입니다. 이 검증은 별도 에러 코드를 유지할 값어치가 있습니다.
+`AUTH_INVALID_SOCIAL_TOKEN`과 구분할 수 없기 때문입니다. 이 검증은 별도 에러 코드를 유지할 값어치가 있습니다.
 
 ## 토큰 정책
 
@@ -63,8 +64,8 @@ SHA-1 검증용이라 id_token의 `aud`가 되지 않습니다), 애플은 **iOS
 
 5번이 없으면 회원 행이 사라진 뒤에도(예: DB 초기화) 남아 있는 토큰이 만료 전까지 그대로 통과하고,
 각 모듈이 존재하지 않는 `userId`로 조회·저장을 시도하게 됩니다. 회원 조회가 필요해 이 컨버터만
-`shared`가 아니라 `user` 모듈(`user/adapter/security/UserRoleAuthenticationConverter`)에 둡니다 —
-`shared`가 `user`를 참조하면 순환 의존이 되므로 `SecurityConfig`는 `Converter<Jwt, AbstractAuthenticationToken>`
+`shared`가 아니라 `auth` 모듈(`auth/adapter/security/UserRoleAuthenticationConverter`)에 두고 `user`의 `RegisteredUserChecker`로 조회합니다 —
+`shared`가 모듈을 참조하면 순환 의존이 되므로 `SecurityConfig`는 `Converter<Jwt, AbstractAuthenticationToken>`
 타입으로만 받습니다. 비용은 인증 요청당 PK 조회 한 번입니다.
 
 역할을 JWT 클레임이 아니라 요청마다 DB에서 읽는 이유: 온보딩 완료로 `ONBOARDING_USER → USER`
@@ -72,7 +73,7 @@ SHA-1 검증용이라 id_token의 `aud`가 되지 않습니다), 애플은 **iOS
 클라이언트가 토큰을 재발급받을 필요도 없습니다. 어차피 5번이 요청당 PK 조회를 하고 있었으므로
 추가 비용도 없습니다.
 
-온보딩 상태의 단일 원천은 `users.role`입니다. 인가뿐 아니라 로그인 응답의 `needsOnboarding`
+온보딩 상태의 단일 원천은 `users.role`입니다. 인가뿐 아니라 `GET /api/users/me` 응답의 `needsOnboarding`
 (`ONBOARDING_USER`면 true)과 온보딩 완료 요청의 중복 판정(`USER`면 409 `USER_ALREADY_ONBOARDED`)도
 같은 컬럼을 읽습니다. `user_profiles` 행 존재 여부는 판정에 쓰지 않습니다 — 두 곳에서 따로 판단하면
 승격은 됐는데 프로필이 없거나 그 반대인 계정이 생겨 화면 분기와 인가가 어긋나기 때문입니다.
@@ -87,10 +88,10 @@ SHA-1 검증용이라 id_token의 `aud`가 되지 않습니다), 애플은 **iOS
 
 | 순서 | 경로 | 접근 |
 |---|---|---|
-| 1 | `/api/health`, `/api/auth/login/social/**`, `/api/auth/login/local`, `/api/auth/token/refresh`, `/api/auth/logout` | permitAll |
+| 1 | `/api/health`, `/api/auth/login/social`, `/api/auth/login/email`, `/api/auth/token/refresh`, `/api/auth/logout`, 구 클라이언트 호환(삭제 예정) `/api/auth/login/social/*`, `/api/auth/login/local` | permitAll |
 | 2 | `/swagger-ui/**` | 문서 활성 환경 permitAll, 그 외 denyAll |
 | 3 | `/api/onboarding/**`, `/api/dogs/profile/image` | `USER`, `ONBOARDING_USER` |
-| 4 | `DELETE /api/users/me` | `USER`, `ONBOARDING_USER` |
+| 4 | `DELETE /api/auth/me`, `GET /api/users/me`, 구 클라이언트 호환(삭제 예정) `DELETE /api/users/me` | `USER`, `ONBOARDING_USER` |
 | 5 | 그 외 전부 | `USER` |
 
 3번은 온보딩 화면에 필요한 경로입니다 — 온보딩 완료 요청에 프로필 이미지 URL이 들어가므로
@@ -113,7 +114,7 @@ SHA-1 검증용이라 id_token의 `aud`가 되지 않습니다), 애플은 **iOS
 제출하면 401**입니다. 이 검증이 없으면 리프레시 토큰이 사실상 14일짜리 액세스 토큰이 됩니다.
 
 회원 존재 검증은 액세스 디코더에만 붙습니다. 재발급·로그아웃 경로는 리프레시 토큰을 요청 본문으로 받아
-`TokenRefreshService`·`LogoutService`가 저장 이력을 확인하고 `USER_INVALID_REFRESH_TOKEN`(401)으로 응답해,
+`AuthenticationService`(재발급)·`RefreshTokenModifyService`(로그아웃)가 저장 이력을 확인하고 `AUTH_INVALID_REFRESH_TOKEN`(401)으로 응답해,
 클라이언트가 재로그인 분기를 그대로 쓸 수 있게 합니다.
 
 ### 리프레시 토큰 영속화와 rotation
@@ -121,10 +122,10 @@ SHA-1 검증용이라 id_token의 `aud`가 되지 않습니다), 애플은 **iOS
 리프레시 토큰은 발급할 때마다 `refresh_tokens`에 행을 남깁니다(`AuthTokenIssueService`가 JWT 발급과 저장을 항상 함께 수행).
 저장 키는 토큰 원문이 아니라 JWT의 `jti`라, DB가 유출되어도 토큰 자체는 새어 나가지 않습니다.
 
-- **재발급(rotation)** — `TokenRefreshService`는 서명이 유효해도 저장 이력이 없거나 이미 폐기·만료된 토큰이면 401을 내고,
+- **재발급(rotation)** — `AuthenticationService.refresh`는 서명이 유효해도 저장 이력이 없거나 이미 폐기·만료된 토큰이면 401을 내고,
   통과하면 제시된 토큰을 폐기한 뒤 새 토큰 쌍을 발급·저장합니다. 폐기와 발급은 한 트랜잭션이라 중간에 실패하면 기존 토큰이 남습니다.
 - **로그아웃** — `POST /api/auth/logout`은 제시한 토큰 하나만 폐기합니다(기기 단위). 이미 폐기된 토큰도 204입니다.
-- **탈퇴** — `UserWithdrawService`가 회원의 살아 있는 토큰을 전부 폐기합니다. Apple 계정 회원은 그 전에 Apple 토큰부터 revoke합니다(아래 절).
+- **탈퇴** — `AuthenticationService.withdraw`가 회원의 살아 있는 토큰을 전부 폐기합니다. Apple 계정 회원은 그 전에 Apple 토큰부터 revoke합니다(아래 절).
 
 폐기는 행 삭제가 아니라 `revoked_at` 기록이라 이력이 남습니다. 액세스 토큰은 저장·조회하지 않으므로 `jti`를 넣지 않으며 만료(1시간)까지 유효하고,
 탈퇴 회원의 액세스 토큰은 `RegisteredUserCheckService`가 미등록으로 취급해 막습니다. 탈퇴(`WITHDRAWN`)는 행이 남는 soft delete라
@@ -136,16 +137,16 @@ SHA-1 검증용이라 id_token의 `aud`가 되지 않습니다), 애플은 **iOS
 
 애플 심사 지침 5.1.1(v)은 Sign in with Apple 앱이 계정을 삭제할 때 Apple의 [토큰 revoke API](https://developer.apple.com/documentation/signinwithapplerestapi/revoke_tokens)를
 호출하도록 요구합니다. 서버는 로그인 때 id_token만 검증하고 Apple 토큰을 보관하지 않으므로, 클라이언트가 탈퇴 직전
-`ASAuthorizationController`로 **재인증해 받은 `authorizationCode`를 `DELETE /api/users/me` 본문(`appleAuthorizationCode`)에 실어** 보내야 합니다.
+`ASAuthorizationController`로 **재인증해 받은 `authorizationCode`를 `DELETE /api/auth/me` 본문(`appleAuthorizationCode`)에 실어** 보내야 합니다.
 `AppleSocialTokenRevoker`가 이 코드를 `/auth/token`으로 refresh_token과 교환한 뒤 `/auth/revoke`로 폐기합니다.
 
 - 두 요청의 `client_secret`은 고정 값이 아니라 `.p8` 개인 키로 서명한 ES256 JWT(`iss`=팀 ID, `sub`=번들 ID, `kid`=키 ID)라
   `APPLE_TEAM_ID`·`APPLE_KEY_ID`·`APPLE_PRIVATE_KEY`가 필요합니다. 개인 키는 기동 시 파싱하므로 잘못 넣으면 배포 시점에 실패합니다.
 - 인가 코드는 **5분 만료·1회용**이라 서버가 저장하지 않으며, 클라이언트도 재사용하지 말고 탈퇴 직전에 새로 받아야 합니다.
-- **revoke가 끝나야 탈퇴가 진행됩니다.** `UserWithdrawService`는 제공자를 가리지 않고 회원의 소셜 계정마다 `SocialTokenRevoker`
-  구현체가 등록돼 있으면 호출하며, 코드가 필수인지는 구현체가 정합니다. Apple 계정 회원이 코드 없이 요청하면 `AppleSocialTokenRevoker`가
-  400(`USER_APPLE_AUTHORIZATION_CODE_REQUIRED`)으로 거절하고,
-  Apple이 코드를 거부하면 400(`USER_INVALID_APPLE_AUTHORIZATION_CODE`), Apple과 통신하지 못하면 502(`USER_SOCIAL_PROVIDER_UNAVAILABLE`)로
+- **revoke가 끝나야 탈퇴가 진행됩니다.** `AuthenticationService.withdraw`는 제공자를 가리지 않고 회원의 소셜 계정마다
+  `SocialTokenRevokers`에 넘기고, 여기에 `SocialTokenRevoker` 구현체가 등록된 제공자만 revoke하며, 코드가 필수인지는 구현체가 정합니다. Apple 계정 회원이 코드 없이 요청하면 `AppleSocialTokenRevoker`가
+  400(`AUTH_APPLE_AUTHORIZATION_CODE_REQUIRED`)으로 거절하고,
+  Apple이 코드를 거부하면 400(`AUTH_INVALID_APPLE_AUTHORIZATION_CODE`), Apple과 통신하지 못하면 502(`AUTH_SOCIAL_PROVIDER_UNAVAILABLE`)로
   끝나고 회원·자격증명은 그대로 남습니다. 사용자가 계정을 지우지 못하는 상태보다 Apple 연결이 남는 상태가 심사 위험이 크다고 봤기 때문에,
   revoke를 소셜 계정 삭제보다 먼저 호출해 실패 시 같은 계정으로 다시 시도할 수 있게 둡니다.
 - 카카오·구글 회원은 이 절차가 없으며 코드를 보내도 무시합니다(아래 "알려진 제약").
@@ -156,8 +157,10 @@ SHA-1 검증용이라 id_token의 `aud`가 되지 않습니다), 애플은 **iOS
 
 - `csrf` / `formLogin` / `httpBasic` / `logout` 비활성화 (`logout`은 Spring의 세션 로그아웃. 앱 로그아웃은 `POST /api/auth/logout`)
 - `SessionCreationPolicy.STATELESS`
-- permitAll: `/api/health`, `/api/auth/login/social/**`, `/api/auth/login/local`, `/api/auth/token/refresh`, `/api/auth/logout`
+- permitAll: `/api/health`, `/api/auth/login/social`, `/api/auth/login/email`, `/api/auth/token/refresh`, `/api/auth/logout`
   (인증 엔드포인트만 개별 경로로 열고 `/api/auth/**`로 넓히지 않습니다. 이후 추가되는 인증 관련 API가 자동으로 공개되는 것을 막기 위함입니다)
+  - 구 클라이언트 호환 경로 `/api/auth/login/social/*`, `/api/auth/login/local`과 온보딩 중 허용 `DELETE /api/users/me`는
+    `auth/adapter/webapi/legacy`(신 계약 이전 앱용)와 함께 삭제합니다. 구 경로의 에러 코드는 `USER_` 접두어로 내려갑니다 ([error-handling.md](error-handling.md))
 - 그 외 요청은 역할 기반 인가 (위 "URL 인가 규칙" 참고)
 - `oauth2ResourceServer.jwt()` — Bearer 토큰 파싱·검증은 프레임워크가 담당하므로 커스텀 필터가 없습니다.
   회원 존재 확인·권한 부여도 커스텀 필터가 아니라 디코더 뒤의 컨버터에 얹습니다 (위 "액세스 토큰 검증 순서" 참고)
@@ -188,27 +191,27 @@ SHA-1 검증용이라 id_token의 `aud`가 되지 않습니다), 애플은 **iOS
 ## 이메일 로그인 (스토어 심사용 테스트 계정)
 
 Google Play·App Store 심사자는 소셜 계정을 만들 수 없으므로, 심사용 테스트 계정만 이메일·비밀번호로 로그인합니다.
-**회원가입·이메일 인증·비밀번호 변경 API는 없습니다.** 계정(`LocalAccount`)은 운영자가 DB에 직접 등록하며 생성 이후 수정되지 않습니다.
+**회원가입·이메일 인증·비밀번호 변경 API는 없습니다.** 계정(`EmailAccount`)은 운영자가 DB에 직접 등록하며 생성 이후 수정되지 않습니다.
 
 ```
 [앱] 이메일·비밀번호 입력
-  → POST /api/auth/login/local  { "email": "...", "password": "..." }
-     → LocalAccountRepository.findByEmail → LocalAccount.isValidPassword(PasswordMatcher, BCrypt) → 탈퇴 여부 확인
+  → POST /api/auth/login/email  { "email": "...", "password": "..." }
+     → EmailAccountRepository.findByEmail → EmailAccount.isValidPassword(PasswordMatcher, BCrypt) → 탈퇴 여부 확인
         → 우리 JWT 발급 (소셜 로그인과 동일)
-  ← { accessToken, refreshToken, needsOnboarding }
+  ← { accessToken, refreshToken }
 ```
 
-비밀번호는 `BCryptPasswordEncoder`(빈 정의는 `SecurityConfig`) 해시로만 저장합니다. 대조 규칙은 `LocalAccount.isValidPassword`에
-있지만 `domain`은 Spring에 의존할 수 없으므로 순수 인터페이스 `user/domain/PasswordMatcher`만 두고,
-`user/adapter/security/BcryptPasswordMatcher`가 스프링 `PasswordEncoder` 빈을 감싸 구현합니다.
+비밀번호는 `BCryptPasswordEncoder`(빈 정의는 `SecurityConfig`) 해시로만 저장합니다. 대조 규칙은 `EmailAccount.isValidPassword`에
+있지만 `domain`은 Spring에 의존할 수 없으므로 순수 인터페이스 `auth/domain/PasswordMatcher`만 두고,
+`auth/adapter/security/BcryptPasswordMatcher`가 스프링 `PasswordEncoder` 빈을 감싸 구현합니다.
 
 ### 실패 응답 정책
 
 | 상황 | 응답 |
 |---|---|
-| 이메일 미등록 **또는** 비밀번호 불일치 | 401 `USER_INVALID_CREDENTIALS` — 어느 쪽인지 구분하지 않습니다. 구분하면 계정 존재 여부가 드러납니다 |
-| 이메일 형식 오류 | 400 `USER_INVALID_EMAIL` — 계정 존재와 무관한 입력 형식 검증이라 정보가 새지 않습니다. 형식 규칙은 `Email` 값 객체 한 곳에만 두고, 컨트롤러가 `new Email(...)`로 변환합니다 |
-| 탈퇴한 회원 | 403 `USER_WITHDRAWN` — **비밀번호 대조를 통과한 뒤에만** 확인해, 비밀번호를 모르는 쪽에 탈퇴 여부가 드러나지 않게 합니다 |
+| 이메일 미등록 **또는** 비밀번호 불일치 | 401 `AUTH_INVALID_CREDENTIALS` — 어느 쪽인지 구분하지 않습니다. 구분하면 계정 존재 여부가 드러납니다 |
+| 이메일 형식 오류 | 400 `AUTH_INVALID_EMAIL` — 계정 존재와 무관한 입력 형식 검증이라 정보가 새지 않습니다. 형식 규칙은 `Email` 값 객체 한 곳에만 두고, 컨트롤러가 `new Email(...)`로 변환합니다 |
+| 탈퇴한 회원 | 403 `AUTH_WITHDRAWN` — **비밀번호 대조를 통과한 뒤에만** 확인해, 비밀번호를 모르는 쪽에 탈퇴 여부가 드러나지 않게 합니다 |
 
 ### 테스트 계정 등록
 
@@ -229,18 +232,18 @@ WITH new_user AS (
 	INSERT INTO users (role, status, created_at, updated_at)
 	VALUES ('ONBOARDING_USER', 'ACTIVE', now(), now()) RETURNING id
 )
-INSERT INTO local_accounts (user_id, email, password_hash, created_at, updated_at)
+INSERT INTO email_accounts (user_id, email, password_hash, created_at, updated_at)
 SELECT id, 'review@example.com', '$2y$10$...', now(), now() FROM new_user;
 COMMIT;
 ```
 
 - 평문 비밀번호는 커밋하지 않고 심사 제출 양식에만 적습니다. local 시드의 비밀번호는 로컬 전용이라 예외입니다.
-- 심사가 끝나 계정을 막으려면 `UPDATE users SET status = 'WITHDRAWN' WHERE id = (SELECT user_id FROM local_accounts WHERE email = '...')`.
-  행을 지우려면 `local_accounts` → `users` 순서로 삭제합니다.
-- **심사관이 탈퇴 API(`DELETE /api/users/me`)를 시험하면 `local_accounts` 행이 삭제되어 그 계정으로는 더 로그인할 수 없습니다.**
+- 심사가 끝나 계정을 막으려면 `UPDATE users SET status = 'WITHDRAWN' WHERE id = (SELECT user_id FROM email_accounts WHERE email = '...')`.
+  행을 지우려면 `email_accounts` → `users` 순서로 삭제합니다.
+- **심사관이 탈퇴 API(`DELETE /api/auth/me`)를 시험하면 `email_accounts` 행이 삭제되어 그 계정으로는 더 로그인할 수 없습니다.**
   `users` 행은 `WITHDRAWN`으로 남지만 이메일 유니크는 풀리므로, 위 SQL로 같은 이메일을 다시 등록하면 됩니다(새 `users` 행이 생깁니다).
   심사 제출 전과 심사 사이에 계정이 살아 있는지 확인하세요. local은 기동마다 시드가 다시 적재되어 신경 쓸 필요가 없습니다.
-- prod는 `ddl-auto: validate`라 `local_accounts` 테이블이 없으면 기동 자체가 실패합니다. 엔티티는 이미 배포되어 있으므로 테이블 존재만 확인하면 됩니다.
+- prod는 `ddl-auto: validate`라 `email_accounts` 테이블이 없으면 기동 자체가 실패합니다. 엔티티는 이미 배포되어 있으므로 테이블 존재만 확인하면 됩니다.
 
 ## 제공자 추가 방법
 
@@ -249,14 +252,15 @@ COMMIT;
 ```java
 public interface SocialProfileReader {
 	SocialProvider provider();
-	SocialAccountLinkCommand read(String credential);
+	SocialProfile read(String credential);
 }
 ```
 
-`SocialLoginService`가 `List<SocialProfileReader>`를 주입받아 `provider()` 기준 맵으로 만듭니다.
+`auth/application/SocialProfileReaders`가 `List<SocialProfileReader>`를 주입받아 `provider()` 기준 맵으로 만들고, 리더가 없는
+`SocialProvider` 상수가 있으면 기동 시점에 실패합니다.
 **제공자 추가 = `{제공자}Properties` record + `{제공자}SocialProfileReader` `@Component` + 설정 블록. 기존 클래스 수정은 없습니다.**
 
-OIDC 제공자는 모두 "JWKS 디코더 + `iss` + `exp` + `aud`" 동일 형태라, 검증은 `user/adapter/integration/OidcIdTokenVerifier`
+OIDC 제공자는 모두 "JWKS 디코더 + `iss` + `exp` + `aud`" 동일 형태라, 검증은 `auth/adapter/integration/OidcIdTokenVerifier`
 하나가 맡고 제공자별 리더는 설정 배선과 클레임 매핑만 합니다. `{제공자}Properties`가 `OidcProviderProperties`
 (`issuer`, `jwkSetUri`, `audiences`)를 구현하면 검증기에 그대로 넘길 수 있습니다. 살아있는 예시는 `AppleSocialProfileReader`.
 
@@ -284,14 +288,14 @@ dev/prod의 DB 접속 변수(`DB_HOST` 등)는 [profiles.md](profiles.md)를 참
 
 - **탈퇴 시 카카오·구글 연결은 끊지 않습니다.** Apple은 심사 요건이라 revoke를 구현했지만(위 "탈퇴 시 Sign in with Apple 토큰 revoke"),
   카카오 unlink(`/v1/user/unlink`)와 구글 revoke(`https://oauth2.googleapis.com/revoke`)는 필수 요건이 아니라 미구현입니다.
-  필요해지면 `SocialTokenRevoker` 구현체를 제공자별로 추가하면 되고, `UserWithdrawService`는 등록된 구현체를 제공자별로 찾아 호출하므로 수정하지 않습니다.
+  필요해지면 `SocialTokenRevoker` 구현체를 제공자별로 추가하면 되고, 탈퇴 흐름은 `SocialTokenRevokers`로 등록된 구현체를 제공자별로 찾아 호출하므로 수정하지 않습니다.
   그동안 구글 계정의 연결된 앱 목록에는 앱이 남습니다.
 - **탈퇴해도 타 모듈 데이터는 남습니다.** 강아지(`dogs`)·AI 리포트(`ai_reports`)·학습 진도는 옛 `userId`로 남으며, 재가입은 새
   `userId`를 받으므로 도달할 수 없는 고아 행이 됩니다. 삭제용 `provided` 인터페이스나 모듈 이벤트 선례가 없어 MVP에서는 두고,
-  필요해지면 `UserWithdrawer`에서 각 모듈의 정리 인터페이스를 호출하도록 넓힙니다.
+  필요해지면 `AuthenticationService.withdraw`에서 각 모듈의 정리 인터페이스를 호출하도록 넓힙니다.
 - **폐기된 리프레시 토큰의 재사용을 감지하지 않습니다.** rotation 후 옛 토큰이 다시 제시되면 탈취 신호로 보고 그 회원의 토큰을
-  전부 폐기하는 것이 일반적이지만, MVP에서는 401로만 응답합니다. 필요해지면 `TokenRefreshService`에서 폐기된 행을 만났을 때
-  `findAllByUserAndRevokedAtIsNull`로 나머지를 폐기하도록 넓힙니다.
+  전부 폐기하는 것이 일반적이지만, MVP에서는 401로만 응답합니다. 필요해지면 `AuthenticationService.refresh`에서 폐기된 행을 만났을 때
+  `findAllByUserIdAndRevokedAtIsNull`로 나머지를 폐기하도록 넓힙니다.
 - **이메일 로그인은 응답 시간을 균등화하지 않습니다.** 이메일이 없으면 BCrypt 대조 없이 바로 401이라, 응답 시간으로
   등록 여부를 추정할 수 있습니다. 로컬 계정은 심사용 몇 개뿐이라 MVP에서는 수용하며, 필요해지면 미존재 분기에서도
   더미 해시에 `matches`를 한 번 호출해 균등화합니다.
@@ -303,17 +307,17 @@ dev/prod의 DB 접속 변수(`DB_HOST` 등)는 [profiles.md](profiles.md)를 참
   유니크 제약 위반으로 한쪽이 500이 될 수 있습니다. 확률이 낮아 MVP에서는 두고, 필요 시
   제약 위반을 잡아 재조회하도록 보완합니다.
 - **소셜 이메일은 필수입니다.** `Email` 값 객체의 컬럼이 전역 NOT NULL이라, id_token에 `email` 클레임이
-  없으면 400 `USER_SOCIAL_EMAIL_REQUIRED`로 **로그인 자체가 거절됩니다.** 카카오는 `account_email` 동의 항목에
+  없으면 400 `AUTH_SOCIAL_EMAIL_REQUIRED`로 **로그인 자체가 거절됩니다.** 카카오는 `account_email` 동의 항목에
   비즈니스 앱 심사가 필요하고 사용자가 동의를 거부할 수도 있으므로, 동의 항목을 켜지 않으면 카카오 로그인이
   전부 막힙니다. 앱은 이 코드를 받으면 이메일 제공 동의를 안내합니다.
 - **소셜 이메일도 `Email` 값 객체로 검증합니다.** 형식 규칙(ASCII 정규식·255자)을 통과하지 못하면
-  400 `USER_INVALID_EMAIL`로 로그인이 거절됩니다. 소셜 이메일은 저장만 하고 조회·인증에 쓰지 않으므로,
+  400 `AUTH_INVALID_EMAIL`로 로그인이 거절됩니다. 소셜 이메일은 저장만 하고 조회·인증에 쓰지 않으므로,
   정상 계정이 이 검증에 막히는 사례가 나오면 규칙을 넓히는 쪽을 검토합니다. 예외 detail에는 주소를 싣지 않습니다.
 - **앱이 OIDC를 켜야 합니다.** 카카오 개발자 콘솔에서 OpenID Connect를 활성화하고 앱이 `openid`
-  스코프로 로그인해야 id_token이 내려옵니다. 액세스 토큰만 보내면 `USER_INVALID_SOCIAL_TOKEN`입니다.
+  스코프로 로그인해야 id_token이 내려옵니다. 액세스 토큰만 보내면 `AUTH_INVALID_SOCIAL_TOKEN`입니다.
 - **애플 이메일은 비공개 릴레이 주소일 수 있습니다.** 사용자가 "이메일 가리기"를 고르면 `email`이
   `@privaterelay.appleid.com` 주소로 오고, 이메일 공유에 동의하지 않으면 클레임 자체가 없어
-  카카오와 마찬가지로 `USER_SOCIAL_EMAIL_REQUIRED`로 거절됩니다. 이름은 id_token에
+  카카오와 마찬가지로 `AUTH_SOCIAL_EMAIL_REQUIRED`로 거절됩니다. 이름은 id_token에
   없고 최초 인가 응답에만 실리므로 서버는 받지 않습니다.
 - **애플·구글 id_token의 `nonce`는 검증하지 않습니다.** 서버가 nonce를 발급·보관하는 왕복이 없는 무상태
   설계라 카카오와 같은 기준을 적용합니다. 재사용 창은 id_token 만료(애플 10분, 구글 1시간)로 제한됩니다.
@@ -323,5 +327,5 @@ dev/prod의 DB 접속 변수(`DB_HOST` 등)는 [profiles.md](profiles.md)를 참
   관측되면 그때 넓힙니다.
 - **공개 키 조회 실패는 여전히 로그인을 막습니다.** 디코더가 JWKS를 캐시하므로 매 로그인이
   제공자에 묶이지는 않지만, 캐시가 비어 있을 때 조회에 실패하면
-  `USER_SOCIAL_PROVIDER_UNAVAILABLE`(502)로 토큰 무효(401)와 구분해 응답합니다.
+  `AUTH_SOCIAL_PROVIDER_UNAVAILABLE`(502)로 토큰 무효(401)와 구분해 응답합니다.
   `spring.http.clients.read-timeout`(3초)이 최후 방어선입니다.

@@ -15,5 +15,5 @@ public interface UserRepository extends JpaRepository<User, Long> {
 	Optional<UserRole> findRoleByIdAndStatusNot(@Param("userId") Long userId,
 	                                            @Param("excludedStatus") UserStatus excludedStatus);
 
-	boolean existsByIdAndStatusNot(Long userId, UserStatus excludedStatus);
+	boolean existsByIdAndStatus(Long id, UserStatus status);
 }

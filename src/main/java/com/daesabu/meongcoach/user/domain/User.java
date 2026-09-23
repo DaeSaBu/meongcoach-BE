@@ -2,7 +2,6 @@ package com.daesabu.meongcoach.user.domain;
 
 import com.daesabu.meongcoach.shared.domain.BaseEntity;
 import com.daesabu.meongcoach.user.domain.exception.AlreadyOnboardedException;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -55,9 +54,5 @@ public class User extends BaseEntity {
 
 	public void withdraw() {
 		this.status = UserStatus.WITHDRAWN;
-	}
-
-	public boolean isWithdrawn() {
-		return status == UserStatus.WITHDRAWN;
 	}
 }

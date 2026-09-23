@@ -64,13 +64,12 @@ class UserTest {
 		user.withdraw();
 
 		assertThat(user.getStatus()).isEqualTo(UserStatus.WITHDRAWN);
-		assertThat(user.isWithdrawn()).isTrue();
 	}
 
 	@Test
 	void 등록_직후에는_탈퇴_상태가_아니다() {
 		User user = User.registerUser();
 
-		assertThat(user.isWithdrawn()).isFalse();
+		assertThat(user.getStatus()).isEqualTo(UserStatus.ACTIVE);
 	}
 }

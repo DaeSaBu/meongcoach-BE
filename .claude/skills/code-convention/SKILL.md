@@ -26,18 +26,19 @@ user-invocable: true
 | 역할 | 위치 | 규칙 | 예시 |
 | --- | --- | --- | --- |
 | 모듈 공개 API 인터페이스 | `application/provided` | 능력을 나타내는 이름, `~Service` 접미사 없음 | `DogRegister`, `MbtiFinder` |
-| 애플리케이션 조회 결과 래퍼 | `application/provided` | `~Result` (record) — 도메인 타입만으로 부족할 때만 | `VideoUploadUrlResult`, `LoginResult` |
+| 애플리케이션 조회 결과 래퍼 | `application/provided` | `~Result` (record) — 도메인 타입만으로 부족할 때만 | `VideoUploadUrlResult`, `OnboardingMetadataResult` |
+| 서비스 입력(웹 요청·모듈 경계 공통) | `application/provided/dto` | `~Request` (record). 도메인 입력이 필요하면 `toCommand()`로 변환 | `SocialLoginRequest`, `SocialAccountRegisterRequest` |
 | 필요 자원 인터페이스 | `application/required` | 자원 이름 그대로 | `UserRepository`, `VideoStorage` |
-| 애플리케이션 서비스 | `application` | `~Service` | `SocialLoginService`, `CurriculumQueryService` |
+| 애플리케이션 서비스 | `application` | `~Service` | `AuthenticationService`, `CurriculumQueryService` |
 | 컨트롤러 | `adapter/webapi` | `~Controller` | `AuthController` |
 | 외부 API 연동 포트 | `application/required` | 자원 이름 그대로 | `SocialProfileReader` |
 | 외부 API 연동 구현 | `adapter/integration` | `{제공자}~` | `KakaoSocialProfileReader` |
 | 도메인 모델 | `domain` | 개념 이름 그대로 | `User` |
 | 도메인 입력 모델 | `domain` | `~Command` (record) | `DogRegisterCommand` |
 | 일급 컬렉션 | `domain` | 엔티티 이름의 복수형 | `Dogs` |
-| 다른 모듈에 노출하는 도메인 타입 | `domain/shared` | 개념 이름 그대로. `package-info.java`에 `@NamedInterface("shared")` 선언 | `Breed`, `Email` |
+| 다른 모듈에 노출하는 도메인 타입 | `domain/shared` | 개념 이름 그대로. `package-info.java`에 `@NamedInterface("shared")` 선언 | `Breed` |
 | 값 객체 | `domain` | 개념 이름 그대로 | `RefreshTokenId`, `VideoObjectKey` |
-| 도메인 예외·에러코드 | `domain/exception` | `{모듈}ErrorCode`, `~Exception` | `UserErrorCode`, `InvalidEmailException` |
+| 도메인 예외·에러코드 | `domain/exception` | `{모듈}ErrorCode`, `~Exception` | `AuthErrorCode`, `InvalidEmailException` |
 
 - `domain` 루트에는 엔티티·enum·일급 컬렉션·값 객체를 두고, 예외·에러코드는 `domain/exception`으로 분리한다. 값 객체용 하위 패키지(`vo`)는 만들지 않으며, 다른 모듈에 노출하는 값 객체만 `domain/shared`에 둔다.
 - 일급 컬렉션은 엔티티 하나로는 판단할 수 없는 규칙(마리 수 상한, 마지막 한 마리 삭제 금지처럼 한 사용자 소유 목록 전체를 봐야 하는 규칙)을 담을 때만 둔다. 영속화 단위가 아니라 application이 리포지토리로 조회한 목록을 생성자로 넘겨 만들며, 리포지토리를 참조하지 않는다. 규칙은 Spring 없는 단위 테스트로 검증한다. (살아있는 예시: `dog/domain/Dogs`)
@@ -66,7 +67,13 @@ user-invocable: true
 ## DTO
 
 - 요청/응답 DTO는 Java `record`로 작성한다.
-- 웹 요청/응답 DTO는 `adapter/webapi/dto`에 두고, 접미사는 요청 `~Request`, 응답 `~Response`를 사용한다. (예: `SocialLoginRequest`, `SocialLoginResponse`)
+- 요청 DTO(`~Request`)는 `application/provided/dto`에 두고, 컨트롤러가 `@Valid @RequestBody`로 받아 **그대로** provided 인터페이스에 넘긴다. 컨트롤러에서 값을 풀어 인자로 나눠 넘기거나 웹 전용 요청 DTO를 따로 만들지 않는다. (살아있는 예시: `auth/application/provided/dto`, `AuthController`)
+	- 제약 어노테이션(`@NotBlank`, `@NotNull`)은 이 record에 한 번만 선언한다. provided 인터페이스 파라미터에 `@Valid`를, 서비스 구현 클래스에 `@Validated`를 붙여 다른 모듈·서비스가 호출하는 경로도 같은 제약으로 검증한다. 제약은 대상 타입에 맞는 것을 쓴다 — `@NotBlank`는 문자열 전용이라 값 객체·`LocalDateTime`에 붙이면 런타임에 `UnexpectedTypeException`이 난다.
+	- **컨트롤러가 `@RequestBody`로 받는** `~Request`의 필드는 JSON에서 바로 역직렬화되는 타입(문자열·숫자·날짜)으로 두고, 값 객체·enum 변환(`new Email(...)`, `SocialProvider.from(...)`)은 서비스·도메인에서 한다. enum을 필드 타입으로 두면 Jackson이 대소문자를 구분하고, 잘못된 값이 우리 에러 코드 없이 일반 400으로 끝난다. 단일 컴포넌트 record 값 객체를 필드로 두면 JSON이 `{"email": {"address": "..."}}` 형태를 요구한다.
+	- 서비스끼리 주고받는 `~Request`(컨트롤러를 거치지 않는 입력)는 이 제약을 받지 않는다. 역직렬화가 없고 이미 검증된 값을 넘기는 것이므로 값 객체·enum을 그대로 필드 타입으로 쓴다. (예: `EmailAccountFindRequest(Email)`, `SocialAccountRegisterRequest(SocialProvider, …, Email)`) 응답 DTO도 enum을 그대로 써도 된다 — 상수명 문자열로 직렬화된다.
+	- 도메인 입력이 필요하면 `toCommand()`로 `~Command`를 만든다. `domain`의 Command는 모듈 밖에 노출하지 않는다. (예: `SocialAccountRegisterRequest.toCommand()`)
+	- 이 규칙 이전에 만든 모듈(`dog`, `onboarding`, `training`, `ai`)의 요청 DTO는 아직 `adapter/webapi/dto`에 있다. 일괄 이동하지 않고 해당 API를 수정할 때 옮긴다.
+- 응답 DTO(`~Response`)는 `adapter/webapi/dto`에 둔다. 웹 노출 형태는 `adapter`의 관심사다. (예: `TokenResponse`)
 - 외부 API 응답 DTO는 `adapter/integration/dto`에 `~Response` record로 두고, 필드 매핑은 `@JsonProperty`로 지정한다. 전역 네이밍 전략(`spring.jackson.property-naming-strategy`)을 바꾸면 우리 API 응답까지 영향을 받으므로 쓰지 않는다.
 - 도메인 입력 모델은 `~Command` 접미사의 record로 `domain`에 두며, 웹 DTO와 별개로 유지한다. (예: `DogRegisterCommand`)
 	- 엔티티 정적 팩토리의 순수 값 파라미터가 3개 이상이면 Command로 묶고, 팩토리는 Command를 받아 생성자에 전달한다.
@@ -83,7 +90,7 @@ user-invocable: true
 
 ## 예외
 
-예외는 각 모듈이 자기 도메인에 맞게 정의해 **던지기만** 하고, HTTP 에러 응답 변환은 `shared/webapi/GlobalExceptionHandler`가 RFC 9457 Problem Details 형식으로 전담한다. 응답 형식·전역 핸들러 처리 범위·시큐리티 필터 체인 예외 번역은 [docs/error-handling.md](../../../docs/error-handling.md) 참고. 살아있는 예시는 `user/domain/exception`.
+예외는 각 모듈이 자기 도메인에 맞게 정의해 **던지기만** 하고, HTTP 에러 응답 변환은 `shared/webapi/GlobalExceptionHandler`가 RFC 9457 Problem Details 형식으로 전담한다. 응답 형식·전역 핸들러 처리 범위·시큐리티 필터 체인 예외 번역은 [docs/error-handling.md](../../../docs/error-handling.md) 참고. 살아있는 예시는 `auth/domain/exception`.
 
 - 컨트롤러/서비스에 개별 `@ExceptionHandler`를 만들지 않고, 예외를 catch해서 에러 DTO를 직접 조립해 반환하지 않는다. 예상치 못한 예외도 전역 핸들러 fallback이 500으로 변환하므로 별도 방어 코드를 두지 않는다.
 - `domain/exception`에 모듈당 1개 `{모듈}ErrorCode` enum을 `ErrorCode` 구현으로 두고, 상수 이름은 `{모듈}_{원인}` 형식의 UPPER_SNAKE_CASE로 전역에서 유일하게 짓는다. `code()`가 `name()`을 반환하므로 상수 이름이 곧 클라이언트 분기용 에러 코드다.

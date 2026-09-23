@@ -51,10 +51,13 @@ public class SecurityConfig {
 	// 토큰을 아직 받지 못한 요청만 열어둔다. `/api/auth/**`로 넓히면 이후 추가될 인증 API까지 공개된다
 	private static final String[] PERMIT_ALL_PATHS = {
 			"/api/health",
-			"/api/auth/login/social/**",
-			"/api/auth/login/local",
+			"/api/auth/login/social",
+			"/api/auth/login/email",
 			"/api/auth/token/refresh",
-			"/api/auth/logout"
+			"/api/auth/logout",
+			// 구 클라이언트 호환 경로. 구 앱 지원이 끝나면 auth/adapter/webapi/legacy와 함께 삭제한다
+			"/api/auth/login/social/*",
+			"/api/auth/login/local"
 	};
 
 	// 온보딩 중에도 필요한 경로. 이미지 업로드 URL 발급은 /api/onboarding/** 안에 있고, 프로필 이미지 조회만 밖에 있다
@@ -65,7 +68,14 @@ public class SecurityConfig {
 
 	// 스토어 심사관이 온보딩을 마치지 않고 탈퇴할 수 있으므로 탈퇴만 온보딩 중에도 연다.
 	// 메서드를 한정해 같은 경로에 나중에 생길 회원 조회·수정이 온보딩 회원에게 열리지 않게 한다
-	private static final String WITHDRAW_PATH = "/api/users/me";
+	private static final String WITHDRAW_PATH = "/api/auth/me";
+
+	// 구 클라이언트의 탈퇴 경로. 구 앱 지원이 끝나면 auth/adapter/webapi/legacy와 함께 삭제한다
+	private static final String LEGACY_WITHDRAW_PATH = "/api/users/me";
+
+	// 로그인 응답에 온보딩 여부가 없어 클라이언트가 로그인 직후 이 경로로 화면을 분기하므로 온보딩 중에도 연다.
+	// 탈퇴와 같은 이유로 메서드를 한정한다
+	private static final String MY_INFO_PATH = "/api/users/me";
 
 	// Swagger UI 정적 파일과 그 안의 openapi3.json이 모두 이 경로 아래에 있다
 	private static final String[] API_DOCS_PATHS = {"/swagger-ui/**"};
@@ -94,6 +104,10 @@ public class SecurityConfig {
 					auth.requestMatchers(ONBOARDING_ALLOWED_PATHS)
 							.hasAnyRole(AuthorityRole.USER.name(), AuthorityRole.ONBOARDING_USER.name());
 					auth.requestMatchers(HttpMethod.DELETE, WITHDRAW_PATH)
+							.hasAnyRole(AuthorityRole.USER.name(), AuthorityRole.ONBOARDING_USER.name());
+					auth.requestMatchers(HttpMethod.DELETE, LEGACY_WITHDRAW_PATH)
+							.hasAnyRole(AuthorityRole.USER.name(), AuthorityRole.ONBOARDING_USER.name());
+					auth.requestMatchers(HttpMethod.GET, MY_INFO_PATH)
 							.hasAnyRole(AuthorityRole.USER.name(), AuthorityRole.ONBOARDING_USER.name());
 					auth.anyRequest().hasRole(AuthorityRole.USER.name());
 				})
@@ -133,7 +147,7 @@ public class SecurityConfig {
 	}
 
 	// 이메일 로그인(스토어 심사용 테스트 계정)의 비밀번호 대조에 쓴다. domain은 Spring에 의존할 수 없으므로
-	// user 모듈의 BcryptPasswordMatcher가 이 빈을 감싸 도메인 PasswordMatcher로 제공한다
+	// auth 모듈의 BcryptPasswordMatcher가 이 빈을 감싸 도메인 PasswordMatcher로 제공한다
 	@Bean
 	PasswordEncoder passwordEncoder() {
 		return new BCryptPasswordEncoder();
@@ -145,7 +159,7 @@ public class SecurityConfig {
 	}
 
 	// 액세스·리프레시 디코더를 분리해 각자 용도를 강제한다. @Primary를 두지 않고 주입 지점마다 명시한다.
-	// 회원 등록 여부 확인은 역할 부여 컨버터(user 모듈 구현)가 겸하므로 디코더에는 검증기를 붙이지 않는다
+	// 회원 등록 여부 확인은 역할 부여 컨버터(auth 모듈 구현)가 겸하므로 디코더에는 검증기를 붙이지 않는다
 	@Bean
 	JwtDecoder accessTokenDecoder(JwtProperties properties) {
 		return tokenDecoder(properties, TokenType.ACCESS, List.of());
