@@ -83,20 +83,4 @@ public class Entitlement extends BaseTimeEntity {
 
 		return entitlement;
 	}
-
-	// 거래 단위 회수 규칙은 Entitlements.revoke()에 있으므로 application이 우회하지 못하게 같은 패키지에서만 연다
-	void revoke(Instant revokedAt) {
-		if (!isActive()) {
-			return;
-		}
-		this.revokedAt = Objects.requireNonNull(revokedAt);
-	}
-
-	public boolean grants(LifeStage lifeStage) {
-		return isActive() && productId.grants(lifeStage);
-	}
-
-	public boolean isActive() {
-		return revokedAt == null;
-	}
 }
