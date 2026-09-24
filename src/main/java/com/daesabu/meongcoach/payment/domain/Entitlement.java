@@ -10,6 +10,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Objects;
 import lombok.AccessLevel;
@@ -17,14 +18,15 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
- * 회원이 구매로 얻은 시기별 이용권. 시기 하나당 한 행이라, 통합 이용권을 사면 같은 거래로 시기 수만큼 행이 생긴다.
+ * 스토어 구매 한 건과 그로 얻은 이용권. 한 행이 한 거래이며, 어느 시기를 열어 주는지는 저장하지 않고 상품 구성({@link ProductId})에서 계산한다.
+ * 그래서 상품 구성을 바꾸면 기존 구매에도 소급 적용된다.
  * 바뀌는 값은 회수 시각뿐이라 수정 시각 없이 생성 시각만 기록한다.
  */
 @Getter
 @Entity
 @Table(
 		name = "entitlements",
-		uniqueConstraints = @UniqueConstraint(columnNames = {"transaction_id", "life_stage"})
+		uniqueConstraints = @UniqueConstraint(columnNames = "transaction_id")
 )
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Entitlement extends BaseTimeEntity {
@@ -42,16 +44,20 @@ public class Entitlement extends BaseTimeEntity {
 	private String transactionId;
 
 	@Enumerated(EnumType.STRING)
-	@Column(name = "life_stage", nullable = false, length = 20)
-	private LifeStage lifeStage;
-
-	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, length = 30)
 	private ProductId productId;
 
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, length = 20)
 	private Store store;
+
+	// 결제 통화 기준 가격(웹훅 price_in_purchased_currency). 스토어가 알려 주지 않으면 null
+	@Column(precision = 19, scale = 4)
+	private BigDecimal price;
+
+	// ISO 4217 통화 코드(웹훅 currency). 스토어가 알려 주지 않으면 null
+	@Column(length = 3)
+	private String currency;
 
 	// 스토어에서 구매한 시각(웹훅 purchased_at_ms). 행을 기록한 시각은 createdAt이다
 	@Column(nullable = false)
@@ -60,15 +66,16 @@ public class Entitlement extends BaseTimeEntity {
 	// 회수되지 않은 이용권은 null
 	private Instant revokedAt;
 
-	// 상품이 주는 시기만 넘어오도록 Entitlements.grant()가 시기를 골라 호출하므로 같은 패키지에서만 연다
-	static Entitlement grant(LifeStage lifeStage, EntitlementGrantCommand command) {
+	// 같은 거래의 중복 부여를 Entitlements.grant()가 막으므로 같은 패키지에서만 연다
+	static Entitlement grant(EntitlementGrantCommand command) {
 		Entitlement entitlement = new Entitlement();
 
 		entitlement.userId = Objects.requireNonNull(command.userId());
 		entitlement.transactionId = Objects.requireNonNull(command.transactionId());
-		entitlement.lifeStage = Objects.requireNonNull(lifeStage);
 		entitlement.productId = Objects.requireNonNull(command.productId());
 		entitlement.store = Objects.requireNonNull(command.store());
+		entitlement.price = command.price();
+		entitlement.currency = command.currency();
 		entitlement.purchasedAt = Objects.requireNonNull(command.purchasedAt());
 
 		return entitlement;
@@ -80,6 +87,10 @@ public class Entitlement extends BaseTimeEntity {
 			return;
 		}
 		this.revokedAt = Objects.requireNonNull(revokedAt);
+	}
+
+	public boolean grants(LifeStage lifeStage) {
+		return isActive() && productId.grants(lifeStage);
 	}
 
 	public boolean isActive() {

@@ -22,4 +22,8 @@ public enum ProductId {
 	// RevenueCat 상품 식별자(웹훅 product_id의 값)
 	private final String identifier;
 	private final Set<LifeStage> lifeStages;
+
+	public boolean grants(LifeStage lifeStage) {
+		return lifeStages.contains(lifeStage);
+	}
 }
