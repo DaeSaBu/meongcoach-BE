@@ -50,23 +50,21 @@ public class Entitlement extends BaseEntity {
 	// 회수되지 않은 이용권은 null
 	private Instant revokedAt;
 
-	public static Entitlement grant(LifeStage lifeStage, EntitlementGrantCommand command) {
-		ProductId productId = Objects.requireNonNull(command.productId());
-		if (!productId.grants(lifeStage)) {
-			throw new IllegalArgumentException(productId + "는 " + lifeStage + " 이용권을 주지 않는다");
-		}
+	// 상품이 주는 시기만 넘어오도록 Entitlements.grant()가 시기를 골라 호출하므로 같은 패키지에서만 연다
+	static Entitlement grant(LifeStage lifeStage, EntitlementGrantCommand command) {
 		Entitlement entitlement = new Entitlement();
 
 		entitlement.userId = Objects.requireNonNull(command.userId());
-		entitlement.lifeStage = lifeStage;
-		entitlement.productId = productId;
+		entitlement.lifeStage = Objects.requireNonNull(lifeStage);
+		entitlement.productId = Objects.requireNonNull(command.productId());
 		entitlement.store = Objects.requireNonNull(command.store());
 		entitlement.grantedAt = Objects.requireNonNull(command.grantedAt());
 
 		return entitlement;
 	}
 
-	public void revoke(Instant revokedAt) {
+	// 상품 단위 회수 규칙은 Entitlements.revoke()에 있으므로 application이 우회하지 못하게 같은 패키지에서만 연다
+	void revoke(Instant revokedAt) {
 		if (!isActive()) {
 			return;
 		}
