@@ -21,7 +21,7 @@ class EntitlementsTest {
 	void 처음_보는_거래면_구매_기록을_만든다() {
 		Entitlements entitlements = new Entitlements(List.of());
 
-		Optional<Entitlement> granted = entitlements.grant(command("tx-1", ProductId.ALL_LIFETIME));
+		Optional<Entitlement> granted = entitlements.grant(USER_ID, command("tx-1", ProductId.ALL_LIFETIME));
 
 		assertThat(granted).get()
 				.extracting(Entitlement::getTransactionId)
@@ -32,7 +32,7 @@ class EntitlementsTest {
 	void 같은_거래로_다시_부여하면_새_구매를_만들지_않는다() {
 		Entitlements entitlements = new Entitlements(owned("tx-1", ProductId.ALL_LIFETIME));
 
-		Optional<Entitlement> granted = entitlements.grant(command("tx-1", ProductId.ALL_LIFETIME));
+		Optional<Entitlement> granted = entitlements.grant(USER_ID, command("tx-1", ProductId.ALL_LIFETIME));
 
 		assertThat(granted).isEmpty();
 	}
@@ -112,12 +112,12 @@ class EntitlementsTest {
 
 	private EntitlementRegisterCommand command(String transactionId, ProductId productId) {
 		return new EntitlementRegisterCommand(
-				USER_ID, transactionId, productId, Store.APP_STORE, new BigDecimal("9900"), "KRW", PURCHASED_AT
+				transactionId, productId, Store.APP_STORE, new BigDecimal("9900"), "KRW", PURCHASED_AT
 		);
 	}
 
 	private List<Entitlement> owned(String transactionId, ProductId productId) {
-		return new Entitlements(List.of()).grant(command(transactionId, productId)).stream().toList();
+		return new Entitlements(List.of()).grant(USER_ID, command(transactionId, productId)).stream().toList();
 	}
 
 	private List<Entitlement> concat(List<Entitlement> first, List<Entitlement> second) {

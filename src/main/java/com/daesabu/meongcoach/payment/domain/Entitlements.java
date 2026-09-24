@@ -25,11 +25,11 @@ public class Entitlements {
 	 * 처음 보는 거래면 구매 기록을 만들어 반환한다. 저장은 호출자가 한다.
 	 * 이미 처리한 거래면 비어 있는 값을 반환해 같은 구매 웹훅이 다시 와도 행이 중복되지 않는다.
 	 */
-	public Optional<Entitlement> grant(EntitlementRegisterCommand command) {
+	public Optional<Entitlement> grant(Long userId, EntitlementRegisterCommand command) {
 		if (hasTransaction(command.transactionId())) {
 			return Optional.empty();
 		}
-		return Optional.of(Entitlement.grant(command));
+		return Optional.of(Entitlement.register(userId, command));
 	}
 
 	public boolean hasAccess(LifeStage lifeStage) {
