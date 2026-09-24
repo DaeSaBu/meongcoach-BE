@@ -2,10 +2,14 @@ package com.daesabu.meongcoach.payment.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 class EntitlementsTest {
 
@@ -14,62 +18,41 @@ class EntitlementsTest {
 	private static final Instant REVOKED_AT = Instant.parse("2026-09-25T03:00:00Z");
 
 	@Test
-	void 퍼피_이용권을_사면_PUPPY_이용권_하나가_생긴다() {
+	void 처음_보는_거래면_구매_기록을_만든다() {
 		Entitlements entitlements = new Entitlements(List.of());
 
-		List<Entitlement> granted = entitlements.grant(command("tx-1", ProductId.PUPPY_LIFETIME));
+		Optional<Entitlement> granted = entitlements.grant(command("tx-1", ProductId.ALL_LIFETIME));
 
-		assertThat(granted).extracting(Entitlement::getLifeStage)
-				.containsExactly(LifeStage.PUPPY);
+		assertThat(granted).get()
+				.extracting(Entitlement::getTransactionId)
+				.isEqualTo("tx-1");
 	}
 
 	@Test
-	void 통합_이용권을_사면_한_거래로_네_시기의_이용권이_생긴다() {
-		Entitlements entitlements = new Entitlements(List.of());
-
-		List<Entitlement> granted = entitlements.grant(command("tx-1", ProductId.ALL_LIFETIME));
-
-		assertThat(granted).extracting(Entitlement::getLifeStage)
-				.containsExactlyInAnyOrder(LifeStage.PUPPY, LifeStage.JUNIOR, LifeStage.ADULT, LifeStage.SENIOR);
-		assertThat(granted).extracting(Entitlement::getTransactionId)
-				.containsOnly("tx-1");
-	}
-
-	@Test
-	void 이미_가진_시기라도_통합_이용권을_사면_그_시기의_이용권을_새로_만든다() {
-		Entitlements entitlements = new Entitlements(owned("tx-1", ProductId.PUPPY_LIFETIME));
-
-		List<Entitlement> granted = entitlements.grant(command("tx-2", ProductId.ALL_LIFETIME));
-
-		assertThat(granted).extracting(Entitlement::getLifeStage)
-				.contains(LifeStage.PUPPY);
-	}
-
-	@Test
-	void 같은_거래로_다시_부여하면_새_이용권을_만들지_않는다() {
+	void 같은_거래로_다시_부여하면_새_구매를_만들지_않는다() {
 		Entitlements entitlements = new Entitlements(owned("tx-1", ProductId.ALL_LIFETIME));
 
-		List<Entitlement> granted = entitlements.grant(command("tx-1", ProductId.ALL_LIFETIME));
+		Optional<Entitlement> granted = entitlements.grant(command("tx-1", ProductId.ALL_LIFETIME));
 
 		assertThat(granted).isEmpty();
 	}
 
 	@Test
-	void 활성_이용권이_있는_시기는_권한이_있다() {
+	void 퍼피_이용권을_사면_PUPPY_시기에만_권한이_생긴다() {
 		Entitlements entitlements = new Entitlements(owned("tx-1", ProductId.PUPPY_LIFETIME));
 
-		boolean hasAccess = entitlements.hasAccess(LifeStage.PUPPY);
-
-		assertThat(hasAccess).isTrue();
+		assertThat(entitlements.hasAccess(LifeStage.PUPPY)).isTrue();
+		assertThat(entitlements.hasAccess(LifeStage.ADULT)).isFalse();
 	}
 
-	@Test
-	void 이용권이_없는_시기는_권한이_없다() {
-		Entitlements entitlements = new Entitlements(owned("tx-1", ProductId.PUPPY_LIFETIME));
+	@ParameterizedTest
+	@EnumSource(LifeStage.class)
+	void 통합_이용권을_사면_모든_시기에_권한이_생긴다(LifeStage lifeStage) {
+		Entitlements entitlements = new Entitlements(owned("tx-1", ProductId.ALL_LIFETIME));
 
-		boolean hasAccess = entitlements.hasAccess(LifeStage.ADULT);
+		boolean hasAccess = entitlements.hasAccess(lifeStage);
 
-		assertThat(hasAccess).isFalse();
+		assertThat(hasAccess).isTrue();
 	}
 
 	@Test
@@ -128,11 +111,13 @@ class EntitlementsTest {
 	}
 
 	private EntitlementGrantCommand command(String transactionId, ProductId productId) {
-		return new EntitlementGrantCommand(USER_ID, transactionId, productId, Store.APP_STORE, PURCHASED_AT);
+		return new EntitlementGrantCommand(
+				USER_ID, transactionId, productId, Store.APP_STORE, new BigDecimal("9900"), "KRW", PURCHASED_AT
+		);
 	}
 
 	private List<Entitlement> owned(String transactionId, ProductId productId) {
-		return new Entitlements(List.of()).grant(command(transactionId, productId));
+		return new Entitlements(List.of()).grant(command(transactionId, productId)).stream().toList();
 	}
 
 	private List<Entitlement> concat(List<Entitlement> first, List<Entitlement> second) {
