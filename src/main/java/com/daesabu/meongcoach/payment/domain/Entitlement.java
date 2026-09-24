@@ -8,6 +8,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.math.BigDecimal;
@@ -26,7 +27,9 @@ import lombok.NoArgsConstructor;
 @Entity
 @Table(
 		name = "entitlements",
-		uniqueConstraints = @UniqueConstraint(columnNames = "transaction_id")
+		uniqueConstraints = @UniqueConstraint(columnNames = "transaction_id"),
+		// 사용자 이용권 조회(user_id)와 결제 이력 정렬(purchased_at)을 함께 받는다. V6 마이그레이션과 이름·컬럼을 맞춘다
+		indexes = @Index(name = "idx_entitlements_user_id_purchased_at", columnList = "user_id, purchased_at")
 )
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Entitlement extends BaseTimeEntity {
@@ -60,7 +63,7 @@ public class Entitlement extends BaseTimeEntity {
 	private String currency;
 
 	// 스토어에서 구매한 시각(웹훅 purchased_at_ms). 행을 기록한 시각은 createdAt이다
-	@Column(nullable = false)
+	@Column(name = "purchased_at", nullable = false)
 	private Instant purchasedAt;
 
 	// 회수되지 않은 이용권은 null

@@ -15,4 +15,5 @@ CREATE TABLE "entitlements" (
     "created_at" TIMESTAMP NOT NULL
 );
 
-CREATE INDEX "idx_entitlements_user_id" ON "entitlements" ("user_id");
+-- 사용자 이용권 조회(user_id)와 결제 이력 정렬(purchased_at)을 함께 받는다. 엔티티 @Index와 이름·컬럼을 맞춘다.
+CREATE INDEX "idx_entitlements_user_id_purchased_at" ON "entitlements" ("user_id", "purchased_at");
