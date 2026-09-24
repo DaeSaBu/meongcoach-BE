@@ -67,7 +67,7 @@ public class Entitlement extends BaseTimeEntity {
 	private Instant revokedAt;
 
 	// 같은 거래의 중복 부여를 Entitlements.grant()가 막으므로 같은 패키지에서만 연다
-	static Entitlement grant(EntitlementGrantCommand command) {
+	static Entitlement grant(EntitlementRegisterCommand command) {
 		Entitlement entitlement = new Entitlement();
 
 		entitlement.userId = Objects.requireNonNull(command.userId());

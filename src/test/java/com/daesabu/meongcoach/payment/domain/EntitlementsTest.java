@@ -110,8 +110,8 @@ class EntitlementsTest {
 		assertThat(puppy).allMatch(Entitlement::isActive);
 	}
 
-	private EntitlementGrantCommand command(String transactionId, ProductId productId) {
-		return new EntitlementGrantCommand(
+	private EntitlementRegisterCommand command(String transactionId, ProductId productId) {
+		return new EntitlementRegisterCommand(
 				USER_ID, transactionId, productId, Store.APP_STORE, new BigDecimal("9900"), "KRW", PURCHASED_AT
 		);
 	}

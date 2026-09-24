@@ -14,7 +14,7 @@ class EntitlementTest {
 	private static final String CURRENCY = "KRW";
 	private static final Instant PURCHASED_AT = Instant.parse("2026-09-24T03:00:00Z");
 	private static final Instant REVOKED_AT = Instant.parse("2026-09-25T03:00:00Z");
-	private static final EntitlementGrantCommand COMMAND = new EntitlementGrantCommand(
+	private static final EntitlementRegisterCommand COMMAND = new EntitlementRegisterCommand(
 			USER_ID, TRANSACTION_ID, ProductId.PUPPY_LIFETIME, Store.APP_STORE, PRICE, CURRENCY, PURCHASED_AT
 	);
 

@@ -3,7 +3,7 @@ package com.daesabu.meongcoach.payment.domain;
 import java.math.BigDecimal;
 import java.time.Instant;
 
-public record EntitlementGrantCommand(
+public record EntitlementRegisterCommand(
 		Long userId,
 		String transactionId,
 		ProductId productId,
