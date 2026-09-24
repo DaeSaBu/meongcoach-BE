@@ -1,5 +1,7 @@
 package com.daesabu.meongcoach.payment.domain;
 
+import static java.util.Objects.requireNonNull;
+
 import com.daesabu.meongcoach.shared.domain.BaseTimeEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -13,7 +15,6 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.Objects;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -72,13 +73,13 @@ public class Entitlement extends BaseTimeEntity {
 	public static Entitlement register(Long userId, EntitlementRegisterCommand command) {
 		Entitlement entitlement = new Entitlement();
 
-		entitlement.userId = Objects.requireNonNull(userId);
-		entitlement.transactionId = Objects.requireNonNull(command.transactionId());
-		entitlement.productId = Objects.requireNonNull(command.productId());
-		entitlement.store = Objects.requireNonNull(command.store());
+		entitlement.userId = requireNonNull(userId);
+		entitlement.transactionId = requireNonNull(command.transactionId());
+		entitlement.productId = requireNonNull(command.productId());
+		entitlement.store = requireNonNull(command.store());
 		entitlement.price = command.price();
 		entitlement.currency = command.currency();
-		entitlement.purchasedAt = Objects.requireNonNull(command.purchasedAt());
+		entitlement.purchasedAt = requireNonNull(command.purchasedAt());
 
 		return entitlement;
 	}
