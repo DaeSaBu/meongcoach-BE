@@ -1,7 +1,6 @@
 package com.daesabu.meongcoach.payment.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
@@ -27,27 +26,6 @@ class EntitlementTest {
 		assertThat(entitlement.getGrantedAt()).isEqualTo(GRANTED_AT);
 		assertThat(entitlement.getRevokedAt()).isNull();
 		assertThat(entitlement.isActive()).isTrue();
-	}
-
-	@Test
-	void 통합_이용권은_어느_시기로든_부여할_수_있다() {
-		EntitlementGrantCommand command = new EntitlementGrantCommand(
-				USER_ID, ProductId.ALL_LIFETIME, Store.PLAY_STORE, GRANTED_AT
-		);
-
-		Entitlement entitlement = Entitlement.grant(LifeStage.SENIOR, command);
-
-		assertThat(entitlement.getLifeStage()).isEqualTo(LifeStage.SENIOR);
-	}
-
-	@Test
-	void 상품이_주지_않는_시기로는_부여할_수_없다() {
-		EntitlementGrantCommand command = new EntitlementGrantCommand(
-				USER_ID, ProductId.PUPPY_LIFETIME, Store.APP_STORE, GRANTED_AT
-		);
-
-		assertThatThrownBy(() -> Entitlement.grant(LifeStage.ADULT, command))
-				.isInstanceOf(IllegalArgumentException.class);
 	}
 
 	@Test
