@@ -1,4 +1,4 @@
-package com.daesabu.meongcoach.payment.domain;
+package com.daesabu.meongcoach.purchase.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

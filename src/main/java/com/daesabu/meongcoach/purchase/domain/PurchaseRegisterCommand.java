@@ -1,4 +1,4 @@
-package com.daesabu.meongcoach.payment.domain;
+package com.daesabu.meongcoach.purchase.domain;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

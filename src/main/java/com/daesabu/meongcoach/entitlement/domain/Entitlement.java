@@ -19,7 +19,7 @@ import lombok.NoArgsConstructor;
 /**
  * 회원이 가진 권한 하나. 한 행이 RevenueCat entitlement 하나라, 통합 상품을 사면 한 구매로 여러 행이 생긴다.
  * 어느 권한을 줄지는 구매 시점 웹훅의 entitlement_ids를 그대로 따르므로, 대시보드 구성을 바꿔도 이미 부여한 권한에는 소급되지 않는다.
- * 권한은 구매 외 경로로도 생길 수 있어 payment 모듈의 구매와 별도 애그리거트로 두고 ID로만 참조한다.
+ * 권한은 구매 외 경로로도 생길 수 있어 purchase 모듈의 구매와 별도 애그리거트로 두고 ID로만 참조한다.
  */
 @Getter
 @Entity
@@ -40,7 +40,7 @@ public class Entitlement extends BaseTimeEntity {
 	@Column(name = "user_id", nullable = false)
 	private Long userId;
 
-	// 이 권한을 준 구매. payment 모듈의 애그리거트라 연관 대신 ID로만 참조한다
+	// 이 권한을 준 구매. purchase 모듈의 애그리거트라 연관 대신 ID로만 참조한다
 	@Column(name = "purchase_id", nullable = false)
 	private Long purchaseId;
 
