@@ -9,12 +9,11 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * RevenueCat 구매 웹훅 한 건의 등록 입력. 값은 웹훅 원본 그대로다.
- * appUserId는 익명 ID일 수도 있어 회원 ID로 바꾸지 않고 받으며, 회원 식별은 서비스가 한다.
- * entitlementIds는 권한을 주지 않는 상품이면 웹훅에서 null로 오므로 빈 집합으로 바꾼다.
+ * 스토어 구매 한 건의 등록 입력. 외부 사용자 ID를 회원 ID로 바꾸는 일은 호출하는 어댑터가 끝내고 넘긴다.
+ * entitlementIds는 권한을 주지 않는 상품이면 null로 올 수 있어 빈 집합으로 바꾼다.
  */
 public record PurchaseRegisterRequest(
-		@NotBlank String appUserId,
+		@NotNull Long userId,
 		@NotBlank String transactionId,
 		@NotBlank String productId,
 		@NotBlank String store,
