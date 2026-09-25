@@ -50,6 +50,7 @@ com.daesabu.meongcoach
 - **서비스 입력은 provided 패키지의 `~Request` record로 받습니다.** 컨트롤러와 다른 모듈이 같은 record를 넘기며, `domain`의 `~Command`는 노출하지 않고 provided record가 `toCommand()`로 변환합니다. (선례: `auth/application/provided/dto`, `UserProfileRegisterRequest`)
 - **모듈 간 의존은 단방향입니다.** `auth → user`처럼 한쪽만 참조하고, 다른 모듈의 엔티티는 연관 대신 ID로 참조합니다. (선례: `RefreshToken.userId`) 양쪽에 걸친 흐름은 참조하는 쪽이 조율합니다 — 탈퇴는 `auth`의 `AuthenticationService`가 자격증명·토큰을 정리한 뒤 `user`의 `UserRegister.withdraw`를 호출합니다.
 - **`application/provided`에는 `package-info.java`로 `@NamedInterface("provided")`를 선언합니다.** 선언하지 않으면 Modulith가 이 패키지를 모듈 내부로 취급해 다른 모듈에서의 호출이 `verify()`에서 실패합니다.
+  - `application/provided/dto`에도 같은 이름으로 따로 선언합니다. 패키지에 선언한 `@NamedInterface`는 하위 패키지로 전파되지 않아, 선언이 없으면 다른 모듈이 `~Request`를 만드는 순간 `verify()`가 실패합니다. 같은 이름의 named interface는 Modulith가 하나로 합칩니다.
 - `shared`는 보안·설정 등 횡단 관심사만 담습니다. 모든 모듈이 `shared`를 참조할 수 있지만, `shared`는 어떤 모듈도 참조하지 않습니다.
 
 ## 모듈 내부 계층
