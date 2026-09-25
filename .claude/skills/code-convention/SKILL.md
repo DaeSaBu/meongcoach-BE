@@ -69,6 +69,7 @@ user-invocable: true
 
 - 요청/응답 DTO는 Java `record`로 작성한다.
 - 요청 DTO(`~Request`)는 `application/provided/dto`에 두고, 컨트롤러가 `@Valid @RequestBody`로 받아 **그대로** provided 인터페이스에 넘긴다. 컨트롤러에서 값을 풀어 인자로 나눠 넘기거나 웹 전용 요청 DTO를 따로 만들지 않는다. (살아있는 예시: `auth/application/provided/dto`, `AuthController`)
+	- `provided/dto`에는 `package-info.java`로 `@NamedInterface("provided")`를 선언한다. 패키지 선언은 하위 패키지로 전파되지 않아, 빠뜨리면 다른 모듈이 이 Request를 쓸 때 `verify()`가 실패한다. (살아있는 예시: `entitlement/application/provided/dto`)
 	- 제약 어노테이션(`@NotBlank`, `@NotNull`)은 이 record에 한 번만 선언한다. provided 인터페이스 파라미터에 `@Valid`를, 서비스 구현 클래스에 `@Validated`를 붙여 다른 모듈·서비스가 호출하는 경로도 같은 제약으로 검증한다. 제약은 대상 타입에 맞는 것을 쓴다 — `@NotBlank`는 문자열 전용이라 값 객체·`LocalDateTime`에 붙이면 런타임에 `UnexpectedTypeException`이 난다.
 	- **컨트롤러가 `@RequestBody`로 받는** `~Request`의 필드는 JSON에서 바로 역직렬화되는 타입(문자열·숫자·날짜)으로 두고, 값 객체·enum 변환(`new Email(...)`, `SocialProvider.from(...)`)은 서비스·도메인에서 한다. enum을 필드 타입으로 두면 Jackson이 대소문자를 구분하고, 잘못된 값이 우리 에러 코드 없이 일반 400으로 끝난다. 단일 컴포넌트 record 값 객체를 필드로 두면 JSON이 `{"email": {"address": "..."}}` 형태를 요구한다.
 	- 서비스끼리 주고받는 `~Request`(컨트롤러를 거치지 않는 입력)는 이 제약을 받지 않는다. 역직렬화가 없고 이미 검증된 값을 넘기는 것이므로 값 객체·enum을 그대로 필드 타입으로 쓴다. (예: `EmailAccountFindRequest(Email)`, `SocialAccountRegisterRequest(SocialProvider, …, Email)`) 응답 DTO도 enum을 그대로 써도 된다 — 상수명 문자열로 직렬화된다.
