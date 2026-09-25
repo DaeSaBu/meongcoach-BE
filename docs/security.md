@@ -88,7 +88,7 @@ SHA-1 검증용이라 id_token의 `aud`가 되지 않습니다), 애플은 **iOS
 
 | 순서 | 경로 | 접근 |
 |---|---|---|
-| 1 | `/api/health`, `/api/auth/login/social`, `/api/auth/login/email`, `/api/auth/token/refresh`, `/api/auth/logout`, 구 클라이언트 호환(삭제 예정) `/api/auth/login/social/*`, `/api/auth/login/local` | permitAll |
+| 1 | `/api/health`, `/api/auth/login/social`, `/api/auth/login/email`, `/api/auth/token/refresh`, `/api/auth/logout`, `/api/webhooks/revenuecat`, 구 클라이언트 호환(삭제 예정) `/api/auth/login/social/*`, `/api/auth/login/local` | permitAll |
 | 2 | `/swagger-ui/**` | 문서 활성 환경 permitAll, 그 외 denyAll |
 | 3 | `/api/onboarding/**`, `/api/dogs/profile/image` | `USER`, `ONBOARDING_USER` |
 | 4 | `DELETE /api/auth/me`, `GET /api/users/me`, 구 클라이언트 호환(삭제 예정) `DELETE /api/users/me` | `USER`, `ONBOARDING_USER` |
@@ -159,6 +159,10 @@ SHA-1 검증용이라 id_token의 `aud`가 되지 않습니다), 애플은 **iOS
 - `SessionCreationPolicy.STATELESS`
 - permitAll: `/api/health`, `/api/auth/login/social`, `/api/auth/login/email`, `/api/auth/token/refresh`, `/api/auth/logout`
   (인증 엔드포인트만 개별 경로로 열고 `/api/auth/**`로 넓히지 않습니다. 이후 추가되는 인증 관련 API가 자동으로 공개되는 것을 막기 위함입니다)
+  - `/api/webhooks/revenuecat`은 JWT가 없는 RevenueCat이 호출하므로 열어 두고, `RevenueCatWebhookController`가 `Authorization` 헤더를
+    `meongcoach.revenuecat.webhook-authorization`과 상수 시간으로 대조합니다(다르면 401 `PURCHASE_WEBHOOK_UNAUTHORIZED`).
+    RevenueCat은 서명 없이 대시보드에 지정한 헤더 값을 그대로 보내기 때문입니다.
+    **함정:** Bearer 토큰 필터는 permitAll 경로에서도 `Bearer `로 시작하는 헤더를 JWT로 검증해 401로 끊으므로, 대시보드 값에 `Bearer ` 접두어를 쓰지 않습니다
   - 구 클라이언트 호환 경로 `/api/auth/login/social/*`, `/api/auth/login/local`과 온보딩 중 허용 `DELETE /api/users/me`는
     `auth/adapter/webapi/legacy`(신 계약 이전 앱용)와 함께 삭제합니다. 구 경로의 에러 코드는 `USER_` 접두어로 내려갑니다 ([error-handling.md](error-handling.md))
 - 그 외 요청은 역할 기반 인가 (위 "URL 인가 규칙" 참고)
@@ -279,6 +283,7 @@ OIDC 제공자는 모두 "JWKS 디코더 + `iss` + `exp` + `aud`" 동일 형태�
 | `APPLE_PRIVATE_KEY` | `-----BEGIN PRIVATE KEY-----` 머리말·꼬리말을 포함한 위 키의 `.p8` 파일 내용 전체(PKCS#8 PEM). **시크릿.** 줄바꿈은 그대로 두거나 `\n`으로 이스케이프. **비거나, 머리말이 없거나, EC 키가 아니면 기동 실패** |
 | `GOOGLE_WEB_CLIENT_ID` | 구글 id_token의 `aud`(웹 OAuth 클라이언트 ID). 안드로이드 SDK도 이 값을 `aud`로 발급합니다. 시크릿이 아닌 식별자. **빈 값이면 기동 실패** |
 | `GOOGLE_IOS_CLIENT_ID` | 구글 id_token의 `aud`(iOS OAuth 클라이언트 ID). 시크릿이 아닌 식별자. **빈 값이면 기동 실패** |
+| `REVENUECAT_WEBHOOK_AUTHORIZATION` | RevenueCat 웹훅의 `Authorization` 헤더 값. **시크릿.** 대시보드 설정과 같은 값을 `Bearer ` 접두어 없이 넣습니다. **빈 값이면 기동 실패** |
 
 로컬은 환경 변수로 export하고, 배포는 ECS task definition의 환경변수와 Secrets Manager 참조로 주입합니다.
 테스트는 `src/test/resources/application-test.yml`의 더미 값을 쓰므로 환경 변수가 필요 없습니다.
