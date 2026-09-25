@@ -21,7 +21,8 @@ import org.springframework.validation.annotation.Validated;
 @RequiredArgsConstructor
 public class PurchaseRegisterService implements PurchaseRegister {
 
-	// 앱이 RevenueCat에 로그인시킨 회원 ID. 로그인 전 구매는 $RCAnonymousID:로 시작하는 익명 ID로 온다
+	// 앱이 RevenueCat에 로그인시킨 회원 ID. 로그인 전 구매는 $RCAnonymousID:로 시작하는 익명 ID로 온다.
+	// 숫자가 아닌 ID를 Long으로 바꾸다 예외가 나면 RevenueCat이 재전송을 반복하므로 먼저 걸러 낸다. 18자리까지는 Long 범위를 넘지 않는다
 	private static final Pattern MEMBER_APP_USER_ID = Pattern.compile("\\d{1,18}");
 
 	private final UserFinder userFinder;
@@ -42,8 +43,9 @@ public class PurchaseRegisterService implements PurchaseRegister {
 			return;
 		}
 		String appUserId = purchaseRegisterRequest.appUserId();
+		// 앱이 로그인 전 구매를 막는 것이 전제라, 여기로 오면 결제는 됐는데 이용권이 없는 사고다. transactionId로 수동 복구한다
 		if (!MEMBER_APP_USER_ID.matcher(appUserId).matches()) {
-			log.warn("회원이 아닌 사용자의 구매라 저장하지 않음: appUserId={}, transactionId={}", appUserId, transactionId);
+			log.error("회원이 아닌 사용자의 구매라 저장하지 않음: appUserId={}, transactionId={}", appUserId, transactionId);
 			return;
 		}
 		Long userId = Long.valueOf(appUserId);
