@@ -4,8 +4,8 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
- * 이용권이 열어 주는 강아지 성장 시기. RevenueCat 대시보드의 entitlement 하나에 대응한다.
- * 상수 이름은 entitlements.life_stage 컬럼에 그대로 저장되는 값이라 한번 정한 뒤에는 바꾸지 않는다.
+ * 이용권이 열어 주는 강아지 성장 시기. 우리 커리큘럼이 해석하는 개념이며, RevenueCat entitlement 식별자와 연결한다.
+ * 권한 확인은 entitlements.identifier에 저장된 식별자를 이 매핑으로 시기에 대응시킨다.
  */
 @Getter
 @RequiredArgsConstructor

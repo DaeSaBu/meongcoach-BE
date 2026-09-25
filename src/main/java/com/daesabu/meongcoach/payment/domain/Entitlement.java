@@ -5,32 +5,29 @@ import static java.util.Objects.requireNonNull;
 import com.daesabu.meongcoach.shared.domain.BaseTimeEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
-import java.math.BigDecimal;
 import java.time.Instant;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
- * 스토어 구매 한 건과 그로 얻은 이용권. 한 행이 한 거래이며, 어느 시기를 열어 주는지는 저장하지 않고 상품 구성({@link ProductId})에서 계산한다.
- * 그래서 상품 구성을 바꾸면 기존 구매에도 소급 적용된다.
- * 바뀌는 값은 회수 시각뿐이라 수정 시각 없이 생성 시각만 기록한다.
+ * 회원이 가진 권한 하나. 한 행이 RevenueCat entitlement 하나라, 통합 상품을 사면 한 구매로 여러 행이 생긴다.
+ * 어느 권한을 줄지는 구매 시점 웹훅의 entitlement_ids를 그대로 따르므로, 대시보드 구성을 바꿔도 이미 부여한 권한에는 소급되지 않는다.
+ * 권한은 구매 외 경로로도 생길 수 있어 {@link Purchase}와 별도 애그리거트로 두고 ID로만 참조한다.
  */
 @Getter
 @Entity
 @Table(
 		name = "entitlements",
-		uniqueConstraints = @UniqueConstraint(columnNames = "transaction_id"),
-		// 사용자 이용권 조회(user_id)와 결제 이력 정렬(purchased_at)을 함께 받는다. V6 마이그레이션과 이름·컬럼을 맞춘다
-		indexes = @Index(name = "idx_entitlements_user_id_purchased_at", columnList = "user_id, purchased_at")
+		uniqueConstraints = @UniqueConstraint(columnNames = {"purchase_id", "identifier"}),
+		// 회원이 특정 권한을 가졌는지 확인한다. V6 마이그레이션과 이름·컬럼을 맞춘다
+		indexes = @Index(name = "idx_entitlements_user_id_identifier", columnList = "user_id, identifier")
 )
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Entitlement extends BaseTimeEntity {
@@ -39,47 +36,28 @@ public class Entitlement extends BaseTimeEntity {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	// 회원은 user 모듈의 애그리거트라 연관 대신 ID로만 참조한다
+	// 다른 모듈이 거래 이력 없이 회원 기준으로 권한만 조회하도록 구매와 별개로 둔다
 	@Column(name = "user_id", nullable = false)
 	private Long userId;
 
-	// 스토어 거래 ID(웹훅 transaction_id). 부여·회수를 거래 단위로 해서 웹훅 재전송과 환불 후 재구매를 구분한다
-	@Column(name = "transaction_id", nullable = false, length = 100)
-	private String transactionId;
+	// 이 권한을 준 구매. 별도 애그리거트라 연관 대신 ID로만 참조한다
+	@Column(name = "purchase_id", nullable = false)
+	private Long purchaseId;
 
-	@Enumerated(EnumType.STRING)
-	@Column(nullable = false, length = 30)
-	private ProductId productId;
+	// RevenueCat entitlement 식별자(웹훅 entitlement_ids의 원소) 원본
+	@Column(nullable = false, length = 50)
+	private String identifier;
 
-	@Enumerated(EnumType.STRING)
-	@Column(nullable = false, length = 20)
-	private Store store;
-
-	// 결제 통화 기준 가격(웹훅 price_in_purchased_currency). 스토어가 알려 주지 않으면 null
-	@Column(precision = 19, scale = 4)
-	private BigDecimal price;
-
-	// ISO 4217 통화 코드(웹훅 currency). 스토어가 알려 주지 않으면 null
-	@Column(length = 3)
-	private String currency;
-
-	// 스토어에서 구매한 시각(웹훅 purchased_at_ms). 행을 기록한 시각은 createdAt이다
-	@Column(name = "purchased_at", nullable = false)
-	private Instant purchasedAt;
-
-	// 회수되지 않은 이용권은 null
+	// 회수되지 않은 권한은 null
 	private Instant revokedAt;
 
-	public static Entitlement register(Long userId, EntitlementRegisterCommand command) {
+	// 구매 하나에서 권한 묶음을 만드는 일은 Entitlements.grant()가 맡으므로 같은 패키지에서만 연다
+	static Entitlement grant(Long userId, Long purchaseId, String identifier) {
 		Entitlement entitlement = new Entitlement();
 
 		entitlement.userId = requireNonNull(userId);
-		entitlement.transactionId = requireNonNull(command.transactionId());
-		entitlement.productId = requireNonNull(command.productId());
-		entitlement.store = requireNonNull(command.store());
-		entitlement.price = command.price();
-		entitlement.currency = command.currency();
-		entitlement.purchasedAt = requireNonNull(command.purchasedAt());
+		entitlement.purchaseId = requireNonNull(purchaseId);
+		entitlement.identifier = requireNonNull(identifier);
 
 		return entitlement;
 	}
