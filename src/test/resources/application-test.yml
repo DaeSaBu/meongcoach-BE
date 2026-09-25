@@ -83,3 +83,5 @@ meongcoach:
       public-base-url: https://videos.test.meongcoach.com
       upload-url-validity: PT15M
       download-url-validity: PT1H
+  revenuecat:
+    webhook-authorization: test-revenuecat-webhook-authorization

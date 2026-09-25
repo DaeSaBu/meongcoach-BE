@@ -120,3 +120,7 @@ meongcoach:
       # id_token의 aud 후보. 안드로이드·서버 검증은 웹 클라이언트 ID, iOS는 iOS 클라이언트 ID라 쉼표로 나열한다.
       # 다른 앱에서 발급된 토큰을 걸러내는 값이므로 반드시 우리 앱의 클라이언트 ID만 넣는다
       audiences: ${GOOGLE_WEB_CLIENT_ID},${GOOGLE_IOS_CLIENT_ID}
+  revenuecat:
+    # RevenueCat 대시보드 웹훅 설정의 Authorization 헤더 값. 웹훅 경로는 JWT 없이 열려 있어 이 값이 유일한 발신자 확인이다.
+    # Bearer 토큰 필터가 JWT로 검증하려 들지 않도록 "Bearer " 접두어 없이 쓴다. 기본값이 없어 미주입 시 기동에 실패한다
+    webhook-authorization: ${REVENUECAT_WEBHOOK_AUTHORIZATION}
