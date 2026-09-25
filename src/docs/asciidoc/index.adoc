@@ -515,3 +515,21 @@ operation::dog/profile-image[snippets='http-request,http-response,response-field
 선택된 강아지가 없으면 404(`DOG_NOT_FOUND`)를 반환합니다. 온보딩을 마치지 않은 사용자가 여기에 해당합니다.
 
 operation::dog/profile-image-error[snippets='http-response,response-fields']
+
+== Purchase API
+
+=== RevenueCat 웹훅 수신
+
+link:{swagger-ui}#/Purchase/purchase-revenuecat-webhook[▶ Swagger에서 Try it out,window=swagger]
+
+RevenueCat이 호출하는 서버 간 API라 앱은 호출하지 않습니다. JWT 대신 RevenueCat 대시보드에 설정한 인증값을 `Authorization` 헤더로 받습니다.
+평생권 구매(`NON_RENEWING_PURCHASE`)만 구매로 기록하고 이용권을 부여합니다. 그 밖의 이벤트, 회원 ID가 아닌 `app_user_id`(로그인 전 익명 구매), 이미 처리한 거래는 저장하지 않고 200을 반환합니다.
+2xx가 아니면 RevenueCat이 같은 이벤트를 재전송하는데, 이런 이벤트는 다시 받아도 결과가 같기 때문입니다.
+
+operation::purchase/revenuecat-webhook[snippets='http-request,request-headers,request-fields,http-response']
+
+==== 실패 응답
+
+인증값이 없거나 설정과 다르면 401(`PURCHASE_WEBHOOK_UNAUTHORIZED`)을 반환합니다.
+
+operation::purchase/revenuecat-webhook-error[snippets='http-response,response-fields']

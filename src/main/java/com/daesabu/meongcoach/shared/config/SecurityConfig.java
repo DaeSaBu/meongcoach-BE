@@ -55,6 +55,8 @@ public class SecurityConfig {
 			"/api/auth/login/email",
 			"/api/auth/token/refresh",
 			"/api/auth/logout",
+			// RevenueCat은 JWT가 없으므로 열어 두고, 컨트롤러가 웹훅 인증값으로 발신자를 확인한다
+			"/api/webhooks/revenuecat",
 			// 구 클라이언트 호환 경로. 구 앱 지원이 끝나면 auth/adapter/webapi/legacy와 함께 삭제한다
 			"/api/auth/login/social/*",
 			"/api/auth/login/local"
