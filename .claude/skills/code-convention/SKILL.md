@@ -76,6 +76,7 @@ user-invocable: true
 	- 도메인 입력이 필요하면 `toCommand()`로 `~Command`를 만든다. `domain`의 Command는 모듈 밖에 노출하지 않는다. (예: `SocialAccountRegisterRequest.toCommand()`)
 	- 이 규칙 이전에 만든 모듈(`dog`, `onboarding`, `training`, `ai`)의 요청 DTO는 아직 `adapter/webapi/dto`에 있다. 일괄 이동하지 않고 해당 API를 수정할 때 옮긴다.
 - 응답 DTO(`~Response`)는 `adapter/webapi/dto`에 둔다. 웹 노출 형태는 `adapter`의 관심사다. (예: `TokenResponse`)
+- 외부 시스템이 형식을 정하는 웹훅 본문은 예외로 `adapter/webapi/dto`에 `@JsonProperty` record로 두고, 컨트롤러가 provided `~Request`로 바꿔 넘긴다. 외부 ID 해석·처리하지 않는 이벤트 거르기처럼 그 시스템에 한정된 지식은 이 변환에 두어 application이 제공자를 모르게 한다. (살아있는 예시: `purchase/adapter/webapi/dto/RevenueCatWebhookRequest`)
 - 외부 API 응답 DTO는 `adapter/integration/dto`에 `~Response` record로 두고, 필드 매핑은 `@JsonProperty`로 지정한다. 전역 네이밍 전략(`spring.jackson.property-naming-strategy`)을 바꾸면 우리 API 응답까지 영향을 받으므로 쓰지 않는다.
 - 도메인 입력 모델은 `~Command` 접미사의 record로 `domain`에 두며, 웹 DTO와 별개로 유지한다. (예: `DogRegisterCommand`)
 	- 엔티티 정적 팩토리의 순수 값 파라미터가 3개 이상이면 Command로 묶고, 팩토리는 Command를 받아 생성자에 전달한다.
