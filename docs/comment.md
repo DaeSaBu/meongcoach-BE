@@ -96,6 +96,10 @@ erDiagram
     card_comments ||--o{ card_comment_likes : "comment_id"
 ```
 
+댓글과 답글은 한 테이블(`card_comments`)에 두고 `parent_id`로 구분합니다. 답글 전용 테이블을 만들지 않습니다. 답글은 댓글과 같은 컬럼을 가지므로 테이블을 나누면 좋아요 테이블·FK·조회 쿼리가 두 벌이 됩니다. WordPress(`wp_comments.comment_parent`)와 Discourse(`posts.reply_to_post_number`)도 같은 구조입니다.
+
+답글 깊이가 1로 고정이므로 경로 열거·중첩 집합·클로저 테이블 같은 트리 저장 방식과 `root_id`·`depth` 컬럼은 쓰지 않습니다. `parent_id`가 곧 최상위 댓글 ID입니다.
+
 댓글과 카드는 `cardId` 값으로만 연결합니다. JPA 연관관계와 FK를 두지 않으며, `Card` 엔티티는 댓글 컬렉션을 갖지 않습니다.
 
 - 카드를 삭제해도 댓글은 남습니다. 카드는 초기 데이터 동기화 스크립트(`db/local/training-initial-data.sql`)의 `DELETE`로 지워지며, 이 스크립트는 댓글을 알지 못해도 됩니다.
@@ -117,7 +121,7 @@ erDiagram
 인덱스:
 
 - `(card_id, id)`: 카드별 최상위 댓글 커서 조회와 카드 댓글 수 집계
-- `(parent_id, id)`: 답글 커서 조회와 답글 수 집계
+- `(parent_id, id)`: 목록 한 페이지에 속한 댓글들의 답글 조회
 
 ### card_comment_likes
 
@@ -127,11 +131,11 @@ erDiagram
 | `user_id` | BIGINT | PK(복합) | 좋아요 누른 사용자. FK 없음 |
 | `created_at` | TIMESTAMP | NOT NULL | |
 
-복합 PK가 사용자당 좋아요 1회를 보장합니다.
+복합 PK가 사용자당 좋아요 1회를 보장합니다. 좋아요 전용 테이블이며, 신고(DAE-472)는 사유·처리 상태 같은 자기 컬럼이 필요하므로 그때 별도 테이블로 만듭니다.
 
 ### 집계 방식
 
-카드 댓글 수, 답글 수, 좋아요 수는 카운터 컬럼 없이 조회할 때마다 셉니다. 목록 요청 한 번에 카드 댓글 수는 `COUNT`, 답글 수와 좋아요 수는 페이지의 댓글 ID로 `GROUP BY`를 한 번씩 실행합니다. 모든 집계가 위 인덱스와 PK를 타며 스캔 범위는 카드 하나의 댓글 수입니다.
+카드 댓글 수와 좋아요 수는 카운터 컬럼 없이 조회할 때마다 셉니다. 목록 요청 한 번에 카드 댓글 수는 `COUNT`, 좋아요 수는 페이지의 댓글·답글 ID로 `GROUP BY`를 한 번 실행합니다. 답글 수는 함께 조회한 답글 목록의 크기입니다. 모든 집계가 위 인덱스와 PK를 타며 스캔 범위는 카드 하나의 댓글 수입니다.
 
 카운터 컬럼은 쓰기마다 부모 행 갱신, 락 경합, 멱등성 처리, 값 어긋남 복구가 따라오므로 두지 않습니다.
 
@@ -150,23 +154,21 @@ erDiagram
 
 | 메서드 | 경로 | 설명 | 화면 |
 | --- | --- | --- | --- |
-| GET | `/api/training/cards/{cardId}/comments` | 최상위 댓글 목록과 카드 댓글 수 | 01, 05 |
-| POST | `/api/training/cards/{cardId}/comments` | 최상위 댓글 작성 | 03 |
-| GET | `/api/training/comments/{commentId}/replies` | 답글 목록 | 02 |
+| GET | `/api/training/cards/{cardId}/comments` | 댓글 목록(답글 포함)과 카드 댓글 수 | 01, 02, 05 |
+| POST | `/api/training/cards/{cardId}/comments` | 댓글 작성 | 03 |
 | POST | `/api/training/comments/{commentId}/replies` | 답글 작성 | 04 |
-| PUT | `/api/training/comments/{commentId}/like` | 좋아요 | 01, 02 |
+| POST | `/api/training/comments/{commentId}/like` | 좋아요 | 01, 02 |
 | DELETE | `/api/training/comments/{commentId}/like` | 좋아요 취소 | 01, 02 |
+
+경로 구조는 Instagram Graph API(`/{media}/comments`, `/{comment}/replies`)와 같고, 좋아요는 Facebook Graph API(`POST`/`DELETE /{comment}/likes`)와 같은 방식입니다.
+
+답글은 별도 API 없이 목록 응답에 통째로 담습니다. 카드 하나의 답글 수가 페이지를 나눌 양이 아니고, 답글을 펼치는 화면(02)이 서버 왕복 없이 바로 뜹니다. 한 댓글에 답글이 수백 개 붙는 상황이 오면 YouTube `commentThreads`처럼 일부만 담고 나머지를 별도 API로 내리는 방식으로 바꾸며, 이때 기존 응답 형식은 유지됩니다.
 
 카드 화면의 댓글 수 배지(05)는 목록 응답의 `totalCount`로 그립니다. 앱은 카드가 화면에 보일 때 목록을 미리 불러오고, 시트를 열 때 같은 데이터를 씁니다. 카드 목록 API(`GET /api/training/lessons/{lessonId}/cards`)의 응답에는 댓글 수를 넣지 않습니다.
 
 ### 목록 조회와 페이지네이션
 
-커서 기반입니다. 커서는 마지막으로 받은 댓글의 `id`입니다.
-
-| 목록 | 정렬 | 기본 `size` | 최대 `size` |
-| --- | --- | --- | --- |
-| 최상위 댓글 | 최신순 (`id` 내림차순) | 20 | 50 |
-| 답글 | 오래된 순 (`id` 오름차순) | 20 | 50 |
+최상위 댓글만 커서로 나눕니다. 커서는 마지막으로 받은 최상위 댓글의 `id`입니다. 정렬은 최신순(`id` 내림차순), 기본 `size`는 20, 최대 50입니다. 각 댓글의 답글은 오래된 순(`id` 오름차순)으로 전부 담깁니다.
 
 `GET /api/training/cards/{cardId}/comments?cursor={id}&size=20`
 
@@ -181,8 +183,18 @@ erDiagram
 			"createdAt": "2026-09-25T02:10:00Z",
 			"likeCount": 3,
 			"likedByMe": true,
-			"replyCount": 1,
-			"mine": false
+			"mine": false,
+			"replies": [
+				{
+					"id": 15,
+					"authorDogName": "두부",
+					"content": "간식은 만나기 전에 주셨나요?",
+					"createdAt": "2026-09-25T02:12:00Z",
+					"likeCount": 1,
+					"likedByMe": false,
+					"mine": true
+				}
+			]
 		}
 	],
 	"nextCursor": 9,
@@ -191,10 +203,9 @@ erDiagram
 ```
 
 - `totalCount`는 카드의 전체 댓글 수(답글 포함)이며 시트 헤더와 카드 화면 배지에 씁니다.
-- `replyCount`는 `답글 N개 더 보기` 표시에 씁니다.
+- `답글 N개 더 보기`의 N은 `replies` 길이입니다. 접고 펼치는 건 앱이 처리합니다.
 - `mine`은 작성자 본인 여부입니다. 삭제·수정·신고 버튼 분기에 쓰려고 미리 둡니다.
-
-답글 목록(`GET /api/training/comments/{commentId}/replies`)의 항목은 `replyCount`가 없다는 점을 빼면 같은 형식입니다. `totalCount`는 없습니다.
+- 답글 항목은 `replies`가 없다는 점을 빼면 댓글 항목과 같은 형식입니다.
 
 ### 작성
 
@@ -204,11 +215,11 @@ erDiagram
 { "content": "현관에서 많이 기다리는 연습부터 해볼게요." }
 ```
 
-`201 Created`로 작성된 댓글을 목록 항목과 같은 형식으로 반환합니다. 앱은 목록을 다시 조회하지 않고 이 응답을 목록에 끼워 넣습니다.
+`201 Created`로 작성된 댓글을 목록 항목과 같은 형식으로 반환합니다. 댓글 작성 응답의 `replies`는 빈 배열이고, 답글 작성 응답에는 `replies`가 없습니다. 앱은 목록을 다시 조회하지 않고 이 응답을 목록에 끼워 넣습니다.
 
 ### 좋아요
 
-`PUT`/`DELETE /api/training/comments/{commentId}/like`는 `200 OK`로 갱신된 상태를 반환합니다.
+`POST`/`DELETE /api/training/comments/{commentId}/like`는 `200 OK`로 갱신된 상태를 반환합니다. 이미 누른 상태에서 `POST`하거나 누르지 않은 상태에서 `DELETE`해도 같은 응답입니다.
 
 ```json
 { "likeCount": 4, "likedByMe": true }
@@ -221,5 +232,5 @@ erDiagram
 | 코드 | 상태 | 조건 |
 | --- | --- | --- |
 | `TRAINING_CARD_NOT_FOUND` | 404 | 댓글을 달 카드가 없음 |
-| `TRAINING_COMMENT_NOT_FOUND` | 404 | 답글 작성·답글 조회·좋아요 대상 댓글이 없음 |
+| `TRAINING_COMMENT_NOT_FOUND` | 404 | 답글 작성·좋아요 대상 댓글이 없음 |
 | `TRAINING_COMMENT_INVALID_CONTENT` | 400 | 본문이 공백뿐이거나 500자를 넘음 |
