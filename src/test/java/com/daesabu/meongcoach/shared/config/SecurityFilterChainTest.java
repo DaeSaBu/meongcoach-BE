@@ -139,6 +139,18 @@ class SecurityFilterChainTest {
 				.andExpect(jsonPath("$.code").value("USER_INVALID_CREDENTIALS"));
 	}
 
+	// RevenueCat은 JWT가 없으므로 필터 체인은 열어 두고 컨트롤러가 웹훅 인증값으로 발신자를 확인한다.
+	// 필터 체인이 막았다면 코드가 UNAUTHORIZED다. 도메인 에러 코드가 나오면 컨트롤러까지 도달한 것이다
+	@Test
+	void RevenueCat_웹훅_경로는_JWT_없이_열려_있고_인증값이_틀리면_401을_반환한다() throws Exception {
+		mockMvc.perform(post("/api/webhooks/revenuecat")
+						.header(HttpHeaders.AUTHORIZATION, "wrong-authorization")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"event\": {\"type\": \"TEST\"}}"))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.code").value("PURCHASE_WEBHOOK_UNAUTHORIZED"));
+	}
+
 	@Test
 	void 회원_경로는_인증이_필요하다() throws Exception {
 		mockMvc.perform(get("/api/users/me"))
