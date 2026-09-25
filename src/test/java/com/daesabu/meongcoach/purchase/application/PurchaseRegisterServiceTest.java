@@ -46,7 +46,7 @@ class PurchaseRegisterServiceTest {
 
 	@Test
 	void 통합_상품을_구매하면_구매_한_건과_시기별_이용권_네_개가_저장된다() {
-		service.register(request(String.valueOf(userId), Set.of("puppy", "junior", "adult", "senior")));
+		service.register(request(userId, Set.of("puppy", "junior", "adult", "senior")));
 
 		assertThat(purchaseRepository.findAll()).singleElement().satisfies(purchase -> {
 			assertThat(purchase.getUserId()).isEqualTo(userId);
@@ -60,7 +60,7 @@ class PurchaseRegisterServiceTest {
 
 	@Test
 	void 같은_거래가_다시_오면_구매와_이용권을_중복_저장하지_않는다() {
-		PurchaseRegisterRequest request = request(String.valueOf(userId), Set.of("puppy"));
+		PurchaseRegisterRequest request = request(userId, Set.of("puppy"));
 		service.register(request);
 
 		service.register(request);
@@ -71,23 +71,15 @@ class PurchaseRegisterServiceTest {
 
 	@Test
 	void 권한이_없는_상품이면_구매만_저장된다() {
-		service.register(request(String.valueOf(userId), null));
+		service.register(request(userId, null));
 
 		assertThat(purchaseRepository.findAll()).extracting(Purchase::getUserId).containsExactly(userId);
 		assertThat(entitlementRepository.findAll()).isEmpty();
 	}
 
 	@Test
-	void 익명_사용자의_구매는_저장하지_않는다() {
-		service.register(request("$RCAnonymousID:8f3b2c1d", Set.of("puppy")));
-
-		assertThat(purchaseRepository.findAll()).isEmpty();
-		assertThat(entitlementRepository.findAll()).isEmpty();
-	}
-
-	@Test
 	void 없는_회원의_구매는_저장하지_않는다() {
-		String unknownUserId = String.valueOf(userId + 1000);
+		Long unknownUserId = userId + 1000;
 
 		service.register(request(unknownUserId, Set.of("puppy")));
 
@@ -95,8 +87,8 @@ class PurchaseRegisterServiceTest {
 		assertThat(entitlementRepository.findAll()).isEmpty();
 	}
 
-	private PurchaseRegisterRequest request(String appUserId, Set<String> entitlementIds) {
-		return new PurchaseRegisterRequest(appUserId, TRANSACTION_ID, "meongcoach_all_lifetime", "TEST_STORE",
+	private PurchaseRegisterRequest request(Long userId, Set<String> entitlementIds) {
+		return new PurchaseRegisterRequest(userId, TRANSACTION_ID, "meongcoach_all_lifetime", "TEST_STORE",
 				new BigDecimal("6.99"), "USD", Instant.parse("2026-09-23T16:38:06Z"), entitlementIds);
 	}
 }
