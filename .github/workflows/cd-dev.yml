@@ -106,6 +106,7 @@ jobs:
           EVOLINK_API_KEY: ${{ secrets.DEV_EVOLINK_API_KEY }}
           EVOLINK_BASE_URL: ${{ secrets.DEV_EVOLINK_BASE_URL }}
           EVOLINK_MODEL: ${{ secrets.DEV_EVOLINK_MODEL }}
+          REVENUECAT_WEBHOOK_AUTHORIZATION: ${{ secrets.DEV_REVENUECAT_WEBHOOK_AUTHORIZATION }}
           SENTRY_DSN: ${{ secrets.DEV_SENTRY_DSN }}
           SENTRY_RELEASE: ${{ github.sha }}
         run: |
