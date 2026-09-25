@@ -166,6 +166,8 @@ val postProcessOpenApiSpec = tasks.register("postProcessOpenApiSpec") {
 	val specFile = layout.buildDirectory.file("api-spec/openapi3.json")
 	val publicPaths = listOf(
 		"/api/health", "/api/auth/login/social", "/api/auth/login/email", "/api/auth/token/refresh", "/api/auth/logout",
+		// JWT 대신 웹훅 인증값 헤더로 확인한다
+		"/api/webhooks/revenuecat",
 		// 구 클라이언트 호환 경로. 구 앱 지원이 끝나면 auth/adapter/webapi/legacy와 함께 삭제한다
 		"/api/auth/login/social/{provider}", "/api/auth/login/local"
 	)
@@ -180,6 +182,7 @@ val postProcessOpenApiSpec = tasks.register("postProcessOpenApiSpec") {
 		"training" to "Training",
 		"ai" to "AI",
 		"dog" to "Dog",
+		"purchase" to "Purchase",
 	)
 	doLast {
 		val file = specFile.get().asFile
