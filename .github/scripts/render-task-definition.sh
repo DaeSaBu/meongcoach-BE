@@ -38,6 +38,7 @@ IMAGE_URI=${3}
 : "${SQS_ACCESS_KEY_ID:?SQS_ACCESS_KEY_ID가 필요합니다.}"
 : "${SQS_SECRET_ACCESS_KEY:?SQS_SECRET_ACCESS_KEY가 필요합니다.}"
 : "${AI_VIDEO_QUEUE:?AI_VIDEO_QUEUE가 필요합니다.}"
+: "${REVENUECAT_WEBHOOK_AUTHORIZATION:?REVENUECAT_WEBHOOK_AUTHORIZATION이 필요합니다.}"
 
 # jq 결과는 stdout으로 나간다. workflow가 이를 register-task-definition 입력 파일로 저장한다.
 jq \
@@ -69,6 +70,7 @@ jq \
 	--arg sqs_access_key_id "${SQS_ACCESS_KEY_ID:-}" \
 	--arg sqs_secret_access_key "${SQS_SECRET_ACCESS_KEY:-}" \
 	--arg ai_video_queue "${AI_VIDEO_QUEUE:-}" \
+	--arg revenuecat_webhook_authorization "${REVENUECAT_WEBHOOK_AUTHORIZATION:-}" \
 	--arg sentry_dsn "${SENTRY_DSN:-}" \
 	--arg sentry_release "${SENTRY_RELEASE:-}" '
 	if ([.containerDefinitions[] | select(.name == $container)] | length) != 1 then
@@ -146,6 +148,7 @@ jq \
 								.name != "EVOLINK_API_KEY" and
 								.name != "EVOLINK_BASE_URL" and
 								.name != "EVOLINK_MODEL" and
+								.name != "REVENUECAT_WEBHOOK_AUTHORIZATION" and
 								.name != "SENTRY_DSN" and
 								.name != "SENTRY_RELEASE"
 							))) +
@@ -173,7 +176,8 @@ jq \
 							{"name": "SQS_ACCESS_KEY_ID", "value": $sqs_access_key_id},
 							{"name": "SQS_SECRET_ACCESS_KEY", "value": $sqs_secret_access_key},
 							{"name": "AI_VIDEO_QUEUE", "value": $ai_video_queue},
-							{"name": "EVOLINK_API_KEY", "value": $evolink_api_key}
+							{"name": "EVOLINK_API_KEY", "value": $evolink_api_key},
+							{"name": "REVENUECAT_WEBHOOK_AUTHORIZATION", "value": $revenuecat_webhook_authorization}
 						] +
 						# 미설정 시 application.yml의 기본값을 쓰도록 주입 자체를 생략한다
 						(if $evolink_base_url == "" then
