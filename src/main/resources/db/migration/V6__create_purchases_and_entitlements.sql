@@ -1,4 +1,4 @@
--- RevenueCat 웹훅으로 기록하는 스토어 구매(payment/domain/Purchase)와 그로 얻은 권한(payment/domain/Entitlement).
+-- RevenueCat 웹훅으로 기록하는 스토어 구매(payment/domain/Purchase)와 그로 얻은 권한(entitlement/domain/Entitlement).
 -- product_id·store·identifier는 RevenueCat이 정의하는 값이라 enum 대신 웹훅 값 원본을 문자열로 저장한다.
 -- 시각 컬럼은 Instant라 Hibernate 매핑에 맞춰 TIMESTAMPTZ로 둔다. 바뀌는 값이 환불·회수 시각뿐이라 updated_at은 두지 않는다.
 

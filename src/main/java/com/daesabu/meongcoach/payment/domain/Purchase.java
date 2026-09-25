@@ -18,7 +18,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
- * 스토어 구매 한 건. 결제 이력과 환불 판단의 기준이며, 이 구매로 얻은 권한은 {@link Entitlement}가 따로 가진다.
+ * 스토어 구매 한 건. 결제 이력과 환불 판단의 기준이며, 이 구매로 얻은 권한은 entitlement 모듈이 따로 가진다.
  * 상품·스토어는 RevenueCat이 정의하는 값이라 enum으로 복제하지 않고 웹훅 값을 그대로 저장한다.
  * 바뀌는 값은 환불 시각뿐이라 수정 시각 없이 생성 시각만 기록한다.
  */

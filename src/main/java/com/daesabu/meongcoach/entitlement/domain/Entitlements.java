@@ -1,6 +1,4 @@
-package com.daesabu.meongcoach.payment.domain;
-
-import static java.util.Objects.requireNonNull;
+package com.daesabu.meongcoach.entitlement.domain;
 
 import java.util.Collection;
 import java.util.List;
@@ -19,12 +17,11 @@ public class Entitlements {
 
 	/**
 	 * 웹훅이 알려 준 entitlement 식별자마다 권한을 만든다. 권한을 주지 않는 상품(소모품 등)이면 빈 묶음이다.
-	 * 권한이 구매를 ID로 가리키므로 저장되어 ID가 있는 구매를 받는다.
+	 * 권한이 구매를 ID로 가리키므로 저장되어 ID가 있는 구매의 ID를 받는다.
 	 */
-	public static Entitlements grant(Purchase purchase, Collection<String> identifiers) {
-		Long purchaseId = requireNonNull(purchase.getId(), "저장되지 않은 구매로는 권한을 부여할 수 없다");
+	public static Entitlements grant(Long userId, Long purchaseId, Collection<String> identifiers) {
 		List<Entitlement> granted = identifiers.stream()
-				.map(identifier -> Entitlement.grant(purchase.getUserId(), purchaseId, identifier))
+				.map(identifier -> Entitlement.grant(userId, purchaseId, identifier))
 				.toList();
 
 		return new Entitlements(granted);

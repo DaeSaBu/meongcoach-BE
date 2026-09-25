@@ -1,4 +1,4 @@
-package com.daesabu.meongcoach.payment.domain;
+package com.daesabu.meongcoach.entitlement.domain;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
