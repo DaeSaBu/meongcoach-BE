@@ -13,7 +13,7 @@ com.daesabu.meongcoach
 ├── auth         ← 소셜/이메일 로그인·JWT·리프레시 토큰·자격증명(소셜·로컬 계정)
 ├── user         ← 회원 역할·상태·프로필
 ├── dog          ← 반려견 프로필
-├── training     ← 훈련 콘텐츠 카탈로그
+├── training     ← 훈련 콘텐츠 카탈로그, 교육 카드 댓글
 ├── progress     ← 학습 진도
 ├── ai           ← AI 영상 분석 리포트 (SQS 컨슈머, EvoLink 연동)
 ├── media        ← 이미지·영상 업로드 URL 발급 (R2/S3)

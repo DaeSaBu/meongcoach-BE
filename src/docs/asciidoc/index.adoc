@@ -323,6 +323,71 @@ operation::training/topic-select[snippets='http-request,path-parameters,http-res
 
 operation::training/topic-select-error[snippets='http-response,response-fields']
 
+=== 카드 댓글 조회
+
+link:{swagger-ui}#/Training/training-comment-list[▶ Swagger에서 Try it out,window=swagger]
+
+부모 댓글 전체를 최신순으로 조회합니다. 각 댓글의 `replyCount`로 답글 수를 확인할 수 있습니다.
+
+operation::training/comment-list[snippets='http-request,path-parameters,http-response,response-fields']
+
+=== 카드 댓글 수 조회
+
+link:{swagger-ui}#/Training/training-comment-count[▶ Swagger에서 Try it out,window=swagger]
+
+카드의 최상위 댓글과 답글을 합친 수를 조회합니다.
+
+operation::training/comment-count[snippets='http-request,path-parameters,http-response,response-fields']
+
+=== 댓글 답글 조회
+
+link:{swagger-ui}#/Training/training-comment-reply-list[▶ Swagger에서 Try it out,window=swagger]
+
+답글을 펼칠 때 부모 댓글 ID로 답글을 조회합니다. 답글은 오래된 순으로 반환합니다.
+
+operation::training/comment-reply-list[snippets='http-request,path-parameters,http-response,response-fields']
+
+부모 댓글이 없거나 답글 ID를 부모로 전달하면 404(`TRAINING_COMMENT_NOT_FOUND`)를 반환합니다.
+
+operation::training/comment-reply-list-error[snippets='http-response,response-fields']
+
+=== 카드 댓글 작성
+
+link:{swagger-ui}#/Training/training-comment-create[▶ Swagger에서 Try it out,window=swagger]
+
+카드에 댓글을 작성하고 201과 작성된 댓글을 반환합니다.
+
+operation::training/comment-create[snippets='http-request,path-parameters,request-fields,http-response,response-fields']
+
+본문이 공백뿐이거나 500자를 넘으면 400(`TRAINING_COMMENT_INVALID_CONTENT`)을 반환합니다.
+
+operation::training/comment-create-error[snippets='http-response,response-fields']
+
+=== 댓글 답글 작성
+
+link:{swagger-ui}#/Training/training-comment-reply-create[▶ Swagger에서 Try it out,window=swagger]
+
+댓글에 답글을 작성하고 201과 작성된 답글을 반환합니다.
+
+operation::training/comment-reply-create[snippets='http-request,path-parameters,request-fields,http-response,response-fields']
+
+=== 댓글 좋아요 상태 조회
+
+link:{swagger-ui}#/Training/training-comment-likes[▶ Swagger에서 Try it out,window=swagger]
+
+카드에서 좋아요가 있는 댓글·답글의 좋아요 수와 내 좋아요 여부를 조회합니다. 응답에 없는 댓글·답글은 좋아요 수가 0이고 내 좋아요 여부가 false입니다.
+
+operation::training/comment-likes[snippets='http-request,path-parameters,http-response,response-fields']
+
+=== 댓글 좋아요
+
+link:{swagger-ui}#/Training/training-comment-like[▶ Swagger에서 Try it out,window=swagger]
+
+좋아요 추가와 취소는 멱등이며 각각 갱신된 좋아요 수와 내 좋아요 여부를 반환합니다.
+
+operation::training/comment-like[snippets='http-request,path-parameters,http-response,response-fields']
+operation::training/comment-unlike[snippets='http-request,path-parameters,http-response,response-fields']
+
 == AI API
 
 훈련 영상 업로드 URL 발급과, 업로드한 영상을 AI가 분석해 만든 리포트를 조회하는 API입니다.
