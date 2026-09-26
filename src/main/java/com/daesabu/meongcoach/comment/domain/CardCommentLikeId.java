@@ -1,14 +1,23 @@
-package com.daesabu.meongcoach.training.domain.comment;
+package com.daesabu.meongcoach.comment.domain;
 
 import java.io.Serializable;
 import java.util.Objects;
 
+/**
+ * 댓글 좋아요의 복합 식별자. JPA IdClass 규약상 기본 생성자와 equals·hashCode가 필요하다.
+ */
 public class CardCommentLikeId implements Serializable {
 
 	private Long commentId;
+
 	private Long userId;
 
-	public CardCommentLikeId() {
+	protected CardCommentLikeId() {
+	}
+
+	public CardCommentLikeId(Long commentId, Long userId) {
+		this.commentId = commentId;
+		this.userId = userId;
 	}
 
 	@Override
