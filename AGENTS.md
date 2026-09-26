@@ -30,6 +30,7 @@
 | [docs/security.md](docs/security.md)                                       | JWT 토큰 정책·검증 체인, 필터 체인 제약, 인증 환경 변수 |
 | [docs/ai-pipeline.md](docs/ai-pipeline.md)                                 | 영상 업로드→SQS→EvoLink 분석→리포트 저장 비동기 흐름 |
 | [docs/media.md](docs/media.md)                                             | R2/S3 presigned URL 발급, 객체 키 소유권 규칙 |
+| [docs/comment.md](docs/comment.md)                                         | 교육 카드 댓글의 테이블 구성, 작성자 이름, 조회 분리에 관한 설계 메모 |
 | [docs/profiles.md](docs/profiles.md)                                       | local/dev/prod 프로파일 구성, DB·ddl-auto 정책 |
 
 ## 문서 추가 방법
