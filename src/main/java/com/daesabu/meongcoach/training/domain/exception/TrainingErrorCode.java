@@ -7,7 +7,10 @@ public enum TrainingErrorCode implements ErrorCode {
 	TRAINING_TOPIC_NOT_FOUND(404, "토픽을 찾을 수 없습니다."),
 	TRAINING_CURRICULUM_NOT_FOUND(404, "커리큘럼을 찾을 수 없습니다."),
 	TRAINING_LESSON_NOT_FOUND(404, "레슨을 찾을 수 없습니다."),
-	TRAINING_TOPIC_NOT_CONFIGURED(404, "등록된 토픽이 없습니다.");
+	TRAINING_CARD_NOT_FOUND(404, "카드를 찾을 수 없습니다."),
+	TRAINING_COMMENT_NOT_FOUND(404, "댓글을 찾을 수 없습니다."),
+	TRAINING_TOPIC_NOT_CONFIGURED(404, "등록된 토픽이 없습니다."),
+	TRAINING_COMMENT_INVALID_CONTENT(400, "댓글 본문은 1~500자여야 합니다.");
 
 	private final int status;
 	private final String message;
