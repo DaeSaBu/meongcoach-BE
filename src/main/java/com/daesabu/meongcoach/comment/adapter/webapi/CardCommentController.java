@@ -4,7 +4,6 @@ import com.daesabu.meongcoach.comment.adapter.webapi.dto.CommentCountsResponse;
 import com.daesabu.meongcoach.comment.adapter.webapi.dto.CommentListResponse;
 import com.daesabu.meongcoach.comment.adapter.webapi.dto.CommentResponse;
 import com.daesabu.meongcoach.comment.adapter.webapi.dto.LikeStateResponse;
-import com.daesabu.meongcoach.comment.adapter.webapi.dto.ReplyListResponse;
 import com.daesabu.meongcoach.comment.application.provided.CardCommentCountResult;
 import com.daesabu.meongcoach.comment.application.provided.CardCommentCreator;
 import com.daesabu.meongcoach.comment.application.provided.CardCommentFinder;
@@ -12,7 +11,6 @@ import com.daesabu.meongcoach.comment.application.provided.CardCommentLiker;
 import com.daesabu.meongcoach.comment.application.provided.CommentPageResult;
 import com.daesabu.meongcoach.comment.application.provided.CommentResult;
 import com.daesabu.meongcoach.comment.application.provided.LikeStateResult;
-import com.daesabu.meongcoach.comment.application.provided.ReplyPageResult;
 import com.daesabu.meongcoach.comment.application.provided.dto.CommentCreateRequest;
 import com.daesabu.meongcoach.shared.security.CurrentUserId;
 import java.util.List;
@@ -34,8 +32,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class CardCommentController {
 
-	private static final String DEFAULT_PAGE_SIZE = "20";
-
 	private final CardCommentFinder commentFinder;
 
 	private final CardCommentCreator commentCreator;
@@ -44,18 +40,16 @@ public class CardCommentController {
 
 	@GetMapping("/cards/{cardId}/comments")
 	public CommentListResponse findComments(@CurrentUserId Long userId, @PathVariable Long cardId,
-	                                        @RequestParam(required = false) Long cursor,
-	                                        @RequestParam(defaultValue = DEFAULT_PAGE_SIZE) int size) {
-		CommentPageResult page = commentFinder.findComments(userId, cardId, cursor, size);
+	                                        @RequestParam(required = false) Long cursor) {
+		CommentPageResult page = commentFinder.findComments(userId, cardId, cursor);
 		return CommentListResponse.from(page, userId);
 	}
 
 	@GetMapping("/comments/{commentId}/replies")
-	public ReplyListResponse findReplies(@CurrentUserId Long userId, @PathVariable Long commentId,
-	                                     @RequestParam(required = false) Long cursor,
-	                                     @RequestParam(defaultValue = DEFAULT_PAGE_SIZE) int size) {
-		ReplyPageResult page = commentFinder.findReplies(userId, commentId, cursor, size);
-		return ReplyListResponse.from(page, userId);
+	public CommentListResponse findReplies(@CurrentUserId Long userId, @PathVariable Long commentId,
+	                                       @RequestParam(required = false) Long cursor) {
+		CommentPageResult page = commentFinder.findReplies(userId, commentId, cursor);
+		return CommentListResponse.from(page, userId);
 	}
 
 	@GetMapping("/comments/counts")

@@ -326,7 +326,7 @@ operation::training/topic-select-error[snippets='http-response,response-fields']
 == Comment API
 
 교육 카드에 달리는 댓글·답글·좋아요입니다. 댓글과 답글은 같은 응답 형식을 쓰며, 답글은 `parentId`에 답한 대상을 담습니다.
-목록은 커서 페이지네이션이며 `nextCursor`가 null이면 마지막 페이지입니다. 페이지 크기는 기본 20, 최대 50입니다.
+목록은 커서 페이지네이션이며 `nextCursor`가 null이면 마지막 페이지입니다. 한 페이지는 20건이고 페이지 크기는 정할 수 없습니다.
 
 === 카드 댓글 조회
 
@@ -341,7 +341,7 @@ operation::comment/list[snippets='http-request,path-parameters,query-parameters,
 
 link:{swagger-ui}#/Comment/comment-reply-list[▶ Swagger에서 Try it out,window=swagger]
 
-최상위 댓글의 답글을 오래된 순으로 한 페이지 조회합니다.
+최상위 댓글의 답글을 오래된 순으로 한 페이지 조회합니다. 응답 형식은 카드 댓글 조회와 같고 `totalCount`는 스레드의 답글 수입니다.
 
 operation::comment/reply-list[snippets='http-request,path-parameters,query-parameters,http-response,response-fields']
 

@@ -41,6 +41,8 @@ public interface CardCommentRepository extends JpaRepository<CardComment, Long> 
 
 	long countByCardId(Long cardId);
 
+	long countByRootId(Long rootId);
+
 	@Query("select new com.daesabu.meongcoach.comment.application.provided.CardCommentCountResult(c.cardId, count(c)) "
 			+ "from CardComment c where c.cardId in :cardIds group by c.cardId")
 	List<CardCommentCountResult> countByCardIds(@Param("cardIds") Set<Long> cardIds);
