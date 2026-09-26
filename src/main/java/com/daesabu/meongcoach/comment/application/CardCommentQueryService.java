@@ -14,11 +14,12 @@ import com.daesabu.meongcoach.training.application.provided.CardFinder;
 import com.daesabu.meongcoach.user.application.provided.UserProfileFinder;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Limit;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,12 +46,9 @@ public class CardCommentQueryService implements CardCommentFinder {
 		if (!cardFinder.existsCard(cardId)) {
 			throw new CardNotFoundException(cardId);
 		}
-		Long beforeId = Objects.requireNonNullElse(cursor, Long.MAX_VALUE);
-		int pageSize = clampPageSize(size);
-		List<CardCommentSummary> rows = commentRepository.findTopLevelBefore(cardId, userId, beforeId,
-				Limit.of(pageSize + 1));
-		List<CommentResult> comments = toResults(rows, pageSize);
-		Long nextCursor = nextCursor(rows, pageSize);
+		Slice<CardCommentSummary> slice = commentRepository.findTopLevel(cardId, userId, cursor, pageOf(size));
+		List<CommentResult> comments = toResults(slice.getContent());
+		Long nextCursor = nextCursor(slice);
 		long totalCount = commentRepository.countByCardId(cardId);
 		return new CommentPageResult(comments, totalCount, nextCursor);
 	}
@@ -61,12 +59,9 @@ public class CardCommentQueryService implements CardCommentFinder {
 		if (root.isReply()) {
 			throw new CommentNotFoundException(commentId);
 		}
-		Long afterId = Objects.requireNonNullElse(cursor, 0L);
-		int pageSize = clampPageSize(size);
-		List<CardCommentSummary> rows = commentRepository.findRepliesAfter(commentId, userId, afterId,
-				Limit.of(pageSize + 1));
-		List<CommentResult> replies = toResults(rows, pageSize);
-		Long nextCursor = nextCursor(rows, pageSize);
+		Slice<CardCommentSummary> slice = commentRepository.findReplies(commentId, userId, cursor, pageOf(size));
+		List<CommentResult> replies = toResults(slice.getContent());
+		Long nextCursor = nextCursor(slice);
 		return new ReplyPageResult(replies, nextCursor);
 	}
 
@@ -75,22 +70,21 @@ public class CardCommentQueryService implements CardCommentFinder {
 		return commentRepository.countByCardIds(cardIds);
 	}
 
-	private int clampPageSize(int size) {
-		return Math.clamp(size, PAGE_SIZE_MIN, PAGE_SIZE_MAX);
+	private Pageable pageOf(int size) {
+		return PageRequest.ofSize(Math.clamp(size, PAGE_SIZE_MIN, PAGE_SIZE_MAX));
 	}
 
-	// 페이지 크기보다 한 건 더 읽었으면 다음 페이지가 있고, 마지막으로 내려준 항목의 id가 다음 커서다
-	private Long nextCursor(List<CardCommentSummary> rows, int pageSize) {
-		if (rows.size() <= pageSize) {
+	// 다음 페이지가 있으면 마지막으로 내려준 항목의 id가 다음 커서다
+	private Long nextCursor(Slice<CardCommentSummary> slice) {
+		if (!slice.hasNext()) {
 			return null;
 		}
-		return rows.get(pageSize - 1).id();
+		return slice.getContent().getLast().id();
 	}
 
-	private List<CommentResult> toResults(List<CardCommentSummary> rows, int pageSize) {
-		List<CardCommentSummary> page = rows.stream().limit(pageSize).toList();
-		Map<Long, String> nicknames = findNicknames(page);
-		return page.stream()
+	private List<CommentResult> toResults(List<CardCommentSummary> rows) {
+		Map<Long, String> nicknames = findNicknames(rows);
+		return rows.stream()
 				.map(row -> toResult(row, nicknames.get(row.authorId())))
 				.toList();
 	}

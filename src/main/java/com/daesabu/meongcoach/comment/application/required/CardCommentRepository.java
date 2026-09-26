@@ -5,7 +5,8 @@ import com.daesabu.meongcoach.comment.domain.CardComment;
 import com.daesabu.meongcoach.comment.domain.exception.CommentNotFoundException;
 import java.util.List;
 import java.util.Set;
-import org.springframework.data.domain.Limit;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -23,18 +24,20 @@ public interface CardCommentRepository extends JpaRepository<CardComment, Long> 
 			""";
 
 	/**
-	 * 카드의 최상위 댓글을 id 내림차순(최신순)으로 beforeId 앞에서부터 읽는다.
+	 * 카드의 최상위 댓글을 id 내림차순(최신순)으로 한 페이지 읽는다. cursor가 null이면 첫 페이지다.
 	 */
-	@Query(SUMMARY_SELECT + "where c.cardId = :cardId and c.rootId is null and c.id < :beforeId order by c.id desc")
-	List<CardCommentSummary> findTopLevelBefore(@Param("cardId") Long cardId, @Param("userId") Long userId,
-	                                            @Param("beforeId") Long beforeId, Limit limit);
+	@Query(SUMMARY_SELECT + "where c.cardId = :cardId and c.rootId is null "
+			+ "and (:cursor is null or c.id < :cursor) order by c.id desc")
+	Slice<CardCommentSummary> findTopLevel(@Param("cardId") Long cardId, @Param("userId") Long userId,
+	                                       @Param("cursor") Long cursor, Pageable pageable);
 
 	/**
-	 * 스레드의 답글을 id 오름차순(오래된 순)으로 afterId 뒤에서부터 읽는다.
+	 * 스레드의 답글을 id 오름차순(오래된 순)으로 한 페이지 읽는다. cursor가 null이면 첫 페이지다.
 	 */
-	@Query(SUMMARY_SELECT + "where c.rootId = :rootId and c.id > :afterId order by c.id asc")
-	List<CardCommentSummary> findRepliesAfter(@Param("rootId") Long rootId, @Param("userId") Long userId,
-	                                          @Param("afterId") Long afterId, Limit limit);
+	@Query(SUMMARY_SELECT + "where c.rootId = :rootId "
+			+ "and (:cursor is null or c.id > :cursor) order by c.id asc")
+	Slice<CardCommentSummary> findReplies(@Param("rootId") Long rootId, @Param("userId") Long userId,
+	                                      @Param("cursor") Long cursor, Pageable pageable);
 
 	long countByCardId(Long cardId);
 
