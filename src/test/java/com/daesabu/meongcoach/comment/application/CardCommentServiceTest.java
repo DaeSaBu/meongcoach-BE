@@ -13,7 +13,6 @@ import com.daesabu.meongcoach.comment.application.provided.CardCommentLiker;
 import com.daesabu.meongcoach.comment.application.provided.CommentPageResult;
 import com.daesabu.meongcoach.comment.application.provided.CommentResult;
 import com.daesabu.meongcoach.comment.application.provided.LikeStateResult;
-import com.daesabu.meongcoach.comment.application.provided.ReplyPageResult;
 import com.daesabu.meongcoach.comment.application.provided.dto.CommentCreateRequest;
 import com.daesabu.meongcoach.comment.domain.CardComment;
 import com.daesabu.meongcoach.comment.domain.exception.CardNotFoundException;
@@ -21,6 +20,7 @@ import com.daesabu.meongcoach.comment.domain.exception.CommentNotFoundException;
 import com.daesabu.meongcoach.comment.domain.exception.InvalidCommentContentException;
 import com.daesabu.meongcoach.training.application.provided.CardFinder;
 import com.daesabu.meongcoach.user.application.provided.UserProfileFinder;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -81,20 +81,19 @@ class CardCommentServiceTest {
 	}
 
 	@Test
-	void 최상위_댓글은_최신순으로_한_페이지씩_조회하고_커서로_이어진다() {
-		CommentResult oldest = createComment(USER_ID, CARD_ID, "첫째");
-		CommentResult middle = createComment(USER_ID, CARD_ID, "둘째");
-		CommentResult newest = createComment(USER_ID, CARD_ID, "셋째");
+	void 최상위_댓글은_최신순으로_20건씩_조회하고_커서로_이어진다() {
+		List<CommentResult> created = createComments(CARD_ID, PAGE_SIZE + 1);
 		createComment(USER_ID, OTHER_CARD_ID, "다른 카드");
 		flushAndClear();
 
-		CommentPageResult firstPage = finder.findComments(USER_ID, CARD_ID, null, 2);
-		CommentPageResult secondPage = finder.findComments(USER_ID, CARD_ID, firstPage.nextCursor(), 2);
+		CommentPageResult firstPage = finder.findComments(USER_ID, CARD_ID, null);
+		CommentPageResult secondPage = finder.findComments(USER_ID, CARD_ID, firstPage.nextCursor());
 
-		assertThat(firstPage.comments()).extracting(CommentResult::id).containsExactly(newest.id(), middle.id());
-		assertThat(firstPage.nextCursor()).isEqualTo(middle.id());
-		assertThat(firstPage.totalCount()).isEqualTo(3);
-		assertThat(secondPage.comments()).extracting(CommentResult::id).containsExactly(oldest.id());
+		List<Long> newestFirst = created.reversed().stream().map(CommentResult::id).toList();
+		assertThat(firstPage.comments()).extracting(CommentResult::id).containsExactlyElementsOf(newestFirst.subList(0, PAGE_SIZE));
+		assertThat(firstPage.nextCursor()).isEqualTo(newestFirst.get(PAGE_SIZE - 1));
+		assertThat(firstPage.totalCount()).isEqualTo(PAGE_SIZE + 1);
+		assertThat(secondPage.comments()).extracting(CommentResult::id).containsExactly(newestFirst.getLast());
 		assertThat(secondPage.nextCursor()).isNull();
 	}
 
@@ -109,9 +108,9 @@ class CardCommentServiceTest {
 		liker.like(OTHER_USER_ID, reply.id());
 		flushAndClear();
 
-		CommentPageResult forUser = finder.findComments(USER_ID, CARD_ID, null, PAGE_SIZE);
-		CommentPageResult forOther = finder.findComments(OTHER_USER_ID, CARD_ID, null, PAGE_SIZE);
-		ReplyPageResult replies = finder.findReplies(USER_ID, popular.id(), null, PAGE_SIZE);
+		CommentPageResult forUser = finder.findComments(USER_ID, CARD_ID, null);
+		CommentPageResult forOther = finder.findComments(OTHER_USER_ID, CARD_ID, null);
+		CommentPageResult replies = finder.findReplies(USER_ID, popular.id(), null);
 
 		assertThat(forUser.totalCount()).isEqualTo(3);
 		assertThat(forUser.comments()).containsExactly(
@@ -119,24 +118,25 @@ class CardCommentServiceTest {
 						likedByOther.createdAt(), 0, 1, false),
 				new CommentResult(popular.id(), null, USER_ID, "멍멍이집사", "좋아요 둘", popular.createdAt(), 1, 2, true));
 		assertThat(forOther.comments()).extracting(CommentResult::likedByMe).containsExactly(true, true);
-		assertThat(replies.replies()).containsExactly(
+		assertThat(replies.totalCount()).isEqualTo(1);
+		assertThat(replies.comments()).containsExactly(
 				new CommentResult(reply.id(), popular.id(), OTHER_USER_ID, "두부집사", "답글", reply.createdAt(), 0, 1, false));
 	}
 
 	@Test
-	void 답글은_오래된_순으로_한_페이지씩_조회한다() {
+	void 답글은_오래된_순으로_20건씩_조회하고_스레드_답글_수를_함께_내린다() {
 		CommentResult root = createComment(USER_ID, CARD_ID, "댓글");
-		CommentResult first = createReply(OTHER_USER_ID, root.id(), "첫째 답글");
-		CommentResult second = createReply(USER_ID, root.id(), "둘째 답글");
-		CommentResult third = createReply(OTHER_USER_ID, root.id(), "셋째 답글");
+		List<CommentResult> created = createReplies(root.id(), PAGE_SIZE + 1);
 		flushAndClear();
 
-		ReplyPageResult firstPage = finder.findReplies(USER_ID, root.id(), null, 2);
-		ReplyPageResult secondPage = finder.findReplies(USER_ID, root.id(), firstPage.nextCursor(), 2);
+		CommentPageResult firstPage = finder.findReplies(USER_ID, root.id(), null);
+		CommentPageResult secondPage = finder.findReplies(USER_ID, root.id(), firstPage.nextCursor());
 
-		assertThat(firstPage.replies()).extracting(CommentResult::id).containsExactly(first.id(), second.id());
-		assertThat(firstPage.nextCursor()).isEqualTo(second.id());
-		assertThat(secondPage.replies()).extracting(CommentResult::id).containsExactly(third.id());
+		List<Long> oldestFirst = created.stream().map(CommentResult::id).toList();
+		assertThat(firstPage.comments()).extracting(CommentResult::id).containsExactlyElementsOf(oldestFirst.subList(0, PAGE_SIZE));
+		assertThat(firstPage.nextCursor()).isEqualTo(oldestFirst.get(PAGE_SIZE - 1));
+		assertThat(firstPage.totalCount()).isEqualTo(PAGE_SIZE + 1);
+		assertThat(secondPage.comments()).extracting(CommentResult::id).containsExactly(oldestFirst.getLast());
 		assertThat(secondPage.nextCursor()).isNull();
 	}
 
@@ -153,9 +153,9 @@ class CardCommentServiceTest {
 		assertThat(saved.getParentId()).isEqualTo(first.id());
 		assertThat(saved.getCardId()).isEqualTo(CARD_ID);
 		assertThat(second.parentId()).isEqualTo(first.id());
-		ReplyPageResult replies = finder.findReplies(USER_ID, root.id(), null, PAGE_SIZE);
-		assertThat(replies.replies()).extracting(CommentResult::parentId).containsExactly(root.id(), first.id());
-		assertThat(finder.findComments(USER_ID, CARD_ID, null, PAGE_SIZE).comments())
+		CommentPageResult replies = finder.findReplies(USER_ID, root.id(), null);
+		assertThat(replies.comments()).extracting(CommentResult::parentId).containsExactly(root.id(), first.id());
+		assertThat(finder.findComments(USER_ID, CARD_ID, null).comments())
 				.extracting(CommentResult::replyCount).containsExactly(2L);
 	}
 
@@ -164,9 +164,9 @@ class CardCommentServiceTest {
 		CommentResult root = createComment(USER_ID, CARD_ID, "댓글");
 		CommentResult reply = createReply(OTHER_USER_ID, root.id(), "답글");
 
-		assertThatThrownBy(() -> finder.findReplies(USER_ID, reply.id(), null, PAGE_SIZE))
+		assertThatThrownBy(() -> finder.findReplies(USER_ID, reply.id(), null))
 				.isInstanceOf(CommentNotFoundException.class);
-		assertThatThrownBy(() -> finder.findReplies(USER_ID, ABSENT_COMMENT_ID, null, PAGE_SIZE))
+		assertThatThrownBy(() -> finder.findReplies(USER_ID, ABSENT_COMMENT_ID, null))
 				.isInstanceOf(CommentNotFoundException.class);
 	}
 
@@ -192,7 +192,7 @@ class CardCommentServiceTest {
 		CommentResult created = createComment(USER_WITHOUT_PROFILE_ID, CARD_ID, "댓글");
 		flushAndClear();
 
-		CommentPageResult page = finder.findComments(USER_ID, CARD_ID, null, PAGE_SIZE);
+		CommentPageResult page = finder.findComments(USER_ID, CARD_ID, null);
 
 		assertThat(created.authorNickname()).isNull();
 		assertThat(page.comments().getFirst().authorNickname()).isNull();
@@ -228,26 +228,10 @@ class CardCommentServiceTest {
 	}
 
 	@Test
-	void 페이지_크기는_1과_50_사이로_조정한다() {
-		for (int i = 0; i < 51; i++) {
-			createComment(USER_ID, CARD_ID, "댓글 " + i);
-		}
-		flushAndClear();
-
-		CommentPageResult smallest = finder.findComments(USER_ID, CARD_ID, null, 0);
-		CommentPageResult largest = finder.findComments(USER_ID, CARD_ID, null, 100);
-
-		assertThat(smallest.comments()).hasSize(1);
-		assertThat(smallest.nextCursor()).isNotNull();
-		assertThat(largest.comments()).hasSize(50);
-		assertThat(largest.nextCursor()).isNotNull();
-	}
-
-	@Test
 	void 없는_카드와_댓글은_각각_404_예외를_던진다() {
 		assertThatThrownBy(() -> creator.createComment(USER_ID, ABSENT_CARD_ID, new CommentCreateRequest("댓글")))
 				.isInstanceOf(CardNotFoundException.class);
-		assertThatThrownBy(() -> finder.findComments(USER_ID, ABSENT_CARD_ID, null, PAGE_SIZE))
+		assertThatThrownBy(() -> finder.findComments(USER_ID, ABSENT_CARD_ID, null))
 				.isInstanceOf(CardNotFoundException.class);
 		assertThatThrownBy(() -> creator.createReply(USER_ID, ABSENT_COMMENT_ID, new CommentCreateRequest("답글")))
 				.isInstanceOf(CommentNotFoundException.class);
@@ -262,7 +246,7 @@ class CardCommentServiceTest {
 		assertThatThrownBy(() -> creator.createComment(USER_ID, CARD_ID, new CommentCreateRequest("   ")))
 				.isInstanceOf(InvalidCommentContentException.class);
 
-		CommentPageResult page = finder.findComments(USER_ID, CARD_ID, null, PAGE_SIZE);
+		CommentPageResult page = finder.findComments(USER_ID, CARD_ID, null);
 		assertThat(page.comments()).isEmpty();
 		assertThat(page.totalCount()).isZero();
 	}
@@ -273,6 +257,23 @@ class CardCommentServiceTest {
 
 	private CommentResult createReply(Long userId, Long commentId, String content) {
 		return creator.createReply(userId, commentId, new CommentCreateRequest(content));
+	}
+
+	// 작성 순서대로 담는다
+	private List<CommentResult> createComments(Long cardId, int count) {
+		List<CommentResult> created = new ArrayList<>();
+		for (int i = 0; i < count; i++) {
+			created.add(createComment(USER_ID, cardId, "댓글 " + i));
+		}
+		return created;
+	}
+
+	private List<CommentResult> createReplies(Long rootId, int count) {
+		List<CommentResult> created = new ArrayList<>();
+		for (int i = 0; i < count; i++) {
+			created.add(createReply(OTHER_USER_ID, rootId, "답글 " + i));
+		}
+		return created;
 	}
 
 	private void flushAndClear() {
