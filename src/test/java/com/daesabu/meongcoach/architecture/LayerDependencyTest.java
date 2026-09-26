@@ -1,5 +1,6 @@
 package com.daesabu.meongcoach.architecture;
 
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static com.tngtech.archunit.library.Architectures.layeredArchitecture;
 import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.slices;
 
@@ -35,6 +36,15 @@ class LayerDependencyTest {
 		slices()
 				.matching("com.daesabu.meongcoach.(*)..")
 				.should().beFreeOfCycles()
+				.check(CLASSES);
+	}
+
+	// 댓글은 카드·작성자를 ID 값으로만 참조한다. 카탈로그·회원 모듈의 타입이 댓글 도메인에 스며들지 않게 막는다
+	@Test
+	void comment_모듈의_domain은_training과_user_모듈에_의존하지_않는다() {
+		noClasses()
+				.that().resideInAPackage("..comment.domain..")
+				.should().dependOnClassesThat().resideInAnyPackage("..training..", "..user..")
 				.check(CLASSES);
 	}
 }
