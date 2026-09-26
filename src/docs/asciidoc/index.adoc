@@ -323,70 +323,69 @@ operation::training/topic-select[snippets='http-request,path-parameters,http-res
 
 operation::training/topic-select-error[snippets='http-response,response-fields']
 
+== Comment API
+
+교육 카드에 달리는 댓글·답글·좋아요입니다. 댓글과 답글은 같은 응답 형식을 쓰며, 답글은 `parentId`에 답한 대상을 담습니다.
+목록은 커서 페이지네이션이며 `nextCursor`가 null이면 마지막 페이지입니다. 페이지 크기는 기본 20, 최대 50입니다.
+
 === 카드 댓글 조회
 
-link:{swagger-ui}#/Training/training-comment-list[▶ Swagger에서 Try it out,window=swagger]
+link:{swagger-ui}#/Comment/comment-list[▶ Swagger에서 Try it out,window=swagger]
 
-부모 댓글 전체를 최신순으로 조회합니다. 각 댓글의 `replyCount`로 답글 수를 확인할 수 있습니다.
+카드의 최상위 댓글을 최신순으로 한 페이지 조회합니다. 각 댓글에 답글 수·좋아요 수·내 좋아요 여부가 함께 담기고,
+`totalCount`는 답글을 포함한 카드 전체 댓글 수입니다. 존재하지 않는 카드면 404(`COMMENT_CARD_NOT_FOUND`)를 반환합니다.
 
-operation::training/comment-list[snippets='http-request,path-parameters,http-response,response-fields']
-
-=== 카드 댓글 수 조회
-
-link:{swagger-ui}#/Training/training-comment-count[▶ Swagger에서 Try it out,window=swagger]
-
-카드의 최상위 댓글과 답글을 합친 수를 조회합니다.
-
-operation::training/comment-count[snippets='http-request,path-parameters,http-response,response-fields']
+operation::comment/list[snippets='http-request,path-parameters,query-parameters,http-response,response-fields']
 
 === 댓글 답글 조회
 
-link:{swagger-ui}#/Training/training-comment-reply-list[▶ Swagger에서 Try it out,window=swagger]
+link:{swagger-ui}#/Comment/comment-reply-list[▶ Swagger에서 Try it out,window=swagger]
 
-답글을 펼칠 때 부모 댓글 ID로 답글을 조회합니다. 답글은 오래된 순으로 반환합니다.
+최상위 댓글의 답글을 오래된 순으로 한 페이지 조회합니다.
 
-operation::training/comment-reply-list[snippets='http-request,path-parameters,http-response,response-fields']
+operation::comment/reply-list[snippets='http-request,path-parameters,query-parameters,http-response,response-fields']
 
-부모 댓글이 없거나 답글 ID를 부모로 전달하면 404(`TRAINING_COMMENT_NOT_FOUND`)를 반환합니다.
+최상위 댓글이 없거나 답글 ID를 전달하면 404(`COMMENT_NOT_FOUND`)를 반환합니다.
 
-operation::training/comment-reply-list-error[snippets='http-response,response-fields']
+operation::comment/reply-list-error[snippets='http-response,response-fields']
+
+=== 카드별 댓글 수 조회
+
+link:{swagger-ui}#/Comment/comment-counts[▶ Swagger에서 Try it out,window=swagger]
+
+여러 카드의 댓글 수를 답글까지 포함해 한 번에 조회합니다. 댓글이 없는 카드는 응답에 없습니다.
+
+operation::comment/counts[snippets='http-request,query-parameters,http-response,response-fields']
 
 === 카드 댓글 작성
 
-link:{swagger-ui}#/Training/training-comment-create[▶ Swagger에서 Try it out,window=swagger]
+link:{swagger-ui}#/Comment/comment-create[▶ Swagger에서 Try it out,window=swagger]
 
-카드에 댓글을 작성하고 201과 작성된 댓글을 반환합니다.
+카드에 댓글을 작성하고 201과 작성된 댓글을 반환합니다. 존재하지 않는 카드면 404(`COMMENT_CARD_NOT_FOUND`)를 반환합니다.
 
-operation::training/comment-create[snippets='http-request,path-parameters,request-fields,http-response,response-fields']
+operation::comment/create[snippets='http-request,path-parameters,request-fields,http-response,response-fields']
 
-본문이 공백뿐이거나 500자를 넘으면 400(`TRAINING_COMMENT_INVALID_CONTENT`)을 반환합니다.
+본문이 공백뿐이거나 500자를 넘으면 400(`COMMENT_INVALID_CONTENT`)을 반환합니다.
 
-operation::training/comment-create-error[snippets='http-response,response-fields']
+operation::comment/create-error[snippets='http-response,response-fields']
 
 === 댓글 답글 작성
 
-link:{swagger-ui}#/Training/training-comment-reply-create[▶ Swagger에서 Try it out,window=swagger]
+link:{swagger-ui}#/Comment/comment-reply-create[▶ Swagger에서 Try it out,window=swagger]
 
-댓글에 답글을 작성하고 201과 작성된 답글을 반환합니다.
+댓글에 답글을 작성하고 201과 작성된 답글을 반환합니다. 답글에 답글을 달면 같은 스레드에 붙고 `parentId`에 답한 답글이 남습니다.
+존재하지 않는 댓글이면 404(`COMMENT_NOT_FOUND`)를 반환합니다.
 
-operation::training/comment-reply-create[snippets='http-request,path-parameters,request-fields,http-response,response-fields']
-
-=== 댓글 좋아요 상태 조회
-
-link:{swagger-ui}#/Training/training-comment-likes[▶ Swagger에서 Try it out,window=swagger]
-
-카드에서 좋아요가 있는 댓글·답글의 좋아요 수와 내 좋아요 여부를 조회합니다. 응답에 없는 댓글·답글은 좋아요 수가 0이고 내 좋아요 여부가 false입니다.
-
-operation::training/comment-likes[snippets='http-request,path-parameters,http-response,response-fields']
+operation::comment/reply-create[snippets='http-request,path-parameters,request-fields,http-response,response-fields']
 
 === 댓글 좋아요
 
-link:{swagger-ui}#/Training/training-comment-like[▶ Swagger에서 Try it out,window=swagger]
+link:{swagger-ui}#/Comment/comment-like[▶ Swagger에서 Try it out,window=swagger]
 
-좋아요 추가와 취소는 멱등이며 각각 갱신된 좋아요 수와 내 좋아요 여부를 반환합니다.
+좋아요 추가와 취소는 멱등이며 각각 갱신된 좋아요 수와 내 좋아요 여부를 반환합니다. 존재하지 않는 댓글이면 404(`COMMENT_NOT_FOUND`)를 반환합니다.
 
-operation::training/comment-like[snippets='http-request,path-parameters,http-response,response-fields']
-operation::training/comment-unlike[snippets='http-request,path-parameters,http-response,response-fields']
+operation::comment/like[snippets='http-request,path-parameters,http-response,response-fields']
+operation::comment/unlike[snippets='http-request,path-parameters,http-response,response-fields']
 
 == AI API
 
