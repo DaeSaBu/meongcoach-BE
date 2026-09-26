@@ -30,9 +30,10 @@
 댓글 한 건의 응답은 댓글·답글 구분 없이 같은 모양이다. `id`, `parentId`, `authorId`, `authorNickname`, `mine`, `content`, `createdAt`, `replyCount`, `likeCount`, `likedByMe`.
 
 - `CardCommentRepository`의 쿼리 하나가 답글 수·좋아요 수·내 좋아요 여부를 서브쿼리로 집계해 한 페이지를 만든다. 닉네임만 `user` 모듈에서 작성자 ID 집합으로 한 번에 받아 합친다.
+- 최상위 댓글 목록과 답글 목록은 같은 페이지 형식이다. `comments`, `totalCount`, `nextCursor`.
 - 최상위 댓글은 `id` 내림차순, 답글은 `id` 오름차순으로 커서 페이지네이션한다. 커서는 마지막 항목의 `id`이고 다음 페이지가 없으면 `nextCursor`가 null이다.
-- 페이지 크기 `size`는 기본 20, 최대 50이다. 범위를 벗어난 값은 경계값으로 조정한다.
-- 최상위 댓글 목록의 `totalCount`는 답글을 포함한 카드 전체 댓글 수다.
+- 한 페이지는 20건이다. 페이지 크기는 클라이언트가 정하지 않는다.
+- `totalCount`는 최상위 댓글 목록에서는 답글을 포함한 카드 전체 댓글 수, 답글 목록에서는 스레드의 답글 수다.
 - `authorNickname`은 작성자 프로필의 닉네임이다. 댓글 API는 온보딩을 마친 USER 역할만 호출할 수 있어 프로필이 없는 작성자는 정상 상태가 아니며 그 경우에만 null이다.
 - `mine`은 작성자가 요청한 사용자인지 여부다. 삭제·수정 기능의 전제 조건이다.
 
@@ -40,8 +41,8 @@
 
 | 메서드 | 경로 | 설명 |
 |---|---|---|
-| GET | `/api/training/cards/{cardId}/comments?cursor&size` | 최상위 댓글 한 페이지와 `totalCount` |
-| GET | `/api/training/comments/{commentId}/replies?cursor&size` | 최상위 댓글의 답글 한 페이지 |
+| GET | `/api/training/cards/{cardId}/comments?cursor` | 최상위 댓글 한 페이지. `totalCount`는 카드 전체 댓글 수 |
+| GET | `/api/training/comments/{commentId}/replies?cursor` | 최상위 댓글의 답글 한 페이지. `totalCount`는 스레드 답글 수 |
 | GET | `/api/training/comments/counts?cardIds=` | 카드별 댓글 수 일괄 조회. 댓글이 없는 카드는 응답에 없다 |
 | POST | `/api/training/cards/{cardId}/comments` | 댓글 작성 |
 | POST | `/api/training/comments/{commentId}/replies` | 답글 작성. 대상이 답글이면 같은 스레드에 붙인다 |
