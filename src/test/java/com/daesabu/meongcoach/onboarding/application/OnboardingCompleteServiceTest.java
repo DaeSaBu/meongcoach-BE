@@ -53,7 +53,8 @@ class OnboardingCompleteServiceTest {
 	@BeforeEach
 	void setUp() {
 		service = new OnboardingCompleteService(
-				new UserProfileRegisterService(new UserQueryService(userRepository), userProfileRepository),
+				new UserProfileRegisterService(new UserQueryService(userRepository, userProfileRepository),
+						userProfileRepository),
 				new DogRegisterService(dogRepository),
 				prefixValidator());
 		userId = userRepository.save(User.registerUser()).getId();
