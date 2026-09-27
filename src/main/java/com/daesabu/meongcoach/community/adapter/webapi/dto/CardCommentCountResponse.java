@@ -1,10 +1,10 @@
 package com.daesabu.meongcoach.community.adapter.webapi.dto;
 
-import com.daesabu.meongcoach.community.application.provided.CardCommentCountResult;
+import com.daesabu.meongcoach.community.application.provided.CommentCountResult;
 
 public record CardCommentCountResponse(Long cardId, long totalCount) {
 
-	public static CardCommentCountResponse from(CardCommentCountResult result) {
-		return new CardCommentCountResponse(result.cardId(), result.totalCount());
+	public static CardCommentCountResponse from(CommentCountResult result) {
+		return new CardCommentCountResponse(result.targetId(), result.totalCount());
 	}
 }
