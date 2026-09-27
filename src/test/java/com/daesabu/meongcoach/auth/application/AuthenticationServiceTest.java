@@ -99,7 +99,7 @@ class AuthenticationServiceTest {
 	@BeforeEach
 	void setUp() {
 		StubTokenProvider tokenProvider = new StubTokenProvider();
-		UserQueryService userFinder = new UserQueryService(userRepository);
+		UserQueryService userFinder = new UserQueryService(userRepository, userProfileRepository);
 		UserRegisterService userRegister = new UserRegisterService(userFinder, userRepository, userProfileRepository);
 		AccountQueryService accountFinder = new AccountQueryService(emailAccountRepository, socialAccountRepository);
 		AccountModifyService accountRegister = new AccountModifyService(socialAccountRepository, userRegister,

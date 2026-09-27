@@ -1,10 +1,16 @@
 package com.daesabu.meongcoach.user.application;
 
 import com.daesabu.meongcoach.user.application.provided.UserFinder;
+import com.daesabu.meongcoach.user.application.provided.UserProfileFinder;
+import com.daesabu.meongcoach.user.application.required.UserProfileRepository;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.User;
+import com.daesabu.meongcoach.user.domain.UserProfile;
 import com.daesabu.meongcoach.user.domain.UserStatus;
 import com.daesabu.meongcoach.user.domain.exception.UserNotFoundException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,8 +18,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
-public class UserQueryService implements UserFinder {
+public class UserQueryService implements UserFinder, UserProfileFinder {
 	private final UserRepository userRepository;
+	private final UserProfileRepository userProfileRepository;
 
 	@Override
 	public boolean isActiveUser(Long userId) {
@@ -30,5 +37,14 @@ public class UserQueryService implements UserFinder {
 	@Override
 	public User findById(Long userId) {
 		return userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException(userId));
+	}
+
+	@Override
+	public Map<Long, String> findNicknames(Set<Long> userIds) {
+		Map<Long, String> nicknames = new HashMap<>();
+		for (UserProfile profile : userProfileRepository.findAllById(userIds)) {
+			nicknames.put(profile.getUserId(), profile.getNickname());
+		}
+		return nicknames;
 	}
 }

@@ -46,7 +46,7 @@ class AccountModifyServiceTest {
 
 	@BeforeEach
 	void setUp() {
-		UserRegisterService userRegister = new UserRegisterService(new UserQueryService(userRepository),
+		UserRegisterService userRegister = new UserRegisterService(new UserQueryService(userRepository, userProfileRepository),
 				userRepository, userProfileRepository);
 		service = new AccountModifyService(socialAccountRepository, userRegister, emailAccountRepository);
 	}
