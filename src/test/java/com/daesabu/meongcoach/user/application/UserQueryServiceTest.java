@@ -3,9 +3,14 @@ package com.daesabu.meongcoach.user.application;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.daesabu.meongcoach.user.application.required.UserProfileRepository;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.User;
+import com.daesabu.meongcoach.user.domain.UserProfile;
+import com.daesabu.meongcoach.user.domain.UserProfileCreateCommand;
 import com.daesabu.meongcoach.user.domain.exception.UserNotFoundException;
+import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -23,6 +28,9 @@ class UserQueryServiceTest {
 
 	@Autowired
 	private UserRepository userRepository;
+
+	@Autowired
+	private UserProfileRepository userProfileRepository;
 
 	@Autowired
 	private TestEntityManager entityManager;
@@ -84,5 +92,29 @@ class UserQueryServiceTest {
 	void 없는_회원_ID로_조회하면_예외를_던진다() {
 		assertThatThrownBy(() -> userQueryService.findById(UNREGISTERED_USER_ID))
 				.isInstanceOf(UserNotFoundException.class);
+	}
+
+	@Test
+	void 여러_회원의_닉네임을_조회하고_프로필이_없는_회원은_제외한다() {
+		User first = userRepository.save(User.registerUser());
+		User second = userRepository.save(User.registerUser());
+		User withdrawn = userRepository.save(User.registerUser());
+		userProfileRepository.save(profile(first, "멍멍이집사"));
+		userProfileRepository.save(profile(second, "두부집사"));
+		userProfileRepository.save(profile(withdrawn, "예전이름"));
+		userProfileRepository.flush();
+		userProfileRepository.deleteById(withdrawn.getId());
+		userProfileRepository.flush();
+
+		Map<Long, String> nicknames = userQueryService.findNicknames(
+				Set.of(first.getId(), second.getId(), withdrawn.getId()));
+
+		assertThat(nicknames).containsExactlyInAnyOrderEntriesOf(
+				Map.of(first.getId(), "멍멍이집사", second.getId(), "두부집사"));
+	}
+
+	private UserProfile profile(User user, String nickname) {
+		return UserProfile.create(user, new UserProfileCreateCommand(nickname, null, null, "INTJ", "FEMALE",
+				Set.of(), Set.of()));
 	}
 }
