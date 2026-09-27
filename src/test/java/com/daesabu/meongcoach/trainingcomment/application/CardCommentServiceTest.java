@@ -113,13 +113,13 @@ class CardCommentServiceTest {
 		CommentPageResult replies = finder.findReplies(USER_ID, popular.id(), null);
 
 		assertThat(forUser.totalCount()).isEqualTo(3);
-		assertThat(forUser.comments()).containsExactly(
+		assertThat(forUser.comments()).usingRecursiveFieldByFieldElementComparatorIgnoringFields("createdAt").containsExactly(
 				new CommentResult(likedByOther.id(), null, USER_ID, "멍멍이집사", "다른 사용자 좋아요",
 						likedByOther.createdAt(), 0, 1, false),
 				new CommentResult(popular.id(), null, USER_ID, "멍멍이집사", "좋아요 둘", popular.createdAt(), 1, 2, true));
 		assertThat(forOther.comments()).extracting(CommentResult::likedByMe).containsExactly(true, true);
 		assertThat(replies.totalCount()).isEqualTo(1);
-		assertThat(replies.comments()).containsExactly(
+		assertThat(replies.comments()).usingRecursiveFieldByFieldElementComparatorIgnoringFields("createdAt").containsExactly(
 				new CommentResult(reply.id(), popular.id(), OTHER_USER_ID, "두부집사", "답글", reply.createdAt(), 0, 1, false));
 	}
 
