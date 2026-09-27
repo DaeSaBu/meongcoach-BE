@@ -1,6 +1,6 @@
-package com.daesabu.meongcoach.training_comment.adapter.webapi.dto;
+package com.daesabu.meongcoach.trainingcomment.adapter.webapi.dto;
 
-import com.daesabu.meongcoach.training_comment.application.provided.LikeStateResult;
+import com.daesabu.meongcoach.trainingcomment.application.provided.LikeStateResult;
 
 public record LikeStateResponse(long likeCount, boolean likedByMe) {
 

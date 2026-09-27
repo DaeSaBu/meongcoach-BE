@@ -1,4 +1,4 @@
-package com.daesabu.meongcoach.training_comment.adapter.webapi;
+package com.daesabu.meongcoach.trainingcomment.adapter.webapi;
 
 import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.document;
 import static org.mockito.BDDMockito.given;
@@ -14,16 +14,16 @@ import static org.springframework.restdocs.request.RequestDocumentation.queryPar
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.daesabu.meongcoach.training_comment.application.provided.CardCommentCountResult;
-import com.daesabu.meongcoach.training_comment.application.provided.CardCommentCreator;
-import com.daesabu.meongcoach.training_comment.application.provided.CardCommentFinder;
-import com.daesabu.meongcoach.training_comment.application.provided.CardCommentLiker;
-import com.daesabu.meongcoach.training_comment.application.provided.CommentPageResult;
-import com.daesabu.meongcoach.training_comment.application.provided.CommentResult;
-import com.daesabu.meongcoach.training_comment.application.provided.LikeStateResult;
-import com.daesabu.meongcoach.training_comment.application.provided.dto.CommentCreateRequest;
-import com.daesabu.meongcoach.training_comment.domain.exception.CommentNotFoundException;
-import com.daesabu.meongcoach.training_comment.domain.exception.InvalidCommentContentException;
+import com.daesabu.meongcoach.trainingcomment.application.provided.CardCommentCountResult;
+import com.daesabu.meongcoach.trainingcomment.application.provided.CardCommentCreator;
+import com.daesabu.meongcoach.trainingcomment.application.provided.CardCommentFinder;
+import com.daesabu.meongcoach.trainingcomment.application.provided.CardCommentLiker;
+import com.daesabu.meongcoach.trainingcomment.application.provided.CommentPageResult;
+import com.daesabu.meongcoach.trainingcomment.application.provided.CommentResult;
+import com.daesabu.meongcoach.trainingcomment.application.provided.LikeStateResult;
+import com.daesabu.meongcoach.trainingcomment.application.provided.dto.CommentCreateRequest;
+import com.daesabu.meongcoach.trainingcomment.domain.exception.CommentNotFoundException;
+import com.daesabu.meongcoach.trainingcomment.domain.exception.InvalidCommentContentException;
 import java.security.Principal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -79,7 +79,7 @@ class CardCommentControllerTest {
 				.andExpect(jsonPath("$.comments[0].likedByMe").value(true))
 				.andExpect(jsonPath("$.comments[0].createdAt").value("2026-09-25T02:10:00"))
 				.andExpect(jsonPath("$.comments[1].mine").value(false))
-				.andDo(document("training_comment/list",
+				.andDo(document("trainingcomment/list",
 						pathParameters(parameterWithName("cardId").description("카드 ID")),
 						queryParameters(parameterWithName("cursor").optional()
 								.description("직전 페이지의 nextCursor. 첫 페이지는 생략")),
@@ -126,7 +126,7 @@ class CardCommentControllerTest {
 				.andExpect(jsonPath("$.comments[0].likeCount").value(1))
 				.andExpect(jsonPath("$.totalCount").value(1))
 				.andExpect(jsonPath("$.nextCursor").value((Object) null))
-				.andDo(document("training_comment/reply-list",
+				.andDo(document("trainingcomment/reply-list",
 						pathParameters(parameterWithName("commentId").description("최상위 댓글 ID")),
 						queryParameters(parameterWithName("cursor").optional()
 								.description("직전 페이지의 nextCursor. 첫 페이지는 생략")),
@@ -155,7 +155,7 @@ class CardCommentControllerTest {
 						.principal(CURRENT_USER).header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isNotFound())
 				.andExpect(jsonPath("$.code").value("COMMENT_NOT_FOUND"))
-				.andDo(document("training_comment/reply-list-error",
+				.andDo(document("trainingcomment/reply-list-error",
 						pathParameters(parameterWithName("commentId").description("최상위 댓글 ID")),
 						responseFields(
 								fieldWithPath("title").description("HTTP 상태 이름"),
@@ -180,7 +180,7 @@ class CardCommentControllerTest {
 				.andExpect(jsonPath("$.counts[0].cardId").value(7))
 				.andExpect(jsonPath("$.counts[0].totalCount").value(4))
 				.andExpect(jsonPath("$.counts[1].cardId").value(8))
-				.andDo(document("training_comment/counts",
+				.andDo(document("trainingcomment/counts",
 						queryParameters(parameterWithName("cardIds").description("카드 ID 목록. 반복하거나 쉼표로 구분")),
 						responseFields(
 								fieldWithPath("counts[]").description("카드별 댓글 수. 댓글이 없는 카드는 없다"),
@@ -203,7 +203,7 @@ class CardCommentControllerTest {
 				.andExpect(jsonPath("$.replyCount").value(0))
 				.andExpect(jsonPath("$.likeCount").value(0))
 				.andExpect(jsonPath("$.likedByMe").value(false))
-				.andDo(document("training_comment/create",
+				.andDo(document("trainingcomment/create",
 						pathParameters(parameterWithName("cardId").description("카드 ID")),
 						requestFields(fieldWithPath("content").description("댓글 본문. 앞뒤 공백 제거 후 1~500자")),
 						responseFields(
@@ -230,7 +230,7 @@ class CardCommentControllerTest {
 						.contentType(MediaType.APPLICATION_JSON).content("{\"content\":\"   \"}"))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.code").value("COMMENT_INVALID_CONTENT"))
-				.andDo(document("training_comment/create-error",
+				.andDo(document("trainingcomment/create-error",
 						pathParameters(parameterWithName("cardId").description("카드 ID")),
 						responseFields(
 								fieldWithPath("title").description("HTTP 상태 이름"),
@@ -253,7 +253,7 @@ class CardCommentControllerTest {
 				.andExpect(jsonPath("$.id").value(15))
 				.andExpect(jsonPath("$.parentId").value(12))
 				.andExpect(jsonPath("$.mine").value(true))
-				.andDo(document("training_comment/reply-create",
+				.andDo(document("trainingcomment/reply-create",
 						pathParameters(parameterWithName("commentId").description("답할 댓글 ID. 답글이면 같은 스레드에 붙는다")),
 						requestFields(fieldWithPath("content").description("답글 본문. 앞뒤 공백 제거 후 1~500자")),
 						responseFields(
@@ -279,7 +279,7 @@ class CardCommentControllerTest {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.likeCount").value(4))
 				.andExpect(jsonPath("$.likedByMe").value(true))
-				.andDo(document("training_comment/like",
+				.andDo(document("trainingcomment/like",
 						pathParameters(parameterWithName("commentId").description("댓글 또는 답글 ID")),
 						responseFields(
 								fieldWithPath("likeCount").description("갱신된 좋아요 수"),
@@ -290,7 +290,7 @@ class CardCommentControllerTest {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.likeCount").value(3))
 				.andExpect(jsonPath("$.likedByMe").value(false))
-				.andDo(document("training_comment/unlike",
+				.andDo(document("trainingcomment/unlike",
 						pathParameters(parameterWithName("commentId").description("댓글 또는 답글 ID")),
 						responseFields(
 								fieldWithPath("likeCount").description("갱신된 좋아요 수"),

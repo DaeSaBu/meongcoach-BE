@@ -1,11 +1,11 @@
-package com.daesabu.meongcoach.training_comment.application;
+package com.daesabu.meongcoach.trainingcomment.application;
 
-import com.daesabu.meongcoach.training_comment.application.provided.CardCommentLiker;
-import com.daesabu.meongcoach.training_comment.application.provided.LikeStateResult;
-import com.daesabu.meongcoach.training_comment.application.required.CardCommentLikeRepository;
-import com.daesabu.meongcoach.training_comment.application.required.CardCommentRepository;
-import com.daesabu.meongcoach.training_comment.domain.CardCommentLike;
-import com.daesabu.meongcoach.training_comment.domain.CardCommentLikeId;
+import com.daesabu.meongcoach.trainingcomment.application.provided.CardCommentLiker;
+import com.daesabu.meongcoach.trainingcomment.application.provided.LikeStateResult;
+import com.daesabu.meongcoach.trainingcomment.application.required.CardCommentLikeRepository;
+import com.daesabu.meongcoach.trainingcomment.application.required.CardCommentRepository;
+import com.daesabu.meongcoach.trainingcomment.domain.CardCommentLike;
+import com.daesabu.meongcoach.trainingcomment.domain.CardCommentLikeId;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

@@ -1,4 +1,4 @@
-package com.daesabu.meongcoach.training_comment.application;
+package com.daesabu.meongcoach.trainingcomment.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -7,18 +7,18 @@ import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.BDDMockito.given;
 
 import com.daesabu.meongcoach.training.application.provided.CardFinder;
-import com.daesabu.meongcoach.training_comment.application.provided.CardCommentCountResult;
-import com.daesabu.meongcoach.training_comment.application.provided.CardCommentCreator;
-import com.daesabu.meongcoach.training_comment.application.provided.CardCommentFinder;
-import com.daesabu.meongcoach.training_comment.application.provided.CardCommentLiker;
-import com.daesabu.meongcoach.training_comment.application.provided.CommentPageResult;
-import com.daesabu.meongcoach.training_comment.application.provided.CommentResult;
-import com.daesabu.meongcoach.training_comment.application.provided.LikeStateResult;
-import com.daesabu.meongcoach.training_comment.application.provided.dto.CommentCreateRequest;
-import com.daesabu.meongcoach.training_comment.domain.CardComment;
-import com.daesabu.meongcoach.training_comment.domain.exception.CardNotFoundException;
-import com.daesabu.meongcoach.training_comment.domain.exception.CommentNotFoundException;
-import com.daesabu.meongcoach.training_comment.domain.exception.InvalidCommentContentException;
+import com.daesabu.meongcoach.trainingcomment.application.provided.CardCommentCountResult;
+import com.daesabu.meongcoach.trainingcomment.application.provided.CardCommentCreator;
+import com.daesabu.meongcoach.trainingcomment.application.provided.CardCommentFinder;
+import com.daesabu.meongcoach.trainingcomment.application.provided.CardCommentLiker;
+import com.daesabu.meongcoach.trainingcomment.application.provided.CommentPageResult;
+import com.daesabu.meongcoach.trainingcomment.application.provided.CommentResult;
+import com.daesabu.meongcoach.trainingcomment.application.provided.LikeStateResult;
+import com.daesabu.meongcoach.trainingcomment.application.provided.dto.CommentCreateRequest;
+import com.daesabu.meongcoach.trainingcomment.domain.CardComment;
+import com.daesabu.meongcoach.trainingcomment.domain.exception.CardNotFoundException;
+import com.daesabu.meongcoach.trainingcomment.domain.exception.CommentNotFoundException;
+import com.daesabu.meongcoach.trainingcomment.domain.exception.InvalidCommentContentException;
 import com.daesabu.meongcoach.user.application.provided.UserProfileFinder;
 import java.util.ArrayList;
 import java.util.List;

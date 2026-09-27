@@ -330,62 +330,62 @@ operation::training/topic-select-error[snippets='http-response,response-fields']
 
 === 카드 댓글 조회
 
-link:{swagger-ui}#/TrainingComment/training_comment-list[▶ Swagger에서 Try it out,window=swagger]
+link:{swagger-ui}#/TrainingComment/trainingcomment-list[▶ Swagger에서 Try it out,window=swagger]
 
 카드의 최상위 댓글을 최신순으로 한 페이지 조회합니다. 각 댓글에 답글 수·좋아요 수·내 좋아요 여부가 함께 담기고,
 `totalCount`는 답글을 포함한 카드 전체 댓글 수입니다. 존재하지 않는 카드면 404(`COMMENT_CARD_NOT_FOUND`)를 반환합니다.
 
-operation::training_comment/list[snippets='http-request,path-parameters,query-parameters,http-response,response-fields']
+operation::trainingcomment/list[snippets='http-request,path-parameters,query-parameters,http-response,response-fields']
 
 === 댓글 답글 조회
 
-link:{swagger-ui}#/TrainingComment/training_comment-reply-list[▶ Swagger에서 Try it out,window=swagger]
+link:{swagger-ui}#/TrainingComment/trainingcomment-reply-list[▶ Swagger에서 Try it out,window=swagger]
 
 최상위 댓글의 답글을 오래된 순으로 한 페이지 조회합니다. 응답 형식은 카드 댓글 조회와 같고 `totalCount`는 스레드의 답글 수입니다.
 
-operation::training_comment/reply-list[snippets='http-request,path-parameters,query-parameters,http-response,response-fields']
+operation::trainingcomment/reply-list[snippets='http-request,path-parameters,query-parameters,http-response,response-fields']
 
 최상위 댓글이 없거나 답글 ID를 전달하면 404(`COMMENT_NOT_FOUND`)를 반환합니다.
 
-operation::training_comment/reply-list-error[snippets='http-response,response-fields']
+operation::trainingcomment/reply-list-error[snippets='http-response,response-fields']
 
 === 카드별 댓글 수 조회
 
-link:{swagger-ui}#/TrainingComment/training_comment-counts[▶ Swagger에서 Try it out,window=swagger]
+link:{swagger-ui}#/TrainingComment/trainingcomment-counts[▶ Swagger에서 Try it out,window=swagger]
 
 여러 카드의 댓글 수를 답글까지 포함해 한 번에 조회합니다. 댓글이 없는 카드는 응답에 없습니다.
 
-operation::training_comment/counts[snippets='http-request,query-parameters,http-response,response-fields']
+operation::trainingcomment/counts[snippets='http-request,query-parameters,http-response,response-fields']
 
 === 카드 댓글 작성
 
-link:{swagger-ui}#/TrainingComment/training_comment-create[▶ Swagger에서 Try it out,window=swagger]
+link:{swagger-ui}#/TrainingComment/trainingcomment-create[▶ Swagger에서 Try it out,window=swagger]
 
 카드에 댓글을 작성하고 201과 작성된 댓글을 반환합니다. 존재하지 않는 카드면 404(`COMMENT_CARD_NOT_FOUND`)를 반환합니다.
 
-operation::training_comment/create[snippets='http-request,path-parameters,request-fields,http-response,response-fields']
+operation::trainingcomment/create[snippets='http-request,path-parameters,request-fields,http-response,response-fields']
 
 본문이 공백뿐이거나 500자를 넘으면 400(`COMMENT_INVALID_CONTENT`)을 반환합니다.
 
-operation::training_comment/create-error[snippets='http-response,response-fields']
+operation::trainingcomment/create-error[snippets='http-response,response-fields']
 
 === 댓글 답글 작성
 
-link:{swagger-ui}#/TrainingComment/training_comment-reply-create[▶ Swagger에서 Try it out,window=swagger]
+link:{swagger-ui}#/TrainingComment/trainingcomment-reply-create[▶ Swagger에서 Try it out,window=swagger]
 
 댓글에 답글을 작성하고 201과 작성된 답글을 반환합니다. 답글에 답글을 달면 같은 스레드에 붙고 `parentId`에 답한 답글이 남습니다.
 존재하지 않는 댓글이면 404(`COMMENT_NOT_FOUND`)를 반환합니다.
 
-operation::training_comment/reply-create[snippets='http-request,path-parameters,request-fields,http-response,response-fields']
+operation::trainingcomment/reply-create[snippets='http-request,path-parameters,request-fields,http-response,response-fields']
 
 === 댓글 좋아요
 
-link:{swagger-ui}#/TrainingComment/training_comment-like[▶ Swagger에서 Try it out,window=swagger]
+link:{swagger-ui}#/TrainingComment/trainingcomment-like[▶ Swagger에서 Try it out,window=swagger]
 
 좋아요 추가와 취소는 멱등이며 각각 갱신된 좋아요 수와 내 좋아요 여부를 반환합니다. 존재하지 않는 댓글이면 404(`COMMENT_NOT_FOUND`)를 반환합니다.
 
-operation::training_comment/like[snippets='http-request,path-parameters,http-response,response-fields']
-operation::training_comment/unlike[snippets='http-request,path-parameters,http-response,response-fields']
+operation::trainingcomment/like[snippets='http-request,path-parameters,http-response,response-fields']
+operation::trainingcomment/unlike[snippets='http-request,path-parameters,http-response,response-fields']
 
 == AI API
 

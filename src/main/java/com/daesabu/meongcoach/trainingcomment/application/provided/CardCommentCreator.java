@@ -1,6 +1,6 @@
-package com.daesabu.meongcoach.training_comment.application.provided;
+package com.daesabu.meongcoach.trainingcomment.application.provided;
 
-import com.daesabu.meongcoach.training_comment.application.provided.dto.CommentCreateRequest;
+import com.daesabu.meongcoach.trainingcomment.application.provided.dto.CommentCreateRequest;
 
 public interface CardCommentCreator {
 

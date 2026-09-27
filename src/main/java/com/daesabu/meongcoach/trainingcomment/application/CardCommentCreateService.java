@@ -1,12 +1,12 @@
-package com.daesabu.meongcoach.training_comment.application;
+package com.daesabu.meongcoach.trainingcomment.application;
 
 import com.daesabu.meongcoach.training.application.provided.CardFinder;
-import com.daesabu.meongcoach.training_comment.application.provided.CardCommentCreator;
-import com.daesabu.meongcoach.training_comment.application.provided.CommentResult;
-import com.daesabu.meongcoach.training_comment.application.provided.dto.CommentCreateRequest;
-import com.daesabu.meongcoach.training_comment.application.required.CardCommentRepository;
-import com.daesabu.meongcoach.training_comment.domain.CardComment;
-import com.daesabu.meongcoach.training_comment.domain.exception.CardNotFoundException;
+import com.daesabu.meongcoach.trainingcomment.application.provided.CardCommentCreator;
+import com.daesabu.meongcoach.trainingcomment.application.provided.CommentResult;
+import com.daesabu.meongcoach.trainingcomment.application.provided.dto.CommentCreateRequest;
+import com.daesabu.meongcoach.trainingcomment.application.required.CardCommentRepository;
+import com.daesabu.meongcoach.trainingcomment.domain.CardComment;
+import com.daesabu.meongcoach.trainingcomment.domain.exception.CardNotFoundException;
 import com.daesabu.meongcoach.user.application.provided.UserProfileFinder;
 import java.util.Map;
 import java.util.Set;
