@@ -1,4 +1,4 @@
-package com.daesabu.meongcoach.cardcomment.domain.exception;
+package com.daesabu.meongcoach.training_comment.domain.exception;
 
 import com.daesabu.meongcoach.shared.exception.DomainException;
 

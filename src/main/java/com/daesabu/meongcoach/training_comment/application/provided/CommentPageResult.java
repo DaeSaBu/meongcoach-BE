@@ -1,4 +1,4 @@
-package com.daesabu.meongcoach.cardcomment.application.provided;
+package com.daesabu.meongcoach.training_comment.application.provided;
 
 import java.util.List;
 

@@ -1,6 +1,6 @@
-package com.daesabu.meongcoach.cardcomment.adapter.webapi.dto;
+package com.daesabu.meongcoach.training_comment.adapter.webapi.dto;
 
-import com.daesabu.meongcoach.cardcomment.application.provided.CardCommentCountResult;
+import com.daesabu.meongcoach.training_comment.application.provided.CardCommentCountResult;
 import java.util.List;
 
 public record CommentCountsResponse(List<CardCommentCountResponse> counts) {

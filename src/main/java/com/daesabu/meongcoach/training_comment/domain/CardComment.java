@@ -1,7 +1,7 @@
-package com.daesabu.meongcoach.cardcomment.domain;
+package com.daesabu.meongcoach.training_comment.domain;
 
-import com.daesabu.meongcoach.cardcomment.domain.exception.InvalidCommentContentException;
 import com.daesabu.meongcoach.shared.domain.BaseEntity;
+import com.daesabu.meongcoach.training_comment.domain.exception.InvalidCommentContentException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;

@@ -1,4 +1,4 @@
-package com.daesabu.meongcoach.cardcomment.application.required;
+package com.daesabu.meongcoach.training_comment.application.required;
 
 import java.time.LocalDateTime;
 
