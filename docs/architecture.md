@@ -14,7 +14,7 @@ com.daesabu.meongcoach
 ├── user         ← 회원 역할·상태·프로필
 ├── dog          ← 반려견 프로필
 ├── training     ← 훈련 콘텐츠 카탈로그
-├── training_comment ← 교육 콘텐츠 댓글·답글·좋아요 (지금은 교육 카드 대상)
+├── trainingcomment ← 교육 콘텐츠 댓글·답글·좋아요 (지금은 교육 카드 대상)
 ├── progress     ← 학습 진도
 ├── ai           ← AI 영상 분석 리포트 (SQS 컨슈머, EvoLink 연동)
 ├── media        ← 이미지·영상 업로드 URL 발급 (R2/S3)
@@ -47,7 +47,7 @@ com.daesabu.meongcoach
   - enum·값 객체 같은 **도메인 타입은 `domain/shared`에 두고 `package-info.java`에 `@NamedInterface("shared")`를 선언해 그대로 노출**합니다. (선례: `dog/domain/shared`의 `Breed`) `DomainPurityTest`가 `domain`의 스프링 의존을 막으므로 타입에 직접 `@NamedInterface`를 붙일 수 없고 package-info로만 선언합니다. 엔티티·일급 컬렉션은 영속 상태에 묶이므로 노출하지 않습니다.
   - projection·집계·여러 애그리거트 조합처럼 **도메인 타입 하나로 표현할 수 없는 값만 provided 패키지의 `~Result` record**로 둡니다. (선례: `TopicSummary`, `VideoUploadUrlResult`)
 - **서비스 입력은 provided 패키지의 `~Request` record로 받습니다.** 컨트롤러와 다른 모듈이 같은 record를 넘기며, `domain`의 `~Command`는 노출하지 않고 provided record가 `toCommand()`로 변환합니다. (선례: `auth/application/provided/dto`, `UserProfileRegisterRequest`)
-- **모듈 간 의존은 단방향입니다.** `auth → user`, `training_comment → training`처럼 한쪽만 참조하고, 다른 모듈의 엔티티는 연관 대신 ID로 참조합니다. (선례: `RefreshToken.userId`, `CardComment.cardId`) 양쪽에 걸친 흐름은 참조하는 쪽이 조율합니다 — 탈퇴는 `auth`의 `AuthenticationService`가 자격증명·토큰을 정리한 뒤 `user`의 `UserRegister.withdraw`를 호출합니다.
+- **모듈 간 의존은 단방향입니다.** `auth → user`, `trainingcomment → training`처럼 한쪽만 참조하고, 다른 모듈의 엔티티는 연관 대신 ID로 참조합니다. (선례: `RefreshToken.userId`, `CardComment.cardId`) 양쪽에 걸친 흐름은 참조하는 쪽이 조율합니다 — 탈퇴는 `auth`의 `AuthenticationService`가 자격증명·토큰을 정리한 뒤 `user`의 `UserRegister.withdraw`를 호출합니다.
 - **`application/provided`에는 `package-info.java`로 `@NamedInterface("provided")`를 선언합니다.** 선언하지 않으면 Modulith가 이 패키지를 모듈 내부로 취급해 다른 모듈에서의 호출이 `verify()`에서 실패합니다.
 - `shared`는 보안·설정 등 횡단 관심사만 담습니다. 모든 모듈이 `shared`를 참조할 수 있지만, `shared`는 어떤 모듈도 참조하지 않습니다.
 

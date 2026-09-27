@@ -1,12 +1,12 @@
 # 트레이닝 댓글
 
-교육 콘텐츠에 달리는 댓글·답글·좋아요는 `training_comment` 모듈이 소유한다. 기준 코드는 `src/main/java/com/daesabu/meongcoach/training_comment`다. 지금 댓글이 붙는 대상은 교육 카드뿐이다.
+교육 콘텐츠에 달리는 댓글·답글·좋아요는 `trainingcomment` 모듈이 소유한다. 기준 코드는 `src/main/java/com/daesabu/meongcoach/trainingcomment`다. 지금 댓글이 붙는 대상은 교육 카드뿐이다.
 
 ## 모듈 경계
 
-- `training_comment`는 `training`과 `user`에 단방향으로 의존한다. `training`의 `CardFinder`로 카드 존재를 확인하고, `user`의 `UserProfileFinder`로 작성자 닉네임을 받는다.
-- `training`은 `training_comment`를 참조하지 않는다. 카드 목록 응답에 댓글 수가 없는 이유다. 앱은 댓글 수 일괄 조회 API로 레슨에 속한 카드들의 댓글 수를 한 번에 받는다.
-- 댓글 도메인은 `Card`·`Lesson`·`User` 엔티티를 참조하지 않고 ID 값만 저장한다. `architecture/LayerDependencyTest`가 `training_comment.domain`의 `training`·`user` 참조를 막는다.
+- `trainingcomment`는 `training`과 `user`에 단방향으로 의존한다. `training`의 `CardFinder`로 카드 존재를 확인하고, `user`의 `UserProfileFinder`로 작성자 닉네임을 받는다.
+- `training`은 `trainingcomment`를 참조하지 않는다. 카드 목록 응답에 댓글 수가 없는 이유다. 앱은 댓글 수 일괄 조회 API로 레슨에 속한 카드들의 댓글 수를 한 번에 받는다.
+- 댓글 도메인은 `Card`·`Lesson`·`User` 엔티티를 참조하지 않고 ID 값만 저장한다. `architecture/LayerDependencyTest`가 `trainingcomment.domain`의 `training`·`user` 참조를 막는다.
 - 카탈로그와 분리한 이유는 댓글이 사용자 생성 콘텐츠이기 때문이다. 카탈로그 옆에 사용자 데이터를 따로 두는 것은 `progress`와 같은 방식이다.
 - 모듈 이름을 카드가 아니라 트레이닝으로 둔 이유는 레슨처럼 카드 밖의 교육 콘텐츠에도 댓글이 붙을 수 있기 때문이다. 엔티티와 테이블 이름은 지금의 대상인 카드를 따른다.
 
@@ -66,5 +66,5 @@
 - 댓글 삭제: 소프트 딜리트 여부, 답글이 남은 댓글의 표시, 집계 제외 방식.
 - 댓글 수정: "수정됨" 표시 여부, 수정 가능 기간.
 - 신고·차단: 앱 스토어 UGC 심사 기준을 맞추는 데 필요하다. 커뮤니티 댓글과 함께 쓰는 모더레이션 기능으로 붙인다.
-- 알림: 댓글·답글 작성 시 `training_comment` 모듈이 이벤트를 발행하고 알림 모듈이 구독하는 방식으로 붙인다. `Card`와 `CardComment` 사이에 양방향 참조를 두지 않는다.
+- 알림: 댓글·답글 작성 시 `trainingcomment` 모듈이 이벤트를 발행하고 알림 모듈이 구독하는 방식으로 붙인다. `Card`와 `CardComment` 사이에 양방향 참조를 두지 않는다.
 - 카드 밖의 대상: 레슨 등 다른 교육 콘텐츠에 댓글이 붙을지, 붙는다면 카드 댓글과 같은 규칙인지.
