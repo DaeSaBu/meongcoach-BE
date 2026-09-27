@@ -15,10 +15,10 @@ import lombok.NoArgsConstructor;
  */
 @Getter
 @Entity
-@Table(name = "comment_likes")
-@IdClass(CommentLikeId.class)
+@Table(name = "card_comment_likes")
+@IdClass(CardCommentLikeId.class)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class CommentLike extends BaseTimeEntity {
+public class CardCommentLike extends BaseTimeEntity {
 
 	@Id
 	@Column(nullable = false)
@@ -28,12 +28,12 @@ public class CommentLike extends BaseTimeEntity {
 	@Column(nullable = false)
 	private Long userId;
 
-	private CommentLike(Long commentId, Long userId) {
+	private CardCommentLike(Long commentId, Long userId) {
 		this.commentId = commentId;
 		this.userId = userId;
 	}
 
-	public static CommentLike create(Long commentId, Long userId) {
-		return new CommentLike(commentId, userId);
+	public static CardCommentLike create(Long commentId, Long userId) {
+		return new CardCommentLike(commentId, userId);
 	}
 }

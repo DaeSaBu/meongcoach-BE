@@ -1,11 +1,11 @@
 package com.daesabu.meongcoach.community.application;
 
-import com.daesabu.meongcoach.community.application.provided.CommentLiker;
+import com.daesabu.meongcoach.community.application.provided.CardCommentLiker;
 import com.daesabu.meongcoach.community.application.provided.LikeStateResult;
-import com.daesabu.meongcoach.community.application.required.CommentLikeRepository;
-import com.daesabu.meongcoach.community.application.required.CommentRepository;
-import com.daesabu.meongcoach.community.domain.CommentLike;
-import com.daesabu.meongcoach.community.domain.CommentLikeId;
+import com.daesabu.meongcoach.community.application.required.CardCommentLikeRepository;
+import com.daesabu.meongcoach.community.application.required.CardCommentRepository;
+import com.daesabu.meongcoach.community.domain.CardCommentLike;
+import com.daesabu.meongcoach.community.domain.CardCommentLikeId;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,20 +16,20 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class CommentLikeService implements CommentLiker {
+public class CardCommentLikeService implements CardCommentLiker {
 
-	private final CommentRepository commentRepository;
+	private final CardCommentRepository commentRepository;
 
-	private final CommentLikeRepository likeRepository;
+	private final CardCommentLikeRepository likeRepository;
 
 	@Override
 	@Transactional
 	public LikeStateResult like(Long userId, Long commentId) {
 		// 없는 댓글이면 여기서 CommentNotFoundException이 난다
 		commentRepository.getComment(commentId);
-		CommentLikeId id = new CommentLikeId(commentId, userId);
+		CardCommentLikeId id = new CardCommentLikeId(commentId, userId);
 		if (!likeRepository.existsById(id)) {
-			likeRepository.save(CommentLike.create(commentId, userId));
+			likeRepository.save(CardCommentLike.create(commentId, userId));
 		}
 		return state(commentId, true);
 	}
@@ -38,7 +38,7 @@ public class CommentLikeService implements CommentLiker {
 	@Transactional
 	public LikeStateResult unlike(Long userId, Long commentId) {
 		commentRepository.getComment(commentId);
-		CommentLikeId id = new CommentLikeId(commentId, userId);
+		CardCommentLikeId id = new CardCommentLikeId(commentId, userId);
 		likeRepository.findById(id).ifPresent(likeRepository::delete);
 		return state(commentId, false);
 	}

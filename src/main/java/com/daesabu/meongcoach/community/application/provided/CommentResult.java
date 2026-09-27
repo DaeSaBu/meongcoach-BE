@@ -1,6 +1,6 @@
 package com.daesabu.meongcoach.community.application.provided;
 
-import com.daesabu.meongcoach.community.domain.Comment;
+import com.daesabu.meongcoach.community.domain.CardComment;
 import java.time.LocalDateTime;
 
 /**
@@ -10,7 +10,7 @@ public record CommentResult(Long id, Long parentId, Long authorId, String author
                             LocalDateTime createdAt, long replyCount, long likeCount, boolean likedByMe) {
 
 	// 방금 작성한 댓글은 답글도 좋아요도 없다
-	public static CommentResult of(Comment comment, String authorNickname) {
+	public static CommentResult of(CardComment comment, String authorNickname) {
 		return new CommentResult(comment.getId(), comment.getParentId(), comment.getAuthorId(), authorNickname,
 				comment.getContent(), comment.getCreatedAt(), 0, 0, false);
 	}

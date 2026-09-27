@@ -333,7 +333,7 @@ operation::training/topic-select-error[snippets='http-response,response-fields']
 link:{swagger-ui}#/Community/community-list[▶ Swagger에서 Try it out,window=swagger]
 
 카드의 최상위 댓글을 최신순으로 한 페이지 조회합니다. 각 댓글에 답글 수·좋아요 수·내 좋아요 여부가 함께 담기고,
-`totalCount`는 답글을 포함한 카드 전체 댓글 수입니다. 존재하지 않는 카드면 404(`COMMENT_TARGET_NOT_FOUND`)를 반환합니다.
+`totalCount`는 답글을 포함한 카드 전체 댓글 수입니다. 존재하지 않는 카드면 404(`COMMENT_CARD_NOT_FOUND`)를 반환합니다.
 
 operation::community/list[snippets='http-request,path-parameters,query-parameters,http-response,response-fields']
 
@@ -361,7 +361,7 @@ operation::community/counts[snippets='http-request,query-parameters,http-respons
 
 link:{swagger-ui}#/Community/community-create[▶ Swagger에서 Try it out,window=swagger]
 
-카드에 댓글을 작성하고 201과 작성된 댓글을 반환합니다. 존재하지 않는 카드면 404(`COMMENT_TARGET_NOT_FOUND`)를 반환합니다.
+카드에 댓글을 작성하고 201과 작성된 댓글을 반환합니다. 존재하지 않는 카드면 404(`COMMENT_CARD_NOT_FOUND`)를 반환합니다.
 
 operation::community/create[snippets='http-request,path-parameters,request-fields,http-response,response-fields']
 
