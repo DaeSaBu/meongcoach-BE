@@ -1,4 +1,4 @@
-package com.daesabu.meongcoach.comment.domain;
+package com.daesabu.meongcoach.community.domain;
 
 import java.io.Serializable;
 import java.util.Objects;

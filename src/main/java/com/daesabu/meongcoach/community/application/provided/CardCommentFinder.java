@@ -1,4 +1,4 @@
-package com.daesabu.meongcoach.comment.application.provided;
+package com.daesabu.meongcoach.community.application.provided;
 
 import java.util.List;
 import java.util.Set;

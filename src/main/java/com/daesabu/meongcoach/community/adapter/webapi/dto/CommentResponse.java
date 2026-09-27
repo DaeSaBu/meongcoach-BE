@@ -1,6 +1,6 @@
-package com.daesabu.meongcoach.comment.adapter.webapi.dto;
+package com.daesabu.meongcoach.community.adapter.webapi.dto;
 
-import com.daesabu.meongcoach.comment.application.provided.CommentResult;
+import com.daesabu.meongcoach.community.application.provided.CommentResult;
 import java.time.LocalDateTime;
 
 public record CommentResponse(Long id, Long parentId, Long authorId, String authorNickname, boolean mine,

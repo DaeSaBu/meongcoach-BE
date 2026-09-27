@@ -1,6 +1,6 @@
-package com.daesabu.meongcoach.comment.adapter.webapi.dto;
+package com.daesabu.meongcoach.community.adapter.webapi.dto;
 
-import com.daesabu.meongcoach.comment.application.provided.CardCommentCountResult;
+import com.daesabu.meongcoach.community.application.provided.CardCommentCountResult;
 
 public record CardCommentCountResponse(Long cardId, long totalCount) {
 

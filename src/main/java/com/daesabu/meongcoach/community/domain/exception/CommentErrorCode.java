@@ -1,4 +1,4 @@
-package com.daesabu.meongcoach.comment.domain.exception;
+package com.daesabu.meongcoach.community.domain.exception;
 
 import com.daesabu.meongcoach.shared.exception.ErrorCode;
 

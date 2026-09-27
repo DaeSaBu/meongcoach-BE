@@ -1,6 +1,6 @@
-package com.daesabu.meongcoach.comment.domain;
+package com.daesabu.meongcoach.community.domain;
 
-import com.daesabu.meongcoach.comment.domain.exception.InvalidCommentContentException;
+import com.daesabu.meongcoach.community.domain.exception.InvalidCommentContentException;
 import com.daesabu.meongcoach.shared.domain.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

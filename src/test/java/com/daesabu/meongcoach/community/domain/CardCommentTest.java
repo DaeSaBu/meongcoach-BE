@@ -1,9 +1,9 @@
-package com.daesabu.meongcoach.comment.domain;
+package com.daesabu.meongcoach.community.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.daesabu.meongcoach.comment.domain.exception.InvalidCommentContentException;
+import com.daesabu.meongcoach.community.domain.exception.InvalidCommentContentException;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 

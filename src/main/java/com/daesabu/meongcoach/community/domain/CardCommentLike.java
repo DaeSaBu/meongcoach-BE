@@ -1,4 +1,4 @@
-package com.daesabu.meongcoach.comment.domain;
+package com.daesabu.meongcoach.community.domain;
 
 import com.daesabu.meongcoach.shared.domain.BaseTimeEntity;
 import jakarta.persistence.Column;

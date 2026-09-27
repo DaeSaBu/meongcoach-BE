@@ -1,6 +1,6 @@
-package com.daesabu.meongcoach.comment.adapter.webapi.dto;
+package com.daesabu.meongcoach.community.adapter.webapi.dto;
 
-import com.daesabu.meongcoach.comment.application.provided.CommentPageResult;
+import com.daesabu.meongcoach.community.application.provided.CommentPageResult;
 import java.util.List;
 
 public record CommentListResponse(List<CommentResponse> comments, long totalCount, Long nextCursor) {

@@ -1,4 +1,4 @@
-package com.daesabu.meongcoach.comment.application.required;
+package com.daesabu.meongcoach.community.application.required;
 
 import java.time.LocalDateTime;
 

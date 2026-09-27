@@ -1,6 +1,6 @@
-package com.daesabu.meongcoach.comment.application.provided;
+package com.daesabu.meongcoach.community.application.provided;
 
-import com.daesabu.meongcoach.comment.domain.CardComment;
+import com.daesabu.meongcoach.community.domain.CardComment;
 import java.time.LocalDateTime;
 
 /**

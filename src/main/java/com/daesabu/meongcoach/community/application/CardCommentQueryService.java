@@ -1,14 +1,14 @@
-package com.daesabu.meongcoach.comment.application;
+package com.daesabu.meongcoach.community.application;
 
-import com.daesabu.meongcoach.comment.application.provided.CardCommentCountResult;
-import com.daesabu.meongcoach.comment.application.provided.CardCommentFinder;
-import com.daesabu.meongcoach.comment.application.provided.CommentPageResult;
-import com.daesabu.meongcoach.comment.application.provided.CommentResult;
-import com.daesabu.meongcoach.comment.application.required.CardCommentRepository;
-import com.daesabu.meongcoach.comment.application.required.CardCommentSummary;
-import com.daesabu.meongcoach.comment.domain.CardComment;
-import com.daesabu.meongcoach.comment.domain.exception.CardNotFoundException;
-import com.daesabu.meongcoach.comment.domain.exception.CommentNotFoundException;
+import com.daesabu.meongcoach.community.application.provided.CardCommentCountResult;
+import com.daesabu.meongcoach.community.application.provided.CardCommentFinder;
+import com.daesabu.meongcoach.community.application.provided.CommentPageResult;
+import com.daesabu.meongcoach.community.application.provided.CommentResult;
+import com.daesabu.meongcoach.community.application.required.CardCommentRepository;
+import com.daesabu.meongcoach.community.application.required.CardCommentSummary;
+import com.daesabu.meongcoach.community.domain.CardComment;
+import com.daesabu.meongcoach.community.domain.exception.CardNotFoundException;
+import com.daesabu.meongcoach.community.domain.exception.CommentNotFoundException;
 import com.daesabu.meongcoach.training.application.provided.CardFinder;
 import com.daesabu.meongcoach.user.application.provided.UserProfileFinder;
 import java.util.List;

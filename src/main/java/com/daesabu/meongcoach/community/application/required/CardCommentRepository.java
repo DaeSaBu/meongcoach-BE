@@ -1,8 +1,8 @@
-package com.daesabu.meongcoach.comment.application.required;
+package com.daesabu.meongcoach.community.application.required;
 
-import com.daesabu.meongcoach.comment.application.provided.CardCommentCountResult;
-import com.daesabu.meongcoach.comment.domain.CardComment;
-import com.daesabu.meongcoach.comment.domain.exception.CommentNotFoundException;
+import com.daesabu.meongcoach.community.application.provided.CardCommentCountResult;
+import com.daesabu.meongcoach.community.domain.CardComment;
+import com.daesabu.meongcoach.community.domain.exception.CommentNotFoundException;
 import java.util.List;
 import java.util.Set;
 import org.springframework.data.domain.Pageable;
@@ -15,7 +15,7 @@ public interface CardCommentRepository extends JpaRepository<CardComment, Long> 
 
 	// 답글 수·좋아요 수·내 좋아요 여부를 서브쿼리로 함께 집계한다. 작성자 닉네임은 user 모듈에서 따로 받아 합친다
 	String SUMMARY_SELECT = """
-			select new com.daesabu.meongcoach.comment.application.required.CardCommentSummary(
+			select new com.daesabu.meongcoach.community.application.required.CardCommentSummary(
 				c.id, c.parentId, c.authorId, c.content, c.createdAt,
 				(select count(r) from CardComment r where r.rootId = c.id),
 				(select count(l) from CardCommentLike l where l.commentId = c.id),
@@ -43,7 +43,7 @@ public interface CardCommentRepository extends JpaRepository<CardComment, Long> 
 
 	long countByRootId(Long rootId);
 
-	@Query("select new com.daesabu.meongcoach.comment.application.provided.CardCommentCountResult(c.cardId, count(c)) "
+	@Query("select new com.daesabu.meongcoach.community.application.provided.CardCommentCountResult(c.cardId, count(c)) "
 			+ "from CardComment c where c.cardId in :cardIds group by c.cardId")
 	List<CardCommentCountResult> countByCardIds(@Param("cardIds") Set<Long> cardIds);
 
