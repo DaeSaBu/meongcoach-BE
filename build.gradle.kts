@@ -178,6 +178,7 @@ val postProcessOpenApiSpec = tasks.register("postProcessOpenApiSpec") {
 		"onboarding" to "Onboarding",
 		"health" to "Health",
 		"training" to "Training",
+		"trainingcomment" to "TrainingComment",
 		"ai" to "AI",
 		"dog" to "Dog",
 	)
