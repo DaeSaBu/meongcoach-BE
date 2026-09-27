@@ -323,69 +323,69 @@ operation::training/topic-select[snippets='http-request,path-parameters,http-res
 
 operation::training/topic-select-error[snippets='http-response,response-fields']
 
-== Community API
+== Card Comment API
 
 교육 카드에 달리는 댓글·답글·좋아요입니다. 댓글과 답글은 같은 응답 형식을 쓰며, 답글은 `parentId`에 답한 대상을 담습니다.
 목록은 커서 페이지네이션이며 `nextCursor`가 null이면 마지막 페이지입니다. 한 페이지는 20건이고 페이지 크기는 정할 수 없습니다.
 
 === 카드 댓글 조회
 
-link:{swagger-ui}#/Community/community-list[▶ Swagger에서 Try it out,window=swagger]
+link:{swagger-ui}#/CardComment/cardcomment-list[▶ Swagger에서 Try it out,window=swagger]
 
 카드의 최상위 댓글을 최신순으로 한 페이지 조회합니다. 각 댓글에 답글 수·좋아요 수·내 좋아요 여부가 함께 담기고,
 `totalCount`는 답글을 포함한 카드 전체 댓글 수입니다. 존재하지 않는 카드면 404(`COMMENT_CARD_NOT_FOUND`)를 반환합니다.
 
-operation::community/list[snippets='http-request,path-parameters,query-parameters,http-response,response-fields']
+operation::cardcomment/list[snippets='http-request,path-parameters,query-parameters,http-response,response-fields']
 
 === 댓글 답글 조회
 
-link:{swagger-ui}#/Community/community-reply-list[▶ Swagger에서 Try it out,window=swagger]
+link:{swagger-ui}#/CardComment/cardcomment-reply-list[▶ Swagger에서 Try it out,window=swagger]
 
 최상위 댓글의 답글을 오래된 순으로 한 페이지 조회합니다. 응답 형식은 카드 댓글 조회와 같고 `totalCount`는 스레드의 답글 수입니다.
 
-operation::community/reply-list[snippets='http-request,path-parameters,query-parameters,http-response,response-fields']
+operation::cardcomment/reply-list[snippets='http-request,path-parameters,query-parameters,http-response,response-fields']
 
 최상위 댓글이 없거나 답글 ID를 전달하면 404(`COMMENT_NOT_FOUND`)를 반환합니다.
 
-operation::community/reply-list-error[snippets='http-response,response-fields']
+operation::cardcomment/reply-list-error[snippets='http-response,response-fields']
 
 === 카드별 댓글 수 조회
 
-link:{swagger-ui}#/Community/community-counts[▶ Swagger에서 Try it out,window=swagger]
+link:{swagger-ui}#/CardComment/cardcomment-counts[▶ Swagger에서 Try it out,window=swagger]
 
 여러 카드의 댓글 수를 답글까지 포함해 한 번에 조회합니다. 댓글이 없는 카드는 응답에 없습니다.
 
-operation::community/counts[snippets='http-request,query-parameters,http-response,response-fields']
+operation::cardcomment/counts[snippets='http-request,query-parameters,http-response,response-fields']
 
 === 카드 댓글 작성
 
-link:{swagger-ui}#/Community/community-create[▶ Swagger에서 Try it out,window=swagger]
+link:{swagger-ui}#/CardComment/cardcomment-create[▶ Swagger에서 Try it out,window=swagger]
 
 카드에 댓글을 작성하고 201과 작성된 댓글을 반환합니다. 존재하지 않는 카드면 404(`COMMENT_CARD_NOT_FOUND`)를 반환합니다.
 
-operation::community/create[snippets='http-request,path-parameters,request-fields,http-response,response-fields']
+operation::cardcomment/create[snippets='http-request,path-parameters,request-fields,http-response,response-fields']
 
 본문이 공백뿐이거나 500자를 넘으면 400(`COMMENT_INVALID_CONTENT`)을 반환합니다.
 
-operation::community/create-error[snippets='http-response,response-fields']
+operation::cardcomment/create-error[snippets='http-response,response-fields']
 
 === 댓글 답글 작성
 
-link:{swagger-ui}#/Community/community-reply-create[▶ Swagger에서 Try it out,window=swagger]
+link:{swagger-ui}#/CardComment/cardcomment-reply-create[▶ Swagger에서 Try it out,window=swagger]
 
 댓글에 답글을 작성하고 201과 작성된 답글을 반환합니다. 답글에 답글을 달면 같은 스레드에 붙고 `parentId`에 답한 답글이 남습니다.
 존재하지 않는 댓글이면 404(`COMMENT_NOT_FOUND`)를 반환합니다.
 
-operation::community/reply-create[snippets='http-request,path-parameters,request-fields,http-response,response-fields']
+operation::cardcomment/reply-create[snippets='http-request,path-parameters,request-fields,http-response,response-fields']
 
 === 댓글 좋아요
 
-link:{swagger-ui}#/Community/community-like[▶ Swagger에서 Try it out,window=swagger]
+link:{swagger-ui}#/CardComment/cardcomment-like[▶ Swagger에서 Try it out,window=swagger]
 
 좋아요 추가와 취소는 멱등이며 각각 갱신된 좋아요 수와 내 좋아요 여부를 반환합니다. 존재하지 않는 댓글이면 404(`COMMENT_NOT_FOUND`)를 반환합니다.
 
-operation::community/like[snippets='http-request,path-parameters,http-response,response-fields']
-operation::community/unlike[snippets='http-request,path-parameters,http-response,response-fields']
+operation::cardcomment/like[snippets='http-request,path-parameters,http-response,response-fields']
+operation::cardcomment/unlike[snippets='http-request,path-parameters,http-response,response-fields']
 
 == AI API
 
