@@ -14,14 +14,16 @@ import static org.springframework.restdocs.request.RequestDocumentation.queryPar
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.daesabu.meongcoach.community.application.provided.CardCommentCountResult;
-import com.daesabu.meongcoach.community.application.provided.CardCommentCreator;
-import com.daesabu.meongcoach.community.application.provided.CardCommentFinder;
-import com.daesabu.meongcoach.community.application.provided.CardCommentLiker;
+import com.daesabu.meongcoach.community.application.provided.CommentCountResult;
+import com.daesabu.meongcoach.community.application.provided.CommentCreator;
+import com.daesabu.meongcoach.community.application.provided.CommentFinder;
+import com.daesabu.meongcoach.community.application.provided.CommentLiker;
 import com.daesabu.meongcoach.community.application.provided.CommentPageResult;
 import com.daesabu.meongcoach.community.application.provided.CommentResult;
 import com.daesabu.meongcoach.community.application.provided.LikeStateResult;
 import com.daesabu.meongcoach.community.application.provided.dto.CommentCreateRequest;
+import com.daesabu.meongcoach.community.domain.CommentTarget;
+import com.daesabu.meongcoach.community.domain.CommentTargetType;
 import com.daesabu.meongcoach.community.domain.exception.CommentNotFoundException;
 import com.daesabu.meongcoach.community.domain.exception.InvalidCommentContentException;
 import java.security.Principal;
@@ -38,13 +40,15 @@ import org.springframework.restdocs.payload.JsonFieldType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-@WebMvcTest(CardCommentController.class)
+@WebMvcTest(CommentController.class)
 @AutoConfigureRestDocs
-class CardCommentControllerTest {
+class CommentControllerTest {
 
 	private static final Long USER_ID = 42L;
 
 	private static final Principal CURRENT_USER = () -> "42";
+
+	private static final CommentTarget CARD = CommentTarget.card(7L);
 
 	private static final LocalDateTime CREATED_AT = LocalDateTime.parse("2026-09-25T02:10:00");
 
@@ -52,19 +56,19 @@ class CardCommentControllerTest {
 	private MockMvc mockMvc;
 
 	@MockitoBean
-	private CardCommentFinder commentFinder;
+	private CommentFinder commentFinder;
 
 	@MockitoBean
-	private CardCommentCreator commentCreator;
+	private CommentCreator commentCreator;
 
 	@MockitoBean
-	private CardCommentLiker commentLiker;
+	private CommentLiker commentLiker;
 
 	@Test
 	void 카드의_최상위_댓글을_집계와_함께_한_페이지_조회한다() throws Exception {
 		CommentResult mine = new CommentResult(12L, null, USER_ID, "멍멍이집사", "댓글", CREATED_AT, 1, 3, true);
 		CommentResult others = new CommentResult(11L, null, 43L, "두부집사", "다른 댓글", CREATED_AT, 0, 0, false);
-		given(commentFinder.findComments(USER_ID, 7L, 20L)).willReturn(new CommentPageResult(List.of(mine, others), 5, 11L));
+		given(commentFinder.findComments(USER_ID, CARD, 20L)).willReturn(new CommentPageResult(List.of(mine, others), 5, 11L));
 
 		mockMvc.perform(get("/api/training/cards/{cardId}/comments", 7L)
 						.queryParam("cursor", "20")
@@ -103,7 +107,7 @@ class CardCommentControllerTest {
 
 	@Test
 	void 댓글이_없으면_빈_목록과_0을_반환한다() throws Exception {
-		given(commentFinder.findComments(USER_ID, 7L, null)).willReturn(new CommentPageResult(List.of(), 0, null));
+		given(commentFinder.findComments(USER_ID, CARD, null)).willReturn(new CommentPageResult(List.of(), 0, null));
 
 		mockMvc.perform(get("/api/training/cards/{cardId}/comments", 7L).principal(CURRENT_USER))
 				.andExpect(status().isOk())
@@ -168,10 +172,10 @@ class CardCommentControllerTest {
 
 	@Test
 	void 카드별_댓글_수를_일괄_조회한다() throws Exception {
-		List<CardCommentCountResult> counts = List.of(
-				new CardCommentCountResult(7L, 4),
-				new CardCommentCountResult(8L, 1));
-		given(commentFinder.countComments(Set.of(7L, 8L, 9L))).willReturn(counts);
+		List<CommentCountResult> counts = List.of(
+				new CommentCountResult(7L, 4),
+				new CommentCountResult(8L, 1));
+		given(commentFinder.countComments(CommentTargetType.CARD, Set.of(7L, 8L, 9L))).willReturn(counts);
 
 		mockMvc.perform(get("/api/training/comments/counts")
 						.queryParam("cardIds", "7", "8", "9")
@@ -191,7 +195,7 @@ class CardCommentControllerTest {
 	@Test
 	void 댓글을_작성하면_201과_비어_있는_집계를_반환한다() throws Exception {
 		CommentResult comment = new CommentResult(12L, null, USER_ID, "멍멍이집사", "댓글", CREATED_AT, 0, 0, false);
-		given(commentCreator.createComment(USER_ID, 7L, new CommentCreateRequest("댓글"))).willReturn(comment);
+		given(commentCreator.createComment(USER_ID, CARD, new CommentCreateRequest("댓글"))).willReturn(comment);
 
 		mockMvc.perform(post("/api/training/cards/{cardId}/comments", 7L)
 						.principal(CURRENT_USER).header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
@@ -222,7 +226,7 @@ class CardCommentControllerTest {
 
 	@Test
 	void 잘못된_댓글_본문은_400과_에러_코드를_반환한다() throws Exception {
-		given(commentCreator.createComment(USER_ID, 7L, new CommentCreateRequest("   ")))
+		given(commentCreator.createComment(USER_ID, CARD, new CommentCreateRequest("   ")))
 				.willThrow(new InvalidCommentContentException());
 
 		mockMvc.perform(post("/api/training/cards/{cardId}/comments", 7L)
