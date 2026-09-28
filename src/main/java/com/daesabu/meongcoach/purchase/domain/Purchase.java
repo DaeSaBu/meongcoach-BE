@@ -5,6 +5,8 @@ import static java.util.Objects.requireNonNull;
 import com.daesabu.meongcoach.shared.domain.BaseTimeEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -19,7 +21,7 @@ import lombok.NoArgsConstructor;
 
 /**
  * 스토어 구매 한 건. 결제 이력과 환불 판단의 기준이며, 이 구매로 얻은 권한은 entitlement 모듈이 따로 가진다.
- * 상품·스토어는 RevenueCat이 정의하는 값이라 enum으로 복제하지 않고 웹훅 값을 그대로 저장한다.
+ * 상품은 스토어 콘솔에서 계속 늘어나는 값이라 웹훅 값을 그대로 저장하고, 스토어는 판매 경로가 정해져 있어 Store로 저장한다.
  * 바뀌는 값은 환불 시각뿐이라 수정 시각 없이 생성 시각만 기록한다.
  */
 @Getter
@@ -49,9 +51,10 @@ public class Purchase extends BaseTimeEntity {
 	@Column(nullable = false, length = 100)
 	private String productId;
 
-	// 구매가 일어난 스토어(웹훅 store) 원본. APP_STORE·PLAY_STORE·PROMOTIONAL 등
+	// 구매가 일어난 스토어(웹훅 store)
+	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, length = 30)
-	private String store;
+	private Store store;
 
 	// 결제 통화 기준 가격(웹훅 price_in_purchased_currency). 스토어가 알려 주지 않으면 null
 	@Column(precision = 19, scale = 4)

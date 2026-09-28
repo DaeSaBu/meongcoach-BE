@@ -10,6 +10,7 @@ import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;
 import com.daesabu.meongcoach.purchase.application.provided.dto.PurchaseRegisterRequest;
 import com.daesabu.meongcoach.purchase.application.required.PurchaseRepository;
 import com.daesabu.meongcoach.purchase.domain.Purchase;
+import com.daesabu.meongcoach.purchase.domain.Store;
 import com.daesabu.meongcoach.user.application.UserQueryService;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.User;
@@ -105,7 +106,7 @@ class PurchaseModifyServiceTest {
 	}
 
 	private PurchaseRegisterRequest request(Long userId, Set<EntitlementType> entitlementTypes) {
-		return new PurchaseRegisterRequest(userId, TRANSACTION_ID, "meongcoach_all_lifetime", "TEST_STORE",
+		return new PurchaseRegisterRequest(userId, TRANSACTION_ID, "meongcoach_all_lifetime", Store.TEST_STORE,
 				new BigDecimal("6.99"), "USD", Instant.parse("2026-09-23T16:38:06Z"), entitlementTypes);
 	}
 }
