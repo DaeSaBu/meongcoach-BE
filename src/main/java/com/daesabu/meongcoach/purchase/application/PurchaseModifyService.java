@@ -46,7 +46,7 @@ public class PurchaseModifyService implements PurchaseRegister {
 
 		Purchase purchase = purchaseRepository.save(Purchase.register(userId, purchaseRegisterRequest.toCommand()));
 		entitlementGranter.grant(
-				new EntitlementGrantRequest(userId, purchase.getId(), purchaseRegisterRequest.entitlementIds())
+				new EntitlementGrantRequest(userId, purchase.getId(), purchaseRegisterRequest.entitlementTypes())
 		);
 	}
 
