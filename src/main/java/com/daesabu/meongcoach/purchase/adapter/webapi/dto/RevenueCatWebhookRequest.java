@@ -1,6 +1,8 @@
 package com.daesabu.meongcoach.purchase.adapter.webapi.dto;
 
+import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;
 import com.daesabu.meongcoach.purchase.application.provided.dto.PurchaseRegisterRequest;
+import com.daesabu.meongcoach.purchase.domain.Store;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.Valid;
@@ -11,6 +13,7 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * RevenueCat 웹훅 본문 중 구매 등록에 쓰는 부분만 담는다. 형식은 RevenueCat이 정하므로 provided Request로 바꿔 넘긴다.
@@ -52,10 +55,22 @@ public record RevenueCatWebhookRequest(@Valid @NotNull Event event) {
 			return Optional.of(userId);
 		}
 
+		// 스토어·entitlement 식별자를 enum으로 바꾸고, 모르는 값이면 예외로 등록을 거절한다
 		public PurchaseRegisterRequest toPurchaseRegisterRequest(Long userId) {
+			Store purchaseStore = Store.from(store);
+			Set<EntitlementType> entitlementTypes = entitlementTypes();
 			Instant purchasedAt = purchasedAt();
-			return new PurchaseRegisterRequest(userId, transactionId, productId, store, price, currency, purchasedAt,
-					entitlementIds);
+			return new PurchaseRegisterRequest(userId, transactionId, productId, purchaseStore, price, currency,
+					purchasedAt, entitlementTypes);
+		}
+
+		private Set<EntitlementType> entitlementTypes() {
+			if (entitlementIds == null) {
+				return Set.of();
+			}
+			return entitlementIds.stream()
+					.map(EntitlementType::from)
+					.collect(Collectors.toUnmodifiableSet());
 		}
 
 		private Instant purchasedAt() {

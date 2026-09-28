@@ -13,8 +13,10 @@ import static org.springframework.restdocs.payload.PayloadDocumentation.response
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;
 import com.daesabu.meongcoach.purchase.application.provided.PurchaseRegister;
 import com.daesabu.meongcoach.purchase.application.provided.dto.PurchaseRegisterRequest;
+import com.daesabu.meongcoach.purchase.domain.Store;
 import com.daesabu.meongcoach.user.domain.exception.UserNotFoundException;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -88,8 +90,8 @@ class RevenueCatWebhookControllerTest {
 				));
 
 		then(purchaseRegister).should().register(new PurchaseRegisterRequest(42L, TRANSACTION_ID,
-				"meongcoach_all_lifetime", "APP_STORE", new BigDecimal("6.99"), "USD",
-				Instant.ofEpochMilli(PURCHASED_AT_MS), Set.of("puppy", "junior", "adult", "senior")));
+				"meongcoach_all_lifetime", Store.APP_STORE, new BigDecimal("6.99"), "USD",
+				Instant.ofEpochMilli(PURCHASED_AT_MS), Set.of(EntitlementType.values())));
 	}
 
 	@Test
