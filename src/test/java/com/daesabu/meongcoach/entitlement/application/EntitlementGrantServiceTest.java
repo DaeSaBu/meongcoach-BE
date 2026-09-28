@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.daesabu.meongcoach.entitlement.application.provided.dto.EntitlementGrantRequest;
 import com.daesabu.meongcoach.entitlement.application.required.EntitlementRepository;
+import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;
+import java.util.EnumSet;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,7 +30,7 @@ class EntitlementGrantServiceTest {
 
 	@Test
 	void 구매로_받은_권한_수만큼_이용권이_저장된다() {
-		service.grant(new EntitlementGrantRequest(USER_ID, PURCHASE_ID, Set.of("puppy", "junior", "adult", "senior")));
+		service.grant(new EntitlementGrantRequest(USER_ID, PURCHASE_ID, EnumSet.allOf(EntitlementType.class)));
 
 		assertThat(entitlementRepository.findAll())
 				.hasSize(4)

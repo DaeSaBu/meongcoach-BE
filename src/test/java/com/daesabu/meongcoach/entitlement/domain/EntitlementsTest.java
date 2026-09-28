@@ -2,6 +2,8 @@ package com.daesabu.meongcoach.entitlement.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -13,12 +15,12 @@ class EntitlementsTest {
 
 	@Test
 	void 통합_상품_구매로_네_개의_권한이_오면_네_개의_이용권이_부여된다() {
-		List<Entitlement> granted = Entitlements.grant(USER_ID, PURCHASE_ID, Set.of("puppy", "junior", "adult", "senior"))
+		List<Entitlement> granted = Entitlements.grant(USER_ID, PURCHASE_ID, EnumSet.allOf(EntitlementType.class))
 				.toList();
 
 		assertThat(granted)
-				.extracting(Entitlement::getIdentifier)
-				.containsExactlyInAnyOrder("puppy", "junior", "adult", "senior");
+				.extracting(Entitlement::getType)
+				.containsExactlyInAnyOrder(EntitlementType.values());
 	}
 
 	@Test
@@ -30,7 +32,7 @@ class EntitlementsTest {
 
 	@Test
 	void 부여된_이용권은_구매한_회원과_구매를_가리키고_회수되지_않은_상태다() {
-		List<Entitlement> granted = Entitlements.grant(USER_ID, PURCHASE_ID, Set.of("puppy")).toList();
+		List<Entitlement> granted = Entitlements.grant(USER_ID, PURCHASE_ID, Set.of(EntitlementType.PUPPY)).toList();
 
 		assertThat(granted).singleElement().satisfies(entitlement -> {
 			assertThat(entitlement.getUserId()).isEqualTo(USER_ID);

@@ -11,7 +11,7 @@ class PurchaseTest {
 	private static final Long USER_ID = 1L;
 	private static final String TRANSACTION_ID = "170000869511114";
 	private static final String PRODUCT_ID = "meongcoach_puppy_lifetime";
-	private static final String STORE = "APP_STORE";
+	private static final Store STORE = Store.APP_STORE;
 	private static final BigDecimal PRICE = new BigDecimal("9900");
 	private static final String CURRENCY = "KRW";
 	private static final Instant PURCHASED_AT = Instant.parse("2026-09-24T03:00:00Z");

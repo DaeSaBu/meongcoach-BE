@@ -1,17 +1,15 @@
-package com.daesabu.meongcoach.purchase.domain.exception;
+package com.daesabu.meongcoach.entitlement.domain.exception;
 
 import com.daesabu.meongcoach.shared.exception.ErrorCode;
 
-public enum PurchaseErrorCode implements ErrorCode {
+public enum EntitlementErrorCode implements ErrorCode {
 
-	PURCHASE_UNSUPPORTED_STORE(400, "지원하지 않는 스토어입니다."),
-	PURCHASE_WEBHOOK_UNAUTHORIZED(401, "구매 웹훅 인증값이 올바르지 않습니다."),
-	;
+	ENTITLEMENT_UNSUPPORTED_TYPE(400, "지원하지 않는 이용권 종류입니다.");
 
 	private final int status;
 	private final String message;
 
-	PurchaseErrorCode(int status, String message) {
+	EntitlementErrorCode(int status, String message) {
 		this.status = status;
 		this.message = message;
 	}

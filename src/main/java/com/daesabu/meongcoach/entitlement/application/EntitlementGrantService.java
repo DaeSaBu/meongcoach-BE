@@ -23,7 +23,7 @@ public class EntitlementGrantService implements EntitlementGranter {
 		Entitlements entitlements = Entitlements.grant(
 				entitlementGrantRequest.userId(),
 				entitlementGrantRequest.purchaseId(),
-				entitlementGrantRequest.identifiers()
+				entitlementGrantRequest.types()
 		);
 		entitlementRepository.saveAll(entitlements.toList());
 	}

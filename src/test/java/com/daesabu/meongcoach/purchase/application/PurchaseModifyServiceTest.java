@@ -6,15 +6,18 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.daesabu.meongcoach.entitlement.application.EntitlementGrantService;
 import com.daesabu.meongcoach.entitlement.application.required.EntitlementRepository;
 import com.daesabu.meongcoach.entitlement.domain.Entitlement;
+import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;
 import com.daesabu.meongcoach.purchase.application.provided.dto.PurchaseRegisterRequest;
 import com.daesabu.meongcoach.purchase.application.required.PurchaseRepository;
 import com.daesabu.meongcoach.purchase.domain.Purchase;
+import com.daesabu.meongcoach.purchase.domain.Store;
 import com.daesabu.meongcoach.user.application.UserQueryService;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.User;
 import com.daesabu.meongcoach.user.domain.exception.UserNotFoundException;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.EnumSet;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,7 +51,7 @@ class PurchaseModifyServiceTest {
 
 	@Test
 	void 통합_상품을_구매하면_구매_한_건과_시기별_이용권_네_개가_저장된다() {
-		service.register(request(userId, Set.of("puppy", "junior", "adult", "senior")));
+		service.register(request(userId, EnumSet.allOf(EntitlementType.class)));
 
 		assertThat(purchaseRepository.findAll()).singleElement().satisfies(purchase -> {
 			assertThat(purchase.getUserId()).isEqualTo(userId);
@@ -56,13 +59,13 @@ class PurchaseModifyServiceTest {
 			assertThat(purchase.getProductId()).isEqualTo("meongcoach_all_lifetime");
 		});
 		assertThat(entitlementRepository.findAll())
-				.extracting(Entitlement::getIdentifier)
-				.containsExactlyInAnyOrder("puppy", "junior", "adult", "senior");
+				.extracting(Entitlement::getType)
+				.containsExactlyInAnyOrder(EntitlementType.values());
 	}
 
 	@Test
 	void 같은_거래가_다시_오면_구매와_이용권을_중복_저장하지_않는다() {
-		PurchaseRegisterRequest request = request(userId, Set.of("puppy"));
+		PurchaseRegisterRequest request = request(userId, Set.of(EntitlementType.PUPPY));
 		service.register(request);
 
 		service.register(request);
@@ -85,7 +88,7 @@ class PurchaseModifyServiceTest {
 		withdrawnUser.withdraw();
 		userRepository.flush();
 
-		service.register(request(withdrawnUser.getId(), Set.of("puppy")));
+		service.register(request(withdrawnUser.getId(), Set.of(EntitlementType.PUPPY)));
 
 		assertThat(purchaseRepository.findAll()).isEmpty();
 		assertThat(entitlementRepository.findAll()).isEmpty();
@@ -95,15 +98,15 @@ class PurchaseModifyServiceTest {
 	void 없는_회원의_구매면_예외를_던지고_저장하지_않는다() {
 		Long unknownUserId = userId + 1000;
 
-		assertThatThrownBy(() -> service.register(request(unknownUserId, Set.of("puppy"))))
+		assertThatThrownBy(() -> service.register(request(unknownUserId, Set.of(EntitlementType.PUPPY))))
 				.isInstanceOf(UserNotFoundException.class);
 
 		assertThat(purchaseRepository.findAll()).isEmpty();
 		assertThat(entitlementRepository.findAll()).isEmpty();
 	}
 
-	private PurchaseRegisterRequest request(Long userId, Set<String> entitlementIds) {
-		return new PurchaseRegisterRequest(userId, TRANSACTION_ID, "meongcoach_all_lifetime", "TEST_STORE",
-				new BigDecimal("6.99"), "USD", Instant.parse("2026-09-23T16:38:06Z"), entitlementIds);
+	private PurchaseRegisterRequest request(Long userId, Set<EntitlementType> entitlementTypes) {
+		return new PurchaseRegisterRequest(userId, TRANSACTION_ID, "meongcoach_all_lifetime", Store.TEST_STORE,
+				new BigDecimal("6.99"), "USD", Instant.parse("2026-09-23T16:38:06Z"), entitlementTypes);
 	}
 }
