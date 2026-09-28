@@ -1,6 +1,7 @@
 package com.daesabu.meongcoach.purchase.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.daesabu.meongcoach.entitlement.application.EntitlementGrantService;
 import com.daesabu.meongcoach.entitlement.application.required.EntitlementRepository;
@@ -11,6 +12,7 @@ import com.daesabu.meongcoach.purchase.domain.Purchase;
 import com.daesabu.meongcoach.user.application.UserQueryService;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.User;
+import com.daesabu.meongcoach.user.domain.exception.UserNotFoundException;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Set;
@@ -78,10 +80,23 @@ class PurchaseModifyServiceTest {
 	}
 
 	@Test
-	void 없는_회원의_구매는_저장하지_않는다() {
+	void 탈퇴한_회원의_구매는_저장하지_않는다() {
+		User withdrawnUser = userRepository.save(User.registerUser());
+		withdrawnUser.withdraw();
+		userRepository.flush();
+
+		service.register(request(withdrawnUser.getId(), Set.of("puppy")));
+
+		assertThat(purchaseRepository.findAll()).isEmpty();
+		assertThat(entitlementRepository.findAll()).isEmpty();
+	}
+
+	@Test
+	void 없는_회원의_구매면_예외를_던지고_저장하지_않는다() {
 		Long unknownUserId = userId + 1000;
 
-		service.register(request(unknownUserId, Set.of("puppy")));
+		assertThatThrownBy(() -> service.register(request(unknownUserId, Set.of("puppy"))))
+				.isInstanceOf(UserNotFoundException.class);
 
 		assertThat(purchaseRepository.findAll()).isEmpty();
 		assertThat(entitlementRepository.findAll()).isEmpty();
