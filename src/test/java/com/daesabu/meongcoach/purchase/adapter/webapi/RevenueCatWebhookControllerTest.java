@@ -1,7 +1,9 @@
 package com.daesabu.meongcoach.purchase.adapter.webapi;
 
 import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.document;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.BDDMockito.willThrow;
 import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
 import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.post;
@@ -13,6 +15,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.daesabu.meongcoach.purchase.application.provided.PurchaseRegister;
 import com.daesabu.meongcoach.purchase.application.provided.dto.PurchaseRegisterRequest;
+import com.daesabu.meongcoach.user.domain.exception.UserNotFoundException;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Set;
@@ -109,6 +112,28 @@ class RevenueCatWebhookControllerTest {
 				.andExpect(status().isOk());
 
 		then(purchaseRegister).shouldHaveNoInteractions();
+	}
+
+	@Test
+	void 없는_회원의_구매면_404와_에러_코드를_반환한다() throws Exception {
+		willThrow(new UserNotFoundException(42L)).given(purchaseRegister).register(any());
+
+		mockMvc.perform(post(WEBHOOK_PATH)
+						.header(HttpHeaders.AUTHORIZATION, WEBHOOK_AUTHORIZATION)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(webhook("NON_RENEWING_PURCHASE", "42")))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.code").value("USER_NOT_FOUND"))
+				.andDo(document("purchase/revenuecat-webhook-user-not-found-error",
+						responseFields(
+								fieldWithPath("title").description("HTTP 상태 이름"),
+								fieldWithPath("status").description("HTTP 상태 코드"),
+								fieldWithPath("detail").description("사람이 읽을 수 있는 에러 설명"),
+								fieldWithPath("instance").description("에러가 발생한 요청 경로"),
+								fieldWithPath("code").description("클라이언트 분기용 에러 코드"),
+								fieldWithPath("timestamp").description("에러 발생 시각(UTC)")
+						)
+				));
 	}
 
 	@Test
