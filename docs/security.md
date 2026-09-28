@@ -167,6 +167,7 @@ SHA-1 검증용이라 id_token의 `aud`가 되지 않습니다), 애플은 **iOS
 - `cors` — 프로파일별 `meongcoach.cors.allowed-origin-patterns`의 origin만 허용합니다 (허용 메서드: GET, POST, PUT, PATCH, DELETE, OPTIONS).
   CORS 필터가 체인 앞단에서 동작하므로 preflight는 인가 전에 처리되고, 401 응답에도 CORS 헤더가 실립니다.
   허용 목록 바인딩은 `shared/security/CorsProperties`, 빈 정의는 `SecurityConfig`에 둡니다.
+  웹 서비스가 없는 dev·prod에는 허용 목록을 두지 않아 교차 출처 요청을 모두 거부하고, local만 로컬 웹 개발용으로 `localhost`·`127.0.0.1`을 엽니다.
 - 헤더는 기본값 유지 — `X-Frame-Options: DENY`
 
 ### 인증 실패 응답
