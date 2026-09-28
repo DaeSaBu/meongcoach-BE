@@ -20,6 +20,7 @@ import com.daesabu.meongcoach.trainingcomment.domain.exception.CardNotFoundExcep
 import com.daesabu.meongcoach.trainingcomment.domain.exception.CommentNotFoundException;
 import com.daesabu.meongcoach.trainingcomment.domain.exception.InvalidCommentContentException;
 import com.daesabu.meongcoach.user.application.provided.UserProfileFinder;
+import jakarta.validation.ConstraintViolationException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -27,12 +28,16 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
+import org.springframework.boot.validation.autoconfigure.ValidationAutoConfiguration;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @DataJpaTest
+// @DataJpaTest는 검증 자동 설정을 불러오지 않아 서비스의 @Validated 메서드 검증을 켜려면 직접 가져와야 한다
+@ImportAutoConfiguration(ValidationAutoConfiguration.class)
 @Import({CardCommentQueryService.class, CardCommentCreateService.class, CardCommentLikeService.class})
 class CardCommentServiceTest {
 
@@ -241,8 +246,20 @@ class CardCommentServiceTest {
 	}
 
 	@Test
-	void 공백으로만_이루어진_본문은_저장하지_않는다() {
+	void 공백으로만_이루어진_본문은_검증에_실패하고_저장하지_않는다() {
 		assertThatThrownBy(() -> creator.createComment(USER_ID, CARD_ID, new CommentCreateRequest("   ")))
+				.isInstanceOf(ConstraintViolationException.class);
+		assertThatThrownBy(() -> creator.createComment(USER_ID, CARD_ID, new CommentCreateRequest(null)))
+				.isInstanceOf(ConstraintViolationException.class);
+
+		CommentPageResult page = finder.findComments(USER_ID, CARD_ID, null);
+		assertThat(page.comments()).isEmpty();
+		assertThat(page.totalCount()).isZero();
+	}
+
+	@Test
+	void 길이_제한을_넘는_본문은_저장하지_않는다() {
+		assertThatThrownBy(() -> creator.createComment(USER_ID, CARD_ID, new CommentCreateRequest("가".repeat(501))))
 				.isInstanceOf(InvalidCommentContentException.class);
 
 		CommentPageResult page = finder.findComments(USER_ID, CARD_ID, null);

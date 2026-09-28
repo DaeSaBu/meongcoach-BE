@@ -221,13 +221,34 @@ class CardCommentControllerTest {
 	}
 
 	@Test
-	void 잘못된_댓글_본문은_400과_에러_코드를_반환한다() throws Exception {
-		given(commentCreator.createComment(USER_ID, 7L, new CommentCreateRequest("   ")))
+	void 공백뿐인_댓글_본문은_검증에_실패한다() throws Exception {
+		mockMvc.perform(post("/api/training/cards/{cardId}/comments", 7L)
+						.principal(CURRENT_USER).header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
+						.contentType(MediaType.APPLICATION_JSON).content("{\"content\":\"   \"}"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
+				.andExpect(jsonPath("$.errors[0].field").value("content"));
+	}
+
+	@Test
+	void 본문이_없는_댓글은_검증에_실패한다() throws Exception {
+		mockMvc.perform(post("/api/training/cards/{cardId}/comments", 7L)
+						.principal(CURRENT_USER).header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
+						.contentType(MediaType.APPLICATION_JSON).content("{}"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
+				.andExpect(jsonPath("$.errors[0].field").value("content"));
+	}
+
+	@Test
+	void 길이_제한을_넘는_댓글_본문은_400과_에러_코드를_반환한다() throws Exception {
+		String content = "가".repeat(501);
+		given(commentCreator.createComment(USER_ID, 7L, new CommentCreateRequest(content)))
 				.willThrow(new InvalidCommentContentException());
 
 		mockMvc.perform(post("/api/training/cards/{cardId}/comments", 7L)
 						.principal(CURRENT_USER).header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
-						.contentType(MediaType.APPLICATION_JSON).content("{\"content\":\"   \"}"))
+						.contentType(MediaType.APPLICATION_JSON).content("{\"content\":\"" + content + "\"}"))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.code").value("COMMENT_INVALID_CONTENT"))
 				.andDo(document("trainingcomment/create-error",
@@ -267,6 +288,16 @@ class CardCommentControllerTest {
 								fieldWithPath("replyCount").description("항상 0"),
 								fieldWithPath("likeCount").description("좋아요 수. 작성 직후에는 0"),
 								fieldWithPath("likedByMe").description("내 좋아요 여부. 작성 직후에는 false"))));
+	}
+
+	@Test
+	void 공백뿐인_답글_본문은_검증에_실패한다() throws Exception {
+		mockMvc.perform(post("/api/training/comments/{commentId}/replies", 12L)
+						.principal(CURRENT_USER).header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
+						.contentType(MediaType.APPLICATION_JSON).content("{\"content\":\"   \"}"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
+				.andExpect(jsonPath("$.errors[0].field").value("content"));
 	}
 
 	@Test
