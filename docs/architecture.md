@@ -106,4 +106,6 @@ HTTP 요청
 
 `architecture/ModularityTest`가 `ApplicationModules.verify()`로 모듈 경계 위반을 검증합니다.
 
+같은 테스트가 Spring Modulith `Documenter`로 모듈 구조 문서도 만듭니다. 테스트를 실행하면 `build/spring-modulith-docs/`에 모듈 의존 다이어그램(`components.puml`, `module-{모듈}.puml`)과 모듈별 공개 API·빈 목록(`module-{모듈}.adoc`)이 생깁니다. 생성물은 커밋하지 않으며, IntelliJ PlantUML·AsciiDoc 플러그인으로 열어 봅니다.
+
 클래스 네이밍 규칙은 [code-convention 스킬](../.claude/skills/code-convention/SKILL.md)을 따릅니다.
