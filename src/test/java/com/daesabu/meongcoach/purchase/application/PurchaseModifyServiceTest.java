@@ -20,7 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 
 @DataJpaTest
-class PurchaseRegisterServiceTest {
+class PurchaseModifyServiceTest {
 
 	private static final String TRANSACTION_ID = "test_1790181485867_15EC5536-9647-4D92-B357-19A8D4495B5A";
 
@@ -33,13 +33,13 @@ class PurchaseRegisterServiceTest {
 	@Autowired
 	private EntitlementRepository entitlementRepository;
 
-	private PurchaseRegisterService service;
+	private PurchaseModifyService service;
 
 	private Long userId;
 
 	@BeforeEach
 	void setUp() {
-		service = new PurchaseRegisterService(new UserQueryService(userRepository), purchaseRepository,
+		service = new PurchaseModifyService(new UserQueryService(userRepository), purchaseRepository,
 				new EntitlementGrantService(entitlementRepository));
 		userId = userRepository.save(User.registerUser()).getId();
 	}

@@ -18,7 +18,7 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
-public class PurchaseRegisterService implements PurchaseRegister {
+public class PurchaseModifyService implements PurchaseRegister {
 
 	private final UserFinder userFinder;
 	private final PurchaseRepository purchaseRepository;
