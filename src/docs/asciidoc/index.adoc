@@ -365,7 +365,7 @@ link:{swagger-ui}#/TrainingComment/trainingcomment-create[▶ Swagger에서 Try 
 
 operation::trainingcomment/create[snippets='http-request,path-parameters,request-fields,http-response,response-fields']
 
-본문이 공백뿐이거나 500자를 넘으면 400(`COMMENT_INVALID_CONTENT`)을 반환합니다.
+본문이 없거나 공백뿐이면 <<_입력값_검증_실패,입력값 검증 실패>> 형식의 400(`BAD_REQUEST`)을, 앞뒤 공백을 제거한 본문이 500자를 넘으면 400(`COMMENT_INVALID_CONTENT`)을 반환합니다. 답글 작성도 같습니다.
 
 operation::trainingcomment/create-error[snippets='http-response,response-fields']
 
