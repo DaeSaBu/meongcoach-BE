@@ -37,16 +37,18 @@ public class PurchaseModifyService implements PurchaseRegister {
 			log.warn("이미 처리된 결제건 입니다 transactionId={}", purchaseRegisterRequest.transactionId());
 			return;
 		}
-		Long userId = purchaseRegisterRequest.userId();
-		if (!userFinder.isActiveUser(userId)) {
-			log.warn("탈퇴한 회원의 구매라 저장하지 않음: userId={}, transactionId={}", userId,
+
+		if (!userFinder.isActiveUser(purchaseRegisterRequest.userId())) {
+			log.warn("탈퇴한 회원의 구매라 저장하지 않음: userId={}, transactionId={}", purchaseRegisterRequest.userId(),
 					purchaseRegisterRequest.transactionId());
 			return;
 		}
 
-		Purchase purchase = purchaseRepository.save(Purchase.register(userId, purchaseRegisterRequest.toCommand()));
+		Purchase purchase = purchaseRepository.save(
+				Purchase.register(purchaseRegisterRequest.userId(), purchaseRegisterRequest.toCommand()));
 		entitlementGranter.grant(
-				new EntitlementGrantRequest(userId, purchase.getId(), purchaseRegisterRequest.entitlementTypes())
+				new EntitlementGrantRequest(purchase.getUserId(), purchase.getId(),
+						purchaseRegisterRequest.entitlementTypes())
 		);
 	}
 
