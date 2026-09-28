@@ -16,7 +16,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * RevenueCat 웹훅 수신. 처리하지 않는 이벤트와 저장할 수 없는 구매도 200으로 끝낸다.
- * 2xx가 아니면 RevenueCat이 같은 이벤트를 재전송하는데, 이런 이벤트는 다시 받아도 결과가 같기 때문이다.
+ * 200이 아니면 RevenueCat이 같은 이벤트를 최대 5회 재전송하는데, 이런 이벤트는 다시 받아도 결과가 같기 때문이다.
+ * 없는 회원의 구매만 예외로 실패시킨다. 실패한 이벤트는 대시보드에 남아, 회원 매핑을 고친 뒤 Retry로 다시 받아 복구한다.
  */
 @Slf4j
 @RestController
