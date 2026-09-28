@@ -13,6 +13,7 @@ import com.daesabu.meongcoach.trainingcomment.application.provided.CommentPageRe
 import com.daesabu.meongcoach.trainingcomment.application.provided.CommentResult;
 import com.daesabu.meongcoach.trainingcomment.application.provided.LikeStateResult;
 import com.daesabu.meongcoach.trainingcomment.application.provided.dto.CommentCreateRequest;
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
@@ -61,7 +62,7 @@ public class CardCommentController {
 	@PostMapping("/cards/{cardId}/comments")
 	@ResponseStatus(HttpStatus.CREATED)
 	public CommentResponse createComment(@CurrentUserId Long userId, @PathVariable Long cardId,
-	                                     @RequestBody CommentCreateRequest request) {
+	                                     @Valid @RequestBody CommentCreateRequest request) {
 		CommentResult result = commentCreator.createComment(userId, cardId, request);
 		return CommentResponse.from(result, userId);
 	}
@@ -69,7 +70,7 @@ public class CardCommentController {
 	@PostMapping("/comments/{commentId}/replies")
 	@ResponseStatus(HttpStatus.CREATED)
 	public CommentResponse createReply(@CurrentUserId Long userId, @PathVariable Long commentId,
-	                                   @RequestBody CommentCreateRequest request) {
+	                                   @Valid @RequestBody CommentCreateRequest request) {
 		CommentResult result = commentCreator.createReply(userId, commentId, request);
 		return CommentResponse.from(result, userId);
 	}

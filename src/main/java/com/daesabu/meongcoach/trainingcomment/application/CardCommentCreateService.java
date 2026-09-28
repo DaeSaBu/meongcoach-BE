@@ -13,12 +13,14 @@ import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 
 /**
  * 댓글·답글 작성 서비스. 카드 존재는 training 모듈에, 작성자 닉네임은 user 모듈에 묻는다.
  */
 @Service
 @RequiredArgsConstructor
+@Validated
 @Transactional(readOnly = true)
 public class CardCommentCreateService implements CardCommentCreator {
 

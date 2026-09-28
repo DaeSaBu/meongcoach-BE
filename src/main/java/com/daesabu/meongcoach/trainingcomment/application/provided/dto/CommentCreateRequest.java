@@ -1,9 +1,11 @@
 package com.daesabu.meongcoach.trainingcomment.application.provided.dto;
 
 import com.daesabu.meongcoach.trainingcomment.domain.CardCommentCreateCommand;
+import jakarta.validation.constraints.NotBlank;
 
-// 본문 검증은 CardComment가 도메인 규칙으로 수행하므로 제약 어노테이션을 두지 않는다
-public record CommentCreateRequest(String content) {
+public record CommentCreateRequest(
+		// 길이 위반은 전용 에러 코드로 내려야 해서 길이 검증은 CardComment가 맡는다
+		@NotBlank String content) {
 
 	public CardCommentCreateCommand toCommand(Long cardId, Long authorId) {
 		return new CardCommentCreateCommand(cardId, authorId, content);
