@@ -23,9 +23,9 @@ import java.time.Instant;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -33,8 +33,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(RevenueCatWebhookController.class)
 @AutoConfigureRestDocs
-// 컨트롤러 슬라이스에는 @ConfigurationPropertiesScan이 적용되지 않아 컨트롤러가 쓰는 설정을 직접 등록한다
-@EnableConfigurationProperties(RevenueCatWebhookProperties.class)
+@Import(RevenueCatPurchaseTranslator.class)
 class RevenueCatWebhookControllerTest {
 
 	private static final String WEBHOOK_PATH = "/api/webhooks/revenuecat";
@@ -165,6 +164,18 @@ class RevenueCatWebhookControllerTest {
 		mockMvc.perform(post(WEBHOOK_PATH)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(webhook("NON_RENEWING_PURCHASE", "42")))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.code").value("PURCHASE_WEBHOOK_UNAUTHORIZED"));
+
+		then(purchaseRegister).shouldHaveNoInteractions();
+	}
+
+	@Test
+	void 인증값이_틀리면_본문이_잘못돼도_401을_반환한다() throws Exception {
+		mockMvc.perform(post(WEBHOOK_PATH)
+						.header(HttpHeaders.AUTHORIZATION, "wrong-authorization")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{}"))
 				.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.code").value("PURCHASE_WEBHOOK_UNAUTHORIZED"));
 
