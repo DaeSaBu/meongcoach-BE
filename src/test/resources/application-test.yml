@@ -92,3 +92,4 @@ meongcoach:
       junior: entl_test_junior
       adult: entl_test_adult
       senior: entl_test_senior
+    webhook-authorization: test-revenuecat-webhook-authorization
