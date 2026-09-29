@@ -120,3 +120,9 @@ meongcoach:
       # id_token의 aud 후보. 안드로이드·서버 검증은 웹 클라이언트 ID, iOS는 iOS 클라이언트 ID라 쉼표로 나열한다.
       # 다른 앱에서 발급된 토큰을 걸러내는 값이므로 반드시 우리 앱의 클라이언트 ID만 넣는다
       audiences: ${GOOGLE_WEB_CLIENT_ID},${GOOGLE_IOS_CLIENT_ID}
+  revenuecat:
+    base-url: ${REVENUECAT_BASE_URL:https://api.revenuecat.com/v2}
+    # 대시보드 Project settings > API keys에서 만든 v2 secret 키. 구매 조회만 하므로 customer_information:purchases:read 권한만 준다.
+    # 기본값이 없어 미주입 시 기동에 실패한다
+    api-key: ${REVENUECAT_API_KEY}
+    project-id: ${REVENUECAT_PROJECT_ID}

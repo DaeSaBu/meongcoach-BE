@@ -83,3 +83,7 @@ meongcoach:
       public-base-url: https://videos.test.meongcoach.com
       upload-url-validity: PT15M
       download-url-validity: PT1H
+  revenuecat:
+    base-url: https://api.revenuecat.test/v2
+    api-key: test-revenuecat-api-key
+    project-id: proj_test

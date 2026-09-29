@@ -43,24 +43,24 @@ public class Purchase extends BaseTimeEntity {
 	@Column(name = "user_id", nullable = false)
 	private Long userId;
 
-	// 스토어 거래 ID(웹훅 transaction_id). 웹훅 재전송과 환불 후 재구매를 거래 단위로 구분한다
+	// 스토어 거래 ID(RevenueCat store_purchase_identifier). 반복 동기화와 환불 후 재구매를 거래 단위로 구분한다
 	@Column(name = "transaction_id", nullable = false, length = 100)
 	private String transactionId;
 
-	// 구매가 일어난 스토어(웹훅 store)
+	// 구매가 일어난 스토어
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, length = 30)
 	private Store store;
 
-	// 결제 통화 기준 가격(웹훅 price_in_purchased_currency). 스토어가 알려 주지 않으면 null
+	// RevenueCat이 USD로 환산한 매출(revenue_in_usd.gross, 세금·수수료 차감 전). 결제 통화 기준 가격이 아니다
 	@Column(precision = 19, scale = 4)
 	private BigDecimal price;
 
-	// ISO 4217 통화 코드(웹훅 currency). 스토어가 알려 주지 않으면 null
+	// price의 ISO 4217 통화 코드(revenue_in_usd.currency). RevenueCat 응답상 USD다
 	@Column(length = 3)
 	private String currency;
 
-	// 스토어에서 구매한 시각(웹훅 purchased_at_ms). 행을 기록한 시각은 createdAt이다
+	// 스토어에서 구매한 시각. 행을 기록한 시각은 createdAt이다
 	@Column(name = "purchased_at", nullable = false)
 	private Instant purchasedAt;
 

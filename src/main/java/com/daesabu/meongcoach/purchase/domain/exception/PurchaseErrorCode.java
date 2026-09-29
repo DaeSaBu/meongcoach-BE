@@ -5,6 +5,7 @@ import com.daesabu.meongcoach.shared.exception.ErrorCode;
 public enum PurchaseErrorCode implements ErrorCode {
 
 	PURCHASE_UNSUPPORTED_STORE(400, "지원하지 않는 스토어입니다."),
+	PURCHASE_STORE_UNAVAILABLE(502, "구매 내역을 확인하지 못했습니다. 잠시 후 다시 시도해 주세요."),
 	;
 
 	private final int status;
