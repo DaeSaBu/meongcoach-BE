@@ -50,6 +50,15 @@ class RevenueCatStorePurchaseReaderTest {
 	}
 
 	private static String purchase(String storePurchaseIdentifier, String status, String... lookupKeys) {
+		return purchaseJson(storePurchaseIdentifier, status, "app_store", lookupKeys);
+	}
+
+	private static String purchaseInStore(String storePurchaseIdentifier, String store, String... lookupKeys) {
+		return purchaseJson(storePurchaseIdentifier, "owned", store, lookupKeys);
+	}
+
+	private static String purchaseJson(String storePurchaseIdentifier, String status, String store,
+			String[] lookupKeys) {
 		String entitlements = String.join(",", Arrays.stream(lookupKeys)
 				.map(lookupKey -> """
 						{"object": "entitlement", "id": "entl_%s", "lookup_key": "%s", "display_name": "%s"}
@@ -69,11 +78,12 @@ class RevenueCatStorePurchaseReaderTest {
 				  "presented_offering_id": "default",
 				  "entitlements": {"object": "list", "items": [%s], "next_page": null, "url": "/v2/entitlements"},
 				  "environment": "sandbox",
-				  "store": "app_store",
+				  "store": "%s",
 				  "store_purchase_identifier": "%s",
 				  "ownership": "purchased"
 				}
-				""".formatted(storePurchaseIdentifier, PURCHASED_AT_MS, status, entitlements, storePurchaseIdentifier);
+				""".formatted(storePurchaseIdentifier, PURCHASED_AT_MS, status, entitlements, store,
+				storePurchaseIdentifier);
 	}
 
 	private static String purchases(String... items) {
@@ -104,6 +114,33 @@ class RevenueCatStorePurchaseReaderTest {
 				.andRespond(withSuccess(purchases(
 						purchase("2000000900000001", "refunded", "puppy"),
 						purchase("2000000900000002", "owned", "adult")
+				), MediaType.APPLICATION_JSON));
+
+		List<PurchaseRegisterRequest> requests = reader.readOwnedPurchases(USER_ID);
+
+		assertThat(requests).extracting(PurchaseRegisterRequest::transactionId).containsExactly("2000000900000002");
+	}
+
+	// 일부 이용권만 등록하면 거래가 저장되어, enum 배포 뒤 재동기화해도 중복 거래로 걸러져 빠진 이용권을 줄 수 없다
+	@Test
+	void 모르는_이용권이_하나라도_섞인_구매는_통째로_건너뛰고_나머지_구매는_반환한다() {
+		server.expect(requestTo(PURCHASES_URL))
+				.andRespond(withSuccess(purchases(
+						purchase("2000000900000001", "owned", "puppy", "unknown_plan"),
+						purchase("2000000900000002", "owned", "adult")
+				), MediaType.APPLICATION_JSON));
+
+		List<PurchaseRegisterRequest> requests = reader.readOwnedPurchases(USER_ID);
+
+		assertThat(requests).extracting(PurchaseRegisterRequest::transactionId).containsExactly("2000000900000002");
+	}
+
+	@Test
+	void 모르는_스토어의_구매는_건너뛰고_나머지_구매는_반환한다() {
+		server.expect(requestTo(PURCHASES_URL))
+				.andRespond(withSuccess(purchases(
+						purchaseInStore("2000000900000001", "stripe", "puppy"),
+						purchaseInStore("2000000900000002", "play_store", "adult")
 				), MediaType.APPLICATION_JSON));
 
 		List<PurchaseRegisterRequest> requests = reader.readOwnedPurchases(USER_ID);
