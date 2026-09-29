@@ -55,7 +55,7 @@ user-invocable: true
 - 메서드 어노테이션은 클래스 설정과 **병합되지 않고 통째로 대체**한다. `@Transactional(timeout = 5)`처럼 일부 속성만 쓰면 `readOnly`가 기본값 `false`로 리셋되므로, 조회 메서드에 다른 속성이 필요하면 `readOnly = true`를 함께 명시한다.
 - 같은 클래스 내부 호출(`this.method()`)은 프록시를 거치지 않아 트랜잭션이 걸리지 않는다. 별도 빈으로 분리해 해결하고, `AopContext.currentProxy()`나 자기 주입은 쓰지 않는다.
 	- 이렇게 분리한 빈은 모듈 공개 API가 아니므로 provided 인터페이스를 만들지 않고, 클래스와 메서드를 package-private으로 두어 같은 패키지의 호출 서비스만 쓰게 한다. 인터페이스가 없어 CGLIB 프록시가 되고, package-private 메서드에도 `@Transactional`이 적용된다. (살아있는 예시: `entitlement/application/EntitlementModifyService`)
-- `open-in-view: true`라 웹 요청에서 한번 빌린 DB 커넥션은 트랜잭션이 끝나도 **요청이 끝날 때까지 반납되지 않는다.** 커넥션은 트랜잭션을 시작할 때 빌리므로, 트랜잭션을 나누는 것만으로는 외부 API를 기다리는 동안 커넥션을 놓지 못한다. 외부 API 호출은 그 요청에서 DB를 처음 건드리기 전에 끝낸다. (살아있는 예시: `entitlement/application/EntitlementSyncService`, 근거: `learning/OsivConnectionLearningTest`)
+- `open-in-view: true`라 웹 요청에서 한번 빌린 DB 커넥션은 트랜잭션이 끝나도 **요청이 끝날 때까지 반납되지 않는다.** 커넥션은 트랜잭션을 시작할 때 빌리므로, 트랜잭션을 나누는 것만으로는 외부 API를 기다리는 동안 커넥션을 놓지 못한다. 외부 API 호출은 그 요청에서 DB를 처음 건드리기 전에 끝낸다. (살아있는 예시: `entitlement/application/EntitlementSyncService`)
 
 ---
 
