@@ -5,7 +5,6 @@ import com.daesabu.meongcoach.shared.exception.ErrorCode;
 public enum PurchaseErrorCode implements ErrorCode {
 
 	PURCHASE_UNSUPPORTED_STORE(400, "지원하지 않는 스토어입니다."),
-	PURCHASE_WEBHOOK_UNAUTHORIZED(401, "구매 웹훅 인증값이 올바르지 않습니다."),
 	;
 
 	private final int status;
