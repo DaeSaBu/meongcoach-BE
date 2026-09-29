@@ -87,3 +87,8 @@ meongcoach:
     base-url: https://api.revenuecat.test/v2
     api-key: test-revenuecat-api-key
     project-id: proj_test
+    entitlement-ids:
+      puppy: entl_test_puppy
+      junior: entl_test_junior
+      adult: entl_test_adult
+      senior: entl_test_senior
