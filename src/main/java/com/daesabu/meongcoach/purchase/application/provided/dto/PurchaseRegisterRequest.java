@@ -17,7 +17,6 @@ import java.util.Set;
 public record PurchaseRegisterRequest(
 		@NotNull Long userId,
 		@NotBlank String transactionId,
-		@NotBlank String productId,
 		@NotNull Store store,
 		BigDecimal price,
 		String currency,
@@ -30,6 +29,6 @@ public record PurchaseRegisterRequest(
 	}
 
 	public PurchaseRegisterCommand toCommand() {
-		return new PurchaseRegisterCommand(transactionId, productId, store, price, currency, purchasedAt);
+		return new PurchaseRegisterCommand(transactionId, store, price, currency, purchasedAt);
 	}
 }

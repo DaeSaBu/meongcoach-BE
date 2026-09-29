@@ -21,7 +21,7 @@ import lombok.NoArgsConstructor;
 
 /**
  * 스토어 구매 한 건. 결제 이력과 환불 판단의 기준이며, 이 구매로 얻은 권한은 entitlement 모듈이 따로 가진다.
- * 상품은 스토어 콘솔에서 계속 늘어나는 값이라 웹훅 값을 그대로 저장하고, 스토어는 판매 경로가 정해져 있어 Store로 저장한다.
+ * 무엇을 샀는지는 이 구매로 부여한 이용권 종류로 남으므로 상품 ID는 저장하지 않는다. 스토어는 판매 경로가 정해져 있어 Store로 저장한다.
  * 바뀌는 값은 환불 시각뿐이라 수정 시각 없이 생성 시각만 기록한다.
  */
 @Getter
@@ -46,10 +46,6 @@ public class Purchase extends BaseTimeEntity {
 	// 스토어 거래 ID(웹훅 transaction_id). 웹훅 재전송과 환불 후 재구매를 거래 단위로 구분한다
 	@Column(name = "transaction_id", nullable = false, length = 100)
 	private String transactionId;
-
-	// RevenueCat 상품 식별자(웹훅 product_id) 원본
-	@Column(nullable = false, length = 100)
-	private String productId;
 
 	// 구매가 일어난 스토어(웹훅 store)
 	@Enumerated(EnumType.STRING)
@@ -76,7 +72,6 @@ public class Purchase extends BaseTimeEntity {
 
 		purchase.userId = requireNonNull(userId);
 		purchase.transactionId = requireNonNull(command.transactionId());
-		purchase.productId = requireNonNull(command.productId());
 		purchase.store = requireNonNull(command.store());
 		purchase.price = command.price();
 		purchase.currency = command.currency();

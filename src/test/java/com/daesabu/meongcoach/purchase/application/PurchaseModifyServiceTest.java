@@ -56,7 +56,6 @@ class PurchaseModifyServiceTest {
 		assertThat(purchaseRepository.findAll()).singleElement().satisfies(purchase -> {
 			assertThat(purchase.getUserId()).isEqualTo(userId);
 			assertThat(purchase.getTransactionId()).isEqualTo(TRANSACTION_ID);
-			assertThat(purchase.getProductId()).isEqualTo("meongcoach_all_lifetime");
 		});
 		assertThat(entitlementRepository.findAll())
 				.extracting(Entitlement::getType)
@@ -106,7 +105,7 @@ class PurchaseModifyServiceTest {
 	}
 
 	private PurchaseRegisterRequest request(Long userId, Set<EntitlementType> entitlementTypes) {
-		return new PurchaseRegisterRequest(userId, TRANSACTION_ID, "meongcoach_all_lifetime", Store.TEST_STORE,
-				new BigDecimal("6.99"), "USD", Instant.parse("2026-09-23T16:38:06Z"), entitlementTypes);
+		return new PurchaseRegisterRequest(userId, TRANSACTION_ID, Store.TEST_STORE, new BigDecimal("6.99"), "USD",
+				Instant.parse("2026-09-23T16:38:06Z"), entitlementTypes);
 	}
 }
