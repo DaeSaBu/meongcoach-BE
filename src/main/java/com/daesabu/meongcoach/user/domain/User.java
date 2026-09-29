@@ -52,6 +52,10 @@ public class User extends BaseEntity {
 		return this.role == UserRole.ONBOARDING_USER;
 	}
 
+	public boolean isActive() {
+		return this.status == UserStatus.ACTIVE;
+	}
+
 	public void withdraw() {
 		this.status = UserStatus.WITHDRAWN;
 	}

@@ -72,4 +72,20 @@ class UserTest {
 
 		assertThat(user.getStatus()).isEqualTo(UserStatus.ACTIVE);
 	}
+
+	@Test
+	void 등록_직후에는_활성_회원이다() {
+		User user = User.registerUser();
+
+		assertThat(user.isActive()).isTrue();
+	}
+
+	@Test
+	void 탈퇴하면_활성_회원이_아니다() {
+		User user = User.registerUser();
+
+		user.withdraw();
+
+		assertThat(user.isActive()).isFalse();
+	}
 }

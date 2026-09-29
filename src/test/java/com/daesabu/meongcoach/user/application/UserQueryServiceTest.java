@@ -45,8 +45,9 @@ class UserQueryServiceTest {
 	}
 
 	@Test
-	void 없는_회원_ID면_false를_반환한다() {
-		assertThat(userQueryService.isActiveUser(UNREGISTERED_USER_ID)).isFalse();
+	void 없는_회원_ID로_활성_여부를_조회하면_예외를_던진다() {
+		assertThatThrownBy(() -> userQueryService.isActiveUser(UNREGISTERED_USER_ID))
+				.isInstanceOf(UserNotFoundException.class);
 	}
 
 	@Test
