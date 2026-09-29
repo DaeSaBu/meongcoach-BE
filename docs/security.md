@@ -159,7 +159,7 @@ SHA-1 검증용이라 id_token의 `aud`가 되지 않습니다), 애플은 **iOS
 - `SessionCreationPolicy.STATELESS`
 - permitAll: `/api/health`, `/api/auth/login/social`, `/api/auth/login/email`, `/api/auth/token/refresh`, `/api/auth/logout`
   (인증 엔드포인트만 개별 경로로 열고 `/api/auth/**`로 넓히지 않습니다. 이후 추가되는 인증 관련 API가 자동으로 공개되는 것을 막기 위함입니다)
-  - `/api/webhooks/revenuecat`은 JWT가 없는 RevenueCat이 호출하므로 열어 두고, `RevenueCatWebhookController`가 `Authorization` 헤더를
+  - `/api/webhooks/revenuecat`은 JWT가 없는 RevenueCat이 호출하므로 열어 두고, `RevenueCatWebhookAuthInterceptor`가 본문 검증보다 먼저 `Authorization` 헤더를
     `meongcoach.revenuecat.webhook-authorization`과 상수 시간으로 대조합니다(다르면 401 `PURCHASE_WEBHOOK_UNAUTHORIZED`).
     RevenueCat은 서명 없이 대시보드에 지정한 헤더 값을 그대로 보내기 때문입니다.
     **함정:** Bearer 토큰 필터는 permitAll 경로에서도 `Bearer `로 시작하는 헤더를 JWT로 검증해 401로 끊으므로, 대시보드 값에 `Bearer ` 접두어를 쓰지 않습니다
