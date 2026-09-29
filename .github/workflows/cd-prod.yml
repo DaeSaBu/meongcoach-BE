@@ -15,53 +15,16 @@ jobs:
       pull-requests: write
     uses: ./.github/workflows/ci.yml
 
-  release-check:
-    needs: ci
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      contents: read
-    outputs:
-      release_version: ${{ steps.release-version.outputs.value }}
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-        with:
-          fetch-depth: 0
-
-      # 배포마다 직전 릴리스의 마이너 버전을 1 올린다. 메이저 버전 변경은 이 워크플로가 다루지 않는다 — 별도로 수동 태깅한다.
-      - name: 다음 운영 버전 계산
-        id: release-version
-        run: |
-          # 이미 릴리스 tag가 붙은 commit의 재실행은 새 버전을 만들지 않는다.
-          ! git tag --points-at "${GITHUB_SHA}" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'
-
-          PREVIOUS_RELEASE=$(git tag --list 'v*' --sort=-version:refname |
-            grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' |
-            head -n 1 || true)
-
-          if [ -n "${PREVIOUS_RELEASE}" ]; then
-            IFS='.' read -r MAJOR MINOR _ <<< "${PREVIOUS_RELEASE#v}"
-            RELEASE_VERSION="v${MAJOR}.$((MINOR + 1)).0"
-          else
-            RELEASE_VERSION="v0.1.0"
-          fi
-
-          set +e
-          git ls-remote --exit-code --tags origin "refs/tags/${RELEASE_VERSION}" > /dev/null
-          TAG_STATUS=$?
-          set -e
-          test "${TAG_STATUS}" -eq 2
-
-          echo "value=${RELEASE_VERSION}" >> "${GITHUB_OUTPUT}"
-
   deploy:
-    needs: release-check
+    needs: ci
     if: >-
       github.workflow == 'CD - Prod' &&
       github.event_name == 'push' &&
       github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    outputs:
+      release_version: ${{ steps.release-version.outputs.value }}
     permissions:
       contents: write
       id-token: write
@@ -207,19 +170,26 @@ jobs:
           exit 1
 
       - name: 운영 배포 tag 생성
-        env:
-          RELEASE_VERSION: ${{ needs.release-check.outputs.release_version }}
+        id: release-version
         run: |
           # 이미 릴리스 tag가 붙은 commit의 재실행은 새 버전을 만들지 않는다.
-          ! git tag --points-at "${GITHUB_SHA}" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'
+          EXISTING_RELEASE=$(git tag --points-at "${GITHUB_SHA}" |
+            grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1 || true)
+          if [ -n "${EXISTING_RELEASE}" ]; then
+            echo "value=${EXISTING_RELEASE}" >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
 
           PREVIOUS_RELEASE=$(git tag --list 'v*' --sort=-version:refname |
             grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' |
             head -n 1 || true)
 
           if [ -n "${PREVIOUS_RELEASE}" ]; then
+            IFS='.' read -r MAJOR MINOR _ <<< "${PREVIOUS_RELEASE#v}"
+            RELEASE_VERSION="v${MAJOR}.$((MINOR + 1)).0"
             COMMIT_RANGE="${PREVIOUS_RELEASE}..${GITHUB_SHA}"
           else
+            RELEASE_VERSION="v0.1.0"
             COMMIT_RANGE="${GITHUB_SHA}"
           fi
 
@@ -236,9 +206,10 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git tag --annotate "${RELEASE_VERSION}" --file tag-message.txt "${GITHUB_SHA}"
           git push origin "refs/tags/${RELEASE_VERSION}"
+          echo "value=${RELEASE_VERSION}" >> "${GITHUB_OUTPUT}"
 
   notify:
-    needs: [ci, release-check, deploy]
+    needs: [ci, deploy]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -248,16 +219,13 @@ jobs:
         id: message
         env:
           CI_RESULT: ${{ needs.ci.result }}
-          RELEASE_CHECK_RESULT: ${{ needs.release-check.result }}
           DEPLOY_RESULT: ${{ needs.deploy.result }}
-          RELEASE_VERSION: ${{ needs.release-check.outputs.release_version }}
+          RELEASE_VERSION: ${{ needs.deploy.outputs.release_version }}
         run: |
           if [ "${DEPLOY_RESULT}" = "success" ]; then
             STATUS=":white_check_mark: 배포 성공"
           elif [ "${CI_RESULT}" != "success" ]; then
             STATUS=":x: 배포 실패 (ci: ${CI_RESULT})"
-          elif [ "${RELEASE_CHECK_RESULT}" != "success" ]; then
-            STATUS=":x: 배포 실패 (release-check: ${RELEASE_CHECK_RESULT})"
           else
             STATUS=":x: 배포 실패 (deploy: ${DEPLOY_RESULT})"
           fi
