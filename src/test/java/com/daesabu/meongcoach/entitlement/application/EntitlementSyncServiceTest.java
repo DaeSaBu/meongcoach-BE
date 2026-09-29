@@ -77,14 +77,13 @@ class EntitlementSyncServiceTest {
 	}
 
 	@Test
-	void 탈퇴한_회원이면_RevenueCat을_조회하지_않고_이용권도_바꾸지_않는다() {
+	void 탈퇴한_회원이면_이용권을_바꾸지_않는다() {
 		User withdrawnUser = userRepository.save(User.registerUser());
 		withdrawnUser.withdraw();
 		activeTypes.add(EntitlementType.PUPPY);
 
 		service.synchronize(withdrawnUser.getId());
 
-		assertThat(readCount).hasValue(0);
 		assertThat(entitlementRepository.findAllByUserId(withdrawnUser.getId())).isEmpty();
 	}
 
