@@ -20,4 +20,10 @@ public enum Store {
 				.findFirst()
 				.orElseThrow(() -> new UnsupportedStoreException(value));
 	}
+
+	// 모르는 스토어를 예외 없이 가려내야 하는 호출자(구매 동기화의 건별 건너뛰기)를 위해 from과 같은 규칙으로 판정한다
+	public static boolean isSupported(String value) {
+		return Arrays.stream(values())
+				.anyMatch(store -> store.name().equals(value));
+	}
 }

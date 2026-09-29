@@ -43,8 +43,22 @@ public class RevenueCatStorePurchaseReader implements StorePurchaseReader {
 		// 환불된 구매는 이용권을 주면 안 되므로 소유 중인 구매만 등록한다
 		return response.items().stream()
 				.filter(RevenueCatPurchasesResponse.Item::isOwned)
+				.filter(item -> isRegistrable(item, userId))
 				.map(item -> item.toPurchaseRegisterRequest(userId))
 				.toList();
+	}
+
+	/**
+	 * 대시보드에 우리 enum보다 먼저 추가한 이용권·스토어의 구매는 건너뛰어, 그 한 건이 회원의 다른 구매 등록까지 막지 않게 한다.
+	 * 건너뛴 구매는 저장되지 않으므로 enum을 배포한 뒤 다시 동기화하면 등록된다.
+	 */
+	private boolean isRegistrable(RevenueCatPurchasesResponse.Item item, Long userId) {
+		if (item.isSupported()) {
+			return true;
+		}
+		log.error("지원하지 않는 스토어·이용권이라 구매를 등록하지 않았습니다: userId={}, transactionId={}, store={}, lookupKeys={}",
+				userId, item.storePurchaseIdentifier(), item.store(), item.lookupKeys());
+		return false;
 	}
 
 	private RevenueCatPurchasesResponse fetchPurchases(Long userId) {
