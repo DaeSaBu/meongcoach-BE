@@ -42,7 +42,7 @@ user-invocable: true
 
 - `domain` 루트에는 엔티티·enum·일급 컬렉션·값 객체를 두고, 예외·에러코드는 `domain/exception`으로 분리한다. 값 객체용 하위 패키지(`vo`)는 만들지 않으며, 다른 모듈에 노출하는 값 객체만 `domain/shared`에 둔다.
 - 일급 컬렉션은 엔티티 하나로는 판단할 수 없는 규칙(마리 수 상한, 마지막 한 마리 삭제 금지처럼 한 사용자 소유 목록 전체를 봐야 하는 규칙)을 담을 때만 둔다. 영속화 단위가 아니라 application이 리포지토리로 조회한 목록을 생성자로 넘겨 만들며, 리포지토리를 참조하지 않는다. 규칙은 Spring 없는 단위 테스트로 검증한다. (살아있는 예시: `dog/domain/Dogs`)
-	- 입력 하나에서 여러 엔티티를 만들어 내는 생성 책임도 일급 컬렉션에 둔다. 이때는 조회 목록 대신 정적 팩토리로 만든 묶음을 호출자가 저장한다. (살아있는 예시: 구매 하나로 권한 N개를 만드는 `entitlement/domain/Entitlements`)
+	- 외부 원천의 상태에 맞추는 일(없던 항목 생성·빠진 항목 회수)도 한 사용자 소유 목록 전체를 봐야 하므로 일급 컬렉션에 둔다. 기존 행은 그 자리에서 바꾸고, 새로 만든 엔티티만 돌려줘 호출자가 저장한다. (살아있는 예시: RevenueCat 활성 이용권에 맞추는 `entitlement/domain/Entitlements`)
 - 일급 컬렉션의 규칙을 거쳐야만 호출할 수 있는 엔티티 메서드는 package-private으로 두어 application이 우회하지 못하게 한다. 같은 패키지의 도메인 단위 테스트는 그대로 호출하고, application 테스트는 일급 컬렉션을 경유해 상태를 만든다. (살아있는 예시: `Dog.delete()`)
 
 ---
@@ -77,7 +77,7 @@ user-invocable: true
 	- 이 규칙 이전에 만든 모듈(`dog`, `onboarding`, `training`, `ai`)의 요청 DTO는 아직 `adapter/webapi/dto`에 있다. 일괄 이동하지 않고 해당 API를 수정할 때 옮긴다.
 - 응답 DTO(`~Response`)는 `adapter/webapi/dto`에 둔다. 웹 노출 형태는 `adapter`의 관심사다. (예: `TokenResponse`)
 - 외부 API 응답 DTO는 `adapter/integration/dto`에 `~Response` record로 두고, 필드 매핑은 `@JsonProperty`로 지정한다. 전역 네이밍 전략(`spring.jackson.property-naming-strategy`)을 바꾸면 우리 API 응답까지 영향을 받으므로 쓰지 않는다.
-	- 외부 응답을 provided `~Request`로 바꿔 돌려줄 때, 등록하지 않을 항목 거르기·404를 "없음"으로 해석하기처럼 그 시스템에 한정된 판단은 `adapter/integration` 구현체에, 값 형식 변환(소문자 코드→enum, epoch ms→`Instant`)은 응답 record에 두어 application이 제공자를 모르게 한다. (살아있는 예시: `purchase/adapter/integration`의 `RevenueCatStorePurchaseReader`, `RevenueCatPurchasesResponse`)
+	- 외부 응답을 우리 어휘로 바꿀 때, 제공자 ID를 우리 enum으로 번역하기·404를 "없음"으로 해석하기처럼 그 시스템에 한정된 판단은 `adapter/integration` 구현체에, 필드 추출은 응답 record에 두어 application이 제공자를 모르게 한다. 번역하지 못한 항목을 어떻게 처리할지(건너뛰기·실패)가 업무 정책이면 application에서 정한다. (살아있는 예시: `entitlement/adapter/integration`의 `RevenueCatActiveEntitlementReader`, `RevenueCatActiveEntitlementsResponse`)
 - 도메인 입력 모델은 `~Command` 접미사의 record로 `domain`에 두며, 웹 DTO와 별개로 유지한다. (예: `DogRegisterCommand`)
 	- 엔티티 정적 팩토리의 순수 값 파라미터가 3개 이상이면 Command로 묶고, 팩토리는 Command를 받아 생성자에 전달한다.
 	- 연관 엔티티는 Command에 담지 않고 별도 인자로 전달한다. (예: `Curriculum.create(Topic topic, CurriculumCreateCommand command)`)
