@@ -1,6 +1,7 @@
 package com.daesabu.meongcoach.entitlement.domain.shared;
 
 import com.daesabu.meongcoach.entitlement.domain.exception.UnsupportedEntitlementTypeException;
+import java.util.Arrays;
 import java.util.Locale;
 
 /**
@@ -17,13 +18,19 @@ public enum EntitlementType {
 	;
 
 	public static EntitlementType from(String value) {
+		if (!isSupported(value)) {
+			throw new UnsupportedEntitlementTypeException(value);
+		}
+		return valueOf(value.toUpperCase(Locale.ROOT));
+	}
+
+	// 모르는 식별자를 예외 없이 가려내야 하는 호출자(구매 동기화의 건별 건너뛰기)를 위해 from과 같은 규칙으로 판정한다
+	public static boolean isSupported(String value) {
 		if (value == null || value.isBlank()) {
-			throw new UnsupportedEntitlementTypeException(value);
+			return false;
 		}
-		try {
-			return valueOf(value.toUpperCase(Locale.ROOT));
-		} catch (IllegalArgumentException e) {
-			throw new UnsupportedEntitlementTypeException(value);
-		}
+		String name = value.toUpperCase(Locale.ROOT);
+		return Arrays.stream(values())
+				.anyMatch(type -> type.name().equals(name));
 	}
 }
