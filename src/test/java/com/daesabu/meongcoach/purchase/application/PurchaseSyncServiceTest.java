@@ -16,6 +16,7 @@ import com.daesabu.meongcoach.user.domain.User;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -74,6 +75,24 @@ class PurchaseSyncServiceTest {
 
 		assertThat(purchaseRepository.findAll()).hasSize(1);
 		assertThat(entitlementRepository.findAll()).hasSize(1);
+	}
+
+	// 이용권 중복은 구매 단위로만 막는다. 이미 가진 이용권이 통합 상품에 들어 있어도 새 구매의 이용권으로 함께 부여된다
+	@Test
+	void 퍼피와_주니어를_산_뒤_통합_상품을_사도_거르지_않고_통합_상품의_이용권을_모두_부여한다() {
+		storePurchases.add(request("2000000900000001", Set.of(EntitlementType.PUPPY)));
+		service.synchronize(userId);
+		storePurchases.add(request("2000000900000002", Set.of(EntitlementType.JUNIOR)));
+		service.synchronize(userId);
+		storePurchases.add(request("2000000900000003", EnumSet.allOf(EntitlementType.class)));
+
+		service.synchronize(userId);
+
+		assertThat(purchaseRepository.findAll()).hasSize(3);
+		assertThat(entitlementRepository.findAll())
+				.extracting(Entitlement::getType)
+				.containsExactlyInAnyOrder(EntitlementType.PUPPY, EntitlementType.PUPPY, EntitlementType.JUNIOR,
+						EntitlementType.JUNIOR, EntitlementType.ADULT, EntitlementType.SENIOR);
 	}
 
 	@Test
