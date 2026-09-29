@@ -14,7 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserQueryService implements UserFinder {
 	private final UserRepository userRepository;
 
-	// 없는 회원은 false가 아니라 예외다. 탈퇴 회원과 구분해야 웹훅이 없는 회원의 구매를 실패로 응답할 수 있다
+	// 없는 회원은 false가 아니라 예외다. 탈퇴 회원과 구분해야 없는 회원의 구매 등록을 실패로 드러낼 수 있다
 	@Override
 	public boolean isActiveUser(Long userId) {
 		User user = findById(userId);
