@@ -8,10 +8,8 @@ import com.daesabu.meongcoach.entitlement.application.required.EntitlementReposi
 import com.daesabu.meongcoach.entitlement.domain.Entitlement;
 import com.daesabu.meongcoach.entitlement.domain.exception.EntitlementProviderUnavailableException;
 import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;
-import com.daesabu.meongcoach.user.application.UserQueryService;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.User;
-import com.daesabu.meongcoach.user.domain.exception.UserNotFoundException;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Set;
@@ -39,8 +37,7 @@ class EntitlementSyncServiceTest {
 	}
 
 	private EntitlementSyncService service(ActiveEntitlementReader activeEntitlementReader) {
-		return new EntitlementSyncService(new UserQueryService(userRepository), activeEntitlementReader,
-				new EntitlementModifyService(entitlementRepository));
+		return new EntitlementSyncService(activeEntitlementReader, new EntitlementModifyService(entitlementRepository));
 	}
 
 	private EntitlementSyncService service() {
@@ -67,23 +64,6 @@ class EntitlementSyncServiceTest {
 		service().synchronize(userId);
 
 		assertThat(entitlementRepository.findAllByUserId(userId)).noneMatch(Entitlement::isActive);
-	}
-
-	@Test
-	void 탈퇴한_회원이면_이용권을_바꾸지_않는다() {
-		User withdrawnUser = userRepository.save(User.registerUser());
-		withdrawnUser.withdraw();
-		activeTypes.add(EntitlementType.PUPPY);
-
-		service().synchronize(withdrawnUser.getId());
-
-		assertThat(entitlementRepository.findAllByUserId(withdrawnUser.getId())).isEmpty();
-	}
-
-	@Test
-	void 없는_회원이면_회원_없음_예외를_던진다() {
-		assertThatThrownBy(() -> service().synchronize(Long.MAX_VALUE))
-				.isInstanceOf(UserNotFoundException.class);
 	}
 
 	@Test
