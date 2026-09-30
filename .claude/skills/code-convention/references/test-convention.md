@@ -39,9 +39,13 @@ MVP 개발 기간을 고려하여 아래 순서로 우선순위를 정해 작성
 - 픽스처 준비와 결과 확인은 `application/required` 리포지토리를 주입받아 한다.
 - 외부 연동 포트(`adapter/integration`이 구현하는 `application/required` 인터페이스 — RevenueCat·소셜 제공자·스토리지 등)는 공통 테스트 설정 한 곳에서 `@MockitoBean`으로 대체한다. 테스트 클래스마다 `@MockitoBean`·`@TestPropertySource`·`@ActiveProfiles`를 따로 선언하지 않는다.
 	- 목 구성이나 프로퍼티가 클래스마다 다르면 스프링이 컨텍스트를 새로 띄운다. 캐시된 컨텍스트마다 Hikari 풀(최대 2)이 살아 있어, 컨텍스트가 늘면 PostgreSQL 커넥션 한도에 걸려 테스트가 멈춘다.
-	- 공통 설정은 `support/ApplicationTest` 메타 어노테이션(`@SpringBootTest` + `@Transactional` + 외부 연동 포트 `@MockitoBean(types = ...)`)이다. Application 테스트 클래스에는 이 어노테이션 하나만 붙이고, 모듈을 옮기며 새 외부 연동 포트가 필요하면 `types`에 추가한다. (살아있는 예시: `entitlement/application/EntitlementSynchronizerTest`)
+	- 공통 설정은 `support/ApplicationTest` 메타 어노테이션(`@SpringBootTest` + `@Transactional` + 외부 연동 포트 `@MockitoBean(types = ...)`)이다. Application 테스트 클래스에는 이 어노테이션 하나만 붙이고, 모듈을 옮기며 새 외부 연동 포트가 필요하면 `types`에 추가한다. `NonTransactionalApplicationTest`의 `types`에도 같이 추가한다. (살아있는 예시: `entitlement/application/EntitlementSynchronizerTest`)
 	- 스텁은 테스트 안에서 `given(...)`으로 지정한다. `@MockitoBean`은 테스트마다 초기화된다.
-- 트랜잭션 커밋 이후에만 드러나는 동작(advisory lock 해제, `@TransactionalEventListener(AFTER_COMMIT)`, `REQUIRES_NEW`로 분리한 쓰기)은 테스트 롤백으로는 보이지 않는다. 이런 테스트는 `@Transactional`을 붙이지 않고 `TransactionTemplate`으로 트랜잭션을 직접 커밋한 뒤, 만든 데이터를 `@AfterEach`에서 지운다. `@ApplicationTest`에는 `@Transactional`이 들어 있으므로, 이런 테스트가 처음 생기면 `@Transactional`만 뺀 공통 설정을 같은 목 구성으로 따로 둔다.
+- 트랜잭션 커밋 이후에만 드러나는 동작(advisory lock 대기·해제, `@TransactionalEventListener(AFTER_COMMIT)`, `REQUIRES_NEW`로 분리한 쓰기)은 테스트 롤백으로는 보이지 않는다. 이런 테스트는 `@ApplicationTest` 대신 `support/NonTransactionalApplicationTest`를 붙이고, 필요하면 `TransactionTemplate`으로 트랜잭션을 직접 커밋한 뒤 만든 데이터를 `@AfterEach`에서 지운다. 클래스명은 `{provided 인터페이스}{상황}Test`로 둔다. (살아있는 예시: `entitlement/application/EntitlementSynchronizerConcurrencyTest`)
+	- `NonTransactionalApplicationTest`는 `@ApplicationTest`에서 `@Transactional`만 뺀 설정이다. `@MockitoBean(types = ...)`를 두 어노테이션에 똑같이 유지해야 컨텍스트를 공유한다.
+	- 워커 스레드에서 부른 서비스는 테스트 트랜잭션에 참여하지 않고 실제로 커밋하므로 `@ApplicationTest`에서 스레드를 띄우면 데이터가 남는다. 또 테스트 트랜잭션이 풀(최대 2)의 커넥션 하나를 쥐어 워커가 락이 아니라 커넥션을 기다리게 되므로, 락이 없어도 통과한다.
+	- 커넥션을 쥐는 스레드는 동시에 2개까지만 둔다. 3개부터는 풀 대기로 직렬화되어 경합이 재현되지 않는다.
+	- 동시 실행 결과는 타이밍에 따라 달라지므로 스레드를 경쟁시키지 않는다. 테스트가 먼저 락을 쥐고 대상 호출이 그동안 끝나지 않는지(`Future.get(timeout)`이 `TimeoutException`) 확인한 뒤 락을 푼다. 작성 후 락 호출을 지우면 테스트가 실패하는지 확인한다.
 - 이 규칙 이전에 작성한 Application 테스트(`@DataJpaTest` + `@Import`, 구현체 직접 조립)는 일괄 전환하지 않고 해당 테스트를 수정할 때 옮긴다.
 
 ## 시큐리티와 테스트 슬라이스
