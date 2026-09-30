@@ -7,7 +7,7 @@ JUnit 5 + Spring Boot Test 기반으로 작성한다. 테스트 코드도 [SKILL
 MVP 개발 기간을 고려하여 아래 순서로 우선순위를 정해 작성한다.
 
 1. **Domain Unit Test** — Spring 컨텍스트 없이 도메인 로직을 검증하는 순수 단위 테스트
-2. **Application Test** — `Application → Domain → DB`를 관통하는 테스트. 필요한 최소한의 컨텍스트만 사용
+2. **Application Test** — `@SpringBootTest` + `@Transactional` 통합 테스트로 `provided` 인터페이스 → 서비스 → Domain → DB를 관통해 검증 ([Application 테스트](#application-테스트))
 3. **Adapter Unit Test** — `adapter/webapi` 컨트롤러 테스트(`@WebMvcTest`). RestDocs 문서 작성을 위한 내용을 함께 포함 ([컨트롤러 테스트와 API 문서화](#컨트롤러-테스트와-api-문서화))
 
 ## 작성하지 않는 대상
@@ -28,8 +28,21 @@ MVP 개발 기간을 고려하여 아래 순서로 우선순위를 정해 작성
 - 동작을 추가·변경할 때는 테스트를 먼저 작성해 `test` 커밋으로 올리고, 구현은 뒤따르는 커밋으로 올린다. 커밋 분리 규칙은 git-convention 스킬의 "커밋 단위" 참고.
 - 슬라이스 테스트: 컨트롤러는 `@WebMvcTest`, 리포지토리(`application/required`의 Spring Data 인터페이스)는 `@DataJpaTest`를 사용한다.
 - 테스트 DB는 `src/test/resources/application-test.yml`의 `jdbc:tc:` URL로 Testcontainers가 띄우는 PostgreSQL 컨테이너 하나를 테스트 JVM 전체가 공유한다. `@DataJpaTest`에 `@AutoConfigureTestDatabase`를 붙이지 않는다 — Spring Boot는 `jdbc:tc:` URL로 잡힌 DataSource를 임베디드 DB로 교체하지 않는다. 다른 컨텍스트의 `create-drop`과 섞이면 안 되는 스키마 검증은 `migration/FlywaySchemaValidationTest`처럼 DB 이름이 다른 `jdbc:tc:` URL을 지정해 별도 컨테이너를 쓴다.
-- `@SpringBootTest` 전체 통합 테스트는 꼭 필요한 시나리오에만 최소한으로 사용한다.
+- Application 테스트 외의 `@SpringBootTest`(시큐리티 필터 체인·CORS 등)는 꼭 필요한 시나리오에만 쓴다.
 - 외부 API 연동은 `MockRestServiceServer.bindTo(RestClient.Builder)`로 검증한다. 어댑터가 `RestClient`가 아닌 `RestClient.Builder`를 주입받아야 이 방식이 가능하므로, 생성자 파라미터를 `Builder`로 둔다.
+
+## Application 테스트
+
+- `@SpringBootTest` + `@Transactional`로 작성한다. 각 테스트는 끝나면 롤백된다.
+- 테스트 대상은 `application/provided` 인터페이스로 `@Autowired` 주입한다. 서비스 구현 클래스를 주입하거나 `new`로 조립하지 않는다. 테스트 클래스명은 `{provided 인터페이스}Test`로 둔다. (예: `EntitlementSynchronizerTest`)
+- provided 인터페이스가 없는 내부 서비스(`EntitlementModifyService`, `UserQueryService` 등)는 전용 테스트를 만들지 않고, 그 서비스를 호출하는 provided 인터페이스의 테스트에서 검증한다.
+- 픽스처 준비와 결과 확인은 `application/required` 리포지토리를 주입받아 한다.
+- 외부 연동 포트(`adapter/integration`이 구현하는 `application/required` 인터페이스 — RevenueCat·소셜 제공자·스토리지 등)는 공통 테스트 설정 한 곳에서 `@MockitoBean`으로 대체한다. 테스트 클래스마다 `@MockitoBean`·`@TestPropertySource`·`@ActiveProfiles`를 따로 선언하지 않는다.
+	- 목 구성이나 프로퍼티가 클래스마다 다르면 스프링이 컨텍스트를 새로 띄운다. 캐시된 컨텍스트마다 Hikari 풀(최대 2)이 살아 있어, 컨텍스트가 늘면 PostgreSQL 커넥션 한도에 걸려 테스트가 멈춘다.
+	- 공통 설정(메타 어노테이션)은 첫 Application 테스트를 이 방식으로 옮길 때 만들고, 만든 뒤 이 문서에 살아있는 예시로 경로를 적는다.
+	- 스텁은 테스트 안에서 `given(...)`으로 지정한다. `@MockitoBean`은 테스트마다 초기화된다.
+- 트랜잭션 커밋 이후에만 드러나는 동작(advisory lock 해제, `@TransactionalEventListener(AFTER_COMMIT)`, `REQUIRES_NEW`로 분리한 쓰기)은 테스트 롤백으로는 보이지 않는다. 이런 테스트는 `@Transactional`을 붙이지 않고 `TransactionTemplate`으로 트랜잭션을 직접 커밋한 뒤, 만든 데이터를 `@AfterEach`에서 지운다.
+- 이 규칙 이전에 작성한 Application 테스트(`@DataJpaTest` + `@Import`, 구현체 직접 조립)는 일괄 전환하지 않고 해당 테스트를 수정할 때 옮긴다.
 
 ## 시큐리티와 테스트 슬라이스
 
