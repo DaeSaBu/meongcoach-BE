@@ -18,7 +18,7 @@ com.daesabu.meongcoach
 ├── ai           ← AI 영상 분석 리포트 (SQS 컨슈머, EvoLink 연동)
 ├── media        ← 이미지·영상 업로드 URL 발급 (R2/S3)
 ├── onboarding   ← 온보딩 흐름 조합
-├── entitlement  ← 이용권 동기화·확인. RevenueCat 활성 이용권의 사본을 두고 권한 확인은 사본만 읽음
+├── entitlement  ← 이용권 동기화. RevenueCat 활성 이용권의 사본을 둠
 ├── health       ← 서비스 상태 확인
 └── shared       ← 횡단 관심사 (config / security / webapi / exception / domain)
 ```
