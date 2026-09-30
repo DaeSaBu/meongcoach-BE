@@ -11,7 +11,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import java.util.Objects;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -36,23 +35,9 @@ public class Curriculum extends BaseEntity {
 	@Column(nullable = false)
 	private int sortOrder;
 
-	// 썸네일 미등록 커리큘럼 허용 — 미설정은 빈 문자열로 저장한다
 	@Column(nullable = false, length = 512)
 	private String thumbnailUrl;
 
-	// 설명 없는 커리큘럼 허용 — 미설정은 빈 문자열로 저장한다
 	@Column(nullable = false, columnDefinition = "TEXT")
 	private String description;
-
-	private Curriculum(Topic topic, CurriculumCreateCommand command) {
-		this.topic = topic;
-		this.title = command.title();
-		this.sortOrder = command.sortOrder();
-		this.thumbnailUrl = Objects.requireNonNullElse(command.thumbnailUrl(), "");
-		this.description = Objects.requireNonNullElse(command.description(), "");
-	}
-
-	public static Curriculum create(Topic topic, CurriculumCreateCommand command) {
-		return new Curriculum(topic, command);
-	}
 }
