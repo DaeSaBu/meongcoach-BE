@@ -97,8 +97,9 @@ user-invocable: true
 - 컨트롤러/서비스에 개별 `@ExceptionHandler`를 만들지 않고, 예외를 catch해서 에러 DTO를 직접 조립해 반환하지 않는다. 예상치 못한 예외도 전역 핸들러 fallback이 500으로 변환하므로 별도 방어 코드를 두지 않는다.
 - `domain/exception`에 모듈당 1개 `{모듈}ErrorCode` enum을 `ErrorCode` 구현으로 두고, 상수 이름은 `{모듈}_{원인}` 형식의 UPPER_SNAKE_CASE로 전역에서 유일하게 짓는다. `code()`가 `name()`을 반환하므로 상수 이름이 곧 클라이언트 분기용 에러 코드다.
 - 케이스별 구체 예외는 `DomainException`을 상속한 `~Exception`으로 둔다. 구체 타입이 있어야 테스트에서 `isInstanceOf`로 검증할 수 있다. 기본 메시지로 충분하면 `super(ErrorCode)`만 호출하고, 상황 정보가 필요하면 두 번째 인자로 detail을 넘긴다 — **detail은 응답에 그대로 노출되므로 민감 정보를 넣지 않는다.**
+- 클라이언트 요청으로 일어날 수 있는 규칙 위반은 위 `DomainException`으로, 호출 쪽이 이미 걸러야 해서 정상 흐름에서는 일어나지 않는 상태 전이는 `org.springframework.util.Assert.state`로 막는다. `Assert.state`는 호출 코드의 버그를 잡는 최후의 방어선이라 에러 코드 없이 `IllegalStateException`(전역 핸들러에서 500)으로 끝난다. 메시지에 식별자를 넣을 때는 `Supplier` 오버로드로 넘긴다. `Assert`는 `domain`에서만 쓴다(`AnnotationPatternTest`). (살아있는 예시: 일급 컬렉션이 고른 행만 회수·복구하는 `Entitlement.revoke()`·`restore()`)
 - 예외를 catch해서 삼키거나 로그만 찍고 다시 던지지 않는다. 로깅은 전역 핸들러가 일괄 수행한다. (중복 로깅 금지)
-- `shared/exception`(`ErrorCode`, `DomainException`)은 순수 Java로 유지한다. `domain`은 Spring에 의존할 수 없으므로 `ErrorCode.status()`는 `HttpStatus`가 아닌 `int`를 반환하고 `HttpStatus` 변환은 `GlobalExceptionHandler`에서만 한다. 같은 이유로 `domain`은 `shared/webapi`를 참조하지 않는다.
+- `shared/exception`(`ErrorCode`, `DomainException`)은 순수 Java로 유지한다. `domain`은 상태 가드용 `Assert` 외에는 Spring에 의존할 수 없으므로 `ErrorCode.status()`는 `HttpStatus`가 아닌 `int`를 반환하고 `HttpStatus` 변환은 `GlobalExceptionHandler`에서만 한다. 같은 이유로 `domain`은 `shared/webapi`를 참조하지 않는다.
 - `adapter/integration`은 인프라 예외(`RestClientException` 등)를 그 자리에서 도메인 예외로 번역한다. DTO 조립이 아니라 계층 경계의 타입 번역이라 위 규칙과 충돌하지 않는다. 실패 원인은 구분해 내린다. (예: 소셜 로그인은 토큰 무효 401과 제공자 통신 실패 502를 다른 에러 코드로 내려 클라이언트가 재로그인과 재시도를 구분하게 한다)
 - 컨트롤러 테스트에 대표 에러 케이스 1개 이상을 `{모듈}/{행위}-error`로 문서화한다. ([references/test-convention.md](references/test-convention.md))
 - `{모듈}ErrorCode` 자체의 단위 테스트는 만들지 않는다. 에러 코드 검증은 위 `-error` 문서화 케이스로 한다. ([references/test-convention.md](references/test-convention.md))
