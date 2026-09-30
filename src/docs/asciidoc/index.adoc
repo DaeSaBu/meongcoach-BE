@@ -515,3 +515,21 @@ operation::dog/profile-image[snippets='http-request,http-response,response-field
 선택된 강아지가 없으면 404(`DOG_NOT_FOUND`)를 반환합니다. 온보딩을 마치지 않은 사용자가 여기에 해당합니다.
 
 operation::dog/profile-image-error[snippets='http-response,response-fields']
+
+== Entitlement API
+
+=== 이용권 동기화
+
+link:{swagger-ui}#/Entitlement/entitlement-synchronize[▶ Swagger에서 Try it out,window=swagger]
+
+앱이 스토어 결제·구매 복원을 마친 직후 호출합니다. 서버가 RevenueCat에서 회원의 활성 이용권을 조회해, 회원의 이용권을 그와 같게 맞춥니다.
+새로 생긴 이용권은 부여하고, 환불·계정 이전으로 빠진 이용권은 회수합니다. 상태를 통째로 맞추므로 여러 번 호출해도 결과가 같고, 이용권이 없어도 204를 반환합니다.
+RevenueCat 고객 ID가 곧 회원 ID이므로 앱은 결제 전에 회원 ID로 RevenueCat SDK에 로그인(`Purchases.logIn`)해야 합니다.
+
+operation::entitlement/synchronize[snippets='http-request,http-response']
+
+==== 실패 응답
+
+RevenueCat 장애·호출 한도 초과·연결 실패로 이용권을 확인하지 못하면 502(`ENTITLEMENT_PROVIDER_UNAVAILABLE`)를 반환합니다. 이때 이용권은 바뀌지 않으므로 잠시 후 다시 호출합니다.
+
+operation::entitlement/synchronize-error[snippets='http-response,response-fields']
