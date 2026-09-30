@@ -4,6 +4,7 @@ import com.daesabu.meongcoach.shared.exception.ErrorCode;
 
 public enum EntitlementErrorCode implements ErrorCode {
 
+	ENTITLEMENT_NOT_OWNED(403, "이용권이 필요한 기능입니다."),
 	;
 
 	private final int status;
