@@ -21,6 +21,8 @@ public class EntitlementModifyService implements EntitlementSynchronizer {
 	@Override
 	@Transactional
 	public void synchronize(Long userId, Set<EntitlementType> activeTypes) {
+		entitlementRepository.lockByUserId(userId);
+
 		Entitlements entitlements = new Entitlements(entitlementRepository.findAllByUserId(userId));
 
 		List<Entitlement> granted = entitlements.synchronize(userId, activeTypes);
