@@ -12,14 +12,12 @@ import org.junit.jupiter.api.Test;
 class EntitlementsTest {
 
 	private static final Long USER_ID = 1L;
-	private static final Instant NOW = Instant.parse("2026-09-29T12:00:00Z");
-	private static final Instant EARLIER = Instant.parse("2026-09-01T12:00:00Z");
 
 	@Test
 	void 가진_이용권이_없을_때_통합_상품의_네_종류가_오면_네_개를_새로_부여한다() {
 		Entitlements entitlements = new Entitlements(List.of());
 
-		List<Entitlement> granted = entitlements.synchronize(USER_ID, EnumSet.allOf(EntitlementType.class), NOW);
+		List<Entitlement> granted = entitlements.synchronize(USER_ID, EnumSet.allOf(EntitlementType.class));
 
 		assertThat(granted)
 				.extracting(Entitlement::getType)
@@ -36,7 +34,7 @@ class EntitlementsTest {
 		Entitlements entitlements = new Entitlements(List.of(puppy));
 
 		List<Entitlement> granted = entitlements.synchronize(USER_ID,
-				Set.of(EntitlementType.PUPPY, EntitlementType.JUNIOR), NOW);
+				Set.of(EntitlementType.PUPPY, EntitlementType.JUNIOR));
 
 		assertThat(granted).extracting(Entitlement::getType).containsExactly(EntitlementType.JUNIOR);
 		assertThat(puppy.isActive()).isTrue();
@@ -48,11 +46,11 @@ class EntitlementsTest {
 		Entitlement junior = Entitlement.grant(USER_ID, EntitlementType.JUNIOR);
 		Entitlements entitlements = new Entitlements(List.of(puppy, junior));
 
-		List<Entitlement> granted = entitlements.synchronize(USER_ID, Set.of(EntitlementType.JUNIOR), NOW);
+		List<Entitlement> granted = entitlements.synchronize(USER_ID, Set.of(EntitlementType.JUNIOR));
 
 		assertThat(granted).isEmpty();
 		assertThat(puppy.isActive()).isFalse();
-		assertThat(puppy.getRevokedAt()).isEqualTo(NOW);
+		assertThat(puppy.getRevokedAt()).isNotNull();
 		assertThat(junior.isActive()).isTrue();
 	}
 
@@ -62,7 +60,7 @@ class EntitlementsTest {
 		Entitlement adult = Entitlement.grant(USER_ID, EntitlementType.ADULT);
 		Entitlements entitlements = new Entitlements(List.of(puppy, adult));
 
-		entitlements.synchronize(USER_ID, Set.of(), NOW);
+		entitlements.synchronize(USER_ID, Set.of());
 
 		assertThat(List.of(puppy, adult)).noneMatch(Entitlement::isActive);
 	}
@@ -71,22 +69,23 @@ class EntitlementsTest {
 	@Test
 	void 이미_회수된_이용권은_회수_시각을_바꾸지_않는다() {
 		Entitlement puppy = Entitlement.grant(USER_ID, EntitlementType.PUPPY);
-		puppy.revoke(EARLIER);
+		puppy.revoke();
+		Instant firstRevokedAt = puppy.getRevokedAt();
 		Entitlements entitlements = new Entitlements(List.of(puppy));
 
-		entitlements.synchronize(USER_ID, Set.of(), NOW);
+		entitlements.synchronize(USER_ID, Set.of());
 
-		assertThat(puppy.getRevokedAt()).isEqualTo(EARLIER);
+		assertThat(puppy.getRevokedAt()).isEqualTo(firstRevokedAt);
 	}
 
 	// 환불 뒤 재구매하거나 다른 계정으로 옮겨 갔던 구매를 복원하면 같은 종류가 다시 활성으로 온다
 	@Test
 	void 회수된_종류가_다시_오면_새로_만들지_않고_되살린다() {
 		Entitlement puppy = Entitlement.grant(USER_ID, EntitlementType.PUPPY);
-		puppy.revoke(EARLIER);
+		puppy.revoke();
 		Entitlements entitlements = new Entitlements(List.of(puppy));
 
-		List<Entitlement> granted = entitlements.synchronize(USER_ID, Set.of(EntitlementType.PUPPY), NOW);
+		List<Entitlement> granted = entitlements.synchronize(USER_ID, Set.of(EntitlementType.PUPPY));
 
 		assertThat(granted).isEmpty();
 		assertThat(puppy.isActive()).isTrue();

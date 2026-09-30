@@ -4,7 +4,6 @@ import com.daesabu.meongcoach.entitlement.application.required.EntitlementReposi
 import com.daesabu.meongcoach.entitlement.domain.Entitlement;
 import com.daesabu.meongcoach.entitlement.domain.Entitlements;
 import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;
-import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
@@ -24,9 +23,9 @@ class EntitlementModifyService {
 
 	// 기존 행의 회수·복구는 변경 감지로 반영되고, 새로 부여한 이용권만 저장한다
 	@Transactional
-	void synchronize(Long userId, Set<EntitlementType> activeTypes, Instant now) {
+	void synchronize(Long userId, Set<EntitlementType> activeTypes) {
 		Entitlements entitlements = new Entitlements(entitlementRepository.findAllByUserId(userId));
-		List<Entitlement> granted = entitlements.synchronize(userId, activeTypes, now);
+		List<Entitlement> granted = entitlements.synchronize(userId, activeTypes);
 		entitlementRepository.saveAll(granted);
 	}
 }

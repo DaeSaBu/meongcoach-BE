@@ -59,11 +59,11 @@ public class Entitlement extends BaseTimeEntity {
 	}
 
 	// 회수할 행은 Entitlements가 활성인 것만 고르므로, 이미 회수된 행이 오면 판단이 틀린 것이다
-	void revoke(Instant now) {
+	void revoke() {
 		if (!isActive()) {
 			throw new IllegalStateException("이미 회수된 이용권입니다: id=" + id);
 		}
-		revokedAt = requireNonNull(now);
+		revokedAt = Instant.now();
 	}
 
 	// 복구할 행은 Entitlements가 회수된 것만 고르므로, 활성인 행이 오면 판단이 틀린 것이다

@@ -1,7 +1,6 @@
 package com.daesabu.meongcoach.entitlement.domain;
 
 import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;
-import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -23,8 +22,8 @@ public class Entitlements {
 	 * 이미 활성 종류와 같은 상태인 행은 건드리지 않으므로, 같은 활성 종류로 다시 맞춰도 아무것도 바뀌지 않는다.
 	 * 기존 행은 이 자리에서 바뀌고, 새로 부여한 이용권만 돌려주므로 호출자가 저장한다.
 	 */
-	public List<Entitlement> synchronize(Long userId, Set<EntitlementType> activeTypes, Instant now) {
-		entitlements.forEach(entitlement -> reflect(entitlement, activeTypes, now));
+	public List<Entitlement> synchronize(Long userId, Set<EntitlementType> activeTypes) {
+		entitlements.forEach(entitlement -> reflect(entitlement, activeTypes));
 
 		Set<EntitlementType> ownedTypes = entitlements.stream()
 				.map(Entitlement::getType)
@@ -35,14 +34,14 @@ public class Entitlements {
 				.toList();
 	}
 
-	private void reflect(Entitlement entitlement, Set<EntitlementType> activeTypes, Instant now) {
+	private void reflect(Entitlement entitlement, Set<EntitlementType> activeTypes) {
 		boolean shouldBeActive = activeTypes.contains(entitlement.getType());
 		if (shouldBeActive && !entitlement.isActive()) {
 			entitlement.restore();
 			return;
 		}
 		if (!shouldBeActive && entitlement.isActive()) {
-			entitlement.revoke(now);
+			entitlement.revoke();
 		}
 	}
 }
