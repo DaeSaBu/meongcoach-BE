@@ -1,6 +1,6 @@
 ---
 name: code-convention
-description: "이 저장소의 코드·테스트 컨벤션 — 도구로 강제되지 않는 스타일 규칙(삼항·else·switch 금지, return 인자 호출 중첩 금지), 역할별 네이밍, 트랜잭션·Lombok·DTO/Result·예외 정의 규칙, 테스트 작성·API 문서화·ArchUnit 규칙(references). Use when writing, modifying, or reviewing Java production code or tests in this repo. Triggers on: 코드 작성, 구현, 리팩토링, 테스트 작성, 코드 리뷰, Java 파일 수정."
+description: "이 저장소의 코드·테스트 컨벤션 — 도구로 강제되지 않는 스타일 규칙(삼항·else·switch 금지, return 인자 호출 중첩 금지), 주석 규칙(`//` 금지, javadoc은 interface에만 동작만 서술), 역할별 네이밍, 트랜잭션·Lombok·DTO/Result·예외 정의 규칙, 테스트 작성·API 문서화·ArchUnit 규칙(references). Use when writing, modifying, or reviewing Java production code or tests in this repo. Triggers on: 코드 작성, 구현, 리팩토링, 테스트 작성, 코드 리뷰, Java 파일 수정, 주석 작성."
 user-invocable: true
 ---
 
@@ -18,6 +18,18 @@ user-invocable: true
 - `else`(`else if` 포함) 금지 — guard clause와 early return으로 분기를 평탄화한다.
 - `switch` 금지 — if + early return, Map 조회, 또는 enum 메서드/다형성으로 대체한다.
 - return 문 **인자에 호출 중첩 금지** — 결과 객체를 `return new ~(...)`로 바로 반환하는 것은 허용하되, 그 인자 자리에 서비스 호출 등 다른 메서드 호출을 넣지 않는다. 필요한 값은 지역 변수로 먼저 준비해 전달한다. 단, DTO·Result 정적 팩토리(`from`, `of`)의 단순 필드 매핑은 허용한다.
+
+---
+
+## 주석
+
+Java 소스(`src/main/java`, `src/test/java`)의 주석은 interface에만 두고 동작만 적는다. 이 코드를 왜 이렇게 작성했는지는 커밋 body와 PR 설명에 적는다. (주석에 남은 결정이 다음 작성자에게 저장소 규칙으로 읽혀 다른 코드로 번지는 것을 막는다)
+
+- `//` 주석과 `/* */` 블록 주석은 쓰지 않는다. 주석 처리한 코드와 `TODO`도 남기지 않는다.
+- `/** */`는 interface 선언부와 interface 메서드에만 둔다. class·record·enum에는 타입·메서드·필드 어디에도 주석을 두지 않고, `package-info.java`에도 javadoc을 쓰지 않는다. (살아있는 예시: `dog/application/provided/DogRegister`, `entitlement/application/provided/EntitlementSynchronizer`)
+- interface javadoc에는 동작만 짧게 쓴다. 무엇을 받아 무엇을 반환하거나 바꾸는지, 어떤 조건에서 어떤 예외를 던지는지까지만 적는다. 결정 사항, 이렇게 구현하게 된 배경, 다른 방식을 택하지 않은 이유(자기 변호)는 쓰지 않는다.
+	- 판별 기준: 문장에 `~라서`·이유를 잇는 `~(이)라`·`~므로`·`~위해`·`~때문에`·`~대신`·`~가 아니라`가 들어가면 이유 서술이므로 지운다.
+- 이 규칙 이전에 작성한 주석(`//`, class·record·enum javadoc)이 아직 남아 있다. 일괄 삭제하지 않고 해당 파일을 수정할 때 지운다. 남아 있는 주석에 적힌 결정은 저장소 규칙이 아니므로, 그 주석을 근거로 다른 코드를 같은 형태로 바꾸지 않는다. 저장소 전체에 적용할 규칙이라면 AGENTS.md의 "문서 추가 방법"을 따라 이 스킬에 올린다.
 
 ---
 

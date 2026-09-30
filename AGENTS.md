@@ -12,7 +12,7 @@
 - 애플리케이션 조회 결과는 도메인 타입 반환이 기본입니다. `~Result` record는 도메인 타입으로 부족할 때만 만듭니다 — 판단 기준은 code-convention 스킬 참고.
 - 트랜잭션은 서비스 구현 클래스에 `@Transactional(readOnly = true)`를 붙여 기본값을 읽기 전용으로 두고, 쓰기 메서드에만 `@Transactional`로 오버라이드합니다. 메서드 어노테이션은 클래스 설정을 병합하지 않고 통째로 대체합니다. (code-convention 스킬 참고)
 - `main` 브랜치에 직접 push하지 않습니다. 변경은 작업 의미 단위별로 가능한 작게 즉시 커밋하고, 동작을 추가·변경할 때는 테스트 커밋을 먼저, 구현 커밋을 뒤에 올립니다(TDD). 작업 브랜치에 push하고, 첫 커밋을 push하면 즉시 draft PR을 생성합니다. PR base는 항상 `develop`입니다(`gh pr create --base develop`; 생략하면 기본 브랜치 `main`으로 잡힙니다). push 후에는 변경 내용을 요약해 공유합니다. (상세: git-convention 스킬)
-- 문서, 커밋 메시지, 코드 주석은 한국어로 작성합니다.
+- 문서, 커밋 메시지, 코드 주석은 한국어로 작성합니다. 코드 주석은 interface의 `/** */`에만 동작만 적고, `//` 주석과 class·record·enum·`package-info` javadoc은 쓰지 않습니다. 이유·결정은 커밋 body와 PR 설명에 적습니다. (code-convention 스킬 참고)
 - 예외는 각 모듈 `domain/exception`에 `{모듈}ErrorCode` enum + `DomainException` 하위 클래스로 정의해 던지기만 하고, 에러 응답 변환은 전역 핸들러가 RFC 9457 Problem Details 형식으로 전담합니다. 컨트롤러/서비스에서 개별 처리하지 않습니다.
 - 인증은 소셜 제공자 토큰을 서버가 검증한 뒤 자체 JWT를 발급하는 무상태 방식입니다. 액세스 토큰은 저장하지 않고 서명으로만 검증하며, 리프레시 토큰은 jti를 `refresh_tokens`에 저장해 재발급(rotation)·로그아웃·탈퇴 시 폐기합니다. 스토어 심사용 이메일 로그인은 DB에 직접 등록한 테스트 계정 전용이며 회원가입·비밀번호 변경 API를 만들지 않습니다. (security.md 참고)
 - API 경로는 `/api/{리소스}` 형태로 쓰고 버전을 붙이지 않습니다. (예: `/api/users`, `/api/dogs`, 헬스 체크는 `/api/health`)
@@ -22,7 +22,7 @@
 | 문서                                                                         | 내용                         |
 |----------------------------------------------------------------------------|----------------------------|
 | [.claude/skills/git-convention/SKILL.md](.claude/skills/git-convention/SKILL.md) | 커밋 메시지, 브랜치 전략, PR 규칙 (Claude Code 스킬) |
-| [.claude/skills/code-convention/SKILL.md](.claude/skills/code-convention/SKILL.md) | 코드 스타일, 네이밍, 트랜잭션, Lombok/DTO, 예외 정의 규칙 (Claude Code 스킬) |
+| [.claude/skills/code-convention/SKILL.md](.claude/skills/code-convention/SKILL.md) | 코드 스타일, 주석, 네이밍, 트랜잭션, Lombok/DTO, 예외 정의 규칙 (Claude Code 스킬) |
 | [.claude/skills/code-convention/references/test-convention.md](.claude/skills/code-convention/references/test-convention.md) | 테스트 작성, RestDocs 문서화, ArchUnit 규칙 (code-convention 스킬 참조 문서) |
 | [docs/api-docs.md](docs/api-docs.md) | REST Docs 빌드, OpenAPI 후처리, Swagger UI 확인 경로 |
 | [docs/error-handling.md](docs/error-handling.md) | Problem Details 에러 응답 형식, 전역 핸들러 처리 범위 |
