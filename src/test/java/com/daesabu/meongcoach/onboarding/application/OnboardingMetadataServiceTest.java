@@ -10,9 +10,9 @@ import com.daesabu.meongcoach.onboarding.application.provided.OnboardingMetadata
 import com.daesabu.meongcoach.training.application.TopicFinderService;
 import com.daesabu.meongcoach.training.application.provided.TopicSummary;
 import com.daesabu.meongcoach.training.application.required.TopicRepository;
-import com.daesabu.meongcoach.training.domain.Topic;
-import com.daesabu.meongcoach.training.domain.TopicCreateCommand;
+import com.daesabu.meongcoach.training.domain.TopicFixture;
 import com.daesabu.meongcoach.training.domain.TrainingCategory;
+import com.daesabu.meongcoach.training.domain.TrainingCategoryFixture;
 import com.daesabu.meongcoach.user.application.MbtiFinderService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,9 +42,9 @@ class OnboardingMetadataServiceTest {
 
 	@Test
 	void 토픽_견종_성격_MBTI_목록을_한_번에_모아_반환한다() {
-		TrainingCategory category = entityManager.persist(TrainingCategory.create("기본 훈련", 1, null, null));
-		entityManager.persist(Topic.create(category, new TopicCreateCommand("산책 훈련", 2, null, null, null)));
-		entityManager.persist(Topic.create(category, new TopicCreateCommand("배변 훈련", 1, null, null, null)));
+		TrainingCategory category = entityManager.persist(TrainingCategoryFixture.create("기본 훈련", 1, null, null));
+		entityManager.persist(TopicFixture.create(category, "산책 훈련", 2, null, null, null));
+		entityManager.persist(TopicFixture.create(category, "배변 훈련", 1, null, null, null));
 
 		OnboardingMetadataResult result = service.find();
 

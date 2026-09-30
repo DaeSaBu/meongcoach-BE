@@ -13,13 +13,14 @@ import com.daesabu.meongcoach.training.application.provided.CurriculumListResult
 import com.daesabu.meongcoach.training.application.provided.CurriculumResult;
 import com.daesabu.meongcoach.training.application.provided.LessonResult;
 import com.daesabu.meongcoach.training.domain.Curriculum;
-import com.daesabu.meongcoach.training.domain.CurriculumCreateCommand;
+import com.daesabu.meongcoach.training.domain.CurriculumFixture;
 import com.daesabu.meongcoach.training.domain.CurriculumStatus;
 import com.daesabu.meongcoach.training.domain.Lesson;
-import com.daesabu.meongcoach.training.domain.LessonCreateCommand;
+import com.daesabu.meongcoach.training.domain.LessonFixture;
 import com.daesabu.meongcoach.training.domain.Topic;
-import com.daesabu.meongcoach.training.domain.TopicCreateCommand;
+import com.daesabu.meongcoach.training.domain.TopicFixture;
 import com.daesabu.meongcoach.training.domain.TrainingCategory;
+import com.daesabu.meongcoach.training.domain.TrainingCategoryFixture;
 import com.daesabu.meongcoach.training.domain.exception.CurriculumNotFoundException;
 import com.daesabu.meongcoach.training.domain.exception.TopicNotConfiguredException;
 import jakarta.persistence.EntityManagerFactory;
@@ -340,11 +341,11 @@ class CurriculumQueryServiceTest {
 	}
 
 	private TrainingCategory persistCategory(String title, int sortOrder) {
-		return entityManager.persist(TrainingCategory.create(title, sortOrder, null, null));
+		return entityManager.persist(TrainingCategoryFixture.create(title, sortOrder, null, null));
 	}
 
 	private Topic persistTopic(TrainingCategory category, String title, int sortOrder) {
-		return entityManager.persist(Topic.create(category, new TopicCreateCommand(title, sortOrder, null, null, null)));
+		return entityManager.persist(TopicFixture.create(category, title, sortOrder, null, null, null));
 	}
 
 	private Topic persistTopicWithCategory() {
@@ -352,8 +353,7 @@ class CurriculumQueryServiceTest {
 	}
 
 	private Curriculum persistCurriculum(Topic topic, String title, int sortOrder) {
-		CurriculumCreateCommand command = new CurriculumCreateCommand(title, sortOrder, null, null);
-		return entityManager.persist(Curriculum.create(topic, command));
+		return entityManager.persist(CurriculumFixture.create(topic, title, sortOrder, null, null));
 	}
 
 	private Lesson persistLesson(Curriculum curriculum, String title, int sortOrder) {
@@ -361,8 +361,7 @@ class CurriculumQueryServiceTest {
 	}
 
 	private Lesson persistLesson(Curriculum curriculum, String title, int sortOrder, int estimatedMinutes) {
-		LessonCreateCommand command = new LessonCreateCommand(title, sortOrder, estimatedMinutes);
-		return entityManager.persist(Lesson.create(curriculum, command));
+		return entityManager.persist(LessonFixture.create(curriculum, title, sortOrder, estimatedMinutes));
 	}
 
 	private long countTopicEntries() {

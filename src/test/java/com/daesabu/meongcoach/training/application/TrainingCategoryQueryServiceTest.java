@@ -6,8 +6,9 @@ import com.daesabu.meongcoach.training.application.provided.TopicResult;
 import com.daesabu.meongcoach.training.application.provided.TrainingCategoryFinder;
 import com.daesabu.meongcoach.training.application.provided.TrainingCategoryResult;
 import com.daesabu.meongcoach.training.domain.Topic;
-import com.daesabu.meongcoach.training.domain.TopicCreateCommand;
+import com.daesabu.meongcoach.training.domain.TopicFixture;
 import com.daesabu.meongcoach.training.domain.TrainingCategory;
+import com.daesabu.meongcoach.training.domain.TrainingCategoryFixture;
 import jakarta.persistence.EntityManagerFactory;
 import java.util.List;
 import org.hibernate.SessionFactory;
@@ -82,16 +83,17 @@ class TrainingCategoryQueryServiceTest {
 
 	@Test
 	void 카테고리와_토픽의_설명_및_아이콘_정보를_반환한다() {
-		TrainingCategory category = entityManager.persist(TrainingCategory.create(
+		TrainingCategory category = entityManager.persist(TrainingCategoryFixture.create(
 				"기본 교육", 1, "기본기를 배우는 교육", "https://example.com/basic.png"
 		));
-		entityManager.persist(Topic.create(category, new TopicCreateCommand(
+		entityManager.persist(TopicFixture.create(
+				category,
 				"앉아",
 				1,
 				"앉아 자세를 배우는 훈련",
 				"차분히 앉는 방법을 익혀요",
 				"https://example.com/sit.png"
-		)));
+		));
 		flushAndClear();
 
 		TrainingCategoryResult categoryResult = trainingCategoryFinder.findAll().getFirst();
@@ -142,11 +144,11 @@ class TrainingCategoryQueryServiceTest {
 	}
 
 	private TrainingCategory persistCategory(String title, int sortOrder) {
-		return entityManager.persist(TrainingCategory.create(title, sortOrder, null, null));
+		return entityManager.persist(TrainingCategoryFixture.create(title, sortOrder, null, null));
 	}
 
 	private Topic persistTopic(TrainingCategory category, String title, int sortOrder) {
-		return entityManager.persist(Topic.create(category, new TopicCreateCommand(title, sortOrder, null, null, null)));
+		return entityManager.persist(TopicFixture.create(category, title, sortOrder, null, null, null));
 	}
 
 	private void flushAndClear() {
