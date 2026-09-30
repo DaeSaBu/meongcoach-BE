@@ -22,28 +22,28 @@ public class Entitlements {
 	 * 종류로 다시 맞춰도 아무것도 바뀌지 않는다. 기존 행은 이 자리에서 바뀌고, 새로 부여한 이용권만 돌려주므로 호출자가 저장한다.
 	 */
 	public List<Entitlement> synchronize(Long userId, Set<EntitlementType> activeTypes) {
-		updateEntitlementState(activeTypes);
+		updateExistingEntitlementState(activeTypes);
 
-		Set<EntitlementType> previousTypes = getPreviousEntitlementTypes();
+		Set<EntitlementType> existingTypes = getExistingEntitlementTypes();
 
-		return getCurrentEntitlements(userId, activeTypes, previousTypes);
+		return grantNewTypes(userId, activeTypes, existingTypes);
 	}
 
-	private static List<Entitlement> getCurrentEntitlements(Long userId, Set<EntitlementType> activeTypes,
-	                                                        Set<EntitlementType> previousTypes) {
+	private static List<Entitlement> grantNewTypes(Long userId, Set<EntitlementType> activeTypes,
+	                                               Set<EntitlementType> existingTypes) {
 		return activeTypes.stream()
-				.filter(type -> !previousTypes.contains(type))
+				.filter(type -> !existingTypes.contains(type))
 				.map(type -> Entitlement.grant(userId, type))
 				.toList();
 	}
 
-	private Set<EntitlementType> getPreviousEntitlementTypes() {
+	private Set<EntitlementType> getExistingEntitlementTypes() {
 		return entitlements.stream()
 				.map(Entitlement::getType)
 				.collect(Collectors.toUnmodifiableSet());
 	}
 
-	private void updateEntitlementState(Set<EntitlementType> activeTypes) {
+	private void updateExistingEntitlementState(Set<EntitlementType> activeTypes) {
 		entitlements.forEach(entitlement -> reflect(entitlement, activeTypes));
 	}
 
