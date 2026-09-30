@@ -25,7 +25,9 @@ class EntitlementModifyService {
 	@Transactional
 	void synchronize(Long userId, Set<EntitlementType> activeTypes) {
 		Entitlements entitlements = new Entitlements(entitlementRepository.findAllByUserId(userId));
+
 		List<Entitlement> granted = entitlements.synchronize(userId, activeTypes);
+
 		entitlementRepository.saveAll(granted);
 	}
 }
