@@ -19,7 +19,8 @@ public class Entitlements {
 	}
 
 	/**
-	 * 활성 종류에 있으면 살리고 없으면 회수한 뒤, 한 번도 가진 적 없는 종류는 새로 부여한다.
+	 * 회수된 행이 활성 종류에 있으면 살리고, 활성 행이 활성 종류에서 빠졌으면 회수한 뒤, 한 번도 가진 적 없는 종류는 새로 부여한다.
+	 * 이미 활성 종류와 같은 상태인 행은 건드리지 않으므로, 같은 활성 종류로 다시 맞춰도 아무것도 바뀌지 않는다.
 	 * 기존 행은 이 자리에서 바뀌고, 새로 부여한 이용권만 돌려주므로 호출자가 저장한다.
 	 */
 	public List<Entitlement> synchronize(Long userId, Set<EntitlementType> activeTypes, Instant now) {
@@ -35,10 +36,13 @@ public class Entitlements {
 	}
 
 	private void reflect(Entitlement entitlement, Set<EntitlementType> activeTypes, Instant now) {
-		if (activeTypes.contains(entitlement.getType())) {
+		boolean shouldBeActive = activeTypes.contains(entitlement.getType());
+		if (shouldBeActive && !entitlement.isActive()) {
 			entitlement.restore();
 			return;
 		}
-		entitlement.revoke(now);
+		if (!shouldBeActive && entitlement.isActive()) {
+			entitlement.revoke(now);
+		}
 	}
 }
