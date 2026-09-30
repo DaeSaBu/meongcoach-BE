@@ -18,7 +18,6 @@ public class EntitlementModifyService implements EntitlementSynchronizer {
 
 	private final EntitlementRepository entitlementRepository;
 
-	// 기존 행의 회수·복구는 변경 감지로 반영되고, 새로 부여한 이용권만 저장한다
 	@Override
 	@Transactional
 	public void synchronize(Long userId, Set<EntitlementType> activeTypes) {
