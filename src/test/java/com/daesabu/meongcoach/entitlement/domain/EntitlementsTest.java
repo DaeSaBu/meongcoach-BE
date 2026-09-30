@@ -65,7 +65,6 @@ class EntitlementsTest {
 		assertThat(List.of(puppy, adult)).noneMatch(Entitlement::isActive);
 	}
 
-	// 회수 시각은 처음 회수를 알게 된 때다. 다시 동기화해도 바뀌지 않아야 언제 잃었는지 답할 수 있다
 	@Test
 	void 이미_회수된_이용권은_회수_시각을_바꾸지_않는다() {
 		Entitlement puppy = Entitlement.grant(USER_ID, EntitlementType.PUPPY);
@@ -78,7 +77,6 @@ class EntitlementsTest {
 		assertThat(puppy.getRevokedAt()).isEqualTo(firstRevokedAt);
 	}
 
-	// 환불 뒤 재구매하거나 다른 계정으로 옮겨 갔던 구매를 복원하면 같은 종류가 다시 활성으로 온다
 	@Test
 	void 회수된_종류가_다시_오면_새로_만들지_않고_되살린다() {
 		Entitlement puppy = Entitlement.grant(USER_ID, EntitlementType.PUPPY);

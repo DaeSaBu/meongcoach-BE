@@ -6,7 +6,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;
 import org.junit.jupiter.api.Test;
 
-// 회수·복구가 필요한 행만 고르는 일은 Entitlements가 하므로, 같은 상태로 다시 바꾸려는 호출은 그 판단이 틀렸다는 뜻이다
 class EntitlementTest {
 
 	private static final Long USER_ID = 1L;
