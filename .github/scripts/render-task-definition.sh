@@ -38,6 +38,13 @@ IMAGE_URI=${3}
 : "${SQS_ACCESS_KEY_ID:?SQS_ACCESS_KEY_ID가 필요합니다.}"
 : "${SQS_SECRET_ACCESS_KEY:?SQS_SECRET_ACCESS_KEY가 필요합니다.}"
 : "${AI_VIDEO_QUEUE:?AI_VIDEO_QUEUE가 필요합니다.}"
+# REVENUECAT_BASE_URL은 application.yml에 기본값이 있어 주입하지 않는다.
+: "${REVENUECAT_API_KEY:?REVENUECAT_API_KEY가 필요합니다.}"
+: "${REVENUECAT_PROJECT_ID:?REVENUECAT_PROJECT_ID가 필요합니다.}"
+: "${REVENUECAT_ENTITLEMENT_ID_PUPPY:?REVENUECAT_ENTITLEMENT_ID_PUPPY가 필요합니다.}"
+: "${REVENUECAT_ENTITLEMENT_ID_JUNIOR:?REVENUECAT_ENTITLEMENT_ID_JUNIOR가 필요합니다.}"
+: "${REVENUECAT_ENTITLEMENT_ID_ADULT:?REVENUECAT_ENTITLEMENT_ID_ADULT가 필요합니다.}"
+: "${REVENUECAT_ENTITLEMENT_ID_SENIOR:?REVENUECAT_ENTITLEMENT_ID_SENIOR가 필요합니다.}"
 
 # jq 결과는 stdout으로 나간다. workflow가 이를 register-task-definition 입력 파일로 저장한다.
 jq \
@@ -69,6 +76,12 @@ jq \
 	--arg sqs_access_key_id "${SQS_ACCESS_KEY_ID:-}" \
 	--arg sqs_secret_access_key "${SQS_SECRET_ACCESS_KEY:-}" \
 	--arg ai_video_queue "${AI_VIDEO_QUEUE:-}" \
+	--arg revenuecat_api_key "${REVENUECAT_API_KEY:-}" \
+	--arg revenuecat_project_id "${REVENUECAT_PROJECT_ID:-}" \
+	--arg revenuecat_entitlement_id_puppy "${REVENUECAT_ENTITLEMENT_ID_PUPPY:-}" \
+	--arg revenuecat_entitlement_id_junior "${REVENUECAT_ENTITLEMENT_ID_JUNIOR:-}" \
+	--arg revenuecat_entitlement_id_adult "${REVENUECAT_ENTITLEMENT_ID_ADULT:-}" \
+	--arg revenuecat_entitlement_id_senior "${REVENUECAT_ENTITLEMENT_ID_SENIOR:-}" \
 	--arg sentry_dsn "${SENTRY_DSN:-}" \
 	--arg sentry_release "${SENTRY_RELEASE:-}" '
 	if ([.containerDefinitions[] | select(.name == $container)] | length) != 1 then
@@ -111,7 +124,8 @@ jq \
 							.name != "S3_SECRET_ACCESS_KEY" and
 							.name != "SQS_ACCESS_KEY_ID" and
 							.name != "SQS_SECRET_ACCESS_KEY" and
-							.name != "EVOLINK_API_KEY"
+							.name != "EVOLINK_API_KEY" and
+							.name != "REVENUECAT_API_KEY"
 						))
 					)
 					| .environment = (
@@ -146,6 +160,12 @@ jq \
 								.name != "EVOLINK_API_KEY" and
 								.name != "EVOLINK_BASE_URL" and
 								.name != "EVOLINK_MODEL" and
+								.name != "REVENUECAT_API_KEY" and
+								.name != "REVENUECAT_PROJECT_ID" and
+								.name != "REVENUECAT_ENTITLEMENT_ID_PUPPY" and
+								.name != "REVENUECAT_ENTITLEMENT_ID_JUNIOR" and
+								.name != "REVENUECAT_ENTITLEMENT_ID_ADULT" and
+								.name != "REVENUECAT_ENTITLEMENT_ID_SENIOR" and
 								.name != "SENTRY_DSN" and
 								.name != "SENTRY_RELEASE"
 							))) +
@@ -173,7 +193,13 @@ jq \
 							{"name": "SQS_ACCESS_KEY_ID", "value": $sqs_access_key_id},
 							{"name": "SQS_SECRET_ACCESS_KEY", "value": $sqs_secret_access_key},
 							{"name": "AI_VIDEO_QUEUE", "value": $ai_video_queue},
-							{"name": "EVOLINK_API_KEY", "value": $evolink_api_key}
+							{"name": "EVOLINK_API_KEY", "value": $evolink_api_key},
+							{"name": "REVENUECAT_API_KEY", "value": $revenuecat_api_key},
+							{"name": "REVENUECAT_PROJECT_ID", "value": $revenuecat_project_id},
+							{"name": "REVENUECAT_ENTITLEMENT_ID_PUPPY", "value": $revenuecat_entitlement_id_puppy},
+							{"name": "REVENUECAT_ENTITLEMENT_ID_JUNIOR", "value": $revenuecat_entitlement_id_junior},
+							{"name": "REVENUECAT_ENTITLEMENT_ID_ADULT", "value": $revenuecat_entitlement_id_adult},
+							{"name": "REVENUECAT_ENTITLEMENT_ID_SENIOR", "value": $revenuecat_entitlement_id_senior}
 						] +
 						# 미설정 시 application.yml의 기본값을 쓰도록 주입 자체를 생략한다
 						(if $evolink_base_url == "" then
