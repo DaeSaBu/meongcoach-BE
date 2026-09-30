@@ -24,12 +24,12 @@ public class EntitlementSyncService implements EntitlementSynchronizer {
 	@Override
 	@Transactional(propagation = Propagation.NOT_SUPPORTED)
 	public void synchronize(Long userId) {
-		Set<EntitlementType> activeTypes = activeEntitlementReader.readActiveTypes(userId);
+		Set<EntitlementType> activeEntitlementTypes = activeEntitlementReader.readActiveEntitlementTypes(userId);
 		if (!userFinder.isActiveUser(userId)) {
 			log.warn("탈퇴한 회원이라 이용권을 동기화하지 않음: userId={}", userId);
 			return;
 		}
 
-		entitlementModifyService.synchronize(userId, activeTypes);
+		entitlementModifyService.synchronize(userId, activeEntitlementTypes);
 	}
 }

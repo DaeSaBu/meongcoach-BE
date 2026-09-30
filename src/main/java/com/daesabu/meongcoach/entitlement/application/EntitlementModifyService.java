@@ -18,12 +18,12 @@ public class EntitlementModifyService {
 	private final EntitlementRepository entitlementRepository;
 
 	@Transactional
-	public void synchronize(Long userId, Set<EntitlementType> activeTypes) {
+	public void synchronize(Long userId, Set<EntitlementType> activeEntitlementTypes) {
 		entitlementRepository.lockByUserId(userId);
 
 		Entitlements entitlements = new Entitlements(entitlementRepository.findAllByUserId(userId));
 
-		List<Entitlement> granted = entitlements.synchronize(userId, activeTypes);
+		List<Entitlement> granted = entitlements.synchronize(userId, activeEntitlementTypes);
 
 		entitlementRepository.saveAll(granted);
 	}

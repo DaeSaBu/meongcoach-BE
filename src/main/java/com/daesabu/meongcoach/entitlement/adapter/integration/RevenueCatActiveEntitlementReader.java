@@ -31,7 +31,7 @@ public class RevenueCatActiveEntitlementReader implements ActiveEntitlementReade
 	}
 
 	@Override
-	public Set<EntitlementType> readActiveTypes(Long userId) {
+	public Set<EntitlementType> readActiveEntitlementTypes(Long userId) {
 		RevenueCatActiveEntitlementsResponse response = fetchActiveEntitlements(userId);
 		if (response == null) {
 			return Set.of();

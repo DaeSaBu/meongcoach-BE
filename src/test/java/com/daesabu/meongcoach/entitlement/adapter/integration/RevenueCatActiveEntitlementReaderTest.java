@@ -69,7 +69,7 @@ class RevenueCatActiveEntitlementReaderTest {
 				.andExpect(header("Authorization", "Bearer " + API_KEY))
 				.andRespond(withSuccess(activeEntitlements("entl_puppy", "entl_junior"), MediaType.APPLICATION_JSON));
 
-		Set<EntitlementType> activeTypes = reader.readActiveTypes(USER_ID);
+		Set<EntitlementType> activeTypes = reader.readActiveEntitlementTypes(USER_ID);
 
 		assertThat(activeTypes).containsExactlyInAnyOrder(EntitlementType.PUPPY, EntitlementType.JUNIOR);
 		server.verify();
@@ -80,7 +80,7 @@ class RevenueCatActiveEntitlementReaderTest {
 		server.expect(requestTo(ACTIVE_ENTITLEMENTS_URL))
 				.andRespond(withSuccess(activeEntitlements("entl_unknown", "entl_adult"), MediaType.APPLICATION_JSON));
 
-		Set<EntitlementType> activeTypes = reader.readActiveTypes(USER_ID);
+		Set<EntitlementType> activeTypes = reader.readActiveEntitlementTypes(USER_ID);
 
 		assertThat(activeTypes).containsExactly(EntitlementType.ADULT);
 	}
@@ -90,7 +90,7 @@ class RevenueCatActiveEntitlementReaderTest {
 		server.expect(requestTo(ACTIVE_ENTITLEMENTS_URL))
 				.andRespond(withSuccess(activeEntitlements(), MediaType.APPLICATION_JSON));
 
-		Set<EntitlementType> activeTypes = reader.readActiveTypes(USER_ID);
+		Set<EntitlementType> activeTypes = reader.readActiveEntitlementTypes(USER_ID);
 
 		assertThat(activeTypes).isEmpty();
 	}
@@ -99,7 +99,7 @@ class RevenueCatActiveEntitlementReaderTest {
 	void RevenueCat에_고객이_없으면_빈_집합을_반환한다() {
 		server.expect(requestTo(ACTIVE_ENTITLEMENTS_URL)).andRespond(withResourceNotFound());
 
-		Set<EntitlementType> activeTypes = reader.readActiveTypes(USER_ID);
+		Set<EntitlementType> activeTypes = reader.readActiveEntitlementTypes(USER_ID);
 
 		assertThat(activeTypes).isEmpty();
 	}
@@ -108,7 +108,7 @@ class RevenueCatActiveEntitlementReaderTest {
 	void RevenueCat_호출_한도를_넘으면_이용권_조회_불가_예외를_던진다() {
 		server.expect(requestTo(ACTIVE_ENTITLEMENTS_URL)).andRespond(withTooManyRequests());
 
-		assertThatThrownBy(() -> reader.readActiveTypes(USER_ID))
+		assertThatThrownBy(() -> reader.readActiveEntitlementTypes(USER_ID))
 				.isInstanceOf(EntitlementProviderUnavailableException.class);
 	}
 
@@ -116,7 +116,7 @@ class RevenueCatActiveEntitlementReaderTest {
 	void RevenueCat_서버_오류면_이용권_조회_불가_예외를_던진다() {
 		server.expect(requestTo(ACTIVE_ENTITLEMENTS_URL)).andRespond(withServerError());
 
-		assertThatThrownBy(() -> reader.readActiveTypes(USER_ID))
+		assertThatThrownBy(() -> reader.readActiveEntitlementTypes(USER_ID))
 				.isInstanceOf(EntitlementProviderUnavailableException.class);
 	}
 
@@ -125,7 +125,7 @@ class RevenueCatActiveEntitlementReaderTest {
 		server.expect(requestTo(ACTIVE_ENTITLEMENTS_URL))
 				.andRespond(withException(new IOException("connection refused")));
 
-		assertThatThrownBy(() -> reader.readActiveTypes(USER_ID))
+		assertThatThrownBy(() -> reader.readActiveEntitlementTypes(USER_ID))
 				.isInstanceOf(EntitlementProviderUnavailableException.class);
 	}
 }
