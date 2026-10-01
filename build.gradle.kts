@@ -69,8 +69,6 @@ dependencies {
 	// Spring Boot 4는 Flyway 자동 구성이 starter로 분리돼 있어 없으면 기동 시 마이그레이션이 실행되지 않는다
 	implementation("org.springframework.boot:spring-boot-starter-flyway")
 	implementation("org.flywaydb:flyway-database-postgresql")
-	// 로컬 실행 시 compose.yml의 postgres를 자동 기동한다. developmentOnly라 bootJar(배포)에는 포함되지 않는다
-	developmentOnly("org.springframework.boot:spring-boot-docker-compose")
 	annotationProcessor("org.projectlombok:lombok")
 	asciidoctorExt("org.springframework.restdocs:spring-restdocs-asciidoctor")
 	testImplementation("org.springframework.boot:spring-boot-restdocs")
