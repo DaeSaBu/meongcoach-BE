@@ -216,10 +216,8 @@ Google Play·App Store 심사자는 소셜 계정을 만들 수 없으므로, �
 
 ### 테스트 계정 등록
 
-**local**은 `src/main/resources/db/local/test-account-data.sql`이 기동마다 적재합니다(이메일·비밀번호는 파일 머리 주석 참고).
 온보딩 전 상태(`ONBOARDING_USER`, 프로필 없음)로 두어 심사자가 앱에서 온보딩까지 직접 진행합니다.
-
-**dev/prod**는 마이그레이션 도구가 없어 psql로 직접 등록합니다. 먼저 BCrypt 해시를 만듭니다.
+마이그레이션 도구가 없어 dev/prod에 psql로 직접 등록합니다. 먼저 BCrypt 해시를 만듭니다.
 
 ```bash
 htpasswd -bnBC 10 "" '비밀번호' | tr -d ':\n'   # macOS 기본 제공. $2y$ 접두어도 BCryptPasswordEncoder가 허용합니다
@@ -238,12 +236,12 @@ SELECT id, 'review@example.com', '$2y$10$...', now(), now() FROM new_user;
 COMMIT;
 ```
 
-- 평문 비밀번호는 커밋하지 않고 심사 제출 양식에만 적습니다. local 시드의 비밀번호는 로컬 전용이라 예외입니다.
+- 평문 비밀번호는 커밋하지 않고 심사 제출 양식에만 적습니다.
 - 심사가 끝나 계정을 막으려면 `UPDATE users SET status = 'WITHDRAWN' WHERE id = (SELECT user_id FROM email_accounts WHERE email = '...')`.
   행을 지우려면 `email_accounts` → `users` 순서로 삭제합니다.
 - **심사관이 탈퇴 API(`DELETE /api/auth/me`)를 시험하면 `email_accounts` 행이 삭제되어 그 계정으로는 더 로그인할 수 없습니다.**
   `users` 행은 `WITHDRAWN`으로 남지만 이메일 유니크는 풀리므로, 위 SQL로 같은 이메일을 다시 등록하면 됩니다(새 `users` 행이 생깁니다).
-  심사 제출 전과 심사 사이에 계정이 살아 있는지 확인하세요. local은 기동마다 시드가 다시 적재되어 신경 쓸 필요가 없습니다.
+  심사 제출 전과 심사 사이에 계정이 살아 있는지 확인하세요.
 - prod는 `ddl-auto: validate`라 `email_accounts` 테이블이 없으면 기동 자체가 실패합니다. 엔티티는 이미 배포되어 있으므로 테이블 존재만 확인하면 됩니다.
 
 ## 제공자 추가 방법
