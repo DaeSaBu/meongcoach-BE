@@ -3,6 +3,7 @@ package com.daesabu.meongcoach.training.application.required;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.daesabu.meongcoach.training.domain.TrainingCategory;
+import com.daesabu.meongcoach.training.domain.TrainingCategoryFixture;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,9 +24,9 @@ class TrainingCategoryRepositoryTest {
 
 	@Test
 	void 카테고리를_정렬_순서_오름차순으로_조회한다() {
-		entityManager.persist(TrainingCategory.create("생활 습관", 3, null, null));
-		entityManager.persist(TrainingCategory.create("기본 교육", 1, null, null));
-		entityManager.persist(TrainingCategory.create("문제 행동", 2, null, null));
+		entityManager.persist(TrainingCategoryFixture.create("생활 습관", 3, null, null));
+		entityManager.persist(TrainingCategoryFixture.create("기본 교육", 1, null, null));
+		entityManager.persist(TrainingCategoryFixture.create("문제 행동", 2, null, null));
 		entityManager.flush();
 
 		List<TrainingCategory> categories = trainingCategoryRepository.findAllByOrderBySortOrderAscIdAsc();
@@ -36,8 +37,8 @@ class TrainingCategoryRepositoryTest {
 
 	@Test
 	void 정렬_순서가_같으면_id_오름차순으로_조회한다() {
-		TrainingCategory first = entityManager.persist(TrainingCategory.create("먼저 등록", 1, null, null));
-		TrainingCategory second = entityManager.persist(TrainingCategory.create("나중 등록", 1, null, null));
+		TrainingCategory first = entityManager.persist(TrainingCategoryFixture.create("먼저 등록", 1, null, null));
+		TrainingCategory second = entityManager.persist(TrainingCategoryFixture.create("나중 등록", 1, null, null));
 		entityManager.flush();
 
 		List<TrainingCategory> categories = trainingCategoryRepository.findAllByOrderBySortOrderAscIdAsc();

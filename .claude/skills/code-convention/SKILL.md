@@ -91,7 +91,7 @@ Java 소스(`src/main/java`, `src/test/java`)의 주석은 interface에만 두�
 - 외부 API 응답 DTO는 `adapter/integration/dto`에 `~Response` record로 두고, 필드 매핑은 `@JsonProperty`로 지정한다. 전역 네이밍 전략(`spring.jackson.property-naming-strategy`)을 바꾸면 우리 API 응답까지 영향을 받으므로 쓰지 않는다.
 - 도메인 입력 모델은 `~Command` 접미사의 record로 `domain`에 두며, 웹 DTO와 별개로 유지한다. (예: `DogRegisterCommand`)
 	- 엔티티 정적 팩토리의 순수 값 파라미터가 3개 이상이면 Command로 묶고, 팩토리는 Command를 받아 생성자에 전달한다.
-	- 연관 엔티티는 Command에 담지 않고 별도 인자로 전달한다. (예: `Curriculum.create(Topic topic, CurriculumCreateCommand command)`)
+	- 연관 엔티티는 Command에 담지 않고 별도 인자로 전달한다. (예: `UserProfile.create(User user, UserProfileCreateCommand command)`)
 - 애플리케이션 조회 결과는 **도메인 타입(엔티티·값 객체)을 그대로 반환하는 것이 기본**이다. 값을 그대로 옮겨 담기만 하는 `~Result`는 만들지 않는다.
 	- **도메인 타입 하나로 표현할 수 없을 때만** — 여러 애그리거트 조합, 일부 필드만 내리는 projection, 집계값 — `application/provided`에 `~Result` record를 두고 감싼다.
 	- 모듈 경계를 넘는다는 이유만으로 `~Result`를 만들지 않는다. 다른 모듈이 필요한 enum·값 객체는 `domain/shared`로 노출해 그대로 주고받는다. 노출되지 않은 도메인 타입을 provided 인터페이스 시그니처에 쓰면 호출하는 모듈이 `ApplicationModules.verify()`에서 실패한다 — 그때 해법은 record 복사본이 아니라 노출이다. 엔티티는 노출하지 않으므로 엔티티를 경계 밖으로 내려야 하면 `~Result`로 projection한다. 노출 규칙의 원천은 [docs/architecture.md](../../../docs/architecture.md)의 모듈 규칙.

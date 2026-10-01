@@ -3,14 +3,15 @@ package com.daesabu.meongcoach.training.application.required;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.daesabu.meongcoach.training.domain.Card;
-import com.daesabu.meongcoach.training.domain.CardCreateCommand;
+import com.daesabu.meongcoach.training.domain.CardFixture;
 import com.daesabu.meongcoach.training.domain.Curriculum;
-import com.daesabu.meongcoach.training.domain.CurriculumCreateCommand;
+import com.daesabu.meongcoach.training.domain.CurriculumFixture;
 import com.daesabu.meongcoach.training.domain.Lesson;
-import com.daesabu.meongcoach.training.domain.LessonCreateCommand;
+import com.daesabu.meongcoach.training.domain.LessonFixture;
 import com.daesabu.meongcoach.training.domain.Topic;
-import com.daesabu.meongcoach.training.domain.TopicCreateCommand;
+import com.daesabu.meongcoach.training.domain.TopicFixture;
 import com.daesabu.meongcoach.training.domain.TrainingCategory;
+import com.daesabu.meongcoach.training.domain.TrainingCategoryFixture;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -81,15 +82,13 @@ class CardRepositoryTest {
 	}
 
 	private Lesson persistLesson(String title) {
-		TrainingCategory category = entityManager.persist(TrainingCategory.create(title + " 카테고리", 1, null, null));
-		Topic topic = entityManager.persist(Topic.create(category, new TopicCreateCommand(title, 1, null, null, null)));
-		CurriculumCreateCommand curriculumCommand = new CurriculumCreateCommand(title + " 커리큘럼", 1, null, null);
-		Curriculum curriculum = entityManager.persist(Curriculum.create(topic, curriculumCommand));
-		return entityManager.persist(Lesson.create(curriculum, new LessonCreateCommand(title + " 레슨", 1, 5)));
+		TrainingCategory category = entityManager.persist(TrainingCategoryFixture.create(title + " 카테고리", 1, null, null));
+		Topic topic = entityManager.persist(TopicFixture.create(category, title, 1, null, null, null));
+		Curriculum curriculum = entityManager.persist(CurriculumFixture.create(topic, title + " 커리큘럼", 1, null, null));
+		return entityManager.persist(LessonFixture.create(curriculum, title + " 레슨", 1, 5));
 	}
 
 	private Card persistCard(Lesson lesson, String title, int sortOrder) {
-		CardCreateCommand command = new CardCreateCommand(title, sortOrder, "지시문");
-		return entityManager.persist(Card.create(lesson, command));
+		return entityManager.persist(CardFixture.create(lesson, title, sortOrder, "지시문"));
 	}
 }

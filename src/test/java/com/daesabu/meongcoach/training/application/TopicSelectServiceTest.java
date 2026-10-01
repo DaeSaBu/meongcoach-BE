@@ -6,8 +6,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.daesabu.meongcoach.progress.application.TopicEntryService;
 import com.daesabu.meongcoach.training.application.provided.TopicSelector;
 import com.daesabu.meongcoach.training.domain.Topic;
-import com.daesabu.meongcoach.training.domain.TopicCreateCommand;
+import com.daesabu.meongcoach.training.domain.TopicFixture;
 import com.daesabu.meongcoach.training.domain.TrainingCategory;
+import com.daesabu.meongcoach.training.domain.TrainingCategoryFixture;
 import com.daesabu.meongcoach.training.domain.exception.TopicNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -86,8 +87,8 @@ class TopicSelectServiceTest {
 	}
 
 	private Topic persistTopic(String title, int sortOrder) {
-		TrainingCategory category = entityManager.persist(TrainingCategory.create("기본 교육", 1, null, null));
-		return entityManager.persist(Topic.create(category, new TopicCreateCommand(title, sortOrder, null, null, null)));
+		TrainingCategory category = entityManager.persist(TrainingCategoryFixture.create("기본 교육", 1, null, null));
+		return entityManager.persist(TopicFixture.create(category, title, sortOrder, null, null, null));
 	}
 
 	private long countEntries() {

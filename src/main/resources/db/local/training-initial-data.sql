@@ -6,23 +6,6 @@
 -- Counts: categories=8, topics=29, curriculums=120, lessons=237, cards=996, cardMedia=428.
 BEGIN;
 
-DELETE FROM "card_branches"
-WHERE "card_id" IN (
-	SELECT "cards"."id"
-	FROM "cards"
-	JOIN "lessons" ON "lessons"."id" = "cards"."lesson_id"
-	JOIN "curriculums" ON "curriculums"."id" = "lessons"."curriculum_id"
-	WHERE "curriculums"."topic_id" = 106
-)
-OR "next_card_id" IN (
-	SELECT "cards"."id"
-	FROM "cards"
-	JOIN "lessons" ON "lessons"."id" = "cards"."lesson_id"
-	JOIN "curriculums" ON "curriculums"."id" = "lessons"."curriculum_id"
-	WHERE "curriculums"."topic_id" = 106
-)
-OR "card_id" IN (109010104, 109010106, 109020106, 109020206)
-OR "next_card_id" IN (109010104, 109010106, 109020106, 109020206);
 DELETE FROM "card_media" WHERE "card_id" IN (109010104, 109010106, 109020106, 109020206);
 DELETE FROM "card_media"
 WHERE "card_id" IN (
