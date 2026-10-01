@@ -40,4 +40,7 @@ public class Curriculum extends BaseEntity {
 
 	@Column(nullable = false, columnDefinition = "TEXT")
 	private String description;
+
+	@Column(nullable = false)
+	private boolean isPremium;
 }
