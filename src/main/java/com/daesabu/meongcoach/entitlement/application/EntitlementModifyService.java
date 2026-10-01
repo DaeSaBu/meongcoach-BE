@@ -1,6 +1,5 @@
 package com.daesabu.meongcoach.entitlement.application;
 
-import com.daesabu.meongcoach.entitlement.application.provided.EntitlementSynchronizer;
 import com.daesabu.meongcoach.entitlement.application.required.EntitlementRepository;
 import com.daesabu.meongcoach.entitlement.domain.Entitlement;
 import com.daesabu.meongcoach.entitlement.domain.Entitlements;
@@ -14,16 +13,17 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class EntitlementModifyService implements EntitlementSynchronizer {
+public class EntitlementModifyService {
 
 	private final EntitlementRepository entitlementRepository;
 
-	@Override
 	@Transactional
-	public void synchronize(Long userId, Set<EntitlementType> activeTypes) {
+	public void synchronize(Long userId, Set<EntitlementType> activeEntitlementTypes) {
+		entitlementRepository.lockByUserId(userId);
+
 		Entitlements entitlements = new Entitlements(entitlementRepository.findAllByUserId(userId));
 
-		List<Entitlement> granted = entitlements.synchronize(userId, activeTypes);
+		List<Entitlement> granted = entitlements.synchronize(userId, activeEntitlementTypes);
 
 		entitlementRepository.saveAll(granted);
 	}
