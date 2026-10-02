@@ -258,7 +258,7 @@ class TrainingControllerTest {
 				new CurriculumResult(11L, "앉아 2단계", 4, 1, CurriculumStatus.IN_PROGRESS)
 		)));
 
-		mockMvc.perform(get("/api/training/curriculums")
+		mockMvc.perform(get("/api/training/topic/selection/curriculums")
 						.principal(CURRENT_USER)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isOk())
@@ -292,7 +292,7 @@ class TrainingControllerTest {
 	void 인증_주체에서_읽은_사용자로_커리큘럼_조회를_위임한다() throws Exception {
 		given(curriculumFinder.findCurriculums(42L)).willReturn(new CurriculumListResult(1L, "앉아", List.of()));
 
-		mockMvc.perform(get("/api/training/curriculums").principal(CURRENT_USER))
+		mockMvc.perform(get("/api/training/topic/selection/curriculums").principal(CURRENT_USER))
 				.andExpect(status().isOk());
 
 		then(curriculumFinder).should().findCurriculums(42L);
@@ -302,7 +302,7 @@ class TrainingControllerTest {
 	void 커리큘럼이_없는_토픽은_빈_배열과_200을_반환한다() throws Exception {
 		given(curriculumFinder.findCurriculums(42L)).willReturn(new CurriculumListResult(1L, "앉아", List.of()));
 
-		mockMvc.perform(get("/api/training/curriculums").principal(CURRENT_USER))
+		mockMvc.perform(get("/api/training/topic/selection/curriculums").principal(CURRENT_USER))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.topicId").value(1))
 				.andExpect(jsonPath("$.curriculums").isArray())
@@ -313,7 +313,7 @@ class TrainingControllerTest {
 	void 등록된_토픽이_없으면_404와_에러_코드를_반환한다() throws Exception {
 		given(curriculumFinder.findCurriculums(42L)).willThrow(new TopicNotConfiguredException());
 
-		mockMvc.perform(get("/api/training/curriculums")
+		mockMvc.perform(get("/api/training/topic/selection/curriculums")
 						.principal(CURRENT_USER)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isNotFound())
@@ -334,7 +334,7 @@ class TrainingControllerTest {
 
 	@Test
 	void 커리큘럼_조회_시_인증_정보가_없으면_401을_반환한다() throws Exception {
-		mockMvc.perform(get("/api/training/curriculums"))
+		mockMvc.perform(get("/api/training/topic/selection/curriculums"))
 				.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
 	}

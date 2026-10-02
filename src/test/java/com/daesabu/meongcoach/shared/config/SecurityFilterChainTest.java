@@ -213,7 +213,7 @@ class SecurityFilterChainTest {
 	void 온보딩_미완료_회원이_정회원_전용_경로에_접근하면_ONBOARDING_NOT_COMPLETED_403을_반환한다() throws Exception {
 		AuthToken token = tokenProvider.issue(onboardingUserId);
 
-		mockMvc.perform(get("/api/training/curriculums")
+		mockMvc.perform(get("/api/training/topic/selection/curriculums")
 						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))
 				.andExpect(status().isForbidden())
 				.andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
