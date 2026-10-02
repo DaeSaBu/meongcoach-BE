@@ -8,7 +8,7 @@ import java.util.List;
 public interface TopicFinder {
 
 	/**
-	 * 모든 토픽을 정렬 순서대로 조회한다.
+	 * 모든 토픽을 카테고리 정렬 순서, 토픽 정렬 순서대로 조회한다. 정렬 순서가 같으면 id 오름차순이다.
 	 */
 	List<TopicSummary> findAllOrdered();
 }
