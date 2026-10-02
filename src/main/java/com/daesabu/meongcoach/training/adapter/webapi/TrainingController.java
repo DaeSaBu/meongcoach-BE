@@ -5,7 +5,6 @@ import com.daesabu.meongcoach.training.adapter.webapi.dto.CardListResponse;
 import com.daesabu.meongcoach.training.adapter.webapi.dto.CurriculumDetailResponse;
 import com.daesabu.meongcoach.training.adapter.webapi.dto.CurriculumListResponse;
 import com.daesabu.meongcoach.training.adapter.webapi.dto.LessonCompleteResponse;
-import com.daesabu.meongcoach.training.adapter.webapi.dto.TopicSelectResponse;
 import com.daesabu.meongcoach.training.adapter.webapi.dto.TrainingCategoryListResponse;
 import com.daesabu.meongcoach.training.application.provided.CurriculumFinder;
 import com.daesabu.meongcoach.training.application.provided.LessonCompleter;
@@ -41,11 +40,11 @@ public class TrainingController {
 		return TrainingCategoryListResponse.from(trainingCategoryFinder.findAllWithTopics());
 	}
 
+	@ResponseStatus(HttpStatus.NO_CONTENT)
 	@PutMapping("/topic/selection")
-	public TopicSelectResponse selectTopic(@CurrentUserId Long userId,
-	                                       @Valid @RequestBody TopicSelectionRequest request) {
+	public void selectTopic(@CurrentUserId Long userId,
+	                        @Valid @RequestBody TopicSelectionRequest request) {
 		topicSelector.selectTopic(userId, request);
-		return TopicSelectResponse.from(request.topicId());
 	}
 
 	@GetMapping("/topic/selection/curriculums")
