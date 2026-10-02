@@ -37,15 +37,4 @@ public class Lesson extends BaseEntity {
 
 	@Column(nullable = false)
 	private Integer estimatedMinutes;
-
-	private Lesson(Curriculum curriculum, LessonCreateCommand command) {
-		this.curriculum = curriculum;
-		this.title = command.title();
-		this.sortOrder = command.sortOrder();
-		this.estimatedMinutes = command.estimatedMinutes();
-	}
-
-	public static Lesson create(Curriculum curriculum, LessonCreateCommand command) {
-		return new Lesson(curriculum, command);
-	}
 }

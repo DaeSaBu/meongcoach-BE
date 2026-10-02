@@ -1,6 +1,6 @@
 ---
 name: code-convention
-description: "이 저장소의 코드·테스트 컨벤션 — 도구로 강제되지 않는 스타일 규칙(삼항·else·switch 금지, return 인자 호출 중첩 금지), 역할별 네이밍, 트랜잭션·Lombok·DTO/Result·예외 정의 규칙, 테스트 작성·API 문서화·ArchUnit 규칙(references). Use when writing, modifying, or reviewing Java production code or tests in this repo. Triggers on: 코드 작성, 구현, 리팩토링, 테스트 작성, 코드 리뷰, Java 파일 수정."
+description: "이 저장소의 코드·테스트 컨벤션 — 도구로 강제되지 않는 스타일 규칙(삼항·else·switch 금지, return 인자 호출 중첩 금지), 주석 규칙(`//` 금지, javadoc은 interface에만 동작만 서술), 역할별 네이밍, 트랜잭션·Lombok·DTO/Result·예외 정의 규칙, 테스트 작성·API 문서화·ArchUnit 규칙(references). Use when writing, modifying, or reviewing Java production code or tests in this repo. Triggers on: 코드 작성, 구현, 리팩토링, 테스트 작성, 코드 리뷰, Java 파일 수정, 주석 작성."
 user-invocable: true
 ---
 
@@ -21,14 +21,27 @@ user-invocable: true
 
 ---
 
+## 주석
+
+Java 소스(`src/main/java`, `src/test/java`)의 주석은 interface에만 두고 동작만 적는다. 이 코드를 왜 이렇게 작성했는지는 커밋 body와 PR 설명에 적는다. (주석에 남은 결정이 다음 작성자에게 저장소 규칙으로 읽혀 다른 코드로 번지는 것을 막는다)
+
+- `//` 주석과 `/* */` 블록 주석은 쓰지 않는다. 주석 처리한 코드와 `TODO`도 남기지 않는다.
+- `/** */`는 interface 선언부와 interface 메서드에만 둔다. class·record·enum에는 타입·메서드·필드 어디에도 주석을 두지 않고, `package-info.java`에도 javadoc을 쓰지 않는다. (살아있는 예시: `dog/application/provided/DogRegister`, `entitlement/application/provided/EntitlementSynchronizer`)
+- interface javadoc에는 동작만 짧게 쓴다. 무엇을 받아 무엇을 반환하거나 바꾸는지, 어떤 조건에서 어떤 예외를 던지는지까지만 적는다. 결정 사항, 이렇게 구현하게 된 배경, 다른 방식을 택하지 않은 이유(자기 변호)는 쓰지 않는다.
+	- 판별 기준: 문장에 `~라서`·이유를 잇는 `~(이)라`·`~므로`·`~위해`·`~때문에`·`~대신`·`~가 아니라`가 들어가면 이유 서술이므로 지운다.
+- 이 규칙 이전에 작성한 주석(`//`, class·record·enum javadoc)이 아직 남아 있다. 일괄 삭제하지 않고 해당 파일을 수정할 때 지운다. 남아 있는 주석에 적힌 결정은 저장소 규칙이 아니므로, 그 주석을 근거로 다른 코드를 같은 형태로 바꾸지 않는다. 저장소 전체에 적용할 규칙이라면 AGENTS.md의 "문서 추가 방법"을 따라 이 스킬에 올린다.
+
+---
+
 ## 아키텍처 역할별 네이밍
 
 | 역할 | 위치 | 규칙 | 예시 |
 | --- | --- | --- | --- |
 | 모듈 공개 API 인터페이스 | `application/provided` | 능력을 나타내는 이름, `~Service` 접미사 없음 | `DogRegister`, `MbtiFinder` |
-| 애플리케이션 조회 결과 래퍼 | `application/provided` | `~Result` (record) — 도메인 타입만으로 부족할 때만 | `VideoUploadUrlResult`, `LoginResult` |
+| 애플리케이션 조회 결과 래퍼 | `application/provided` | `~Result` (record) — 도메인 타입만으로 부족할 때만 | `VideoUploadUrlResult`, `OnboardingMetadataResult` |
+| 서비스 입력(웹 요청·모듈 경계 공통) | `application/provided/dto` | `~Request` (record). 도메인 입력이 필요하면 `toCommand()`로 변환 | `SocialLoginRequest`, `SocialAccountRegisterRequest` |
 | 필요 자원 인터페이스 | `application/required` | 자원 이름 그대로 | `UserRepository`, `VideoStorage` |
-| 애플리케이션 서비스 | `application` | `~Service` | `SocialLoginService`, `CurriculumQueryService` |
+| 애플리케이션 서비스 | `application` | `~Service` | `AuthenticationService`, `CurriculumQueryService` |
 | 컨트롤러 | `adapter/webapi` | `~Controller` | `AuthController` |
 | 외부 API 연동 포트 | `application/required` | 자원 이름 그대로 | `SocialProfileReader` |
 | 외부 API 연동 구현 | `adapter/integration` | `{제공자}~` | `KakaoSocialProfileReader` |
@@ -36,11 +49,12 @@ user-invocable: true
 | 도메인 입력 모델 | `domain` | `~Command` (record) | `DogRegisterCommand` |
 | 일급 컬렉션 | `domain` | 엔티티 이름의 복수형 | `Dogs` |
 | 다른 모듈에 노출하는 도메인 타입 | `domain/shared` | 개념 이름 그대로. `package-info.java`에 `@NamedInterface("shared")` 선언 | `Breed` |
-| 값 객체 | `domain/vo` | 개념 이름 그대로 | `Email` |
-| 도메인 예외·에러코드 | `domain/exception` | `{모듈}ErrorCode`, `~Exception` | `UserErrorCode`, `InvalidEmailException` |
+| 값 객체 | `domain` | 개념 이름 그대로 | `RefreshTokenId`, `VideoObjectKey` |
+| 도메인 예외·에러코드 | `domain/exception` | `{모듈}ErrorCode`, `~Exception` | `AuthErrorCode`, `InvalidEmailException` |
 
-- `domain` 루트에는 엔티티·enum·일급 컬렉션을 두고, 값 객체는 `domain/vo`, 예외·에러코드는 `domain/exception`으로 분리한다.
+- `domain` 루트에는 엔티티·enum·일급 컬렉션·값 객체를 두고, 예외·에러코드는 `domain/exception`으로 분리한다. 값 객체용 하위 패키지(`vo`)는 만들지 않으며, 다른 모듈에 노출하는 값 객체만 `domain/shared`에 둔다.
 - 일급 컬렉션은 엔티티 하나로는 판단할 수 없는 규칙(마리 수 상한, 마지막 한 마리 삭제 금지처럼 한 사용자 소유 목록 전체를 봐야 하는 규칙)을 담을 때만 둔다. 영속화 단위가 아니라 application이 리포지토리로 조회한 목록을 생성자로 넘겨 만들며, 리포지토리를 참조하지 않는다. 규칙은 Spring 없는 단위 테스트로 검증한다. (살아있는 예시: `dog/domain/Dogs`)
+	- 목록 전체를 보고 판단한 결과로 새 엔티티가 생기면 그 생성도 일급 컬렉션이 맡는다. 기존 엔티티는 그 자리에서 바꾸고, 새로 만든 엔티티만 돌려주어 호출자가 저장한다. (살아있는 예시: 활성 종류에 맞춰 회수·복구하고 없던 종류만 새로 부여하는 `entitlement/domain/Entitlements.synchronize`)
 - 일급 컬렉션의 규칙을 거쳐야만 호출할 수 있는 엔티티 메서드는 package-private으로 두어 application이 우회하지 못하게 한다. 같은 패키지의 도메인 단위 테스트는 그대로 호출하고, application 테스트는 일급 컬렉션을 경유해 상태를 만든다. (살아있는 예시: `Dog.delete()`)
 
 ---
@@ -66,11 +80,18 @@ user-invocable: true
 ## DTO
 
 - 요청/응답 DTO는 Java `record`로 작성한다.
-- 웹 요청/응답 DTO는 `adapter/webapi/dto`에 두고, 접미사는 요청 `~Request`, 응답 `~Response`를 사용한다. (예: `SocialLoginRequest`, `SocialLoginResponse`)
+- 요청 DTO(`~Request`)는 `application/provided/dto`에 두고, 컨트롤러가 `@Valid @RequestBody`로 받아 **그대로** provided 인터페이스에 넘긴다. 컨트롤러에서 값을 풀어 인자로 나눠 넘기거나 웹 전용 요청 DTO를 따로 만들지 않는다. (살아있는 예시: `auth/application/provided/dto`, `AuthController`)
+	- `provided/dto`에는 `package-info.java`로 `@NamedInterface("provided")`를 선언한다. 패키지 선언은 하위 패키지로 전파되지 않아, 빠뜨리면 다른 모듈이 이 Request를 쓸 때 `verify()`가 실패한다. (살아있는 예시: `auth/application/provided/dto`)
+	- 제약 어노테이션(`@NotBlank`, `@NotNull`)은 이 record에 한 번만 선언한다. provided 인터페이스 파라미터에 `@Valid`를, 서비스 구현 클래스에 `@Validated`를 붙여 다른 모듈·서비스가 호출하는 경로도 같은 제약으로 검증한다. 제약은 대상 타입에 맞는 것을 쓴다 — `@NotBlank`는 문자열 전용이라 값 객체·`LocalDateTime`에 붙이면 런타임에 `UnexpectedTypeException`이 난다.
+	- **컨트롤러가 `@RequestBody`로 받는** `~Request`의 필드는 JSON에서 바로 역직렬화되는 타입(문자열·숫자·날짜)으로 두고, 값 객체·enum 변환(`new Email(...)`, `SocialProvider.from(...)`)은 서비스·도메인에서 한다. enum을 필드 타입으로 두면 Jackson이 대소문자를 구분하고, 잘못된 값이 우리 에러 코드 없이 일반 400으로 끝난다. 단일 컴포넌트 record 값 객체를 필드로 두면 JSON이 `{"email": {"address": "..."}}` 형태를 요구한다.
+	- 서비스끼리 주고받는 `~Request`(컨트롤러를 거치지 않는 입력)는 이 제약을 받지 않는다. 역직렬화가 없고 이미 검증된 값을 넘기는 것이므로 값 객체·enum을 그대로 필드 타입으로 쓴다. (예: `EmailAccountFindRequest(Email)`, `SocialAccountRegisterRequest(SocialProvider, …, Email)`) 응답 DTO도 enum을 그대로 써도 된다 — 상수명 문자열로 직렬화된다.
+	- 도메인 입력이 필요하면 `toCommand()`로 `~Command`를 만든다. `domain`의 Command는 모듈 밖에 노출하지 않는다. (예: `SocialAccountRegisterRequest.toCommand()`)
+	- 이 규칙 이전에 만든 모듈(`dog`, `onboarding`, `training`, `ai`)의 요청 DTO는 아직 `adapter/webapi/dto`에 있다. 일괄 이동하지 않고 해당 API를 수정할 때 옮긴다.
+- 응답 DTO(`~Response`)는 `adapter/webapi/dto`에 둔다. 웹 노출 형태는 `adapter`의 관심사다. (예: `TokenResponse`)
 - 외부 API 응답 DTO는 `adapter/integration/dto`에 `~Response` record로 두고, 필드 매핑은 `@JsonProperty`로 지정한다. 전역 네이밍 전략(`spring.jackson.property-naming-strategy`)을 바꾸면 우리 API 응답까지 영향을 받으므로 쓰지 않는다.
 - 도메인 입력 모델은 `~Command` 접미사의 record로 `domain`에 두며, 웹 DTO와 별개로 유지한다. (예: `DogRegisterCommand`)
 	- 엔티티 정적 팩토리의 순수 값 파라미터가 3개 이상이면 Command로 묶고, 팩토리는 Command를 받아 생성자에 전달한다.
-	- 연관 엔티티는 Command에 담지 않고 별도 인자로 전달한다. (예: `Curriculum.create(Topic topic, CurriculumCreateCommand command)`)
+	- 연관 엔티티는 Command에 담지 않고 별도 인자로 전달한다. (예: `UserProfile.create(User user, UserProfileCreateCommand command)`)
 - 애플리케이션 조회 결과는 **도메인 타입(엔티티·값 객체)을 그대로 반환하는 것이 기본**이다. 값을 그대로 옮겨 담기만 하는 `~Result`는 만들지 않는다.
 	- **도메인 타입 하나로 표현할 수 없을 때만** — 여러 애그리거트 조합, 일부 필드만 내리는 projection, 집계값 — `application/provided`에 `~Result` record를 두고 감싼다.
 	- 모듈 경계를 넘는다는 이유만으로 `~Result`를 만들지 않는다. 다른 모듈이 필요한 enum·값 객체는 `domain/shared`로 노출해 그대로 주고받는다. 노출되지 않은 도메인 타입을 provided 인터페이스 시그니처에 쓰면 호출하는 모듈이 `ApplicationModules.verify()`에서 실패한다 — 그때 해법은 record 복사본이 아니라 노출이다. 엔티티는 노출하지 않으므로 엔티티를 경계 밖으로 내려야 하면 `~Result`로 projection한다. 노출 규칙의 원천은 [docs/architecture.md](../../../docs/architecture.md)의 모듈 규칙.
@@ -83,13 +104,14 @@ user-invocable: true
 
 ## 예외
 
-예외는 각 모듈이 자기 도메인에 맞게 정의해 **던지기만** 하고, HTTP 에러 응답 변환은 `shared/webapi/GlobalExceptionHandler`가 RFC 9457 Problem Details 형식으로 전담한다. 응답 형식·전역 핸들러 처리 범위·시큐리티 필터 체인 예외 번역은 [docs/error-handling.md](../../../docs/error-handling.md) 참고. 살아있는 예시는 `user/domain/exception`.
+예외는 각 모듈이 자기 도메인에 맞게 정의해 **던지기만** 하고, HTTP 에러 응답 변환은 `shared/webapi/GlobalExceptionHandler`가 RFC 9457 Problem Details 형식으로 전담한다. 응답 형식·전역 핸들러 처리 범위·시큐리티 필터 체인 예외 번역은 [docs/error-handling.md](../../../docs/error-handling.md) 참고. 살아있는 예시는 `auth/domain/exception`.
 
 - 컨트롤러/서비스에 개별 `@ExceptionHandler`를 만들지 않고, 예외를 catch해서 에러 DTO를 직접 조립해 반환하지 않는다. 예상치 못한 예외도 전역 핸들러 fallback이 500으로 변환하므로 별도 방어 코드를 두지 않는다.
 - `domain/exception`에 모듈당 1개 `{모듈}ErrorCode` enum을 `ErrorCode` 구현으로 두고, 상수 이름은 `{모듈}_{원인}` 형식의 UPPER_SNAKE_CASE로 전역에서 유일하게 짓는다. `code()`가 `name()`을 반환하므로 상수 이름이 곧 클라이언트 분기용 에러 코드다.
 - 케이스별 구체 예외는 `DomainException`을 상속한 `~Exception`으로 둔다. 구체 타입이 있어야 테스트에서 `isInstanceOf`로 검증할 수 있다. 기본 메시지로 충분하면 `super(ErrorCode)`만 호출하고, 상황 정보가 필요하면 두 번째 인자로 detail을 넘긴다 — **detail은 응답에 그대로 노출되므로 민감 정보를 넣지 않는다.**
+- 클라이언트 요청으로 일어날 수 있는 규칙 위반은 위 `DomainException`으로, 호출 쪽이 이미 걸러야 해서 정상 흐름에서는 일어나지 않는 상태 전이는 `org.springframework.util.Assert.state`로 막는다. `Assert.state`는 호출 코드의 버그를 잡는 최후의 방어선이라 에러 코드 없이 `IllegalStateException`(전역 핸들러에서 500)으로 끝난다. 메시지는 응답에 드러나지 않고 원인은 스택 트레이스로 찾으므로, 값을 붙이지 않은 상수 문자열로 짧게 둔다. `Assert`는 `domain`에서만 쓴다(`AnnotationPatternTest`). (살아있는 예시: 일급 컬렉션이 고른 행만 회수·복구하는 `Entitlement.revoke()`·`restore()`)
 - 예외를 catch해서 삼키거나 로그만 찍고 다시 던지지 않는다. 로깅은 전역 핸들러가 일괄 수행한다. (중복 로깅 금지)
-- `shared/exception`(`ErrorCode`, `DomainException`)은 순수 Java로 유지한다. `domain`은 Spring에 의존할 수 없으므로 `ErrorCode.status()`는 `HttpStatus`가 아닌 `int`를 반환하고 `HttpStatus` 변환은 `GlobalExceptionHandler`에서만 한다. 같은 이유로 `domain`은 `shared/webapi`를 참조하지 않는다.
+- `shared/exception`(`ErrorCode`, `DomainException`)은 순수 Java로 유지한다. `domain`은 상태 가드용 `Assert` 외에는 Spring에 의존할 수 없으므로 `ErrorCode.status()`는 `HttpStatus`가 아닌 `int`를 반환하고 `HttpStatus` 변환은 `GlobalExceptionHandler`에서만 한다. 같은 이유로 `domain`은 `shared/webapi`를 참조하지 않는다.
 - `adapter/integration`은 인프라 예외(`RestClientException` 등)를 그 자리에서 도메인 예외로 번역한다. DTO 조립이 아니라 계층 경계의 타입 번역이라 위 규칙과 충돌하지 않는다. 실패 원인은 구분해 내린다. (예: 소셜 로그인은 토큰 무효 401과 제공자 통신 실패 502를 다른 에러 코드로 내려 클라이언트가 재로그인과 재시도를 구분하게 한다)
 - 컨트롤러 테스트에 대표 에러 케이스 1개 이상을 `{모듈}/{행위}-error`로 문서화한다. ([references/test-convention.md](references/test-convention.md))
 - `{모듈}ErrorCode` 자체의 단위 테스트는 만들지 않는다. 에러 코드 검증은 위 `-error` 문서화 케이스로 한다. ([references/test-convention.md](references/test-convention.md))

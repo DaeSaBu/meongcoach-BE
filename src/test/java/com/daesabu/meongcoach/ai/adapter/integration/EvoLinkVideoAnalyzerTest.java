@@ -24,6 +24,8 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
@@ -127,12 +129,16 @@ class EvoLinkVideoAnalyzerTest {
 				.isInstanceOf(VideoAnalysisFailedException.class);
 	}
 
-	@Test
-	void report_항목이_비어_있으면_분석에_실패한다() {
-		givenModelResponds("{\"recommend\":[],\"report\":[],\"solution\":[]}");
+	@ParameterizedTest
+	@ValueSource(strings = {"null", "{}", "{\"report\":null}", "{\"report\":[]}"})
+	void 유효한_report가_없으면_분석에_실패한다(String response) {
+		givenModelResponds(response);
 
 		assertThatThrownBy(() -> analyzer.analyze(VIDEO_URL))
-				.isInstanceOf(VideoAnalysisFailedException.class);
+				.isInstanceOf(VideoAnalysisFailedException.class)
+				.hasMessageContaining("report 항목이 없습니다")
+				.hasMessageNotContaining("X-Amz-Signature");
+		server.verify();
 	}
 
 	@Test

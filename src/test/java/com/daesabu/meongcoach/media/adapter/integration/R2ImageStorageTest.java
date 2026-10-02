@@ -3,7 +3,7 @@ package com.daesabu.meongcoach.media.adapter.integration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.daesabu.meongcoach.media.application.required.ImageUploadUrl;
-import com.daesabu.meongcoach.media.domain.vo.ImageObjectKey;
+import com.daesabu.meongcoach.media.domain.ImageObjectKey;
 import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

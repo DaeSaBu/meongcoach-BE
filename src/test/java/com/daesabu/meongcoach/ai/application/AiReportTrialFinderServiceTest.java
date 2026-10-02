@@ -6,7 +6,7 @@ import com.daesabu.meongcoach.ai.application.provided.AiTrialFinder;
 import com.daesabu.meongcoach.ai.application.required.AiReportRepository;
 import com.daesabu.meongcoach.ai.domain.AiReport;
 import com.daesabu.meongcoach.ai.domain.AiReportUploadCommand;
-import com.daesabu.meongcoach.ai.domain.vo.AiTrial;
+import com.daesabu.meongcoach.ai.domain.AiTrial;
 import java.time.LocalDateTime;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;

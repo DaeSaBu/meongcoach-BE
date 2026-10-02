@@ -3,7 +3,7 @@ package com.daesabu.meongcoach.media.adapter.integration;
 import com.daesabu.meongcoach.media.application.required.VideoDownloadUrl;
 import com.daesabu.meongcoach.media.application.required.VideoStorage;
 import com.daesabu.meongcoach.media.application.required.VideoUploadUrl;
-import com.daesabu.meongcoach.media.domain.vo.VideoObjectKey;
+import com.daesabu.meongcoach.media.domain.VideoObjectKey;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;

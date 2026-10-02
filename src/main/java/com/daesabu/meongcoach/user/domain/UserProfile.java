@@ -1,7 +1,6 @@
 package com.daesabu.meongcoach.user.domain;
 
 import com.daesabu.meongcoach.shared.domain.BaseEntity;
-import com.daesabu.meongcoach.user.domain.command.UserProfileCreateCommand;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -24,7 +23,7 @@ import lombok.NoArgsConstructor;
 
 /**
  * 사용자 프로필. 온보딩은 스킵할 수 없으므로 온보딩 완료 시점에 생성되며,
- * 온보딩 완료 여부는 이 행의 존재가 아니라 User.role(ONBOARDING_MEMBER → MEMBER)로 판단한다.
+ * 온보딩 완료 여부는 이 행의 존재가 아니라 User.role(ONBOARDING_USER → USER)로 판단한다.
  */
 @Getter
 @Entity

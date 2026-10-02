@@ -1,14 +1,12 @@
 package com.daesabu.meongcoach.user.adapter.webapi;
 
 import com.daesabu.meongcoach.shared.security.CurrentUserId;
-import com.daesabu.meongcoach.user.adapter.webapi.dto.UserWithdrawRequest;
-import com.daesabu.meongcoach.user.application.provided.UserWithdrawer;
+import com.daesabu.meongcoach.user.adapter.webapi.dto.UserMeResponse;
+import com.daesabu.meongcoach.user.application.provided.UserFinder;
+import com.daesabu.meongcoach.user.domain.User;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -16,23 +14,13 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class UserController {
 
-	private final UserWithdrawer userWithdrawer;
+	private final UserFinder userFinder;
 
-	// 회원 행은 남지만 클라이언트 관점에서는 계정이 사라지므로 204로 응답한다.
-	// 토큰의 회원만 탈퇴할 수 있으므로 식별자는 경로 변수가 아니라 인증 주체에서 받는다.
-	// 본문은 Apple 계정 회원만 보내므로 선택으로 두고, 없으면 코드 없이 위임한다.
-	// API 필드는 클라이언트가 실제로 보내는 Apple 코드지만, 서비스는 제공자를 가리지 않는 인가 코드로 받는다
-	@DeleteMapping("/me")
-	@ResponseStatus(HttpStatus.NO_CONTENT)
-	public void withdraw(@CurrentUserId Long userId, @RequestBody(required = false) UserWithdrawRequest request) {
-		String appleAuthorizationCode = appleAuthorizationCode(request);
-		userWithdrawer.withdraw(userId, appleAuthorizationCode);
-	}
-
-	private static String appleAuthorizationCode(UserWithdrawRequest request) {
-		if (request == null) {
-			return null;
-		}
-		return request.appleAuthorizationCode();
+	// 로그인 응답은 토큰만 내려주므로, 클라이언트는 로그인 직후 이 응답으로 온보딩 화면 진입 여부를 정한다.
+	// 온보딩 상태의 단일 원천은 users.role이라 프로필 존재 여부는 보지 않는다
+	@GetMapping("/me")
+	public UserMeResponse me(@CurrentUserId Long userId) {
+		User user = userFinder.findById(userId);
+		return UserMeResponse.from(user);
 	}
 }

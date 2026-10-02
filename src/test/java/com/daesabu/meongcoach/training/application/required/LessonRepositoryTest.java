@@ -3,12 +3,13 @@ package com.daesabu.meongcoach.training.application.required;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.daesabu.meongcoach.training.domain.Curriculum;
-import com.daesabu.meongcoach.training.domain.CurriculumCreateCommand;
+import com.daesabu.meongcoach.training.domain.CurriculumFixture;
 import com.daesabu.meongcoach.training.domain.Lesson;
-import com.daesabu.meongcoach.training.domain.LessonCreateCommand;
+import com.daesabu.meongcoach.training.domain.LessonFixture;
 import com.daesabu.meongcoach.training.domain.Topic;
-import com.daesabu.meongcoach.training.domain.TopicCreateCommand;
+import com.daesabu.meongcoach.training.domain.TopicFixture;
 import com.daesabu.meongcoach.training.domain.TrainingCategory;
+import com.daesabu.meongcoach.training.domain.TrainingCategoryFixture;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -129,17 +130,15 @@ class LessonRepositoryTest {
 	}
 
 	private Topic persistTopic(String title) {
-		TrainingCategory category = entityManager.persist(TrainingCategory.create(title + " 카테고리", 1, null, null));
-		return entityManager.persist(Topic.create(category, new TopicCreateCommand(title, 1, null, null, null)));
+		TrainingCategory category = entityManager.persist(TrainingCategoryFixture.create(title + " 카테고리", 1, null, null));
+		return entityManager.persist(TopicFixture.create(category, title, 1, null, null, null));
 	}
 
 	private Curriculum persistCurriculum(Topic topic, String title, int sortOrder) {
-		CurriculumCreateCommand command = new CurriculumCreateCommand(title, sortOrder, null, null);
-		return entityManager.persist(Curriculum.create(topic, command));
+		return entityManager.persist(CurriculumFixture.create(topic, title, sortOrder, null, null));
 	}
 
 	private Lesson persistLesson(Curriculum curriculum, String title, int sortOrder) {
-		LessonCreateCommand command = new LessonCreateCommand(title, sortOrder, 5);
-		return entityManager.persist(Lesson.create(curriculum, command));
+		return entityManager.persist(LessonFixture.create(curriculum, title, sortOrder, 5));
 	}
 }

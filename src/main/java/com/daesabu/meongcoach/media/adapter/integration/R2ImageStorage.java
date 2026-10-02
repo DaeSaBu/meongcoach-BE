@@ -2,7 +2,7 @@ package com.daesabu.meongcoach.media.adapter.integration;
 
 import com.daesabu.meongcoach.media.application.required.ImageStorage;
 import com.daesabu.meongcoach.media.application.required.ImageUploadUrl;
-import com.daesabu.meongcoach.media.domain.vo.ImageObjectKey;
+import com.daesabu.meongcoach.media.domain.ImageObjectKey;
 import java.net.URI;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;

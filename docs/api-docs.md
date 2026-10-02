@@ -15,7 +15,7 @@ API 문서는 Spring REST Docs로 작성합니다. 문서 스니펫은 `adapter/
 
   link:{swagger-ui}#/Auth/auth-login[▶ Swagger에서 Try it out,window=swagger]
 
-  operation::auth/login[snippets='http-request,path-parameters,request-fields,http-response,response-fields']
+  operation::auth/login[snippets='http-request,request-fields,http-response,response-fields']
   ```
 - `./gradlew test` 실행 시 테스트 종료 후 asciidoctor가 자동 실행되어 `build/docs/asciidoc/index.html`이 생성됩니다.
 

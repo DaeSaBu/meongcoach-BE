@@ -14,6 +14,7 @@ import com.daesabu.meongcoach.media.application.provided.StoredImageUrlValidator
 import com.daesabu.meongcoach.media.domain.exception.InvalidImageUrlException;
 import com.daesabu.meongcoach.onboarding.application.provided.OnboardingCompleteInfo;
 import com.daesabu.meongcoach.user.application.UserProfileRegisterService;
+import com.daesabu.meongcoach.user.application.UserQueryService;
 import com.daesabu.meongcoach.user.application.required.UserProfileRepository;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.User;
@@ -52,10 +53,10 @@ class OnboardingCompleteServiceTest {
 	@BeforeEach
 	void setUp() {
 		service = new OnboardingCompleteService(
-				new UserProfileRegisterService(userRepository, userProfileRepository),
+				new UserProfileRegisterService(new UserQueryService(userRepository), userProfileRepository),
 				new DogRegisterService(dogRepository),
 				prefixValidator());
-		userId = userRepository.save(User.registerOnboardingMember()).getId();
+		userId = userRepository.save(User.registerUser()).getId();
 	}
 
 	// 미설정(null·빈 문자열)은 통과하고
@@ -177,7 +178,7 @@ class OnboardingCompleteServiceTest {
 		service.complete(userId, completeInfo());
 
 		User user = userRepository.findById(userId).orElseThrow();
-		assertThat(user.getRole()).isEqualTo(UserRole.MEMBER);
+		assertThat(user.getRole()).isEqualTo(UserRole.USER);
 	}
 
 	@Test

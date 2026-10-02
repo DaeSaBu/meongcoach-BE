@@ -5,8 +5,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.daesabu.meongcoach.media.application.required.ImageStorage;
 import com.daesabu.meongcoach.media.application.required.ImageUploadUrl;
+import com.daesabu.meongcoach.media.domain.ImageObjectKey;
 import com.daesabu.meongcoach.media.domain.exception.InvalidImageUrlException;
-import com.daesabu.meongcoach.media.domain.vo.ImageObjectKey;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

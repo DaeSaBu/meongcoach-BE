@@ -18,7 +18,6 @@ plugins {
 	// 0.20.x가 Spring Boot 4.x / REST Docs 4.x 지원 라인이다
 	id("com.epages.restdocs-api-spec") version "0.20.1"
 	id("com.diffplug.spotless") version "8.8.0"
-	id("org.flywaydb.flyway") version "12.7.0"
 }
 
 group = "com.daesabu"
@@ -36,16 +35,6 @@ repositories {
 }
 
 val asciidoctorExt: Configuration by configurations.creating
-
-// `./gradlew flywayMigrate`로 마이그레이션 파일을 로컬 postgres(compose.yml)에 직접 검증할 때 쓴다.
-// 앱 부팅 시 마이그레이션은 dev/prod 프로파일이 spring.flyway.*(DataSource 재사용)로 별도 수행한다.
-// 앱(local 프로파일)의 create-drop과 섞이지 않도록 검증 전용 DB(compose/postgres-init.sql)를 쓴다
-flyway {
-	url = "jdbc:postgresql://localhost:5432/meongcoach_schema_check"
-	user = "meongcoach_local"
-	password = "meongcoach-local"
-	locations = arrayOf("filesystem:src/main/resources/db/migration")
-}
 
 dependencyManagement {
 	imports {
@@ -80,8 +69,6 @@ dependencies {
 	// Spring Boot 4는 Flyway 자동 구성이 starter로 분리돼 있어 없으면 기동 시 마이그레이션이 실행되지 않는다
 	implementation("org.springframework.boot:spring-boot-starter-flyway")
 	implementation("org.flywaydb:flyway-database-postgresql")
-	// 로컬 실행 시 compose.yml의 postgres를 자동 기동한다. developmentOnly라 bootJar(배포)에는 포함되지 않는다
-	developmentOnly("org.springframework.boot:spring-boot-docker-compose")
 	annotationProcessor("org.projectlombok:lombok")
 	asciidoctorExt("org.springframework.restdocs:spring-restdocs-asciidoctor")
 	testImplementation("org.springframework.boot:spring-boot-restdocs")
@@ -165,7 +152,9 @@ val postProcessOpenApiSpec = tasks.register("postProcessOpenApiSpec") {
 	description = "openapi3.json에 보안 스킴과 모듈 태그를 주입하고 operationId를 정규화한다"
 	val specFile = layout.buildDirectory.file("api-spec/openapi3.json")
 	val publicPaths = listOf(
-		"/api/health", "/api/auth/login/social/{provider}", "/api/auth/login/local", "/api/auth/token/refresh", "/api/auth/logout"
+		"/api/health", "/api/auth/login/social", "/api/auth/login/email", "/api/auth/token/refresh", "/api/auth/logout",
+		// 구 클라이언트 호환 경로. 구 앱 지원이 끝나면 auth/adapter/webapi/legacy와 함께 삭제한다
+		"/api/auth/login/social/{provider}", "/api/auth/login/local"
 	)
 	val httpMethods = setOf("get", "post", "put", "patch", "delete", "head", "options")
 	// REST Docs 스니펫 식별자의 모듈 접두어 → Swagger UI 그룹 태그. 선언 순서가 화면 표시 순서다
@@ -178,6 +167,7 @@ val postProcessOpenApiSpec = tasks.register("postProcessOpenApiSpec") {
 		"training" to "Training",
 		"ai" to "AI",
 		"dog" to "Dog",
+		"entitlement" to "Entitlement",
 	)
 	doLast {
 		val file = specFile.get().asFile

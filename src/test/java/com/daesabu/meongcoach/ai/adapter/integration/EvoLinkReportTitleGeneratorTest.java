@@ -16,6 +16,8 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
@@ -161,12 +163,15 @@ class EvoLinkReportTitleGeneratorTest {
 				.isInstanceOf(ReportTitleGenerationFailedException.class);
 	}
 
-	@Test
-	void 응답에_title_항목이_없으면_제목_생성에_실패한다() {
-		givenModelRespondsRaw("{\"summary\":\"제목이 아닌 필드\"}");
+	@ParameterizedTest
+	@ValueSource(strings = {"null", "{}", "{\"title\":null}", "{\"summary\":\"제목이 아닌 필드\"}"})
+	void 응답에_title_항목이_없으면_제목_생성에_실패한다(String response) {
+		givenModelRespondsRaw(response);
 
 		assertThatThrownBy(() -> generator.generateTitle(REPORT_JSON))
-				.isInstanceOf(ReportTitleGenerationFailedException.class);
+				.isInstanceOf(ReportTitleGenerationFailedException.class)
+				.hasMessage("리포트 제목 응답에 title 항목이 없습니다");
+		server.verify();
 	}
 
 	@Test
@@ -177,11 +182,14 @@ class EvoLinkReportTitleGeneratorTest {
 				.isInstanceOf(ReportTitleGenerationFailedException.class);
 	}
 
-	@Test
-	void 제목이_비어_있으면_제목_생성에_실패한다() {
-		givenModelRespondsTitle(" ");
+	@ParameterizedTest
+	@ValueSource(strings = {"", " ", "\t\n", "\u2003"})
+	void 제목이_비어_있으면_제목_생성에_실패한다(String title) {
+		givenModelRespondsTitle(title);
 
 		assertThatThrownBy(() -> generator.generateTitle(REPORT_JSON))
-				.isInstanceOf(ReportTitleGenerationFailedException.class);
+				.isInstanceOf(ReportTitleGenerationFailedException.class)
+				.hasMessage("리포트 제목 생성 결과가 비어 있습니다");
+		server.verify();
 	}
 }

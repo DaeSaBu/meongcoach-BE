@@ -3,8 +3,9 @@ package com.daesabu.meongcoach.training.application.required;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.daesabu.meongcoach.training.domain.Topic;
-import com.daesabu.meongcoach.training.domain.TopicCreateCommand;
+import com.daesabu.meongcoach.training.domain.TopicFixture;
 import com.daesabu.meongcoach.training.domain.TrainingCategory;
+import com.daesabu.meongcoach.training.domain.TrainingCategoryFixture;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -75,10 +76,10 @@ class TopicRepositoryTest {
 	}
 
 	private TrainingCategory persistCategory(String title, int sortOrder) {
-		return entityManager.persist(TrainingCategory.create(title, sortOrder, null, null));
+		return entityManager.persist(TrainingCategoryFixture.create(title, sortOrder, null, null));
 	}
 
 	private Topic persistTopic(TrainingCategory category, String title, int sortOrder) {
-		return entityManager.persist(Topic.create(category, new TopicCreateCommand(title, sortOrder, null, null, null)));
+		return entityManager.persist(TopicFixture.create(category, title, sortOrder, null, null, null));
 	}
 }

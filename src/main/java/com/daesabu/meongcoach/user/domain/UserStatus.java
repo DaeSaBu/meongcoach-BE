@@ -5,6 +5,5 @@ package com.daesabu.meongcoach.user.domain;
  */
 public enum UserStatus {
 	ACTIVE,
-	DORMANT,
 	WITHDRAWN,
 }

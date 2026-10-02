@@ -4,9 +4,9 @@ import com.daesabu.meongcoach.media.application.provided.ImageUploadUrlIssuer;
 import com.daesabu.meongcoach.media.application.provided.ImageUploadUrlResult;
 import com.daesabu.meongcoach.media.application.required.ImageStorage;
 import com.daesabu.meongcoach.media.application.required.ImageUploadUrl;
+import com.daesabu.meongcoach.media.domain.ImageObjectKey;
 import com.daesabu.meongcoach.media.domain.ImageType;
 import com.daesabu.meongcoach.media.domain.ImageUploadTarget;
-import com.daesabu.meongcoach.media.domain.vo.ImageObjectKey;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

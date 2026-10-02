@@ -4,10 +4,10 @@ import com.daesabu.meongcoach.media.application.provided.VideoUploadUrlIssuer;
 import com.daesabu.meongcoach.media.application.provided.VideoUploadUrlResult;
 import com.daesabu.meongcoach.media.application.required.VideoStorage;
 import com.daesabu.meongcoach.media.application.required.VideoUploadUrl;
+import com.daesabu.meongcoach.media.domain.VideoFileSize;
+import com.daesabu.meongcoach.media.domain.VideoObjectKey;
 import com.daesabu.meongcoach.media.domain.VideoType;
 import com.daesabu.meongcoach.media.domain.VideoUploadTarget;
-import com.daesabu.meongcoach.media.domain.vo.VideoFileSize;
-import com.daesabu.meongcoach.media.domain.vo.VideoObjectKey;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

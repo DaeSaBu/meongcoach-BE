@@ -3,6 +3,7 @@ package com.daesabu.meongcoach.user.application;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.daesabu.meongcoach.user.application.provided.UserProfileRegisterRequest;
 import com.daesabu.meongcoach.user.application.required.UserProfileRepository;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.Gender;
@@ -10,7 +11,6 @@ import com.daesabu.meongcoach.user.domain.Mbti;
 import com.daesabu.meongcoach.user.domain.User;
 import com.daesabu.meongcoach.user.domain.UserProfile;
 import com.daesabu.meongcoach.user.domain.UserRole;
-import com.daesabu.meongcoach.user.domain.command.UserProfileCreateCommand;
 import com.daesabu.meongcoach.user.domain.exception.AlreadyOnboardedException;
 import com.daesabu.meongcoach.user.domain.exception.InvalidGenderException;
 import com.daesabu.meongcoach.user.domain.exception.InvalidMbtiException;
@@ -44,8 +44,8 @@ class UserProfileRegisterServiceTest {
 
 	@BeforeEach
 	void setUp() {
-		service = new UserProfileRegisterService(userRepository, userProfileRepository);
-		userId = userRepository.save(User.registerOnboardingMember()).getId();
+		service = new UserProfileRegisterService(new UserQueryService(userRepository), userProfileRepository);
+		userId = userRepository.save(User.registerUser()).getId();
 	}
 
 	@Test
@@ -95,7 +95,7 @@ class UserProfileRegisterServiceTest {
 
 	@Test
 	void 교육_이력과_목표를_함께_저장한다() {
-		UserProfileCreateCommand command = new UserProfileCreateCommand(
+		UserProfileRegisterRequest command = new UserProfileRegisterRequest(
 				"멍멍이집사", null, null, VALID_MBTI, VALID_GENDER, Set.of(1L, 2L), Set.of(2L, 3L));
 
 		service.register(userId, command);
@@ -113,17 +113,17 @@ class UserProfileRegisterServiceTest {
 		entityManager.flush();
 		entityManager.clear();
 		User user = userRepository.findById(userId).orElseThrow();
-		assertThat(user.getRole()).isEqualTo(UserRole.MEMBER);
+		assertThat(user.getRole()).isEqualTo(UserRole.USER);
 	}
 
-	// 프로필 행이 없어도 role이 MEMBER면 온보딩 완료로 본다 — 온보딩 상태의 원천은 role 하나다
+	// 프로필 행이 없어도 role이 USER면 온보딩 완료로 본다 — 온보딩 상태의 원천은 role 하나다
 	@Test
 	void 이미_정회원이면_등록에_실패한다() {
-		User member = User.registerOnboardingMember();
-		member.promoteToMember();
-		Long memberId = userRepository.save(member).getId();
+		User promoted = User.registerUser();
+		promoted.promoteToUser();
+		Long promotedId = userRepository.save(promoted).getId();
 
-		assertThatThrownBy(() -> service.register(memberId,
+		assertThatThrownBy(() -> service.register(promotedId,
 				command("멍멍이집사", null, VALID_MBTI, VALID_GENDER, null)))
 				.isInstanceOf(AlreadyOnboardedException.class);
 	}
@@ -177,9 +177,9 @@ class UserProfileRegisterServiceTest {
 				.isInstanceOf(InvalidGenderException.class);
 	}
 
-	private static UserProfileCreateCommand command(String nickname, LocalDate birthDate, String mbti, String gender,
+	private static UserProfileRegisterRequest command(String nickname, LocalDate birthDate, String mbti, String gender,
 			String profileImageUrl) {
-		return new UserProfileCreateCommand(nickname, profileImageUrl, birthDate, mbti, gender, Set.of(), Set.of());
+		return new UserProfileRegisterRequest(nickname, profileImageUrl, birthDate, mbti, gender, Set.of(), Set.of());
 	}
 
 	private UserProfile findPersistedProfile() {

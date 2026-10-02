@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.daesabu.meongcoach.media.application.required.VideoDownloadUrl;
 import com.daesabu.meongcoach.media.application.required.VideoUploadUrl;
-import com.daesabu.meongcoach.media.domain.vo.VideoObjectKey;
+import com.daesabu.meongcoach.media.domain.VideoObjectKey;
 import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

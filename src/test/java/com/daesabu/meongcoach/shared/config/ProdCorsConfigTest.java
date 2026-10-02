@@ -20,16 +20,11 @@ class ProdCorsConfigTest {
 	@Autowired
 	private MockMvc mockMvc;
 
+	// 웹 서비스를 내려 개발·운영 환경의 클라이언트는 네이티브 앱뿐이므로 교차 출처 요청을 모두 거부한다
 	@Test
-	void 운영_프론트엔드_origin만_허용한다() throws Exception {
+	void 운영_웹_origin을_허용하지_않는다() throws Exception {
 		mockMvc.perform(options("/api/training/categories")
 					.header(HttpHeaders.ORIGIN, "https://app.meongcoach.com")
-					.header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "GET"))
-				.andExpect(status().isOk())
-				.andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "https://app.meongcoach.com"));
-
-		mockMvc.perform(options("/api/training/categories")
-					.header(HttpHeaders.ORIGIN, "https://app.dev.meongcoach.com")
 					.header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "GET"))
 				.andExpect(status().isForbidden())
 				.andExpect(header().doesNotExist(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN));

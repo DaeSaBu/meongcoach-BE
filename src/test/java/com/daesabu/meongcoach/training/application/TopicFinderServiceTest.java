@@ -4,9 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.daesabu.meongcoach.training.application.provided.TopicSummary;
 import com.daesabu.meongcoach.training.application.required.TopicRepository;
-import com.daesabu.meongcoach.training.domain.Topic;
-import com.daesabu.meongcoach.training.domain.TopicCreateCommand;
+import com.daesabu.meongcoach.training.domain.TopicFixture;
 import com.daesabu.meongcoach.training.domain.TrainingCategory;
+import com.daesabu.meongcoach.training.domain.TrainingCategoryFixture;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,9 +32,9 @@ class TopicFinderServiceTest {
 
 	@Test
 	void 토픽을_정렬_순서대로_조회한다() {
-		TrainingCategory category = entityManager.persist(TrainingCategory.create("기본 훈련", 1, null, null));
-		entityManager.persist(Topic.create(category, new TopicCreateCommand("산책 훈련", 2, "즐겁고 안전한 첫 산책", null, null)));
-		entityManager.persist(Topic.create(category, new TopicCreateCommand("배변 훈련", 1, "편안한 배변 습관 만들기", null, null)));
+		TrainingCategory category = entityManager.persist(TrainingCategoryFixture.create("기본 훈련", 1, null, null));
+		entityManager.persist(TopicFixture.create(category, "산책 훈련", 2, "즐겁고 안전한 첫 산책", null, null));
+		entityManager.persist(TopicFixture.create(category, "배변 훈련", 1, "편안한 배변 습관 만들기", null, null));
 
 		List<TopicSummary> topics = service.findAllOrdered();
 
