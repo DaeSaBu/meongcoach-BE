@@ -164,14 +164,10 @@ class TrainingControllerTest {
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(selectionBody(1L)))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.topicId").value(1))
+				.andExpect(status().isNoContent())
 				.andDo(document("training/topic-select",
 						requestFields(
 								fieldWithPath("topicId").description("필수 입력. 커리큘럼 화면에 표시할 토픽 ID")
-						),
-						responseFields(
-								fieldWithPath("topicId").description("선택된 토픽 ID")
 						)
 				));
 	}
@@ -182,26 +178,24 @@ class TrainingControllerTest {
 						.principal(CURRENT_USER)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(selectionBody(7L)))
-				.andExpect(status().isOk());
+				.andExpect(status().isNoContent());
 
 		then(topicSelector).should().selectTopic(42L, new TopicSelectionRequest(7L));
 	}
 
 	@Test
-	void 같은_토픽을_연속으로_선택해도_200을_반환한다() throws Exception {
+	void 같은_토픽을_연속으로_선택해도_204를_반환한다() throws Exception {
 		mockMvc.perform(put("/api/training/topic/selection")
 						.principal(CURRENT_USER)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(selectionBody(1L)))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.topicId").value(1));
+				.andExpect(status().isNoContent());
 
 		mockMvc.perform(put("/api/training/topic/selection")
 						.principal(CURRENT_USER)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(selectionBody(1L)))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.topicId").value(1));
+				.andExpect(status().isNoContent());
 	}
 
 	@Test
