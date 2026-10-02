@@ -16,6 +16,6 @@ public class TrainingCategoryController {
 
 	@GetMapping
 	public TrainingCategoryListResponse findAll() {
-		return TrainingCategoryListResponse.from(trainingCategoryFinder.findAll());
+		return TrainingCategoryListResponse.from(trainingCategoryFinder.findAllWithTopics());
 	}
 }

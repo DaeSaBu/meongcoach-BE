@@ -11,11 +11,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface TopicRepository extends JpaRepository<Topic, Long> {
 
 	/**
-	 * 전체 토픽을 카테고리 정렬 순서, 토픽 정렬 순서, id 오름차순으로 조회한다.
-	 */
-	List<Topic> findAllByOrderByTrainingCategory_SortOrderAscSortOrderAscIdAsc();
-
-	/**
 	 * 카테고리 정렬 순서, 토픽 정렬 순서, id 오름차순 기준 첫 토픽을 조회한다.
 	 */
 	Optional<Topic> findFirstByOrderByTrainingCategory_SortOrderAscSortOrderAscIdAsc();

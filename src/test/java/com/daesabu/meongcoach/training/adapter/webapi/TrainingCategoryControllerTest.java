@@ -8,9 +8,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.daesabu.meongcoach.training.application.provided.TopicResult;
 import com.daesabu.meongcoach.training.application.provided.TrainingCategoryFinder;
-import com.daesabu.meongcoach.training.application.provided.TrainingCategoryResult;
+import com.daesabu.meongcoach.training.domain.Topic;
+import com.daesabu.meongcoach.training.domain.TopicFixture;
+import com.daesabu.meongcoach.training.domain.TrainingCategory;
+import com.daesabu.meongcoach.training.domain.TrainingCategoryFixture;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,11 +20,9 @@ import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDoc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 
-/**
- * 라이브러리 탭 진입 API 검증.
- */
 @WebMvcTest(TrainingCategoryController.class)
 @AutoConfigureRestDocs
 class TrainingCategoryControllerTest {
@@ -35,20 +35,18 @@ class TrainingCategoryControllerTest {
 
 	@Test
 	void 교육_카테고리와_소속_토픽_목록을_반환한다() throws Exception {
-		given(trainingCategoryFinder.findAll()).willReturn(List.of(
-				new TrainingCategoryResult(
-						1L, "기본 교육", "기본기를 배우는 교육", "https://example.com/basic.png", 1,
+		given(trainingCategoryFinder.findAllWithTopics()).willReturn(List.of(
+				category(1L, "기본 교육", "기본기를 배우는 교육", "https://example.com/basic.png", 1,
 						List.of(
-								new TopicResult(10L, "앉아", "앉아 자세를 배우는 훈련", "차분히 앉는 방법을 익혀요",
+								topic(10L, "앉아", "앉아 자세를 배우는 훈련", "차분히 앉는 방법을 익혀요",
 										"https://example.com/sit.png", 1),
-								new TopicResult(11L, "기다려", "기다림을 배우는 훈련", "보호자의 신호를 기다려요",
+								topic(11L, "기다려", "기다림을 배우는 훈련", "보호자의 신호를 기다려요",
 										"https://example.com/wait.png", 2)
 						)
 				),
-				new TrainingCategoryResult(
-						2L, "심화 교육", "응용 행동을 배우는 교육", "https://example.com/advanced.png", 2,
+				category(2L, "심화 교육", "응용 행동을 배우는 교육", "https://example.com/advanced.png", 2,
 						List.of(
-								new TopicResult(20L, "이리와", "호출에 반응하는 훈련", "보호자에게 바로 돌아와요",
+								topic(20L, "이리와", "호출에 반응하는 훈련", "보호자에게 바로 돌아와요",
 										"https://example.com/come.png", 1)
 						)
 				)
@@ -98,15 +96,8 @@ class TrainingCategoryControllerTest {
 
 	@Test
 	void 토픽이_없는_카테고리는_빈_배열을_반환한다() throws Exception {
-		given(trainingCategoryFinder.findAll()).willReturn(List.of(
-				new TrainingCategoryResult(
-						1L,
-						"기본 교육",
-						"기본기를 배우는 교육",
-						"https://example.com/basic.png",
-						1,
-						List.of()
-				)
+		given(trainingCategoryFinder.findAllWithTopics()).willReturn(List.of(
+				category(1L, "기본 교육", "기본기를 배우는 교육", "https://example.com/basic.png", 1, List.of())
 		));
 
 		mockMvc.perform(get("/api/training/categories"))
@@ -117,11 +108,25 @@ class TrainingCategoryControllerTest {
 
 	@Test
 	void 등록된_카테고리가_없으면_빈_배열과_200을_반환한다() throws Exception {
-		given(trainingCategoryFinder.findAll()).willReturn(List.of());
+		given(trainingCategoryFinder.findAllWithTopics()).willReturn(List.of());
 
 		mockMvc.perform(get("/api/training/categories"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.trainingCategories").isArray())
 				.andExpect(jsonPath("$.trainingCategories").isEmpty());
+	}
+
+	private TrainingCategory category(Long id, String title, String description, String iconUrl, int sortOrder,
+			List<Topic> topics) {
+		TrainingCategory category = TrainingCategoryFixture.create(title, sortOrder, description, iconUrl);
+		ReflectionTestUtils.setField(category, "id", id);
+		ReflectionTestUtils.setField(category, "topics", topics);
+		return category;
+	}
+
+	private Topic topic(Long id, String title, String description, String detail, String iconUrl, int sortOrder) {
+		Topic topic = TopicFixture.create(null, title, sortOrder, description, detail, iconUrl);
+		ReflectionTestUtils.setField(topic, "id", id);
+		return topic;
 	}
 }

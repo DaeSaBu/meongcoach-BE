@@ -1,6 +1,6 @@
 package com.daesabu.meongcoach.training.adapter.webapi.dto;
 
-import com.daesabu.meongcoach.training.application.provided.TopicResult;
+import com.daesabu.meongcoach.training.domain.Topic;
 
 /**
  * 토픽 응답.
@@ -14,14 +14,14 @@ public record TopicResponse(
 		int topicSortOrder
 ) {
 
-	public static TopicResponse from(TopicResult result) {
+	public static TopicResponse from(Topic topic) {
 		return new TopicResponse(
-				result.id(),
-				result.title(),
-				result.description(),
-				result.detail(),
-				result.iconUrl(),
-				result.sortOrder()
+				topic.getId(),
+				topic.getTitle(),
+				topic.getDescription(),
+				topic.getDetail(),
+				topic.getIconUrl(),
+				topic.getSortOrder()
 		);
 	}
 }
