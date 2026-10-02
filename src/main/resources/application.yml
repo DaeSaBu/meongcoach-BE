@@ -2,7 +2,7 @@ spring:
   application:
     name: meongcoach
   profiles:
-    # 프로파일 미지정 시 로컬 개발로 기동한다 — `./gradlew bootRun`만으로 실행 가능
+    # 프로파일 미지정 시 로컬 실행용 local로 기동한다
     default: local
   jpa:
     properties:

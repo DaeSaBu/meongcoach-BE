@@ -1,9 +1,12 @@
 package com.daesabu.meongcoach.training.domain;
 
+import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;
 import com.daesabu.meongcoach.shared.domain.BaseEntity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -33,4 +36,8 @@ public class TrainingCategory extends BaseEntity {
 
 	@Column(nullable = false)
 	private int sortOrder;
+
+	@Enumerated(EnumType.STRING)
+	@Column(length = 50)
+	private EntitlementType requiredEntitlementType;
 }

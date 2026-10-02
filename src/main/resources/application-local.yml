@@ -1,28 +1,17 @@
-# 로컬 개발 전용 — PostgreSQL 스키마를 재생성한 뒤 정적 교육 초기 데이터를 반영한다
+# 로컬 실행 — bastion 호스트 SSH 터널로 dev DB에 접속한다. 접속 정보는 기본값이 없어 미주입 시 기동에 실패한다
 spring:
-  # IDE/bootRun 실행 시에는 spring-boot-docker-compose가 compose.yml의 postgres를 자동 기동하고
-  # ConnectionDetails로 접속 정보를 주입해 아래 datasource 값을 덮어쓴다.
-  # 플레이스홀더는 compose 지원이 없는 풀 컨테이너 모드(--profile app)에서 compose.yml이 주입하는
-  # DB_HOST=postgres 등을 받기 위한 것으로, 기본값은 로컬 직접 접속용이다.
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:5432/${DB_NAME:meongcoach}
+    url: jdbc:postgresql://${DB_HOST}:5432/${DB_NAME}
     driver-class-name: org.postgresql.Driver
-    username: ${DB_USERNAME:meongcoach_local}
-    password: ${DB_PASSWORD:meongcoach-local}
-  # 로컬은 ddl-auto(create-drop)가 매 기동마다 스키마를 재생성하므로 Flyway를 끈다
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  # dev DB의 마이그레이션은 dev 서버 배포가 적용하므로 로컬에서는 실행하지 않는다
   flyway:
     enabled: false
   jpa:
-    defer-datasource-initialization: true
     hibernate:
-      ddl-auto: create-drop
-  sql:
-    init:
-      # 교육 초기 데이터 → 스토어 심사용 테스트 계정 순서로 적재한다
-      data-locations:
-        - classpath:db/local/training-initial-data.sql
-        - classpath:db/local/test-account-data.sql
-      mode: always
+      # 공유 DB이므로 스키마를 변경하지 않고 엔티티와의 일치만 검증한다
+      ddl-auto: validate
   cloud:
     aws:
       # 로컬은 실제 큐 없이 기동한다. 실 큐로 소비를 확인하려면 켜고 SQS_ 환경 변수에 실제 값을 넣는다
