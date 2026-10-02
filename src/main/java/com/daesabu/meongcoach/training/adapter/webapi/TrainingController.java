@@ -48,7 +48,7 @@ public class TrainingController {
 		return TopicSelectResponse.from(request.topicId());
 	}
 
-	@GetMapping("/curriculums")
+	@GetMapping("/topic/selection/curriculums")
 	public CurriculumListResponse findCurriculums(@CurrentUserId Long userId) {
 		return CurriculumListResponse.from(curriculumFinder.findCurriculums(userId));
 	}
