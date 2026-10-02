@@ -1,52 +1,45 @@
-package com.daesabu.meongcoach.onboarding.application;
+package com.daesabu.meongcoach.onboarding.application.provided;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.daesabu.meongcoach.dog.application.BreedFinderService;
-import com.daesabu.meongcoach.dog.application.PersonalityFinderService;
 import com.daesabu.meongcoach.dog.domain.shared.Breed;
 import com.daesabu.meongcoach.dog.domain.shared.Personality;
-import com.daesabu.meongcoach.onboarding.application.provided.OnboardingMetadataResult;
-import com.daesabu.meongcoach.training.application.TopicFinderService;
+import com.daesabu.meongcoach.support.ApplicationTest;
 import com.daesabu.meongcoach.training.application.provided.TopicSummary;
 import com.daesabu.meongcoach.training.application.required.TopicRepository;
+import com.daesabu.meongcoach.training.application.required.TrainingCategoryRepository;
 import com.daesabu.meongcoach.training.domain.TopicFixture;
 import com.daesabu.meongcoach.training.domain.TrainingCategory;
 import com.daesabu.meongcoach.training.domain.TrainingCategoryFixture;
-import com.daesabu.meongcoach.user.application.MbtiFinderService;
-import org.junit.jupiter.api.BeforeEach;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
-import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 
-@DataJpaTest
-class OnboardingMetadataServiceTest {
+@ApplicationTest
+class OnboardingMetadataFinderTest {
+
+	@Autowired
+	private OnboardingMetadataFinder onboardingMetadataFinder;
+
+	@Autowired
+	private TrainingCategoryRepository trainingCategoryRepository;
 
 	@Autowired
 	private TopicRepository topicRepository;
 
 	@Autowired
-	private TestEntityManager entityManager;
-
-	private OnboardingMetadataService service;
-
-	@BeforeEach
-	void setUp() {
-		service = new OnboardingMetadataService(
-				new TopicFinderService(topicRepository),
-				new BreedFinderService(),
-				new PersonalityFinderService(),
-				new MbtiFinderService());
-	}
+	private EntityManager entityManager;
 
 	@Test
 	void 토픽_견종_성격_MBTI_목록을_한_번에_모아_반환한다() {
-		TrainingCategory category = entityManager.persist(TrainingCategoryFixture.create("기본 훈련", 1, null, null));
-		entityManager.persist(TopicFixture.create(category, "산책 훈련", 2, null, null, null));
-		entityManager.persist(TopicFixture.create(category, "배변 훈련", 1, null, null, null));
+		TrainingCategory category = trainingCategoryRepository.save(
+				TrainingCategoryFixture.create("기본 훈련", 1, null, null));
+		topicRepository.save(TopicFixture.create(category, "산책 훈련", 2, null, null, null));
+		topicRepository.save(TopicFixture.create(category, "배변 훈련", 1, null, null, null));
+		entityManager.flush();
+		entityManager.clear();
 
-		OnboardingMetadataResult result = service.find();
+		OnboardingMetadataResult result = onboardingMetadataFinder.find();
 
 		assertThat(result.topics()).extracting(TopicSummary::title)
 				.containsExactly("배변 훈련", "산책 훈련");
@@ -62,7 +55,7 @@ class OnboardingMetadataServiceTest {
 
 	@Test
 	void 토픽이_없어도_견종_성격_MBTI_목록은_그대로_반환한다() {
-		OnboardingMetadataResult result = service.find();
+		OnboardingMetadataResult result = onboardingMetadataFinder.find();
 
 		assertThat(result.topics()).isEmpty();
 		assertThat(result.breeds()).isNotEmpty();
