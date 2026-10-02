@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.daesabu.meongcoach.progress.application.TopicEntryService;
 import com.daesabu.meongcoach.training.application.provided.TopicSelector;
+import com.daesabu.meongcoach.training.application.provided.dto.TopicSelectionRequest;
 import com.daesabu.meongcoach.training.domain.Topic;
 import com.daesabu.meongcoach.training.domain.TopicFixture;
 import com.daesabu.meongcoach.training.domain.TrainingCategory;
@@ -38,7 +39,7 @@ class TopicSelectServiceTest {
 		Topic topic = persistTopic("앉아", 1);
 		flushAndClear();
 
-		topicSelector.selectTopic(USER_ID, topic.getId());
+		topicSelector.selectTopic(USER_ID, new TopicSelectionRequest(topic.getId()));
 
 		flushAndClear();
 		assertThat(countEntries()).isOne();
@@ -50,8 +51,8 @@ class TopicSelectServiceTest {
 		Topic topic = persistTopic("앉아", 1);
 		flushAndClear();
 
-		topicSelector.selectTopic(USER_ID, topic.getId());
-		topicSelector.selectTopic(USER_ID, topic.getId());
+		topicSelector.selectTopic(USER_ID, new TopicSelectionRequest(topic.getId()));
+		topicSelector.selectTopic(USER_ID, new TopicSelectionRequest(topic.getId()));
 
 		flushAndClear();
 		assertThat(countEntries()).isOne();
@@ -63,8 +64,8 @@ class TopicSelectServiceTest {
 		Topic wait = persistTopic("기다려", 2);
 		flushAndClear();
 
-		topicSelector.selectTopic(USER_ID, sit.getId());
-		topicSelector.selectTopic(USER_ID, wait.getId());
+		topicSelector.selectTopic(USER_ID, new TopicSelectionRequest(sit.getId()));
+		topicSelector.selectTopic(USER_ID, new TopicSelectionRequest(wait.getId()));
 
 		flushAndClear();
 		assertThat(countEntries()).isOne();
@@ -73,13 +74,13 @@ class TopicSelectServiceTest {
 
 	@Test
 	void 존재하지_않는_토픽이면_예외를_던진다() {
-		assertThatThrownBy(() -> topicSelector.selectTopic(USER_ID, ABSENT_TOPIC_ID))
+		assertThatThrownBy(() -> topicSelector.selectTopic(USER_ID, new TopicSelectionRequest(ABSENT_TOPIC_ID)))
 				.isInstanceOf(TopicNotFoundException.class);
 	}
 
 	@Test
 	void 존재하지_않는_토픽이면_진입_기록을_만들지_않는다() {
-		assertThatThrownBy(() -> topicSelector.selectTopic(USER_ID, ABSENT_TOPIC_ID))
+		assertThatThrownBy(() -> topicSelector.selectTopic(USER_ID, new TopicSelectionRequest(ABSENT_TOPIC_ID)))
 				.isInstanceOf(TopicNotFoundException.class);
 
 		flushAndClear();

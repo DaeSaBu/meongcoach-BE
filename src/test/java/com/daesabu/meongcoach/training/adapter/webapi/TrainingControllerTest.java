@@ -28,6 +28,7 @@ import com.daesabu.meongcoach.training.application.provided.LessonFinder;
 import com.daesabu.meongcoach.training.application.provided.LessonResult;
 import com.daesabu.meongcoach.training.application.provided.TopicSelector;
 import com.daesabu.meongcoach.training.application.provided.TrainingCategoryFinder;
+import com.daesabu.meongcoach.training.application.provided.dto.TopicSelectionRequest;
 import com.daesabu.meongcoach.training.domain.CurriculumStatus;
 import com.daesabu.meongcoach.training.domain.Topic;
 import com.daesabu.meongcoach.training.domain.TopicFixture;
@@ -183,7 +184,7 @@ class TrainingControllerTest {
 						.content(selectionBody(7L)))
 				.andExpect(status().isOk());
 
-		then(topicSelector).should().selectTopic(42L, 7L);
+		then(topicSelector).should().selectTopic(42L, new TopicSelectionRequest(7L));
 	}
 
 	@Test
@@ -216,7 +217,7 @@ class TrainingControllerTest {
 
 	@Test
 	void 존재하지_않는_토픽이면_404와_에러_코드를_반환한다() throws Exception {
-		willThrow(new TopicNotFoundException(999L)).given(topicSelector).selectTopic(42L, 999L);
+		willThrow(new TopicNotFoundException(999L)).given(topicSelector).selectTopic(42L, new TopicSelectionRequest(999L));
 
 		mockMvc.perform(put("/api/training/topic/selection")
 						.principal(CURRENT_USER)

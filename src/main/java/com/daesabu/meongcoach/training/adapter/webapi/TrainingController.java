@@ -6,13 +6,13 @@ import com.daesabu.meongcoach.training.adapter.webapi.dto.CurriculumDetailRespon
 import com.daesabu.meongcoach.training.adapter.webapi.dto.CurriculumListResponse;
 import com.daesabu.meongcoach.training.adapter.webapi.dto.LessonCompleteResponse;
 import com.daesabu.meongcoach.training.adapter.webapi.dto.TopicSelectResponse;
-import com.daesabu.meongcoach.training.adapter.webapi.dto.TopicSelectionRequest;
 import com.daesabu.meongcoach.training.adapter.webapi.dto.TrainingCategoryListResponse;
 import com.daesabu.meongcoach.training.application.provided.CurriculumFinder;
 import com.daesabu.meongcoach.training.application.provided.LessonCompleter;
 import com.daesabu.meongcoach.training.application.provided.LessonFinder;
 import com.daesabu.meongcoach.training.application.provided.TopicSelector;
 import com.daesabu.meongcoach.training.application.provided.TrainingCategoryFinder;
+import com.daesabu.meongcoach.training.application.provided.dto.TopicSelectionRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -44,7 +44,7 @@ public class TrainingController {
 	@PutMapping("/topic/selection")
 	public TopicSelectResponse selectTopic(@CurrentUserId Long userId,
 	                                       @Valid @RequestBody TopicSelectionRequest request) {
-		topicSelector.selectTopic(userId, request.topicId());
+		topicSelector.selectTopic(userId, request);
 		return TopicSelectResponse.from(request.topicId());
 	}
 

@@ -2,31 +2,34 @@ package com.daesabu.meongcoach.training.application;
 
 import com.daesabu.meongcoach.progress.application.provided.TopicEntryRecorder;
 import com.daesabu.meongcoach.training.application.provided.TopicSelector;
+import com.daesabu.meongcoach.training.application.provided.dto.TopicSelectionRequest;
 import com.daesabu.meongcoach.training.application.required.TopicRepository;
 import com.daesabu.meongcoach.training.domain.exception.TopicNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 
-/**
- * 커리큘럼 화면 변경 서비스. 토픽 존재를 확인한 뒤 진입 기록은 progress 모듈의 공개 API에 위임한다.
- */
 @Service
+@Validated
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class TopicSelectService implements TopicSelector {
 
 	private final TopicRepository topicRepository;
-
 	private final TopicEntryRecorder topicEntryRecorder;
 
 	@Override
 	@Transactional
-	public void selectTopic(Long userId, Long topicId) {
-		if (!topicRepository.existsById(topicId)) {
-			throw new TopicNotFoundException(topicId);
-		}
+	public void selectTopic(Long userId, TopicSelectionRequest topicSelectionRequest) {
+		validateExistingTopic(topicSelectionRequest);
 
-		topicEntryRecorder.enterTopic(userId, topicId);
+		topicEntryRecorder.enterTopic(userId, topicSelectionRequest.topicId());
+	}
+
+	private void validateExistingTopic(TopicSelectionRequest topicSelectionRequest) {
+		if (!topicRepository.existsById(topicSelectionRequest.topicId())) {
+			throw new TopicNotFoundException(topicSelectionRequest.topicId());
+		}
 	}
 }
