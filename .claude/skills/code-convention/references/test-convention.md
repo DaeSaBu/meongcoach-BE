@@ -64,7 +64,7 @@ private static final Principal CURRENT_USER = () -> "42";
 
 @Test
 void 인증_주체에서_읽은_사용자로_조회를_위임한다() throws Exception {
-	mockMvc.perform(get("/api/training/curriculums").principal(CURRENT_USER)) ...
+	mockMvc.perform(get("/api/training/topic/selection/curriculums").principal(CURRENT_USER)) ...
 }
 ```
 
