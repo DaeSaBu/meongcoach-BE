@@ -14,6 +14,7 @@ import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -50,4 +51,17 @@ public class Curriculum extends BaseEntity {
 	@OneToMany(mappedBy = "curriculum")
 	@OrderBy("sortOrder ASC, id ASC")
 	private List<Lesson> lessons = new ArrayList<>();
+
+	public List<Long> lessonIds() {
+		return lessons.stream()
+				.map(Lesson::getId)
+				.toList();
+	}
+
+	public int countCompletedLessons(Set<Long> completedLessonIds) {
+		return (int) lessons.stream()
+				.map(Lesson::getId)
+				.filter(completedLessonIds::contains)
+				.count();
+	}
 }

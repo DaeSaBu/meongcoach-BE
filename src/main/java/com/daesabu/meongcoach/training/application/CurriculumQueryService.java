@@ -49,11 +49,10 @@ public class CurriculumQueryService implements CurriculumFinder {
 		Curriculum curriculum = curriculumRepository.findById(curriculumId)
 				.orElseThrow(() -> new CurriculumNotFoundException(curriculumId));
 
-		List<Lesson> lessons = curriculum.getLessons();
-		List<Long> lessonIds = lessons.stream().map(Lesson::getId).toList();
+		List<Long> lessonIds = curriculum.lessonIds();
 		Map<Long, Integer> completedCounts = lessonProgressFinder.findCompletedCounts(userId, lessonIds);
 
-		List<LessonResult> lessonResults = lessons.stream()
+		List<LessonResult> lessonResults = curriculum.getLessons().stream()
 				.map(lesson -> toLessonResult(lesson, completedCounts.get(lesson.getId())))
 				.toList();
 		return new CurriculumDetailResult(curriculum.getId(), curriculum.getTopic().getId(), curriculum.getTitle(),
@@ -73,19 +72,14 @@ public class CurriculumQueryService implements CurriculumFinder {
 
 	private Set<Long> findCompletedLessonIds(Long userId, List<Curriculum> curriculums) {
 		List<Long> lessonIds = curriculums.stream()
-				.flatMap(curriculum -> curriculum.getLessons().stream())
-				.map(Lesson::getId)
+				.flatMap(curriculum -> curriculum.lessonIds().stream())
 				.toList();
 		return lessonProgressFinder.findCompletedLessonIds(userId, lessonIds);
 	}
 
 	private CurriculumResult toResult(Curriculum curriculum, Set<Long> completedLessonIds) {
-		List<Lesson> lessons = curriculum.getLessons();
-		int totalLessons = lessons.size();
-		int completedLessons = (int) lessons.stream()
-				.map(Lesson::getId)
-				.filter(completedLessonIds::contains)
-				.count();
+		int totalLessons = curriculum.getLessons().size();
+		int completedLessons = curriculum.countCompletedLessons(completedLessonIds);
 		return new CurriculumResult(curriculum.getId(), curriculum.getTitle(), totalLessons, completedLessons,
 				CurriculumStatus.of(totalLessons, completedLessons));
 	}
