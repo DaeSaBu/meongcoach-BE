@@ -14,9 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class LessonQueryService implements LessonFinder {
-
 	private final LessonRepository lessonRepository;
-
 	private final CardRepository cardRepository;
 
 	@Override
