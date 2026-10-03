@@ -1,9 +1,10 @@
 package com.daesabu.meongcoach.shared.config;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static com.daesabu.meongcoach.support.AppClientRequests.appDelete;
+import static com.daesabu.meongcoach.support.AppClientRequests.appGet;
+import static com.daesabu.meongcoach.support.AppClientRequests.appPost;
+import static com.daesabu.meongcoach.support.AppClientRequests.appPut;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -75,7 +76,7 @@ class SecurityFilterChainTest {
 
 	@Test
 	void 토큰_재발급은_인증_없이_호출할_수_있다() throws Exception {
-		mockMvc.perform(post("/api/auth/token/refresh")
+		mockMvc.perform(appPost("/api/auth/token/refresh")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"refreshToken\": \"\"}"))
 				.andExpect(status().isBadRequest());
@@ -83,7 +84,7 @@ class SecurityFilterChainTest {
 
 	@Test
 	void 로그아웃은_인증_없이_호출할_수_있다() throws Exception {
-		mockMvc.perform(post("/api/auth/logout")
+		mockMvc.perform(appPost("/api/auth/logout")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"refreshToken\": \"\"}"))
 				.andExpect(status().isBadRequest());
@@ -93,7 +94,7 @@ class SecurityFilterChainTest {
 	void 잘못된_소셜_토큰을_제출하면_401을_반환한다() throws Exception {
 		AuthToken token = tokenProvider.issue(userId);
 
-		mockMvc.perform(post("/api/auth/login/social")
+		mockMvc.perform(appPost("/api/auth/login/social")
 						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"socialProvider\": \"KAKAO\", \"idToken\": \"invalid\"}"))
@@ -103,7 +104,7 @@ class SecurityFilterChainTest {
 
 	@Test
 	void 애플_로그인_경로도_인증_없이_열려_있고_잘못된_토큰이면_401을_반환한다() throws Exception {
-		mockMvc.perform(post("/api/auth/login/social")
+		mockMvc.perform(appPost("/api/auth/login/social")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"socialProvider\": \"apple\", \"idToken\": \"invalid\"}"))
 				.andExpect(status().isUnauthorized())
@@ -113,7 +114,7 @@ class SecurityFilterChainTest {
 	// 필터 체인이 막았다면 코드가 UNAUTHORIZED다. 도메인 에러 코드가 나오면 컨트롤러까지 도달한 것이다
 	@Test
 	void 이메일_로그인_경로는_인증_없이_열려_있고_자격증명이_틀리면_401을_반환한다() throws Exception {
-		mockMvc.perform(post("/api/auth/login/email")
+		mockMvc.perform(appPost("/api/auth/login/email")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"email\": \"nobody@meongcoach.com\", \"password\": \"wrong-password\"}"))
 				.andExpect(status().isUnauthorized())
@@ -123,7 +124,7 @@ class SecurityFilterChainTest {
 	// 구 클라이언트 호환 경로. 구 앱 지원이 끝나면 LegacyAuthController와 함께 삭제한다
 	@Test
 	void 구_소셜_로그인_경로는_인증_없이_열려_있고_USER_접두어_에러_코드를_반환한다() throws Exception {
-		mockMvc.perform(post("/api/auth/login/social/kakao")
+		mockMvc.perform(appPost("/api/auth/login/social/kakao")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"token\": \"invalid\"}"))
 				.andExpect(status().isUnauthorized())
@@ -132,7 +133,7 @@ class SecurityFilterChainTest {
 
 	@Test
 	void 구_이메일_로그인_경로는_인증_없이_열려_있고_USER_접두어_에러_코드를_반환한다() throws Exception {
-		mockMvc.perform(post("/api/auth/login/local")
+		mockMvc.perform(appPost("/api/auth/login/local")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"email\": \"nobody@meongcoach.com\", \"password\": \"wrong-password\"}"))
 				.andExpect(status().isUnauthorized())
@@ -141,13 +142,13 @@ class SecurityFilterChainTest {
 
 	@Test
 	void 회원_경로는_인증이_필요하다() throws Exception {
-		mockMvc.perform(get("/api/users/me"))
+		mockMvc.perform(appGet("/api/users/me"))
 				.andExpect(status().isUnauthorized());
 	}
 
 	@Test
 	void 토큰_없이_보호된_경로에_접근하면_Problem_Details로_401을_반환한다() throws Exception {
-		mockMvc.perform(get(PROTECTED_PATH))
+		mockMvc.perform(appGet(PROTECTED_PATH))
 				.andExpect(status().isUnauthorized())
 				.andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
 				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
@@ -156,7 +157,7 @@ class SecurityFilterChainTest {
 
 	@Test
 	void 위조된_토큰은_거부된다() throws Exception {
-		mockMvc.perform(get(PROTECTED_PATH).header(HttpHeaders.AUTHORIZATION, "Bearer forged.token.value"))
+		mockMvc.perform(appGet(PROTECTED_PATH).header(HttpHeaders.AUTHORIZATION, "Bearer forged.token.value"))
 				.andExpect(status().isUnauthorized());
 	}
 
@@ -164,7 +165,7 @@ class SecurityFilterChainTest {
 	void 리프레시_토큰은_액세스_토큰_자리에서_거부된다() throws Exception {
 		AuthToken token = tokenProvider.issue(userId);
 
-		mockMvc.perform(get(PROTECTED_PATH).header(HttpHeaders.AUTHORIZATION, "Bearer " + token.refreshToken()))
+		mockMvc.perform(appGet(PROTECTED_PATH).header(HttpHeaders.AUTHORIZATION, "Bearer " + token.refreshToken()))
 				.andExpect(status().isUnauthorized());
 	}
 
@@ -172,7 +173,7 @@ class SecurityFilterChainTest {
 	void 유효한_액세스_토큰이면_인증을_통과한다() throws Exception {
 		AuthToken token = tokenProvider.issue(userId);
 
-		mockMvc.perform(get(PROTECTED_PATH).header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))
+		mockMvc.perform(appGet(PROTECTED_PATH).header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))
 				.andExpect(status().isOk());
 	}
 
@@ -181,7 +182,7 @@ class SecurityFilterChainTest {
 	void 등록되지_않은_회원의_액세스_토큰은_거부된다() throws Exception {
 		AuthToken token = tokenProvider.issue(userId + UNREGISTERED_ID_OFFSET);
 
-		mockMvc.perform(get(PROTECTED_PATH).header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))
+		mockMvc.perform(appGet(PROTECTED_PATH).header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))
 				.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
 	}
@@ -192,7 +193,7 @@ class SecurityFilterChainTest {
 	void 필터_체인이_세운_인증_주체가_CurrentUserId_파라미터로_해석된다() throws Exception {
 		AuthToken token = tokenProvider.issue(userId);
 
-		mockMvc.perform(put(CURRENT_USER_PATH)
+		mockMvc.perform(appPut(CURRENT_USER_PATH)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(MISSING_TOPIC_SELECTION_BODY))
@@ -202,7 +203,7 @@ class SecurityFilterChainTest {
 
 	@Test
 	void 토큰_없이_CurrentUserId_경로에_접근하면_401을_반환한다() throws Exception {
-		mockMvc.perform(put(CURRENT_USER_PATH)
+		mockMvc.perform(appPut(CURRENT_USER_PATH)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(MISSING_TOPIC_SELECTION_BODY))
 				.andExpect(status().isUnauthorized())
@@ -213,7 +214,7 @@ class SecurityFilterChainTest {
 	void 온보딩_미완료_회원이_정회원_전용_경로에_접근하면_ONBOARDING_NOT_COMPLETED_403을_반환한다() throws Exception {
 		AuthToken token = tokenProvider.issue(onboardingUserId);
 
-		mockMvc.perform(get("/api/training/topic/selection/curriculums")
+		mockMvc.perform(appGet("/api/training/topic/selection/curriculums")
 						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))
 				.andExpect(status().isForbidden())
 				.andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
@@ -224,7 +225,7 @@ class SecurityFilterChainTest {
 	void 온보딩_미완료_회원도_온보딩_메타데이터를_조회할_수_있다() throws Exception {
 		AuthToken token = tokenProvider.issue(onboardingUserId);
 
-		mockMvc.perform(get("/api/onboarding/metadata")
+		mockMvc.perform(appGet("/api/onboarding/metadata")
 						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))
 				.andExpect(status().isOk());
 	}
@@ -235,7 +236,7 @@ class SecurityFilterChainTest {
 	void 온보딩_미완료_회원도_강아지_프로필_이미지_경로에_접근할_수_있다() throws Exception {
 		AuthToken token = tokenProvider.issue(onboardingUserId);
 
-		mockMvc.perform(get("/api/dogs/profile/image")
+		mockMvc.perform(appGet("/api/dogs/profile/image")
 						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))
 				.andExpect(status().isNotFound());
 	}
@@ -246,11 +247,11 @@ class SecurityFilterChainTest {
 	void 온보딩_미완료_회원도_탈퇴할_수_있고_탈퇴_후_같은_토큰은_거부된다() throws Exception {
 		AuthToken token = tokenProvider.issue(onboardingUserId);
 
-		mockMvc.perform(delete("/api/auth/me")
+		mockMvc.perform(appDelete("/api/auth/me")
 						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))
 				.andExpect(status().isNoContent());
 
-		mockMvc.perform(get("/api/onboarding/metadata")
+		mockMvc.perform(appGet("/api/onboarding/metadata")
 						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))
 				.andExpect(status().isUnauthorized());
 	}
@@ -260,11 +261,11 @@ class SecurityFilterChainTest {
 	void 온보딩_미완료_회원도_구_탈퇴_경로로_탈퇴할_수_있다() throws Exception {
 		AuthToken token = tokenProvider.issue(onboardingUserId);
 
-		mockMvc.perform(delete("/api/users/me")
+		mockMvc.perform(appDelete("/api/users/me")
 						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))
 				.andExpect(status().isNoContent());
 
-		mockMvc.perform(get("/api/onboarding/metadata")
+		mockMvc.perform(appGet("/api/onboarding/metadata")
 						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))
 				.andExpect(status().isUnauthorized());
 	}
@@ -274,7 +275,7 @@ class SecurityFilterChainTest {
 	void 온보딩_미완료_회원도_내_정보를_조회할_수_있다() throws Exception {
 		AuthToken token = tokenProvider.issue(onboardingUserId);
 
-		mockMvc.perform(get("/api/users/me")
+		mockMvc.perform(appGet("/api/users/me")
 						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.needsOnboarding").value(true));
@@ -285,11 +286,11 @@ class SecurityFilterChainTest {
 	void 온보딩_미완료_회원은_허용된_메서드_외에는_회원_경로에_접근할_수_없다() throws Exception {
 		AuthToken token = tokenProvider.issue(onboardingUserId);
 
-		mockMvc.perform(put("/api/users/me")
+		mockMvc.perform(appPut("/api/users/me")
 						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))
 				.andExpect(status().isForbidden())
 				.andExpect(jsonPath("$.code").value("ONBOARDING_NOT_COMPLETED"));
-		mockMvc.perform(get("/api/auth/me")
+		mockMvc.perform(appGet("/api/auth/me")
 						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))
 				.andExpect(status().isForbidden())
 				.andExpect(jsonPath("$.code").value("ONBOARDING_NOT_COMPLETED"));
@@ -300,7 +301,7 @@ class SecurityFilterChainTest {
 	void 정회원도_온보딩_메타데이터를_조회할_수_있다() throws Exception {
 		AuthToken token = tokenProvider.issue(userId);
 
-		mockMvc.perform(get("/api/onboarding/metadata")
+		mockMvc.perform(appGet("/api/onboarding/metadata")
 						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))
 				.andExpect(status().isOk());
 	}
