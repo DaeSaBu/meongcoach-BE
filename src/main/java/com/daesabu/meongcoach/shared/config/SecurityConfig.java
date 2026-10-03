@@ -1,7 +1,6 @@
 package com.daesabu.meongcoach.shared.config;
 
 import com.daesabu.meongcoach.shared.security.AuthorityRole;
-import com.daesabu.meongcoach.shared.security.CorsProperties;
 import com.daesabu.meongcoach.shared.security.JwtProperties;
 import com.daesabu.meongcoach.shared.security.TokenType;
 import com.daesabu.meongcoach.shared.security.TokenTypeValidator;
@@ -34,16 +33,7 @@ import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-/**
- * 인증·인가 구성. 클라이언트가 네이티브 앱뿐이라 세션·CSRF·폼 로그인이 필요 없고,
- * 자체 발급 JWT를 Bearer 토큰으로 검증하는 무상태 필터 체인을 둔다.
- * CORS도 이 체인 앞단에서 처리해 preflight는 인가 전에 응답되고 401 응답에도 CORS 헤더가 실린다.
- * 이 클래스는 빈 정의만 담고 로직은 shared/security에 두어 커버리지 측정 대상으로 남긴다.
- */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
@@ -85,10 +75,9 @@ public class SecurityConfig {
 	                                        Converter<Jwt, AbstractAuthenticationToken> userRoleAuthenticationConverter,
 	                                        AuthenticationEntryPoint authenticationEntryPoint,
 	                                        AccessDeniedHandler accessDeniedHandler,
-	                                        CorsConfigurationSource corsConfigurationSource,
 	                                        @Value("${meongcoach.api-docs.enabled:false}") boolean apiDocsEnabled) {
 		return http
-				.cors(cors -> cors.configurationSource(corsConfigurationSource))
+				.cors(AbstractHttpConfigurer::disable)
 				.csrf(AbstractHttpConfigurer::disable)
 				.formLogin(AbstractHttpConfigurer::disable)
 				.httpBasic(AbstractHttpConfigurer::disable)
@@ -131,19 +120,6 @@ public class SecurityConfig {
 			return;
 		}
 		auth.requestMatchers(API_DOCS_PATHS).denyAll();
-	}
-
-	// CORS가 시큐리티 체인 안에서 동작하므로, 필터 체인을 추가하면 그 체인에도 .cors(...)를 걸어야 한다
-	@Bean
-	CorsConfigurationSource corsConfigurationSource(CorsProperties properties) {
-		CorsConfiguration configuration = new CorsConfiguration();
-		configuration.setAllowedOriginPatterns(properties.allowedOriginPatterns());
-		configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-		configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
-
-		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-		source.registerCorsConfiguration("/**", configuration);
-		return source;
 	}
 
 	// 이메일 로그인(스토어 심사용 테스트 계정)의 비밀번호 대조에 쓴다. domain은 Spring에 의존할 수 없으므로
