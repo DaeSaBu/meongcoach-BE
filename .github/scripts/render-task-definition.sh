@@ -83,7 +83,9 @@ jq \
 	--arg revenuecat_entitlement_id_adult "${REVENUECAT_ENTITLEMENT_ID_ADULT:-}" \
 	--arg revenuecat_entitlement_id_senior "${REVENUECAT_ENTITLEMENT_ID_SENIOR:-}" \
 	--arg sentry_dsn "${SENTRY_DSN:-}" \
-	--arg sentry_release "${SENTRY_RELEASE:-}" '
+	--arg sentry_release "${SENTRY_RELEASE:-}" \
+	--arg app_minimum_version_ios "${APP_MINIMUM_VERSION_IOS:-}" \
+	--arg app_minimum_version_android "${APP_MINIMUM_VERSION_ANDROID:-}" '
 	if ([.containerDefinitions[] | select(.name == $container)] | length) != 1 then
 		error("배포 대상 컨테이너는 정확히 하나여야 합니다.")
 	else
@@ -167,7 +169,9 @@ jq \
 								.name != "REVENUECAT_ENTITLEMENT_ID_ADULT" and
 								.name != "REVENUECAT_ENTITLEMENT_ID_SENIOR" and
 								.name != "SENTRY_DSN" and
-								.name != "SENTRY_RELEASE"
+								.name != "SENTRY_RELEASE" and
+								.name != "APP_MINIMUM_VERSION_IOS" and
+								.name != "APP_MINIMUM_VERSION_ANDROID"
 							))) +
 						[
 							{"name": "JWT_SECRET", "value": $jwt_secret},
@@ -220,6 +224,17 @@ jq \
 								{"name": "SENTRY_DSN", "value": $sentry_dsn},
 								{"name": "SENTRY_RELEASE", "value": $sentry_release}
 							]
+						 end) +
+						# 최소 지원 앱 버전은 GitHub Variables가 소유한다. 미설정 시 application.yml의 기본값을 쓰도록 주입을 생략한다
+						(if $app_minimum_version_ios == "" then
+							[]
+						 else
+							[{"name": "APP_MINIMUM_VERSION_IOS", "value": $app_minimum_version_ios}]
+						 end) +
+						(if $app_minimum_version_android == "" then
+							[]
+						 else
+							[{"name": "APP_MINIMUM_VERSION_ANDROID", "value": $app_minimum_version_android}]
 						 end)
 					)
 					| .image = $image
