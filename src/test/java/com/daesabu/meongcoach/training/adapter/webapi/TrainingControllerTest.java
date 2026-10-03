@@ -360,9 +360,7 @@ class TrainingControllerTest {
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.curriculumId").value(10))
-				.andExpect(jsonPath("$.topicId").value(1))
 				.andExpect(jsonPath("$.curriculumTitle").value("앉아 1단계"))
-				.andExpect(jsonPath("$.curriculumSortOrder").value(1))
 				.andExpect(jsonPath("$.lessons[0].lessonId").value(100))
 				.andExpect(jsonPath("$.lessons[0].lessonTitle").value("손 위의 간식"))
 				.andExpect(jsonPath("$.lessons[0].lessonSortOrder").value(1))
@@ -377,9 +375,7 @@ class TrainingControllerTest {
 						),
 						responseFields(
 								fieldWithPath("curriculumId").description("커리큘럼 ID"),
-								fieldWithPath("topicId").description("커리큘럼이 속한 토픽 ID"),
 								fieldWithPath("curriculumTitle").description("커리큘럼 이름"),
-								fieldWithPath("curriculumSortOrder").description("커리큘럼 노출 순서"),
 								fieldWithPath("lessons[]").description("커리큘럼의 레슨 목록. 노출 순서 오름차순"),
 								fieldWithPath("lessons[].lessonId").description("레슨 ID"),
 								fieldWithPath("lessons[].lessonTitle").description("레슨 이름"),

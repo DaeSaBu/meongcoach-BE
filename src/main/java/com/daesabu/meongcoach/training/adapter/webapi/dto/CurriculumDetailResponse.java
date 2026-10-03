@@ -5,8 +5,7 @@ import com.daesabu.meongcoach.training.domain.Curriculum;
 import java.util.List;
 import java.util.Map;
 
-public record CurriculumDetailResponse(Long curriculumId, Long topicId, String curriculumTitle,
-		int curriculumSortOrder, List<LessonResponse> lessons) {
+public record CurriculumDetailResponse(Long curriculumId, String curriculumTitle, List<LessonResponse> lessons) {
 
 	public static CurriculumDetailResponse from(CurriculumDetailResult result) {
 		Curriculum curriculum = result.curriculum();
@@ -14,7 +13,6 @@ public record CurriculumDetailResponse(Long curriculumId, Long topicId, String c
 		List<LessonResponse> lessons = curriculum.getLessons().stream()
 				.map(lesson -> LessonResponse.of(lesson, completedCounts.get(lesson.getId())))
 				.toList();
-		return new CurriculumDetailResponse(curriculum.getId(), curriculum.getTopic().getId(), curriculum.getTitle(),
-				curriculum.getSortOrder(), lessons);
+		return new CurriculumDetailResponse(curriculum.getId(), curriculum.getTitle(), lessons);
 	}
 }
