@@ -3,8 +3,9 @@ package com.daesabu.meongcoach.training.application;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.daesabu.meongcoach.progress.application.TopicEntryService;
+import com.daesabu.meongcoach.progress.application.TopicProgressModifyService;
 import com.daesabu.meongcoach.training.application.provided.TopicSelector;
+import com.daesabu.meongcoach.training.application.provided.dto.TopicSelectionRequest;
 import com.daesabu.meongcoach.training.domain.Topic;
 import com.daesabu.meongcoach.training.domain.TopicFixture;
 import com.daesabu.meongcoach.training.domain.TrainingCategory;
@@ -16,11 +17,8 @@ import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 import org.springframework.context.annotation.Import;
 
-/**
- * 커리큘럼 화면 변경 서비스 검증.
- */
 @DataJpaTest
-@Import({TopicSelectService.class, TopicEntryService.class})
+@Import({TopicSelectService.class, TopicProgressModifyService.class})
 class TopicSelectServiceTest {
 
 	private static final Long USER_ID = 1L;
@@ -38,7 +36,7 @@ class TopicSelectServiceTest {
 		Topic topic = persistTopic("앉아", 1);
 		flushAndClear();
 
-		topicSelector.selectTopic(USER_ID, topic.getId());
+		topicSelector.selectTopic(USER_ID, new TopicSelectionRequest(topic.getId()));
 
 		flushAndClear();
 		assertThat(countEntries()).isOne();
@@ -50,8 +48,8 @@ class TopicSelectServiceTest {
 		Topic topic = persistTopic("앉아", 1);
 		flushAndClear();
 
-		topicSelector.selectTopic(USER_ID, topic.getId());
-		topicSelector.selectTopic(USER_ID, topic.getId());
+		topicSelector.selectTopic(USER_ID, new TopicSelectionRequest(topic.getId()));
+		topicSelector.selectTopic(USER_ID, new TopicSelectionRequest(topic.getId()));
 
 		flushAndClear();
 		assertThat(countEntries()).isOne();
@@ -63,8 +61,8 @@ class TopicSelectServiceTest {
 		Topic wait = persistTopic("기다려", 2);
 		flushAndClear();
 
-		topicSelector.selectTopic(USER_ID, sit.getId());
-		topicSelector.selectTopic(USER_ID, wait.getId());
+		topicSelector.selectTopic(USER_ID, new TopicSelectionRequest(sit.getId()));
+		topicSelector.selectTopic(USER_ID, new TopicSelectionRequest(wait.getId()));
 
 		flushAndClear();
 		assertThat(countEntries()).isOne();
@@ -73,13 +71,13 @@ class TopicSelectServiceTest {
 
 	@Test
 	void 존재하지_않는_토픽이면_예외를_던진다() {
-		assertThatThrownBy(() -> topicSelector.selectTopic(USER_ID, ABSENT_TOPIC_ID))
+		assertThatThrownBy(() -> topicSelector.selectTopic(USER_ID, new TopicSelectionRequest(ABSENT_TOPIC_ID)))
 				.isInstanceOf(TopicNotFoundException.class);
 	}
 
 	@Test
 	void 존재하지_않는_토픽이면_진입_기록을_만들지_않는다() {
-		assertThatThrownBy(() -> topicSelector.selectTopic(USER_ID, ABSENT_TOPIC_ID))
+		assertThatThrownBy(() -> topicSelector.selectTopic(USER_ID, new TopicSelectionRequest(ABSENT_TOPIC_ID)))
 				.isInstanceOf(TopicNotFoundException.class);
 
 		flushAndClear();
@@ -93,13 +91,13 @@ class TopicSelectServiceTest {
 
 	private long countEntries() {
 		return entityManager.getEntityManager()
-				.createQuery("select count(c) from UserSelectedTopic c", Long.class)
+				.createQuery("select count(c) from TopicProgress c", Long.class)
 				.getSingleResult();
 	}
 
 	private Long findEnteredTopicId(Long userId) {
 		return entityManager.getEntityManager()
-				.createQuery("select c.topicId from UserSelectedTopic c where c.userId = :userId", Long.class)
+				.createQuery("select c.topicId from TopicProgress c where c.userId = :userId", Long.class)
 				.setParameter("userId", userId)
 				.getSingleResult();
 	}

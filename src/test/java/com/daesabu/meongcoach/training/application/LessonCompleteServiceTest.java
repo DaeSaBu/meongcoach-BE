@@ -3,7 +3,7 @@ package com.daesabu.meongcoach.training.application;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.daesabu.meongcoach.progress.application.LessonProgressService;
+import com.daesabu.meongcoach.progress.application.LessonProgressModifyService;
 import com.daesabu.meongcoach.training.application.provided.LessonCompleter;
 import com.daesabu.meongcoach.training.domain.Curriculum;
 import com.daesabu.meongcoach.training.domain.CurriculumFixture;
@@ -20,11 +20,8 @@ import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 import org.springframework.context.annotation.Import;
 
-/**
- * 레슨 완료 서비스 검증.
- */
 @DataJpaTest
-@Import({LessonCompleteService.class, LessonProgressService.class})
+@Import({LessonCompleteService.class, LessonProgressModifyService.class})
 class LessonCompleteServiceTest {
 
 	private static final Long USER_ID = 1L;
@@ -120,13 +117,13 @@ class LessonCompleteServiceTest {
 
 	private long countProgress() {
 		return entityManager.getEntityManager()
-				.createQuery("select count(p) from UserLessonProgress p", Long.class)
+				.createQuery("select count(p) from LessonProgress p", Long.class)
 				.getSingleResult();
 	}
 
 	private int findCompletedCount(Long userId, Long lessonId) {
 		return entityManager.getEntityManager()
-				.createQuery("select p.completedCount from UserLessonProgress p "
+				.createQuery("select p.completedCount from LessonProgress p "
 						+ "where p.userId = :userId and p.lessonId = :lessonId", Integer.class)
 				.setParameter("userId", userId)
 				.setParameter("lessonId", lessonId)

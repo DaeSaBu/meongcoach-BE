@@ -3,8 +3,6 @@ package com.daesabu.meongcoach.training.application;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.daesabu.meongcoach.training.application.provided.CardMediaResult;
-import com.daesabu.meongcoach.training.application.provided.CardResult;
 import com.daesabu.meongcoach.training.application.provided.LessonFinder;
 import com.daesabu.meongcoach.training.domain.Card;
 import com.daesabu.meongcoach.training.domain.CardFixture;
@@ -31,9 +29,6 @@ import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.TestPropertySource;
 
-/**
- * 레슨 카드 조회 서비스 검증.
- */
 @DataJpaTest
 @Import(LessonQueryService.class)
 @TestPropertySource(properties = "spring.jpa.properties.hibernate.generate_statistics=true")
@@ -55,9 +50,9 @@ class LessonQueryServiceTest {
 		persistCard(lesson, "먼저 카드 지시문", 1);
 		flushAndClear();
 
-		List<CardResult> cards = lessonFinder.findCards(lesson.getId());
+		List<Card> cards = lessonFinder.findCards(lesson.getId());
 
-		assertThat(cards).extracting(CardResult::instruction)
+		assertThat(cards).extracting(Card::getInstruction)
 				.containsExactly("먼저 카드 지시문", "나중 카드 지시문");
 	}
 
@@ -67,9 +62,9 @@ class LessonQueryServiceTest {
 		persistCard(lesson, "앉아 준비", "지시문", 1);
 		flushAndClear();
 
-		List<CardResult> cards = lessonFinder.findCards(lesson.getId());
+		List<Card> cards = lessonFinder.findCards(lesson.getId());
 
-		assertThat(cards).extracting(CardResult::title).containsExactly("앉아 준비");
+		assertThat(cards).extracting(Card::getTitle).containsExactly("앉아 준비");
 	}
 
 	@Test
@@ -81,10 +76,10 @@ class LessonQueryServiceTest {
 		persistCardMedia(card, MediaType.VIDEO, "https://cdn.example.com/2.mp4", 2);
 		flushAndClear();
 
-		List<CardResult> cards = lessonFinder.findCards(lesson.getId());
+		List<Card> cards = lessonFinder.findCards(lesson.getId());
 
 		assertThat(cards).hasSize(1);
-		assertThat(cards.getFirst().cardMedia()).extracting(CardMediaResult::url)
+		assertThat(cards.getFirst().getCardMedia()).extracting(CardMedia::getUrl)
 				.containsExactly("https://cdn.example.com/1.png", "https://cdn.example.com/2.mp4",
 						"https://cdn.example.com/3.png");
 	}
@@ -99,12 +94,12 @@ class LessonQueryServiceTest {
 		persistCardMedia(second, MediaType.IMAGE, "https://cdn.example.com/second.png", 2);
 		flushAndClear();
 
-		List<CardResult> cards = lessonFinder.findCards(lesson.getId());
+		List<Card> cards = lessonFinder.findCards(lesson.getId());
 
 		assertThat(cards).hasSize(2);
-		assertThat(cards.get(0).cardMedia()).extracting(CardMediaResult::url)
+		assertThat(cards.get(0).getCardMedia()).extracting(CardMedia::getUrl)
 				.containsExactly("https://cdn.example.com/first.png");
-		assertThat(cards.get(1).cardMedia()).extracting(CardMediaResult::url)
+		assertThat(cards.get(1).getCardMedia()).extracting(CardMedia::getUrl)
 				.containsExactly("https://cdn.example.com/second.mp4", "https://cdn.example.com/second.png");
 	}
 
@@ -115,11 +110,11 @@ class LessonQueryServiceTest {
 		persistCardMedia(card, MediaType.VIDEO, "https://cdn.example.com/1.mp4", 1);
 		flushAndClear();
 
-		List<CardResult> cards = lessonFinder.findCards(lesson.getId());
+		List<Card> cards = lessonFinder.findCards(lesson.getId());
 
-		CardMediaResult cardMedia = cards.getFirst().cardMedia().getFirst();
-		assertThat(cardMedia.mediaType()).isEqualTo(MediaType.VIDEO);
-		assertThat(cardMedia.cardId()).isEqualTo(card.getId());
+		CardMedia cardMedia = cards.getFirst().getCardMedia().getFirst();
+		assertThat(cardMedia.getMediaType()).isEqualTo(MediaType.VIDEO);
+		assertThat(cardMedia.getCard().getId()).isEqualTo(card.getId());
 	}
 
 	@Test
@@ -130,10 +125,10 @@ class LessonQueryServiceTest {
 		persistCardMedia(other, MediaType.IMAGE, "https://cdn.example.com/1.png", 1);
 		flushAndClear();
 
-		List<CardResult> cards = lessonFinder.findCards(lesson.getId());
+		List<Card> cards = lessonFinder.findCards(lesson.getId());
 
 		assertThat(cards).hasSize(2);
-		assertThat(cards.getFirst().cardMedia()).isEmpty();
+		assertThat(cards.getFirst().getCardMedia()).isEmpty();
 	}
 
 	@Test
@@ -144,9 +139,9 @@ class LessonQueryServiceTest {
 		persistCard(other, "다른 레슨 지시문", 1);
 		flushAndClear();
 
-		List<CardResult> cards = lessonFinder.findCards(lesson.getId());
+		List<Card> cards = lessonFinder.findCards(lesson.getId());
 
-		assertThat(cards).extracting(CardResult::instruction).containsExactly("대상 지시문");
+		assertThat(cards).extracting(Card::getInstruction).containsExactly("대상 지시문");
 	}
 
 	@Test
@@ -154,7 +149,7 @@ class LessonQueryServiceTest {
 		Lesson lesson = persistLesson("기본 교육");
 		flushAndClear();
 
-		List<CardResult> cards = lessonFinder.findCards(lesson.getId());
+		List<Card> cards = lessonFinder.findCards(lesson.getId());
 
 		assertThat(cards).isEmpty();
 	}
@@ -168,7 +163,7 @@ class LessonQueryServiceTest {
 	}
 
 	@Test
-	void 카드_수와_무관하게_세_번의_쿼리로_조회한다() {
+	void 카드_수와_무관하게_두_번의_쿼리로_조회한다() {
 		Lesson lesson = persistLesson("기본 교육");
 		Card first = persistCard(lesson, "첫째 지시문", 1);
 		Card second = persistCard(lesson, "둘째 지시문", 2);
@@ -179,7 +174,7 @@ class LessonQueryServiceTest {
 
 		lessonFinder.findCards(lesson.getId());
 
-		assertThat(statistics.getPrepareStatementCount()).isEqualTo(3);
+		assertThat(statistics.getPrepareStatementCount()).isEqualTo(2);
 	}
 
 	private Lesson persistLesson(String title) {
