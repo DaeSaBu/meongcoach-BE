@@ -62,6 +62,12 @@ public class Curriculum extends BaseEntity {
 		return lessons.size();
 	}
 
+	public CurriculumStatus statusOf(Set<Long> completedLessonIds) {
+		int totalLessons = getLessonsSize();
+		int completedLessons = countCompletedLessons(completedLessonIds);
+		return CurriculumStatus.of(totalLessons, completedLessons);
+	}
+
 	public int countCompletedLessons(Set<Long> completedLessonIds) {
 		return (int) lessons.stream()
 				.map(Lesson::getId)
