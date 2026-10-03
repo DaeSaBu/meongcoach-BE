@@ -45,6 +45,11 @@ sentry:
   send-default-pii: false
 
 meongcoach:
+  # 이보다 낮은 앱 버전의 요청은 426으로 거절해 강제 업데이트를 유도한다. 스토어 출시 후 환경 변수로 올린다
+  app-version:
+    minimum:
+      ios: ${APP_MINIMUM_VERSION_IOS:2.0.0}
+      android: ${APP_MINIMUM_VERSION_ANDROID:2.0.0}
   jwt:
     issuer: meongcoach
     # 기본값을 두지 않아 미주입 시 기동에 실패한다 — 커밋된 키가 배포로 흘러가는 것을 막는다
