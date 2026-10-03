@@ -16,7 +16,6 @@ public class TopicProgressQueryService implements TopicProgressFinder {
 
 	@Override
 	public Optional<Long> findLatestTopicId(Long userId) {
-		return topicProgressRepository.findByUserId(userId)
-				.map(TopicProgress::getTopicId);
+		return topicProgressRepository.findByUserId(userId).map(TopicProgress::getTopicId);
 	}
 }
