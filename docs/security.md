@@ -160,7 +160,9 @@ SHA-1 검증용이라 id_token의 `aud`가 되지 않습니다), 애플은 **iOS
   - 헤더가 없거나 최소 버전보다 낮으면 426 `APP_UPDATE_REQUIRED`, 값 형식이 틀리면 400 `APP_VERSION_INVALID`입니다. 헤더가 없는 요청은 강제 업데이트 처리가 없는 v2.0.0 이전 앱이라 426으로 봅니다. 앱은 426 status만 보고 업데이트 화면을 띄웁니다.
   - `/api/health`는 CD·로드밸런서 헬스 체크가 헤더 없이 호출하므로 검사하지 않습니다. curl·JMeter·Swagger UI(Authorize의 `appVersion`·`appPlatform`)로 다른 API를 호출할 때도 두 헤더가 필요합니다.
   - 필터는 빈이 아니라 `SecurityConfig`에서 직접 생성합니다. 빈으로 등록하면 서블릿 컨테이너에도 자동 등록되어 두 번 실행되고 `@WebMvcTest` 슬라이스에 포함됩니다. 실패 응답은 아래 "인증 실패 응답"과 같은 방식으로 전역 예외 처리기에 넘깁니다.
-  - 최소 버전은 `APP_MINIMUM_VERSION_IOS`·`APP_MINIMUM_VERSION_ANDROID`로 올립니다. 옛 API를 쓰는 앱을 막으려면 새 앱이 스토어에 출시된 뒤, 그 API를 바꾼 서버를 배포하기 전에 올립니다.
+  - 최소 버전은 `APP_MINIMUM_VERSION_IOS`·`APP_MINIMUM_VERSION_ANDROID`이고, 배포 값은 GitHub Variables `{DEV|PROD}_APP_MINIMUM_VERSION_{IOS|ANDROID}`에 둡니다 ([profiles.md](profiles.md)).
+    CD가 배포할 때 주입하므로 값을 바꾸면 해당 환경의 CD를 다시 실행해야 반영됩니다.
+  - 옛 API를 쓰는 앱을 막으려면 새 앱이 스토어에 출시된 뒤에 `PROD_` Variable을 그 버전으로 올리고, 그 API를 바꾼 서버를 main에 반영합니다. 최소 버전 상향과 API 변경이 같은 배포로 나갑니다.
 - `csrf` / `formLogin` / `httpBasic` / `logout` 비활성화 (`logout`은 Spring의 세션 로그아웃. 앱 로그아웃은 `POST /api/auth/logout`)
 - `SessionCreationPolicy.STATELESS`
 - permitAll: `/api/health`, `/api/auth/login/social`, `/api/auth/login/email`, `/api/auth/token/refresh`, `/api/auth/logout`
