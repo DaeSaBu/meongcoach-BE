@@ -17,8 +17,6 @@ import static org.springframework.restdocs.request.RequestDocumentation.pathPara
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.daesabu.meongcoach.training.application.provided.CardMediaResult;
-import com.daesabu.meongcoach.training.application.provided.CardResult;
 import com.daesabu.meongcoach.training.application.provided.CurriculumDetailResult;
 import com.daesabu.meongcoach.training.application.provided.CurriculumFinder;
 import com.daesabu.meongcoach.training.application.provided.CurriculumListResult;
@@ -29,6 +27,10 @@ import com.daesabu.meongcoach.training.application.provided.LessonResult;
 import com.daesabu.meongcoach.training.application.provided.TopicSelector;
 import com.daesabu.meongcoach.training.application.provided.TrainingCategoryFinder;
 import com.daesabu.meongcoach.training.application.provided.dto.TopicSelectionRequest;
+import com.daesabu.meongcoach.training.domain.Card;
+import com.daesabu.meongcoach.training.domain.CardFixture;
+import com.daesabu.meongcoach.training.domain.CardMedia;
+import com.daesabu.meongcoach.training.domain.CardMediaFixture;
 import com.daesabu.meongcoach.training.domain.CurriculumStatus;
 import com.daesabu.meongcoach.training.domain.Topic;
 import com.daesabu.meongcoach.training.domain.TopicFixture;
@@ -429,15 +431,12 @@ class TrainingControllerTest {
 
 	@Test
 	void 레슨의_카드와_미디어_목록을_반환한다() throws Exception {
-		given(lessonFinder.findCards(1L)).willReturn(List.of(
-				new CardResult(10L, "앉아 준비", 1, "간식을 손에 쥐고 앉아를 말하세요", List.of(
-						new CardMediaResult(100L, 10L, IMAGE, "https://cdn.example.com/1.png", 1),
-						new CardMediaResult(101L, 10L, VIDEO, "https://cdn.example.com/1.mp4", 2)
-				)),
-				new CardResult(11L, "앉아 보상", 2, "앉으면 바로 간식을 주세요", List.of(
-						new CardMediaResult(102L, 11L, IMAGE, "https://cdn.example.com/2.png", 1)
-				))
-		));
+		Card first = card(10L, "앉아 준비", 1, "간식을 손에 쥐고 앉아를 말하세요");
+		addCardMedia(first, 100L, IMAGE, "https://cdn.example.com/1.png", 1);
+		addCardMedia(first, 101L, VIDEO, "https://cdn.example.com/1.mp4", 2);
+		Card second = card(11L, "앉아 보상", 2, "앉으면 바로 간식을 주세요");
+		addCardMedia(second, 102L, IMAGE, "https://cdn.example.com/2.png", 1);
+		given(lessonFinder.findCards(1L)).willReturn(List.of(first, second));
 
 		mockMvc.perform(get("/api/training/lessons/{lessonId}/cards", 1L)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
@@ -477,9 +476,7 @@ class TrainingControllerTest {
 
 	@Test
 	void 미디어가_없는_카드는_빈_배열을_반환한다() throws Exception {
-		given(lessonFinder.findCards(1L)).willReturn(List.of(
-				new CardResult(10L, "앉아 준비", 1, "간식을 손에 쥐고 앉아를 말하세요", List.of())
-		));
+		given(lessonFinder.findCards(1L)).willReturn(List.of(card(10L, "앉아 준비", 1, "간식을 손에 쥐고 앉아를 말하세요")));
 
 		mockMvc.perform(get("/api/training/lessons/{lessonId}/cards", 1L))
 				.andExpect(status().isOk())
@@ -596,6 +593,19 @@ class TrainingControllerTest {
 		Topic topic = TopicFixture.create(null, title, sortOrder, description, detail, iconUrl);
 		ReflectionTestUtils.setField(topic, "id", id);
 		return topic;
+	}
+
+	private Card card(Long id, String title, int sortOrder, String instruction) {
+		Card card = CardFixture.create(null, title, sortOrder, instruction);
+		ReflectionTestUtils.setField(card, "id", id);
+		return card;
+	}
+
+	private void addCardMedia(Card card, Long id, com.daesabu.meongcoach.training.domain.MediaType mediaType, String url,
+			int sortOrder) {
+		CardMedia cardMedia = CardMediaFixture.create(card, mediaType, url, sortOrder);
+		ReflectionTestUtils.setField(cardMedia, "id", id);
+		card.getCardMedia().add(cardMedia);
 	}
 
 	private String selectionBody(long topicId) {

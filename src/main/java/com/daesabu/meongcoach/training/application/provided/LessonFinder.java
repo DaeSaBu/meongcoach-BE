@@ -1,5 +1,6 @@
 package com.daesabu.meongcoach.training.application.provided;
 
+import com.daesabu.meongcoach.training.domain.Card;
 import java.util.List;
 
 /**
@@ -12,5 +13,5 @@ public interface LessonFinder {
 	 *
 	 * @throws com.daesabu.meongcoach.training.domain.exception.LessonNotFoundException 레슨이 없으면 발생한다
 	 */
-	List<CardResult> findCards(Long lessonId);
+	List<Card> findCards(Long lessonId);
 }
