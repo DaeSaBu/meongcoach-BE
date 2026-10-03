@@ -1,4 +1,4 @@
-package com.daesabu.meongcoach.training.application.provided;
+package com.daesabu.meongcoach.training.application.provided.dto;
 
 import com.daesabu.meongcoach.training.domain.Curriculum;
 import java.util.Map;
