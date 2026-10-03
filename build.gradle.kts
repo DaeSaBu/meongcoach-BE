@@ -149,13 +149,16 @@ openapi3 {
 val postProcessOpenApiSpec = tasks.register("postProcessOpenApiSpec") {
 	dependsOn("openapi3")
 	group = "documentation"
-	description = "openapi3.json에 보안 스킴과 모듈 태그를 주입하고 operationId를 정규화한다"
+	description = "openapi3.json에 보안·앱 헤더 스킴과 모듈 태그를 주입하고 operationId를 정규화한다"
 	val specFile = layout.buildDirectory.file("api-spec/openapi3.json")
 	val publicPaths = listOf(
 		"/api/health", "/api/auth/login/social", "/api/auth/login/email", "/api/auth/token/refresh", "/api/auth/logout",
 		// 구 클라이언트 호환 경로. 구 앱 지원이 끝나면 auth/adapter/webapi/legacy와 함께 삭제한다
 		"/api/auth/login/social/{provider}", "/api/auth/login/local"
 	)
+	// 앱 버전 게이트(shared/security/AppVersionFilter)가 검사하지 않는 경로
+	val appHeaderExcludedPaths = setOf("/api/health")
+	val appHeaderSecurity = mapOf("appVersion" to emptyList<String>(), "appPlatform" to emptyList<String>())
 	val httpMethods = setOf("get", "post", "put", "patch", "delete", "head", "options")
 	// REST Docs 스니펫 식별자의 모듈 접두어 → Swagger UI 그룹 태그. 선언 순서가 화면 표시 순서다
 	val moduleTags = linkedMapOf(
@@ -182,18 +185,21 @@ val postProcessOpenApiSpec = tasks.register("postProcessOpenApiSpec") {
 		@Suppress("UNCHECKED_CAST")
 		val components = spec.getOrPut("components") { mutableMapOf<String, Any?>() } as MutableMap<String, Any?>
 		components["securitySchemes"] = mapOf(
-			"bearerAuth" to mapOf("type" to "http", "scheme" to "bearer", "bearerFormat" to "JWT")
+			"bearerAuth" to mapOf("type" to "http", "scheme" to "bearer", "bearerFormat" to "JWT"),
+			"appVersion" to mapOf("type" to "apiKey", "in" to "header", "name" to "X-App-Version"),
+			"appPlatform" to mapOf("type" to "apiKey", "in" to "header", "name" to "X-App-Platform")
 		)
-		spec["security"] = listOf(mapOf("bearerAuth" to emptyList<String>()))
+		spec["security"] = listOf(mapOf("bearerAuth" to emptyList<String>()) + appHeaderSecurity)
 
 		@Suppress("UNCHECKED_CAST")
 		val paths = spec["paths"] as? MutableMap<String, Any?> ?: mutableMapOf()
 		publicPaths.forEach { path ->
+			val security = if (path in appHeaderExcludedPaths) emptyList<Any>() else listOf(appHeaderSecurity)
 			@Suppress("UNCHECKED_CAST")
 			(paths[path] as? MutableMap<String, Any?>)?.forEach { (method, operation) ->
 				if (method in httpMethods) {
 					@Suppress("UNCHECKED_CAST")
-					(operation as MutableMap<String, Any?>)["security"] = emptyList<Any>()
+					(operation as MutableMap<String, Any?>)["security"] = security
 				}
 			}
 		}

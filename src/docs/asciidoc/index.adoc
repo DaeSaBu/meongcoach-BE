@@ -12,6 +12,23 @@
 API 문서는 테스트를 통과한 스니펫으로부터 생성됩니다.
 모듈별로 `== {모듈} API` 섹션을 추가하고, `operation::` 매크로로 스니펫을 포함합니다.
 
+== 공통 요청 헤더
+
+`/api/health`를 제외한 모든 API는 앱 정보를 헤더로 받습니다.
+
+|===
+| 헤더 | 값
+
+| `X-App-Platform`
+| `ios` 또는 `android`
+
+| `X-App-Version`
+| 앱 표시 버전 (`숫자.숫자.숫자`, 예: `2.0.0`)
+|===
+
+헤더가 없거나 플랫폼별 최소 지원 버전보다 낮으면 426(`APP_UPDATE_REQUIRED`)을, 값 형식이 틀리면 400(`APP_VERSION_INVALID`)을 반환합니다.
+앱은 426을 받으면 스토어 업데이트 화면으로 이동시킵니다.
+
 == 공통 에러 응답
 
 모든 에러 응답은 RFC 9457 Problem Details 형식(`application/problem+json`)을 따릅니다.
