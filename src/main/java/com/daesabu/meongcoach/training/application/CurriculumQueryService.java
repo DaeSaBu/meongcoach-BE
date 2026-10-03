@@ -49,7 +49,7 @@ public class CurriculumQueryService implements CurriculumFinder {
 		Curriculum curriculum = curriculumRepository.findById(curriculumId)
 				.orElseThrow(() -> new CurriculumNotFoundException(curriculumId));
 
-		List<Long> lessonIds = curriculum.lessonIds();
+		List<Long> lessonIds = curriculum.getLessonIds();
 		Map<Long, Integer> completedCounts = lessonProgressFinder.findCompletedCounts(userId, lessonIds);
 
 		List<LessonResult> lessonResults = curriculum.getLessons().stream()
@@ -72,13 +72,13 @@ public class CurriculumQueryService implements CurriculumFinder {
 
 	private Set<Long> findCompletedLessonIds(Long userId, List<Curriculum> curriculums) {
 		List<Long> lessonIds = curriculums.stream()
-				.flatMap(curriculum -> curriculum.lessonIds().stream())
+				.flatMap(curriculum -> curriculum.getLessonIds().stream())
 				.toList();
 		return lessonProgressFinder.findCompletedLessonIds(userId, lessonIds);
 	}
 
 	private CurriculumResult toResult(Curriculum curriculum, Set<Long> completedLessonIds) {
-		int totalLessons = curriculum.getLessons().size();
+		int totalLessons = curriculum.getLessonsSize();
 		int completedLessons = curriculum.countCompletedLessons(completedLessonIds);
 		return new CurriculumResult(curriculum.getId(), curriculum.getTitle(), totalLessons, completedLessons,
 				CurriculumStatus.of(totalLessons, completedLessons));

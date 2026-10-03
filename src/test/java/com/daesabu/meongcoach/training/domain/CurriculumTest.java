@@ -14,7 +14,7 @@ class CurriculumTest {
 	void 레슨_id를_레슨_순서대로_반환한다() {
 		Curriculum curriculum = curriculumWithLessonIds(3L, 1L, 2L);
 
-		List<Long> lessonIds = curriculum.lessonIds();
+		List<Long> lessonIds = curriculum.getLessonIds();
 
 		assertThat(lessonIds).containsExactly(3L, 1L, 2L);
 	}

@@ -52,10 +52,14 @@ public class Curriculum extends BaseEntity {
 	@OrderBy("sortOrder ASC, id ASC")
 	private List<Lesson> lessons = new ArrayList<>();
 
-	public List<Long> lessonIds() {
+	public List<Long> getLessonIds() {
 		return lessons.stream()
 				.map(Lesson::getId)
 				.toList();
+	}
+
+	public int getLessonsSize() {
+		return lessons.size();
 	}
 
 	public int countCompletedLessons(Set<Long> completedLessonIds) {
