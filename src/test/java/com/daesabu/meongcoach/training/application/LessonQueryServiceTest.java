@@ -168,7 +168,7 @@ class LessonQueryServiceTest {
 	}
 
 	@Test
-	void 카드_수와_무관하게_세_번의_쿼리로_조회한다() {
+	void 카드_수와_무관하게_두_번의_쿼리로_조회한다() {
 		Lesson lesson = persistLesson("기본 교육");
 		Card first = persistCard(lesson, "첫째 지시문", 1);
 		Card second = persistCard(lesson, "둘째 지시문", 2);
@@ -179,7 +179,7 @@ class LessonQueryServiceTest {
 
 		lessonFinder.findCards(lesson.getId());
 
-		assertThat(statistics.getPrepareStatementCount()).isEqualTo(3);
+		assertThat(statistics.getPrepareStatementCount()).isEqualTo(2);
 	}
 
 	private Lesson persistLesson(String title) {
