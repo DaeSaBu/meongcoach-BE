@@ -8,7 +8,6 @@ import com.daesabu.meongcoach.training.application.provided.CurriculumListResult
 import com.daesabu.meongcoach.training.application.provided.CurriculumResult;
 import com.daesabu.meongcoach.training.application.provided.LessonResult;
 import com.daesabu.meongcoach.training.application.required.CurriculumRepository;
-import com.daesabu.meongcoach.training.application.required.LessonRepository;
 import com.daesabu.meongcoach.training.application.required.TopicRepository;
 import com.daesabu.meongcoach.training.domain.Curriculum;
 import com.daesabu.meongcoach.training.domain.CurriculumStatus;
@@ -19,7 +18,6 @@ import com.daesabu.meongcoach.training.domain.exception.TopicNotConfiguredExcept
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,7 +28,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class CurriculumQueryService implements CurriculumFinder {
 	private final TopicRepository topicRepository;
 	private final CurriculumRepository curriculumRepository;
-	private final LessonRepository lessonRepository;
 	private final TopicProgressFinder topicProgressFinder;
 	private final LessonProgressFinder lessonProgressFinder;
 
@@ -39,12 +36,10 @@ public class CurriculumQueryService implements CurriculumFinder {
 		Topic topic = findLatestOrFirstTopic(userId);
 
 		List<Curriculum> curriculums = curriculumRepository.findAllByTopicId(topic.getId());
-		Map<Long, List<Lesson>> lessonsByCurriculumId = groupLessonsByCurriculumId(curriculums);
-		Set<Long> completedLessonIds = findCompletedLessonIds(userId, lessonsByCurriculumId);
+		Set<Long> completedLessonIds = findCompletedLessonIds(userId, curriculums);
 
 		List<CurriculumResult> curriculumResults = curriculums.stream()
-				.map(curriculum -> toResult(curriculum,
-						lessonsByCurriculumId.getOrDefault(curriculum.getId(), List.of()), completedLessonIds))
+				.map(curriculum -> toResult(curriculum, completedLessonIds))
 				.toList();
 		return new CurriculumListResult(topic.getId(), topic.getTitle(), curriculumResults);
 	}
@@ -54,7 +49,7 @@ public class CurriculumQueryService implements CurriculumFinder {
 		Curriculum curriculum = curriculumRepository.findById(curriculumId)
 				.orElseThrow(() -> new CurriculumNotFoundException(curriculumId));
 
-		List<Lesson> lessons = lessonRepository.findAllByCurriculum_IdOrderBySortOrderAscIdAsc(curriculumId);
+		List<Lesson> lessons = curriculum.getLessons();
 		List<Long> lessonIds = lessons.stream().map(Lesson::getId).toList();
 		Map<Long, Integer> completedCounts = lessonProgressFinder.findCompletedCounts(userId, lessonIds);
 
@@ -76,21 +71,16 @@ public class CurriculumQueryService implements CurriculumFinder {
 				.orElseThrow(TopicNotConfiguredException::new);
 	}
 
-	private Map<Long, List<Lesson>> groupLessonsByCurriculumId(List<Curriculum> curriculums) {
-		List<Long> curriculumIds = curriculums.stream().map(Curriculum::getId).toList();
-		return lessonRepository.findAllByCurriculum_IdInOrderBySortOrderAscIdAsc(curriculumIds).stream()
-				.collect(Collectors.groupingBy(lesson -> lesson.getCurriculum().getId()));
-	}
-
-	private Set<Long> findCompletedLessonIds(Long userId, Map<Long, List<Lesson>> lessonsByCurriculumId) {
-		List<Long> lessonIds = lessonsByCurriculumId.values().stream()
-				.flatMap(List::stream)
+	private Set<Long> findCompletedLessonIds(Long userId, List<Curriculum> curriculums) {
+		List<Long> lessonIds = curriculums.stream()
+				.flatMap(curriculum -> curriculum.getLessons().stream())
 				.map(Lesson::getId)
 				.toList();
 		return lessonProgressFinder.findCompletedLessonIds(userId, lessonIds);
 	}
 
-	private CurriculumResult toResult(Curriculum curriculum, List<Lesson> lessons, Set<Long> completedLessonIds) {
+	private CurriculumResult toResult(Curriculum curriculum, Set<Long> completedLessonIds) {
+		List<Lesson> lessons = curriculum.getLessons();
 		int totalLessons = lessons.size();
 		int completedLessons = (int) lessons.stream()
 				.map(Lesson::getId)

@@ -205,7 +205,7 @@ class CurriculumQueryServiceTest {
 	}
 
 	@Test
-	void 커리큘럼_수와_무관하게_다섯_번의_쿼리로_조회한다() {
+	void 커리큘럼_수와_무관하게_네_번의_쿼리로_조회한다() {
 		Topic topic = persistTopicWithCategory();
 		Curriculum first = persistCurriculum(topic, "1단계", 1);
 		Curriculum second = persistCurriculum(topic, "2단계", 2);
@@ -220,7 +220,7 @@ class CurriculumQueryServiceTest {
 
 		curriculumFinder.findCurriculums(USER_ID);
 
-		assertThat(statistics.getPrepareStatementCount()).isEqualTo(5);
+		assertThat(statistics.getPrepareStatementCount()).isEqualTo(4);
 	}
 
 	@Test
