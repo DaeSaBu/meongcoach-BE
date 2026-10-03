@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 /**
  * 사용자별 레슨 진행도 조회 리포지토리. Spring Data JPA가 런타임에 구현한다.
@@ -21,9 +22,12 @@ public interface LessonProgressRepository extends JpaRepository<LessonProgress, 
 	 */
 	Optional<LessonProgress> findByUserIdAndLessonId(Long userId, Long lessonId);
 
-	/**
-	 * 한 사용자의 완료 횟수가 기준값 이상인 레슨 목록을 조회한다.
-	 */
-	List<LessonProgress> findAllByUserIdAndLessonIdInAndCompletedCountGreaterThanEqual(
-			Long userId, Collection<Long> lessonIds, int completedCount);
+	@Query("""
+			select lp
+			from LessonProgress lp
+			where lp.userId = :userId
+			and lp.lessonId in :lessonIds
+			and lp.completedCount > 0
+			""")
+	List<LessonProgress> findAllCompleted(Long userId, Collection<Long> lessonIds);
 }

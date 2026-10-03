@@ -16,15 +16,11 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class LessonProgressQueryService implements LessonProgressFinder {
-	private static final int COMPLETED_THRESHOLD = 1;
-
 	private final LessonProgressRepository lessonProgressRepository;
 
 	@Override
 	public Set<Long> findCompletedLessonIds(Long userId, Collection<Long> lessonIds) {
-		return lessonProgressRepository
-				.findAllByUserIdAndLessonIdInAndCompletedCountGreaterThanEqual(
-						userId, lessonIds, COMPLETED_THRESHOLD)
+		return lessonProgressRepository.findAllCompleted(userId, lessonIds)
 				.stream()
 				.map(LessonProgress::getLessonId)
 				.collect(Collectors.toUnmodifiableSet());
