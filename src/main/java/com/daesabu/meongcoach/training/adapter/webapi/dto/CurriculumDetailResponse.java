@@ -1,6 +1,6 @@
 package com.daesabu.meongcoach.training.adapter.webapi.dto;
 
-import com.daesabu.meongcoach.training.application.provided.CurriculumDetailResult;
+import com.daesabu.meongcoach.training.application.provided.dto.CurriculumDetailResult;
 import com.daesabu.meongcoach.training.domain.Curriculum;
 import java.util.List;
 import java.util.Map;

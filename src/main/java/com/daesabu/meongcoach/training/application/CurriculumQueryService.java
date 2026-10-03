@@ -2,9 +2,9 @@ package com.daesabu.meongcoach.training.application;
 
 import com.daesabu.meongcoach.progress.application.provided.LessonProgressFinder;
 import com.daesabu.meongcoach.progress.application.provided.TopicProgressFinder;
-import com.daesabu.meongcoach.training.application.provided.CurriculumDetailResult;
 import com.daesabu.meongcoach.training.application.provided.CurriculumFinder;
-import com.daesabu.meongcoach.training.application.provided.CurriculumListResult;
+import com.daesabu.meongcoach.training.application.provided.dto.CurriculumDetailResult;
+import com.daesabu.meongcoach.training.application.provided.dto.CurriculumListResult;
 import com.daesabu.meongcoach.training.application.required.CurriculumRepository;
 import com.daesabu.meongcoach.training.application.required.TopicRepository;
 import com.daesabu.meongcoach.training.domain.Curriculum;

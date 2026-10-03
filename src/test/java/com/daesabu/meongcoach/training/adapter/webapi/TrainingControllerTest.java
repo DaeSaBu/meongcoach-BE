@@ -17,13 +17,13 @@ import static org.springframework.restdocs.request.RequestDocumentation.pathPara
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.daesabu.meongcoach.training.application.provided.CurriculumDetailResult;
 import com.daesabu.meongcoach.training.application.provided.CurriculumFinder;
-import com.daesabu.meongcoach.training.application.provided.CurriculumListResult;
 import com.daesabu.meongcoach.training.application.provided.LessonCompleter;
 import com.daesabu.meongcoach.training.application.provided.LessonFinder;
 import com.daesabu.meongcoach.training.application.provided.TopicSelector;
 import com.daesabu.meongcoach.training.application.provided.TrainingCategoryFinder;
+import com.daesabu.meongcoach.training.application.provided.dto.CurriculumDetailResult;
+import com.daesabu.meongcoach.training.application.provided.dto.CurriculumListResult;
 import com.daesabu.meongcoach.training.application.provided.dto.TopicSelectionRequest;
 import com.daesabu.meongcoach.training.domain.Card;
 import com.daesabu.meongcoach.training.domain.CardFixture;

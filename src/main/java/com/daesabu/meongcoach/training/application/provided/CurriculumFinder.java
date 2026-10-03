@@ -1,5 +1,8 @@
 package com.daesabu.meongcoach.training.application.provided;
 
+import com.daesabu.meongcoach.training.application.provided.dto.CurriculumDetailResult;
+import com.daesabu.meongcoach.training.application.provided.dto.CurriculumListResult;
+
 /**
  * 커리큘럼 조회 능력.
  */
