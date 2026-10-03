@@ -3,7 +3,7 @@ package com.daesabu.meongcoach.training.application;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.daesabu.meongcoach.progress.application.TopicEntryService;
+import com.daesabu.meongcoach.progress.application.TopicProgressModifyService;
 import com.daesabu.meongcoach.training.application.provided.TopicSelector;
 import com.daesabu.meongcoach.training.application.provided.dto.TopicSelectionRequest;
 import com.daesabu.meongcoach.training.domain.Topic;
@@ -17,11 +17,8 @@ import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 import org.springframework.context.annotation.Import;
 
-/**
- * 커리큘럼 화면 변경 서비스 검증.
- */
 @DataJpaTest
-@Import({TopicSelectService.class, TopicEntryService.class})
+@Import({TopicSelectService.class, TopicProgressModifyService.class})
 class TopicSelectServiceTest {
 
 	private static final Long USER_ID = 1L;
@@ -94,13 +91,13 @@ class TopicSelectServiceTest {
 
 	private long countEntries() {
 		return entityManager.getEntityManager()
-				.createQuery("select count(c) from UserSelectedTopic c", Long.class)
+				.createQuery("select count(c) from TopicProgress c", Long.class)
 				.getSingleResult();
 	}
 
 	private Long findEnteredTopicId(Long userId) {
 		return entityManager.getEntityManager()
-				.createQuery("select c.topicId from UserSelectedTopic c where c.userId = :userId", Long.class)
+				.createQuery("select c.topicId from TopicProgress c where c.userId = :userId", Long.class)
 				.setParameter("userId", userId)
 				.getSingleResult();
 	}

@@ -1,7 +1,7 @@
 package com.daesabu.meongcoach.training.application;
 
 import com.daesabu.meongcoach.progress.application.provided.LessonProgressFinder;
-import com.daesabu.meongcoach.progress.application.provided.TopicEntryFinder;
+import com.daesabu.meongcoach.progress.application.provided.TopicProgressFinder;
 import com.daesabu.meongcoach.training.application.provided.CurriculumDetailResult;
 import com.daesabu.meongcoach.training.application.provided.CurriculumFinder;
 import com.daesabu.meongcoach.training.application.provided.CurriculumListResult;
@@ -24,9 +24,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * 커리큘럼 리스트·세부 조회 서비스. 레슨과 진행도를 각각 한 번에 읽어 커리큘럼·레슨 수와 무관하게 쿼리 수를 상수로 유지한다.
- */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -38,7 +35,7 @@ public class CurriculumQueryService implements CurriculumFinder {
 
 	private final LessonRepository lessonRepository;
 
-	private final TopicEntryFinder topicEntryFinder;
+	private final TopicProgressFinder topicProgressFinder;
 
 	private final LessonProgressFinder lessonProgressFinder;
 
@@ -69,14 +66,12 @@ public class CurriculumQueryService implements CurriculumFinder {
 		List<LessonResult> lessonResults = lessons.stream()
 				.map(lesson -> toLessonResult(lesson, completedCounts.get(lesson.getId())))
 				.toList();
-		// 토픽은 지연 로딩 프록시의 id만 읽어 추가 쿼리 없이 얻는다
 		return new CurriculumDetailResult(curriculum.getId(), curriculum.getTopic().getId(), curriculum.getTitle(),
 				curriculum.getSortOrder(), lessonResults);
 	}
 
-	// 진입 기록이 없거나 기록된 토픽이 더 이상 없으면 카테고리·토픽 정렬 순서 기준 첫 토픽으로 폴백한다
 	private Topic resolveTopic(Long userId) {
-		return topicEntryFinder.findLatestEnteredTopicId(userId)
+		return topicProgressFinder.findLatestTopicId(userId)
 				.flatMap(topicRepository::findById)
 				.orElseGet(this::findFirstTopic);
 	}
@@ -86,7 +81,6 @@ public class CurriculumQueryService implements CurriculumFinder {
 				.orElseThrow(TopicNotConfiguredException::new);
 	}
 
-	// 레슨을 커리큘럼 id IN 조건으로 한 번에 읽어 커리큘럼별로 나눈다
 	private Map<Long, List<Lesson>> groupLessonsByCurriculumId(List<Curriculum> curriculums) {
 		List<Long> curriculumIds = curriculums.stream().map(Curriculum::getId).toList();
 		return lessonRepository.findAllByCurriculum_IdInOrderBySortOrderAscIdAsc(curriculumIds).stream()

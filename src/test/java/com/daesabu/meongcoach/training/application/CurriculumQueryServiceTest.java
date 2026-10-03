@@ -3,10 +3,12 @@ package com.daesabu.meongcoach.training.application;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.daesabu.meongcoach.progress.application.LessonProgressService;
-import com.daesabu.meongcoach.progress.application.TopicEntryService;
-import com.daesabu.meongcoach.progress.application.provided.LessonProgressRecorder;
-import com.daesabu.meongcoach.progress.application.provided.TopicEntryRecorder;
+import com.daesabu.meongcoach.progress.application.LessonProgressModifyService;
+import com.daesabu.meongcoach.progress.application.LessonProgressQueryService;
+import com.daesabu.meongcoach.progress.application.TopicProgressModifyService;
+import com.daesabu.meongcoach.progress.application.TopicProgressQueryService;
+import com.daesabu.meongcoach.progress.application.provided.LessonProgressUpdater;
+import com.daesabu.meongcoach.progress.application.provided.TopicProgressUpdater;
 import com.daesabu.meongcoach.training.application.provided.CurriculumDetailResult;
 import com.daesabu.meongcoach.training.application.provided.CurriculumFinder;
 import com.daesabu.meongcoach.training.application.provided.CurriculumListResult;
@@ -33,11 +35,9 @@ import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.TestPropertySource;
 
-/**
- * 커리큘럼 리스트·세부 조회 서비스 검증.
- */
 @DataJpaTest
-@Import({CurriculumQueryService.class, TopicEntryService.class, LessonProgressService.class})
+@Import({CurriculumQueryService.class, TopicProgressQueryService.class, TopicProgressModifyService.class,
+		LessonProgressQueryService.class, LessonProgressModifyService.class})
 @TestPropertySource(properties = "spring.jpa.properties.hibernate.generate_statistics=true")
 class CurriculumQueryServiceTest {
 
@@ -49,10 +49,10 @@ class CurriculumQueryServiceTest {
 	private CurriculumFinder curriculumFinder;
 
 	@Autowired
-	private TopicEntryRecorder topicEntryRecorder;
+	private TopicProgressUpdater topicProgressUpdater;
 
 	@Autowired
-	private LessonProgressRecorder lessonProgressRecorder;
+	private LessonProgressUpdater lessonProgressUpdater;
 
 	@Autowired
 	private TestEntityManager entityManager;
@@ -68,7 +68,7 @@ class CurriculumQueryServiceTest {
 		persistCurriculum(first, "앉아 1단계", 1);
 		persistCurriculum(second, "기다려 1단계", 1);
 		flushAndClear();
-		topicEntryRecorder.enterTopic(USER_ID, second.getId());
+		topicProgressUpdater.enterTopic(USER_ID, second.getId());
 		flushAndClear();
 
 		CurriculumListResult curriculumList = curriculumFinder.findCurriculums(USER_ID);
@@ -103,7 +103,7 @@ class CurriculumQueryServiceTest {
 		Topic topic = persistTopic(category, "앉아", 1);
 		persistCurriculum(topic, "앉아 1단계", 1);
 		flushAndClear();
-		topicEntryRecorder.enterTopic(USER_ID, 999L);
+		topicProgressUpdater.enterTopic(USER_ID, 999L);
 		flushAndClear();
 
 		CurriculumListResult curriculumList = curriculumFinder.findCurriculums(USER_ID);
@@ -141,7 +141,7 @@ class CurriculumQueryServiceTest {
 		persistLesson(first, "간식 없이 앉아", 2);
 		persistLesson(second, "거리 두고 앉아", 1);
 		flushAndClear();
-		lessonProgressRecorder.completeLesson(USER_ID, completed.getId());
+		lessonProgressUpdater.updateCompletion(USER_ID, completed.getId());
 		flushAndClear();
 
 		CurriculumListResult curriculumList = curriculumFinder.findCurriculums(USER_ID);
@@ -160,7 +160,7 @@ class CurriculumQueryServiceTest {
 		Curriculum curriculum = persistCurriculum(topic, "1단계", 1);
 		Lesson lesson = persistLesson(curriculum, "손 위의 간식", 1);
 		flushAndClear();
-		lessonProgressRecorder.completeLesson(OTHER_USER_ID, lesson.getId());
+		lessonProgressUpdater.updateCompletion(OTHER_USER_ID, lesson.getId());
 		flushAndClear();
 
 		CurriculumListResult curriculumList = curriculumFinder.findCurriculums(USER_ID);
@@ -192,8 +192,8 @@ class CurriculumQueryServiceTest {
 		Lesson first = persistLesson(curriculum, "손 위의 간식", 1);
 		Lesson second = persistLesson(curriculum, "간식 없이 앉아", 2);
 		flushAndClear();
-		lessonProgressRecorder.completeLesson(USER_ID, first.getId());
-		lessonProgressRecorder.completeLesson(USER_ID, second.getId());
+		lessonProgressUpdater.updateCompletion(USER_ID, first.getId());
+		lessonProgressUpdater.updateCompletion(USER_ID, second.getId());
 		flushAndClear();
 
 		CurriculumListResult curriculumList = curriculumFinder.findCurriculums(USER_ID);
@@ -214,7 +214,7 @@ class CurriculumQueryServiceTest {
 		persistLesson(second, "둘째 레슨", 1);
 		persistLesson(third, "셋째 레슨", 1);
 		flushAndClear();
-		topicEntryRecorder.enterTopic(USER_ID, topic.getId());
+		topicProgressUpdater.enterTopic(USER_ID, topic.getId());
 		flushAndClear();
 		Statistics statistics = clearedStatistics();
 
@@ -280,9 +280,9 @@ class CurriculumQueryServiceTest {
 		Lesson once = persistLesson(curriculum, "둘째 레슨", 2, 5);
 		persistLesson(curriculum, "셋째 레슨", 3, 5);
 		flushAndClear();
-		lessonProgressRecorder.completeLesson(USER_ID, twice.getId());
-		lessonProgressRecorder.completeLesson(USER_ID, twice.getId());
-		lessonProgressRecorder.completeLesson(USER_ID, once.getId());
+		lessonProgressUpdater.updateCompletion(USER_ID, twice.getId());
+		lessonProgressUpdater.updateCompletion(USER_ID, twice.getId());
+		lessonProgressUpdater.updateCompletion(USER_ID, once.getId());
 		flushAndClear();
 
 		CurriculumDetailResult detail = curriculumFinder.findCurriculum(USER_ID, curriculum.getId());
@@ -297,7 +297,7 @@ class CurriculumQueryServiceTest {
 		Curriculum curriculum = persistCurriculum(topic, "1단계", 1);
 		Lesson lesson = persistLesson(curriculum, "손 위의 간식", 1, 5);
 		flushAndClear();
-		lessonProgressRecorder.completeLesson(OTHER_USER_ID, lesson.getId());
+		lessonProgressUpdater.updateCompletion(OTHER_USER_ID, lesson.getId());
 		flushAndClear();
 
 		CurriculumDetailResult detail = curriculumFinder.findCurriculum(USER_ID, curriculum.getId());
@@ -366,7 +366,7 @@ class CurriculumQueryServiceTest {
 
 	private long countTopicEntries() {
 		return entityManager.getEntityManager()
-				.createQuery("select count(c) from UserSelectedTopic c", Long.class)
+				.createQuery("select count(c) from TopicProgress c", Long.class)
 				.getSingleResult();
 	}
 

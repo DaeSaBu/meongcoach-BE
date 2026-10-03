@@ -1,7 +1,8 @@
 package com.daesabu.meongcoach.progress.domain;
 
-import com.daesabu.meongcoach.shared.domain.BaseEntity;
+import static java.util.Objects.requireNonNull;
 
+import com.daesabu.meongcoach.shared.domain.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -13,17 +14,14 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-/**
- * 사용자별 레슨 진행 상태. completedCount는 반복 완료 횟수(U-0207)다.
- */
 @Getter
 @Entity
 @Table(
-		name = "user_lesson_progress",
+		name = "lesson_progress",
 		uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "lesson_id"})
 )
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class UserLessonProgress extends BaseEntity {
+public class LessonProgress extends BaseEntity {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -38,12 +36,14 @@ public class UserLessonProgress extends BaseEntity {
 	@Column(nullable = false)
 	private int completedCount;
 
-	public static UserLessonProgress start(Long userId, Long lessonId) {
-		UserLessonProgress progress = new UserLessonProgress();
-		progress.userId = userId;
-		progress.lessonId = lessonId;
-		progress.completedCount = 0;
-		return progress;
+	public static LessonProgress start(Long userId, Long lessonId) {
+		LessonProgress lessonProgress = new LessonProgress();
+
+		lessonProgress.userId = requireNonNull(userId);
+		lessonProgress.lessonId = requireNonNull(lessonId);
+		lessonProgress.completedCount = 0;
+
+		return lessonProgress;
 	}
 
 	public void increaseCompletedCount() {

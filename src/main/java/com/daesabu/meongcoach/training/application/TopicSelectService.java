@@ -1,6 +1,6 @@
 package com.daesabu.meongcoach.training.application;
 
-import com.daesabu.meongcoach.progress.application.provided.TopicEntryRecorder;
+import com.daesabu.meongcoach.progress.application.provided.TopicProgressUpdater;
 import com.daesabu.meongcoach.training.application.provided.TopicSelector;
 import com.daesabu.meongcoach.training.application.provided.dto.TopicSelectionRequest;
 import com.daesabu.meongcoach.training.application.required.TopicRepository;
@@ -17,14 +17,14 @@ import org.springframework.validation.annotation.Validated;
 public class TopicSelectService implements TopicSelector {
 
 	private final TopicRepository topicRepository;
-	private final TopicEntryRecorder topicEntryRecorder;
+	private final TopicProgressUpdater topicProgressUpdater;
 
 	@Override
 	@Transactional
 	public void selectTopic(Long userId, TopicSelectionRequest topicSelectionRequest) {
 		validateExistingTopic(topicSelectionRequest);
 
-		topicEntryRecorder.enterTopic(userId, topicSelectionRequest.topicId());
+		topicProgressUpdater.enterTopic(userId, topicSelectionRequest.topicId());
 	}
 
 	private void validateExistingTopic(TopicSelectionRequest topicSelectionRequest) {
