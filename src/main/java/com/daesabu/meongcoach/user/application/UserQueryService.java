@@ -21,12 +21,6 @@ public class UserQueryService implements UserFinder {
 	}
 
 	@Override
-	public boolean isOnboardingUser(Long userId) {
-		User user = findById(userId);
-		return user.isOnboarding();
-	}
-
-	@Override
 	public User findById(Long userId) {
 		return userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException(userId));
 	}
