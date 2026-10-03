@@ -1,5 +1,7 @@
 package com.daesabu.meongcoach.shared.config;
 
+import com.daesabu.meongcoach.shared.security.AppVersionFilter;
+import com.daesabu.meongcoach.shared.security.AppVersionProperties;
 import com.daesabu.meongcoach.shared.security.AuthorityRole;
 import com.daesabu.meongcoach.shared.security.JwtProperties;
 import com.daesabu.meongcoach.shared.security.TokenType;
@@ -7,6 +9,7 @@ import com.daesabu.meongcoach.shared.security.TokenTypeValidator;
 import java.util.ArrayList;
 import java.util.List;
 import javax.crypto.SecretKey;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -33,6 +36,8 @@ import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
+import org.springframework.security.web.session.DisableEncodeUrlFilter;
+import org.springframework.web.servlet.HandlerExceptionResolver;
 
 @Configuration
 @EnableWebSecurity
@@ -75,8 +80,11 @@ public class SecurityConfig {
 	                                        Converter<Jwt, AbstractAuthenticationToken> userRoleAuthenticationConverter,
 	                                        AuthenticationEntryPoint authenticationEntryPoint,
 	                                        AccessDeniedHandler accessDeniedHandler,
+	                                        AppVersionProperties appVersionProperties,
+	                                        @Qualifier("handlerExceptionResolver") HandlerExceptionResolver resolver,
 	                                        @Value("${meongcoach.api-docs.enabled:false}") boolean apiDocsEnabled) {
 		return http
+				.addFilterBefore(new AppVersionFilter(appVersionProperties, resolver), DisableEncodeUrlFilter.class)
 				.cors(AbstractHttpConfigurer::disable)
 				.csrf(AbstractHttpConfigurer::disable)
 				.formLogin(AbstractHttpConfigurer::disable)
