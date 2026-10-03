@@ -40,6 +40,9 @@ asciidoc 문서와 별개로, 같은 테스트에서 OpenAPI 3 스펙을 생성�
   - 서버 주소: 상대 경로(`/`)로 덮어써 Try it out이 문서를 서빙한 오리진(localhost 또는 dev 서버)을 그대로 향합니다.
   - 보안 스킴: 문서화 테스트는 `principal()`로 인증을 우회하므로 bearerAuth 스킴과 전역 `security`를
     주입합니다. 인증 없이 호출 가능한 경로는 `build.gradle.kts`의 `publicPaths` 목록으로 제외합니다.
+  - 앱 헤더 스킴: 앱 버전 게이트([security.md](security.md) "필터 체인 구성") 때문에 `X-App-Version`·`X-App-Platform`을
+    apiKey 스킴(`appVersion`·`appPlatform`)으로 주입해 모든 경로에 요구합니다. `publicPaths`도 이 두 스킴은 요구하고, `/api/health`만 전부 제외합니다.
+    Swagger UI Authorize에 두 값을 넣으면 Try it out이 게이트를 통과합니다.
   - 모듈 태그: 스니펫 식별자의 모듈 접두어(`auth/…`, `training/…`)를 `moduleTags` 매핑에 따라 Swagger UI 그룹
     태그(Auth, Training 등)로 바꿉니다.
   - operationId 정규화: Swagger UI 딥링크가 `/`를 해석하지 못해 `auth/login`을
