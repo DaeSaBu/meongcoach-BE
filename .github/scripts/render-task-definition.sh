@@ -225,7 +225,7 @@ jq \
 								{"name": "SENTRY_RELEASE", "value": $sentry_release}
 							]
 						 end) +
-						# 최소 지원 앱 버전은 GitHub Variables가 소유한다. 미설정 시 application.yml의 기본값을 쓰도록 주입을 생략한다
+						# 최소 지원 앱 버전은 선택 사항이다. 미설정 시 application.yml의 기본값을 쓰도록 주입을 생략한다
 						(if $app_minimum_version_ios == "" then
 							[]
 						 else
