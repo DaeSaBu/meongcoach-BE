@@ -11,7 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class TopicFinderService implements TopicFinder {
+public class TopicQueryService implements TopicFinder {
 
 	private final TrainingCategoryRepository trainingCategoryRepository;
 
