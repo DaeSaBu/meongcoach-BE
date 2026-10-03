@@ -5,13 +5,9 @@ import com.daesabu.meongcoach.progress.application.provided.TopicProgressFinder;
 import com.daesabu.meongcoach.training.application.provided.CurriculumDetailResult;
 import com.daesabu.meongcoach.training.application.provided.CurriculumFinder;
 import com.daesabu.meongcoach.training.application.provided.CurriculumListResult;
-import com.daesabu.meongcoach.training.application.provided.CurriculumResult;
-import com.daesabu.meongcoach.training.application.provided.LessonResult;
 import com.daesabu.meongcoach.training.application.required.CurriculumRepository;
 import com.daesabu.meongcoach.training.application.required.TopicRepository;
 import com.daesabu.meongcoach.training.domain.Curriculum;
-import com.daesabu.meongcoach.training.domain.CurriculumStatus;
-import com.daesabu.meongcoach.training.domain.Lesson;
 import com.daesabu.meongcoach.training.domain.Topic;
 import com.daesabu.meongcoach.training.domain.exception.CurriculumNotFoundException;
 import com.daesabu.meongcoach.training.domain.exception.TopicNotConfiguredException;
@@ -38,10 +34,7 @@ public class CurriculumQueryService implements CurriculumFinder {
 		List<Curriculum> curriculums = curriculumRepository.findAllByTopicId(topic.getId());
 		Set<Long> completedLessonIds = findCompletedLessonIds(userId, curriculums);
 
-		List<CurriculumResult> curriculumResults = curriculums.stream()
-				.map(curriculum -> toResult(curriculum, completedLessonIds))
-				.toList();
-		return new CurriculumListResult(topic.getId(), topic.getTitle(), curriculumResults);
+		return new CurriculumListResult(topic, curriculums, completedLessonIds);
 	}
 
 	@Override
@@ -52,11 +45,7 @@ public class CurriculumQueryService implements CurriculumFinder {
 		List<Long> lessonIds = curriculum.getLessonIds();
 		Map<Long, Integer> completedCounts = lessonProgressFinder.findCompletedCounts(userId, lessonIds);
 
-		List<LessonResult> lessonResults = curriculum.getLessons().stream()
-				.map(lesson -> toLessonResult(lesson, completedCounts.get(lesson.getId())))
-				.toList();
-		return new CurriculumDetailResult(curriculum.getId(), curriculum.getTopic().getId(), curriculum.getTitle(),
-				curriculum.getSortOrder(), lessonResults);
+		return new CurriculumDetailResult(curriculum, completedCounts);
 	}
 
 	private Topic findLatestOrFirstTopic(Long userId) {
@@ -75,17 +64,5 @@ public class CurriculumQueryService implements CurriculumFinder {
 				.flatMap(curriculum -> curriculum.getLessonIds().stream())
 				.toList();
 		return lessonProgressFinder.findCompletedLessonIds(userId, lessonIds);
-	}
-
-	private CurriculumResult toResult(Curriculum curriculum, Set<Long> completedLessonIds) {
-		int totalLessons = curriculum.getLessonsSize();
-		int completedLessons = curriculum.countCompletedLessons(completedLessonIds);
-		return new CurriculumResult(curriculum.getId(), curriculum.getTitle(), totalLessons, completedLessons,
-				CurriculumStatus.of(totalLessons, completedLessons));
-	}
-
-	private LessonResult toLessonResult(Lesson lesson, int completedCount) {
-		return new LessonResult(lesson.getId(), lesson.getTitle(), lesson.getSortOrder(), lesson.getEstimatedMinutes(),
-				completedCount);
 	}
 }
