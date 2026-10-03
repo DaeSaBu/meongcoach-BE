@@ -112,24 +112,6 @@ class SecurityFilterChainTest {
 	}
 
 	@Test
-	void 구_소셜_로그인_경로는_인증_없이_열려_있고_USER_접두어_에러_코드를_반환한다() throws Exception {
-		mockMvc.perform(appPost("/api/auth/login/social/kakao")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"token\": \"invalid\"}"))
-				.andExpect(status().isUnauthorized())
-				.andExpect(jsonPath("$.code").value("USER_INVALID_SOCIAL_TOKEN"));
-	}
-
-	@Test
-	void 구_이메일_로그인_경로는_인증_없이_열려_있고_USER_접두어_에러_코드를_반환한다() throws Exception {
-		mockMvc.perform(appPost("/api/auth/login/local")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"email\": \"nobody@meongcoach.com\", \"password\": \"wrong-password\"}"))
-				.andExpect(status().isUnauthorized())
-				.andExpect(jsonPath("$.code").value("USER_INVALID_CREDENTIALS"));
-	}
-
-	@Test
 	void 회원_경로는_인증이_필요하다() throws Exception {
 		mockMvc.perform(appGet("/api/users/me"))
 				.andExpect(status().isUnauthorized());
@@ -230,19 +212,6 @@ class SecurityFilterChainTest {
 		AuthToken token = tokenProvider.issue(onboardingUserId);
 
 		mockMvc.perform(appDelete("/api/auth/me")
-						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))
-				.andExpect(status().isNoContent());
-
-		mockMvc.perform(appGet("/api/onboarding/metadata")
-						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))
-				.andExpect(status().isUnauthorized());
-	}
-
-	@Test
-	void 온보딩_미완료_회원도_구_탈퇴_경로로_탈퇴할_수_있다() throws Exception {
-		AuthToken token = tokenProvider.issue(onboardingUserId);
-
-		mockMvc.perform(appDelete("/api/users/me")
 						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))
 				.andExpect(status().isNoContent());
 

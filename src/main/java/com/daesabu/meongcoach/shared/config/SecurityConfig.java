@@ -48,9 +48,7 @@ public class SecurityConfig {
 			"/api/auth/login/social",
 			"/api/auth/login/email",
 			"/api/auth/token/refresh",
-			"/api/auth/logout",
-			"/api/auth/login/social/*",
-			"/api/auth/login/local"
+			"/api/auth/logout"
 	};
 
 	private static final String[] ONBOARDING_ALLOWED_PATHS = {
@@ -59,8 +57,6 @@ public class SecurityConfig {
 	};
 
 	private static final String WITHDRAW_PATH = "/api/auth/me";
-
-	private static final String LEGACY_WITHDRAW_PATH = "/api/users/me";
 
 	private static final String MY_INFO_PATH = "/api/users/me";
 
@@ -90,8 +86,6 @@ public class SecurityConfig {
 					auth.requestMatchers(ONBOARDING_ALLOWED_PATHS)
 							.hasAnyRole(AuthorityRole.USER.name(), AuthorityRole.ONBOARDING_USER.name());
 					auth.requestMatchers(HttpMethod.DELETE, WITHDRAW_PATH)
-							.hasAnyRole(AuthorityRole.USER.name(), AuthorityRole.ONBOARDING_USER.name());
-					auth.requestMatchers(HttpMethod.DELETE, LEGACY_WITHDRAW_PATH)
 							.hasAnyRole(AuthorityRole.USER.name(), AuthorityRole.ONBOARDING_USER.name());
 					auth.requestMatchers(HttpMethod.GET, MY_INFO_PATH)
 							.hasAnyRole(AuthorityRole.USER.name(), AuthorityRole.ONBOARDING_USER.name());
