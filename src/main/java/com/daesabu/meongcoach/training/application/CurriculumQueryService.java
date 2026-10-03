@@ -39,13 +39,17 @@ public class CurriculumQueryService implements CurriculumFinder {
 
 	@Override
 	public CurriculumDetailResult findCurriculum(Long userId, Long curriculumId) {
-		Curriculum curriculum = curriculumRepository.findById(curriculumId)
-				.orElseThrow(() -> new CurriculumNotFoundException(curriculumId));
+		Curriculum curriculum = findCurriculum(curriculumId);
 
 		List<Long> lessonIds = curriculum.getLessonIds();
 		Map<Long, Integer> completedCounts = lessonProgressFinder.findCompletedCounts(userId, lessonIds);
 
 		return new CurriculumDetailResult(curriculum, completedCounts);
+	}
+
+	private Curriculum findCurriculum(Long curriculumId) {
+		return curriculumRepository.findById(curriculumId)
+				.orElseThrow(() -> new CurriculumNotFoundException(curriculumId));
 	}
 
 	private Topic findLatestOrFirstTopic(Long userId) {
