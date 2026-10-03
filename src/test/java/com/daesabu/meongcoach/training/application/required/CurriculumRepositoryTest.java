@@ -34,7 +34,7 @@ class CurriculumRepositoryTest {
 		persistCurriculum(topic, "둘째", 2);
 		entityManager.flush();
 
-		List<Curriculum> curriculums = curriculumRepository.findAllByTopic_IdOrderBySortOrderAscIdAsc(topic.getId());
+		List<Curriculum> curriculums = curriculumRepository.findAllByTopicId(topic.getId());
 
 		assertThat(curriculums).extracting(Curriculum::getTitle)
 				.containsExactly("첫째", "둘째", "셋째");
@@ -47,7 +47,7 @@ class CurriculumRepositoryTest {
 		Curriculum second = persistCurriculum(topic, "나중 등록", 1);
 		entityManager.flush();
 
-		List<Curriculum> curriculums = curriculumRepository.findAllByTopic_IdOrderBySortOrderAscIdAsc(topic.getId());
+		List<Curriculum> curriculums = curriculumRepository.findAllByTopicId(topic.getId());
 
 		assertThat(curriculums).extracting(Curriculum::getId)
 				.containsExactly(first.getId(), second.getId());
@@ -61,7 +61,7 @@ class CurriculumRepositoryTest {
 		persistCurriculum(otherTopic, "다른 토픽 커리큘럼", 1);
 		entityManager.flush();
 
-		List<Curriculum> curriculums = curriculumRepository.findAllByTopic_IdOrderBySortOrderAscIdAsc(topic.getId());
+		List<Curriculum> curriculums = curriculumRepository.findAllByTopicId(topic.getId());
 
 		assertThat(curriculums).extracting(Curriculum::getTitle)
 				.containsExactly("대상 커리큘럼");
@@ -72,7 +72,7 @@ class CurriculumRepositoryTest {
 		Topic topic = persistTopic("기본 교육");
 		entityManager.flush();
 
-		List<Curriculum> curriculums = curriculumRepository.findAllByTopic_IdOrderBySortOrderAscIdAsc(topic.getId());
+		List<Curriculum> curriculums = curriculumRepository.findAllByTopicId(topic.getId());
 
 		assertThat(curriculums).isEmpty();
 	}

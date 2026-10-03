@@ -28,22 +28,17 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class CurriculumQueryService implements CurriculumFinder {
-
 	private final TopicRepository topicRepository;
-
 	private final CurriculumRepository curriculumRepository;
-
 	private final LessonRepository lessonRepository;
-
 	private final TopicProgressFinder topicProgressFinder;
-
 	private final LessonProgressFinder lessonProgressFinder;
 
 	@Override
 	public CurriculumListResult findCurriculums(Long userId) {
-		Topic topic = resolveTopic(userId);
+		Topic topic = findLatestOrFirstTopic(userId);
 
-		List<Curriculum> curriculums = curriculumRepository.findAllByTopic_IdOrderBySortOrderAscIdAsc(topic.getId());
+		List<Curriculum> curriculums = curriculumRepository.findAllByTopicId(topic.getId());
 		Map<Long, List<Lesson>> lessonsByCurriculumId = groupLessonsByCurriculumId(curriculums);
 		Set<Long> completedLessonIds = findCompletedLessonIds(userId, lessonsByCurriculumId);
 
@@ -70,14 +65,14 @@ public class CurriculumQueryService implements CurriculumFinder {
 				curriculum.getSortOrder(), lessonResults);
 	}
 
-	private Topic resolveTopic(Long userId) {
+	private Topic findLatestOrFirstTopic(Long userId) {
 		return topicProgressFinder.findLatestTopicId(userId)
 				.flatMap(topicRepository::findById)
 				.orElseGet(this::findFirstTopic);
 	}
 
 	private Topic findFirstTopic() {
-		return topicRepository.findFirstByOrderByTrainingCategory_SortOrderAscSortOrderAscIdAsc()
+		return topicRepository.findFirstTopic()
 				.orElseThrow(TopicNotConfiguredException::new);
 	}
 

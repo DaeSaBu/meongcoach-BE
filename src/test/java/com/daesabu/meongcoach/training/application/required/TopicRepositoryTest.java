@@ -30,7 +30,7 @@ class TopicRepositoryTest {
 		persistTopic(earlier, "먼저-첫째", 1);
 		entityManager.flush();
 
-		Optional<Topic> topic = topicRepository.findFirstByOrderByTrainingCategory_SortOrderAscSortOrderAscIdAsc();
+		Optional<Topic> topic = topicRepository.findFirstTopic();
 
 		assertThat(topic).isPresent();
 		assertThat(topic.get().getTitle()).isEqualTo("먼저-첫째");
@@ -38,7 +38,7 @@ class TopicRepositoryTest {
 
 	@Test
 	void 등록된_토픽이_없으면_빈_값을_반환한다() {
-		Optional<Topic> topic = topicRepository.findFirstByOrderByTrainingCategory_SortOrderAscSortOrderAscIdAsc();
+		Optional<Topic> topic = topicRepository.findFirstTopic();
 
 		assertThat(topic).isEmpty();
 	}
