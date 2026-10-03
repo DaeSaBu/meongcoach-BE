@@ -15,8 +15,8 @@
 - `DB_HOST`와 `DB_NAME`으로 `jdbc:postgresql://{host}:5432/{database}` URL을 구성합니다.
 - DB 접속 환경 변수에는 기본값이 없습니다. `SENTRY_DSN`만 예외로, 없으면 Sentry SDK가 꺼진 채 기동합니다 ([error-handling.md](error-handling.md) "Sentry 전송").
 - `APP_MINIMUM_VERSION_IOS`·`APP_MINIMUM_VERSION_ANDROID`는 플랫폼별 최소 지원 앱 버전이며, 없으면 `application.yml`의 기본값을 씁니다 ([security.md](security.md) "필터 체인 구성").
-  비밀값이 아니므로 배포 값은 GitHub Secrets가 아니라 GitHub Variables(`DEV_APP_MINIMUM_VERSION_IOS`·`DEV_APP_MINIMUM_VERSION_ANDROID`, `PROD_`도 같은 이름)가 소유합니다.
-  CD가 배포할 때 값을 주입하며, Variable이 비어 있으면 주입을 생략해 기본값이 적용됩니다. task definition에 직접 넣은 값은 다음 배포에서 지워집니다.
+  배포 값은 다른 애플리케이션 설정과 같이 GitHub Secrets(`DEV_APP_MINIMUM_VERSION_IOS`·`DEV_APP_MINIMUM_VERSION_ANDROID`, `PROD_`도 같은 이름)에 둡니다.
+  CD가 배포할 때 값을 주입하며, Secret이 없으면 주입을 생략해 기본값이 적용됩니다. task definition에 직접 넣은 값은 다음 배포에서 지워집니다.
 
 ## 활성화 방법
 
@@ -24,7 +24,7 @@
   `./gradlew bootRun`(또는 IDE Run)으로 실행합니다. dev 서버와 같은 DB를 쓰므로 `ddl-auto: validate`로 스키마를 바꾸지 않고,
   마이그레이션은 dev 배포가 적용하므로 Flyway를 끕니다. 아직 dev에 적용되지 않은 마이그레이션이 필요한 엔티티 변경은
   validate에서 기동이 실패합니다.
-- **배포**: 환경별 Terraform task definition이 `SPRING_PROFILES_ACTIVE=dev` 또는 `prod`를 고정합니다. CD는 이 값과 DB 설정을 보존하고 GitHub Secrets·Variables의 애플리케이션 설정과 이미지를 반영합니다.
+- **배포**: 환경별 Terraform task definition이 `SPRING_PROFILES_ACTIVE=dev` 또는 `prod`를 고정합니다. CD는 이 값과 DB 설정을 보존하고 GitHub Secrets의 애플리케이션 설정과 이미지를 반영합니다.
 - **테스트**: `build.gradle.kts`의 `tasks.withType<Test>`가 `spring.profiles.active=test`를
   강제하므로 별도 설정이 필요 없습니다. DB는 `application-test.yml`의 `jdbc:tc:` URL을 Testcontainers JDBC
   드라이버가 해석해 배포 환경과 같은 PostgreSQL 18.3 컨테이너를 띄우므로 Docker 데몬이 실행 중이어야 합니다.
@@ -48,7 +48,7 @@ flowchart LR
     Spring --> Profile
 ```
 
-CD는 환경별 task definition family의 최신 리비전에서 프로파일을 보존하고 이미지와 GitHub Secrets·Variables의 애플리케이션 설정만 반영합니다. Spring Boot는 `SPRING_PROFILES_ACTIVE`를 `spring.profiles.active`로 해석하고 `application.yml`과 환경별 프로파일 파일을 함께 읽습니다.
+CD는 환경별 task definition family의 최신 리비전에서 프로파일을 보존하고 이미지와 GitHub Secrets의 애플리케이션 설정만 반영합니다. Spring Boot는 `SPRING_PROFILES_ACTIVE`를 `spring.profiles.active`로 해석하고 `application.yml`과 환경별 프로파일 파일을 함께 읽습니다.
 
 > 트러블슈팅: 셸에 `SPRING_PROFILES_ACTIVE`가 남아 있으면 `profiles.default`가 무시됩니다.
 > 프로파일이 이상하게 잡히면 `echo $SPRING_PROFILES_ACTIVE`부터 확인하세요.
