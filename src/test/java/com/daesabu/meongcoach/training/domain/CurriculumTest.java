@@ -46,6 +46,33 @@ class CurriculumTest {
 		assertThat(completedLessons).isZero();
 	}
 
+	@Test
+	void 레슨이_없으면_시작_전_상태다() {
+		Curriculum curriculum = curriculumWithLessonIds();
+
+		CurriculumStatus status = curriculum.statusOf(Set.of());
+
+		assertThat(status).isEqualTo(CurriculumStatus.NOT_STARTED);
+	}
+
+	@Test
+	void 일부_레슨만_완료하면_진행_중_상태다() {
+		Curriculum curriculum = curriculumWithLessonIds(1L, 2L);
+
+		CurriculumStatus status = curriculum.statusOf(Set.of(1L));
+
+		assertThat(status).isEqualTo(CurriculumStatus.IN_PROGRESS);
+	}
+
+	@Test
+	void 모든_레슨을_완료하면_완료_상태다() {
+		Curriculum curriculum = curriculumWithLessonIds(1L, 2L);
+
+		CurriculumStatus status = curriculum.statusOf(Set.of(1L, 2L));
+
+		assertThat(status).isEqualTo(CurriculumStatus.COMPLETED);
+	}
+
 	private Curriculum curriculumWithLessonIds(Long... lessonIds) {
 		Curriculum curriculum = CurriculumFixture.create(null, "커리큘럼", 1, null, null);
 		List<Lesson> lessons = new ArrayList<>();
