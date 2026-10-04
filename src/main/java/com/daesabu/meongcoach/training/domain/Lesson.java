@@ -25,10 +25,6 @@ public class Lesson extends BaseEntity {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "curriculum_id", nullable = false)
-	private Curriculum curriculum;
-
 	@Column(nullable = false, length = 200)
 	private String title;
 
@@ -37,4 +33,8 @@ public class Lesson extends BaseEntity {
 
 	@Column(nullable = false)
 	private Integer estimatedMinutes;
+
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "curriculum_id", nullable = false)
+	private Curriculum curriculum;
 }

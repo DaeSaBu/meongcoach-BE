@@ -195,13 +195,13 @@ AI 리포트용 영상 업로드 URL 발급은 무료 체험 횟수 검증과 �
 
 === 이미지 업로드 URL 발급
 
-link:{swagger-ui}#/Media/media-image-upload-url[▶ Swagger에서 Try it out,window=swagger]
+link:{swagger-ui}#/Onboarding/onboarding-image-upload-url[▶ Swagger에서 Try it out,window=swagger]
 
-operation::media/image-upload-url[snippets='http-request,request-fields,http-response,response-fields']
+operation::onboarding/image-upload-url[snippets='http-request,request-fields,http-response,response-fields']
 
 ==== 실패 응답
 
-operation::media/image-upload-url-error[snippets='http-response,response-fields']
+operation::onboarding/image-upload-url-error[snippets='http-response,response-fields']
 
 == Onboarding API
 
@@ -275,12 +275,12 @@ operation::training/curriculum-detail-error[snippets='http-response,response-fie
 
 === 라이브러리 탭 진입
 
-link:{swagger-ui}#/Training/training-training-categories[▶ Swagger에서 Try it out,window=swagger]
+link:{swagger-ui}#/Training/training-categories[▶ Swagger에서 Try it out,window=swagger]
 
 전체 교육 카테고리와 각 카테고리에 속한 토픽을 조회합니다.
 카테고리와 토픽 모두 노출 순서(`sortOrder`) 오름차순으로 정렬되며, 토픽이 없는 카테고리는 빈 배열로 내려갑니다.
 
-operation::training/training-categories[snippets='http-request,http-response,response-fields']
+operation::training/categories[snippets='http-request,http-response,response-fields']
 
 === 레슨 시작 카드 조회
 
@@ -317,7 +317,7 @@ link:{swagger-ui}#/Training/training-topic-select[▶ Swagger에서 Try it out,w
 커리큘럼 탭에 표시할 토픽을 변경합니다.
 액세스 토큰으로 사용자를 식별하며, 같은 토픽을 연속으로 선택해도 진입 기록은 한 건만 유지되는 멱등 요청입니다.
 
-operation::training/topic-select[snippets='http-request,path-parameters,http-response,response-fields']
+operation::training/topic-select[snippets='http-request,request-fields,http-response']
 
 존재하지 않는 토픽을 요청하면 404(`TRAINING_TOPIC_NOT_FOUND`)를 반환합니다.
 
