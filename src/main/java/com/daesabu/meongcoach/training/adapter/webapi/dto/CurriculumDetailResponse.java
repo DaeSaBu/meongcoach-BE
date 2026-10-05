@@ -1,18 +1,18 @@
 package com.daesabu.meongcoach.training.adapter.webapi.dto;
 
-import com.daesabu.meongcoach.training.application.provided.CurriculumDetailResult;
+import com.daesabu.meongcoach.training.application.provided.dto.CurriculumDetailResult;
+import com.daesabu.meongcoach.training.domain.Curriculum;
 import java.util.List;
+import java.util.Map;
 
-/**
- * 커리큘럼 세부 조회 응답. 커리큘럼 정보와 소속 레슨 목록을 담는다.
- */
-public record CurriculumDetailResponse(Long curriculumId, Long topicId, String curriculumTitle,
-		int curriculumSortOrder, List<LessonResponse> lessons) {
+public record CurriculumDetailResponse(Long curriculumId, String curriculumTitle, List<LessonResponse> lessons) {
 
 	public static CurriculumDetailResponse from(CurriculumDetailResult result) {
-		List<LessonResponse> lessons = result.lessons().stream()
-				.map(LessonResponse::from)
+		Curriculum curriculum = result.curriculum();
+		Map<Long, Integer> completedCounts = result.completedCounts();
+		List<LessonResponse> lessons = curriculum.getLessons().stream()
+				.map(lesson -> LessonResponse.of(lesson, completedCounts.get(lesson.getId())))
 				.toList();
-		return new CurriculumDetailResponse(result.id(), result.topicId(), result.title(), result.sortOrder(), lessons);
+		return new CurriculumDetailResponse(curriculum.getId(), curriculum.getTitle(), lessons);
 	}
 }

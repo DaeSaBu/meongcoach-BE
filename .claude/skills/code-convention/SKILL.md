@@ -38,7 +38,7 @@ Java 소스(`src/main/java`, `src/test/java`)의 주석은 interface에만 두�
 | 역할 | 위치 | 규칙 | 예시 |
 | --- | --- | --- | --- |
 | 모듈 공개 API 인터페이스 | `application/provided` | 능력을 나타내는 이름, `~Service` 접미사 없음 | `DogRegister`, `MbtiFinder` |
-| 애플리케이션 조회 결과 래퍼 | `application/provided` | `~Result` (record) — 도메인 타입만으로 부족할 때만 | `VideoUploadUrlResult`, `OnboardingMetadataResult` |
+| 애플리케이션 조회 결과 래퍼 | `application/provided` 또는 `application/provided/dto` | `~Result` (record) — 도메인 타입만으로 부족할 때만 | `VideoUploadUrlResult`, `CurriculumDetailResult` |
 | 서비스 입력(웹 요청·모듈 경계 공통) | `application/provided/dto` | `~Request` (record). 도메인 입력이 필요하면 `toCommand()`로 변환 | `SocialLoginRequest`, `SocialAccountRegisterRequest` |
 | 필요 자원 인터페이스 | `application/required` | 자원 이름 그대로 | `UserRepository`, `VideoStorage` |
 | 애플리케이션 서비스 | `application` | `~Service` | `AuthenticationService`, `CurriculumQueryService` |
@@ -81,7 +81,7 @@ Java 소스(`src/main/java`, `src/test/java`)의 주석은 interface에만 두�
 
 - 요청/응답 DTO는 Java `record`로 작성한다.
 - 요청 DTO(`~Request`)는 `application/provided/dto`에 두고, 컨트롤러가 `@Valid @RequestBody`로 받아 **그대로** provided 인터페이스에 넘긴다. 컨트롤러에서 값을 풀어 인자로 나눠 넘기거나 웹 전용 요청 DTO를 따로 만들지 않는다. (살아있는 예시: `auth/application/provided/dto`, `AuthController`)
-	- `provided/dto`에는 `package-info.java`로 `@NamedInterface("provided")`를 선언한다. 패키지 선언은 하위 패키지로 전파되지 않아, 빠뜨리면 다른 모듈이 이 Request를 쓸 때 `verify()`가 실패한다. (살아있는 예시: `auth/application/provided/dto`)
+	- `provided/dto`에는 `package-info.java`로 `@NamedInterface("provided")`를 선언한다. 패키지 선언은 하위 패키지로 전파되지 않아, 빠뜨리면 다른 모듈이 이 패키지의 Request·Result를 쓸 때 `verify()`가 실패한다. (살아있는 예시: `auth/application/provided/dto`)
 	- 제약 어노테이션(`@NotBlank`, `@NotNull`)은 이 record에 한 번만 선언한다. provided 인터페이스 파라미터에 `@Valid`를, 서비스 구현 클래스에 `@Validated`를 붙여 다른 모듈·서비스가 호출하는 경로도 같은 제약으로 검증한다. 제약은 대상 타입에 맞는 것을 쓴다 — `@NotBlank`는 문자열 전용이라 값 객체·`LocalDateTime`에 붙이면 런타임에 `UnexpectedTypeException`이 난다.
 	- **컨트롤러가 `@RequestBody`로 받는** `~Request`의 필드는 JSON에서 바로 역직렬화되는 타입(문자열·숫자·날짜)으로 두고, 값 객체·enum 변환(`new Email(...)`, `SocialProvider.from(...)`)은 서비스·도메인에서 한다. enum을 필드 타입으로 두면 Jackson이 대소문자를 구분하고, 잘못된 값이 우리 에러 코드 없이 일반 400으로 끝난다. 단일 컴포넌트 record 값 객체를 필드로 두면 JSON이 `{"email": {"address": "..."}}` 형태를 요구한다.
 	- 서비스끼리 주고받는 `~Request`(컨트롤러를 거치지 않는 입력)는 이 제약을 받지 않는다. 역직렬화가 없고 이미 검증된 값을 넘기는 것이므로 값 객체·enum을 그대로 필드 타입으로 쓴다. (예: `EmailAccountFindRequest(Email)`, `SocialAccountRegisterRequest(SocialProvider, …, Email)`) 응답 DTO도 enum을 그대로 써도 된다 — 상수명 문자열로 직렬화된다.
@@ -93,7 +93,7 @@ Java 소스(`src/main/java`, `src/test/java`)의 주석은 interface에만 두�
 	- 엔티티 정적 팩토리의 순수 값 파라미터가 3개 이상이면 Command로 묶고, 팩토리는 Command를 받아 생성자에 전달한다.
 	- 연관 엔티티는 Command에 담지 않고 별도 인자로 전달한다. (예: `UserProfile.create(User user, UserProfileCreateCommand command)`)
 - 애플리케이션 조회 결과는 **도메인 타입(엔티티·값 객체)을 그대로 반환하는 것이 기본**이다. 값을 그대로 옮겨 담기만 하는 `~Result`는 만들지 않는다.
-	- **도메인 타입 하나로 표현할 수 없을 때만** — 여러 애그리거트 조합, 일부 필드만 내리는 projection, 집계값 — `application/provided`에 `~Result` record를 두고 감싼다.
+	- **도메인 타입 하나로 표현할 수 없을 때만** — 여러 애그리거트 조합, 일부 필드만 내리는 projection, 집계값 — `application/provided` 또는 `application/provided/dto`에 `~Result` record를 두고 감싼다. (살아있는 예시: `training/application/provided/dto`)
 	- 모듈 경계를 넘는다는 이유만으로 `~Result`를 만들지 않는다. 다른 모듈이 필요한 enum·값 객체는 `domain/shared`로 노출해 그대로 주고받는다. 노출되지 않은 도메인 타입을 provided 인터페이스 시그니처에 쓰면 호출하는 모듈이 `ApplicationModules.verify()`에서 실패한다 — 그때 해법은 record 복사본이 아니라 노출이다. 엔티티는 노출하지 않으므로 엔티티를 경계 밖으로 내려야 하면 `~Result`로 projection한다. 노출 규칙의 원천은 [docs/architecture.md](../../../docs/architecture.md)의 모듈 규칙.
 	- `open-in-view: true`(`application.yml`)라 `adapter`에서 엔티티의 지연 로딩 연관을 읽어도 `LazyInitializationException`이 나지 않는다. 다만 그 쿼리는 서비스 트랜잭션 밖에서 실행되고 요청이 끝날 때까지 커넥션을 잡으므로, 컬렉션을 내려야 하는 조회는 리포지토리 메서드에 `@EntityGraph`/fetch join을 붙여 트랜잭션 안에서 미리 로딩한다.
 	- `~Result`를 둘 때 필드명은 도메인 기준(`id`, `title`, `sortOrder`)으로 두고, 웹 노출 이름(`topicId`, `topicTitle`)으로 바꾸는 일은 `~Response.from(...)` 정적 팩토리에서만 한다. `~Result`에 웹 네이밍을 쓰면 `application`이 `adapter`의 관심사를 떠안게 된다.

@@ -88,10 +88,10 @@ SHA-1 검증용이라 id_token의 `aud`가 되지 않습니다), 애플은 **iOS
 
 | 순서 | 경로 | 접근 |
 |---|---|---|
-| 1 | `/api/health`, `/api/auth/login/social`, `/api/auth/login/email`, `/api/auth/token/refresh`, `/api/auth/logout`, 구 클라이언트 호환(삭제 예정) `/api/auth/login/social/*`, `/api/auth/login/local` | permitAll |
+| 1 | `/api/health`, `/api/auth/login/social`, `/api/auth/login/email`, `/api/auth/token/refresh`, `/api/auth/logout` | permitAll |
 | 2 | `/swagger-ui/**` | 문서 활성 환경 permitAll, 그 외 denyAll |
 | 3 | `/api/onboarding/**`, `/api/dogs/profile/image` | `USER`, `ONBOARDING_USER` |
-| 4 | `DELETE /api/auth/me`, `GET /api/users/me`, 구 클라이언트 호환(삭제 예정) `DELETE /api/users/me` | `USER`, `ONBOARDING_USER` |
+| 4 | `DELETE /api/auth/me`, `GET /api/users/me` | `USER`, `ONBOARDING_USER` |
 | 5 | 그 외 전부 | `USER` |
 
 3번은 온보딩 화면에 필요한 경로입니다 — 온보딩 완료 요청에 프로필 이미지 URL이 들어가므로
@@ -155,19 +155,22 @@ SHA-1 검증용이라 id_token의 `aud`가 되지 않습니다), 애플은 **iOS
 
 리다이렉트 흐름이 없어 세션이 필요 없으므로 **무상태 체인 하나**를 기본으로 둡니다.
 
+- 앱 버전 게이트 — 체인의 첫 필터(`DisableEncodeUrlFilter`) 앞에 `shared/security/AppVersionFilter`를 두어 인증보다 먼저 검사합니다.
+  - `/api/**` 요청의 `X-App-Platform`(`ios`/`android`)·`X-App-Version`(`숫자.숫자.숫자`)을 플랫폼별 최소 지원 버전(`meongcoach.app-version.minimum`)과 비교합니다.
+  - 헤더가 없거나 최소 버전보다 낮으면 426 `APP_UPDATE_REQUIRED`, 값 형식이 틀리면 400 `APP_VERSION_INVALID`입니다. 헤더가 없는 요청은 강제 업데이트 처리가 없는 v2.0.0 이전 앱이라 426으로 봅니다. 앱은 426 status만 보고 업데이트 화면을 띄웁니다.
+  - `/api/health`는 CD·로드밸런서 헬스 체크가 헤더 없이 호출하므로 검사하지 않습니다. curl·JMeter·Swagger UI(Authorize의 `appVersion`·`appPlatform`)로 다른 API를 호출할 때도 두 헤더가 필요합니다.
+  - 필터는 빈이 아니라 `SecurityConfig`에서 직접 생성합니다. 빈으로 등록하면 서블릿 컨테이너에도 자동 등록되어 두 번 실행되고 `@WebMvcTest` 슬라이스에 포함됩니다. 실패 응답은 아래 "인증 실패 응답"과 같은 방식으로 전역 예외 처리기에 넘깁니다.
+  - 최소 버전은 `APP_MINIMUM_VERSION_IOS`·`APP_MINIMUM_VERSION_ANDROID`이고, 배포 값은 GitHub Secrets `{DEV|PROD}_APP_MINIMUM_VERSION_{IOS|ANDROID}`에 둡니다 ([profiles.md](profiles.md)).
+    CD가 배포할 때 주입하므로 값을 바꾸면 해당 환경의 CD를 다시 실행해야 반영됩니다.
+  - 옛 API를 쓰는 앱을 막으려면 새 앱이 스토어에 출시된 뒤에 `PROD_` Secret을 그 버전으로 올리고, 그 API를 바꾼 서버를 main에 반영합니다. 최소 버전 상향과 API 변경이 같은 배포로 나갑니다.
 - `csrf` / `formLogin` / `httpBasic` / `logout` 비활성화 (`logout`은 Spring의 세션 로그아웃. 앱 로그아웃은 `POST /api/auth/logout`)
 - `SessionCreationPolicy.STATELESS`
 - permitAll: `/api/health`, `/api/auth/login/social`, `/api/auth/login/email`, `/api/auth/token/refresh`, `/api/auth/logout`
   (인증 엔드포인트만 개별 경로로 열고 `/api/auth/**`로 넓히지 않습니다. 이후 추가되는 인증 관련 API가 자동으로 공개되는 것을 막기 위함입니다)
-  - 구 클라이언트 호환 경로 `/api/auth/login/social/*`, `/api/auth/login/local`과 온보딩 중 허용 `DELETE /api/users/me`는
-    `auth/adapter/webapi/legacy`(신 계약 이전 앱용)와 함께 삭제합니다. 구 경로의 에러 코드는 `USER_` 접두어로 내려갑니다 ([error-handling.md](error-handling.md))
 - 그 외 요청은 역할 기반 인가 (위 "URL 인가 규칙" 참고)
-- `oauth2ResourceServer.jwt()` — Bearer 토큰 파싱·검증은 프레임워크가 담당하므로 커스텀 필터가 없습니다.
+- `oauth2ResourceServer.jwt()` — Bearer 토큰 파싱·검증은 프레임워크가 담당하므로 인증용 커스텀 필터가 없습니다.
   회원 존재 확인·권한 부여도 커스텀 필터가 아니라 디코더 뒤의 컨버터에 얹습니다 (위 "액세스 토큰 검증 순서" 참고)
-- `cors` — 프로파일별 `meongcoach.cors.allowed-origin-patterns`의 origin만 허용합니다 (허용 메서드: GET, POST, PUT, PATCH, DELETE, OPTIONS).
-  CORS 필터가 체인 앞단에서 동작하므로 preflight는 인가 전에 처리되고, 401 응답에도 CORS 헤더가 실립니다.
-  허용 목록 바인딩은 `shared/security/CorsProperties`, 빈 정의는 `SecurityConfig`에 둡니다.
-  웹 서비스가 없는 dev·prod에는 허용 목록을 두지 않아 교차 출처 요청을 모두 거부하고, local만 로컬 웹 개발용으로 `localhost`·`127.0.0.1`을 엽니다.
+- `cors` 비활성화 — 클라이언트가 네이티브 앱뿐이라 브라우저 교차 출처 요청을 받지 않습니다. Swagger UI는 API 서버가 같은 오리진에서 서빙합니다.
 - 헤더는 기본값 유지 — `X-Frame-Options: DENY`
 
 ### 인증 실패 응답

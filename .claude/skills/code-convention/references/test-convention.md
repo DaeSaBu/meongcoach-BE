@@ -29,25 +29,27 @@ MVP 개발 기간을 고려하여 아래 순서로 우선순위를 정해 작성
 - 슬라이스 테스트: 컨트롤러는 `@WebMvcTest`, 리포지토리(`application/required`의 Spring Data 인터페이스)는 `@DataJpaTest`를 사용한다.
 - 운영 코드에 생성 경로가 없는 엔티티(DB에 직접 적재하는 엔티티)는 테스트 소스의 같은 패키지에 `{엔티티}Fixture`를 두고 `ReflectionTestUtils.setField`로 만든다. 테스트에서 쓰려고 운영 코드에 정적 팩토리나 Command를 추가하지 않는다. (살아있는 예시: `auth/domain/EmailAccountFixture`, `training/domain/TopicFixture`)
 - 테스트 DB는 `src/test/resources/application-test.yml`의 `jdbc:tc:` URL로 Testcontainers가 띄우는 PostgreSQL 컨테이너 하나를 테스트 JVM 전체가 공유한다. `@DataJpaTest`에 `@AutoConfigureTestDatabase`를 붙이지 않는다 — Spring Boot는 `jdbc:tc:` URL로 잡힌 DataSource를 임베디드 DB로 교체하지 않는다. 다른 컨텍스트의 `create-drop`과 섞이면 안 되는 스키마 검증은 `migration/FlywaySchemaValidationTest`처럼 DB 이름이 다른 `jdbc:tc:` URL을 지정해 별도 컨테이너를 쓴다.
-- Application 테스트 외의 `@SpringBootTest`(시큐리티 필터 체인·CORS 등)는 꼭 필요한 시나리오에만 쓴다.
+- Application 테스트 외의 `@SpringBootTest`(시큐리티 필터 체인 등)는 꼭 필요한 시나리오에만 쓴다.
 - 외부 API 연동은 `MockRestServiceServer.bindTo(RestClient.Builder)`로 검증한다. 어댑터가 `RestClient`가 아닌 `RestClient.Builder`를 주입받아야 이 방식이 가능하므로, 생성자 파라미터를 `Builder`로 둔다.
 
 ## Application 테스트
 
 - `@SpringBootTest` + `@Transactional`로 작성한다. 각 테스트는 끝나면 롤백된다.
-- 테스트 대상은 `application/provided` 인터페이스로 `@Autowired` 주입한다. 서비스 구현 클래스를 주입하거나 `new`로 조립하지 않는다. 테스트 클래스명은 `{provided 인터페이스}Test`로 둔다. (예: `EntitlementSynchronizerTest`)
+- 테스트 대상은 `application/provided` 인터페이스로 `@Autowired` 주입한다. 서비스 구현 클래스를 주입하거나 `new`로 조립하지 않는다. 테스트 클래스명은 `{provided 인터페이스}Test`로 두고, 대상 인터페이스와 같은 `application/provided` 패키지에 둔다. (살아있는 예시: `training/application/provided/TrainingCategoryFinderTest`)
 - provided 인터페이스가 없는 내부 서비스(`EntitlementModifyService`, `UserQueryService` 등)는 전용 테스트를 만들지 않고, 그 서비스를 호출하는 provided 인터페이스의 테스트에서 검증한다.
 - 픽스처 준비와 결과 확인은 `application/required` 리포지토리를 주입받아 한다.
+	- 테스트 전체가 한 트랜잭션이라 방금 `save`한 엔티티는 영속성 컨텍스트에 그대로 남는다. 대상이 `@OneToMany` 컬렉션처럼 DB에서 다시 읽어야 채워지는 값을 반환하면, `EntityManager`를 주입해 픽스처 저장 뒤 `flush()`·`clear()`를 호출한다. 그러지 않으면 저장할 때의 빈 컬렉션이 그대로 반환된다. `TestEntityManager`는 `@DataJpaTest` 전용이라 쓸 수 없다.
+	- 연관 컬렉션을 함께 로딩하는지(N+1 없음)는 쿼리 수 통계(`hibernate.generate_statistics`) 대신 `clear()` 뒤 조회한 결과에 `Hibernate.isInitialized(컬렉션)`이 true인지로 확인한다. 통계는 클래스별 `@TestPropertySource`가 필요해 컨텍스트가 하나 더 뜬다. (살아있는 예시: `TrainingCategoryFinderTest.카테고리를_조회할_때_토픽도_함께_로딩한다`)
 - 외부 연동 포트(`adapter/integration`이 구현하는 `application/required` 인터페이스 — RevenueCat·소셜 제공자·스토리지 등)는 공통 테스트 설정 한 곳에서 `@MockitoBean`으로 대체한다. 테스트 클래스마다 `@MockitoBean`·`@TestPropertySource`·`@ActiveProfiles`를 따로 선언하지 않는다.
 	- 목 구성이나 프로퍼티가 클래스마다 다르면 스프링이 컨텍스트를 새로 띄운다. 캐시된 컨텍스트마다 Hikari 풀(최대 2)이 살아 있어, 컨텍스트가 늘면 PostgreSQL 커넥션 한도에 걸려 테스트가 멈춘다.
-	- 공통 설정은 `support/ApplicationTest` 메타 어노테이션(`@SpringBootTest` + `@Transactional` + 외부 연동 포트 `@MockitoBean(types = ...)`)이다. Application 테스트 클래스에는 이 어노테이션 하나만 붙이고, 모듈을 옮기며 새 외부 연동 포트가 필요하면 `types`에 추가한다. `NonTransactionalApplicationTest`의 `types`에도 같이 추가한다. (살아있는 예시: `entitlement/application/EntitlementSynchronizerTest`)
+	- 공통 설정은 `support/ApplicationTest` 메타 어노테이션(`@SpringBootTest` + `@Transactional` + 외부 연동 포트 `@MockitoBean(types = ...)`)이다. Application 테스트 클래스에는 이 어노테이션 하나만 붙이고, 모듈을 옮기며 새 외부 연동 포트가 필요하면 `types`에 추가한다. `NonTransactionalApplicationTest`의 `types`에도 같이 추가한다. (외부 연동 포트를 스텁하는 예시: `entitlement/application/EntitlementSynchronizerTest`)
 	- 스텁은 테스트 안에서 `given(...)`으로 지정한다. `@MockitoBean`은 테스트마다 초기화된다.
 - 트랜잭션 커밋 이후에만 드러나는 동작(advisory lock 대기·해제, `@TransactionalEventListener(AFTER_COMMIT)`, `REQUIRES_NEW`로 분리한 쓰기)은 테스트 롤백으로는 보이지 않는다. 이런 테스트는 `@ApplicationTest` 대신 `support/NonTransactionalApplicationTest`를 붙이고, 필요하면 `TransactionTemplate`으로 트랜잭션을 직접 커밋한 뒤 만든 데이터를 `@AfterEach`에서 지운다. 클래스명은 `{provided 인터페이스}{상황}Test`로 둔다. (살아있는 예시: `entitlement/application/EntitlementSynchronizerConcurrencyTest`)
 	- `NonTransactionalApplicationTest`는 `@ApplicationTest`에서 `@Transactional`만 뺀 설정이다. `@MockitoBean(types = ...)`를 두 어노테이션에 똑같이 유지해야 컨텍스트를 공유한다.
 	- 워커 스레드에서 부른 서비스는 테스트 트랜잭션에 참여하지 않고 실제로 커밋하므로 `@ApplicationTest`에서 스레드를 띄우면 데이터가 남는다. 또 테스트 트랜잭션이 풀(최대 2)의 커넥션 하나를 쥐어 워커가 락이 아니라 커넥션을 기다리게 되므로, 락이 없어도 통과한다.
 	- 커넥션을 쥐는 스레드는 동시에 2개까지만 둔다. 3개부터는 풀 대기로 직렬화되어 경합이 재현되지 않는다.
 	- 동시 실행 결과는 타이밍에 따라 달라지므로 스레드를 경쟁시키지 않는다. 테스트가 먼저 락을 쥐고 대상 호출이 그동안 끝나지 않는지(`Future.get(timeout)`이 `TimeoutException`) 확인한 뒤 락을 푼다. 작성 후 락 호출을 지우면 테스트가 실패하는지 확인한다.
-- 이 규칙 이전에 작성한 Application 테스트(`@DataJpaTest` + `@Import`, 구현체 직접 조립)는 일괄 전환하지 않고 해당 테스트를 수정할 때 옮긴다.
+- 이 규칙 이전에 작성한 Application 테스트(`@DataJpaTest` + `@Import`, 구현체 직접 조립, `application` 패키지 위치)는 일괄 전환하지 않고 해당 테스트를 수정할 때 옮긴다.
 
 ## 시큐리티와 테스트 슬라이스
 
@@ -62,7 +64,7 @@ private static final Principal CURRENT_USER = () -> "42";
 
 @Test
 void 인증_주체에서_읽은_사용자로_조회를_위임한다() throws Exception {
-	mockMvc.perform(get("/api/training/curriculums").principal(CURRENT_USER)) ...
+	mockMvc.perform(get("/api/training/topic/selection/curriculums").principal(CURRENT_USER)) ...
 }
 ```
 

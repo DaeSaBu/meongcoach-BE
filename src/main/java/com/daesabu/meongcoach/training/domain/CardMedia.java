@@ -1,7 +1,6 @@
 package com.daesabu.meongcoach.training.domain;
 
 import com.daesabu.meongcoach.shared.domain.BaseEntity;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -27,10 +26,6 @@ public class CardMedia extends BaseEntity {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "card_id", nullable = false)
-	private Card card;
-
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, length = 20)
 	private MediaType mediaType;
@@ -40,4 +35,8 @@ public class CardMedia extends BaseEntity {
 
 	@Column(nullable = false)
 	private int sortOrder;
+
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "card_id", nullable = false)
+	private Card card;
 }
