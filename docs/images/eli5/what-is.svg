@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 320" width="900" height="320">
+  <style>
+    text { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif; fill: #333; text-anchor: middle; }
+    .cap { font-size: 26px; font-weight: 700; }
+    .emoji { font-size: 84px; dominant-baseline: central; }
+  </style>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#888"/></marker>
+  </defs>
+  <rect x="2" y="2" width="896" height="316" rx="24" fill="#FFFDF7" stroke="#E8E2D4" stroke-width="2"/>
+  <circle cx="150" cy="140" r="92" fill="#FFE7C2"/>
+  <circle cx="450" cy="140" r="92" fill="#D9F0DC"/>
+  <circle cx="750" cy="140" r="92" fill="#DCE9F7"/>
+  <text class="emoji" x="150" y="140">📱</text>
+  <text class="emoji" x="450" y="140">🐶</text>
+  <text class="emoji" x="750" y="140">🤖</text>
+  <line x1="250" y1="140" x2="350" y2="140" stroke="#888" stroke-width="6" marker-end="url(#a)"/>
+  <line x1="550" y1="140" x2="650" y2="140" stroke="#888" stroke-width="6" marker-end="url(#a)"/>
+  <text class="cap" x="150" y="280">보호자가 앱을 열면</text>
+  <text class="cap" x="450" y="280">훈련을 차근차근</text>
+  <text class="cap" x="750" y="280">영상은 AI가 코칭</text>
+</svg>

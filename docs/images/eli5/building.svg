@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 560" width="900" height="560">
+  <style>
+    text { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif; fill: #333; text-anchor: middle; }
+    .title { font-size: 32px; font-weight: 800; }
+    .emoji { font-size: 42px; }
+    .name { font-size: 20px; font-weight: 700; }
+    .desc { font-size: 16px; fill: #666; }
+    .base { font-size: 22px; font-weight: 700; }
+  </style>
+  <rect x="2" y="2" width="896" height="556" rx="24" fill="#FFFDF7" stroke="#E8E2D4" stroke-width="2"/>
+  <polygon points="450,28 860,152 40,152" fill="#F4B183"/>
+  <text class="title" x="450" y="128">멍코치 서버 = 건물 하나</text>
+  <rect x="60" y="152" width="780" height="298" fill="#FFF6E5" stroke="#D9C7A7" stroke-width="2"/>
+  <g>
+    <rect x="76" y="168" width="140" height="124" rx="12" fill="#fff" stroke="#C9B79C" stroke-width="2"/>
+    <text class="emoji" x="146" y="222">🔑</text><text class="name" x="146" y="256">auth</text><text class="desc" x="146" y="280">로그인</text>
+    <rect x="228" y="168" width="140" height="124" rx="12" fill="#fff" stroke="#C9B79C" stroke-width="2"/>
+    <text class="emoji" x="298" y="222">🙋</text><text class="name" x="298" y="256">user</text><text class="desc" x="298" y="280">회원</text>
+    <rect x="380" y="168" width="140" height="124" rx="12" fill="#fff" stroke="#C9B79C" stroke-width="2"/>
+    <text class="emoji" x="450" y="222">🐶</text><text class="name" x="450" y="256">dog</text><text class="desc" x="450" y="280">강아지</text>
+    <rect x="532" y="168" width="140" height="124" rx="12" fill="#fff" stroke="#C9B79C" stroke-width="2"/>
+    <text class="emoji" x="602" y="222">📚</text><text class="name" x="602" y="256">training</text><text class="desc" x="602" y="280">훈련</text>
+    <rect x="684" y="168" width="140" height="124" rx="12" fill="#fff" stroke="#C9B79C" stroke-width="2"/>
+    <text class="emoji" x="754" y="222">✅</text><text class="name" x="754" y="256">progress</text><text class="desc" x="754" y="280">진도</text>
+  </g>
+  <g>
+    <rect x="76" y="310" width="140" height="124" rx="12" fill="#fff" stroke="#C9B79C" stroke-width="2"/>
+    <text class="emoji" x="146" y="364">🤖</text><text class="name" x="146" y="398">ai</text><text class="desc" x="146" y="422">영상 분석</text>
+    <rect x="228" y="310" width="140" height="124" rx="12" fill="#fff" stroke="#C9B79C" stroke-width="2"/>
+    <text class="emoji" x="298" y="364">🖼️</text><text class="name" x="298" y="398">media</text><text class="desc" x="298" y="422">사진·영상 보관</text>
+    <rect x="380" y="310" width="140" height="124" rx="12" fill="#fff" stroke="#C9B79C" stroke-width="2"/>
+    <text class="emoji" x="450" y="364">🧭</text><text class="name" x="450" y="398">onboarding</text><text class="desc" x="450" y="422">첫 설정</text>
+    <rect x="532" y="310" width="140" height="124" rx="12" fill="#fff" stroke="#C9B79C" stroke-width="2"/>
+    <text class="emoji" x="602" y="364">🎟️</text><text class="name" x="602" y="398">entitlement</text><text class="desc" x="602" y="422">이용권</text>
+    <rect x="684" y="310" width="140" height="124" rx="12" fill="#fff" stroke="#C9B79C" stroke-width="2"/>
+    <text class="emoji" x="754" y="364">💓</text><text class="name" x="754" y="398">health</text><text class="desc" x="754" y="422">살아있니?</text>
+  </g>
+  <rect x="60" y="462" width="780" height="72" rx="12" fill="#E6E6E6" stroke="#BDBDBD" stroke-width="2"/>
+  <text class="base" x="450" y="506">🔧 shared · 모든 방이 같이 쓰는 공용 설비</text>
+</svg>

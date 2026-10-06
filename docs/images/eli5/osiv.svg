@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 400" width="900" height="400">
+  <style>
+    text { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif; fill: #333; text-anchor: middle; }
+    .bar { font-size: 22px; font-weight: 700; }
+    .emoji { font-size: 64px; dominant-baseline: central; }
+    .label { font-size: 20px; font-weight: 700; }
+    .box { font-size: 22px; font-weight: 800; dominant-baseline: central; }
+  </style>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#666"/></marker>
+  </defs>
+  <rect x="2" y="2" width="896" height="396" rx="24" fill="#FFFDF7" stroke="#E8E2D4" stroke-width="2"/>
+  <rect x="60" y="36" width="780" height="54" rx="27" fill="#FFE0B2" stroke="#F0B46A" stroke-width="2"/>
+  <text class="bar" x="450" y="71">🔌 DB 연결이 응답 끝까지 열려 있어요 (OSIV)</text>
+  <text class="emoji" x="150" y="200">🧑‍🍳</text>
+  <text class="label" x="150" y="262">application</text>
+  <rect x="320" y="160" width="260" height="80" rx="16" fill="#D9F0DC" stroke="#8CC59A" stroke-width="3"/>
+  <text class="box" x="450" y="200">🐶 엔티티 그대로</text>
+  <line x1="210" y1="200" x2="314" y2="200" stroke="#666" stroke-width="5" marker-end="url(#a)"/>
+  <line x1="586" y1="200" x2="690" y2="200" stroke="#666" stroke-width="5" marker-end="url(#a)"/>
+  <text class="emoji" x="750" y="200">🚪</text>
+  <text class="label" x="750" y="262">adapter</text>
+  <line x1="750" y1="282" x2="750" y2="322" stroke="#666" stroke-width="5" marker-end="url(#a)"/>
+  <text class="label" x="750" y="362">📄 응답으로 포장</text>
+</svg>

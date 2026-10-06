@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 360" width="900" height="360">
+  <style>
+    text { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif; fill: #333; text-anchor: middle; }
+    .emoji { font-size: 48px; dominant-baseline: central; }
+    .label { font-size: 18px; font-weight: 700; }
+    .poll { font-size: 20px; font-weight: 700; fill: #1565C0; }
+  </style>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#666"/></marker>
+    <marker id="b" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1565C0"/></marker>
+  </defs>
+  <rect x="2" y="2" width="896" height="356" rx="24" fill="#FFFDF7" stroke="#E8E2D4" stroke-width="2"/>
+  <circle cx="90" cy="130" r="52" fill="#FFE7C2"/>
+  <circle cx="234" cy="130" r="52" fill="#E3F0FA"/>
+  <circle cx="378" cy="130" r="52" fill="#E3F0FA"/>
+  <circle cx="522" cy="130" r="52" fill="#FFF1CC"/>
+  <circle cx="666" cy="130" r="52" fill="#F3E5F5"/>
+  <circle cx="810" cy="130" r="52" fill="#D9F0DC"/>
+  <text class="emoji" x="90" y="130">📱</text>
+  <text class="emoji" x="234" y="130">🪣</text>
+  <text class="emoji" x="378" y="130">📬</text>
+  <text class="emoji" x="522" y="130">🖥️</text>
+  <text class="emoji" x="666" y="130">🧠</text>
+  <text class="emoji" x="810" y="130">📄</text>
+  <line x1="144" y1="130" x2="178" y2="130" stroke="#666" stroke-width="4" marker-end="url(#a)"/>
+  <line x1="288" y1="130" x2="322" y2="130" stroke="#666" stroke-width="4" marker-end="url(#a)"/>
+  <line x1="432" y1="130" x2="466" y2="130" stroke="#666" stroke-width="4" marker-end="url(#a)"/>
+  <line x1="576" y1="130" x2="610" y2="130" stroke="#666" stroke-width="4" marker-end="url(#a)"/>
+  <line x1="720" y1="130" x2="754" y2="130" stroke="#666" stroke-width="4" marker-end="url(#a)"/>
+  <text class="label" x="90" y="212">영상 올리기</text>
+  <text class="label" x="234" y="212">S3 보관함</text>
+  <text class="label" x="378" y="212">SQS 우편함</text>
+  <text class="label" x="522" y="212">서버</text>
+  <text class="label" x="666" y="212">AI 분석</text>
+  <text class="label" x="810" y="212">리포트</text>
+  <path d="M810,236 C 700,300 200,300 96,238" fill="none" stroke="#1565C0" stroke-width="4" stroke-dasharray="10 8" marker-end="url(#b)"/>
+  <text class="poll" x="450" y="334">📱 "다 됐어?" 하고 가끔 물어봐요</text>
+</svg>
