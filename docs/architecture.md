@@ -36,7 +36,7 @@ com.daesabu.meongcoach
 └── domain                   // 엔티티, 일급 컬렉션, 값 객체, exception/, 입력 모델(~Command)
 ```
 
-모듈은 필요한 계층만 갖습니다. `dog`·`progress`는 자체 API 없이 `provided` 인터페이스로만 노출되어 `adapter`가 없고, `onboarding`은 다른 모듈을 조합만 하므로 `domain`이 없습니다. 문서나 코드를 생성할 때 없는 계층을 만들어 채우지 않습니다.
+모듈은 필요한 계층만 갖습니다. `progress`는 자체 API 없이 `provided` 인터페이스로만 노출되어 `adapter`가 없고, `onboarding`은 다른 모듈을 조합만 하므로 `domain`이 없습니다. 문서나 코드를 생성할 때 없는 계층을 만들어 채우지 않습니다.
 
 ## 모듈 규칙
 
@@ -106,5 +106,15 @@ HTTP 요청
 `architecture/ModularityTest`가 `ApplicationModules.verify()`로 모듈 경계 위반을 검증합니다.
 
 같은 테스트가 Spring Modulith `Documenter`로 모듈 구조 문서도 만듭니다. 테스트를 실행하면 `build/spring-modulith-docs/`에 모듈 의존 다이어그램(`components.puml`, `module-{모듈}.puml`)과 모듈별 공개 API·빈 목록(`module-{모듈}.adoc`)이 생깁니다. 생성물은 커밋하지 않으며, IntelliJ PlantUML·AsciiDoc 플러그인으로 열어 봅니다.
+
+문서 생성에서는 `shared` 패키지를 뺍니다. 모든 모듈이 참조해 다이어그램에 관계선만 늘리기 때문입니다. `DiagramOptions.withExclusions`는 다이어그램에만 적용되어 캔버스는 계속 생기므로, 문서용 `ApplicationModules`를 따로 만들어 `shared` 패키지를 무시합니다. 경계 검증(`verify()`)은 `shared`를 포함한 전체 모듈로 합니다. 다이어그램에는 모듈과 모듈 간 의존만 나오고 외부 시스템은 나오지 않으며, 외부 시스템 전체 그림은 README의 시스템 구성 다이어그램에 직접 그립니다.
+
+README의 모듈 다이어그램(`docs/images/module-dependencies.svg`)은 `components.puml`을 렌더링한 스냅샷이라 자동으로 갱신되지 않습니다. 모듈 간 의존이 바뀌는 PR에서는 테스트로 `components.puml`을 다시 생성한 뒤 아래 명령으로 다시 렌더링해 함께 커밋합니다.
+
+```bash
+./gradlew test --tests '*ModularityTest'
+docker run --rm -v "$PWD/build/spring-modulith-docs:/data" plantuml/plantuml -tsvg /data/components.puml
+cp build/spring-modulith-docs/components.svg docs/images/module-dependencies.svg
+```
 
 클래스 네이밍 규칙은 [code-convention 스킬](../.claude/skills/code-convention/SKILL.md)을 따릅니다.
