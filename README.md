@@ -102,7 +102,7 @@ AI 분석은 수십 초가 걸리므로 요청-응답이 아니라 S3 업로드 
 
 ![모듈 의존 다이어그램](docs/images/module-dependencies.svg)
 
-> 자동 생성 다이어그램은 모듈 사이 관계만 그리고 외부 시스템은 나타내지 않습니다. 외부 시스템은 [시스템 구성](#시스템-구성)에서 보고, 모듈별 외부 연동 어댑터 목록은 생성되는 모듈 캔버스(`module-{모듈}.adoc`)의 "외부 연동" 항목에서 확인할 수 있습니다. 이 이미지는 생성물을 렌더링한 스냅샷이며, 다시 만드는 방법은 [docs/architecture.md](docs/architecture.md#모듈-경계-검증)에 있습니다.
+> 구름 모양은 외부 시스템이고, 실선(`calls`·`delivers`)은 모듈이 외부 시스템을 호출하거나 메시지를 받는 관계입니다. Spring Modulith는 외부 시스템을 그리지 않으므로, 각 모듈의 외부 연동 어댑터(`adapter/integration`·`adapter/consumer`)를 찾아 테스트가 생성 결과에 덧붙였습니다. 모든 모듈이 쓰는 PostgreSQL은 [시스템 구성](#시스템-구성)에만 표시했습니다. 이 이미지는 생성물을 렌더링한 스냅샷이며, 다시 만드는 방법은 [docs/architecture.md](docs/architecture.md#모듈-경계-검증)에 있습니다.
 
 ### 모듈별 책임 · 역할 · 협력
 
