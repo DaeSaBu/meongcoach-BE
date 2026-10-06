@@ -107,7 +107,7 @@ HTTP 요청
 
 같은 테스트가 Spring Modulith `Documenter`로 모듈 구조 문서도 만듭니다. 테스트를 실행하면 `build/spring-modulith-docs/`에 모듈 의존 다이어그램(`components.puml`, `module-{모듈}.puml`)과 모듈별 공개 API·빈 목록(`module-{모듈}.adoc`)이 생깁니다. 생성물은 커밋하지 않으며, IntelliJ PlantUML·AsciiDoc 플러그인으로 열어 봅니다.
 
-다이어그램에는 모듈과 모듈 간 의존만 나오고 외부 시스템은 나오지 않습니다. `Documenter`에 외부 노드를 추가하는 API가 없기 때문입니다. 대신 모듈 캔버스(`module-{모듈}.adoc`)의 "외부 연동"(`adapter/integration`)·"메시지 수신"(`adapter/consumer`) 항목에 모듈별 외부 연동 빈이 나열됩니다. 외부 시스템 전체 그림은 README의 시스템 구성 다이어그램에 직접 그립니다.
+다이어그램에서는 `shared` 모듈을 뺍니다(`DiagramOptions.withExclusions`). 모든 모듈이 참조해 관계선만 늘리기 때문입니다. 다이어그램에는 모듈과 모듈 간 의존만 나오고 외부 시스템은 나오지 않습니다. `Documenter`에 외부 노드를 추가하는 API가 없기 때문입니다. 대신 모듈 캔버스(`module-{모듈}.adoc`)의 "외부 연동"(`adapter/integration`)·"메시지 수신"(`adapter/consumer`) 항목에 모듈별 외부 연동 빈이 나열됩니다. 외부 시스템 전체 그림은 README의 시스템 구성 다이어그램에 직접 그립니다.
 
 README의 모듈 다이어그램(`docs/images/module-dependencies.svg`)은 `components.puml`을 렌더링한 스냅샷이라 자동으로 갱신되지 않습니다. 모듈 간 의존이 바뀌는 PR에서는 테스트로 `components.puml`을 다시 생성한 뒤 아래 명령으로 다시 렌더링해 함께 커밋합니다.
 

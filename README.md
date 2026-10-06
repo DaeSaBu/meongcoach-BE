@@ -98,7 +98,7 @@ AI 분석은 수십 초가 걸리므로 요청-응답이 아니라 S3 업로드 
 
 ## 모듈 구조
 
-아래 다이어그램은 테스트(`ModularityTest`)가 실행될 때 Spring Modulith `Documenter`가 코드에서 자동 생성한 모듈 의존 관계입니다. `uses`는 다른 모듈의 Spring 빈(`provided` 인터페이스) 호출, `depends on`은 타입 참조입니다.
+아래 다이어그램은 테스트(`ModularityTest`)가 실행될 때 Spring Modulith `Documenter`가 코드에서 자동 생성한 모듈 의존 관계입니다. `uses`는 다른 모듈의 Spring 빈(`provided` 인터페이스) 호출, `depends on`은 타입 참조입니다. 모든 모듈이 참조하는 `shared`는 관계선이 모듈 수만큼 늘어나 실제 협력 관계를 가리므로 그림에서 뺐습니다.
 
 ![모듈 의존 다이어그램](docs/images/module-dependencies.svg)
 
