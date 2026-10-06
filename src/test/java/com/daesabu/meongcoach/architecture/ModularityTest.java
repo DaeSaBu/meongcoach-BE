@@ -1,6 +1,8 @@
 package com.daesabu.meongcoach.architecture;
 
 import com.daesabu.meongcoach.MeongcoachApplication;
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.function.Predicate;
 import org.junit.jupiter.api.Test;
 import org.springframework.modulith.core.ApplicationModuleIdentifier;
@@ -15,6 +17,8 @@ import org.springframework.modulith.docs.Documenter.DiagramOptions.ElementsWitho
 class ModularityTest {
 
 	private static final ApplicationModules MODULES = ApplicationModules.of(MeongcoachApplication.class);
+
+	private static final Path MODULE_DIAGRAM = Path.of("build", "spring-modulith-docs", "components.puml");
 
 	private static final ApplicationModuleIdentifier SHARED = ApplicationModuleIdentifier.of("shared");
 
@@ -34,8 +38,9 @@ class ModularityTest {
 	}
 
 	@Test
-	void 모듈_구조_문서를_생성한다() {
+	void 모듈_구조_문서를_생성한다() throws IOException {
 		new Documenter(MODULES).writeDocumentation(DIAGRAM_OPTIONS, CANVAS_OPTIONS);
+		ExternalSystemDiagram.appendTo(MODULE_DIAGRAM, MODULES);
 	}
 
 	private static Predicate<SpringBean> inPackage(String packageSuffix) {
