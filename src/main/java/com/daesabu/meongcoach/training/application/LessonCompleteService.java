@@ -22,7 +22,7 @@ public class LessonCompleteService implements LessonCompleter {
 	public int completeLesson(Long userId, Long lessonId) {
 		Lesson lesson = lessonFinder.find(lessonId);
 
-		lesson.getCurriculum().findRequiredEntitlementType()
+		lesson.findRequiredEntitlementType()
 				.ifPresent(type -> entitlementChecker.validateEntitlement(userId, type));
 
 		return lessonProgressUpdater.updateCompletion(userId, lessonId);

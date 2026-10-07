@@ -69,7 +69,7 @@ public class CurriculumQueryService implements CurriculumFinder {
 	}
 
 	private boolean hasEntitlement(Long userId, Topic topic) {
-		return topic.getTrainingCategory().findRequiredEntitlementType()
+		return topic.findRequiredEntitlementType()
 				.map(type -> entitlementChecker.hasEntitlement(userId, type))
 				.orElse(true);
 	}
