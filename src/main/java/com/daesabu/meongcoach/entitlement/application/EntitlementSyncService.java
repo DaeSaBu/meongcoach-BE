@@ -2,8 +2,8 @@ package com.daesabu.meongcoach.entitlement.application;
 
 import com.daesabu.meongcoach.entitlement.application.provided.EntitlementSynchronizer;
 import com.daesabu.meongcoach.entitlement.application.required.ActiveEntitlementReader;
-import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;
-import java.util.Set;
+import com.daesabu.meongcoach.entitlement.domain.ActiveEntitlement;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -16,8 +16,8 @@ public class EntitlementSyncService implements EntitlementSynchronizer {
 
 	@Override
 	public void synchronize(Long userId) {
-		Set<EntitlementType> activeEntitlementTypes = activeEntitlementReader.readActiveEntitlementTypes(userId);
+		List<ActiveEntitlement> activeEntitlements = activeEntitlementReader.readActiveEntitlements(userId);
 
-		entitlementModifyService.synchronize(userId, activeEntitlementTypes);
+		entitlementModifyService.synchronize(userId, activeEntitlements);
 	}
 }
