@@ -1,5 +1,6 @@
 package com.daesabu.meongcoach.training.domain;
 
+import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;
 import com.daesabu.meongcoach.shared.domain.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -14,6 +15,7 @@ import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -66,6 +68,17 @@ public class Curriculum extends BaseEntity {
 		int totalLessons = getLessonsSize();
 		int completedLessons = countCompletedLessons(completedLessonIds);
 		return CurriculumStatus.of(totalLessons, completedLessons);
+	}
+
+	public Optional<EntitlementType> findRequiredEntitlementType() {
+		if (!isPremium) {
+			return Optional.empty();
+		}
+		return topic.getTrainingCategory().findRequiredEntitlementType();
+	}
+
+	public boolean isLocked(boolean hasEntitlement) {
+		return findRequiredEntitlementType().isPresent() && !hasEntitlement;
 	}
 
 	public int countCompletedLessons(Set<Long> completedLessonIds) {
