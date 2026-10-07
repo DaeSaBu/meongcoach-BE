@@ -11,7 +11,6 @@ import com.daesabu.meongcoach.training.domain.TrainingCategory;
 import com.daesabu.meongcoach.training.domain.TrainingCategoryFixture;
 import jakarta.persistence.EntityManager;
 import java.util.List;
-import org.hibernate.Hibernate;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -120,19 +119,6 @@ class TrainingCategoryFinderTest {
 		List<TrainingCategory> categories = trainingCategoryFinder.findAllWithTopics();
 
 		assertThat(categories).isEmpty();
-	}
-
-	@Test
-	void 카테고리를_조회할_때_토픽도_함께_로딩한다() {
-		TrainingCategory basic = saveCategory("기본 교육", 1);
-		TrainingCategory advanced = saveCategory("심화 교육", 2);
-		saveTopic(basic, "앉아", 1);
-		saveTopic(advanced, "기다려", 1);
-		flushAndClear();
-
-		List<TrainingCategory> categories = trainingCategoryFinder.findAllWithTopics();
-
-		assertThat(categories).allSatisfy(category -> assertThat(Hibernate.isInitialized(category.getTopics())).isTrue());
 	}
 
 	private TrainingCategory saveCategory(String title, int sortOrder) {

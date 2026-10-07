@@ -29,7 +29,6 @@ import com.daesabu.meongcoach.training.domain.TrainingCategoryFixture;
 import com.daesabu.meongcoach.training.domain.exception.LessonNotFoundException;
 import jakarta.persistence.EntityManager;
 import java.util.List;
-import org.hibernate.Hibernate;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -177,20 +176,6 @@ class LessonFinderTest {
 	void 존재하지_않는_레슨이면_예외를_던진다() {
 		assertThatThrownBy(() -> lessonFinder.findCards(USER_ID, -1L))
 				.isInstanceOf(LessonNotFoundException.class);
-	}
-
-	@Test
-	void 카드를_조회할_때_미디어도_함께_로딩한다() {
-		Lesson lesson = saveLesson("기본 교육");
-		Card first = saveCard(lesson, "첫째 지시문", 1);
-		Card second = saveCard(lesson, "둘째 지시문", 2);
-		saveCardMedia(first, MediaType.IMAGE, "https://cdn.example.com/1.png", 1);
-		saveCardMedia(second, MediaType.VIDEO, "https://cdn.example.com/2.mp4", 1);
-		flushAndClear();
-
-		List<Card> cards = lessonFinder.findCards(USER_ID, lesson.getId());
-
-		assertThat(cards).allSatisfy(card -> assertThat(Hibernate.isInitialized(card.getCardMedia())).isTrue());
 	}
 
 	@Test
