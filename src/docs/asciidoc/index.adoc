@@ -214,6 +214,7 @@ operation::health/check[snippets='http-request,http-response,response-fields']
 == Training API
 
 모든 엔드포인트는 액세스 토큰 인증이 필요합니다.
+목록 응답은 배열 순서가 곧 노출 순서이므로, 클라이언트는 다시 정렬하지 않고 받은 순서대로 표시합니다.
 
 === 커리큘럼 리스트 조회
 
@@ -222,7 +223,7 @@ link:{swagger-ui}#/Training/training-curriculum-list[▶ Swagger에서 Try it ou
 커리큘럼 탭에 표시할 토픽과 그 토픽의 커리큘럼 목록을 진행 상태와 함께 조회합니다.
 대상 토픽은 액세스 토큰으로 식별한 사용자가 마지막으로 진입한 토픽이며,
 진입 기록이 없거나 기록된 토픽이 더 이상 없으면 카테고리·토픽 노출 순서 기준 첫 토픽으로 폴백합니다.
-커리큘럼은 노출 순서(`sortOrder`) 오름차순으로 정렬되며, 이 요청은 어떤 데이터도 저장하지 않습니다.
+커리큘럼은 노출 순서대로 정렬되어 내려가며, 이 요청은 어떤 데이터도 저장하지 않습니다.
 
 operation::training/curriculum-list[snippets='http-request,http-response,response-fields']
 
@@ -235,7 +236,7 @@ operation::training/curriculum-list-error[snippets='http-response,response-field
 link:{swagger-ui}#/Training/training-curriculum-detail[▶ Swagger에서 Try it out,window=swagger]
 
 커리큘럼 하나와 그 커리큘럼에 속한 레슨 목록을 조회합니다.
-레슨은 노출 순서(`sortOrder`) 오름차순으로 정렬되며, 각 레슨에는 액세스 토큰으로 식별한 사용자의
+레슨은 노출 순서대로 정렬되어 내려가며, 각 레슨에는 액세스 토큰으로 식별한 사용자의
 반복 완료 횟수(`userLessonProgress.completedCount`)가 함께 내려갑니다.
 진행 기록이 없는 레슨의 완료 횟수는 0이고, 레슨이 없는 커리큘럼은 빈 배열로 내려갑니다.
 
@@ -250,7 +251,7 @@ operation::training/curriculum-detail-error[snippets='http-response,response-fie
 link:{swagger-ui}#/Training/training-categories[▶ Swagger에서 Try it out,window=swagger]
 
 전체 교육 카테고리와 각 카테고리에 속한 토픽을 조회합니다.
-카테고리와 토픽 모두 노출 순서(`sortOrder`) 오름차순으로 정렬되며, 토픽이 없는 카테고리는 빈 배열로 내려갑니다.
+카테고리와 토픽 모두 노출 순서대로 정렬되어 내려가며, 토픽이 없는 카테고리는 빈 배열로 내려갑니다.
 
 operation::training/categories[snippets='http-request,http-response,response-fields']
 
@@ -259,7 +260,7 @@ operation::training/categories[snippets='http-request,http-response,response-fie
 link:{swagger-ui}#/Training/training-lesson-cards[▶ Swagger에서 Try it out,window=swagger]
 
 레슨에 속한 카드 전체를 페이지네이션 없이 조회합니다.
-카드와 각 카드의 미디어 모두 노출 순서(`sortOrder`) 오름차순으로 정렬되며, 미디어가 없는 카드는 빈 배열로 내려갑니다.
+카드와 각 카드의 미디어 모두 노출 순서대로 정렬되어 내려가며, 미디어가 없는 카드는 빈 배열로 내려갑니다.
 이 API는 조회만 수행하며 진행 기록을 만들지 않습니다.
 
 operation::training/lesson-cards[snippets='http-request,path-parameters,http-response,response-fields']
