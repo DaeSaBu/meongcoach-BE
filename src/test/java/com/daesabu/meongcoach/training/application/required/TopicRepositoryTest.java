@@ -10,6 +10,7 @@ import com.daesabu.meongcoach.training.domain.TrainingCategory;
 import com.daesabu.meongcoach.training.domain.TrainingCategoryFixture;
 import java.util.List;
 import java.util.Optional;
+import org.hibernate.Hibernate;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -50,6 +51,31 @@ class TopicRepositoryTest {
 		Optional<Topic> topic = topicRepository.findFirstTopic();
 
 		assertThat(topic).map(Topic::getTitle).contains("먼저-둘째");
+	}
+
+	@Test
+	void 첫_토픽을_카테고리와_함께_조회한다() {
+		persistTopic(persistCategory("기본 교육", 1), "앉아", 1);
+		flushAndClear();
+
+		Topic topic = topicRepository.findFirstTopic().orElseThrow();
+
+		assertThat(Hibernate.isInitialized(topic.getTrainingCategory())).isTrue();
+	}
+
+	@Test
+	void 토픽을_카테고리와_함께_조회한다() {
+		Topic topic = persistTopic(persistCategory("기본 교육", 1), "앉아", 1);
+		flushAndClear();
+
+		Topic found = topicRepository.findWithCategoryById(topic.getId()).orElseThrow();
+
+		assertThat(Hibernate.isInitialized(found.getTrainingCategory())).isTrue();
+	}
+
+	@Test
+	void 없는_토픽을_카테고리와_함께_조회하면_빈_값을_반환한다() {
+		assertThat(topicRepository.findWithCategoryById(999L)).isEmpty();
 	}
 
 	@Test
