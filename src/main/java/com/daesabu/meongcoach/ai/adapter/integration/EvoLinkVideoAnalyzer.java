@@ -10,7 +10,7 @@ import com.daesabu.meongcoach.ai.application.provided.AiReportContent.Recommend;
 import com.daesabu.meongcoach.ai.application.required.VideoAnalyzer;
 import com.daesabu.meongcoach.ai.domain.exception.VideoAnalysisFailedException;
 import com.daesabu.meongcoach.training.application.provided.TopicFinder;
-import com.daesabu.meongcoach.training.application.provided.dto.TopicsResult;
+import com.daesabu.meongcoach.training.application.provided.dto.TopicResult;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -67,7 +67,7 @@ public class EvoLinkVideoAnalyzer implements VideoAnalyzer {
 	public String analyze(String videoUrl) {
 		// 교육 목록은 기동 시점이 아니라 호출마다 조회한다. 영상 분석은 저빈도 작업이라 쿼리 비용이 무시 가능하고,
 		// 토픽이 바뀌어도 재기동 없이 반영된다. 프롬프트와 topicId 검증이 같은 목록을 보도록 한 번만 조회한다
-		List<TopicsResult> topics = topicFinder.findAll();
+		List<TopicResult> topics = topicFinder.findAll();
 		String content = completeOrThrow(videoUrl, topics);
 
 		AiReportContent reportContent = parseContent(content, topics, videoUrl);
@@ -75,7 +75,7 @@ public class EvoLinkVideoAnalyzer implements VideoAnalyzer {
 	}
 
 	// HTTP 오류와 쓸 수 없는 응답을 경계에서 도메인 예외로 번역한다. 그 외 예외는 버그로 보고 그대로 둔다
-	private String completeOrThrow(String videoUrl, List<TopicsResult> topics) {
+	private String completeOrThrow(String videoUrl, List<TopicResult> topics) {
 		try {
 			return chatClient.complete(buildRequest(videoUrl, topics));
 		}
@@ -84,7 +84,7 @@ public class EvoLinkVideoAnalyzer implements VideoAnalyzer {
 		}
 	}
 
-	private EvoLinkChatRequest buildRequest(String videoUrl, List<TopicsResult> topics) {
+	private EvoLinkChatRequest buildRequest(String videoUrl, List<TopicResult> topics) {
 		return new EvoLinkChatRequest(
 				properties.model(),
 				List.of(
@@ -99,7 +99,7 @@ public class EvoLinkVideoAnalyzer implements VideoAnalyzer {
 	}
 
 	// json_schema strict가 순수 JSON을 보장하므로 응답을 바로 파싱한다. 어긋나면 예외로 드러낸다
-	private AiReportContent parseContent(String rawText, List<TopicsResult> topics, String videoUrl) {
+	private AiReportContent parseContent(String rawText, List<TopicResult> topics, String videoUrl) {
 		AiReportContent content;
 		try {
 			content = objectMapper.readValue(rawText, AiReportContent.class);
@@ -117,9 +117,9 @@ public class EvoLinkVideoAnalyzer implements VideoAnalyzer {
 
 	// 스키마는 topicId가 정수인 것만 강제하므로 교육 목록에 실제 있는 id인지는 여기서 검증한다.
 	// HashSet이라 topicId가 null이어도 contains가 false를 돌려줘 같은 경로로 실패한다 (Set.of 계열은 contains(null)에 NPE)
-	private static void requireKnownTopicIds(AiReportContent content, List<TopicsResult> topics, String videoUrl) {
+	private static void requireKnownTopicIds(AiReportContent content, List<TopicResult> topics, String videoUrl) {
 		Set<Long> knownIds = topics.stream()
-				.map(TopicsResult::id)
+				.map(TopicResult::id)
 				.collect(Collectors.toCollection(HashSet::new));
 		List<Long> unknownIds = content.recommend().stream()
 				.map(Recommend::topicId)
@@ -138,7 +138,7 @@ public class EvoLinkVideoAnalyzer implements VideoAnalyzer {
 		return queryStart < 0 ? url : url.substring(0, queryStart);
 	}
 
-	private String renderUserPrompt(List<TopicsResult> topics) {
+	private String renderUserPrompt(List<TopicResult> topics) {
 		String topicLines = topics.stream()
 				.map(EvoLinkVideoAnalyzer::renderTopicLine)
 				.collect(Collectors.joining("\n"));
@@ -146,7 +146,7 @@ public class EvoLinkVideoAnalyzer implements VideoAnalyzer {
 	}
 
 	// 라벨을 응답 키 이름(topicId)과 맞춰 모델이 값을 그대로 복사하게 한다. 형식은 user.md의 ##교육 목록## 설명과 맞춘다
-	private static String renderTopicLine(TopicsResult topic) {
+	private static String renderTopicLine(TopicResult topic) {
 		return "- topicId: " + topic.id() + ", 교육 이름: " + topic.title() + ", 설명: " + topic.description();
 	}
 }
