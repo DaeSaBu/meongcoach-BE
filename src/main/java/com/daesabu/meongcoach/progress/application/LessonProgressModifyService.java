@@ -17,9 +17,10 @@ public class LessonProgressModifyService implements LessonProgressUpdater {
 	@Transactional
 	public int updateCompletion(Long userId, Long lessonId) {
 		LessonProgress progress = lessonProgressRepository.findByUserIdAndLessonId(userId, lessonId)
-				.orElseGet(() -> lessonProgressRepository.save(LessonProgress.start(userId, lessonId)));
+				.orElseGet(() -> LessonProgress.start(userId, lessonId));
 
 		progress.increaseCompletedCount();
+		lessonProgressRepository.save(progress);
 		return progress.getCompletedCount();
 	}
 }
