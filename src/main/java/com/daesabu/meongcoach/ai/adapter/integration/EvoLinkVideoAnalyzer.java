@@ -67,7 +67,7 @@ public class EvoLinkVideoAnalyzer implements VideoAnalyzer {
 	public String analyze(String videoUrl) {
 		// 교육 목록은 기동 시점이 아니라 호출마다 조회한다. 영상 분석은 저빈도 작업이라 쿼리 비용이 무시 가능하고,
 		// 토픽이 바뀌어도 재기동 없이 반영된다. 프롬프트와 topicId 검증이 같은 목록을 보도록 한 번만 조회한다
-		List<TopicResult> topics = topicFinder.findAll();
+		List<TopicResult> topics = topicFinder.findAllOrdered();
 		String content = completeOrThrow(videoUrl, topics);
 
 		AiReportContent reportContent = parseContent(content, topics, videoUrl);

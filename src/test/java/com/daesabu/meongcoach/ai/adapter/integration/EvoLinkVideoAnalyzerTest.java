@@ -62,7 +62,7 @@ class EvoLinkVideoAnalyzerTest {
 		RestClient.Builder builder = RestClient.builder();
 		server = MockRestServiceServer.bindTo(builder).build();
 		topicFinder = mock(TopicFinder.class);
-		when(topicFinder.findAll()).thenReturn(TOPICS);
+		when(topicFinder.findAllOrdered()).thenReturn(TOPICS);
 		EvoLinkProperties properties = new EvoLinkProperties(BASE_URL, "test-evolink-api-key", MODEL,
 				Duration.ofMinutes(5), 4096, 0.0, "disabled", 1.0);
 		analyzer = new EvoLinkVideoAnalyzer(new EvoLinkChatClient(properties, builder.build()),
@@ -273,7 +273,7 @@ class EvoLinkVideoAnalyzerTest {
 
 		analyzer.analyze(VIDEO_URL);
 
-		verify(topicFinder, times(1)).findAll();
+		verify(topicFinder, times(1)).findAllOrdered();
 	}
 
 	@Test

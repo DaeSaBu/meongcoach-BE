@@ -36,7 +36,7 @@ class TopicFinderTest {
 		topicRepository.save(TopicFixture.create(category, "배변 훈련", 1, "편안한 배변 습관 만들기", null, null));
 		flushAndClear();
 
-		List<TopicResult> topics = topicFinder.findAll();
+		List<TopicResult> topics = topicFinder.findAllOrdered();
 
 		assertThat(topics).extracting(TopicResult::title)
 				.containsExactly("배변 훈련", "산책 훈련");
@@ -53,7 +53,7 @@ class TopicFinderTest {
 		topicRepository.save(TopicFixture.create(earlier, "먼저-첫째", 1, null, null, null));
 		flushAndClear();
 
-		List<TopicResult> topics = topicFinder.findAll();
+		List<TopicResult> topics = topicFinder.findAllOrdered();
 
 		assertThat(topics).extracting(TopicResult::title)
 				.containsExactly("먼저-첫째", "먼저-둘째", "나중-첫째");
@@ -61,7 +61,7 @@ class TopicFinderTest {
 
 	@Test
 	void 토픽이_없으면_빈_목록을_반환한다() {
-		assertThat(topicFinder.findAll()).isEmpty();
+		assertThat(topicFinder.findAllOrdered()).isEmpty();
 	}
 
 	private TrainingCategory saveCategory(String title, int sortOrder) {
