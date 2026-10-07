@@ -10,6 +10,7 @@ import com.daesabu.meongcoach.training.domain.Topic;
 import com.daesabu.meongcoach.training.domain.TopicFixture;
 import com.daesabu.meongcoach.training.domain.TrainingCategory;
 import com.daesabu.meongcoach.training.domain.TrainingCategoryFixture;
+import org.hibernate.Hibernate;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -64,6 +65,22 @@ class CurriculumRepositoryTest {
 		Curriculum found = curriculumRepository.findById(curriculum.getId()).orElseThrow();
 
 		assertThat(found.getLessons()).isEmpty();
+	}
+
+	@Test
+	void 커리큘럼을_토픽_카테고리와_함께_조회한다() {
+		Curriculum curriculum = persistCurriculum(persistTopic("기본 교육"), "커리큘럼", 1);
+		flushAndClear();
+
+		Curriculum found = curriculumRepository.findWithCategoryById(curriculum.getId()).orElseThrow();
+
+		assertThat(Hibernate.isInitialized(found.getTopic())).isTrue();
+		assertThat(Hibernate.isInitialized(found.getTopic().getTrainingCategory())).isTrue();
+	}
+
+	@Test
+	void 없는_커리큘럼을_상위_연관과_함께_조회하면_빈_값을_반환한다() {
+		assertThat(curriculumRepository.findWithCategoryById(999L)).isEmpty();
 	}
 
 	private Topic persistTopic(String title) {
