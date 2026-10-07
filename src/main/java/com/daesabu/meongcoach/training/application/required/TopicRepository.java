@@ -11,10 +11,9 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
 	@Query("""
 			select t
 			from Topic t
-			join t.trainingCategory c
 			order by
-				c.sortOrder asc,
-				c.id asc,
+				t.trainingCategory.sortOrder asc,
+				t.trainingCategory.id asc,
 				t.sortOrder asc,
 				t.id asc
 			""")
@@ -23,10 +22,9 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
 	@Query("""
 			select t
 			from Topic t
-			join t.trainingCategory c
 			order by
-				c.sortOrder asc,
-				c.id asc,
+				t.trainingCategory.sortOrder asc,
+				t.trainingCategory.id asc,
 				t.sortOrder asc,
 				t.id asc
 			limit 1
