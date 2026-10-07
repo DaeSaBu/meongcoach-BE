@@ -68,7 +68,7 @@ class TopicRepositoryTest {
 		persistTopic(earlier, "먼저-첫째", 1);
 		entityManager.flush();
 
-		List<Topic> topics = topicRepository.findAll();
+		List<Topic> topics = topicRepository.findAllOrdered();
 
 		assertThat(topics).extracting(Topic::getTitle)
 				.containsExactly("먼저-첫째", "먼저-둘째", "나중-첫째");
@@ -82,7 +82,7 @@ class TopicRepositoryTest {
 		persistTopic(first, "먼저-둘째", 2);
 		entityManager.flush();
 
-		List<Topic> topics = topicRepository.findAll();
+		List<Topic> topics = topicRepository.findAllOrdered();
 
 		assertThat(topics).extracting(Topic::getTitle)
 				.containsExactly("먼저-둘째", "나중-첫째");
@@ -95,7 +95,7 @@ class TopicRepositoryTest {
 		Topic second = persistTopic(category, "나중 등록", 1);
 		entityManager.flush();
 
-		List<Topic> topics = topicRepository.findAll();
+		List<Topic> topics = topicRepository.findAllOrdered();
 
 		assertThat(topics).extracting(Topic::getId)
 				.containsExactly(first.getId(), second.getId());
