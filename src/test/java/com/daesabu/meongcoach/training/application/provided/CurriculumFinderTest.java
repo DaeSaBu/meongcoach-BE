@@ -4,6 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
 
+import com.daesabu.meongcoach.entitlement.application.required.EntitlementRepository;
+import com.daesabu.meongcoach.entitlement.domain.EntitlementFixture;
+import com.daesabu.meongcoach.entitlement.domain.exception.EntitlementRequiredException;
+import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;
 import com.daesabu.meongcoach.progress.application.provided.LessonProgressUpdater;
 import com.daesabu.meongcoach.progress.application.provided.TopicProgressUpdater;
 import com.daesabu.meongcoach.progress.application.required.TopicProgressRepository;
@@ -58,6 +62,9 @@ class CurriculumFinderTest {
 
 	@Autowired
 	private TopicProgressRepository topicProgressRepository;
+
+	@Autowired
+	private EntitlementRepository entitlementRepository;
 
 	@Autowired
 	private EntityManager entityManager;
@@ -272,6 +279,87 @@ class CurriculumFinderTest {
 
 		assertThat(detail.curriculum().getLessons()).isEmpty();
 		assertThat(detail.completedCounts()).isEmpty();
+	}
+
+	@Test
+	void 이용권이_필요한_토픽에서_이용권이_없으면_보유하지_않았다고_반환한다() {
+		Topic topic = saveTopic(savePaidCategory(EntitlementType.PUPPY), "앉아", 1);
+		savePremiumCurriculum(topic, "앉아 1단계", 1);
+		flushAndClear();
+
+		CurriculumListResult curriculumList = curriculumFinder.findCurriculums(USER_ID);
+
+		assertThat(curriculumList.hasEntitlement()).isFalse();
+	}
+
+	@Test
+	void 이용권이_필요한_토픽에서_이용권이_있으면_보유했다고_반환한다() {
+		Topic topic = saveTopic(savePaidCategory(EntitlementType.PUPPY), "앉아", 1);
+		savePremiumCurriculum(topic, "앉아 1단계", 1);
+		grant(USER_ID, EntitlementType.PUPPY);
+		flushAndClear();
+
+		CurriculumListResult curriculumList = curriculumFinder.findCurriculums(USER_ID);
+
+		assertThat(curriculumList.hasEntitlement()).isTrue();
+	}
+
+	@Test
+	void 이용권이_필요_없는_토픽이면_이용권이_없어도_보유했다고_반환한다() {
+		Topic topic = saveTopicWithCategory();
+		saveCurriculum(topic, "앉아 1단계", 1);
+		flushAndClear();
+
+		CurriculumListResult curriculumList = curriculumFinder.findCurriculums(USER_ID);
+
+		assertThat(curriculumList.hasEntitlement()).isTrue();
+	}
+
+	@Test
+	void 이용권_없이_유료_커리큘럼을_조회하면_예외를_던진다() {
+		Topic topic = saveTopic(savePaidCategory(EntitlementType.PUPPY), "앉아", 1);
+		Curriculum curriculum = savePremiumCurriculum(topic, "앉아 1단계", 1);
+		grant(USER_ID, EntitlementType.JUNIOR);
+		flushAndClear();
+
+		assertThatThrownBy(() -> curriculumFinder.findCurriculum(USER_ID, curriculum.getId()))
+				.isInstanceOf(EntitlementRequiredException.class);
+	}
+
+	@Test
+	void 이용권이_있으면_유료_커리큘럼을_조회한다() {
+		Topic topic = saveTopic(savePaidCategory(EntitlementType.PUPPY), "앉아", 1);
+		Curriculum curriculum = savePremiumCurriculum(topic, "앉아 1단계", 1);
+		grant(USER_ID, EntitlementType.PUPPY);
+		flushAndClear();
+
+		CurriculumDetailResult detail = curriculumFinder.findCurriculum(USER_ID, curriculum.getId());
+
+		assertThat(detail.curriculum().getId()).isEqualTo(curriculum.getId());
+	}
+
+	@Test
+	void 유료_카테고리의_맛보기_커리큘럼은_이용권_없이_조회한다() {
+		Topic topic = saveTopic(savePaidCategory(EntitlementType.PUPPY), "앉아", 1);
+		Curriculum sample = saveCurriculum(topic, "앉아 맛보기", 1);
+		flushAndClear();
+
+		CurriculumDetailResult detail = curriculumFinder.findCurriculum(USER_ID, sample.getId());
+
+		assertThat(detail.curriculum().getId()).isEqualTo(sample.getId());
+	}
+
+	private TrainingCategory savePaidCategory(EntitlementType requiredEntitlementType) {
+		return trainingCategoryRepository.save(
+				TrainingCategoryFixture.create("퍼피 교육", 1, null, null, requiredEntitlementType));
+	}
+
+	private Curriculum savePremiumCurriculum(Topic topic, String title, int sortOrder) {
+		return curriculumRepository.save(CurriculumFixture.create(topic, title, sortOrder, null, null, true));
+	}
+
+	private void grant(Long userId, EntitlementType type) {
+		entitlementRepository.save(EntitlementFixture.create(userId, type, null));
 	}
 
 	private TrainingCategory saveCategory(String title, int sortOrder) {
