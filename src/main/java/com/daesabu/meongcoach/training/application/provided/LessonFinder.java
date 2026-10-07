@@ -12,5 +12,8 @@ public interface LessonFinder {
 	 */
 	List<Card> findCards(Long userId, Long lessonId);
 
+	/**
+	 * 레슨을 조회한다. 레슨이 없으면 {@code LessonNotFoundException}을 던진다.
+	 */
 	Lesson find(Long lessonId);
 }
