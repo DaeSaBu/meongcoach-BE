@@ -22,11 +22,17 @@ public class LessonQueryService implements LessonFinder {
 
 	@Override
 	public List<Card> findCards(Long userId, Long lessonId) {
-		Lesson lesson = lessonRepository.findById(lessonId)
-				.orElseThrow(() -> new LessonNotFoundException(lessonId));
+		Lesson lesson = find(lessonId);
+
 		lesson.getCurriculum().findRequiredEntitlementType()
 				.ifPresent(type -> entitlementChecker.validateEntitlement(userId, type));
 
 		return cardRepository.findAllByLessonId(lessonId);
+	}
+
+	@Override
+	public Lesson find(Long lessonId) {
+		return lessonRepository.findById(lessonId)
+				.orElseThrow(() -> new LessonNotFoundException(lessonId));
 	}
 }
