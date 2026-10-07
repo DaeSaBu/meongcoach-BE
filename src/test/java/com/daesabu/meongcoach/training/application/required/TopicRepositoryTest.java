@@ -2,6 +2,8 @@ package com.daesabu.meongcoach.training.application.required;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.daesabu.meongcoach.training.domain.Curriculum;
+import com.daesabu.meongcoach.training.domain.CurriculumFixture;
 import com.daesabu.meongcoach.training.domain.Topic;
 import com.daesabu.meongcoach.training.domain.TopicFixture;
 import com.daesabu.meongcoach.training.domain.TrainingCategory;
@@ -99,11 +101,62 @@ class TopicRepositoryTest {
 				.containsExactly(first.getId(), second.getId());
 	}
 
+	@Test
+	void 토픽의_커리큘럼을_정렬_순서_오름차순으로_로딩하고_다른_토픽의_커리큘럼은_제외한다() {
+		TrainingCategory category = persistCategory("기본 교육", 1);
+		Topic topic = persistTopic(category, "앉아", 1);
+		Topic other = persistTopic(category, "기다려", 2);
+		persistCurriculum(topic, "셋째", 3);
+		persistCurriculum(topic, "첫째", 1);
+		persistCurriculum(topic, "둘째", 2);
+		persistCurriculum(other, "다른 토픽 커리큘럼", 1);
+		flushAndClear();
+
+		Topic found = topicRepository.findById(topic.getId()).orElseThrow();
+
+		assertThat(found.getCurriculums()).extracting(Curriculum::getTitle)
+				.containsExactly("첫째", "둘째", "셋째");
+	}
+
+	@Test
+	void 정렬_순서가_같은_커리큘럼은_id_오름차순으로_로딩한다() {
+		TrainingCategory category = persistCategory("기본 교육", 1);
+		Topic topic = persistTopic(category, "앉아", 1);
+		Curriculum first = persistCurriculum(topic, "먼저 등록", 1);
+		Curriculum second = persistCurriculum(topic, "나중 등록", 1);
+		flushAndClear();
+
+		Topic found = topicRepository.findById(topic.getId()).orElseThrow();
+
+		assertThat(found.getCurriculums()).extracting(Curriculum::getId)
+				.containsExactly(first.getId(), second.getId());
+	}
+
+	@Test
+	void 커리큘럼이_없는_토픽은_빈_커리큘럼_목록으로_로딩한다() {
+		TrainingCategory category = persistCategory("기본 교육", 1);
+		Topic topic = persistTopic(category, "앉아", 1);
+		flushAndClear();
+
+		Topic found = topicRepository.findById(topic.getId()).orElseThrow();
+
+		assertThat(found.getCurriculums()).isEmpty();
+	}
+
 	private TrainingCategory persistCategory(String title, int sortOrder) {
 		return entityManager.persist(TrainingCategoryFixture.create(title, sortOrder, null, null));
 	}
 
 	private Topic persistTopic(TrainingCategory category, String title, int sortOrder) {
 		return entityManager.persist(TopicFixture.create(category, title, sortOrder, null, null, null));
+	}
+
+	private Curriculum persistCurriculum(Topic topic, String title, int sortOrder) {
+		return entityManager.persist(CurriculumFixture.create(topic, title, sortOrder, null, null));
+	}
+
+	private void flushAndClear() {
+		entityManager.flush();
+		entityManager.clear();
 	}
 }
