@@ -35,7 +35,7 @@ class TrainingCategoryFinderTest {
 		saveCategory("먼저 카테고리", 1);
 		flushAndClear();
 
-		List<TrainingCategory> categories = trainingCategoryFinder.findAllWithTopics();
+		List<TrainingCategory> categories = trainingCategoryFinder.findAll();
 
 		assertThat(categories).extracting(TrainingCategory::getTitle)
 				.containsExactly("먼저 카테고리", "나중 카테고리");
@@ -49,7 +49,7 @@ class TrainingCategoryFinderTest {
 		saveTopic(category, "둘째 토픽", 2);
 		flushAndClear();
 
-		List<TrainingCategory> categories = trainingCategoryFinder.findAllWithTopics();
+		List<TrainingCategory> categories = trainingCategoryFinder.findAll();
 
 		assertThat(categories).hasSize(1);
 		assertThat(categories.getFirst().getTopics()).extracting(Topic::getTitle)
@@ -65,7 +65,7 @@ class TrainingCategoryFinderTest {
 		saveTopic(advanced, "이리와", 2);
 		flushAndClear();
 
-		List<TrainingCategory> categories = trainingCategoryFinder.findAllWithTopics();
+		List<TrainingCategory> categories = trainingCategoryFinder.findAll();
 
 		assertThat(categories).extracting(TrainingCategory::getTitle)
 				.containsExactly("기본 교육", "심화 교육");
@@ -88,7 +88,7 @@ class TrainingCategoryFinderTest {
 		));
 		flushAndClear();
 
-		TrainingCategory found = trainingCategoryFinder.findAllWithTopics().getFirst();
+		TrainingCategory found = trainingCategoryFinder.findAll().getFirst();
 
 		assertThat(found.getDescription()).isEqualTo("기본기를 배우는 교육");
 		assertThat(found.getIconUrl()).isEqualTo("https://example.com/basic.png");
@@ -108,7 +108,7 @@ class TrainingCategoryFinderTest {
 		saveTopic(other, "앉아", 1);
 		flushAndClear();
 
-		List<TrainingCategory> categories = trainingCategoryFinder.findAllWithTopics();
+		List<TrainingCategory> categories = trainingCategoryFinder.findAll();
 
 		assertThat(categories).hasSize(2);
 		assertThat(categories.getFirst().getTopics()).isEmpty();
@@ -116,7 +116,7 @@ class TrainingCategoryFinderTest {
 
 	@Test
 	void 등록된_카테고리가_없으면_빈_목록을_반환한다() {
-		List<TrainingCategory> categories = trainingCategoryFinder.findAllWithTopics();
+		List<TrainingCategory> categories = trainingCategoryFinder.findAll();
 
 		assertThat(categories).isEmpty();
 	}

@@ -17,7 +17,7 @@ public class TopicQueryService implements TopicFinder {
 
 	@Override
 	public List<TopicSummary> findAllOrdered() {
-		return trainingCategoryRepository.findAllWithTopics().stream()
+		return trainingCategoryRepository.findAll().stream()
 				.flatMap(category -> category.getTopics().stream())
 				.map(TopicSummary::from)
 				.toList();
