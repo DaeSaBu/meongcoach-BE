@@ -1,6 +1,7 @@
 package com.daesabu.meongcoach.training.application.required;
 
 import com.daesabu.meongcoach.training.domain.Topic;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -10,8 +11,22 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
 	@Query("""
 			select t
 			from Topic t
+			join t.trainingCategory c
 			order by
-				t.trainingCategory.sortOrder asc,
+				c.sortOrder asc,
+				c.id asc,
+				t.sortOrder asc,
+				t.id asc
+			""")
+	List<Topic> findAll();
+
+	@Query("""
+			select t
+			from Topic t
+			join t.trainingCategory c
+			order by
+				c.sortOrder asc,
+				c.id asc,
 				t.sortOrder asc,
 				t.id asc
 			limit 1
