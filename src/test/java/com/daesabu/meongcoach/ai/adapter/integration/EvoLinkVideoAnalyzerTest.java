@@ -18,7 +18,7 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 
 import com.daesabu.meongcoach.ai.domain.exception.VideoAnalysisFailedException;
 import com.daesabu.meongcoach.training.application.provided.TopicFinder;
-import com.daesabu.meongcoach.training.application.provided.dto.TopicsResult;
+import com.daesabu.meongcoach.training.application.provided.dto.TopicResult;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -44,9 +44,9 @@ class EvoLinkVideoAnalyzerTest {
 	private static final String VIDEO_URL =
 			"https://test-video-bucket.s3.amazonaws.com/videos/training/7/key.mp4?X-Amz-Signature=abc";
 	// 프롬프트에 넣고 응답 topicId를 검증하는 교육 목록. 응답 예시의 topicId(104)가 여기 있어야 검증을 통과한다
-	private static final List<TopicsResult> TOPICS = List.of(
-			new TopicsResult(104L, "입질", "무는 습관 교정하기"),
-			new TopicsResult(106L, "분리불안", "혼자서도 편안하게"));
+	private static final List<TopicResult> TOPICS = List.of(
+			new TopicResult(104L, "입질", "무는 습관 교정하기"),
+			new TopicResult(106L, "분리불안", "혼자서도 편안하게"));
 	// 정규화 재직렬화 결과와 비교할 수 있도록 record 컴포넌트 순서(recommend, report, solution / topicId, title, description)와 맞춘 JSON
 	private static final String VALID_CONTENT_JSON = "{\"recommend\":[{\"topicId\":104,\"title\":\"입질\","
 			+ "\"description\":\"물건을 무는 습관을 줄이는 교육이라 도움이 돼요.\"}],"
