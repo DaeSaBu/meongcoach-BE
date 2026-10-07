@@ -20,7 +20,7 @@ import com.daesabu.meongcoach.onboarding.application.provided.OnboardingImageUpl
 import com.daesabu.meongcoach.onboarding.application.provided.OnboardingImageUploadUrlResult;
 import com.daesabu.meongcoach.onboarding.application.provided.OnboardingMetadataFinder;
 import com.daesabu.meongcoach.onboarding.application.provided.OnboardingMetadataResult;
-import com.daesabu.meongcoach.training.application.provided.TopicSummary;
+import com.daesabu.meongcoach.training.application.provided.dto.TopicsResult;
 import com.daesabu.meongcoach.user.domain.exception.AlreadyOnboardedException;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -560,8 +560,8 @@ class OnboardingControllerTest {
 		@Bean
 		OnboardingMetadataFinder onboardingMetadataFinder() {
 			return () -> new OnboardingMetadataResult(
-					List.of(new TopicSummary(1L, "배변 훈련", "편안한 배변 습관 만들기"),
-								new TopicSummary(2L, "산책 훈련", "즐겁고 안전한 첫 산책")),
+					List.of(new TopicsResult(1L, "배변 훈련", "편안한 배변 습관 만들기"),
+							new TopicsResult(2L, "산책 훈련", "즐겁고 안전한 첫 산책")),
 					List.of(Breed.POODLE, Breed.MALTESE),
 					List.of(Personality.TIMID, Personality.LIVELY),
 					List.of("ISTJ", "INTJ"));

@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.daesabu.meongcoach.dog.domain.shared.Breed;
 import com.daesabu.meongcoach.dog.domain.shared.Personality;
 import com.daesabu.meongcoach.support.ApplicationTest;
-import com.daesabu.meongcoach.training.application.provided.TopicSummary;
+import com.daesabu.meongcoach.training.application.provided.dto.TopicsResult;
 import com.daesabu.meongcoach.training.application.required.TopicRepository;
 import com.daesabu.meongcoach.training.application.required.TrainingCategoryRepository;
 import com.daesabu.meongcoach.training.domain.TopicFixture;
@@ -41,7 +41,7 @@ class OnboardingMetadataFinderTest {
 
 		OnboardingMetadataResult result = onboardingMetadataFinder.find();
 
-		assertThat(result.topics()).extracting(TopicSummary::title)
+		assertThat(result.topics()).extracting(TopicsResult::title)
 				.containsExactly("배변 훈련", "산책 훈련");
 		assertThat(result.breeds()).extracting(Breed::name)
 				.hasSize(31)
