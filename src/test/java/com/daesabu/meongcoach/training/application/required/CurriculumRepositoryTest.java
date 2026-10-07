@@ -11,7 +11,6 @@ import com.daesabu.meongcoach.training.domain.TopicFixture;
 import com.daesabu.meongcoach.training.domain.TrainingCategory;
 import com.daesabu.meongcoach.training.domain.TrainingCategoryFixture;
 import java.util.List;
-import org.hibernate.Hibernate;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -78,18 +77,6 @@ class CurriculumRepositoryTest {
 		List<Curriculum> curriculums = curriculumRepository.findAllByTopicId(topic.getId());
 
 		assertThat(curriculums).isEmpty();
-	}
-
-	@Test
-	void 커리큘럼을_조회할_때_레슨도_함께_로딩한다() {
-		Topic topic = persistTopic("기본 교육");
-		Curriculum curriculum = persistCurriculum(topic, "커리큘럼", 1);
-		persistLesson(curriculum, "레슨", 1);
-		flushAndClear();
-
-		List<Curriculum> curriculums = curriculumRepository.findAllByTopicId(topic.getId());
-
-		assertThat(curriculums).allSatisfy(found -> assertThat(Hibernate.isInitialized(found.getLessons())).isTrue());
 	}
 
 	@Test

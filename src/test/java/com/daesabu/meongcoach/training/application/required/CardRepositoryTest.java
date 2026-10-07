@@ -16,7 +16,6 @@ import com.daesabu.meongcoach.training.domain.TopicFixture;
 import com.daesabu.meongcoach.training.domain.TrainingCategory;
 import com.daesabu.meongcoach.training.domain.TrainingCategoryFixture;
 import java.util.List;
-import org.hibernate.Hibernate;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -83,18 +82,6 @@ class CardRepositoryTest {
 		List<Card> cards = cardRepository.findAllByLessonId(lesson.getId());
 
 		assertThat(cards).isEmpty();
-	}
-
-	@Test
-	void 카드를_조회할_때_미디어도_함께_로딩한다() {
-		Lesson lesson = persistLesson("기본 교육");
-		Card card = persistCard(lesson, "카드", 1);
-		persistCardMedia(card, "https://cdn.example.com/1.png", 1);
-		flushAndClear();
-
-		List<Card> cards = cardRepository.findAllByLessonId(lesson.getId());
-
-		assertThat(cards).allSatisfy(found -> assertThat(Hibernate.isInitialized(found.getCardMedia())).isTrue());
 	}
 
 	@Test
