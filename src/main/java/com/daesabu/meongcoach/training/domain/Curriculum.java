@@ -74,7 +74,7 @@ public class Curriculum extends BaseEntity {
 		if (!isPremium) {
 			return Optional.empty();
 		}
-		return topic.getTrainingCategory().findRequiredEntitlementType();
+		return topic.findRequiredEntitlementType();
 	}
 
 	public boolean isLocked(boolean hasEntitlement) {

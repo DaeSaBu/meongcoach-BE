@@ -22,7 +22,7 @@ public class LessonQueryService implements LessonFinder {
 	public List<Card> findCards(Long userId, Long lessonId) {
 		Lesson lesson = find(lessonId);
 
-		lesson.getCurriculum().findRequiredEntitlementType()
+		lesson.findRequiredEntitlementType()
 				.ifPresent(type -> entitlementChecker.validateEntitlement(userId, type));
 
 		return lesson.getCards();
