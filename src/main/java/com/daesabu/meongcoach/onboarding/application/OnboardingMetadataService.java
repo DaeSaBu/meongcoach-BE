@@ -26,7 +26,7 @@ public class OnboardingMetadataService implements OnboardingMetadataFinder {
 	@Override
 	public OnboardingMetadataResult find() {
 		return new OnboardingMetadataResult(
-				topicFinder.findAll(),
+				topicFinder.findAllOrdered(),
 				breedFinder.findAll(),
 				personalityFinder.findAll(),
 				mbtiFinder.findAllCodes());
