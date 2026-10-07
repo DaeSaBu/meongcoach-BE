@@ -22,6 +22,7 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
 	@Query("""
 			select t
 			from Topic t
+			join fetch t.trainingCategory
 			order by
 				t.trainingCategory.sortOrder asc,
 				t.trainingCategory.id asc,
@@ -30,4 +31,12 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
 			limit 1
 			""")
 	Optional<Topic> findFirstTopic();
+
+	@Query("""
+			select t
+			from Topic t
+			join fetch t.trainingCategory
+			where t.id = :topicId
+			""")
+	Optional<Topic> findWithCategoryById(Long topicId);
 }

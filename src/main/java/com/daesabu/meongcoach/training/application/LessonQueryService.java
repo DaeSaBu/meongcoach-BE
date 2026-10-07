@@ -30,7 +30,7 @@ public class LessonQueryService implements LessonFinder {
 
 	@Override
 	public Lesson find(Long lessonId) {
-		return lessonRepository.findById(lessonId)
+		return lessonRepository.findWithCategoryById(lessonId)
 				.orElseThrow(() -> new LessonNotFoundException(lessonId));
 	}
 }
