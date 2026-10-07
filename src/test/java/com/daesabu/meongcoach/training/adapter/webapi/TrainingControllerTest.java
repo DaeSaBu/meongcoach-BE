@@ -83,7 +83,7 @@ class TrainingControllerTest {
 
 	@Test
 	void 교육_카테고리와_소속_토픽_목록을_반환한다() throws Exception {
-		given(trainingCategoryFinder.findAllWithTopics()).willReturn(List.of(
+		given(trainingCategoryFinder.findAll()).willReturn(List.of(
 				category(1L, "기본 교육", "기본기를 배우는 교육", "https://example.com/basic.png", 1,
 						List.of(
 								topic(10L, "앉아", "앉아 자세를 배우는 훈련", "차분히 앉는 방법을 익혀요",
@@ -138,7 +138,7 @@ class TrainingControllerTest {
 
 	@Test
 	void 토픽이_없는_카테고리는_빈_배열을_반환한다() throws Exception {
-		given(trainingCategoryFinder.findAllWithTopics()).willReturn(List.of(
+		given(trainingCategoryFinder.findAll()).willReturn(List.of(
 				category(1L, "기본 교육", "기본기를 배우는 교육", "https://example.com/basic.png", 1, List.of())
 		));
 
@@ -150,7 +150,7 @@ class TrainingControllerTest {
 
 	@Test
 	void 등록된_카테고리가_없으면_빈_배열과_200을_반환한다() throws Exception {
-		given(trainingCategoryFinder.findAllWithTopics()).willReturn(List.of());
+		given(trainingCategoryFinder.findAll()).willReturn(List.of());
 
 		mockMvc.perform(get("/api/training/categories"))
 				.andExpect(status().isOk())

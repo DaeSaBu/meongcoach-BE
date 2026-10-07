@@ -37,7 +37,7 @@ public class TrainingController {
 
 	@GetMapping("/categories")
 	public TrainingCategoryListResponse findAll() {
-		return TrainingCategoryListResponse.from(trainingCategoryFinder.findAllWithTopics());
+		return TrainingCategoryListResponse.from(trainingCategoryFinder.findAll());
 	}
 
 	@ResponseStatus(HttpStatus.NO_CONTENT)
