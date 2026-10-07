@@ -1,7 +1,7 @@
 package com.daesabu.meongcoach.training.application;
 
 import com.daesabu.meongcoach.training.application.provided.TopicFinder;
-import com.daesabu.meongcoach.training.application.provided.TopicSummary;
+import com.daesabu.meongcoach.training.application.provided.dto.TopicsResult;
 import com.daesabu.meongcoach.training.application.required.TrainingCategoryRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -16,10 +16,10 @@ public class TopicQueryService implements TopicFinder {
 	private final TrainingCategoryRepository trainingCategoryRepository;
 
 	@Override
-	public List<TopicSummary> findAllOrdered() {
+	public List<TopicsResult> findAll() {
 		return trainingCategoryRepository.findAll().stream()
 				.flatMap(category -> category.getTopics().stream())
-				.map(TopicSummary::from)
+				.map(TopicsResult::from)
 				.toList();
 	}
 }

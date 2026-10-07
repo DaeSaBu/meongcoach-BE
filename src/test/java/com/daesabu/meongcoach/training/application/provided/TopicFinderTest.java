@@ -3,6 +3,7 @@ package com.daesabu.meongcoach.training.application.provided;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.daesabu.meongcoach.support.ApplicationTest;
+import com.daesabu.meongcoach.training.application.provided.dto.TopicsResult;
 import com.daesabu.meongcoach.training.application.required.TopicRepository;
 import com.daesabu.meongcoach.training.application.required.TrainingCategoryRepository;
 import com.daesabu.meongcoach.training.domain.TopicFixture;
@@ -35,11 +36,11 @@ class TopicFinderTest {
 		topicRepository.save(TopicFixture.create(category, "배변 훈련", 1, "편안한 배변 습관 만들기", null, null));
 		flushAndClear();
 
-		List<TopicSummary> topics = topicFinder.findAllOrdered();
+		List<TopicsResult> topics = topicFinder.findAll();
 
-		assertThat(topics).extracting(TopicSummary::title)
+		assertThat(topics).extracting(TopicsResult::title)
 				.containsExactly("배변 훈련", "산책 훈련");
-		assertThat(topics).extracting(TopicSummary::description)
+		assertThat(topics).extracting(TopicsResult::description)
 				.containsExactly("편안한 배변 습관 만들기", "즐겁고 안전한 첫 산책");
 	}
 
@@ -52,15 +53,15 @@ class TopicFinderTest {
 		topicRepository.save(TopicFixture.create(earlier, "먼저-첫째", 1, null, null, null));
 		flushAndClear();
 
-		List<TopicSummary> topics = topicFinder.findAllOrdered();
+		List<TopicsResult> topics = topicFinder.findAll();
 
-		assertThat(topics).extracting(TopicSummary::title)
+		assertThat(topics).extracting(TopicsResult::title)
 				.containsExactly("먼저-첫째", "먼저-둘째", "나중-첫째");
 	}
 
 	@Test
 	void 토픽이_없으면_빈_목록을_반환한다() {
-		assertThat(topicFinder.findAllOrdered()).isEmpty();
+		assertThat(topicFinder.findAll()).isEmpty();
 	}
 
 	private TrainingCategory saveCategory(String title, int sortOrder) {
