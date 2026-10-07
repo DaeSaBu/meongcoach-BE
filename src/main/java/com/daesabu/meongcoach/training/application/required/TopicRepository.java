@@ -18,7 +18,7 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
 				t.sortOrder asc,
 				t.id asc
 			""")
-	List<Topic> findAll();
+	List<Topic> findAllOrdered();
 
 	@Query("""
 			select t
