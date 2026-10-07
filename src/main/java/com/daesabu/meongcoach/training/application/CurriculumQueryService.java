@@ -33,7 +33,7 @@ public class CurriculumQueryService implements CurriculumFinder {
 	public CurriculumListResult findCurriculums(Long userId) {
 		Topic topic = findLatestOrFirstTopic(userId);
 
-		List<Curriculum> curriculums = curriculumRepository.findAllByTopicId(topic.getId());
+		List<Curriculum> curriculums = topic.getCurriculums();
 		Set<Long> completedLessonIds = findCompletedLessonIds(userId, curriculums);
 		boolean hasEntitlement = hasEntitlement(userId, topic);
 
