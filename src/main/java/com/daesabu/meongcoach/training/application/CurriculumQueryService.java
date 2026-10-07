@@ -53,13 +53,13 @@ public class CurriculumQueryService implements CurriculumFinder {
 	}
 
 	private Curriculum findCurriculum(Long curriculumId) {
-		return curriculumRepository.findById(curriculumId)
+		return curriculumRepository.findWithCategoryById(curriculumId)
 				.orElseThrow(() -> new CurriculumNotFoundException(curriculumId));
 	}
 
 	private Topic findLatestOrFirstTopic(Long userId) {
 		return topicProgressFinder.findLatestTopicId(userId)
-				.flatMap(topicRepository::findById)
+				.flatMap(topicRepository::findWithCategoryById)
 				.orElseGet(this::findFirstTopic);
 	}
 
