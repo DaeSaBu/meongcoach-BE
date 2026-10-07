@@ -17,6 +17,6 @@ public class TrainingCategoryQueryService implements TrainingCategoryFinder {
 
 	@Override
 	public List<TrainingCategory> findAll() {
-		return trainingCategoryRepository.findAll();
+		return trainingCategoryRepository.findAllOrdered();
 	}
 }

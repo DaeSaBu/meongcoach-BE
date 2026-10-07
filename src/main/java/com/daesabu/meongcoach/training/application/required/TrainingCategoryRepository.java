@@ -14,5 +14,5 @@ public interface TrainingCategoryRepository extends JpaRepository<TrainingCatego
 	 * 전체 카테고리를 정렬 순서 오름차순으로 조회한다. 정렬 순서가 같으면 id 오름차순이다.
 	 */
 	@Query("select c from TrainingCategory c order by c.sortOrder asc, c.id asc")
-	List<TrainingCategory> findAll();
+	List<TrainingCategory> findAllOrdered();
 }
