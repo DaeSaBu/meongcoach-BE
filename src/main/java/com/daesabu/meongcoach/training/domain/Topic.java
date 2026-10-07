@@ -10,7 +10,11 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -43,4 +47,8 @@ public class Topic extends BaseEntity {
 	@ManyToOne(fetch = LAZY)
 	@JoinColumn(name = "training_category_id", nullable = false)
 	private TrainingCategory trainingCategory;
+
+	@OneToMany(mappedBy = "topic")
+	@OrderBy("sortOrder ASC, id ASC")
+	private List<Curriculum> curriculums = new ArrayList<>();
 }
