@@ -108,36 +108,30 @@ class TrainingControllerTest {
 				.andExpect(jsonPath("$.trainingCategories[0].trainingCategoryDescription").value("기본기를 배우는 교육"))
 				.andExpect(jsonPath("$.trainingCategories[0].trainingCategoryIconUrl")
 						.value("https://example.com/basic.png"))
-				.andExpect(jsonPath("$.trainingCategories[0].trainingCategorySortOrder").value(1))
 				.andExpect(jsonPath("$.trainingCategories[0].topics[0].topicId").value(10))
 				.andExpect(jsonPath("$.trainingCategories[0].topics[0].topicTitle").value("앉아"))
 				.andExpect(jsonPath("$.trainingCategories[0].topics[0].topicDescription").value("앉아 자세를 배우는 훈련"))
 				.andExpect(jsonPath("$.trainingCategories[0].topics[0].topicDetail").value("차분히 앉는 방법을 익혀요"))
 				.andExpect(jsonPath("$.trainingCategories[0].topics[0].topicIconUrl")
 						.value("https://example.com/sit.png"))
-				.andExpect(jsonPath("$.trainingCategories[0].topics[0].topicSortOrder").value(1))
 				.andExpect(jsonPath("$.trainingCategories[0].topics[1].topicId").value(11))
 				.andExpect(jsonPath("$.trainingCategories[1].trainingCategoryId").value(2))
 				.andExpect(jsonPath("$.trainingCategories[1].topics[0].topicId").value(20))
 				.andDo(document("training/categories",
 						responseFields(
-								fieldWithPath("trainingCategories[]").description("교육 카테고리 목록"),
+								fieldWithPath("trainingCategories[]").description("교육 카테고리 목록. 노출 순서대로 정렬"),
 								fieldWithPath("trainingCategories[].trainingCategoryId").description("교육 카테고리 ID"),
 								fieldWithPath("trainingCategories[].trainingCategoryTitle").description("교육 카테고리 이름"),
 								fieldWithPath("trainingCategories[].trainingCategoryDescription")
 										.description("교육 카테고리 설명"),
 								fieldWithPath("trainingCategories[].trainingCategoryIconUrl")
 										.description("교육 카테고리 아이콘 URL"),
-								fieldWithPath("trainingCategories[].trainingCategorySortOrder")
-										.description("교육 카테고리 노출 순서. 오름차순 정렬"),
-								fieldWithPath("trainingCategories[].topics[]").description("카테고리에 속한 토픽 목록. 없으면 빈 배열"),
+								fieldWithPath("trainingCategories[].topics[]").description("카테고리에 속한 토픽 목록. 노출 순서대로 정렬, 없으면 빈 배열"),
 								fieldWithPath("trainingCategories[].topics[].topicId").description("토픽 ID"),
 								fieldWithPath("trainingCategories[].topics[].topicTitle").description("토픽 이름"),
 								fieldWithPath("trainingCategories[].topics[].topicDescription").description("토픽 설명"),
 								fieldWithPath("trainingCategories[].topics[].topicDetail").description("토픽 상세 설명"),
-								fieldWithPath("trainingCategories[].topics[].topicIconUrl").description("토픽 아이콘 URL"),
-								fieldWithPath("trainingCategories[].topics[].topicSortOrder")
-										.description("토픽 노출 순서. 오름차순 정렬")
+								fieldWithPath("trainingCategories[].topics[].topicIconUrl").description("토픽 아이콘 URL")
 						)
 				));
 	}
@@ -288,7 +282,7 @@ class TrainingControllerTest {
 						responseFields(
 								fieldWithPath("topicId").description("커리큘럼 화면에 표시 중인 토픽 ID"),
 								fieldWithPath("topicTitle").description("토픽 이름"),
-								fieldWithPath("curriculums[]").description("토픽의 커리큘럼 목록. 노출 순서 오름차순"),
+								fieldWithPath("curriculums[]").description("토픽의 커리큘럼 목록. 노출 순서대로 정렬"),
 								fieldWithPath("curriculums[].curriculumId").description("커리큘럼 ID"),
 								fieldWithPath("curriculums[].curriculumTitle").description("커리큘럼 이름"),
 								fieldWithPath("curriculums[].totalLessons").description("커리큘럼에 속한 전체 레슨 수"),
@@ -385,7 +379,6 @@ class TrainingControllerTest {
 				.andExpect(jsonPath("$.curriculumTitle").value("앉아 1단계"))
 				.andExpect(jsonPath("$.lessons[0].lessonId").value(100))
 				.andExpect(jsonPath("$.lessons[0].lessonTitle").value("손 위의 간식"))
-				.andExpect(jsonPath("$.lessons[0].lessonSortOrder").value(1))
 				.andExpect(jsonPath("$.lessons[0].estimatedMinutes").value(5))
 				.andExpect(jsonPath("$.lessons[0].userLessonProgress.completedCount").value(3))
 				.andExpect(jsonPath("$.lessons[1].lessonId").value(101))
@@ -398,10 +391,9 @@ class TrainingControllerTest {
 						responseFields(
 								fieldWithPath("curriculumId").description("커리큘럼 ID"),
 								fieldWithPath("curriculumTitle").description("커리큘럼 이름"),
-								fieldWithPath("lessons[]").description("커리큘럼의 레슨 목록. 노출 순서 오름차순"),
+								fieldWithPath("lessons[]").description("커리큘럼의 레슨 목록. 노출 순서대로 정렬"),
 								fieldWithPath("lessons[].lessonId").description("레슨 ID"),
 								fieldWithPath("lessons[].lessonTitle").description("레슨 이름"),
-								fieldWithPath("lessons[].lessonSortOrder").description("레슨 노출 순서"),
 								fieldWithPath("lessons[].estimatedMinutes").description("예상 소요 시간(분)"),
 								fieldWithPath("lessons[].userLessonProgress").description("사용자의 레슨 진행도"),
 								fieldWithPath("lessons[].userLessonProgress.completedCount")
@@ -498,33 +490,28 @@ class TrainingControllerTest {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.cards[0].cardId").value(10))
 				.andExpect(jsonPath("$.cards[0].cardTitle").value("앉아 준비"))
-				.andExpect(jsonPath("$.cards[0].cardSortOrder").value(1))
 				.andExpect(jsonPath("$.cards[0].instruction").value("간식을 손에 쥐고 앉아를 말하세요"))
 				.andExpect(jsonPath("$.cards[0].cardMedia[0].cardMediaId").value(100))
 				.andExpect(jsonPath("$.cards[0].cardMedia[0].cardId").value(10))
 				.andExpect(jsonPath("$.cards[0].cardMedia[0].mediaType").value("IMAGE"))
 				.andExpect(jsonPath("$.cards[0].cardMedia[0].url").value("https://cdn.example.com/1.png"))
-				.andExpect(jsonPath("$.cards[0].cardMedia[0].sortOrder").value(1))
 				.andExpect(jsonPath("$.cards[0].cardMedia[1].mediaType").value("VIDEO"))
 				.andExpect(jsonPath("$.cards[1].cardId").value(11))
-				.andExpect(jsonPath("$.cards[1].cardSortOrder").value(2))
 				.andExpect(jsonPath("$.cards[1].cardMedia[0].cardMediaId").value(102))
 				.andDo(document("training/lesson-cards",
 						pathParameters(
 								parameterWithName("lessonId").description("레슨 ID")
 						),
 						responseFields(
-								fieldWithPath("cards[]").description("레슨의 카드 목록. 페이지네이션 없이 전부 내려간다"),
+								fieldWithPath("cards[]").description("레슨의 카드 목록. 노출 순서대로 정렬, 페이지네이션 없이 전부 내려간다"),
 								fieldWithPath("cards[].cardId").description("카드 ID"),
 								fieldWithPath("cards[].cardTitle").description("카드 타이틀. 없으면 빈 문자열"),
-								fieldWithPath("cards[].cardSortOrder").description("카드 노출 순서. 오름차순 정렬"),
 								fieldWithPath("cards[].instruction").description("카드 지시문. 없으면 빈 문자열"),
-								fieldWithPath("cards[].cardMedia[]").description("카드에 속한 미디어 목록. 없으면 빈 배열"),
+								fieldWithPath("cards[].cardMedia[]").description("카드에 속한 미디어 목록. 노출 순서대로 정렬, 없으면 빈 배열"),
 								fieldWithPath("cards[].cardMedia[].cardMediaId").description("카드 미디어 ID"),
 								fieldWithPath("cards[].cardMedia[].cardId").description("미디어가 속한 카드 ID"),
 								fieldWithPath("cards[].cardMedia[].mediaType").description("미디어 유형. `IMAGE` 또는 `VIDEO`"),
-								fieldWithPath("cards[].cardMedia[].url").description("미디어 URL"),
-								fieldWithPath("cards[].cardMedia[].sortOrder").description("미디어 노출 순서. 오름차순 정렬")
+								fieldWithPath("cards[].cardMedia[].url").description("미디어 URL")
 						)
 				));
 	}
