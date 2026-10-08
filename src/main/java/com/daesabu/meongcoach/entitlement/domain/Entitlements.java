@@ -1,7 +1,9 @@
 package com.daesabu.meongcoach.entitlement.domain;
 
 import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;
+import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -13,40 +15,40 @@ public class Entitlements {
 		this.entitlements = List.copyOf(entitlements);
 	}
 
-	public List<Entitlement> synchronize(Long userId, Set<EntitlementType> activeTypes) {
-		updateExistingEntitlementState(activeTypes);
+	public List<Entitlement> synchronize(Long userId, List<ActiveEntitlement> activeEntitlements, Instant now) {
+		expireMissing(activeEntitlements, now);
+		renewOwned(activeEntitlements);
 
-		Set<EntitlementType> existingTypes = getExistingEntitlementTypes();
-
-		return grantNewTypes(userId, activeTypes, existingTypes);
+		return grantUnowned(userId, activeEntitlements);
 	}
 
-	private static List<Entitlement> grantNewTypes(Long userId, Set<EntitlementType> activeTypes,
-	                                               Set<EntitlementType> existingTypes) {
-		return activeTypes.stream()
-				.filter(type -> !existingTypes.contains(type))
-				.map(type -> Entitlement.grant(userId, type))
+	private void expireMissing(List<ActiveEntitlement> activeEntitlements, Instant now) {
+		Set<EntitlementType> activeTypes = activeEntitlements.stream()
+				.map(ActiveEntitlement::type)
+				.collect(Collectors.toUnmodifiableSet());
+
+		entitlements.stream()
+				.filter(entitlement -> !activeTypes.contains(entitlement.getType()))
+				.filter(entitlement -> entitlement.isActive(now))
+				.forEach(entitlement -> entitlement.expire(now));
+	}
+
+	private void renewOwned(List<ActiveEntitlement> activeEntitlements) {
+		activeEntitlements.forEach(activeEntitlement -> findByType(activeEntitlement.type())
+				.ifPresent(entitlement -> entitlement.changeExpiresAt(activeEntitlement.expiresAt())));
+	}
+
+	private List<Entitlement> grantUnowned(Long userId, List<ActiveEntitlement> activeEntitlements) {
+		return activeEntitlements.stream()
+				.filter(activeEntitlement -> findByType(activeEntitlement.type()).isEmpty())
+				.map(activeEntitlement -> Entitlement.grant(userId, activeEntitlement.type(),
+						activeEntitlement.expiresAt()))
 				.toList();
 	}
 
-	private Set<EntitlementType> getExistingEntitlementTypes() {
+	private Optional<Entitlement> findByType(EntitlementType type) {
 		return entitlements.stream()
-				.map(Entitlement::getType)
-				.collect(Collectors.toUnmodifiableSet());
-	}
-
-	private void updateExistingEntitlementState(Set<EntitlementType> activeTypes) {
-		entitlements.forEach(entitlement -> reflect(entitlement, activeTypes));
-	}
-
-	private void reflect(Entitlement entitlement, Set<EntitlementType> activeTypes) {
-		boolean shouldBeActive = activeTypes.contains(entitlement.getType());
-		if (shouldBeActive && !entitlement.isActive()) {
-			entitlement.restore();
-			return;
-		}
-		if (!shouldBeActive && entitlement.isActive()) {
-			entitlement.revoke();
-		}
+				.filter(entitlement -> entitlement.getType() == type)
+				.findFirst();
 	}
 }
