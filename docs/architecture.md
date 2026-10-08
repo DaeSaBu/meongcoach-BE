@@ -19,6 +19,7 @@ com.daesabu.meongcoach
 ├── media        ← 이미지·영상 업로드 URL 발급 (R2/S3)
 ├── onboarding   ← 온보딩 흐름 조합
 ├── entitlement  ← 이용권 동기화. RevenueCat 활성 이용권의 사본을 둠
+├── promotion    ← 이용권을 무료로 부여하는 프로모션 코드와 사용 기록
 ├── health       ← 서비스 상태 확인
 └── shared       ← 횡단 관심사 (config / security / webapi / exception / domain)
 ```
