@@ -3,6 +3,10 @@ package com.daesabu.meongcoach.training.application.provided;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.daesabu.meongcoach.entitlement.application.required.EntitlementRepository;
+import com.daesabu.meongcoach.entitlement.domain.EntitlementFixture;
+import com.daesabu.meongcoach.entitlement.domain.exception.EntitlementRequiredException;
+import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;
 import com.daesabu.meongcoach.support.ApplicationTest;
 import com.daesabu.meongcoach.training.application.required.CardRepository;
 import com.daesabu.meongcoach.training.application.required.CurriculumRepository;
@@ -32,6 +36,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 @ApplicationTest
 class LessonFinderTest {
 
+	private static final Long USER_ID = 42L;
+
 	@Autowired
 	private LessonFinder lessonFinder;
 
@@ -51,6 +57,9 @@ class LessonFinderTest {
 	private CardRepository cardRepository;
 
 	@Autowired
+	private EntitlementRepository entitlementRepository;
+
+	@Autowired
 	private EntityManager entityManager;
 
 	@Test
@@ -60,7 +69,7 @@ class LessonFinderTest {
 		saveCard(lesson, "먼저 카드 지시문", 1);
 		flushAndClear();
 
-		List<Card> cards = lessonFinder.findCards(lesson.getId());
+		List<Card> cards = lessonFinder.findCards(USER_ID, lesson.getId());
 
 		assertThat(cards).extracting(Card::getInstruction)
 				.containsExactly("먼저 카드 지시문", "나중 카드 지시문");
@@ -72,7 +81,7 @@ class LessonFinderTest {
 		saveCard(lesson, "앉아 준비", "지시문", 1);
 		flushAndClear();
 
-		List<Card> cards = lessonFinder.findCards(lesson.getId());
+		List<Card> cards = lessonFinder.findCards(USER_ID, lesson.getId());
 
 		assertThat(cards).extracting(Card::getTitle).containsExactly("앉아 준비");
 	}
@@ -86,7 +95,7 @@ class LessonFinderTest {
 		saveCardMedia(card, MediaType.VIDEO, "https://cdn.example.com/2.mp4", 2);
 		flushAndClear();
 
-		List<Card> cards = lessonFinder.findCards(lesson.getId());
+		List<Card> cards = lessonFinder.findCards(USER_ID, lesson.getId());
 
 		assertThat(cards).hasSize(1);
 		assertThat(cards.getFirst().getCardMedia()).extracting(CardMedia::getUrl)
@@ -104,7 +113,7 @@ class LessonFinderTest {
 		saveCardMedia(second, MediaType.IMAGE, "https://cdn.example.com/second.png", 2);
 		flushAndClear();
 
-		List<Card> cards = lessonFinder.findCards(lesson.getId());
+		List<Card> cards = lessonFinder.findCards(USER_ID, lesson.getId());
 
 		assertThat(cards).hasSize(2);
 		assertThat(cards.get(0).getCardMedia()).extracting(CardMedia::getUrl)
@@ -120,7 +129,7 @@ class LessonFinderTest {
 		saveCardMedia(card, MediaType.VIDEO, "https://cdn.example.com/1.mp4", 1);
 		flushAndClear();
 
-		List<Card> cards = lessonFinder.findCards(lesson.getId());
+		List<Card> cards = lessonFinder.findCards(USER_ID, lesson.getId());
 
 		CardMedia cardMedia = cards.getFirst().getCardMedia().getFirst();
 		assertThat(cardMedia.getMediaType()).isEqualTo(MediaType.VIDEO);
@@ -135,7 +144,7 @@ class LessonFinderTest {
 		saveCardMedia(other, MediaType.IMAGE, "https://cdn.example.com/1.png", 1);
 		flushAndClear();
 
-		List<Card> cards = lessonFinder.findCards(lesson.getId());
+		List<Card> cards = lessonFinder.findCards(USER_ID, lesson.getId());
 
 		assertThat(cards).hasSize(2);
 		assertThat(cards.getFirst().getCardMedia()).isEmpty();
@@ -149,7 +158,7 @@ class LessonFinderTest {
 		saveCard(other, "다른 레슨 지시문", 1);
 		flushAndClear();
 
-		List<Card> cards = lessonFinder.findCards(lesson.getId());
+		List<Card> cards = lessonFinder.findCards(USER_ID, lesson.getId());
 
 		assertThat(cards).extracting(Card::getInstruction).containsExactly("대상 지시문");
 	}
@@ -159,14 +168,14 @@ class LessonFinderTest {
 		Lesson lesson = saveLesson("기본 교육");
 		flushAndClear();
 
-		List<Card> cards = lessonFinder.findCards(lesson.getId());
+		List<Card> cards = lessonFinder.findCards(USER_ID, lesson.getId());
 
 		assertThat(cards).isEmpty();
 	}
 
 	@Test
 	void 존재하지_않는_레슨이면_예외를_던진다() {
-		assertThatThrownBy(() -> lessonFinder.findCards(-1L))
+		assertThatThrownBy(() -> lessonFinder.findCards(USER_ID, -1L))
 				.isInstanceOf(LessonNotFoundException.class);
 	}
 
@@ -179,15 +188,46 @@ class LessonFinderTest {
 		saveCardMedia(second, MediaType.VIDEO, "https://cdn.example.com/2.mp4", 1);
 		flushAndClear();
 
-		List<Card> cards = lessonFinder.findCards(lesson.getId());
+		List<Card> cards = lessonFinder.findCards(USER_ID, lesson.getId());
 
 		assertThat(cards).allSatisfy(card -> assertThat(Hibernate.isInitialized(card.getCardMedia())).isTrue());
 	}
 
+	@Test
+	void 이용권_없이_유료_레슨의_카드를_조회하면_예외를_던진다() {
+		Lesson lesson = savePremiumLesson("앉아", EntitlementType.PUPPY);
+		flushAndClear();
+
+		assertThatThrownBy(() -> lessonFinder.findCards(USER_ID, lesson.getId()))
+				.isInstanceOf(EntitlementRequiredException.class);
+	}
+
+	@Test
+	void 이용권이_있으면_유료_레슨의_카드를_조회한다() {
+		Lesson lesson = savePremiumLesson("앉아", EntitlementType.PUPPY);
+		saveCard(lesson, "지시문", 1);
+		entitlementRepository.save(EntitlementFixture.create(USER_ID, EntitlementType.PUPPY, null));
+		flushAndClear();
+
+		List<Card> cards = lessonFinder.findCards(USER_ID, lesson.getId());
+
+		assertThat(cards).extracting(Card::getInstruction).containsExactly("지시문");
+	}
+
 	private Lesson saveLesson(String title) {
-		TrainingCategory category = trainingCategoryRepository.save(TrainingCategoryFixture.create(title + " 카테고리", 1, null, null));
+		return saveLesson(title, null, false);
+	}
+
+	private Lesson savePremiumLesson(String title, EntitlementType requiredEntitlementType) {
+		return saveLesson(title, requiredEntitlementType, true);
+	}
+
+	private Lesson saveLesson(String title, EntitlementType requiredEntitlementType, boolean isPremium) {
+		TrainingCategory category = trainingCategoryRepository.save(
+				TrainingCategoryFixture.create(title + " 카테고리", 1, null, null, requiredEntitlementType));
 		Topic topic = topicRepository.save(TopicFixture.create(category, title, 1, null, null, null));
-		Curriculum curriculum = curriculumRepository.save(CurriculumFixture.create(topic, title + " 커리큘럼", 1, null, null));
+		Curriculum curriculum = curriculumRepository.save(
+				CurriculumFixture.create(topic, title + " 커리큘럼", 1, null, null, isPremium));
 		return lessonRepository.save(LessonFixture.create(curriculum, title + " 레슨", 1, 5));
 	}
 
