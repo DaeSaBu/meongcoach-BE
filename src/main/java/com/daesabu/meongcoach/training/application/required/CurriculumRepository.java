@@ -1,8 +1,7 @@
 package com.daesabu.meongcoach.training.application.required;
 
 import com.daesabu.meongcoach.training.domain.Curriculum;
-import java.util.List;
-import org.springframework.data.jpa.repository.EntityGraph;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
@@ -11,11 +10,9 @@ public interface CurriculumRepository extends JpaRepository<Curriculum, Long> {
 	@Query("""
 			select c
 			from Curriculum c
-			where c.topic.id = :topicId
-			order by
-				c.sortOrder asc,
-				c.id asc
+			join fetch c.topic t
+			join fetch t.trainingCategory
+			where c.id = :curriculumId
 			""")
-	@EntityGraph(attributePaths = "lessons")
-	List<Curriculum> findAllByTopicId(Long topicId);
+	Optional<Curriculum> findWithCategoryById(Long curriculumId);
 }

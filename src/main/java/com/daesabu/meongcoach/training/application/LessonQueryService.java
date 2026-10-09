@@ -2,7 +2,6 @@ package com.daesabu.meongcoach.training.application;
 
 import com.daesabu.meongcoach.entitlement.application.provided.EntitlementChecker;
 import com.daesabu.meongcoach.training.application.provided.LessonFinder;
-import com.daesabu.meongcoach.training.application.required.CardRepository;
 import com.daesabu.meongcoach.training.application.required.LessonRepository;
 import com.daesabu.meongcoach.training.domain.Card;
 import com.daesabu.meongcoach.training.domain.Lesson;
@@ -17,22 +16,21 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class LessonQueryService implements LessonFinder {
 	private final LessonRepository lessonRepository;
-	private final CardRepository cardRepository;
 	private final EntitlementChecker entitlementChecker;
 
 	@Override
 	public List<Card> findCards(Long userId, Long lessonId) {
 		Lesson lesson = find(lessonId);
 
-		lesson.getCurriculum().findRequiredEntitlementType()
+		lesson.findRequiredEntitlementType()
 				.ifPresent(type -> entitlementChecker.validateEntitlement(userId, type));
 
-		return cardRepository.findAllByLessonId(lessonId);
+		return lesson.getCards();
 	}
 
 	@Override
 	public Lesson find(Long lessonId) {
-		return lessonRepository.findById(lessonId)
+		return lessonRepository.findWithCategoryById(lessonId)
 				.orElseThrow(() -> new LessonNotFoundException(lessonId));
 	}
 }

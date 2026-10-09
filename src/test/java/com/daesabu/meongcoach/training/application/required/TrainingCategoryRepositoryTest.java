@@ -28,7 +28,7 @@ class TrainingCategoryRepositoryTest {
 		persistCategory("문제 행동", 2);
 		entityManager.flush();
 
-		List<TrainingCategory> categories = trainingCategoryRepository.findAllWithTopics();
+		List<TrainingCategory> categories = trainingCategoryRepository.findAllOrdered();
 
 		assertThat(categories).extracting(TrainingCategory::getTitle)
 				.containsExactly("기본 교육", "문제 행동", "생활 습관");
@@ -40,7 +40,7 @@ class TrainingCategoryRepositoryTest {
 		TrainingCategory second = persistCategory("나중 등록", 1);
 		entityManager.flush();
 
-		List<TrainingCategory> categories = trainingCategoryRepository.findAllWithTopics();
+		List<TrainingCategory> categories = trainingCategoryRepository.findAllOrdered();
 
 		assertThat(categories).extracting(TrainingCategory::getId)
 				.containsExactly(first.getId(), second.getId());
@@ -55,7 +55,7 @@ class TrainingCategoryRepositoryTest {
 		entityManager.flush();
 		entityManager.clear();
 
-		List<TrainingCategory> categories = trainingCategoryRepository.findAllWithTopics();
+		List<TrainingCategory> categories = trainingCategoryRepository.findAllOrdered();
 
 		assertThat(categories).hasSize(1);
 		assertThat(categories.getFirst().getTopics()).extracting(Topic::getId)
@@ -70,7 +70,7 @@ class TrainingCategoryRepositoryTest {
 		entityManager.flush();
 		entityManager.clear();
 
-		List<TrainingCategory> categories = trainingCategoryRepository.findAllWithTopics();
+		List<TrainingCategory> categories = trainingCategoryRepository.findAllOrdered();
 
 		assertThat(categories).extracting(TrainingCategory::getTitle)
 				.containsExactly("토픽 없는 카테고리", "토픽 있는 카테고리");
@@ -79,7 +79,7 @@ class TrainingCategoryRepositoryTest {
 
 	@Test
 	void 등록된_카테고리가_없으면_빈_목록을_반환한다() {
-		List<TrainingCategory> categories = trainingCategoryRepository.findAllWithTopics();
+		List<TrainingCategory> categories = trainingCategoryRepository.findAllOrdered();
 
 		assertThat(categories).isEmpty();
 	}

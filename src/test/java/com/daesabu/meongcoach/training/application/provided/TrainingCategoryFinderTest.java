@@ -11,7 +11,6 @@ import com.daesabu.meongcoach.training.domain.TrainingCategory;
 import com.daesabu.meongcoach.training.domain.TrainingCategoryFixture;
 import jakarta.persistence.EntityManager;
 import java.util.List;
-import org.hibernate.Hibernate;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -36,7 +35,7 @@ class TrainingCategoryFinderTest {
 		saveCategory("먼저 카테고리", 1);
 		flushAndClear();
 
-		List<TrainingCategory> categories = trainingCategoryFinder.findAllWithTopics();
+		List<TrainingCategory> categories = trainingCategoryFinder.findAllOrdered();
 
 		assertThat(categories).extracting(TrainingCategory::getTitle)
 				.containsExactly("먼저 카테고리", "나중 카테고리");
@@ -50,7 +49,7 @@ class TrainingCategoryFinderTest {
 		saveTopic(category, "둘째 토픽", 2);
 		flushAndClear();
 
-		List<TrainingCategory> categories = trainingCategoryFinder.findAllWithTopics();
+		List<TrainingCategory> categories = trainingCategoryFinder.findAllOrdered();
 
 		assertThat(categories).hasSize(1);
 		assertThat(categories.getFirst().getTopics()).extracting(Topic::getTitle)
@@ -66,7 +65,7 @@ class TrainingCategoryFinderTest {
 		saveTopic(advanced, "이리와", 2);
 		flushAndClear();
 
-		List<TrainingCategory> categories = trainingCategoryFinder.findAllWithTopics();
+		List<TrainingCategory> categories = trainingCategoryFinder.findAllOrdered();
 
 		assertThat(categories).extracting(TrainingCategory::getTitle)
 				.containsExactly("기본 교육", "심화 교육");
@@ -89,7 +88,7 @@ class TrainingCategoryFinderTest {
 		));
 		flushAndClear();
 
-		TrainingCategory found = trainingCategoryFinder.findAllWithTopics().getFirst();
+		TrainingCategory found = trainingCategoryFinder.findAllOrdered().getFirst();
 
 		assertThat(found.getDescription()).isEqualTo("기본기를 배우는 교육");
 		assertThat(found.getIconUrl()).isEqualTo("https://example.com/basic.png");
@@ -109,7 +108,7 @@ class TrainingCategoryFinderTest {
 		saveTopic(other, "앉아", 1);
 		flushAndClear();
 
-		List<TrainingCategory> categories = trainingCategoryFinder.findAllWithTopics();
+		List<TrainingCategory> categories = trainingCategoryFinder.findAllOrdered();
 
 		assertThat(categories).hasSize(2);
 		assertThat(categories.getFirst().getTopics()).isEmpty();
@@ -117,22 +116,9 @@ class TrainingCategoryFinderTest {
 
 	@Test
 	void 등록된_카테고리가_없으면_빈_목록을_반환한다() {
-		List<TrainingCategory> categories = trainingCategoryFinder.findAllWithTopics();
+		List<TrainingCategory> categories = trainingCategoryFinder.findAllOrdered();
 
 		assertThat(categories).isEmpty();
-	}
-
-	@Test
-	void 카테고리를_조회할_때_토픽도_함께_로딩한다() {
-		TrainingCategory basic = saveCategory("기본 교육", 1);
-		TrainingCategory advanced = saveCategory("심화 교육", 2);
-		saveTopic(basic, "앉아", 1);
-		saveTopic(advanced, "기다려", 1);
-		flushAndClear();
-
-		List<TrainingCategory> categories = trainingCategoryFinder.findAllWithTopics();
-
-		assertThat(categories).allSatisfy(category -> assertThat(Hibernate.isInitialized(category.getTopics())).isTrue());
 	}
 
 	private TrainingCategory saveCategory(String title, int sortOrder) {

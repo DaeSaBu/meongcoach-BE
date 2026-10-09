@@ -89,9 +89,8 @@ class DogRepositoryTest {
 		assertThat(dogRepository.findAllByUserIdOrderByIdAsc(USER_ID)).isEmpty();
 	}
 
-	// 성격 컬렉션은 LAZY라 트랜잭션 밖(adapter)에서 읽기 전에 선로딩돼야 한다. 영속성 컨텍스트를 비워 실제 쿼리 결과만으로 확인한다
 	@Test
-	void 목록_조회는_성격을_함께_로딩하고_성격이_여러_개여도_강아지를_중복시키지_않는다() {
+	void 목록_조회는_성격이_여러_개여도_강아지를_중복시키지_않는다() {
 		Dog dog = persistDogWithPersonalities(USER_ID, Set.of(Personality.TIMID, Personality.LIVELY));
 		entityManager.clear();
 
@@ -103,7 +102,7 @@ class DogRepositoryTest {
 	}
 
 	@Test
-	void ID와_소유자가_모두_일치하는_강아지를_성격과_함께_조회한다() {
+	void ID와_소유자가_모두_일치하는_강아지를_성격과_조회한다() {
 		Dog dog = persistDogWithPersonalities(USER_ID, Set.of(Personality.FRIENDLY));
 		entityManager.clear();
 

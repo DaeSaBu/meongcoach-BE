@@ -33,7 +33,7 @@ public class CurriculumQueryService implements CurriculumFinder {
 	public CurriculumListResult findCurriculums(Long userId) {
 		Topic topic = findLatestOrFirstTopic(userId);
 
-		List<Curriculum> curriculums = curriculumRepository.findAllByTopicId(topic.getId());
+		List<Curriculum> curriculums = topic.getCurriculums();
 		Set<Long> completedLessonIds = findCompletedLessonIds(userId, curriculums);
 		boolean hasEntitlement = hasEntitlement(userId, topic);
 
@@ -53,13 +53,13 @@ public class CurriculumQueryService implements CurriculumFinder {
 	}
 
 	private Curriculum findCurriculum(Long curriculumId) {
-		return curriculumRepository.findById(curriculumId)
+		return curriculumRepository.findWithCategoryById(curriculumId)
 				.orElseThrow(() -> new CurriculumNotFoundException(curriculumId));
 	}
 
 	private Topic findLatestOrFirstTopic(Long userId) {
 		return topicProgressFinder.findLatestTopicId(userId)
-				.flatMap(topicRepository::findById)
+				.flatMap(topicRepository::findWithCategoryById)
 				.orElseGet(this::findFirstTopic);
 	}
 
@@ -69,7 +69,7 @@ public class CurriculumQueryService implements CurriculumFinder {
 	}
 
 	private boolean hasEntitlement(Long userId, Topic topic) {
-		return topic.getTrainingCategory().findRequiredEntitlementType()
+		return topic.findRequiredEntitlementType()
 				.map(type -> entitlementChecker.hasEntitlement(userId, type))
 				.orElse(true);
 	}
