@@ -31,6 +31,7 @@
 | [docs/ai-pipeline.md](docs/ai-pipeline.md)                                 | 영상 업로드→SQS→EvoLink 분석→리포트 저장 비동기 흐름 |
 | [docs/media.md](docs/media.md)                                             | R2/S3 presigned URL 발급, 객체 키 소유권 규칙 |
 | [docs/profiles.md](docs/profiles.md)                                       | local/dev/prod 프로파일 구성, DB·ddl-auto 정책 |
+| [docs/breeds/README.md](docs/breeds/README.md) | 공식 기관 기준 견종 목록, 변종 관계, 출처와 검증 결과 |
 
 ## 문서 추가 방법
 

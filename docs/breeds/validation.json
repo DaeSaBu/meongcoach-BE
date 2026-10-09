@@ -1,0 +1,108 @@
+{
+  "checked_on": "2026-10-10",
+  "list_coverage_complete": true,
+  "scope_ko": "FCI 정식·잠정 인정 목록, AKC 견종 목록(정식·Miscellaneous·FSS), 영국 Royal Kennel Club 공개 견종 표준 목록의 합집합. 전 세계 모든 미등록 지역견·교잡견을 의미하지 않는다.",
+  "counts": {
+    "catalogue_entries": 393,
+    "fci_registry_entries": 364,
+    "akc_registry_entries": 297,
+    "rkc_registry_entries": 226,
+    "fci_top_level_variety_rows": 124,
+    "fci_nested_subvariety_groups": 35
+  },
+  "original_registry_entry_count": 887,
+  "source_url_count": 1553,
+  "registry_status_counts": {
+    "FCI": {
+      "definitive": 344,
+      "provisional": 20
+    },
+    "AKC": {
+      "recognized": 208,
+      "miscellaneous": 13,
+      "fss": 76
+    },
+    "RKC": {
+      "published_standard": 225,
+      "interim_standard": 1
+    }
+  },
+  "independent_list_comparison": {
+    "akc_pagination_count": 297,
+    "akc_missing_in_selector": [],
+    "akc_missing_in_pages": [],
+    "fci_alphabet_count": 364,
+    "fci_missing_in_groups": [],
+    "fci_missing_in_alphabet": []
+  },
+  "data_integrity_checks_ko": [
+    "견종·기관 항목·변종 식별자 중복 없음",
+    "세 기관 원본 목록 URL 집합과 저장 목록 URL 집합 일치",
+    "모든 기관 원본 항목을 통합 항목에 연결",
+    "모든 견종·변종 관계 및 출처 참조 유효",
+    "모든 견종 상세·목록 페이지 HTTP 200",
+    "AKC가 연결한 FCI 표준번호 59개와 대응 결과 일치",
+    "콜리·피레니안 셰퍼드 포괄 관계 보존",
+    "포메라니안·푸들·닥스훈트 등의 실제 변종 식별자 연결",
+    "아키타 두 견종 분리 및 Segugio Italiano 단모종 연결",
+    "기관별 범위가 불명확한 두 관계를 일괄 통합하지 않음",
+    "모든 한글명을 편집 음역으로 표시",
+    "JSON 구문 및 문서 상대 링크 유효"
+  ],
+  "all_referenced_links_accessible": false,
+  "unavailable_referenced_standard_links": [
+    {
+      "url": "https://fcm.mx/descargas/RazasMex/CALUPOH-EN.pdf",
+      "status_code": 403
+    }
+  ],
+  "corrected_source_link_attempts": [
+    {
+      "original_url": "https://www.fci.be/Nomenclature/Standards/187g07-en.pdf  ",
+      "corrected_url": "https://www.fci.be/Nomenclature/Standards/187g07-en.pdf",
+      "original_status_code": 404,
+      "corrected_status_code": 200
+    },
+    {
+      "original_url": "https://www.fci.be/Nomenclature/Standards/244g06-en.pdf ",
+      "corrected_url": "https://www.fci.be/Nomenclature/Standards/244g06-en.pdf",
+      "original_status_code": 404,
+      "corrected_status_code": 200
+    },
+    {
+      "original_url": "https://www.fci.be/Nomenclature/Standards/260g02-en.pdf ",
+      "corrected_url": "https://www.fci.be/Nomenclature/Standards/260g02-en.pdf",
+      "original_status_code": 404,
+      "corrected_status_code": 200
+    },
+    {
+      "original_url": "https://www.fci.be/Nomenclature/Standards/261g05-en.pdf ",
+      "corrected_url": "https://www.fci.be/Nomenclature/Standards/261g05-en.pdf",
+      "original_status_code": 404,
+      "corrected_status_code": 200
+    },
+    {
+      "original_url": "https://www.fci.be/Nomenclature/Standards/349g01-en.pdf ",
+      "corrected_url": "https://www.fci.be/Nomenclature/Standards/349g01-en.pdf",
+      "original_status_code": 404,
+      "corrected_status_code": 200
+    }
+  ],
+  "official_korean_labels_verified": false,
+  "unresolved_taxonomy_pairs": [
+    [
+      "AKC_ANATOLIAN_SHEPHERD_DOG",
+      "FCI_331"
+    ],
+    [
+      "AKC_WORKING_KELPIE",
+      "FCI_293"
+    ]
+  ],
+  "limitations_ko": [
+    "정의한 세 기관 목록의 수집은 완료했으나 전 세계 미등록 견종 전체를 뜻하지 않는다.",
+    "국내 공식 한글 표기 검수는 미완료다.",
+    "Calupoh 원산국 표준 PDF는 HTTP 403으로 본문을 확인하지 못했다.",
+    "기관 간 두 관계는 별도 보존했으며 완전한 동의어 정리는 미완료다."
+  ]
+}
