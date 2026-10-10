@@ -315,7 +315,7 @@ operation::training/topic-select-error[snippets='http-response,response-fields']
 `videoObjectKey`는 분석한 영상을 가리키는 S3 객체 키이며,
 영상 재생 URL은 내려가지 않습니다.
 
-AI 리포트 생성은 무료 체험으로 사용자당 총 3회까지 가능합니다.
+AI 리포트 생성은 무료 체험으로 사용자당 총 30회까지 가능합니다.
 횟수를 소진하면 영상 업로드 URL 발급이 403으로 거부됩니다.
 
 === AI 리포트 영상 업로드 URL 발급
@@ -347,7 +347,7 @@ operation::ai/video-upload-url[snippets='http-request,request-fields,http-respon
 
 ==== 실패 응답
 
-무료 체험 횟수(3회)를 소진하면 403(`AI_REPORT_TRIAL_EXCEEDED`)을 반환합니다.
+무료 체험 횟수(30회)를 소진하면 403(`AI_REPORT_TRIAL_EXCEEDED`)을 반환합니다.
 파일 크기가 상한을 넘으면 `MEDIA_VIDEO_FILE_SIZE_EXCEEDED`, 0 이하면 `MEDIA_INVALID_VIDEO_FILE_SIZE`,
 지원하지 않는 형식이면 `MEDIA_UNSUPPORTED_VIDEO_TYPE`을 400으로 반환합니다.
 
