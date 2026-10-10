@@ -2,7 +2,7 @@ package com.daesabu.meongcoach.ai.domain;
 
 public record AiTrial(int usedCount) {
 
-	public static final int MAX_COUNT = 3;
+	public static final int MAX_COUNT = 30;
 
 	public static AiTrial of(long completedCount) {
 		return new AiTrial(Math.toIntExact(completedCount));
