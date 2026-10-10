@@ -365,8 +365,8 @@ class AiControllerTest {
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.usedCount").value(1))
-				.andExpect(jsonPath("$.maxCount").value(3))
-				.andExpect(jsonPath("$.remainingCount").value(2))
+				.andExpect(jsonPath("$.maxCount").value(30))
+				.andExpect(jsonPath("$.remainingCount").value(29))
 				.andDo(document("ai/trial",
 						responseFields(
 								fieldWithPath("usedCount").description("분석이 완료된 AI 리포트 수. 실패·진행 중은 세지 않는다"),

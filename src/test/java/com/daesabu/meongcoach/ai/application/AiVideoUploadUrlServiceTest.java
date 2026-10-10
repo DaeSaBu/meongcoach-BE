@@ -60,7 +60,7 @@ class AiVideoUploadUrlServiceTest {
 	}
 
 	@ParameterizedTest
-	@ValueSource(ints = {0, 1, 2})
+	@ValueSource(ints = {0, 1, 29})
 	void 체험_횟수가_남아_있으면_훈련_영상_대상으로_업로드_URL_발급을_위임한다(int usedCount) {
 		persistCompletedReports(usedCount);
 

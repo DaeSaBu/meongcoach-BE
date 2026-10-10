@@ -10,8 +10,8 @@ import org.junit.jupiter.params.provider.ValueSource;
 class AiTrialTest {
 
 	@Test
-	void 무료_체험_최대_횟수는_3회다() {
-		assertThat(AiTrial.MAX_COUNT).isEqualTo(3);
+	void 무료_체험_최대_횟수는_30회다() {
+		assertThat(AiTrial.MAX_COUNT).isEqualTo(30);
 	}
 
 	@Test
@@ -20,26 +20,26 @@ class AiTrialTest {
 	}
 
 	@ParameterizedTest
-	@ValueSource(ints = {0, 1, 2})
+	@ValueSource(ints = {0, 1, 29})
 	void 생성한_리포트가_한도_미만이면_체험이_남아_있다(int usedCount) {
 		assertThat(new AiTrial(usedCount).isAvailable()).isTrue();
 	}
 
 	@ParameterizedTest
-	@ValueSource(ints = {3, 4})
+	@ValueSource(ints = {30, 31})
 	void 생성한_리포트가_한도_이상이면_체험을_소진했다(int usedCount) {
 		assertThat(new AiTrial(usedCount).isAvailable()).isFalse();
 	}
 
 	@ParameterizedTest
-	@CsvSource({"0, 3", "1, 2", "2, 1", "3, 0"})
+	@CsvSource({"0, 30", "1, 29", "29, 1", "30, 0"})
 	void 사용한_만큼_잔여_횟수가_줄어든다(int usedCount, int expected) {
 		assertThat(new AiTrial(usedCount).remainingCount()).isEqualTo(expected);
 	}
 
 	@Test
 	void 한도를_넘겨_저장된_경우에도_잔여_횟수는_0으로_내려간다() {
-		assertThat(new AiTrial(4).remainingCount()).isZero();
+		assertThat(new AiTrial(31).remainingCount()).isZero();
 	}
 
 	@Test
