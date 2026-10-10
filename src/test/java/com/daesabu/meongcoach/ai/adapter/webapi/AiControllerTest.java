@@ -37,15 +37,10 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-/**
- * AI 리포트 목록·상세 조회와 영상 업로드 URL 발급·체험 횟수 조회 API 검증.
- */
 @WebMvcTest(AiController.class)
 @AutoConfigureRestDocs
 class AiControllerTest {
 
-	// 컨트롤러 슬라이스에는 필터 체인이 없으므로 인증 주체를 요청에 직접 실어 보낸다
-	// (test-convention.md)
 	private static final Principal CURRENT_USER = () -> "42";
 
 	private static final String VIDEO_OBJECT_KEY = "videos/training/42/uuid.mp4";
