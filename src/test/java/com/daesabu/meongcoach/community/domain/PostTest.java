@@ -50,12 +50,4 @@ class PostTest {
 
 		assertThat(post.getContent()).hasSize(Post.MAX_CONTENT_LENGTH);
 	}
-
-	@Test
-	void 작성자_본인인지_판단한다() {
-		Post post = Post.write(new PostWriteCommand(USER_ID, "본문", null));
-
-		assertThat(post.isWrittenBy(USER_ID)).isTrue();
-		assertThat(post.isWrittenBy(43L)).isFalse();
-	}
 }

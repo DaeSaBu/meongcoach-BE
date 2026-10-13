@@ -64,8 +64,4 @@ public class Post extends BaseEntity {
 		}
 		return content;
 	}
-
-	public boolean isWrittenBy(Long userId) {
-		return this.userId.equals(userId);
-	}
 }
