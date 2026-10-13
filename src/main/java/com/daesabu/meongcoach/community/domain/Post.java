@@ -68,8 +68,4 @@ public class Post extends BaseEntity {
 	public boolean isWrittenBy(Long userId) {
 		return this.userId.equals(userId);
 	}
-
-	public boolean hasMention() {
-		return this.mention != null;
-	}
 }
