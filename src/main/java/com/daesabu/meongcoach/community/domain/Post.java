@@ -40,17 +40,19 @@ public class Post extends BaseEntity {
 	@JoinColumn(name = "mention_id", unique = true)
 	private PostMention mention;
 
-	public static Post write(Long userId, String content) {
+	public static Post write(PostWriteCommand command) {
 		Post post = new Post();
-		post.userId = requireNonNull(userId);
-		post.content = validContent(content);
+		post.userId = requireNonNull(command.userId());
+		post.content = validContent(command.content());
+		post.mention = mentionOf(command);
 		return post;
 	}
 
-	public static Post writeWithMention(Long userId, String content, MentionCommand mention) {
-		Post post = write(userId, content);
-		post.mention = PostMention.mention(mention);
-		return post;
+	private static PostMention mentionOf(PostWriteCommand command) {
+		if (!command.hasMention()) {
+			return null;
+		}
+		return PostMention.create(command.mention());
 	}
 
 	private static String validContent(String content) {

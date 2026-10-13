@@ -9,7 +9,7 @@ public final class PostFixture {
 	}
 
 	public static Post create(Long id, Long userId, String content, LocalDateTime createdAt) {
-		Post post = Post.write(userId, content);
+		Post post = Post.write(new PostWriteCommand(userId, content, null));
 		ReflectionTestUtils.setField(post, "id", id);
 		ReflectionTestUtils.setField(post, "createdAt", createdAt);
 		return post;
