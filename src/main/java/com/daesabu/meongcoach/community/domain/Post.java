@@ -24,7 +24,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Post extends BaseEntity {
 
-	public static final int MAX_CONTENT_LENGTH = 2000;
+	public static final int MAX_CONTENT_LENGTH = 500;
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
