@@ -15,7 +15,7 @@ class PostTest {
 		Post post = Post.write(new PostWriteCommand(USER_ID, "오늘 앉아 훈련 성공!", null));
 
 		assertThat(post.getUserId()).isEqualTo(USER_ID);
-		assertThat(post.getContent()).isEqualTo("오늘 앉아 훈련 성공!");
+		assertThat(post.getContent()).isEqualTo(new PostContent("오늘 앉아 훈련 성공!"));
 	}
 
 	@Test
@@ -32,22 +32,5 @@ class PostTest {
 	void 본문이_비어_있으면_작성할_수_없다() {
 		assertThatThrownBy(() -> Post.write(new PostWriteCommand(USER_ID, "   ", null)))
 				.isInstanceOf(InvalidPostContentException.class);
-	}
-
-	@Test
-	void 본문이_500자를_넘으면_작성할_수_없다() {
-		String tooLong = "a".repeat(Post.MAX_CONTENT_LENGTH + 1);
-
-		assertThatThrownBy(() -> Post.write(new PostWriteCommand(USER_ID, tooLong, null)))
-				.isInstanceOf(InvalidPostContentException.class);
-	}
-
-	@Test
-	void 본문이_500자면_작성할_수_있다() {
-		String maxLength = "a".repeat(Post.MAX_CONTENT_LENGTH);
-
-		Post post = Post.write(new PostWriteCommand(USER_ID, maxLength, null));
-
-		assertThat(post.getContent()).hasSize(Post.MAX_CONTENT_LENGTH);
 	}
 }
