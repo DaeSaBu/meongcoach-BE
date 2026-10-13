@@ -18,9 +18,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 
-/**
- * 강아지 리포지토리 검증.
- */
 @DataJpaTest
 class DogRepositoryTest {
 
@@ -44,7 +41,6 @@ class DogRepositoryTest {
 		assertThat(found.orElseThrow().getId()).isEqualTo(selected.getId());
 	}
 
-	// 애플리케이션 레이어에서만 불변식을 강제하므로, 선택이 여러 건인 데이터가 남아 있어도 예외 없이 끝나야 한다
 	@Test
 	void 선택된_강아지가_여러_건이어도_가장_먼저_등록된_한_마리를_반환한다() {
 		Dog first = persistSelectedDog(USER_ID);

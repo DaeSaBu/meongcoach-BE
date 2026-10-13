@@ -59,8 +59,6 @@ class OnboardingCompleteServiceTest {
 		userId = userRepository.save(User.registerUser()).getId();
 	}
 
-	// 미설정(null·빈 문자열)은 통과하고
-	// 우리 스토리지 밖 URL은 거부하는 media 모듈 검증기의 스텁
 	private StoredImageUrlValidator prefixValidator() {
 		return url -> {
 			if (url != null && !url.isBlank() && !url.startsWith(STORAGE_BASE_URL)) {

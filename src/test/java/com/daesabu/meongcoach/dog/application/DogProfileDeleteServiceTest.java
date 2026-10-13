@@ -66,7 +66,6 @@ class DogProfileDeleteServiceTest {
 		entityManager.flush();
 		entityManager.clear();
 
-		// 엔티티 조회는 삭제 건을 자동 제외하므로 네이티브 쿼리로 행 존재와 삭제 시각을 확인한다
 		Object deletedAt = entityManager.getEntityManager()
 				.createNativeQuery("select deleted_at from dogs where id = :id")
 				.setParameter("id", saved.getId())

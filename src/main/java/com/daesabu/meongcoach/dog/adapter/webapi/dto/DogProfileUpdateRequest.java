@@ -13,10 +13,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Set;
 
-/**
- * 강아지 프로필 전체 교체 요청. 검증 규칙은 온보딩 강아지 등록 요청과 같다.
- * 견종·성별·성격 코드는 여기서 도메인 enum으로 변환하며, 잘못된 코드는 도메인 예외로 400이 된다.
- */
 public record DogProfileUpdateRequest(
 		@NotBlank @Size(max = 50) String name,
 		@NotBlank @Size(max = 30) String breed,

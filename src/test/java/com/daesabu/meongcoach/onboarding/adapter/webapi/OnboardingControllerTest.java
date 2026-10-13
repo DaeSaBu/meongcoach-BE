@@ -572,7 +572,6 @@ class OnboardingControllerTest {
 			return new RecordingOnboardingCompleter();
 		}
 
-		// target·contentType 검증은 media 도메인이 수행하므로 스텁에서도 실제 변환을 태워 400 경로를 재현한다
 		@Bean
 		OnboardingImageUploadUrlIssuer onboardingImageUploadUrlIssuer() {
 			return (userId, target, contentType) -> {

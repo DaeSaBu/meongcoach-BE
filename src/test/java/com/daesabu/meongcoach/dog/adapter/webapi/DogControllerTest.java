@@ -51,14 +51,10 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 
-/**
- * 강아지 등록·프로필 조회·수정·삭제 API 검증.
- */
 @WebMvcTest(DogController.class)
 @AutoConfigureRestDocs
 class DogControllerTest {
 
-	// 컨트롤러 슬라이스에는 필터 체인이 없으므로 인증 주체를 요청에 직접 실어 보낸다 (test-convention.md)
 	private static final Principal CURRENT_USER = () -> "42";
 
 	private static final String IMAGE_URL = "https://images.test.meongcoach.com/images/dog-profile/42/a.jpg";
@@ -750,7 +746,6 @@ class DogControllerTest {
 		then(dogProfileDeleter).shouldHaveNoInteractions();
 	}
 
-	// 슬라이스 테스트는 DB를 거치지 않아 JPA가 id를 채우지 않으므로, 응답의 dogId를 검증하려면 리플렉션으로 주입한다
 	private Dog selectedDog(Long id) {
 		Dog dog = Dog.register(new DogRegisterCommand(42L, "초코", Breed.POODLE, DogSex.MALE,
 				LocalDate.of(2024, 3, 1), new BigDecimal("4.50"), IMAGE_URL, EXPECTATION));
@@ -768,7 +763,6 @@ class DogControllerTest {
 		return dog;
 	}
 
-	// 수정 서비스가 돌려주는, 요청 본문대로 교체된 강아지
 	private Dog updatedDog(Long id) {
 		Dog dog = Dog.register(new DogRegisterCommand(42L, "보리", Breed.MALTESE, DogSex.FEMALE,
 				LocalDate.of(2023, 1, 15), new BigDecimal("3.20"), NEW_IMAGE_URL, NEW_EXPECTATION));

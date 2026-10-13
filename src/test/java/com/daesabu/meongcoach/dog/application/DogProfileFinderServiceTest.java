@@ -170,7 +170,6 @@ class DogProfileFinderServiceTest {
 
 	@Test
 	void 삭제된_강아지는_선택_조회에서_제외된다() {
-		// 남는 강아지는 미선택이라 선택 조회 대상이 되지 않는다
 		Dog remaining = dogRepository.saveAndFlush(newDog(USER_ID));
 		Dog deleted = persistSelectedDog(USER_ID);
 		new Dogs(List.of(remaining, deleted)).delete(deleted.getId());

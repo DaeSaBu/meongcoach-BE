@@ -116,7 +116,6 @@ class DogsTest {
 		return dog;
 	}
 
-	// 순수 단위 테스트라 JPA가 id를 채우지 않으므로, 삭제 대상 조회를 검증하려면 리플렉션으로 주입한다
 	private Dog unselectedDog(Long id) {
 		Dog dog = Dog.register(COMMAND);
 		ReflectionTestUtils.setField(dog, "id", id);
