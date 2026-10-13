@@ -47,9 +47,9 @@ public class Post extends BaseEntity {
 		return post;
 	}
 
-	public static Post writeWithMention(Long userId, String content, PostMention mention) {
+	public static Post writeWithMention(Long userId, String content, MentionCommand mention) {
 		Post post = write(userId, content);
-		post.mention = requireNonNull(mention);
+		post.mention = PostMention.mention(mention);
 		return post;
 	}
 
