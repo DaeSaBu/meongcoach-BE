@@ -2,10 +2,10 @@ package com.daesabu.meongcoach.community.domain;
 
 import static java.util.Objects.requireNonNull;
 
-import com.daesabu.meongcoach.community.domain.exception.InvalidPostContentException;
 import com.daesabu.meongcoach.shared.domain.BaseEntity;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -24,8 +24,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Post extends BaseEntity {
 
-	public static final int MAX_CONTENT_LENGTH = 500;
-
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
@@ -33,8 +31,8 @@ public class Post extends BaseEntity {
 	@Column(nullable = false)
 	private Long userId;
 
-	@Column(nullable = false, columnDefinition = "TEXT")
-	private String content;
+	@Embedded
+	private PostContent content;
 
 	@OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
 	@JoinColumn(name = "mention_id", unique = true)
@@ -43,7 +41,7 @@ public class Post extends BaseEntity {
 	public static Post write(PostWriteCommand command) {
 		Post post = new Post();
 		post.userId = requireNonNull(command.userId());
-		post.content = validContent(command.content());
+		post.content = new PostContent(command.content());
 		post.mention = mentionOf(command);
 		return post;
 	}
@@ -53,15 +51,5 @@ public class Post extends BaseEntity {
 			return null;
 		}
 		return PostMention.create(command.mention());
-	}
-
-	private static String validContent(String content) {
-		if (content == null || content.isBlank()) {
-			throw new InvalidPostContentException("본문이 비어 있습니다.");
-		}
-		if (content.length() > MAX_CONTENT_LENGTH) {
-			throw new InvalidPostContentException("본문은 " + MAX_CONTENT_LENGTH + "자를 넘을 수 없습니다.");
-		}
-		return content;
 	}
 }
