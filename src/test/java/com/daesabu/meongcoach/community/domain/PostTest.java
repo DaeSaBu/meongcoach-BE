@@ -36,7 +36,7 @@ class PostTest {
 	}
 
 	@Test
-	void 본문이_2000자를_넘으면_작성할_수_없다() {
+	void 본문이_500자를_넘으면_작성할_수_없다() {
 		String tooLong = "a".repeat(Post.MAX_CONTENT_LENGTH + 1);
 
 		assertThatThrownBy(() -> Post.write(USER_ID, tooLong))
@@ -44,7 +44,7 @@ class PostTest {
 	}
 
 	@Test
-	void 본문이_2000자면_작성할_수_있다() {
+	void 본문이_500자면_작성할_수_있다() {
 		String maxLength = "a".repeat(Post.MAX_CONTENT_LENGTH);
 
 		Post post = Post.write(USER_ID, maxLength);
