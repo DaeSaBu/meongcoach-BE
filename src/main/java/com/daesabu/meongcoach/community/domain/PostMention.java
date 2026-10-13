@@ -8,31 +8,26 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.MapsId;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Getter
 @Entity
-@Table(
-		name = "post_mentions",
-		uniqueConstraints = @UniqueConstraint(columnNames = {"post_id", "target_type", "target_id"})
-)
+@Table(name = "post_mentions")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class PostMention extends BaseTimeEntity {
 
 	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long id;
+	private Long postId;
 
-	@ManyToOne(fetch = FetchType.LAZY)
+	@MapsId
+	@OneToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "post_id", nullable = false)
 	private Post post;
 
@@ -43,10 +38,12 @@ public class PostMention extends BaseTimeEntity {
 	@Column(nullable = false)
 	private Long targetId;
 
-	PostMention(Post post, MentionCommand command) {
-		this.post = requireNonNull(post);
-		this.targetType = requireNonNull(command.targetType());
-		this.targetId = requireNonNull(command.targetId());
+	public static PostMention mention(Post post, MentionTargetType targetType, Long targetId) {
+		PostMention mention = new PostMention();
+		mention.post = requireNonNull(post);
+		mention.targetType = requireNonNull(targetType);
+		mention.targetId = requireNonNull(targetId);
+		return mention;
 	}
 
 	public boolean isTarget(MentionTargetType type) {

@@ -4,16 +4,12 @@ import static java.util.Objects.requireNonNull;
 
 import com.daesabu.meongcoach.community.domain.exception.InvalidPostContentException;
 import com.daesabu.meongcoach.shared.domain.BaseEntity;
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
-import java.util.ArrayList;
-import java.util.List;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -36,20 +32,11 @@ public class Post extends BaseEntity {
 	@Column(nullable = false, columnDefinition = "TEXT")
 	private String content;
 
-	@OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
-	private List<PostMention> mentions = new ArrayList<>();
-
-	private Post(PostWriteCommand command) {
-		this.userId = requireNonNull(command.userId());
-		this.content = validContent(command.content());
-		requireNonNull(command.mentions()).stream()
-				.distinct()
-				.map(mention -> new PostMention(this, mention))
-				.forEach(this.mentions::add);
-	}
-
-	public static Post write(PostWriteCommand command) {
-		return new Post(command);
+	public static Post write(Long userId, String content) {
+		Post post = new Post();
+		post.userId = requireNonNull(userId);
+		post.content = validContent(content);
+		return post;
 	}
 
 	private static String validContent(String content) {
@@ -64,12 +51,5 @@ public class Post extends BaseEntity {
 
 	public boolean isWrittenBy(Long userId) {
 		return this.userId.equals(userId);
-	}
-
-	public List<Long> findMentionedCardIds() {
-		return mentions.stream()
-				.filter(mention -> mention.isTarget(MentionTargetType.CARD))
-				.map(PostMention::getTargetId)
-				.toList();
 	}
 }
