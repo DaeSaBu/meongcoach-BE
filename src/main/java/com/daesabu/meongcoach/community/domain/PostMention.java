@@ -32,7 +32,7 @@ public class PostMention extends BaseTimeEntity {
 	@Column(nullable = false)
 	private Long targetId;
 
-	static PostMention mention(MentionCommand command) {
+	static PostMention create(MentionCommand command) {
 		PostMention mention = new PostMention();
 		mention.targetType = requireNonNull(command.targetType());
 		mention.targetId = requireNonNull(command.targetId());
