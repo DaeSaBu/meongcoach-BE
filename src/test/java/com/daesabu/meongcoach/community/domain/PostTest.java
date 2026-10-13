@@ -16,6 +16,17 @@ class PostTest {
 
 		assertThat(post.getUserId()).isEqualTo(USER_ID);
 		assertThat(post.getContent()).isEqualTo("오늘 앉아 훈련 성공!");
+		assertThat(post.hasMention()).isFalse();
+	}
+
+	@Test
+	void 멘션과_함께_작성하면_멘션이_채워진다() {
+		PostMention mention = PostMention.mention(MentionTargetType.CARD, 10L);
+
+		Post post = Post.writeWithMention(USER_ID, "이 카드 따라해봤어요", mention);
+
+		assertThat(post.hasMention()).isTrue();
+		assertThat(post.getMention()).isSameAs(mention);
 	}
 
 	@Test

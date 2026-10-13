@@ -4,11 +4,15 @@ import static java.util.Objects.requireNonNull;
 
 import com.daesabu.meongcoach.community.domain.exception.InvalidPostContentException;
 import com.daesabu.meongcoach.shared.domain.BaseEntity;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -32,10 +36,20 @@ public class Post extends BaseEntity {
 	@Column(nullable = false, columnDefinition = "TEXT")
 	private String content;
 
+	@OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+	@JoinColumn(name = "mention_id", unique = true)
+	private PostMention mention;
+
 	public static Post write(Long userId, String content) {
 		Post post = new Post();
 		post.userId = requireNonNull(userId);
 		post.content = validContent(content);
+		return post;
+	}
+
+	public static Post writeWithMention(Long userId, String content, PostMention mention) {
+		Post post = write(userId, content);
+		post.mention = requireNonNull(mention);
 		return post;
 	}
 
@@ -51,5 +65,9 @@ public class Post extends BaseEntity {
 
 	public boolean isWrittenBy(Long userId) {
 		return this.userId.equals(userId);
+	}
+
+	public boolean hasMention() {
+		return this.mention != null;
 	}
 }

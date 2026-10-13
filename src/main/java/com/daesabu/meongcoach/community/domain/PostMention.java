@@ -7,12 +7,9 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -28,10 +25,6 @@ public class PostMention extends BaseTimeEntity {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@OneToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "post_id", nullable = false, unique = true)
-	private Post post;
-
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, length = 20)
 	private MentionTargetType targetType;
@@ -39,9 +32,8 @@ public class PostMention extends BaseTimeEntity {
 	@Column(nullable = false)
 	private Long targetId;
 
-	public static PostMention mention(Post post, MentionTargetType targetType, Long targetId) {
+	public static PostMention mention(MentionTargetType targetType, Long targetId) {
 		PostMention mention = new PostMention();
-		mention.post = requireNonNull(post);
 		mention.targetType = requireNonNull(targetType);
 		mention.targetId = requireNonNull(targetId);
 		return mention;
