@@ -1,6 +1,7 @@
 package com.daesabu.meongcoach.community.domain;
 
 import static java.util.Objects.requireNonNull;
+import static java.util.Optional.ofNullable;
 
 import com.daesabu.meongcoach.shared.domain.BaseEntity;
 import jakarta.persistence.CascadeType;
@@ -38,18 +39,13 @@ public class Post extends BaseEntity {
 	@JoinColumn(name = "mention_id", unique = true)
 	private PostMention mention;
 
-	public static Post write(PostWriteCommand command) {
+	public static Post write(Long userId, PostWriteCommand command) {
 		Post post = new Post();
-		post.userId = requireNonNull(command.userId());
+		post.userId = requireNonNull(userId);
 		post.content = new PostContent(command.content());
-		post.mention = mentionOf(command);
+		post.mention = ofNullable(command.mention())
+				.map(PostMention::create)
+				.orElse(null);
 		return post;
-	}
-
-	private static PostMention mentionOf(PostWriteCommand command) {
-		if (!command.hasMention()) {
-			return null;
-		}
-		return PostMention.create(command.mention());
 	}
 }
