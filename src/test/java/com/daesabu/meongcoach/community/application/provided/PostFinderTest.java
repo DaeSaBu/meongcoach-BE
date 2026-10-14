@@ -193,8 +193,8 @@ class PostFinderTest {
 		PostListResult result = postFinder.findPosts(new PostListRequest(null, 20));
 
 		assertThat(result.posts()).extracting(PostResult::mentionedCard)
-				.extracting(CardSummaryResult::lessonId, CardSummaryResult::id, CardSummaryResult::title)
-				.containsExactly(tuple(lesson.getId(), card.getId(), "앉아 준비"));
+				.extracting(CardSummaryResult::id, CardSummaryResult::title)
+				.containsExactly(tuple(card.getId(), "앉아 준비"));
 	}
 
 	@Test

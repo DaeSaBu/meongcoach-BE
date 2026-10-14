@@ -50,22 +50,14 @@ class CardFinderTest {
 	private EntityManager entityManager;
 
 	@Test
-	void 카테고리부터_카드까지_각_계층의_id와_제목을_요약으로_반환한다() {
+	void 카드의_id와_제목을_요약으로_반환한다() {
 		Lesson lesson = saveLesson("기본 교육");
 		Card card = saveCard(lesson, "앉아 준비", 1);
 		flushAndClear();
 
 		List<CardSummaryResult> summaries = cardFinder.findSummaries(Set.of(card.getId()));
 
-		Curriculum curriculum = lesson.getCurriculum();
-		Topic topic = curriculum.getTopic();
-		TrainingCategory category = topic.getTrainingCategory();
-		assertThat(summaries).containsExactly(new CardSummaryResult(
-				category.getId(), "기본 교육 카테고리",
-				topic.getId(), "기본 교육",
-				curriculum.getId(), "기본 교육 커리큘럼",
-				lesson.getId(), "기본 교육 레슨",
-				card.getId(), "앉아 준비"));
+		assertThat(summaries).containsExactly(new CardSummaryResult(card.getId(), "앉아 준비"));
 	}
 
 	@Test

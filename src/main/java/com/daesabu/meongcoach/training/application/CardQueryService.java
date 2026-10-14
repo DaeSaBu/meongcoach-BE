@@ -21,7 +21,7 @@ public class CardQueryService implements CardFinder {
 		if (cardIds.isEmpty()) {
 			return List.of();
 		}
-		return cardRepository.findAllWithHierarchyByIdIn(cardIds).stream()
+		return cardRepository.findAllById(cardIds).stream()
 				.map(CardSummaryResult::from)
 				.toList();
 	}
