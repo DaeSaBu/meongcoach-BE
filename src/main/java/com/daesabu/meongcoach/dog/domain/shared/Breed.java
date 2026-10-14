@@ -1,6 +1,7 @@
 package com.daesabu.meongcoach.dog.domain.shared;
 
-import com.daesabu.meongcoach.dog.domain.exception.InvalidBreedException;
+import com.daesabu.meongcoach.dog.domain.exception.BreedLengthExceededException;
+import com.daesabu.meongcoach.dog.domain.exception.BreedRequiredException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import java.util.Optional;
@@ -12,11 +13,11 @@ public record Breed(@Column(name = "breed", nullable = false, length = Breed.MAX
 
 	public Breed {
 		if (value == null || value.isBlank()) {
-			throw new InvalidBreedException();
+			throw new BreedRequiredException();
 		}
 		value = value.strip();
 		if (value.length() > MAX_LENGTH) {
-			throw new InvalidBreedException();
+			throw new BreedLengthExceededException();
 		}
 		value = RegisteredBreed.findByLabel(value)
 				.map(RegisteredBreed::name)
