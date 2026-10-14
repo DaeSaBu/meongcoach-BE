@@ -59,6 +59,12 @@ class RegisteredBreedTest {
 	}
 
 	@Test
+	void 상수_이름에_견종_등록_번호를_쓰지_않는다() {
+		assertThat(RegisteredBreed.values())
+				.allSatisfy(breed -> assertThat(breed.name()).doesNotMatch("FCI_\\d+"));
+	}
+
+	@Test
 	void 이미_저장된_기존_견종_코드를_모두_보존한다() {
 		assertThat(LEGACY_CODES).allSatisfy(code -> assertThat(RegisteredBreed.find(code)).isPresent());
 	}
