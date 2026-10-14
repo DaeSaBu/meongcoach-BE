@@ -187,6 +187,7 @@ link:{swagger-ui}#/Onboarding/onboarding-metadata[▶ Swagger에서 Try it out,w
 온보딩 화면에 필요한 토픽·견종·강아지 성격·MBTI 목록을 한 번에 반환합니다.
 견종(`breeds`)은 등록 견종 전체이며 믹스견을 맨 앞에 두고 나머지는 한글 라벨 가나다순입니다.
 각 견종의 `aliases`는 한글·영문 별칭 목록이므로, 앱은 이 목록을 받아 기기에서 견종을 검색합니다.
+`aliases`에는 `label`이 들어 있지 않으므로 검색할 때 `label`과 `aliases`를 함께 비교합니다. 대소문자·띄어쓰기만 다른 별칭은 하나만 내려갑니다.
 
 operation::onboarding/metadata[snippets='http-request,http-response,response-fields']
 
