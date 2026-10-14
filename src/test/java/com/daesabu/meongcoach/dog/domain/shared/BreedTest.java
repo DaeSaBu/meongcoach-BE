@@ -3,7 +3,9 @@ package com.daesabu.meongcoach.dog.domain.shared;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.daesabu.meongcoach.dog.domain.exception.InvalidBreedException;
+import com.daesabu.meongcoach.dog.domain.exception.BreedLengthExceededException;
+import com.daesabu.meongcoach.dog.domain.exception.BreedRequiredException;
+import com.daesabu.meongcoach.dog.domain.exception.DogErrorCode;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -62,14 +64,18 @@ class BreedTest {
 	@Test
 	void 값이_null이면_생성에_실패한다() {
 		assertThatThrownBy(() -> Breed.from(null))
-				.isInstanceOf(InvalidBreedException.class);
+				.isInstanceOf(BreedRequiredException.class)
+				.extracting("errorCode")
+				.isEqualTo(DogErrorCode.DOG_BREED_REQUIRED);
 	}
 
 	@ParameterizedTest
 	@ValueSource(strings = {"", " ", "   "})
 	void 값이_비어_있으면_생성에_실패한다(String value) {
 		assertThatThrownBy(() -> Breed.from(value))
-				.isInstanceOf(InvalidBreedException.class);
+				.isInstanceOf(BreedRequiredException.class)
+				.extracting("errorCode")
+				.isEqualTo(DogErrorCode.DOG_BREED_REQUIRED);
 	}
 
 	@Test
@@ -80,11 +86,20 @@ class BreedTest {
 	}
 
 	@Test
+	void 앞뒤_공백을_제거한_길이가_최대_길이면_생성에_성공한다() {
+		String name = "가".repeat(Breed.MAX_LENGTH);
+
+		assertThat(Breed.from(" " + name + " ").value()).isEqualTo(name);
+	}
+
+	@Test
 	void 값이_최대_길이를_넘으면_생성에_실패한다() {
 		String name = "가".repeat(Breed.MAX_LENGTH + 1);
 
 		assertThatThrownBy(() -> Breed.from(name))
-				.isInstanceOf(InvalidBreedException.class);
+				.isInstanceOf(BreedLengthExceededException.class)
+				.extracting("errorCode")
+				.isEqualTo(DogErrorCode.DOG_BREED_LENGTH_EXCEEDED);
 	}
 
 	@Test
@@ -92,7 +107,7 @@ class BreedTest {
 		String name = "비밀".repeat(Breed.MAX_LENGTH);
 
 		assertThatThrownBy(() -> Breed.from(name))
-				.isInstanceOf(InvalidBreedException.class)
+				.isInstanceOf(BreedLengthExceededException.class)
 				.hasMessageNotContaining("비밀");
 	}
 }

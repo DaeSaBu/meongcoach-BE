@@ -9,8 +9,8 @@ import com.daesabu.meongcoach.dog.domain.Dog;
 import com.daesabu.meongcoach.dog.domain.DogSex;
 import com.daesabu.meongcoach.dog.domain.DogStatus;
 import com.daesabu.meongcoach.dog.domain.Dogs;
+import com.daesabu.meongcoach.dog.domain.exception.BreedRequiredException;
 import com.daesabu.meongcoach.dog.domain.exception.DogLimitExceededException;
-import com.daesabu.meongcoach.dog.domain.exception.InvalidBreedException;
 import com.daesabu.meongcoach.dog.domain.exception.InvalidDogSexException;
 import com.daesabu.meongcoach.dog.domain.exception.InvalidPersonalityException;
 import com.daesabu.meongcoach.dog.domain.shared.Breed;
@@ -173,7 +173,7 @@ class DogRegisterServiceTest {
 				new BigDecimal("4.50"), Set.of(), null, null);
 
 		assertThatThrownBy(() -> service.register(1L, info))
-				.isInstanceOf(InvalidBreedException.class);
+				.isInstanceOf(BreedRequiredException.class);
 	}
 
 	@Test
