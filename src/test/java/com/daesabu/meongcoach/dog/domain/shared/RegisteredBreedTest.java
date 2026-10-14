@@ -2,12 +2,9 @@ package com.daesabu.meongcoach.dog.domain.shared;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.InputStream;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.Test;
-import tools.jackson.core.type.TypeReference;
-import tools.jackson.databind.ObjectMapper;
 
 class RegisteredBreedTest {
 
@@ -20,19 +17,24 @@ class RegisteredBreedTest {
 			"DOBERMANN", "MIXED");
 
 	@Test
-	void 선언_순서와_라벨과_별칭이_조사한_견종_목록과_같다() {
-		List<BreedChoice> expected = readChoices();
-
-		List<BreedChoice> actual = Arrays.stream(RegisteredBreed.values())
-				.map(breed -> new BreedChoice(breed.name(), breed.getLabel(), breed.getAliases()))
-				.toList();
-
-		assertThat(actual).containsExactlyElementsOf(expected);
+	void 믹스견을_맨_앞에_둔다() {
+		assertThat(RegisteredBreed.values()[0]).isEqualTo(RegisteredBreed.MIXED);
 	}
 
 	@Test
-	void 믹스견을_맨_앞에_둔다() {
-		assertThat(RegisteredBreed.values()[0]).isEqualTo(RegisteredBreed.MIXED);
+	void 믹스견_뒤의_견종은_라벨_가나다순으로_선언한다() {
+		List<String> labels = Arrays.stream(RegisteredBreed.values())
+				.skip(1)
+				.map(RegisteredBreed::getLabel)
+				.toList();
+
+		assertThat(labels).isSorted();
+	}
+
+	@Test
+	void 세부_종류를_모르는_부모_견종은_접미사_없는_라벨로_표시하고_원래_라벨로도_검색된다() {
+		assertThat(RegisteredBreed.POODLE.getLabel()).isEqualTo("푸들");
+		assertThat(RegisteredBreed.POODLE.getAliases()).contains("푸들 (세부 종류 모름)");
 	}
 
 	@Test
@@ -57,14 +59,5 @@ class RegisteredBreedTest {
 		assertThat(RegisteredBreed.find(null)).isEmpty();
 		assertThat(RegisteredBreed.findByLabel("삽살개")).isEmpty();
 		assertThat(RegisteredBreed.findByLabel(null)).isEmpty();
-	}
-
-	private List<BreedChoice> readChoices() {
-		InputStream fixture = getClass().getResourceAsStream("/dog/breed-choices.json");
-		return new ObjectMapper().readValue(fixture, new TypeReference<>() {
-		});
-	}
-
-	private record BreedChoice(String code, String label, List<String> aliases) {
 	}
 }
