@@ -6,6 +6,7 @@ import com.daesabu.meongcoach.shared.domain.BaseEntity;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -45,8 +46,7 @@ public class Dog extends BaseEntity {
 	@Column(nullable = false, length = 50)
 	private String name;
 
-	@Enumerated(EnumType.STRING)
-	@Column(nullable = false, length = 30)
+	@Embedded
 	private Breed breed;
 
 	@Enumerated(EnumType.STRING)

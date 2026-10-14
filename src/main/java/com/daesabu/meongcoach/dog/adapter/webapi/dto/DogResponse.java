@@ -26,7 +26,7 @@ public record DogResponse(Long dogId, String name, BreedResponse breed, DogSex s
 	public record BreedResponse(String code, String label) {
 
 		public static BreedResponse from(Breed breed) {
-			return new BreedResponse(breed.name(), breed.getLabel());
+			return new BreedResponse(breed.value(), breed.label());
 		}
 	}
 
