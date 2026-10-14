@@ -31,10 +31,10 @@ import com.daesabu.meongcoach.dog.domain.DogRegisterCommand;
 import com.daesabu.meongcoach.dog.domain.DogSex;
 import com.daesabu.meongcoach.dog.domain.exception.DogLimitExceededException;
 import com.daesabu.meongcoach.dog.domain.exception.DogNotFoundException;
-import com.daesabu.meongcoach.dog.domain.exception.InvalidBreedException;
 import com.daesabu.meongcoach.dog.domain.exception.LastDogNotDeletableException;
 import com.daesabu.meongcoach.dog.domain.shared.Breed;
 import com.daesabu.meongcoach.dog.domain.shared.Personality;
+import com.daesabu.meongcoach.dog.domain.shared.RegisteredBreed;
 import java.math.BigDecimal;
 import java.security.Principal;
 import java.time.LocalDate;
@@ -129,7 +129,8 @@ class DogControllerTest {
 				.andDo(document("dog/register",
 						requestFields(
 								fieldWithPath("name").description("필수 입력. 강아지 이름(최대 50자)"),
-								fieldWithPath("breed").description("필수 입력. 견종 코드(온보딩 메타데이터 breeds의 code)"),
+								fieldWithPath("breed").description(
+										"필수 입력. 견종 코드(온보딩 메타데이터 breeds의 code). 목록에 없는 견종은 견종 이름을 직접 입력(최대 30자)"),
 								fieldWithPath("sex").description("필수 입력. 성별(MALE, FEMALE)"),
 								fieldWithPath("birthDate").optional()
 										.description("생년월일(yyyy-MM-dd, 과거 날짜). 나이 미상이면 생략하거나 null"),
@@ -145,8 +146,8 @@ class DogControllerTest {
 								fieldWithPath("dogId").description("등록된 강아지 ID"),
 								fieldWithPath("name").description("강아지 이름"),
 								fieldWithPath("breed").description("견종"),
-								fieldWithPath("breed.code").description("견종 코드"),
-								fieldWithPath("breed.label").description("견종 표시명"),
+								fieldWithPath("breed.code").description("견종 코드. 직접 입력한 견종이면 입력한 이름"),
+								fieldWithPath("breed.label").description("견종 표시명. 직접 입력한 견종이면 입력한 이름"),
 								fieldWithPath("sex").description("성별(MALE, FEMALE)"),
 								fieldWithPath("birthDate").optional()
 										.description("생년월일(yyyy-MM-dd). 나이 미상이면 null"),
@@ -213,18 +214,36 @@ class DogControllerTest {
 	}
 
 	@Test
-	void 잘못된_견종_코드면_등록은_400과_에러_코드를_반환한다() throws Exception {
-		given(dogRegister.register(eq(42L), any(DogRegisterInfo.class))).willThrow(new InvalidBreedException("UNKNOWN"));
+	void 목록에_없는_견종_이름으로_등록하면_입력한_이름을_코드와_표시명으로_반환한다() throws Exception {
+		given(dogRegister.register(eq(42L), any(DogRegisterInfo.class))).willReturn(10L);
+		given(dogProfileFinder.findDog(42L, 10L)).willReturn(customBreedDog(10L));
 
 		mockMvc.perform(post("/api/dogs")
 						.principal(CURRENT_USER)
 						.contentType(MediaType.APPLICATION_JSON)
-						.content(REGISTER_BODY.replace("\"POODLE\"", "\"UNKNOWN\"")))
-				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.status").value(400))
-				.andExpect(jsonPath("$.code").value("DOG_INVALID_BREED"));
+						.content(REGISTER_BODY.replace("\"POODLE\"", "\"삽살개\"")))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.breed.code").value("삽살개"))
+				.andExpect(jsonPath("$.breed.label").value("삽살개"));
 
-		then(dogProfileFinder).shouldHaveNoInteractions();
+		ArgumentCaptor<DogRegisterInfo> captor = ArgumentCaptor.forClass(DogRegisterInfo.class);
+		then(dogRegister).should().register(eq(42L), captor.capture());
+		assertThat(captor.getValue().breed()).isEqualTo("삽살개");
+	}
+
+	@Test
+	void 견종이_30자를_넘으면_등록은_검증에_실패한다() throws Exception {
+		String longBreed = "가".repeat(31);
+
+		mockMvc.perform(post("/api/dogs")
+						.principal(CURRENT_USER)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(REGISTER_BODY.replace("\"POODLE\"", "\"" + longBreed + "\"")))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
+				.andExpect(jsonPath("$.errors[0].field").value("breed"));
+
+		then(dogRegister).shouldHaveNoInteractions();
 	}
 
 	@Test
@@ -300,8 +319,8 @@ class DogControllerTest {
 								fieldWithPath("dogs[].dogId").description("강아지 ID"),
 								fieldWithPath("dogs[].name").description("강아지 이름"),
 								fieldWithPath("dogs[].breed").description("견종"),
-								fieldWithPath("dogs[].breed.code").description("견종 코드"),
-								fieldWithPath("dogs[].breed.label").description("견종 표시명"),
+								fieldWithPath("dogs[].breed.code").description("견종 코드. 직접 입력한 견종이면 입력한 이름"),
+								fieldWithPath("dogs[].breed.label").description("견종 표시명. 직접 입력한 견종이면 입력한 이름"),
 								fieldWithPath("dogs[].sex").description("성별(MALE, FEMALE)"),
 								fieldWithPath("dogs[].birthDate").optional()
 										.description("생년월일(yyyy-MM-dd). 나이 미상이면 null"),
@@ -375,8 +394,8 @@ class DogControllerTest {
 								fieldWithPath("dogId").description("강아지 ID"),
 								fieldWithPath("name").description("강아지 이름"),
 								fieldWithPath("breed").description("견종"),
-								fieldWithPath("breed.code").description("견종 코드"),
-								fieldWithPath("breed.label").description("견종 표시명"),
+								fieldWithPath("breed.code").description("견종 코드. 직접 입력한 견종이면 입력한 이름"),
+								fieldWithPath("breed.label").description("견종 표시명. 직접 입력한 견종이면 입력한 이름"),
 								fieldWithPath("sex").description("성별(MALE, FEMALE)"),
 								fieldWithPath("birthDate").optional()
 										.description("생년월일(yyyy-MM-dd). 나이 미상이면 null"),
@@ -535,7 +554,8 @@ class DogControllerTest {
 						),
 						requestFields(
 								fieldWithPath("name").description("필수 입력. 강아지 이름(최대 50자)"),
-								fieldWithPath("breed").description("필수 입력. 견종 코드(온보딩 메타데이터 breeds의 code)"),
+								fieldWithPath("breed").description(
+										"필수 입력. 견종 코드(온보딩 메타데이터 breeds의 code). 목록에 없는 견종은 견종 이름을 직접 입력(최대 30자)"),
 								fieldWithPath("sex").description("필수 입력. 성별(MALE, FEMALE)"),
 								fieldWithPath("birthDate").optional()
 										.description("생년월일(yyyy-MM-dd, 과거 날짜). 나이 미상이면 생략하거나 null"),
@@ -551,8 +571,8 @@ class DogControllerTest {
 								fieldWithPath("dogId").description("강아지 ID"),
 								fieldWithPath("name").description("강아지 이름"),
 								fieldWithPath("breed").description("견종"),
-								fieldWithPath("breed.code").description("견종 코드"),
-								fieldWithPath("breed.label").description("견종 표시명"),
+								fieldWithPath("breed.code").description("견종 코드. 직접 입력한 견종이면 입력한 이름"),
+								fieldWithPath("breed.label").description("견종 표시명. 직접 입력한 견종이면 입력한 이름"),
 								fieldWithPath("sex").description("성별(MALE, FEMALE)"),
 								fieldWithPath("birthDate").optional()
 										.description("생년월일(yyyy-MM-dd). 나이 미상이면 null"),
@@ -580,8 +600,8 @@ class DogControllerTest {
 						.content(UPDATE_BODY))
 				.andExpect(status().isOk());
 
-		then(dogProfileUpdater).should().update(42L, 10L, new DogProfileUpdateCommand("보리", Breed.MALTESE,
-				DogSex.FEMALE, LocalDate.of(2023, 1, 15), new BigDecimal("3.2"),
+		then(dogProfileUpdater).should().update(42L, 10L, new DogProfileUpdateCommand("보리",
+				Breed.of(RegisteredBreed.MALTESE), DogSex.FEMALE, LocalDate.of(2023, 1, 15), new BigDecimal("3.2"),
 				Set.of(Personality.TIMID, Personality.LIVELY), NEW_IMAGE_URL, NEW_EXPECTATION));
 	}
 
@@ -595,20 +615,40 @@ class DogControllerTest {
 						.content(UPDATE_BODY.replace("\"personalities\": [\"TIMID\", \"LIVELY\"],", "")))
 				.andExpect(status().isOk());
 
-		then(dogProfileUpdater).should().update(42L, 10L, new DogProfileUpdateCommand("보리", Breed.MALTESE,
-				DogSex.FEMALE, LocalDate.of(2023, 1, 15), new BigDecimal("3.2"), Set.of(), NEW_IMAGE_URL,
-				NEW_EXPECTATION));
+		then(dogProfileUpdater).should().update(42L, 10L, new DogProfileUpdateCommand("보리",
+				Breed.of(RegisteredBreed.MALTESE), DogSex.FEMALE, LocalDate.of(2023, 1, 15), new BigDecimal("3.2"),
+				Set.of(), NEW_IMAGE_URL, NEW_EXPECTATION));
 	}
 
 	@Test
-	void 잘못된_견종_코드면_수정은_400과_에러_코드를_반환한다() throws Exception {
+	void 목록에_없는_견종_이름으로_수정하면_직접_입력한_견종으로_수정을_위임한다() throws Exception {
+		given(dogProfileUpdater.update(eq(42L), eq(10L), any(DogProfileUpdateCommand.class)))
+				.willReturn(customBreedDog(10L));
+
 		mockMvc.perform(put("/api/dogs/{dogId}", 10L)
 						.principal(CURRENT_USER)
 						.contentType(MediaType.APPLICATION_JSON)
-						.content(UPDATE_BODY.replace("\"MALTESE\"", "\"UNKNOWN\"")))
+						.content(UPDATE_BODY.replace("\"MALTESE\"", "\"삽살개\"")))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.breed.code").value("삽살개"))
+				.andExpect(jsonPath("$.breed.label").value("삽살개"));
+
+		ArgumentCaptor<DogProfileUpdateCommand> captor = ArgumentCaptor.forClass(DogProfileUpdateCommand.class);
+		then(dogProfileUpdater).should().update(eq(42L), eq(10L), captor.capture());
+		assertThat(captor.getValue().breed()).isEqualTo(Breed.from("삽살개"));
+	}
+
+	@Test
+	void 견종이_30자를_넘으면_수정은_검증에_실패한다() throws Exception {
+		String longBreed = "가".repeat(31);
+
+		mockMvc.perform(put("/api/dogs/{dogId}", 10L)
+						.principal(CURRENT_USER)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(UPDATE_BODY.replace("\"MALTESE\"", "\"" + longBreed + "\"")))
 				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.status").value(400))
-				.andExpect(jsonPath("$.code").value("DOG_INVALID_BREED"));
+				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
+				.andExpect(jsonPath("$.errors[0].field").value("breed"));
 
 		then(dogProfileUpdater).shouldHaveNoInteractions();
 	}
@@ -747,7 +787,7 @@ class DogControllerTest {
 	}
 
 	private Dog selectedDog(Long id) {
-		Dog dog = Dog.register(new DogRegisterCommand(42L, "초코", Breed.POODLE, DogSex.MALE,
+		Dog dog = Dog.register(new DogRegisterCommand(42L, "초코", Breed.of(RegisteredBreed.POODLE), DogSex.MALE,
 				LocalDate.of(2024, 3, 1), new BigDecimal("4.50"), IMAGE_URL, EXPECTATION));
 		dog.select();
 		dog.changePersonalities(Set.of(Personality.FRIENDLY, Personality.TIMID));
@@ -756,7 +796,7 @@ class DogControllerTest {
 	}
 
 	private Dog selectedDogWithoutImage(Long id) {
-		Dog dog = Dog.register(new DogRegisterCommand(42L, "초코", Breed.POODLE, DogSex.MALE,
+		Dog dog = Dog.register(new DogRegisterCommand(42L, "초코", Breed.of(RegisteredBreed.POODLE), DogSex.MALE,
 				LocalDate.of(2024, 3, 1), new BigDecimal("4.50"), null, EXPECTATION));
 		dog.select();
 		ReflectionTestUtils.setField(dog, "id", id);
@@ -764,7 +804,7 @@ class DogControllerTest {
 	}
 
 	private Dog updatedDog(Long id) {
-		Dog dog = Dog.register(new DogRegisterCommand(42L, "보리", Breed.MALTESE, DogSex.FEMALE,
+		Dog dog = Dog.register(new DogRegisterCommand(42L, "보리", Breed.of(RegisteredBreed.MALTESE), DogSex.FEMALE,
 				LocalDate.of(2023, 1, 15), new BigDecimal("3.20"), NEW_IMAGE_URL, NEW_EXPECTATION));
 		dog.select();
 		dog.changePersonalities(Set.of(Personality.TIMID, Personality.LIVELY));
@@ -772,8 +812,16 @@ class DogControllerTest {
 		return dog;
 	}
 
+	private Dog customBreedDog(Long id) {
+		Dog dog = Dog.register(new DogRegisterCommand(42L, "초코", Breed.from("삽살개"), DogSex.MALE,
+				LocalDate.of(2024, 3, 1), new BigDecimal("4.50"), IMAGE_URL, EXPECTATION));
+		dog.select();
+		ReflectionTestUtils.setField(dog, "id", id);
+		return dog;
+	}
+
 	private Dog unselectedDog(Long id) {
-		Dog dog = Dog.register(new DogRegisterCommand(42L, "보리", Breed.MALTESE, DogSex.FEMALE,
+		Dog dog = Dog.register(new DogRegisterCommand(42L, "보리", Breed.of(RegisteredBreed.MALTESE), DogSex.FEMALE,
 				null, new BigDecimal("3.20"), "", null));
 		ReflectionTestUtils.setField(dog, "id", id);
 		return dog;

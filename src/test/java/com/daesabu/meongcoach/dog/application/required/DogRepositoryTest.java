@@ -8,6 +8,7 @@ import com.daesabu.meongcoach.dog.domain.DogSex;
 import com.daesabu.meongcoach.dog.domain.DogStatus;
 import com.daesabu.meongcoach.dog.domain.shared.Breed;
 import com.daesabu.meongcoach.dog.domain.shared.Personality;
+import com.daesabu.meongcoach.dog.domain.shared.RegisteredBreed;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -126,6 +127,34 @@ class DogRepositoryTest {
 		return dogRepository.saveAndFlush(dog);
 	}
 
+	@Test
+	void 등록_견종은_상수_이름으로_breed_컬럼에_저장한다() {
+		Long dogId = dogRepository.saveAndFlush(newDog(USER_ID)).getId();
+		entityManager.clear();
+
+		assertThat(storedBreed(dogId)).isEqualTo("POODLE");
+		assertThat(dogRepository.findById(dogId).orElseThrow().getBreed())
+				.isEqualTo(Breed.of(RegisteredBreed.POODLE));
+	}
+
+	@Test
+	void 직접_입력한_견종은_입력한_이름으로_breed_컬럼에_저장한다() {
+		Dog dog = Dog.register(new DogRegisterCommand(USER_ID, "초코", Breed.from("삽살개"), DogSex.MALE,
+				LocalDate.of(2024, 3, 1), new BigDecimal("4.50"), IMAGE_URL, null));
+		Long dogId = dogRepository.saveAndFlush(dog).getId();
+		entityManager.clear();
+
+		assertThat(storedBreed(dogId)).isEqualTo("삽살개");
+		assertThat(dogRepository.findById(dogId).orElseThrow().getBreed()).isEqualTo(Breed.from("삽살개"));
+	}
+
+	private Object storedBreed(Long dogId) {
+		return entityManager.getEntityManager()
+				.createNativeQuery("SELECT breed FROM dogs WHERE id = :id")
+				.setParameter("id", dogId)
+				.getSingleResult();
+	}
+
 	private Dog persistUnselectedDog(Long userId) {
 		return dogRepository.saveAndFlush(newDog(userId));
 	}
@@ -137,7 +166,7 @@ class DogRepositoryTest {
 	}
 
 	private Dog newDog(Long userId) {
-		return Dog.register(new DogRegisterCommand(userId, "초코", Breed.POODLE, DogSex.MALE,
+		return Dog.register(new DogRegisterCommand(userId, "초코", Breed.of(RegisteredBreed.POODLE), DogSex.MALE,
 				LocalDate.of(2024, 3, 1), new BigDecimal("4.50"), IMAGE_URL, null));
 	}
 }

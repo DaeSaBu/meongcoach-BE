@@ -13,6 +13,7 @@ import com.daesabu.meongcoach.dog.domain.Dogs;
 import com.daesabu.meongcoach.dog.domain.exception.DogNotFoundException;
 import com.daesabu.meongcoach.dog.domain.shared.Breed;
 import com.daesabu.meongcoach.dog.domain.shared.Personality;
+import com.daesabu.meongcoach.dog.domain.shared.RegisteredBreed;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -67,7 +68,7 @@ class DogProfileFinderServiceTest {
 
 		assertThat(found.getId()).isEqualTo(saved.getId());
 		assertThat(found.getName()).isEqualTo("초코");
-		assertThat(found.getBreed()).isEqualTo(Breed.POODLE);
+		assertThat(found.getBreed()).isEqualTo(Breed.of(RegisteredBreed.POODLE));
 		assertThat(found.getSex()).isEqualTo(DogSex.MALE);
 		assertThat(found.getBirthDate()).isEqualTo(LocalDate.of(2024, 3, 1));
 		assertThat(found.getWeightKg()).isEqualByComparingTo(new BigDecimal("4.50"));
@@ -113,7 +114,7 @@ class DogProfileFinderServiceTest {
 
 	@Test
 	void 선택된_강아지의_프로필_이미지가_없으면_빈_문자열을_가진다() {
-		Dog dog = Dog.register(new DogRegisterCommand(USER_ID, "초코", Breed.POODLE, DogSex.MALE,
+		Dog dog = Dog.register(new DogRegisterCommand(USER_ID, "초코", Breed.of(RegisteredBreed.POODLE), DogSex.MALE,
 				LocalDate.of(2024, 3, 1), new BigDecimal("4.50"), null, null));
 		dog.select();
 		dogRepository.saveAndFlush(dog);
@@ -186,7 +187,7 @@ class DogProfileFinderServiceTest {
 	}
 
 	private Dog newDog(Long userId) {
-		Dog dog = Dog.register(new DogRegisterCommand(userId, "초코", Breed.POODLE, DogSex.MALE,
+		Dog dog = Dog.register(new DogRegisterCommand(userId, "초코", Breed.of(RegisteredBreed.POODLE), DogSex.MALE,
 				LocalDate.of(2024, 3, 1), new BigDecimal("4.50"), IMAGE_URL, EXPECTATION));
 		dog.changePersonalities(Set.of(Personality.FRIENDLY));
 		return dog;

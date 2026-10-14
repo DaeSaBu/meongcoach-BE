@@ -10,8 +10,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.daesabu.meongcoach.dog.domain.shared.Breed;
 import com.daesabu.meongcoach.dog.domain.shared.Personality;
+import com.daesabu.meongcoach.dog.domain.shared.RegisteredBreed;
 import com.daesabu.meongcoach.media.domain.ImageType;
 import com.daesabu.meongcoach.media.domain.ImageUploadTarget;
 import com.daesabu.meongcoach.onboarding.application.provided.OnboardingCompleteInfo;
@@ -110,14 +110,18 @@ class OnboardingControllerTest {
 				.andExpect(jsonPath("$.topics[0].title").value("배변 훈련"))
 				.andExpect(jsonPath("$.breeds[0].code").value("POODLE"))
 				.andExpect(jsonPath("$.breeds[0].label").value("푸들"))
+				.andExpect(jsonPath("$.breeds[0].aliases[0]").value("푸들"))
+				.andExpect(jsonPath("$.breeds[0].aliases[1]").value("POODLE"))
 				.andExpect(jsonPath("$.personalities[0].code").value("TIMID"))
 				.andExpect(jsonPath("$.mbtis[0]").value("ISTJ"))
 				.andDo(document("onboarding/metadata",
 						responseFields(
 								fieldWithPath("topics[].id").description("토픽 ID"),
 								fieldWithPath("topics[].title").description("토픽 이름"),
+								fieldWithPath("breeds[]").description("등록 견종 목록. 믹스견이 맨 앞이고 나머지는 한글 라벨 가나다순"),
 								fieldWithPath("breeds[].code").description("강아지 견종 코드"),
 								fieldWithPath("breeds[].label").description("강아지 견종 한글 라벨"),
+								fieldWithPath("breeds[].aliases[]").description("견종 검색에 쓰는 한글·영문 별칭 목록"),
 								fieldWithPath("personalities[].code").description("강아지 성격 코드"),
 								fieldWithPath("personalities[].label").description("강아지 성격 한글 라벨"),
 								fieldWithPath("mbtis[]").description("선택 가능한 사람 MBTI 코드 목록")
@@ -153,7 +157,8 @@ class OnboardingControllerTest {
 								fieldWithPath("dogs[]").description("등록할 강아지 목록. 1마리 이상 5마리 이하"),
 								fieldWithPath("dogs[].name").description("강아지 이름. 필수 입력, 최대 50자"),
 								fieldWithPath("dogs[].breed").description(
-										"메타데이터 조회 응답에서 선택한 강아지 견종 코드. 최대 30자"),
+										"메타데이터 조회 응답에서 선택한 강아지 견종 코드. "
+												+ "목록에 없는 견종은 견종 이름을 직접 입력. 최대 30자"),
 								fieldWithPath("dogs[].sex").description("강아지 성별. `MALE` 또는 `FEMALE`"),
 								fieldWithPath("dogs[].birthDate")
 										.description("강아지 생년월일. 과거 날짜, 선택 입력").optional(),
@@ -562,7 +567,7 @@ class OnboardingControllerTest {
 			return () -> new OnboardingMetadataResult(
 					List.of(new TopicResult(1L, "배변 훈련", "편안한 배변 습관 만들기"),
 							new TopicResult(2L, "산책 훈련", "즐겁고 안전한 첫 산책")),
-					List.of(Breed.POODLE, Breed.MALTESE),
+					List.of(RegisteredBreed.POODLE, RegisteredBreed.MALTESE),
 					List.of(Personality.TIMID, Personality.LIVELY),
 					List.of("ISTJ", "INTJ"));
 		}

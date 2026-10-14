@@ -10,6 +10,7 @@ import com.daesabu.meongcoach.dog.domain.Dog;
 import com.daesabu.meongcoach.dog.domain.DogStatus;
 import com.daesabu.meongcoach.dog.domain.shared.Breed;
 import com.daesabu.meongcoach.dog.domain.shared.Personality;
+import com.daesabu.meongcoach.dog.domain.shared.RegisteredBreed;
 import com.daesabu.meongcoach.media.application.provided.StoredImageUrlValidator;
 import com.daesabu.meongcoach.media.domain.exception.InvalidImageUrlException;
 import com.daesabu.meongcoach.onboarding.application.provided.OnboardingCompleteInfo;
@@ -98,7 +99,8 @@ class OnboardingCompleteServiceTest {
 		List<Dog> dogs = dogRepository.findAllById(dogIds);
 		assertThat(dogs).extracting(Dog::getUserId).containsOnly(userId);
 		assertThat(dogs).extracting(Dog::getName).containsExactlyInAnyOrder("초코", "보리");
-		assertThat(dogs).extracting(Dog::getBreed).containsExactlyInAnyOrder(Breed.POODLE, Breed.MALTESE);
+		assertThat(dogs).extracting(Dog::getBreed)
+				.containsExactlyInAnyOrder(Breed.of(RegisteredBreed.POODLE), Breed.of(RegisteredBreed.MALTESE));
 	}
 
 	@Test

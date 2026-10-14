@@ -15,6 +15,7 @@ import com.daesabu.meongcoach.dog.domain.exception.InvalidDogSexException;
 import com.daesabu.meongcoach.dog.domain.exception.InvalidPersonalityException;
 import com.daesabu.meongcoach.dog.domain.shared.Breed;
 import com.daesabu.meongcoach.dog.domain.shared.Personality;
+import com.daesabu.meongcoach.dog.domain.shared.RegisteredBreed;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -54,7 +55,7 @@ class DogRegisterServiceTest {
 		Dog dog = dogRepository.findById(dogId).orElseThrow();
 		assertThat(dog.getUserId()).isEqualTo(1L);
 		assertThat(dog.getName()).isEqualTo("초코");
-		assertThat(dog.getBreed()).isEqualTo(Breed.POODLE);
+		assertThat(dog.getBreed()).isEqualTo(Breed.of(RegisteredBreed.POODLE));
 		assertThat(dog.getSex()).isEqualTo(DogSex.MALE);
 		assertThat(dog.getStatus()).isEqualTo(DogStatus.SELECTED);
 		assertThat(dog.getPersonalities()).containsExactlyInAnyOrder(Personality.TIMID, Personality.LIVELY);
@@ -141,12 +142,29 @@ class DogRegisterServiceTest {
 	}
 
 	@Test
-	void 잘못된_견종_값이면_등록에_실패한다() {
-		DogRegisterInfo info = new DogRegisterInfo("초코", "UNKNOWN", "MALE", null,
+	void 목록에_없는_견종_이름은_직접_입력한_견종으로_등록된다() {
+		DogRegisterInfo info = new DogRegisterInfo("초코", "삽살개", "MALE", null,
 				new BigDecimal("4.50"), Set.of(), null, null);
 
-		assertThatThrownBy(() -> service.register(1L, info))
-				.isInstanceOf(InvalidBreedException.class);
+		Long dogId = service.register(1L, info);
+
+		entityManager.flush();
+		entityManager.clear();
+		Dog dog = dogRepository.findById(dogId).orElseThrow();
+		assertThat(dog.getBreed()).isEqualTo(Breed.from("삽살개"));
+		assertThat(dog.getBreed().isCustom()).isTrue();
+		assertThat(dog.getBreed().label()).isEqualTo("삽살개");
+	}
+
+	@Test
+	void 등록_견종의_한글_라벨을_보내면_해당_견종으로_등록된다() {
+		DogRegisterInfo info = new DogRegisterInfo("초코", "말티즈", "MALE", null,
+				new BigDecimal("4.50"), Set.of(), null, null);
+
+		Long dogId = service.register(1L, info);
+
+		Dog dog = dogRepository.findById(dogId).orElseThrow();
+		assertThat(dog.getBreed()).isEqualTo(Breed.of(RegisteredBreed.MALTESE));
 	}
 
 	@Test
