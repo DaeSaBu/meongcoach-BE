@@ -110,8 +110,8 @@ class OnboardingControllerTest {
 				.andExpect(jsonPath("$.topics[0].title").value("배변 훈련"))
 				.andExpect(jsonPath("$.breeds[0].code").value("POODLE"))
 				.andExpect(jsonPath("$.breeds[0].label").value("푸들"))
-				.andExpect(jsonPath("$.breeds[0].aliases[0]").value("푸들"))
-				.andExpect(jsonPath("$.breeds[0].aliases[1]").value("POODLE"))
+				.andExpect(jsonPath("$.breeds[0].aliases[0]").value("POODLE"))
+				.andExpect(jsonPath("$.breeds[0].aliases[1]").value("CANICHE"))
 				.andExpect(jsonPath("$.personalities[0].code").value("TIMID"))
 				.andExpect(jsonPath("$.mbtis[0]").value("ISTJ"))
 				.andDo(document("onboarding/metadata",
@@ -121,7 +121,7 @@ class OnboardingControllerTest {
 								fieldWithPath("breeds[]").description("등록 견종 목록. 믹스견이 맨 앞이고 나머지는 한글 라벨 가나다순"),
 								fieldWithPath("breeds[].code").description("강아지 견종 코드"),
 								fieldWithPath("breeds[].label").description("강아지 견종 한글 라벨"),
-								fieldWithPath("breeds[].aliases[]").description("견종 검색에 쓰는 한글·영문 별칭 목록"),
+								fieldWithPath("breeds[].aliases[]").description("견종 검색에 쓰는 한글·영문 별칭 목록. 라벨은 포함하지 않으며 대소문자·띄어쓰기만 다른 값은 하나만 둔다"),
 								fieldWithPath("personalities[].code").description("강아지 성격 코드"),
 								fieldWithPath("personalities[].label").description("강아지 성격 한글 라벨"),
 								fieldWithPath("mbtis[]").description("선택 가능한 사람 MBTI 코드 목록")

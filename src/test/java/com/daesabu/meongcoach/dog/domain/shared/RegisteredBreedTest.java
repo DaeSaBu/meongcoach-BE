@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import org.junit.jupiter.api.Test;
 
 class RegisteredBreedTest {
@@ -38,6 +39,20 @@ class RegisteredBreedTest {
 	}
 
 	@Test
+	void 별칭에는_라벨과_검색할_때_같은_값을_두지_않는다() {
+		assertThat(RegisteredBreed.values()).allSatisfy(breed -> assertThat(breed.getAliases())
+				.map(RegisteredBreedTest::normalize)
+				.doesNotContain(normalize(breed.getLabel())));
+	}
+
+	@Test
+	void 별칭끼리는_검색할_때_같은_값을_두지_않는다() {
+		assertThat(RegisteredBreed.values()).allSatisfy(breed -> assertThat(breed.getAliases())
+				.map(RegisteredBreedTest::normalize)
+				.doesNotHaveDuplicates());
+	}
+
+	@Test
 	void 상수_이름은_breed_컬럼_길이를_넘지_않는다() {
 		assertThat(RegisteredBreed.values())
 				.allSatisfy(breed -> assertThat(breed.name()).hasSizeLessThanOrEqualTo(BREED_COLUMN_LENGTH));
@@ -59,5 +74,9 @@ class RegisteredBreedTest {
 		assertThat(RegisteredBreed.find(null)).isEmpty();
 		assertThat(RegisteredBreed.findByLabel("삽살개")).isEmpty();
 		assertThat(RegisteredBreed.findByLabel(null)).isEmpty();
+	}
+
+	private static String normalize(String text) {
+		return text.toLowerCase(Locale.ROOT).replaceAll("\\s+", "");
 	}
 }
