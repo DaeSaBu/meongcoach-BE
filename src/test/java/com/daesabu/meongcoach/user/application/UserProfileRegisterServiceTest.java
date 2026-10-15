@@ -143,37 +143,27 @@ class UserProfileRegisterServiceTest {
 	}
 
 	@Test
-	void MBTI가_null이면_등록에_실패한다() {
-		assertThatThrownBy(() -> service.register(userId,
-				command("멍멍이집사", null, null, VALID_GENDER, null)))
-				.isInstanceOf(InvalidMbtiException.class);
+	void MBTI와_성별이_null이면_미입력으로_등록한다() {
+		service.register(userId, command("멍멍이집사", null, null, null, null));
+
+		UserProfile profile = findPersistedProfile();
+		assertThat(profile.getMbti()).isNull();
+		assertThat(profile.getGender()).isNull();
 	}
 
 	@Test
-	void MBTI가_공백이면_등록에_실패한다() {
-		assertThatThrownBy(() -> service.register(userId,
-				command("멍멍이집사", null, "   ", VALID_GENDER, null)))
-				.isInstanceOf(InvalidMbtiException.class);
+	void MBTI와_성별이_공백이면_미입력으로_등록한다() {
+		service.register(userId, command("멍멍이집사", null, "   ", "   ", null));
+
+		UserProfile profile = findPersistedProfile();
+		assertThat(profile.getMbti()).isNull();
+		assertThat(profile.getGender()).isNull();
 	}
 
 	@Test
 	void 잘못된_성별_값이면_등록에_실패한다() {
 		assertThatThrownBy(() -> service.register(userId,
 				command("멍멍이집사", null, VALID_MBTI, "OTHER", null)))
-				.isInstanceOf(InvalidGenderException.class);
-	}
-
-	@Test
-	void 성별이_null이면_등록에_실패한다() {
-		assertThatThrownBy(() -> service.register(userId,
-				command("멍멍이집사", null, VALID_MBTI, null, null)))
-				.isInstanceOf(InvalidGenderException.class);
-	}
-
-	@Test
-	void 성별이_공백이면_등록에_실패한다() {
-		assertThatThrownBy(() -> service.register(userId,
-				command("멍멍이집사", null, VALID_MBTI, "   ", null)))
 				.isInstanceOf(InvalidGenderException.class);
 	}
 
