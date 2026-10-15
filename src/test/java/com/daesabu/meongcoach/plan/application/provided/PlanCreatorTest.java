@@ -140,6 +140,18 @@ class PlanCreatorTest extends PlanApplicationTestSupport {
 	}
 
 	@Test
+	void 재시도_호출이_실패하면_대체_플랜을_저장한다() {
+		given(structuredChatClient.complete(any()))
+				.willReturn(draftJson(List.of(sitBasicId), List.of(UNKNOWN_CURRICULUM_ID)))
+				.willThrow(new StructuredChatCompletionFailedException("호출 실패"));
+
+		PlanDetailResult result = planCreator.create(userId, aiRequest(NEW_EXPECTATION, false));
+
+		assertThat(result.generator()).isEqualTo(PlanGeneratorType.FALLBACK);
+		then(structuredChatClient).should(times(2)).complete(any());
+	}
+
+	@Test
 	void 모델_응답이_JSON이_아니면_재시도_없이_대체_플랜을_저장한다() {
 		given(structuredChatClient.complete(any())).willReturn("플랜을 만들었어요");
 
