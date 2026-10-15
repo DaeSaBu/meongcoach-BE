@@ -80,7 +80,7 @@ public class FallbackPlanBuilder {
 	private List<Placement> arrangeOrder(List<CatalogTopic> topics, Set<Long> completedLessonIds) {
 		List<Placement> ordered = topics.stream()
 				.flatMap(topic -> topic.curriculums().stream()
-						.filter(curriculum -> !curriculum.locked())
+						.filter(PlanCatalogRules::isPlannable)
 						.sorted(Comparator.comparingInt(CatalogCurriculum::sortOrder))
 						.map(curriculum -> new Placement(topic, curriculum)))
 				.toList();
@@ -203,7 +203,7 @@ public class FallbackPlanBuilder {
 
 	private static Stream<CatalogCurriculum> openCurriculums(CatalogTopic topic) {
 		return topic.curriculums().stream()
-				.filter(curriculum -> !curriculum.locked());
+				.filter(PlanCatalogRules::isPlannable);
 	}
 
 	private record Placement(CatalogTopic topic, CatalogCurriculum curriculum) {
