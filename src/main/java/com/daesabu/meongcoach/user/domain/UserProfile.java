@@ -12,6 +12,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.MapsId;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -40,7 +41,7 @@ public class UserProfile extends BaseEntity {
 	private String profileImageUrl;
 
 	@Enumerated(EnumType.STRING)
-	@Column(nullable = false, length = 4)
+	@Column(length = 4)
 	private Mbti mbti;
 
 	@Column(name = "prior_training_topic_ids", nullable = false)
@@ -56,7 +57,7 @@ public class UserProfile extends BaseEntity {
 		this.user = user;
 		this.nickname = command.nickname();
 		this.profileImageUrl = Objects.requireNonNullElse(command.profileImageUrl(), "");
-		this.mbti = Mbti.from(command.mbti());
+		this.mbti = parseMbti(command.mbti());
 		this.priorTrainingTopicIds = copyOrEmpty(command.priorTrainingTopicIds());
 		this.trainingGoalTopicIds = copyOrEmpty(command.trainingGoalTopicIds());
 		this.isCompletedTooltip = false;
@@ -66,11 +67,29 @@ public class UserProfile extends BaseEntity {
 		return new UserProfile(user, command);
 	}
 
+	private static Mbti parseMbti(String value) {
+		if (value == null || value.isBlank()) {
+			return null;
+		}
+		return Mbti.from(value);
+	}
+
 	private static Set<Long> copyOrEmpty(Set<Long> topicIds) {
 		if (topicIds == null) {
 			return new HashSet<>();
 		}
 		return new HashSet<>(topicIds);
+	}
+
+	public void updateProfile(UserProfileUpdateCommand command) {
+		Mbti newMbti = parseMbti(command.mbti());
+		this.nickname = command.nickname();
+		this.profileImageUrl = Objects.requireNonNullElse(command.profileImageUrl(), "");
+		this.mbti = newMbti;
+	}
+
+	public void addPriorTrainingTopics(Collection<Long> topicIds) {
+		priorTrainingTopicIds.addAll(topicIds);
 	}
 
 	public void completeTooltip() {
