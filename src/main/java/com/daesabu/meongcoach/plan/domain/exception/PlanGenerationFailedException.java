@@ -4,6 +4,10 @@ import com.daesabu.meongcoach.shared.exception.DomainException;
 
 public class PlanGenerationFailedException extends DomainException {
 
+	public PlanGenerationFailedException(String detail) {
+		super(PlanErrorCode.PLAN_GENERATION_FAILED, detail);
+	}
+
 	public PlanGenerationFailedException(String detail, Throwable cause) {
 		super(PlanErrorCode.PLAN_GENERATION_FAILED, detail, cause);
 	}
