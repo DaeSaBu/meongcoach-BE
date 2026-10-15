@@ -35,6 +35,8 @@ spring:
       mode: never
 
 meongcoach:
+  admin:
+    key: test-admin-key
   ai:
     video-queue: test-video-queue
     evolink:
