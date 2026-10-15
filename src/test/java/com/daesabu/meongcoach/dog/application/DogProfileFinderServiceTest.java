@@ -15,6 +15,7 @@ import com.daesabu.meongcoach.dog.domain.exception.DogNotFoundException;
 import com.daesabu.meongcoach.dog.domain.shared.Breed;
 import com.daesabu.meongcoach.dog.domain.shared.Personality;
 import com.daesabu.meongcoach.dog.domain.shared.RegisteredBreed;
+import com.daesabu.meongcoach.shared.config.ClockConfig;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -26,7 +27,7 @@ import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.context.annotation.Import;
 
 @DataJpaTest
-@Import(DogProfileFinderService.class)
+@Import({DogProfileFinderService.class, ClockConfig.class})
 class DogProfileFinderServiceTest {
 
 	private static final Long USER_ID = 42L;
