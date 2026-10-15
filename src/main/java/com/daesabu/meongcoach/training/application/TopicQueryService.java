@@ -3,6 +3,8 @@ package com.daesabu.meongcoach.training.application;
 import com.daesabu.meongcoach.training.application.provided.TopicFinder;
 import com.daesabu.meongcoach.training.application.provided.dto.TopicResult;
 import com.daesabu.meongcoach.training.application.required.TopicRepository;
+import com.daesabu.meongcoach.training.domain.Topic;
+import com.daesabu.meongcoach.training.domain.exception.TopicNotFoundException;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,5 +21,12 @@ public class TopicQueryService implements TopicFinder {
 		return topicRepository.findAllOrdered().stream()
 				.map(TopicResult::from)
 				.toList();
+	}
+
+	@Override
+	public TopicResult findTopic(Long topicId) {
+		Topic topic = topicRepository.findById(topicId)
+				.orElseThrow(() -> new TopicNotFoundException(topicId));
+		return TopicResult.from(topic);
 	}
 }
