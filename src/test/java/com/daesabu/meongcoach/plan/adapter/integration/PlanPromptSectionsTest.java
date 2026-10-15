@@ -24,7 +24,7 @@ class PlanPromptSectionsTest {
 
 		String section = PlanPromptSections.dog(dog);
 
-		assertThat(section).isEqualTo("이름: 초코 / 월령: 7개월 / 견종: 푸들 / 성별: MALE / 성격: 활발함, 겁이 많음 / 몸무게: 3.2kg");
+		assertThat(section).isEqualTo("이름: 초코 / 월령: 7개월 / 견종: 푸들 / 성별: 수컷 / 성격: 활발함, 겁이 많음 / 몸무게: 3.2kg");
 	}
 
 	@Test
@@ -55,12 +55,35 @@ class PlanPromptSectionsTest {
 	}
 
 	@Test
-	void 성격이_없으면_없음으로_적는다() {
+	void 성격이_없으면_성격_항목을_뺀다() {
 		DogProfileResult dog = new DogProfileResult(2L, "초코", null, false, 7, "푸들", "MALE", List.of(), null, "");
 
 		String section = PlanPromptSections.dog(dog);
 
-		assertThat(section).contains("성격: 없음");
+		assertThat(section).isEqualTo("이름: 초코 / 월령: 7개월 / 견종: 푸들 / 성별: 수컷");
+	}
+
+	@Test
+	void 암컷은_암컷으로_적는다() {
+		DogProfileResult dog = new DogProfileResult(2L, "초코", null, false, 7, "푸들", "FEMALE", List.of(), null, "");
+
+		assertThat(PlanPromptSections.dog(dog)).contains("성별: 암컷");
+	}
+
+	@Test
+	void 견종이_비었거나_성별을_알_수_없으면_해당_항목을_뺀다() {
+		DogProfileResult dog = new DogProfileResult(2L, "초코", null, false, 7, " ", "UNKNOWN", List.of("활발함"), null, "");
+
+		String section = PlanPromptSections.dog(dog);
+
+		assertThat(section).isEqualTo("이름: 초코 / 월령: 7개월 / 성격: 활발함");
+	}
+
+	@Test
+	void 견종과_성별이_null이어도_항목을_뺀다() {
+		DogProfileResult dog = new DogProfileResult(2L, "초코", null, false, 7, null, null, List.of(), null, "");
+
+		assertThat(PlanPromptSections.dog(dog)).isEqualTo("이름: 초코 / 월령: 7개월");
 	}
 
 	@Test
