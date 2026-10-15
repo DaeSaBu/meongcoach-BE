@@ -45,6 +45,9 @@ sentry:
   send-default-pii: false
 
 meongcoach:
+  # 운영자 API(/api/admin/**)를 지키는 X-Admin-Key 값. 32자 이상 랜덤 문자열을 넣고, 비어 있으면 운영자 API 전체가 404로 닫힌다
+  admin:
+    key: ${ADMIN_API_KEY:}
   # 이보다 낮은 앱 버전의 요청은 426으로 거절해 강제 업데이트를 유도한다. 스토어 출시 후 환경 변수로 올린다
   app-version:
     minimum:

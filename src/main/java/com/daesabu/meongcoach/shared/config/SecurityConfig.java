@@ -62,6 +62,9 @@ public class SecurityConfig {
 
 	private static final String[] API_DOCS_PATHS = {"/swagger-ui/**"};
 
+	// 운영자 경로는 JWT 대신 WebConfig의 AdminKeyInterceptor가 X-Admin-Key로 지킨다
+	private static final String ADMIN_PATHS = "/api/admin/**";
+
 	@Bean
 	SecurityFilterChain securityFilterChain(HttpSecurity http, JwtDecoder accessTokenDecoder,
 	                                        Converter<Jwt, AbstractAuthenticationToken> userRoleAuthenticationConverter,
@@ -82,6 +85,7 @@ public class SecurityConfig {
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authorizeHttpRequests(auth -> {
 					auth.requestMatchers(PERMIT_ALL_PATHS).permitAll();
+					auth.requestMatchers(ADMIN_PATHS).permitAll();
 					configureApiDocsAccess(auth, apiDocsEnabled);
 					auth.requestMatchers(ONBOARDING_ALLOWED_PATHS)
 							.hasAnyRole(AuthorityRole.USER.name(), AuthorityRole.ONBOARDING_USER.name());
