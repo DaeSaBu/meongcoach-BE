@@ -1,0 +1,27 @@
+{
+  "type": "object",
+  "properties": {
+    "title": { "type": "string" },
+    "goal": { "type": "string" },
+    "reason": { "type": "string" },
+    "weeks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "weekNo": { "type": "integer" },
+          "theme": { "type": "string" },
+          "milestone": { "type": "string" },
+          "curriculumIds": {
+            "type": "array",
+            "items": { "type": "integer" }
+          }
+        },
+        "required": ["weekNo", "theme", "milestone", "curriculumIds"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["title", "goal", "reason", "weeks"],
+  "additionalProperties": false
+}
