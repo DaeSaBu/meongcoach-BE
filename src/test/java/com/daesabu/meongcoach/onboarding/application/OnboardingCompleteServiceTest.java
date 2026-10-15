@@ -80,11 +80,11 @@ class OnboardingCompleteServiceTest {
 				Set.of(PRIOR_TRAINING_TOPIC_ID),
 				Set.of(TRAINING_GOAL_TOPIC_ID),
 				List.of(
-						new DogRegisterInfo("초코", "POODLE", "MALE", LocalDate.of(2024, 3, 1),
+						new DogRegisterInfo("초코", "POODLE", "MALE", LocalDate.of(2024, 3, 1), true,
 								new BigDecimal("4.50"), Set.of("TIMID"), dogImageUrl,
 								"산책할 때 보호자에게 집중하면 좋겠어요."),
-						new DogRegisterInfo("보리", "MALTESE", "FEMALE", null,
-								new BigDecimal("3.20"), Set.of(), null, null)));
+						new DogRegisterInfo("보리", "MALTESE", "FEMALE", null, null,
+								null, Set.of(), null, null)));
 	}
 
 	@Test
@@ -134,6 +134,32 @@ class OnboardingCompleteServiceTest {
 	}
 
 	@Test
+	void 생년월일_추정_여부가_저장되고_전달하지_않으면_false로_저장된다() {
+		List<Long> dogIds = service.complete(userId, completeInfo());
+
+		List<Dog> dogs = dogRepository.findAllById(dogIds);
+		assertThat(dogs).filteredOn(dog -> dog.getName().equals("초코"))
+				.singleElement()
+				.satisfies(dog -> assertThat(dog.isBirthDateEstimated()).isTrue());
+		assertThat(dogs).filteredOn(dog -> dog.getName().equals("보리"))
+				.singleElement()
+				.satisfies(dog -> assertThat(dog.isBirthDateEstimated()).isFalse());
+	}
+
+	@Test
+	void 몸무게를_전달하지_않으면_몸무게_없이_저장된다() {
+		List<Long> dogIds = service.complete(userId, completeInfo());
+
+		List<Dog> dogs = dogRepository.findAllById(dogIds);
+		assertThat(dogs).filteredOn(dog -> dog.getName().equals("보리"))
+				.singleElement()
+				.satisfies(dog -> assertThat(dog.getWeightKg()).isNull());
+		assertThat(dogs).filteredOn(dog -> dog.getName().equals("초코"))
+				.singleElement()
+				.satisfies(dog -> assertThat(dog.getWeightKg()).isEqualByComparingTo("4.50"));
+	}
+
+	@Test
 	void 교육_이력과_목표가_저장된다() {
 		service.complete(userId, completeInfo());
 
@@ -160,7 +186,7 @@ class OnboardingCompleteServiceTest {
 	@Test
 	void MBTI를_전달하지_않으면_미입력으로_저장한다() {
 		OnboardingCompleteInfo info = new OnboardingCompleteInfo("멍멍이집사", null, null, Set.of(), Set.of(),
-				List.of(new DogRegisterInfo("보리", "MALTESE", "FEMALE", null, new BigDecimal("3.20"), Set.of(), null,
+				List.of(new DogRegisterInfo("보리", "MALTESE", "FEMALE", null, null, new BigDecimal("3.20"), Set.of(), null,
 						null)));
 
 		service.complete(userId, info);
