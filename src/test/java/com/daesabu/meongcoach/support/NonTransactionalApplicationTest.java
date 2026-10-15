@@ -1,5 +1,6 @@
 package com.daesabu.meongcoach.support;
 
+import com.daesabu.meongcoach.ai.application.required.StructuredChatClient;
 import com.daesabu.meongcoach.entitlement.application.required.ActiveEntitlementReader;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -11,6 +12,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @SpringBootTest
-@MockitoBean(types = ActiveEntitlementReader.class)
+@MockitoBean(types = { ActiveEntitlementReader.class, StructuredChatClient.class })
 public @interface NonTransactionalApplicationTest {
 }
