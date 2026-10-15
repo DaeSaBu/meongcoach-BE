@@ -89,7 +89,6 @@ class VideoUploadSqsConsumerTest {
 	void URL_인코딩된_객체_키는_디코딩해_위임한다() throws Exception {
 		consumer.consume(s3Event("ObjectCreated:Put", "videos/training/7/my+video%3D1.mp4"));
 
-		// 디코딩된 키여야 presigned URL 발급 시 실제 객체를 가리킨다
 		assertThat(aiReportGenerator.objectKeys).containsExactly("videos/training/7/my video=1.mp4");
 	}
 
@@ -149,12 +148,10 @@ class VideoUploadSqsConsumerTest {
 		aiReportGenerator.failure = new InvalidVideoObjectKeyException("images/profile/7/key.png");
 
 		consumer.consume(s3Event("ObjectCreated:Put", "images/profile/7/key.png"));
-		// 예외가 나가지 않아야 SQS가 메시지를 삭제하고 무한 재시도를 하지 않는다
 	}
 
 	@Test
 	void 리포트_생성이_실패해도_예외를_삼키고_정상_반환한다() {
-		// MVP라 재시도를 두지 않는다. 예외가 나가면 SQS가 메시지를 삭제하지 않고 무한 재전달한다
 		aiReportGenerator.failure = new IllegalStateException("모델 호출 실패");
 
 		assertThatCode(() -> consumer.consume(s3Event("ObjectCreated:Put", "videos/training/7/key.mp4")))
@@ -185,7 +182,6 @@ class VideoUploadSqsConsumerTest {
 
 	@Test
 	void 객체_키가_없는_레코드는_버리고_정상_반환한다() {
-		// 알 수 없는 필드를 무시하는 설정이라 s3·object·key가 빠진 메시지도 그대로 도달한다
 		assertThatCode(() -> consumer.consume("""
 				{
 					"Records": [

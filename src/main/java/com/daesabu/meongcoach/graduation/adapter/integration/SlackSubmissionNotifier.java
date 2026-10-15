@@ -11,10 +11,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
-/**
- * Slack incoming webhook으로 실습 인증 제출을 운영자 채널에 알린다.
- * 알림은 검수를 돕는 부가 기능이라 전송에 실패해도 제출을 실패시키지 않도록 예외를 삼키고 경고 로그만 남긴다.
- */
 @Slf4j
 @Component
 public class SlackSubmissionNotifier implements SubmissionNotifier {

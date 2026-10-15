@@ -4,9 +4,6 @@ import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationDeta
 import com.daesabu.meongcoach.graduation.domain.GraduationSubmission;
 import com.daesabu.meongcoach.graduation.domain.TopicGraduation;
 
-/**
- * 토픽 하나의 실습 인증 현황 응답. 제출한 적이 없으면 status가 NOT_SUBMITTED이고 graduationId·latestSubmission이 null이다.
- */
 public record GraduationResponse(Long topicId, String topicTitle, boolean eligible, String status, Long graduationId,
                                  int attemptCount, LatestSubmissionResponse latestSubmission, RewardResponse reward) {
 

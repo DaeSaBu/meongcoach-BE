@@ -44,7 +44,7 @@ public interface TopicGraduationRepository extends JpaRepository<TopicGraduation
 	List<Long> findApprovedTopicIds(Long userId);
 
 	/**
-	 * 회원 ID를 키로 PostgreSQL 트랜잭션 advisory lock을 잡는다. 이용권 동기화와 같은 키라 같은 트랜잭션 안에서는 다시 잡아도 막히지 않는다.
+	 * 회원 ID를 키로 PostgreSQL 트랜잭션 advisory lock을 잡는다. 같은 키를 잠근 다른 트랜잭션이 끝날 때까지 기다리고, 잡은 락은 현재 트랜잭션이 끝날 때 풀린다.
 	 */
 	@Query(value = "SELECT 1 FROM pg_advisory_xact_lock(:userId)", nativeQuery = true)
 	void lockByUserId(Long userId);

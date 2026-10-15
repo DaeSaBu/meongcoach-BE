@@ -5,7 +5,7 @@ import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationSumm
 import java.util.List;
 
 /**
- * 토픽 수료 조회 공개 API. "이 회원이 이 토픽을 수료했는가"는 다른 모듈도 이 인터페이스로만 읽는다.
+ * 토픽 수료 조회 공개 API.
  */
 public interface GraduationFinder {
 

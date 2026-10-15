@@ -17,7 +17,7 @@ public interface GraduationSubmissionRepository extends JpaRepository<Graduation
 	List<GraduationSubmission> findAllByResultOrderBySubmittedAtAscIdAsc(SubmissionResult result);
 
 	/**
-	 * 제출 엔티티를 영속성 컨텍스트에 올리지 않고 수료 행 id만 읽는다. 수료 행을 먼저 잠근 뒤 제출을 읽기 위해서다.
+	 * 제출 엔티티를 영속성 컨텍스트에 올리지 않고 그 제출의 수료 행 id만 읽는다. 제출이 없으면 빈 값이다.
 	 */
 	@Query("select s.graduationId from GraduationSubmission s where s.id = :id")
 	Optional<Long> findGraduationIdById(Long id);

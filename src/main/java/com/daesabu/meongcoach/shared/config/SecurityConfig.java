@@ -62,7 +62,6 @@ public class SecurityConfig {
 
 	private static final String[] API_DOCS_PATHS = {"/swagger-ui/**"};
 
-	// 운영자 경로는 JWT 대신 WebConfig의 AdminKeyInterceptor가 X-Admin-Key로 지킨다
 	private static final String ADMIN_PATHS = "/api/admin/**";
 
 	@Bean

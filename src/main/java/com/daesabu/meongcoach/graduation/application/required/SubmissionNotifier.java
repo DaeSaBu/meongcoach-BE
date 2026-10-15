@@ -7,7 +7,6 @@ public interface SubmissionNotifier {
 
 	/**
 	 * 제출 한 건을 운영자 채널에 알린다. 알림 대상이 설정되지 않았거나 전송에 실패해도 예외를 던지지 않는다.
-	 * 알림은 검수를 돕는 부가 기능이라 제출을 실패시키지 않기 위해서다.
 	 */
 	void notifySubmitted(SubmissionNotice notice);
 }

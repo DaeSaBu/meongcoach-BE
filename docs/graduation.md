@@ -48,7 +48,9 @@ AI 분석 소비자(`VideoUploadSqsConsumer`)가 `videos/training/` 접두사만
 - 만료 시각은 `max(지금, 이 회원이 이전에 받은 보상의 가장 늦은 만료 시각) + 3일`입니다(`RewardPolicy`).
 - 지급은 `EntitlementGranter`가 RevenueCat v2 `POST /projects/{projectId}/customers/{userId}/actions/grant_entitlement`(본문 `entitlement_id`, `expires_at` 밀리초)를 종류마다 부르고, 이어서 이용권 동기화로 서버 DB에 반영합니다. 서버 DB에만 넣으면 다음 동기화가 RevenueCat에 없는 이용권을 만료시키기 때문입니다.
 - RevenueCat에 고객이 없으면(앱에서 구매 SDK를 한 번도 초기화하지 않은 회원) 404가 오므로, `POST /projects/{projectId}/customers`로 고객을 만든 뒤 한 번 다시 지급합니다.
-- RevenueCat은 같은 이용권을 더 늦은 만료 시각으로 다시 지급하면 연장하지만, 기존 지급의 만료와 2시간 이내로 가까우면 중복으로 보고 무시합니다. 보상은 3일 단위로 이어 붙으므로 문제가 되지 않습니다.
+- RevenueCat은 같은 이용권을 더 늦은 만료 시각으로 다시 지급하면 연장하지만, 기존 지급의 만료와 2시간 이내로 가까우면 중복으로 보고 무시합니다. 보상은 3일 단위로 이어 붙으므로 평소에는 문제가 되지 않습니다.
+- 부분 실패 뒤 곧바로 다시 받으면, 앞서 성공한 종류는 만료 시각이 몇 초만 달라 중복이 됩니다. 이때 RevenueCat이 409를 돌려주면 `RevenueCatEntitlementGranter`는 이미 지급된 것으로 보고 다음 종류로 넘어갑니다. 중복 요청의 실제 응답 코드는 dev 프로젝트에서 확인해 이 문단을 갱신합니다.
+- AI 분석 SQS 소비자(`VideoUploadSqsConsumer`)는 같은 버킷의 실습 영상 이벤트를 받지만 `videos/training/` 접두사가 아니면 건너뜁니다.
 - 네 종류가 모두 성공하고 동기화까지 끝난 뒤에만 받은 시각을 기록합니다. 도중에 실패하면 502(`ENTITLEMENT_PROVIDER_UNAVAILABLE`)이고 받지 않은 상태로 남으며, 다시 누르면 그 시점 기준으로 다시 계산해 네 종류를 다시 지급합니다.
 - 보상 받기는 회원 ID advisory lock(`pg_advisory_xact_lock`)으로 직렬화합니다. 이용권 동기화와 같은 키라 같은 트랜잭션 안에서 다시 잡아도 막히지 않고, 두 토픽을 동시에 받아도 3일씩 이어 붙습니다.
 - 이미 받았으면 지급하지 않고 저장된 값을 돌려줍니다(멱등).

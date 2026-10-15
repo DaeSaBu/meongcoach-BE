@@ -16,7 +16,6 @@ public class AppVersionFilter extends OncePerRequestFilter {
 
 	private static final String API_PATH_PREFIX = "/api/";
 	private static final String HEALTH_PATH = "/api/health";
-	// 운영자가 curl로 부르는 경로라 앱 버전 헤더를 요구하지 않는다
 	private static final String ADMIN_PATH_PREFIX = "/api/admin/";
 
 	private final AppVersionProperties properties;
