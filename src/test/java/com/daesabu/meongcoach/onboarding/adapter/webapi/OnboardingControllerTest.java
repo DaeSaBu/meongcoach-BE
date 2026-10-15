@@ -138,9 +138,11 @@ class OnboardingControllerTest {
 						requestFields(
 								fieldWithPath("nickname").description("사용자 닉네임. 필수 입력, 최대 50자"),
 								fieldWithPath("birthDate").description("사용자 생년월일. 과거 날짜, 선택 입력").optional(),
-								fieldWithPath("mbti").description("사용자 MBTI 코드. 필수 입력"),
+								fieldWithPath("mbti").description("사용자 MBTI 코드. 최대 4자, 선택 입력. 미입력·null·공백은 미입력으로 저장")
+										.optional(),
 								fieldWithPath("gender").description(
-										"사용자 성별. `MALE`/`FEMALE`/`NONE`(응답 안 함). 필수 입력"),
+										"사용자 성별. `MALE`/`FEMALE`/`NONE`(응답 안 함). 최대 10자, 선택 입력. "
+												+ "미입력·null·공백은 미입력으로 저장").optional(),
 								fieldWithPath("profileImageUrl").description(
 										"사용자 프로필 이미지 공개 URL. 이미지 업로드 URL 발급 API의 "
 												+ "publicUrl. 최대 512자, 선택 입력").optional(),
@@ -314,55 +316,47 @@ class OnboardingControllerTest {
 	}
 
 	@Test
-	void MBTI가_null이면_검증에_실패한다() throws Exception {
-		String request = COMPLETE_REQUEST.replace("\"mbti\": \"INTJ\"", "\"mbti\": null");
+	void MBTI와_성별을_보내지_않아도_온보딩을_완료한다() throws Exception {
+		String request = COMPLETE_REQUEST.replace("\"mbti\": \"INTJ\",", "")
+				.replace("\"gender\": \"FEMALE\",", "");
 
 		mockMvc.perform(post("/api/onboarding")
 						.principal(() -> "1")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(request))
-				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
-				.andExpect(jsonPath("$.errors[0].field").value("mbti"));
+				.andExpect(status().isCreated());
+
+		assertThat(onboardingCompleter.lastInfo.mbti()).isNull();
+		assertThat(onboardingCompleter.lastInfo.gender()).isNull();
 	}
 
 	@Test
-	void MBTI가_공백이면_검증에_실패한다() throws Exception {
-		String request = COMPLETE_REQUEST.replace("\"mbti\": \"INTJ\"", "\"mbti\": \"   \"");
+	void MBTI와_성별이_null_또는_공백이면_미입력으로_전달한다() throws Exception {
+		String request = COMPLETE_REQUEST.replace("\"mbti\": \"INTJ\"", "\"mbti\": null")
+				.replace("\"gender\": \"FEMALE\"", "\"gender\": \"   \"");
 
 		mockMvc.perform(post("/api/onboarding")
 						.principal(() -> "1")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(request))
-				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
-				.andExpect(jsonPath("$.errors[0].field").value("mbti"));
+				.andExpect(status().isCreated());
+
+		assertThat(onboardingCompleter.lastInfo.mbti()).isNull();
+		assertThat(onboardingCompleter.lastInfo.gender()).isNull();
 	}
 
 	@Test
-	void 성별이_null이면_검증에_실패한다() throws Exception {
-		String request = COMPLETE_REQUEST.replace("\"gender\": \"FEMALE\"", "\"gender\": null");
+	void MBTI가_4자를_넘으면_검증에_실패한다() throws Exception {
+		String request = COMPLETE_REQUEST.replace("\"mbti\": \"INTJ\"", "\"mbti\": \"INTJX\"");
 
-		mockMvc.perform(post("/api/onboarding")
-						.principal(() -> "1")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content(request))
-				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
-				.andExpect(jsonPath("$.errors[0].field").value("gender"));
+		assertValidationFails(request, "mbti");
 	}
 
 	@Test
-	void 성별이_공백이면_검증에_실패한다() throws Exception {
-		String request = COMPLETE_REQUEST.replace("\"gender\": \"FEMALE\"", "\"gender\": \"   \"");
+	void 성별이_10자를_넘으면_검증에_실패한다() throws Exception {
+		String request = COMPLETE_REQUEST.replace("\"gender\": \"FEMALE\"", "\"gender\": \"FEMALEFEMALE\"");
 
-		mockMvc.perform(post("/api/onboarding")
-						.principal(() -> "1")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content(request))
-				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
-				.andExpect(jsonPath("$.errors[0].field").value("gender"));
+		assertValidationFails(request, "gender");
 	}
 
 	@Test
