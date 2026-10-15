@@ -8,8 +8,10 @@ import com.daesabu.meongcoach.training.application.provided.dto.TrainingCatalogR
 import com.daesabu.meongcoach.training.application.provided.dto.TrainingCatalogResult.CatalogLesson;
 import com.daesabu.meongcoach.training.application.provided.dto.TrainingCatalogResult.CatalogTopic;
 import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 final class CatalogBuilder {
@@ -51,13 +53,13 @@ final class CatalogBuilder {
 	}
 
 	static Set<Long> completed(long... lessonIds) {
-		return java.util.Arrays.stream(lessonIds).boxed().collect(java.util.stream.Collectors.toSet());
+		return Arrays.stream(lessonIds).boxed().collect(Collectors.toSet());
 	}
 
 	static Set<Long> allLessonsOf(long curriculumId, int lessonCount) {
 		return IntStream.rangeClosed(1, lessonCount)
 				.mapToObj(order -> lessonId(curriculumId, order))
-				.collect(java.util.stream.Collectors.toSet());
+				.collect(Collectors.toSet());
 	}
 
 	static DogProfileResult dog(Integer ageInMonths, boolean estimated) {
