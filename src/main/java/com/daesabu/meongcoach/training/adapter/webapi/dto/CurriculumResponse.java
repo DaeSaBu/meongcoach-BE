@@ -1,7 +1,7 @@
 package com.daesabu.meongcoach.training.adapter.webapi.dto;
 
 import com.daesabu.meongcoach.training.domain.Curriculum;
-import com.daesabu.meongcoach.training.domain.CurriculumStatus;
+import com.daesabu.meongcoach.training.domain.shared.CurriculumStatus;
 import java.util.Set;
 
 public record CurriculumResponse(Long curriculumId, String curriculumTitle, int totalLessons, int completedLessons,

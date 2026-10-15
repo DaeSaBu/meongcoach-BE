@@ -3,6 +3,7 @@ package com.daesabu.meongcoach.training.domain;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;
+import com.daesabu.meongcoach.training.domain.shared.CurriculumStatus;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
