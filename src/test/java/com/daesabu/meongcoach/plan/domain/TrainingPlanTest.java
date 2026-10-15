@@ -98,6 +98,17 @@ class TrainingPlanTest {
 	}
 
 	@Test
+	void 포기했거나_완료한_플랜은_다시_포기할_수_없다() {
+		TrainingPlan abandoned = TrainingPlan.create(command(2, draft("제목", "목표", "이유")));
+		abandoned.abandon();
+		TrainingPlan completed = TrainingPlan.create(command(2, draft("제목", "목표", "이유")));
+		completed.complete(PlanOutcome.ACHIEVED, LocalDateTime.of(2026, 10, 10, 9, 0));
+
+		assertThatThrownBy(abandoned::abandon).isInstanceOf(PlanNotActiveException.class);
+		assertThatThrownBy(completed::abandon).isInstanceOf(PlanNotActiveException.class);
+	}
+
+	@Test
 	void 완료하면_결과와_완료_시각을_기록한다() {
 		TrainingPlan plan = TrainingPlan.create(command(2, draft("제목", "목표", "이유")));
 		LocalDateTime now = LocalDateTime.of(2026, 10, 10, 9, 0);

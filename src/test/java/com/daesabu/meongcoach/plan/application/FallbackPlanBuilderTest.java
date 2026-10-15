@@ -43,6 +43,22 @@ class FallbackPlanBuilderTest {
 	}
 
 	@Test
+	void 입력_카탈로그가_뒤섞여_있어도_카테고리와_토픽_정렬_순서로_재정렬한다() {
+		TrainingCatalogResult catalog = catalog(
+				category(2L, EntitlementType.JUNIOR,
+						topic(4L, "배변", curriculum(41L, "배변 기초", 1, 1)),
+						topic(3L, "기다려", curriculum(31L, "기다려 기초", 1, 1))),
+				category(1L, EntitlementType.PUPPY,
+						topic(2L, "산책", curriculum(21L, "산책 기초", 1, 1)),
+						topic(1L, "앉기", curriculum(11L, "앉기 기초", 1, 1))));
+
+		FallbackResult result = builder.buildManual(context(7, catalog, Set.of()), List.of(4L, 3L, 2L, 1L));
+
+		assertThat(result.draft().weeks()).extracting(WeekDraft::curriculumIds)
+				.containsExactly(List.of(11L, 21L), List.of(31L, 41L));
+	}
+
+	@Test
 	void 완료한_커리큘럼은_뒤로_보낸다() {
 		TrainingCatalogResult catalog = twoTopicCatalog();
 		Set<Long> done = allLessonsOf(11L, 1);
