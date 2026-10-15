@@ -105,6 +105,14 @@ class EvoLinkPlanGeneratorTest {
 	}
 
 	@Test
+	void 응답이_없으면_생성_실패로_번역한다() {
+		given(structuredChatCompleter.complete(any())).willReturn(null);
+
+		assertThatThrownBy(() -> generator().generate(context(), ""))
+				.isInstanceOf(PlanGenerationFailedException.class);
+	}
+
+	@Test
 	void 모델_호출_예외는_원인을_보존해_생성_실패로_번역한다() {
 		StructuredChatCompletionFailedException cause = new StructuredChatCompletionFailedException("호출 실패");
 		given(structuredChatCompleter.complete(any())).willThrow(cause);
