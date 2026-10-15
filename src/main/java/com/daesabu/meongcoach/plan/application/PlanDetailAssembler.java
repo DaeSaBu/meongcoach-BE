@@ -66,7 +66,7 @@ final class PlanDetailAssembler {
 			Set<Long> completedLessonIds) {
 		Optional<CatalogEntry> found = catalog.findCurriculum(item.getCurriculumId());
 		if (found.isEmpty()) {
-			log.warn("플랜 항목의 커리큘럼이 카탈로그에 없어 제외합니다. planId={}, curriculumId={}",
+			log.debug("플랜 항목의 커리큘럼이 카탈로그에 없어 제외합니다. planId={}, curriculumId={}",
 					item.getPlan().getId(), item.getCurriculumId());
 			return Optional.empty();
 		}
@@ -77,7 +77,7 @@ final class PlanDetailAssembler {
 				.count();
 		Item result = new Item(entry.curriculum().id(), entry.curriculum().title(), entry.topic().id(),
 				entry.topic().title(), totalLessons, completedLessons,
-				CurriculumStatus.of(totalLessons, completedLessons));
+				CurriculumStatus.of(totalLessons, completedLessons), entry.curriculum().locked());
 		return Optional.of(new ResolvedItem(entry, result));
 	}
 
@@ -104,7 +104,7 @@ final class PlanDetailAssembler {
 				.findFirst()
 				.map(lesson -> new Today(item.result().curriculumId(), item.result().curriculumTitle(),
 						item.result().topicId(), item.result().topicTitle(), lesson.id(), lesson.title(),
-						lesson.estimatedMinutes()));
+						lesson.estimatedMinutes(), item.result().locked()));
 	}
 
 	private static int expectedWeekNo(TrainingPlan plan, LocalDate today) {

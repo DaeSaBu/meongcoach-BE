@@ -16,13 +16,13 @@ public record PlanDetailResult(Long id, Long dogId, String dogName, PlanMode mod
 	}
 
 	public record Today(Long curriculumId, String curriculumTitle, Long topicId, String topicTitle, Long lessonId,
-			String lessonTitle, Integer estimatedMinutes) {
+			String lessonTitle, Integer estimatedMinutes, boolean locked) {
 	}
 
 	public record Week(int weekNo, String theme, String milestone, CurriculumStatus status, List<Item> items) {
 	}
 
 	public record Item(Long curriculumId, String curriculumTitle, Long topicId, String topicTitle, int totalLessons,
-			int completedLessons, CurriculumStatus status) {
+			int completedLessons, CurriculumStatus status, boolean locked) {
 	}
 }

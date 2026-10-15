@@ -34,14 +34,14 @@ public record PlanDetailResponse(Long planId, Long dogId, String dogName, PlanMo
 	}
 
 	public record TodayResponse(Long curriculumId, String curriculumTitle, Long topicId, String topicTitle,
-			Long lessonId, String lessonTitle, Integer estimatedMinutes) {
+			Long lessonId, String lessonTitle, Integer estimatedMinutes, boolean locked) {
 
 		static TodayResponse from(PlanDetailResult.Today today) {
 			if (today == null) {
 				return null;
 			}
 			return new TodayResponse(today.curriculumId(), today.curriculumTitle(), today.topicId(),
-					today.topicTitle(), today.lessonId(), today.lessonTitle(), today.estimatedMinutes());
+					today.topicTitle(), today.lessonId(), today.lessonTitle(), today.estimatedMinutes(), today.locked());
 		}
 	}
 
@@ -57,11 +57,11 @@ public record PlanDetailResponse(Long planId, Long dogId, String dogName, PlanMo
 	}
 
 	public record ItemResponse(Long curriculumId, String curriculumTitle, Long topicId, String topicTitle,
-			int totalLessons, int completedLessons, CurriculumStatus status) {
+			int totalLessons, int completedLessons, CurriculumStatus status, boolean locked) {
 
 		static ItemResponse from(PlanDetailResult.Item item) {
 			return new ItemResponse(item.curriculumId(), item.curriculumTitle(), item.topicId(), item.topicTitle(),
-					item.totalLessons(), item.completedLessons(), item.status());
+					item.totalLessons(), item.completedLessons(), item.status(), item.locked());
 		}
 	}
 }
