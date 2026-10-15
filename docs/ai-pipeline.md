@@ -38,6 +38,31 @@ VideoUploadSqsConsumer                      (ai/adapter/consumer)
 - **제목 200자 규칙은 `AiReport` 도메인이 단일 소유합니다** (`TITLE_MAX_LENGTH`). 프롬프트나 어댑터에서 길이를 중복 강제하지 않습니다. 제목 생성 실패는 부가 정보 실패라 리포트 저장을 막지 않습니다.
 - **추천 교육은 모델이 `topicId`를 돌려주고 서버가 교육 목록에 있는 id인지 검증합니다.** 교육 이름은 카테고리 간에 중복되므로("앉아"가 101·1101) 이름→id 역매핑이 불가능합니다. 그래서 프롬프트의 교육 목록에 id를 함께 넣고 응답 스키마에 `topicId`를 required로 둡니다. 목록에 없는 id는 `VideoAnalysisFailedException`(→ `FAILED_ANALYSIS`)이고, 도입 전에 저장된 리포트의 `topicId`는 null입니다.
 
+## 플랜 생성(동기)
+
+맞춤 플랜의 AI 생성(`POST /api/plans`, `mode = AI`)은 리포트 파이프라인과 달리 요청 안에서 모델을 부르고 응답을 기다립니다. 비동기 큐·상태 폴링은 없습니다.
+
+```
+PlanGenerateService.create                          (plan — 트랜잭션 없음)
+  → 요청 검증 · 활성 플랜 충돌 확인                    (모델 호출 전에 409로 끝냄)
+  → PlanGenerationContext 조립                       (강아지·기대사항·이력·열린 카탈로그)
+  → 열린 커리큘럼 < 2 이면 모델 없이 대체 플랜
+  → PlanGenerator.generate(context, "")              (EvoLinkPlanGenerator → StructuredChatCompleter)
+  → PlanValidator.validateDraft                      (주차 2·weekNo 1,2·주차마다 1개 이상·카탈로그 존재·중복 없음·공백 아님)
+     위반 → 위반 목록을 피드백으로 붙여 1회만 재시도 → 다시 위반이면 대체 플랜
+  → PlanGenerationFailedException                    (호출·해석 실패. 재시도 없이 warn 로그 후 대체 플랜)
+  → PlanStoreService.store                           (짧은 @Transactional. generator = AI 또는 FALLBACK)
+```
+
+- **재시도는 검증 실패에만 1회입니다.** 호출 자체가 실패(네트워크·content_filter·length·JSON 아님)하면 같은 요청이 다시 실패할 가능성이 커서 바로 대체합니다.
+- **대체 플랜(`FallbackPlanBuilder.buildFallback`, `generator = FALLBACK`)은 기대사항을 쓰지 않고** 월령에 맞는 생애주기의 첫 미완료 토픽 1~2개로 만듭니다. 대체로 넘어간 이유는 warn 로그에만 남고 사용자 응답은 정상 플랜입니다.
+- **`PlanGenerateService`는 의도적으로 트랜잭션이 없습니다.** 모델 호출이 수십 초 걸려 트랜잭션을 걸면 호출 내내 DB 커넥션을 점유합니다. 저장만 `PlanStoreService`의 짧은 트랜잭션에서 합니다.
+- **문자열 길이는 검증하지 않고 `TrainingPlan.create`가 저장 시 자릅니다.** 프롬프트가 한도(20/60/150/20/40자)를 알려 주지만 어겨도 재시도하지 않습니다.
+- **기대사항은 사용자 자유 입력이라 참고 정보로만 씁니다.** 사용자 프롬프트에는 따옴표로 감싸 넣고, 시스템 프롬프트가 지시로 해석하지 않도록 못 박습니다. 템플릿 치환은 한 번의 패스라 기대사항 안의 `{{...}}`가 다시 치환되지 않습니다.
+- 모델·온도·토큰 설정은 `meongcoach.ai.evolink`를 그대로 씁니다. 응답 시간 목표는 p95 20초이고, 넘으면 영상 리포트처럼 폴링으로 바꿉니다.
+
+프롬프트는 `prompts/plan-generation/{system.md, user.md, schema.json}`에 있습니다. `system.md`의 `## 페르소나` 절은 말투·존댓말·이름 부르기·단정하지 않기만 담아, 이후 챗봇 기본 프롬프트로 떼어 쓸 수 있게 분리했습니다. `user.md`의 `{{dog}} {{owner}} {{history}} {{catalog}} {{retryFeedback}}`은 `EvoLinkPlanGenerator`가 기동 시 모두 있는지 검증합니다.
+
 ## EvoLink 연동 (ai/adapter/integration)
 
 - OpenAI 호환 chat API를 씁니다. 멀티모달(영상) 호출은 `api.evolink.ai`가 주력 엔드포인트입니다.
@@ -47,7 +72,7 @@ VideoUploadSqsConsumer                      (ai/adapter/consumer)
 
 ## 프롬프트 템플릿 (src/main/resources/prompts/)
 
-`{video-analysis,report-title}/{system.md, user.md, schema.json}` 구조입니다.
+`{video-analysis,report-title,plan-generation}/{system.md, user.md, schema.json}` 구조입니다.
 
 - `PromptLoader`가 기동 시점에 읽어 검증합니다 — 파일이 없거나 비어 있으면 **애플리케이션이 기동하지 않습니다.**
 - `schema.json`은 strict 모드로 응답 형태를 강제하므로, 프롬프트에서 출력 형식을 바꾸려면 스키마를 함께 수정해야 합니다.
