@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Past;
+import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
@@ -52,15 +53,16 @@ public record OnboardingCompleteRequest(
 			@NotBlank @Size(max = 50) String name,
 			@NotBlank @Size(max = 30) String breed,
 			@NotBlank String sex,
-			@Past LocalDate birthDate,
-			@NotNull @Positive BigDecimal weightKg,
+			@PastOrPresent LocalDate birthDate,
+			Boolean birthDateEstimated,
+			@Positive BigDecimal weightKg,
 			Set<String> personalities,
 			@Size(max = 512) String profileImageUrl,
 			@Size(max = 500) String expectation) {
 
 		public DogRegisterInfo toInfo() {
-			return new DogRegisterInfo(name, breed, sex, birthDate, null, weightKg, personalities, profileImageUrl,
-					expectation);
+			return new DogRegisterInfo(name, breed, sex, birthDate, birthDateEstimated, weightKg, personalities,
+					profileImageUrl, expectation);
 		}
 	}
 }

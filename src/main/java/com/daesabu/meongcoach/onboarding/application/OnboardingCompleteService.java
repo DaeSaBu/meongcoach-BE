@@ -11,10 +11,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * 온보딩 완료를 오케스트레이션한다. 입력에 포함된 외부 자원을 검증한 뒤,
- * 프로필과 강아지 생성을 하나의 트랜잭션으로 묶어 부분 성공이 남지 않게 한다.
- */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -35,9 +31,6 @@ public class OnboardingCompleteService implements OnboardingCompleter {
 				.map(dog -> dogRegister.register(userId, dog))
 				.toList();
 	}
-
-	// 업로드 완료 알림 없이 클라이언트가 보낸 URL을 믿는 방식이라,
-	// 우리 스토리지 URL인지 저장 전에 검증한다
 	private void validateImageUrls(OnboardingCompleteInfo info) {
 		storedImageUrlValidator.validate(info.profileImageUrl());
 		info.dogs().forEach(dog -> storedImageUrlValidator.validate(dog.profileImageUrl()));
