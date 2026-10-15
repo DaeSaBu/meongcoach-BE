@@ -26,7 +26,10 @@ public class FallbackPlanBuilder {
 	private static final int WEEKS = 2;
 
 	public FallbackResult buildManual(PlanGenerationContext context, List<Long> topicIds) {
-		List<CatalogTopic> allTopics = allTopics(context.catalog().categories());
+		List<CatalogCategory> sortedCategories = context.catalog().categories().stream()
+				.sorted(Comparator.comparingInt(CatalogCategory::sortOrder))
+				.toList();
+		List<CatalogTopic> allTopics = allTopics(sortedCategories);
 		topicIds.stream()
 				.filter(topicId -> allTopics.stream().noneMatch(topic -> topic.id().equals(topicId)))
 				.findFirst()
@@ -137,13 +140,15 @@ public class FallbackPlanBuilder {
 
 	private String goal(List<CatalogTopic> topics, int durationWeeks) {
 		String joined = joinTitles(topics);
-		return durationWeeks + "주 동안 " + joined + KoreanParticle.objectOf(joined) + " 차근차근 익혀요";
+		String particle = KoreanParticle.objectOf(joined);
+		return durationWeeks + "주 동안 " + joined + particle + " 차근차근 익혀요";
 	}
 
 	private String reason(PlanGenerationContext context, List<CatalogTopic> topics) {
 		String joined = joinTitles(topics);
+		String particle = KoreanParticle.objectOf(joined);
 		String subject = subject(context);
-		return "이렇게 짰어요: " + joined + KoreanParticle.objectOf(joined) + " " + subject
+		return "이렇게 짰어요: " + joined + particle + " " + subject
 				+ "에게 맞게 기초부터 단계별로 이어지도록 묶고, 하루 " + context.dailyMinutes() + "분 · 주 "
 				+ context.daysPerWeek() + "일에 맞췄어요.";
 	}
@@ -168,7 +173,8 @@ public class FallbackPlanBuilder {
 				.map(LifeStage::toEntitlementType)
 				.toList();
 		return categories.stream()
-				.sorted(Comparator.comparingInt(category -> rank(order, category)))
+				.sorted(Comparator.comparingInt((CatalogCategory category) -> rank(order, category))
+						.thenComparingInt(CatalogCategory::sortOrder))
 				.toList();
 	}
 
@@ -182,7 +188,8 @@ public class FallbackPlanBuilder {
 
 	private List<CatalogTopic> allTopics(List<CatalogCategory> categories) {
 		return categories.stream()
-				.flatMap(category -> category.topics().stream())
+				.flatMap(category -> category.topics().stream()
+						.sorted(Comparator.comparingInt(CatalogTopic::sortOrder)))
 				.toList();
 	}
 

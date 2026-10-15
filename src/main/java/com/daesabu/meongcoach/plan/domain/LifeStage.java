@@ -55,21 +55,21 @@ public enum LifeStage {
 			return "3개월 미만";
 		}
 		if (ageInMonths < 6) {
-			return "3~5개월";
+			return "3~6개월";
 		}
 		if (ageInMonths < JUNIOR_FROM_MONTHS) {
-			return "6~11개월";
+			return "6개월~1살";
 		}
 		if (ageInMonths < ADULT_FROM_MONTHS) {
-			return "1살(12~23개월)";
+			return "1~2살";
 		}
 		if (ageInMonths < 60) {
-			return "2~4살(24~59개월)";
+			return "2~5살";
 		}
 		if (ageInMonths < SENIOR_FROM_MONTHS) {
-			return "5~7살(60~95개월)";
+			return "5~8살";
 		}
-		return "8살 이상(96개월 이상)";
+		return "8살 이상";
 	}
 
 	public EntitlementType toEntitlementType() {
