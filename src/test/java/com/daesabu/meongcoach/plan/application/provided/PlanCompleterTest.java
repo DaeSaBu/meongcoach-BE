@@ -48,6 +48,17 @@ class PlanCompleterTest extends PlanApplicationTestSupport {
 	}
 
 	@Test
+	void 같은_토픽의_커리큘럼이_여럿이어도_토픽은_한_번만_반영한다() {
+		Long planId = createManualPlan(sitTopicId);
+
+		PlanCompletionResult result = planCompleter.complete(userId, planId, new PlanCompleteRequest("ACHIEVED"));
+
+		assertThat(result.totalCurriculums()).isEqualTo(2);
+		assertThat(result.reflectedTopics()).hasSize(1);
+		assertThat(result.reflectedTopics().getFirst().topicId()).isEqualTo(sitTopicId);
+	}
+
+	@Test
 	void 일부_달성으로_마무리해도_배운_토픽에_누적된다() {
 		Long planId = createManualPlan(sitTopicId);
 

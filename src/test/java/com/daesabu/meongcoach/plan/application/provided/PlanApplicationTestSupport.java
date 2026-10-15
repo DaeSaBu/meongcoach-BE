@@ -102,6 +102,20 @@ abstract class PlanApplicationTestSupport {
 		return trainingPlanRepository.findByUserIdAndStatus(userId, status);
 	}
 
+	protected Long saveSecondDog() {
+		Dog first = dogRepository.findAllByUserIdOrderByIdAsc(userId).getFirst();
+		DogRegisterCommand command = new DogRegisterCommand(userId, "보리", Breed.of(RegisteredBreed.POODLE), DogSex.FEMALE,
+				LocalDate.now().minusMonths(30), false, new BigDecimal("5.5"), null, ORIGINAL_EXPECTATION);
+		Dog second = dogRepository.save(new Dogs(List.of(first)).register(command));
+		entityManager.flush();
+		entityManager.clear();
+		return second.getId();
+	}
+
+	protected PlanCreateRequest manualRequestFor(Long targetDogId, boolean replace, Long... topicIds) {
+		return new PlanCreateRequest(targetDogId, "MANUAL", List.of(topicIds), null, 10, 3, replace);
+	}
+
 	private void seedUser() {
 		User user = userRepository.save(User.registerUser());
 		userProfileRepository.save(UserProfile.create(user,

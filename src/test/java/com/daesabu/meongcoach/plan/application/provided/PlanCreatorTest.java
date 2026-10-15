@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.then;
 
 import com.daesabu.meongcoach.ai.application.required.StructuredChatClient;
+import com.daesabu.meongcoach.dog.application.provided.DogProfileDeleter;
 import com.daesabu.meongcoach.dog.domain.exception.DogNotFoundException;
 import com.daesabu.meongcoach.plan.application.provided.dto.PlanCreateRequest;
 import com.daesabu.meongcoach.plan.application.provided.dto.PlanDetailResult;
@@ -29,6 +30,9 @@ class PlanCreatorTest extends PlanApplicationTestSupport {
 
 	@Autowired
 	private PlanCreator planCreator;
+
+	@Autowired
+	private DogProfileDeleter dogProfileDeleter;
 
 	@Autowired
 	private StructuredChatClient structuredChatClient;
@@ -94,6 +98,30 @@ class PlanCreatorTest extends PlanApplicationTestSupport {
 		List<TrainingPlan> active = plansOf(PlanStatus.ACTIVE);
 		assertThat(active).hasSize(1);
 		assertThat(active.getFirst().curriculumIds()).containsExactly(comeBasicId);
+	}
+
+	@Test
+	void 진행_중_플랜의_강아지가_삭제됐으면_교체하지_않아도_포기하고_새_플랜을_만든다() {
+		Long secondDogId = saveSecondDog();
+		planCreator.create(userId, manualRequest(false, sitTopicId));
+		dogProfileDeleter.delete(userId, dogId);
+		entityManager.flush();
+		entityManager.clear();
+
+		PlanDetailResult result = planCreator.create(userId, manualRequestFor(secondDogId, false, comeTopicId));
+
+		assertThat(result.dogId()).isEqualTo(secondDogId);
+		assertThat(plansOf(PlanStatus.ABANDONED)).hasSize(1);
+		assertThat(plansOf(PlanStatus.ACTIVE)).hasSize(1);
+	}
+
+	@Test
+	void 진행_중_플랜의_강아지가_있으면_다른_강아지로도_교체하지_않으면_충돌한다() {
+		Long secondDogId = saveSecondDog();
+		planCreator.create(userId, manualRequest(false, sitTopicId));
+
+		assertThatThrownBy(() -> planCreator.create(userId, manualRequestFor(secondDogId, false, comeTopicId)))
+				.isInstanceOf(PlanAlreadyActiveException.class);
 	}
 
 	@Test

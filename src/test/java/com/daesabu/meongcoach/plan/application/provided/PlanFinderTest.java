@@ -2,6 +2,7 @@ package com.daesabu.meongcoach.plan.application.provided;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.daesabu.meongcoach.dog.application.provided.DogProfileDeleter;
 import com.daesabu.meongcoach.plan.application.provided.dto.CurrentPlanResult;
 import com.daesabu.meongcoach.plan.application.provided.dto.PlanDetailResult;
 import com.daesabu.meongcoach.plan.domain.PlanOutcome;
@@ -21,6 +22,9 @@ class PlanFinderTest extends PlanApplicationTestSupport {
 
 	@Autowired
 	private PlanCreator planCreator;
+
+	@Autowired
+	private DogProfileDeleter dogProfileDeleter;
 
 	@Autowired
 	private LessonProgressUpdater lessonProgressUpdater;
@@ -63,13 +67,41 @@ class PlanFinderTest extends PlanApplicationTestSupport {
 	}
 
 	@Test
-	void 포기한_플랜은_완료_이력으로_세지_않는다() {
+	void 포기한_플랜만_있으면_완료_이력이_없다() {
+		planCreator.create(userId, manualRequest(false, sitTopicId));
+		planCreator.create(userId, manualRequest(true, comeTopicId));
+		plansOf(PlanStatus.ACTIVE).getFirst().abandon();
+
+		CurrentPlanResult result = planFinder.findCurrent(userId);
+
+		assertThat(plansOf(PlanStatus.ABANDONED)).hasSize(2);
+		assertThat(result.plan()).isNull();
+		assertThat(result.hasCompletedPlan()).isFalse();
+	}
+
+	@Test
+	void 포기한_플랜이_있어도_완료한_플랜이_있으면_완료_이력이_있다() {
 		planCreator.create(userId, manualRequest(false, sitTopicId));
 		planCreator.create(userId, manualRequest(true, comeTopicId));
 		plansOf(PlanStatus.ACTIVE).getFirst().complete(PlanOutcome.ACHIEVED, LocalDateTime.now());
 
 		assertThat(planFinder.findCurrent(userId).hasCompletedPlan()).isTrue();
 		assertThat(plansOf(PlanStatus.ABANDONED)).hasSize(1);
+	}
+
+	@Test
+	void 진행_중_플랜의_강아지가_삭제됐으면_플랜은_null이고_완료_이력은_그대로다() {
+		Long secondDogId = saveSecondDog();
+		planCreator.create(userId, manualRequest(false, sitTopicId));
+		dogProfileDeleter.delete(userId, dogId);
+		entityManager.flush();
+		entityManager.clear();
+
+		CurrentPlanResult result = planFinder.findCurrent(userId);
+
+		assertThat(result.plan()).isNull();
+		assertThat(result.hasCompletedPlan()).isFalse();
+		assertThat(secondDogId).isNotEqualTo(dogId);
 	}
 
 	@Test
