@@ -154,10 +154,10 @@ public class TrainingPlan extends BaseEntity {
 	}
 
 	static String truncate(String value, int maxLength) {
-		if (value.length() <= maxLength) {
+		if (value.codePointCount(0, value.length()) <= maxLength) {
 			return value;
 		}
-		return value.substring(0, maxLength);
+		return value.substring(0, value.offsetByCodePoints(0, maxLength));
 	}
 
 	private void addWeek(WeekDraft draft) {
