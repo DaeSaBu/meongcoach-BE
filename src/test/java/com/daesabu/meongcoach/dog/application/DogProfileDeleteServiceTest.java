@@ -151,7 +151,7 @@ class DogProfileDeleteServiceTest {
 
 	private Dog newDog(Long userId) {
 		Dog dog = Dog.register(new DogRegisterCommand(userId, "초코", Breed.of(RegisteredBreed.POODLE), DogSex.MALE,
-				LocalDate.of(2024, 3, 1), new BigDecimal("4.50"), IMAGE_URL, EXPECTATION));
+				LocalDate.of(2024, 3, 1), false, new BigDecimal("4.50"), IMAGE_URL, EXPECTATION));
 		dog.changePersonalities(Set.of(Personality.FRIENDLY));
 		return dog;
 	}

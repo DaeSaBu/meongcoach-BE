@@ -140,7 +140,7 @@ class DogRepositoryTest {
 	@Test
 	void 직접_입력한_견종은_입력한_이름으로_breed_컬럼에_저장한다() {
 		Dog dog = Dog.register(new DogRegisterCommand(USER_ID, "초코", Breed.from("삽살개"), DogSex.MALE,
-				LocalDate.of(2024, 3, 1), new BigDecimal("4.50"), IMAGE_URL, null));
+				LocalDate.of(2024, 3, 1), false, new BigDecimal("4.50"), IMAGE_URL, null));
 		Long dogId = dogRepository.saveAndFlush(dog).getId();
 		entityManager.clear();
 
@@ -167,6 +167,6 @@ class DogRepositoryTest {
 
 	private Dog newDog(Long userId) {
 		return Dog.register(new DogRegisterCommand(userId, "초코", Breed.of(RegisteredBreed.POODLE), DogSex.MALE,
-				LocalDate.of(2024, 3, 1), new BigDecimal("4.50"), IMAGE_URL, null));
+				LocalDate.of(2024, 3, 1), false, new BigDecimal("4.50"), IMAGE_URL, null));
 	}
 }
