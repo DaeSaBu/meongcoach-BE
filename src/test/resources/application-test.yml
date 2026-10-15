@@ -47,6 +47,10 @@ meongcoach:
       temperature: 0
       thinking: disabled
       video-fps: 1
+  plan:
+    generation:
+      call-timeout: PT30S
+      total-budget: PT75S
   jwt:
     secret: meongcoach-test-only-jwt-secret-key-32b
   social:

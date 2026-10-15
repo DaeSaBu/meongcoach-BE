@@ -58,7 +58,6 @@ import org.springframework.test.web.servlet.MockMvc;
 @AutoConfigureRestDocs
 class DogControllerTest {
 
-	// 컨트롤러 슬라이스에는 필터 체인이 없으므로 인증 주체를 요청에 직접 실어 보낸다 (test-convention.md)
 	private static final Principal CURRENT_USER = () -> "42";
 
 	private static final String IMAGE_URL = "https://images.test.meongcoach.com/images/dog-profile/42/a.jpg";
@@ -72,6 +71,7 @@ class DogControllerTest {
 			  "breed": "POODLE",
 			  "sex": "MALE",
 			  "birthDate": "2024-03-01",
+			  "birthDateEstimated": true,
 			  "weightKg": 4.5,
 			  "personalities": ["TIMID", "FRIENDLY"],
 			  "profileImageUrl": "%s",
@@ -84,6 +84,7 @@ class DogControllerTest {
 			  "breed": "MALTESE",
 			  "sex": "FEMALE",
 			  "birthDate": "2023-01-15",
+			  "birthDateEstimated": true,
 			  "weightKg": 3.2,
 			  "personalities": ["TIMID", "LIVELY"],
 			  "profileImageUrl": "%s",
@@ -124,6 +125,8 @@ class DogControllerTest {
 				.andExpect(jsonPath("$.sex").value("MALE"))
 				.andExpect(jsonPath("$.birthDate").value("2024-03-01"))
 				.andExpect(jsonPath("$.age").isNumber())
+				.andExpect(jsonPath("$.birthDateEstimated").value(true))
+				.andExpect(jsonPath("$.ageInMonths").isNumber())
 				.andExpect(jsonPath("$.weightKg").value(4.5))
 				.andExpect(jsonPath("$.status").value("SELECTED"))
 				.andExpect(jsonPath("$.profileImageUrl").value(IMAGE_URL))
@@ -136,8 +139,11 @@ class DogControllerTest {
 								fieldWithPath("breed").description("필수 입력. 견종 코드(온보딩 메타데이터 breeds의 code)"),
 								fieldWithPath("sex").description("필수 입력. 성별(MALE, FEMALE)"),
 								fieldWithPath("birthDate").optional()
-										.description("생년월일(yyyy-MM-dd, 과거 날짜). 나이 미상이면 생략하거나 null"),
-								fieldWithPath("weightKg").description("필수 입력. 몸무게(kg, 양수)"),
+										.description("생년월일(yyyy-MM-dd, 오늘 이전 또는 오늘). 나이 미상이면 생략하거나 null"),
+								fieldWithPath("birthDateEstimated").optional()
+										.description("생년월일을 추정했는지 여부. 생략하거나 null이면 false"),
+								fieldWithPath("weightKg").optional()
+										.description("몸무게(kg, 양수). 모르면 생략하거나 null"),
 								fieldWithPath("personalities").optional()
 										.description("성격 코드 목록(온보딩 메타데이터 personalities의 code). 생략하거나 null이면 빈 목록으로 저장"),
 								fieldWithPath("profileImageUrl").optional()
@@ -156,7 +162,10 @@ class DogControllerTest {
 										.description("생년월일(yyyy-MM-dd). 나이 미상이면 null"),
 								fieldWithPath("age").optional()
 										.description("생년월일로 계산한 만 나이. 나이 미상이면 null"),
-								fieldWithPath("weightKg").description("몸무게(kg)"),
+								fieldWithPath("birthDateEstimated").description("생년월일을 추정했는지 여부"),
+								fieldWithPath("ageInMonths").optional()
+										.description("생년월일로 계산한 월령. 나이 미상이면 null"),
+								fieldWithPath("weightKg").optional().description("몸무게(kg). 입력하지 않았으면 null"),
 								fieldWithPath("status").description(
 										"선택 상태(SELECTED, UNSELECTED). 선택된 강아지가 없을 때 등록하면 SELECTED"),
 								fieldWithPath("profileImageUrl")
@@ -183,7 +192,7 @@ class DogControllerTest {
 		ArgumentCaptor<DogRegisterInfo> captor = ArgumentCaptor.forClass(DogRegisterInfo.class);
 		then(dogRegister).should().register(eq(42L), captor.capture());
 		assertThat(captor.getValue()).isEqualTo(new DogRegisterInfo("초코", "POODLE", "MALE",
-				LocalDate.of(2024, 3, 1), new BigDecimal("4.5"), Set.of("TIMID", "FRIENDLY"), IMAGE_URL, EXPECTATION));
+				LocalDate.of(2024, 3, 1), true, new BigDecimal("4.5"), Set.of("TIMID", "FRIENDLY"), IMAGE_URL, EXPECTATION));
 		then(dogProfileFinder).should().findDog(42L, 10L);
 	}
 
@@ -201,6 +210,62 @@ class DogControllerTest {
 		ArgumentCaptor<DogRegisterInfo> captor = ArgumentCaptor.forClass(DogRegisterInfo.class);
 		then(dogRegister).should().register(eq(42L), captor.capture());
 		assertThat(captor.getValue().personalities()).isNull();
+	}
+
+	@Test
+	void 몸무게_없이도_201과_null_몸무게를_반환한다() throws Exception {
+		given(dogRegister.register(eq(42L), any(DogRegisterInfo.class))).willReturn(10L);
+		given(dogProfileFinder.findDog(42L, 10L)).willReturn(selectedDogWithoutWeight(10L));
+
+		mockMvc.perform(post("/api/dogs")
+						.principal(CURRENT_USER)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(REGISTER_BODY.replace("\"weightKg\": 4.5,", "")))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.weightKg").value(nullValue()));
+
+		ArgumentCaptor<DogRegisterInfo> captor = ArgumentCaptor.forClass(DogRegisterInfo.class);
+		then(dogRegister).should().register(eq(42L), captor.capture());
+		assertThat(captor.getValue().weightKg()).isNull();
+	}
+
+	@Test
+	void 생년월일이_오늘이어도_등록할_수_있다() throws Exception {
+		given(dogRegister.register(eq(42L), any(DogRegisterInfo.class))).willReturn(10L);
+		given(dogProfileFinder.findDog(42L, 10L)).willReturn(selectedDog(10L));
+
+		mockMvc.perform(post("/api/dogs")
+						.principal(CURRENT_USER)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(REGISTER_BODY.replace("2024-03-01", LocalDate.now().toString())))
+				.andExpect(status().isCreated());
+	}
+
+	@Test
+	void 생년월일이_내일이면_등록은_검증에_실패한다() throws Exception {
+		mockMvc.perform(post("/api/dogs")
+						.principal(CURRENT_USER)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(REGISTER_BODY.replace("2024-03-01", LocalDate.now().plusDays(1).toString())))
+				.andExpect(status().isBadRequest());
+
+		then(dogRegister).shouldHaveNoInteractions();
+	}
+
+	@Test
+	void 생년월일_추정_여부를_생략하면_null로_등록을_위임한다() throws Exception {
+		given(dogRegister.register(eq(42L), any(DogRegisterInfo.class))).willReturn(10L);
+		given(dogProfileFinder.findDog(42L, 10L)).willReturn(selectedDog(10L));
+
+		mockMvc.perform(post("/api/dogs")
+						.principal(CURRENT_USER)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(REGISTER_BODY.replace("\"birthDateEstimated\": true,", "")))
+				.andExpect(status().isCreated());
+
+		ArgumentCaptor<DogRegisterInfo> captor = ArgumentCaptor.forClass(DogRegisterInfo.class);
+		then(dogRegister).should().register(eq(42L), captor.capture());
+		assertThat(captor.getValue().birthDateEstimated()).isNull();
 	}
 
 	@Test
@@ -297,6 +362,8 @@ class DogControllerTest {
 				.andExpect(jsonPath("$.dogs[1].status").value("UNSELECTED"))
 				.andExpect(jsonPath("$.dogs[1].birthDate").value(nullValue()))
 				.andExpect(jsonPath("$.dogs[1].age").value(nullValue()))
+				.andExpect(jsonPath("$.dogs[1].ageInMonths").value(nullValue()))
+				.andExpect(jsonPath("$.dogs[1].birthDateEstimated").value(false))
 				.andExpect(jsonPath("$.dogs[1].personalities").isEmpty())
 				.andDo(document("dog/list",
 						responseFields(
@@ -311,7 +378,10 @@ class DogControllerTest {
 										.description("생년월일(yyyy-MM-dd). 나이 미상이면 null"),
 								fieldWithPath("dogs[].age").optional()
 										.description("생년월일로 계산한 만 나이. 나이 미상이면 null"),
-								fieldWithPath("dogs[].weightKg").description("몸무게(kg)"),
+								fieldWithPath("dogs[].birthDateEstimated").description("생년월일을 추정했는지 여부"),
+								fieldWithPath("dogs[].ageInMonths").optional()
+										.description("생년월일로 계산한 월령. 나이 미상이면 null"),
+								fieldWithPath("dogs[].weightKg").optional().description("몸무게(kg). 입력하지 않았으면 null"),
 								fieldWithPath("dogs[].status").description("선택 상태(SELECTED, UNSELECTED). 사용자당 SELECTED는 한 마리"),
 								fieldWithPath("dogs[].profileImageUrl")
 										.description("프로필 이미지 공개 URL. 등록하지 않았으면 빈 문자열"),
@@ -386,7 +456,10 @@ class DogControllerTest {
 										.description("생년월일(yyyy-MM-dd). 나이 미상이면 null"),
 								fieldWithPath("age").optional()
 										.description("생년월일로 계산한 만 나이. 나이 미상이면 null"),
-								fieldWithPath("weightKg").description("몸무게(kg)"),
+								fieldWithPath("birthDateEstimated").description("생년월일을 추정했는지 여부"),
+								fieldWithPath("ageInMonths").optional()
+										.description("생년월일로 계산한 월령. 나이 미상이면 null"),
+								fieldWithPath("weightKg").optional().description("몸무게(kg). 입력하지 않았으면 null"),
 								fieldWithPath("status").description("선택 상태(SELECTED, UNSELECTED). 사용자당 SELECTED는 한 마리"),
 								fieldWithPath("profileImageUrl")
 										.description("프로필 이미지 공개 URL. 등록하지 않았으면 빈 문자열"),
@@ -542,8 +615,11 @@ class DogControllerTest {
 								fieldWithPath("breed").description("필수 입력. 견종 코드(온보딩 메타데이터 breeds의 code)"),
 								fieldWithPath("sex").description("필수 입력. 성별(MALE, FEMALE)"),
 								fieldWithPath("birthDate").optional()
-										.description("생년월일(yyyy-MM-dd, 과거 날짜). 나이 미상이면 생략하거나 null"),
-								fieldWithPath("weightKg").description("필수 입력. 몸무게(kg, 양수)"),
+										.description("생년월일(yyyy-MM-dd, 오늘 이전 또는 오늘). 나이 미상이면 생략하거나 null"),
+								fieldWithPath("birthDateEstimated").optional()
+										.description("생년월일을 추정했는지 여부. 생략하거나 null이면 false"),
+								fieldWithPath("weightKg").optional()
+										.description("몸무게(kg, 양수). 모르면 생략하거나 null"),
 								fieldWithPath("personalities").optional()
 										.description("성격 코드 목록(온보딩 메타데이터 personalities의 code). 생략하거나 null이면 빈 목록으로 저장"),
 								fieldWithPath("profileImageUrl").optional()
@@ -562,7 +638,10 @@ class DogControllerTest {
 										.description("생년월일(yyyy-MM-dd). 나이 미상이면 null"),
 								fieldWithPath("age").optional()
 										.description("생년월일로 계산한 만 나이. 나이 미상이면 null"),
-								fieldWithPath("weightKg").description("몸무게(kg)"),
+								fieldWithPath("birthDateEstimated").description("생년월일을 추정했는지 여부"),
+								fieldWithPath("ageInMonths").optional()
+										.description("생년월일로 계산한 월령. 나이 미상이면 null"),
+								fieldWithPath("weightKg").optional().description("몸무게(kg). 입력하지 않았으면 null"),
 								fieldWithPath("status").description("선택 상태(SELECTED, UNSELECTED). 수정으로 바뀌지 않음"),
 								fieldWithPath("profileImageUrl")
 										.description("프로필 이미지 공개 URL. 등록하지 않았으면 빈 문자열"),
@@ -585,7 +664,37 @@ class DogControllerTest {
 				.andExpect(status().isOk());
 
 		then(dogProfileUpdater).should().update(42L, 10L, new DogProfileUpdateCommand("보리", Breed.MALTESE,
-				DogSex.FEMALE, LocalDate.of(2023, 1, 15), new BigDecimal("3.2"),
+				DogSex.FEMALE, LocalDate.of(2023, 1, 15), true, new BigDecimal("3.2"),
+				Set.of(Personality.TIMID, Personality.LIVELY), NEW_IMAGE_URL, NEW_EXPECTATION));
+	}
+
+	@Test
+	void 몸무게_없이_수정하면_null_몸무게로_수정을_위임한다() throws Exception {
+		given(dogProfileUpdater.update(eq(42L), eq(10L), any(DogProfileUpdateCommand.class))).willReturn(updatedDog(10L));
+
+		mockMvc.perform(put("/api/dogs/{dogId}", 10L)
+						.principal(CURRENT_USER)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(UPDATE_BODY.replace("\"weightKg\": 3.2,", "")))
+				.andExpect(status().isOk());
+
+		then(dogProfileUpdater).should().update(42L, 10L, new DogProfileUpdateCommand("보리", Breed.MALTESE,
+				DogSex.FEMALE, LocalDate.of(2023, 1, 15), true, null,
+				Set.of(Personality.TIMID, Personality.LIVELY), NEW_IMAGE_URL, NEW_EXPECTATION));
+	}
+
+	@Test
+	void 생년월일_추정_여부를_생략하면_false로_수정을_위임한다() throws Exception {
+		given(dogProfileUpdater.update(eq(42L), eq(10L), any(DogProfileUpdateCommand.class))).willReturn(updatedDog(10L));
+
+		mockMvc.perform(put("/api/dogs/{dogId}", 10L)
+						.principal(CURRENT_USER)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(UPDATE_BODY.replace("\"birthDateEstimated\": true,", "")))
+				.andExpect(status().isOk());
+
+		then(dogProfileUpdater).should().update(42L, 10L, new DogProfileUpdateCommand("보리", Breed.MALTESE,
+				DogSex.FEMALE, LocalDate.of(2023, 1, 15), false, new BigDecimal("3.2"),
 				Set.of(Personality.TIMID, Personality.LIVELY), NEW_IMAGE_URL, NEW_EXPECTATION));
 	}
 
@@ -600,7 +709,7 @@ class DogControllerTest {
 				.andExpect(status().isOk());
 
 		then(dogProfileUpdater).should().update(42L, 10L, new DogProfileUpdateCommand("보리", Breed.MALTESE,
-				DogSex.FEMALE, LocalDate.of(2023, 1, 15), new BigDecimal("3.2"), Set.of(), NEW_IMAGE_URL,
+				DogSex.FEMALE, LocalDate.of(2023, 1, 15), true, new BigDecimal("3.2"), Set.of(), NEW_IMAGE_URL,
 				NEW_EXPECTATION));
 	}
 
@@ -750,28 +859,34 @@ class DogControllerTest {
 		then(dogProfileDeleter).shouldHaveNoInteractions();
 	}
 
-	// 슬라이스 테스트는 DB를 거치지 않아 JPA가 id를 채우지 않으므로, 응답의 dogId를 검증하려면 리플렉션으로 주입한다
 	private Dog selectedDog(Long id) {
 		Dog dog = Dog.register(new DogRegisterCommand(42L, "초코", Breed.POODLE, DogSex.MALE,
-				LocalDate.of(2024, 3, 1), new BigDecimal("4.50"), IMAGE_URL, EXPECTATION));
+				LocalDate.of(2024, 3, 1), true, new BigDecimal("4.50"), IMAGE_URL, EXPECTATION));
 		dog.select();
 		dog.changePersonalities(Set.of(Personality.FRIENDLY, Personality.TIMID));
 		ReflectionTestUtils.setField(dog, "id", id);
 		return dog;
 	}
 
-	private Dog selectedDogWithoutImage(Long id) {
+	private Dog selectedDogWithoutWeight(Long id) {
 		Dog dog = Dog.register(new DogRegisterCommand(42L, "초코", Breed.POODLE, DogSex.MALE,
-				LocalDate.of(2024, 3, 1), new BigDecimal("4.50"), null, EXPECTATION));
+				LocalDate.of(2024, 3, 1), true, null, IMAGE_URL, EXPECTATION));
 		dog.select();
 		ReflectionTestUtils.setField(dog, "id", id);
 		return dog;
 	}
 
-	// 수정 서비스가 돌려주는, 요청 본문대로 교체된 강아지
+	private Dog selectedDogWithoutImage(Long id) {
+		Dog dog = Dog.register(new DogRegisterCommand(42L, "초코", Breed.POODLE, DogSex.MALE,
+				LocalDate.of(2024, 3, 1), false, new BigDecimal("4.50"), null, EXPECTATION));
+		dog.select();
+		ReflectionTestUtils.setField(dog, "id", id);
+		return dog;
+	}
+
 	private Dog updatedDog(Long id) {
 		Dog dog = Dog.register(new DogRegisterCommand(42L, "보리", Breed.MALTESE, DogSex.FEMALE,
-				LocalDate.of(2023, 1, 15), new BigDecimal("3.20"), NEW_IMAGE_URL, NEW_EXPECTATION));
+				LocalDate.of(2023, 1, 15), true, new BigDecimal("3.20"), NEW_IMAGE_URL, NEW_EXPECTATION));
 		dog.select();
 		dog.changePersonalities(Set.of(Personality.TIMID, Personality.LIVELY));
 		ReflectionTestUtils.setField(dog, "id", id);
@@ -780,7 +895,7 @@ class DogControllerTest {
 
 	private Dog unselectedDog(Long id) {
 		Dog dog = Dog.register(new DogRegisterCommand(42L, "보리", Breed.MALTESE, DogSex.FEMALE,
-				null, new BigDecimal("3.20"), "", null));
+				null, false, new BigDecimal("3.20"), "", null));
 		ReflectionTestUtils.setField(dog, "id", id);
 		return dog;
 	}

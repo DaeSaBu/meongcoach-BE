@@ -4,7 +4,7 @@ import com.daesabu.meongcoach.dog.domain.Dog;
 import com.daesabu.meongcoach.dog.domain.DogProfileUpdateCommand;
 
 /**
- * 강아지 프로필 수정 능력. dog 모듈 내부(webapi)에서만 호출하므로 문자열 입력 record 없이 도메인 Command를 받는다.
+ * 강아지 프로필 수정 능력.
  */
 public interface DogProfileUpdater {
 
@@ -13,4 +13,10 @@ public interface DogProfileUpdater {
 	 * 없거나 본인 소유가 아니면 {@code DogNotFoundException}을 던진다.
 	 */
 	Dog update(Long userId, Long dogId, DogProfileUpdateCommand command);
+
+	/**
+	 * 사용자가 소유한 강아지의 교육 기대 사항만 바꾼다. null은 빈 문자열로 저장한다.
+	 * 없거나 본인 소유가 아니면 {@code DogNotFoundException}을 던진다.
+	 */
+	void updateExpectation(Long userId, Long dogId, String expectation);
 }

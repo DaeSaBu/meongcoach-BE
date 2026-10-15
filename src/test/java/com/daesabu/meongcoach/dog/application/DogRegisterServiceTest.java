@@ -43,7 +43,7 @@ class DogRegisterServiceTest {
 	}
 
 	private DogRegisterInfo registerInfo(String sex, Set<String> personalities) {
-		return new DogRegisterInfo("초코", "POODLE", sex, LocalDate.of(2024, 3, 1),
+		return new DogRegisterInfo("초코", "POODLE", sex, LocalDate.of(2024, 3, 1), null,
 				new BigDecimal("4.50"), personalities, null, null);
 	}
 
@@ -92,7 +92,7 @@ class DogRegisterServiceTest {
 
 	@Test
 	void 생년월일이_없어도_등록할_수_있다() {
-		DogRegisterInfo info = new DogRegisterInfo("초코", "POODLE", "MALE", null,
+		DogRegisterInfo info = new DogRegisterInfo("초코", "POODLE", "MALE", null, null,
 				new BigDecimal("4.50"), Set.of(), null, null);
 
 		Long dogId = service.register(1L, info);
@@ -102,9 +102,33 @@ class DogRegisterServiceTest {
 	}
 
 	@Test
+	void 생년월일_추정_여부를_저장하고_전달하지_않으면_false로_저장한다() {
+		DogRegisterInfo estimated = new DogRegisterInfo("초코", "POODLE", "MALE", LocalDate.of(2024, 3, 1), true,
+				new BigDecimal("4.50"), Set.of(), null, null);
+
+		Long estimatedId = service.register(1L, estimated);
+		Long defaultId = service.register(1L, registerInfo("MALE", Set.of()));
+
+		assertThat(dogRepository.findById(estimatedId).orElseThrow().isBirthDateEstimated()).isTrue();
+		assertThat(dogRepository.findById(defaultId).orElseThrow().isBirthDateEstimated()).isFalse();
+	}
+
+	@Test
+	void 몸무게가_없어도_등록할_수_있다() {
+		DogRegisterInfo info = new DogRegisterInfo("초코", "POODLE", "MALE", null, null, null, Set.of(), null, null);
+
+		Long dogId = service.register(1L, info);
+		entityManager.flush();
+		entityManager.clear();
+
+		Dog dog = dogRepository.findById(dogId).orElseThrow();
+		assertThat(dog.getWeightKg()).isNull();
+	}
+
+	@Test
 	void 프로필_이미지_URL을_함께_저장한다() {
 		String imageUrl = "https://images.test.meongcoach.com/images/dog-profile/1/a.jpg";
-		DogRegisterInfo info = new DogRegisterInfo("초코", "POODLE", "MALE", null,
+		DogRegisterInfo info = new DogRegisterInfo("초코", "POODLE", "MALE", null, null,
 				new BigDecimal("4.50"), Set.of(), imageUrl, null);
 
 		Long dogId = service.register(1L, info);
@@ -123,7 +147,7 @@ class DogRegisterServiceTest {
 
 	@Test
 	void 기대_사항을_함께_저장한다() {
-		DogRegisterInfo info = new DogRegisterInfo("초코", "POODLE", "MALE", null,
+		DogRegisterInfo info = new DogRegisterInfo("초코", "POODLE", "MALE", null, null,
 				new BigDecimal("4.50"), Set.of(), null, "보호자와 즐겁게 교육받고 싶어요.");
 
 		Long dogId = service.register(1L, info);
@@ -142,7 +166,7 @@ class DogRegisterServiceTest {
 
 	@Test
 	void 잘못된_견종_값이면_등록에_실패한다() {
-		DogRegisterInfo info = new DogRegisterInfo("초코", "UNKNOWN", "MALE", null,
+		DogRegisterInfo info = new DogRegisterInfo("초코", "UNKNOWN", "MALE", null, null,
 				new BigDecimal("4.50"), Set.of(), null, null);
 
 		assertThatThrownBy(() -> service.register(1L, info))
@@ -151,7 +175,7 @@ class DogRegisterServiceTest {
 
 	@Test
 	void 견종_값이_없으면_등록에_실패한다() {
-		DogRegisterInfo info = new DogRegisterInfo("초코", null, "MALE", null,
+		DogRegisterInfo info = new DogRegisterInfo("초코", null, "MALE", null, null,
 				new BigDecimal("4.50"), Set.of(), null, null);
 
 		assertThatThrownBy(() -> service.register(1L, info))

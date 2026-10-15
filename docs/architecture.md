@@ -19,6 +19,7 @@ com.daesabu.meongcoach
 ├── media        ← 이미지·영상 업로드 URL 발급 (R2/S3)
 ├── onboarding   ← 온보딩 흐름 조합
 ├── entitlement  ← 이용권 동기화. RevenueCat 활성 이용권의 사본을 둠
+├── plan         ← 맞춤 플랜 (생성·현재 플랜 조회·마무리). AI 생성은 ai의 StructuredChatCompleter에 의존
 ├── health       ← 서비스 상태 확인
 └── shared       ← 횡단 관심사 (config / security / webapi / exception / domain)
 ```

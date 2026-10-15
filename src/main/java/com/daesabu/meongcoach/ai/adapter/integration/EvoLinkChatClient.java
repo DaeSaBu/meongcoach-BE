@@ -3,10 +3,14 @@ package com.daesabu.meongcoach.ai.adapter.integration;
 import com.daesabu.meongcoach.ai.adapter.integration.dto.EvoLinkChatRequest;
 import com.daesabu.meongcoach.ai.adapter.integration.dto.EvoLinkChatResponse;
 import java.time.Duration;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.http.client.ClientHttpRequestFactoryBuilder;
 import org.springframework.boot.http.client.HttpClientSettings;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
@@ -27,27 +31,35 @@ class EvoLinkChatClient {
 
 	private final EvoLinkProperties properties;
 	private final RestClient restClient;
+	private final Function<Duration, RestClient> timeoutClientFactory;
+	private final Map<Duration, RestClient> timeoutClients = new ConcurrentHashMap<>();
 
 	// 생성자가 둘이라 주입 대상을 명시한다
 	@Autowired
 	EvoLinkChatClient(EvoLinkProperties properties, RestClient.Builder restClientBuilder) {
-		this(properties, restClientBuilder
-				.requestFactory(ClientHttpRequestFactoryBuilder.detect()
-						.build(HttpClientSettings.defaults()
-								.withConnectTimeout(CONNECT_TIMEOUT)
-								.withReadTimeout(properties.responseTimeout())))
-				.build());
+		this(properties, buildRestClient(restClientBuilder.clone(), properties.responseTimeout()),
+				timeout -> buildRestClient(restClientBuilder.clone(), timeout));
 	}
 
 	// MockRestServiceServer로 응답을 가로챌 수 있도록 완성된 RestClient를 직접 받는 통로를 둔다.
 	// baseUrl·인증 헤더를 빌더 기본값이 아니라 요청 코드에서 붙이는 것도 이 경로에서 같이 검증되게 하기 위해서다
 	EvoLinkChatClient(EvoLinkProperties properties, RestClient restClient) {
+		this(properties, restClient, timeout -> restClient);
+	}
+
+	EvoLinkChatClient(EvoLinkProperties properties, RestClient restClient,
+			Function<Duration, RestClient> timeoutClientFactory) {
 		this.properties = properties;
 		this.restClient = restClient;
+		this.timeoutClientFactory = timeoutClientFactory;
 	}
 
 	String complete(EvoLinkChatRequest request) {
-		EvoLinkChatResponse response = restClient.post()
+		return complete(request, null);
+	}
+
+	String complete(EvoLinkChatRequest request, Duration readTimeout) {
+		EvoLinkChatResponse response = clientFor(readTimeout).post()
 				.uri(properties.baseUrl() + CHAT_COMPLETIONS_PATH)
 				.headers(headers -> headers.setBearerAuth(properties.apiKey()))
 				.contentType(MediaType.APPLICATION_JSON)
@@ -55,6 +67,21 @@ class EvoLinkChatClient {
 				.retrieve()
 				.body(EvoLinkChatResponse.class);
 		return extractContent(response);
+	}
+
+	private RestClient clientFor(Duration readTimeout) {
+		if (readTimeout == null) {
+			return restClient;
+		}
+		return timeoutClients.computeIfAbsent(readTimeout, timeoutClientFactory);
+	}
+
+	private static RestClient buildRestClient(RestClient.Builder builder, Duration readTimeout) {
+		HttpClientSettings settings = HttpClientSettings.defaults()
+				.withConnectTimeout(CONNECT_TIMEOUT)
+				.withReadTimeout(readTimeout);
+		ClientHttpRequestFactory requestFactory = ClientHttpRequestFactoryBuilder.detect().build(settings);
+		return builder.requestFactory(requestFactory).build();
 	}
 
 	private static String extractContent(EvoLinkChatResponse response) {

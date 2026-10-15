@@ -17,7 +17,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 class DogsTest {
 
 	private static final DogRegisterCommand COMMAND = new DogRegisterCommand(1L, "초코", Breed.POODLE, DogSex.MALE,
-			LocalDate.of(2024, 3, 1), new BigDecimal("4.50"), null, null);
+			LocalDate.of(2024, 3, 1), false, new BigDecimal("4.50"), null, null);
 
 	@Test
 	void 강아지가_5마리면_더_등록할_수_없다() {
@@ -116,7 +116,6 @@ class DogsTest {
 		return dog;
 	}
 
-	// 순수 단위 테스트라 JPA가 id를 채우지 않으므로, 삭제 대상 조회를 검증하려면 리플렉션으로 주입한다
 	private Dog unselectedDog(Long id) {
 		Dog dog = Dog.register(COMMAND);
 		ReflectionTestUtils.setField(dog, "id", id);

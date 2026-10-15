@@ -1,8 +1,5 @@
-package com.daesabu.meongcoach.training.domain;
+package com.daesabu.meongcoach.training.domain.shared;
 
-/**
- * 레슨 완료 수로부터 계산하는 커리큘럼 진행 상태.
- */
 public enum CurriculumStatus {
 	NOT_STARTED,
 	IN_PROGRESS,

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.daesabu.meongcoach.dog.application.provided.DogProfileFinder;
+import com.daesabu.meongcoach.dog.application.provided.DogProfileResult;
 import com.daesabu.meongcoach.dog.application.required.DogRepository;
 import com.daesabu.meongcoach.dog.domain.Dog;
 import com.daesabu.meongcoach.dog.domain.DogRegisterCommand;
@@ -13,9 +14,11 @@ import com.daesabu.meongcoach.dog.domain.Dogs;
 import com.daesabu.meongcoach.dog.domain.exception.DogNotFoundException;
 import com.daesabu.meongcoach.dog.domain.shared.Breed;
 import com.daesabu.meongcoach.dog.domain.shared.Personality;
+import com.daesabu.meongcoach.shared.config.ClockConfig;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,7 +26,7 @@ import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.context.annotation.Import;
 
 @DataJpaTest
-@Import(DogProfileFinderService.class)
+@Import({DogProfileFinderService.class, ClockConfig.class})
 class DogProfileFinderServiceTest {
 
 	private static final Long USER_ID = 42L;
@@ -78,6 +81,73 @@ class DogProfileFinderServiceTest {
 	}
 
 	@Test
+	void 프로필을_표시용_결과로_반환한다() {
+		Dog saved = persistSelectedDog(USER_ID);
+
+		DogProfileResult result = dogProfileFinder.findProfile(USER_ID, saved.getId());
+
+		assertThat(result.id()).isEqualTo(saved.getId());
+		assertThat(result.name()).isEqualTo("초코");
+		assertThat(result.birthDate()).isEqualTo(LocalDate.of(2024, 3, 1));
+		assertThat(result.birthDateEstimated()).isTrue();
+		assertThat(result.ageInMonths()).isEqualTo(saved.getAgeInMonths());
+		assertThat(result.breedLabel()).isEqualTo("푸들");
+		assertThat(result.sex()).isEqualTo("MALE");
+		assertThat(result.personalityLabels()).containsExactly("친화적");
+		assertThat(result.weightKg()).isEqualByComparingTo("4.50");
+		assertThat(result.expectation()).isEqualTo(EXPECTATION);
+	}
+
+	@Test
+	void 생년월일과_몸무게가_없는_프로필은_해당_값이_null이다() {
+		Dog dog = Dog.register(new DogRegisterCommand(USER_ID, "초코", Breed.POODLE, DogSex.FEMALE, null, false, null,
+				null, null));
+		Dog saved = dogRepository.saveAndFlush(dog);
+
+		DogProfileResult result = dogProfileFinder.findProfile(USER_ID, saved.getId());
+
+		assertThat(result.birthDate()).isNull();
+		assertThat(result.ageInMonths()).isNull();
+		assertThat(result.weightKg()).isNull();
+		assertThat(result.birthDateEstimated()).isFalse();
+		assertThat(result.personalityLabels()).isEmpty();
+		assertThat(result.expectation()).isEmpty();
+	}
+
+	@Test
+	void 다른_사용자의_강아지_프로필을_조회하면_예외를_던진다() {
+		Dog othersDog = persistSelectedDog(OTHER_USER_ID);
+
+		assertThatThrownBy(() -> dogProfileFinder.findProfile(USER_ID, othersDog.getId()))
+				.isInstanceOf(DogNotFoundException.class);
+	}
+
+	@Test
+	void 없는_강아지_ID로_프로필을_조회하면_예외를_던진다() {
+		assertThatThrownBy(() -> dogProfileFinder.findProfile(USER_ID, 999L))
+				.isInstanceOf(DogNotFoundException.class);
+	}
+
+	@Test
+	void 있는_강아지는_프로필을_Optional로_반환한다() {
+		Dog saved = persistSelectedDog(USER_ID);
+
+		Optional<DogProfileResult> result = dogProfileFinder.findProfileIfPresent(USER_ID, saved.getId());
+
+		assertThat(result).isPresent();
+		assertThat(result.get().id()).isEqualTo(saved.getId());
+		assertThat(result.get().name()).isEqualTo("초코");
+	}
+
+	@Test
+	void 없거나_다른_사용자의_강아지는_예외_없이_빈_값을_반환한다() {
+		Dog othersDog = persistSelectedDog(OTHER_USER_ID);
+
+		assertThat(dogProfileFinder.findProfileIfPresent(USER_ID, othersDog.getId())).isEmpty();
+		assertThat(dogProfileFinder.findProfileIfPresent(USER_ID, 999L)).isEmpty();
+	}
+
+	@Test
 	void 다른_사용자의_강아지_ID로_조회하면_예외를_던진다() {
 		Dog othersDog = persistSelectedDog(OTHER_USER_ID);
 
@@ -114,7 +184,7 @@ class DogProfileFinderServiceTest {
 	@Test
 	void 선택된_강아지의_프로필_이미지가_없으면_빈_문자열을_가진다() {
 		Dog dog = Dog.register(new DogRegisterCommand(USER_ID, "초코", Breed.POODLE, DogSex.MALE,
-				LocalDate.of(2024, 3, 1), new BigDecimal("4.50"), null, null));
+				LocalDate.of(2024, 3, 1), false, new BigDecimal("4.50"), null, null));
 		dog.select();
 		dogRepository.saveAndFlush(dog);
 
@@ -170,7 +240,6 @@ class DogProfileFinderServiceTest {
 
 	@Test
 	void 삭제된_강아지는_선택_조회에서_제외된다() {
-		// 남는 강아지는 미선택이라 선택 조회 대상이 되지 않는다
 		Dog remaining = dogRepository.saveAndFlush(newDog(USER_ID));
 		Dog deleted = persistSelectedDog(USER_ID);
 		new Dogs(List.of(remaining, deleted)).delete(deleted.getId());
@@ -188,7 +257,7 @@ class DogProfileFinderServiceTest {
 
 	private Dog newDog(Long userId) {
 		Dog dog = Dog.register(new DogRegisterCommand(userId, "초코", Breed.POODLE, DogSex.MALE,
-				LocalDate.of(2024, 3, 1), new BigDecimal("4.50"), IMAGE_URL, EXPECTATION));
+				LocalDate.of(2024, 3, 1), true, new BigDecimal("4.50"), IMAGE_URL, EXPECTATION));
 		dog.changePersonalities(Set.of(Personality.FRIENDLY));
 		return dog;
 	}
