@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.daesabu.meongcoach.dog.domain.exception.DogNotFoundException;
-import com.daesabu.meongcoach.plan.application.FallbackPlanBuilder.FallbackResult;
 import com.daesabu.meongcoach.plan.application.provided.dto.PlanCreateRequest;
 import com.daesabu.meongcoach.plan.application.required.TrainingPlanRepository;
 import com.daesabu.meongcoach.plan.domain.PlanDraft;
@@ -47,7 +46,7 @@ class PlanStoreServiceRollbackTest {
 				draft)));
 		PlanCreateRequest request = new PlanCreateRequest(ABSENT_DOG_ID, "AI", null, "산책 예절을 배우고 싶어요", 10, 3,
 				true);
-		FallbackResult result = new FallbackResult(draft, 1, null, PlanGeneratorType.FALLBACK);
+		GeneratedPlan result = new GeneratedPlan(draft, 1, null, PlanGeneratorType.FALLBACK);
 
 		assertThatThrownBy(() -> planStoreService.store(USER_ID, PlanMode.AI, request, result, "{}"))
 				.isInstanceOf(DogNotFoundException.class);

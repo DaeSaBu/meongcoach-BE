@@ -82,6 +82,9 @@ public class EvoLinkPlanGenerator implements PlanGenerator {
 	}
 
 	private PlanDraft parseDraft(String content) {
+		if (content == null || content.isBlank()) {
+			throw new PlanGenerationFailedException("플랜 생성 응답이 비어 있습니다");
+		}
 		DraftContent draft;
 		try {
 			draft = objectMapper.readValue(content, DraftContent.class);
