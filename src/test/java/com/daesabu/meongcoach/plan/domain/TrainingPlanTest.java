@@ -37,6 +37,20 @@ class TrainingPlanTest {
 	}
 
 	@Test
+	void 이모지가_섞인_문자열은_코드포인트_단위로_잘라_깨지지_않는다() {
+		PlanDraft draft = new PlanDraft("🐶".repeat(25), "🐕".repeat(70), "🦴".repeat(160),
+				List.of(new WeekDraft(1, "🐾".repeat(25), "⭐".repeat(30) + "🏆".repeat(30), List.of(10L))));
+
+		TrainingPlan plan = TrainingPlan.create(command(1, draft));
+
+		assertThat(plan.getTitle()).isEqualTo("🐶".repeat(20));
+		assertThat(plan.getGoal()).isEqualTo("🐕".repeat(60));
+		assertThat(plan.getReason()).isEqualTo("🦴".repeat(150));
+		assertThat(plan.getWeeks().getFirst().getTheme()).isEqualTo("🐾".repeat(20));
+		assertThat(plan.getWeeks().getFirst().getMilestone()).isEqualTo("⭐".repeat(30) + "🏆".repeat(10));
+	}
+
+	@Test
 	void 문자열은_컬럼_길이에_맞게_자른다() {
 		PlanDraft draft = new PlanDraft("가".repeat(30), "나".repeat(80), "다".repeat(200),
 				List.of(new WeekDraft(1, "라".repeat(30), "마".repeat(60), List.of(10L))));

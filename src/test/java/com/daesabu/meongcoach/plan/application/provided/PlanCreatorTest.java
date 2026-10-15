@@ -76,6 +76,30 @@ class PlanCreatorTest extends PlanApplicationTestSupport {
 	}
 
 	@Test
+	void 직접_고르기가_보낸_기대사항은_무시하고_저장하지_않는다() {
+		PlanCreateRequest request = new PlanCreateRequest(dogId, "MANUAL", List.of(sitTopicId), NEW_EXPECTATION, 10, 3,
+				false);
+
+		planCreator.create(userId, request);
+
+		TrainingPlan saved = plansOf(PlanStatus.ACTIVE).getFirst();
+		assertThat(saved.getInterviewJson()).doesNotContain(NEW_EXPECTATION).contains("\"expectation\":null");
+		assertThat(dogRepository.findById(dogId).orElseThrow().getExpectation()).isEqualTo(ORIGINAL_EXPECTATION);
+	}
+
+	@Test
+	void AI_모드가_보낸_토픽은_무시하고_저장하지_않는다() {
+		given(structuredChatClient.complete(any())).willReturn(draftJson(List.of(sitBasicId), List.of(comeBasicId)));
+		PlanCreateRequest request = new PlanCreateRequest(dogId, "AI", List.of(sitTopicId), NEW_EXPECTATION, 10, 3,
+				false);
+
+		planCreator.create(userId, request);
+
+		TrainingPlan saved = plansOf(PlanStatus.ACTIVE).getFirst();
+		assertThat(saved.getInterviewJson()).contains("\"topicIds\":null");
+	}
+
+	@Test
 	void AI_모드는_모델_초안대로_플랜을_저장하고_강아지_기대사항을_갱신한다() {
 		given(structuredChatClient.complete(any())).willReturn(draftJson(List.of(sitBasicId), List.of(sitAdvancedId, comeBasicId)));
 

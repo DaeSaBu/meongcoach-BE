@@ -43,7 +43,6 @@ import org.springframework.test.web.servlet.MockMvc;
 @AutoConfigureRestDocs
 class UserControllerTest {
 
-	// 컨트롤러 슬라이스에는 필터 체인이 없으므로 인증 주체를 요청에 직접 실어 보낸다
 	private static final Principal CURRENT_USER = () -> "42";
 
 	@Autowired

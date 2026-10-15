@@ -5,6 +5,7 @@ import static com.daesabu.meongcoach.plan.application.CatalogBuilder.catalog;
 import static com.daesabu.meongcoach.plan.application.CatalogBuilder.category;
 import static com.daesabu.meongcoach.plan.application.CatalogBuilder.completed;
 import static com.daesabu.meongcoach.plan.application.CatalogBuilder.curriculum;
+import static com.daesabu.meongcoach.plan.application.CatalogBuilder.locked;
 import static com.daesabu.meongcoach.plan.application.CatalogBuilder.topic;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -168,6 +169,27 @@ class PlanDetailAssemblerTest {
 		assertThat(result.weeks()).extracting(Week::status)
 				.containsExactly(CurriculumStatus.NOT_STARTED, CurriculumStatus.NOT_STARTED);
 		assertThat(result.weeks()).allSatisfy(week -> assertThat(week.items()).isEmpty());
+	}
+
+	@Test
+	void 잠긴_커리큘럼은_건너뛰지_않고_잠김으로_표시해_오늘의_할_일로_가리킨다() {
+		TrainingCatalogResult lockedCatalog = catalog(category(1L, EntitlementType.PUPPY,
+				topic(1L, "앉기", locked(11L, "앉기 기초", 1, 2), curriculum(12L, "앉기 심화", 2, 1)),
+				topic(2L, "산책", curriculum(21L, "산책 기초", 1, 1))));
+
+		PlanDetailResult result = PlanDetailAssembler.assemble(plan(TODAY), "초코", lockedCatalog, Set.of(), TODAY);
+
+		assertThat(result.weeks().getFirst().items()).extracting(Item::locked).containsExactly(true, false);
+		assertThat(result.weeks().get(1).items()).extracting(Item::locked).containsExactly(false);
+		assertThat(result.today().curriculumId()).isEqualTo(11L);
+		assertThat(result.today().locked()).isTrue();
+	}
+
+	@Test
+	void 열린_커리큘럼의_오늘의_할_일은_잠김이_아니다() {
+		PlanDetailResult result = assemble(plan(TODAY), Set.of(), TODAY);
+
+		assertThat(result.today().locked()).isFalse();
 	}
 
 	private static PlanDetailResult assemble(TrainingPlan plan, Set<Long> completedLessonIds, LocalDate today) {

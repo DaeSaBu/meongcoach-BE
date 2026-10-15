@@ -109,6 +109,15 @@ class EvoLinkPlanGeneratorTest {
 	}
 
 	@Test
+	void weeks_원소가_null이면_생성_실패로_번역한다() {
+		given(structuredChatCompleter.complete(any())).willReturn(
+				"{\"title\":\"t\",\"goal\":\"g\",\"reason\":\"r\",\"weeks\":[null]}");
+
+		assertThatThrownBy(() -> generator().generate(context(), ""))
+				.isInstanceOf(PlanGenerationFailedException.class);
+	}
+
+	@Test
 	void JSON이_아닌_응답은_생성_실패로_번역한다() {
 		given(structuredChatCompleter.complete(any())).willReturn("플랜을 만들었어요");
 

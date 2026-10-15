@@ -134,6 +134,21 @@ class FallbackPlanBuilderTest {
 	}
 
 	@Test
+	void 레슨이_없는_커리큘럼은_직접_고르기와_대체_플랜_모두에서_담지_않는다() {
+		TrainingCatalogResult catalog = catalog(category(1L, EntitlementType.PUPPY,
+				topic(1L, "앉기", curriculum(11L, "앉기 기초", 1, 1), curriculum(12L, "앉기 빈 커리큘럼", 2, 0)),
+				topic(2L, "산책", curriculum(21L, "산책 빈 커리큘럼", 1, 0)),
+				topic(3L, "배변", curriculum(31L, "배변 기초", 1, 1))));
+
+		GeneratedPlan manual = builder.buildManual(context(7, catalog, Set.of()), List.of(1L, 2L));
+		GeneratedPlan fallback = builder.buildFallback(context(7, catalog, Set.of()));
+
+		assertThat(manual.draft().weeks()).extracting(WeekDraft::curriculumIds).containsExactly(List.of(11L));
+		assertThat(fallback.draft().weeks()).extracting(WeekDraft::curriculumIds)
+				.containsExactly(List.of(11L), List.of(31L));
+	}
+
+	@Test
 	void 선택한_토픽이_카탈로그에_없으면_토픽_없음_예외를_던진다() {
 		TrainingCatalogResult catalog = twoTopicCatalog();
 
