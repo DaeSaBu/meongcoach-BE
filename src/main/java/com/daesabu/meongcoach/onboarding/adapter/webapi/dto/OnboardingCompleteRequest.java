@@ -17,7 +17,7 @@ import java.util.Set;
 
 public record OnboardingCompleteRequest(
 		@NotBlank @Size(max = 50) String nickname,
-		@NotBlank String mbti,
+		@Size(max = 4) String mbti,
 		@Size(max = 512) String profileImageUrl,
 		@Size(max = 100) List<@NotNull @Positive Long> priorTrainingTopicIds,
 		@Size(max = 100) List<@NotNull @Positive Long> trainingGoalTopicIds,
@@ -26,11 +26,18 @@ public record OnboardingCompleteRequest(
 	public OnboardingCompleteInfo toInfo() {
 		return new OnboardingCompleteInfo(
 				nickname,
-				mbti,
+				nullIfBlank(mbti),
 				profileImageUrl,
 				Set.copyOf(emptyIfNull(priorTrainingTopicIds)),
 				Set.copyOf(emptyIfNull(trainingGoalTopicIds)),
 				dogs.stream().map(DogRequest::toInfo).toList());
+	}
+
+	private static String nullIfBlank(String value) {
+		if (value == null || value.isBlank()) {
+			return null;
+		}
+		return value;
 	}
 
 	private static <T> List<T> emptyIfNull(List<T> values) {
