@@ -10,13 +10,11 @@ import com.daesabu.meongcoach.dog.domain.Dogs;
 import com.daesabu.meongcoach.dog.domain.shared.Breed;
 import com.daesabu.meongcoach.dog.domain.shared.Personality;
 import java.util.List;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * 문자열 입력을 도메인 타입으로 변환·검증한 뒤 강아지를 등록한다.
- */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -27,12 +25,12 @@ public class DogRegisterService implements DogRegister {
 	@Override
 	@Transactional
 	public Long register(Long userId, DogRegisterInfo info) {
-		// 마리 수 상한·선택 여부는 사용자 단위 규칙이라 Dogs가 판단한다.
-		// 소프트 딜리트된 강아지는 엔티티의 @SQLRestriction으로 조회에서 제외되므로 살아있는 강아지만 담긴다
 		List<Dog> owned = dogRepository.findAllByUserIdOrderByIdAsc(userId);
 		Dogs dogs = new Dogs(owned);
+		boolean birthDateEstimated = Objects.requireNonNullElse(info.birthDateEstimated(), false);
 		Dog dog = dogs.register(new DogRegisterCommand(userId, info.name(), Breed.from(info.breed()),
-				DogSex.from(info.sex()), info.birthDate(), info.weightKg(), info.profileImageUrl(), info.expectation()));
+				DogSex.from(info.sex()), info.birthDate(), birthDateEstimated, info.weightKg(), info.profileImageUrl(),
+				info.expectation()));
 		dog.changePersonalities(Personality.fromCodes(info.personalities()));
 		return dogRepository.save(dog).getId();
 	}

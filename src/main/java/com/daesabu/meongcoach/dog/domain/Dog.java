@@ -55,7 +55,10 @@ public class Dog extends BaseEntity {
 
 	private LocalDate birthDate;
 
-	@Column(nullable = false, precision = 5, scale = 2)
+	@Column(nullable = false)
+	private boolean birthDateEstimated;
+
+	@Column(precision = 5, scale = 2)
 	private BigDecimal weightKg;
 
 	@Enumerated(EnumType.STRING)
@@ -85,6 +88,7 @@ public class Dog extends BaseEntity {
 		this.breed = command.breed();
 		this.sex = command.sex();
 		this.birthDate = command.birthDate();
+		this.birthDateEstimated = command.birthDateEstimated();
 		this.weightKg = command.weightKg();
 		this.status = DogStatus.UNSELECTED;
 		this.profileImageUrl = Objects.requireNonNullElse(command.profileImageUrl(), "");
@@ -112,10 +116,15 @@ public class Dog extends BaseEntity {
 		this.breed = command.breed();
 		this.sex = command.sex();
 		this.birthDate = command.birthDate();
+		this.birthDateEstimated = command.birthDateEstimated();
 		this.weightKg = command.weightKg();
 		this.profileImageUrl = Objects.requireNonNullElse(command.profileImageUrl(), "");
 		this.expectation = Objects.requireNonNullElse(command.expectation(), "");
 		changePersonalities(command.personalities());
+	}
+
+	public void changeExpectation(String expectation) {
+		this.expectation = Objects.requireNonNullElse(expectation, "");
 	}
 
 	public void changePersonalities(Set<Personality> personalities) {
@@ -131,5 +140,13 @@ public class Dog extends BaseEntity {
 			return null;
 		}
 		return Period.between(birthDate, LocalDate.now()).getYears();
+	}
+
+	public Integer getAgeInMonths() {
+		if (birthDate == null) {
+			return null;
+		}
+		Period period = Period.between(birthDate, LocalDate.now());
+		return period.getYears() * 12 + period.getMonths();
 	}
 }
