@@ -64,6 +64,13 @@ class PlanPromptSectionsTest {
 	}
 
 	@Test
+	void 성격_목록이_null이어도_성격_항목을_뺀다() {
+		DogProfileResult dog = new DogProfileResult(2L, "초코", null, false, 7, "푸들", "MALE", null, null, "");
+
+		assertThat(PlanPromptSections.dog(dog)).isEqualTo("이름: 초코 / 월령: 7개월 / 견종: 푸들 / 성별: 수컷");
+	}
+
+	@Test
 	void 암컷은_암컷으로_적는다() {
 		DogProfileResult dog = new DogProfileResult(2L, "초코", null, false, 7, "푸들", "FEMALE", List.of(), null, "");
 
