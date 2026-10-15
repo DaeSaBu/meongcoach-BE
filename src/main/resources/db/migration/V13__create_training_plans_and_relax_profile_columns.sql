@@ -25,7 +25,7 @@ CREATE TABLE "training_plans" (
     "target_end_on" DATE NOT NULL,
     "completed_at" TIMESTAMP,
     "outcome" VARCHAR(20),
-    "interview_json" TEXT,
+    "interview_json" TEXT NOT NULL,
     "created_at" TIMESTAMP NOT NULL,
     "updated_at" TIMESTAMP NOT NULL
 );
