@@ -1,6 +1,7 @@
 package com.daesabu.meongcoach.plan.adapter.integration;
 
 import com.daesabu.meongcoach.dog.application.provided.DogProfileResult;
+import com.daesabu.meongcoach.plan.application.PlanCatalogRules;
 import com.daesabu.meongcoach.plan.application.PlanGenerationContext;
 import com.daesabu.meongcoach.plan.domain.LifeStage;
 import com.daesabu.meongcoach.training.application.provided.dto.TrainingCatalogResult;
@@ -55,7 +56,7 @@ final class PlanPromptSections {
 		return catalog.categories().stream()
 				.flatMap(category -> category.topics().stream()
 						.flatMap(topic -> topic.curriculums().stream()
-								.filter(curriculum -> !curriculum.locked())
+								.filter(PlanCatalogRules::isPlannable)
 								.map(curriculum -> catalogLine(category, topic, curriculum))))
 				.map(PlanPromptSections::toJson)
 				.collect(Collectors.joining("\n"));
