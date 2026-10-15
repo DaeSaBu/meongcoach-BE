@@ -98,6 +98,12 @@ meongcoach:
       thinking: ${EVOLINK_THINKING:disabled}
       # 영상 프레임 추출 빈도(0.2~5). 높일수록 화면 변화에 민감하지만 토큰 소비가 늘어난다
       video-fps: 1
+  plan:
+    generation:
+      # 모델 호출 1회가 기다리는 최대 시간. 클라이언트 대기(90초) 안에 끝나도록 전체 예산과 함께 정한다
+      call-timeout: PT30S
+      # 첫 호출 이후 남은 시간이 call-timeout보다 짧으면 재시도 없이 대체 플랜으로 넘어간다
+      total-budget: PT75S
   social:
     kakao:
       issuer: https://kauth.kakao.com

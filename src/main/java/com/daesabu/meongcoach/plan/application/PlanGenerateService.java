@@ -21,6 +21,8 @@ import com.daesabu.meongcoach.training.application.provided.dto.TrainingCatalogR
 import com.daesabu.meongcoach.training.application.provided.dto.TrainingCatalogResult.CatalogCurriculum;
 import com.daesabu.meongcoach.user.application.provided.UserProfileFinder;
 import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -53,6 +55,7 @@ public class PlanGenerateService implements PlanCreator {
 	private final UserProfileFinder userProfileFinder;
 	private final ObjectMapper objectMapper;
 	private final Clock clock;
+	private final PlanGenerationProperties generationProperties;
 
 	@Override
 	public PlanDetailResult create(Long userId, PlanCreateRequest request) {
@@ -116,6 +119,7 @@ public class PlanGenerateService implements PlanCreator {
 		Set<Long> openCurriculumIds = context.catalog().openCurriculums().stream()
 				.map(CatalogCurriculum::id)
 				.collect(Collectors.toSet());
+		Instant startedAt = clock.instant();
 		try {
 			PlanDraft draft = planGenerator.generate(context, "");
 			List<String> violations = planValidator.validateDraft(draft, openCurriculumIds);
@@ -123,7 +127,7 @@ public class PlanGenerateService implements PlanCreator {
 				GeneratedPlan plan = aiPlan(draft);
 				return Optional.of(plan);
 			}
-			return retryAiPlan(context, openCurriculumIds, violations);
+			return retryAiPlan(context, openCurriculumIds, violations, startedAt);
 		} catch (PlanGenerationFailedException e) {
 			log.warn("AI 플랜 생성에 실패해 대체 플랜으로 넘어갑니다", e);
 			return Optional.empty();
@@ -131,7 +135,12 @@ public class PlanGenerateService implements PlanCreator {
 	}
 
 	private Optional<GeneratedPlan> retryAiPlan(PlanGenerationContext context, Set<Long> openCurriculumIds,
-			List<String> violations) {
+			List<String> violations, Instant startedAt) {
+		Duration remaining = generationProperties.totalBudget().minus(Duration.between(startedAt, clock.instant()));
+		if (remaining.compareTo(generationProperties.callTimeout()) < 0) {
+			log.warn("AI 플랜 생성 예산이 부족해 재시도 없이 대체 플랜으로 넘어갑니다. 남은 예산={}", remaining);
+			return Optional.empty();
+		}
 		PlanDraft retried = planGenerator.generate(context, String.join("; ", violations));
 		List<String> retriedViolations = planValidator.validateDraft(retried, openCurriculumIds);
 		if (retriedViolations.isEmpty()) {

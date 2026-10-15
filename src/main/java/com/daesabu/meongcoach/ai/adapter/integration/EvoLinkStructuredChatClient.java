@@ -26,7 +26,7 @@ public class EvoLinkStructuredChatClient implements StructuredChatClient {
 	@Override
 	public String complete(StructuredChatRequest request) {
 		try {
-			return chatClient.complete(buildRequest(request));
+			return chatClient.complete(buildRequest(request), request.timeout());
 		}
 		catch (RestClientException | EvoLinkResponseException | JacksonException e) {
 			throw new StructuredChatCompletionFailedException("구조화 JSON 채팅 모델 호출에 실패했습니다", e);
