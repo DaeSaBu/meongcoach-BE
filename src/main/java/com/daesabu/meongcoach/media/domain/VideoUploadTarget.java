@@ -7,6 +7,7 @@ import com.daesabu.meongcoach.media.domain.exception.InvalidVideoUploadTargetExc
  */
 public enum VideoUploadTarget {
 	TRAINING_VIDEO("training"),
+	GRADUATION_VIDEO("graduation"),
 	;
 
 	private final String pathSegment;

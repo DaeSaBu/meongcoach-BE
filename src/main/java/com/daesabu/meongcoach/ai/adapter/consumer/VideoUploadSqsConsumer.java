@@ -24,6 +24,8 @@ import tools.jackson.databind.ObjectMapper;
 public class VideoUploadSqsConsumer {
 
 	private static final String OBJECT_CREATED_PREFIX = "ObjectCreated";
+	// 같은 버킷에 실습 인증 영상(videos/graduation/)도 올라오지만 AI 분석 대상은 훈련 영상만이다
+	private static final String TRAINING_VIDEO_KEY_PREFIX = "videos/training/";
 
 	private final AiReportGenerator aiReportGenerator;
 	private final ObjectMapper objectMapper;
@@ -63,6 +65,10 @@ public class VideoUploadSqsConsumer {
 		}
 		String objectKey = objectKeyOf(record);
 		if (objectKey == null) {
+			return;
+		}
+		if (!objectKey.startsWith(TRAINING_VIDEO_KEY_PREFIX)) {
+			log.debug("훈련 영상이 아닌 객체 키라 리포트 생성을 건너뛴다: {}", objectKey);
 			return;
 		}
 		try {
