@@ -118,7 +118,8 @@ public class PlanGenerateService implements PlanCreator {
 			PlanDraft draft = planGenerator.generate(context, "");
 			List<String> violations = planValidator.validateDraft(draft, openCurriculumIds);
 			if (violations.isEmpty()) {
-				return Optional.of(aiPlan(draft));
+				GeneratedPlan plan = aiPlan(draft);
+				return Optional.of(plan);
 			}
 			return retryAiPlan(context, openCurriculumIds, violations);
 		} catch (PlanGenerationFailedException e) {
@@ -132,7 +133,8 @@ public class PlanGenerateService implements PlanCreator {
 		PlanDraft retried = planGenerator.generate(context, String.join("; ", violations));
 		List<String> retriedViolations = planValidator.validateDraft(retried, openCurriculumIds);
 		if (retriedViolations.isEmpty()) {
-			return Optional.of(aiPlan(retried));
+			GeneratedPlan plan = aiPlan(retried);
+			return Optional.of(plan);
 		}
 		log.warn("AI 플랜이 재시도 후에도 검증을 통과하지 못해 대체 플랜으로 넘어갑니다: {}", retriedViolations);
 		return Optional.empty();

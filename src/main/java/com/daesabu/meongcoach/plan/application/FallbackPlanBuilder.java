@@ -68,7 +68,7 @@ public class FallbackPlanBuilder {
 		}
 		Set<Long> completedLessonIds = context.completedLessonIds();
 		List<Placement> placements = arrangeOrder(topics, completedLessonIds);
-		boolean allCompleted = placements.stream().allMatch(placement -> isCompleted(placement.curriculum(), completedLessonIds));
+		boolean allCompleted = placements.stream().allMatch(placement -> placement.curriculum().isCompleted(completedLessonIds));
 		int durationWeeks = durationWeeks(placements.size());
 		PlanAdjustedReason adjustedReason = adjustedReason(placements.size(), allCompleted);
 		List<WeekDraft> weeks = splitWeeks(placements, durationWeeks);
@@ -86,10 +86,10 @@ public class FallbackPlanBuilder {
 				.toList();
 		List<Placement> result = new ArrayList<>();
 		ordered.stream()
-				.filter(placement -> !isCompleted(placement.curriculum(), completedLessonIds))
+				.filter(placement -> !placement.curriculum().isCompleted(completedLessonIds))
 				.forEach(result::add);
 		ordered.stream()
-				.filter(placement -> isCompleted(placement.curriculum(), completedLessonIds))
+				.filter(placement -> placement.curriculum().isCompleted(completedLessonIds))
 				.forEach(result::add);
 		return result;
 	}
@@ -198,19 +198,13 @@ public class FallbackPlanBuilder {
 	}
 
 	private static boolean hasUnfinishedOpenCurriculum(CatalogTopic topic, Set<Long> completedLessonIds) {
-		return openCurriculums(topic).anyMatch(curriculum -> !isCompleted(curriculum, completedLessonIds));
+		return openCurriculums(topic).anyMatch(curriculum -> !curriculum.isCompleted(completedLessonIds));
 	}
 
 	private static Stream<CatalogCurriculum> openCurriculums(CatalogTopic topic) {
 		return topic.curriculums().stream()
 				.filter(curriculum -> !curriculum.locked());
 	}
-
-	private static boolean isCompleted(CatalogCurriculum curriculum, Set<Long> completedLessonIds) {
-		return !curriculum.lessons().isEmpty()
-				&& curriculum.lessons().stream().allMatch(lesson -> completedLessonIds.contains(lesson.id()));
-	}
-
 
 	private record Placement(CatalogTopic topic, CatalogCurriculum curriculum) {
 	}

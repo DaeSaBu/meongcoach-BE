@@ -3,6 +3,7 @@ package com.daesabu.meongcoach.training.application.provided.dto;
 import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 
 public record TrainingCatalogResult(List<CatalogCategory> categories) {
@@ -44,6 +45,10 @@ public record TrainingCatalogResult(List<CatalogCategory> categories) {
 
 	public record CatalogCurriculum(Long id, String title, String description, int sortOrder, boolean premium,
 			boolean locked, List<CatalogLesson> lessons) {
+
+		public boolean isCompleted(Set<Long> completedLessonIds) {
+			return !lessons.isEmpty() && lessons.stream().allMatch(lesson -> completedLessonIds.contains(lesson.id()));
+		}
 	}
 
 	public record CatalogLesson(Long id, String title, int sortOrder, Integer estimatedMinutes) {

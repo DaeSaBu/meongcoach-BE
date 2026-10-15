@@ -28,9 +28,9 @@ final class PlanPromptSections {
 		List<String> parts = Stream.of(
 				"이름: " + dog.name(),
 				"월령: " + age(dog),
-				"견종: " + dog.breedLabel(),
-				"성별: " + dog.sex(),
-				"성격: " + personality(dog.personalityLabels()),
+				optional("견종", dog.breedLabel()),
+				optional("성별", sex(dog.sex())),
+				optional("성격", String.join(", ", dog.personalityLabels())),
 				weight(dog.weightKg()))
 				.filter(part -> !part.isEmpty())
 				.toList();
@@ -80,8 +80,21 @@ final class PlanPromptSections {
 		return "약 " + age + "(추정 월령, 구간 \"" + LifeStage.ageRange(ageInMonths) + "\")";
 	}
 
-	private static String personality(List<String> labels) {
-		return joinOrNone(labels, ", ");
+	private static String optional(String label, String value) {
+		if (value == null || value.isBlank()) {
+			return "";
+		}
+		return label + ": " + value;
+	}
+
+	private static String sex(String sex) {
+		if ("MALE".equals(sex)) {
+			return "수컷";
+		}
+		if ("FEMALE".equals(sex)) {
+			return "암컷";
+		}
+		return "";
 	}
 
 	private static String weight(BigDecimal weightKg) {
@@ -92,7 +105,8 @@ final class PlanPromptSections {
 	}
 
 	private static String joinOrNone(List<String> values, String delimiter) {
-		return orNone(values.isEmpty(), String.join(delimiter, values));
+		String joined = String.join(delimiter, values);
+		return orNone(values.isEmpty(), joined);
 	}
 
 	private static String orNone(boolean empty, String text) {
@@ -106,14 +120,9 @@ final class PlanPromptSections {
 		return catalog.categories().stream()
 				.flatMap(category -> category.topics().stream())
 				.flatMap(topic -> topic.curriculums().stream())
-				.filter(curriculum -> isCompleted(curriculum, completedLessonIds))
+				.filter(curriculum -> curriculum.isCompleted(completedLessonIds))
 				.map(CatalogCurriculum::id)
 				.toList();
-	}
-
-	private static boolean isCompleted(CatalogCurriculum curriculum, Set<Long> completedLessonIds) {
-		return !curriculum.lessons().isEmpty()
-				&& curriculum.lessons().stream().allMatch(lesson -> completedLessonIds.contains(lesson.id()));
 	}
 
 	private static CatalogLine catalogLine(CatalogCategory category, CatalogTopic topic,
