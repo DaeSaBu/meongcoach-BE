@@ -2,6 +2,7 @@ package com.daesabu.meongcoach.support;
 
 import com.daesabu.meongcoach.entitlement.application.required.ActiveEntitlementReader;
 import com.daesabu.meongcoach.entitlement.application.required.PromotionalEntitlementGranter;
+import com.daesabu.meongcoach.graduation.application.required.SubmissionNotifier;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -14,6 +15,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Retention(RetentionPolicy.RUNTIME)
 @SpringBootTest
 @Transactional
-@MockitoBean(types = {ActiveEntitlementReader.class, PromotionalEntitlementGranter.class})
+@MockitoBean(types = {ActiveEntitlementReader.class, PromotionalEntitlementGranter.class, SubmissionNotifier.class})
 public @interface ApplicationTest {
 }
