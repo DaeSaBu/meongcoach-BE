@@ -681,7 +681,7 @@ class DogControllerTest {
 				.andExpect(status().isOk());
 
 		then(dogProfileUpdater).should().update(42L, 10L, new DogProfileUpdateCommand("보리", Breed.of(RegisteredBreed.MALTESE),
-				DogSex.FEMALE, LocalDate.of(2023, 1, 15), false, new BigDecimal("3.2"),
+				DogSex.FEMALE, LocalDate.of(2023, 1, 15), true, new BigDecimal("3.2"),
 				Set.of(Personality.TIMID, Personality.LIVELY), NEW_IMAGE_URL, NEW_EXPECTATION));
 	}
 
@@ -726,7 +726,7 @@ class DogControllerTest {
 				.andExpect(status().isOk());
 
 		then(dogProfileUpdater).should().update(42L, 10L, new DogProfileUpdateCommand("보리", Breed.of(RegisteredBreed.MALTESE),
-				DogSex.FEMALE, LocalDate.of(2023, 1, 15), false, new BigDecimal("3.2"), Set.of(), NEW_IMAGE_URL,
+				DogSex.FEMALE, LocalDate.of(2023, 1, 15), true, new BigDecimal("3.2"), Set.of(), NEW_IMAGE_URL,
 				NEW_EXPECTATION));
 	}
 
