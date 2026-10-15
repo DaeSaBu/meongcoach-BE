@@ -13,6 +13,7 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,8 +34,16 @@ public class PlanStoreService {
 		TrainingPlanCreateCommand command = new TrainingPlanCreateCommand(userId, request.dogId(), mode,
 				result.generatorType(), result.adjustedReason(), result.durationWeeks(), request.dailyMinutes(),
 				request.daysPerWeek(), LocalDate.now(clock), interviewJson, result.draft());
-		trainingPlanRepository.save(TrainingPlan.create(command));
+		saveOrConflict(TrainingPlan.create(command));
 		updateExpectation(userId, request);
+	}
+
+	private void saveOrConflict(TrainingPlan plan) {
+		try {
+			trainingPlanRepository.saveAndFlush(plan);
+		} catch (DataIntegrityViolationException e) {
+			throw new PlanAlreadyActiveException();
+		}
 	}
 
 	private void abandonActivePlans(Long userId, boolean replace) {
