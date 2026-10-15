@@ -12,6 +12,7 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 import com.daesabu.meongcoach.ai.adapter.integration.dto.EvoLinkChatRequest;
 import com.daesabu.meongcoach.ai.adapter.integration.dto.EvoLinkChatRequest.ChatMessage;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -19,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.test.web.client.ExpectedCount;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
@@ -34,13 +36,19 @@ class EvoLinkChatClientTest {
 	private static final String CHAT_URL = BASE_URL + "/v1/chat/completions";
 
 	private MockRestServiceServer server;
+	private RestClient defaultRestClient;
 	private EvoLinkChatClient client;
 
 	@BeforeEach
 	void setUp() {
 		RestClient.Builder builder = RestClient.builder();
 		server = MockRestServiceServer.bindTo(builder).build();
-		client = new EvoLinkChatClient(properties(), builder.build());
+		defaultRestClient = builder.build();
+		client = new EvoLinkChatClient(properties(), defaultRestClient);
+	}
+
+	private RestClient restClient() {
+		return defaultRestClient;
 	}
 
 	private static EvoLinkProperties properties() {
@@ -129,5 +137,39 @@ class EvoLinkChatClientTest {
 
 		assertThatThrownBy(() -> client.complete(chatRequest()))
 				.isInstanceOf(RestClientResponseException.class);
+	}
+
+	@Test
+	void 요청별_타임아웃이_주어지면_그_타임아웃용_클라이언트로_한_번만_만들어_재사용한다() {
+		RestClient.Builder timeoutBuilder = RestClient.builder();
+		MockRestServiceServer timeoutServer = MockRestServiceServer.bindTo(timeoutBuilder).build();
+		RestClient timeoutClient = timeoutBuilder.build();
+		List<Duration> requestedTimeouts = new ArrayList<>();
+		EvoLinkChatClient timeoutAware = new EvoLinkChatClient(properties(), RestClient.builder().build(), timeout -> {
+			requestedTimeouts.add(timeout);
+			return timeoutClient;
+		});
+		timeoutServer.expect(ExpectedCount.twice(), requestTo(CHAT_URL))
+				.andRespond(withSuccess(chatResponseJson("안녕하세요", "stop"), MediaType.APPLICATION_JSON));
+
+		timeoutAware.complete(chatRequest(), Duration.ofSeconds(30));
+		timeoutAware.complete(chatRequest(), Duration.ofSeconds(30));
+
+		assertThat(requestedTimeouts).containsExactly(Duration.ofSeconds(30));
+		timeoutServer.verify();
+	}
+
+	@Test
+	void 타임아웃이_없으면_기본_클라이언트로_호출한다() {
+		EvoLinkChatClient timeoutAware = new EvoLinkChatClient(properties(), restClient(), timeout -> {
+			throw new IllegalStateException("타임아웃용 클라이언트를 만들면 안 됩니다");
+		});
+		server.expect(requestTo(CHAT_URL))
+				.andRespond(withSuccess(chatResponseJson("안녕하세요", "stop"), MediaType.APPLICATION_JSON));
+
+		String content = timeoutAware.complete(chatRequest(), null);
+
+		assertThat(content).isEqualTo("안녕하세요");
+		server.verify();
 	}
 }
