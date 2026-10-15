@@ -59,7 +59,7 @@ public record OnboardingCompleteRequest(
 			@Size(max = 500) String expectation) {
 
 		public DogRegisterInfo toInfo() {
-			return new DogRegisterInfo(name, breed, sex, birthDate, weightKg, personalities, profileImageUrl,
+			return new DogRegisterInfo(name, breed, sex, birthDate, null, weightKg, personalities, profileImageUrl,
 					expectation);
 		}
 	}
