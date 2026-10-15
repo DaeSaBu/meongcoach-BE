@@ -10,6 +10,7 @@ import com.daesabu.meongcoach.plan.application.provided.dto.PlanDetailResult;
 import com.daesabu.meongcoach.plan.application.required.TrainingPlanRepository;
 import com.daesabu.meongcoach.plan.domain.PlanMode;
 import com.daesabu.meongcoach.plan.domain.PlanStatus;
+import com.daesabu.meongcoach.plan.domain.TrainingPlan;
 import com.daesabu.meongcoach.plan.domain.exception.PlanAlreadyActiveException;
 import com.daesabu.meongcoach.progress.application.provided.LessonProgressFinder;
 import com.daesabu.meongcoach.training.application.provided.TrainingCatalogFinder;
@@ -55,7 +56,12 @@ public class PlanGenerateService implements PlanCreator {
 		if (request.replace()) {
 			return;
 		}
-		if (trainingPlanRepository.existsByUserIdAndStatus(userId, PlanStatus.ACTIVE)) {
+		List<TrainingPlan> activePlans = trainingPlanRepository.findByUserIdAndStatus(userId, PlanStatus.ACTIVE);
+		if (activePlans.isEmpty()) {
+			return;
+		}
+		Long activeDogId = activePlans.getFirst().getDogId();
+		if (dogProfileFinder.findProfileIfPresent(userId, activeDogId).isPresent()) {
 			throw new PlanAlreadyActiveException();
 		}
 	}

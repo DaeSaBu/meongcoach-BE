@@ -13,6 +13,7 @@ import com.daesabu.meongcoach.training.application.provided.TrainingCatalogFinde
 import com.daesabu.meongcoach.training.application.provided.dto.TrainingCatalogResult;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -35,12 +36,15 @@ public class PlanQueryService implements PlanFinder {
 		if (activePlans.isEmpty()) {
 			return new CurrentPlanResult(hasCompletedPlan, null);
 		}
-		PlanDetailResult detail = assemble(userId, activePlans.getFirst());
+		Optional<DogProfileResult> dog = dogProfileFinder.findProfileIfPresent(userId, activePlans.getFirst().getDogId());
+		if (dog.isEmpty()) {
+			return new CurrentPlanResult(hasCompletedPlan, null);
+		}
+		PlanDetailResult detail = assemble(userId, activePlans.getFirst(), dog.get());
 		return new CurrentPlanResult(hasCompletedPlan, detail);
 	}
 
-	private PlanDetailResult assemble(Long userId, TrainingPlan plan) {
-		DogProfileResult dog = dogProfileFinder.findProfile(userId, plan.getDogId());
+	private PlanDetailResult assemble(Long userId, TrainingPlan plan, DogProfileResult dog) {
 		TrainingCatalogResult catalog = trainingCatalogFinder.findCatalog(userId);
 		Set<Long> completedLessonIds = lessonProgressFinder.findCompletedLessonIds(userId, catalog.allLessonIds());
 		return PlanDetailAssembler.assemble(plan, dog.name(), catalog, completedLessonIds, LocalDate.now());
