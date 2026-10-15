@@ -2,7 +2,6 @@ package com.daesabu.meongcoach.plan.application;
 
 import com.daesabu.meongcoach.dog.application.provided.DogProfileFinder;
 import com.daesabu.meongcoach.dog.application.provided.DogProfileUpdater;
-import com.daesabu.meongcoach.plan.application.FallbackPlanBuilder.FallbackResult;
 import com.daesabu.meongcoach.plan.application.provided.dto.PlanCreateRequest;
 import com.daesabu.meongcoach.plan.application.required.TrainingPlanRepository;
 import com.daesabu.meongcoach.plan.domain.PlanMode;
@@ -26,7 +25,7 @@ public class PlanStoreService {
 	private final DogProfileUpdater dogProfileUpdater;
 
 	@Transactional
-	public void store(Long userId, PlanMode mode, PlanCreateRequest request, FallbackResult result,
+	public void store(Long userId, PlanMode mode, PlanCreateRequest request, GeneratedPlan result,
 			String interviewJson) {
 		abandonActivePlans(userId, request.replace());
 		TrainingPlanCreateCommand command = new TrainingPlanCreateCommand(userId, request.dogId(), mode,

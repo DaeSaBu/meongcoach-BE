@@ -13,7 +13,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;
-import com.daesabu.meongcoach.plan.application.FallbackPlanBuilder.FallbackResult;
 import com.daesabu.meongcoach.plan.domain.PlanAdjustedReason;
 import com.daesabu.meongcoach.plan.domain.PlanDraft.WeekDraft;
 import com.daesabu.meongcoach.plan.domain.PlanGeneratorType;
@@ -32,7 +31,7 @@ class FallbackPlanBuilderTest {
 	void 직접_고른_토픽은_카탈로그_순서대로_재정렬한다() {
 		TrainingCatalogResult catalog = twoTopicCatalog();
 
-		FallbackResult result = builder.buildManual(context(7, catalog, Set.of()), List.of(2L, 1L));
+		GeneratedPlan result = builder.buildManual(context(7, catalog, Set.of()), List.of(2L, 1L));
 
 		assertThat(result.draft().weeks()).extracting(WeekDraft::curriculumIds)
 				.containsExactly(List.of(11L, 12L), List.of(21L, 22L));
@@ -52,7 +51,7 @@ class FallbackPlanBuilderTest {
 						topic(2L, "산책", curriculum(21L, "산책 기초", 1, 1)),
 						topic(1L, "앉기", curriculum(11L, "앉기 기초", 1, 1))));
 
-		FallbackResult result = builder.buildManual(context(7, catalog, Set.of()), List.of(4L, 3L, 2L, 1L));
+		GeneratedPlan result = builder.buildManual(context(7, catalog, Set.of()), List.of(4L, 3L, 2L, 1L));
 
 		assertThat(result.draft().weeks()).extracting(WeekDraft::curriculumIds)
 				.containsExactly(List.of(11L, 21L), List.of(31L, 41L));
@@ -63,7 +62,7 @@ class FallbackPlanBuilderTest {
 		TrainingCatalogResult catalog = twoTopicCatalog();
 		Set<Long> done = allLessonsOf(11L, 1);
 
-		FallbackResult result = builder.buildManual(context(7, catalog, done), List.of(1L, 2L));
+		GeneratedPlan result = builder.buildManual(context(7, catalog, done), List.of(1L, 2L));
 
 		assertThat(result.draft().weeks()).extracting(WeekDraft::curriculumIds)
 				.containsExactly(List.of(12L, 21L), List.of(22L, 11L));
@@ -74,7 +73,7 @@ class FallbackPlanBuilderTest {
 		TrainingCatalogResult catalog = catalog(category(1L, EntitlementType.PUPPY,
 				topic(1L, "앉기", curriculum(12L, "앉기 심화", 2, 1), curriculum(11L, "앉기 기초", 1, 1))));
 
-		FallbackResult result = builder.buildManual(context(7, catalog, Set.of()), List.of(1L));
+		GeneratedPlan result = builder.buildManual(context(7, catalog, Set.of()), List.of(1L));
 
 		assertThat(result.draft().weeks()).extracting(WeekDraft::curriculumIds)
 				.containsExactly(List.of(11L), List.of(12L));
@@ -86,7 +85,7 @@ class FallbackPlanBuilderTest {
 				topic(1L, "앉기", curriculum(11L, "앉기 기초", 1, 1), curriculum(12L, "앉기 심화", 2, 1),
 						curriculum(13L, "앉기 응용", 3, 1))));
 
-		FallbackResult result = builder.buildManual(context(7, catalog, Set.of()), List.of(1L));
+		GeneratedPlan result = builder.buildManual(context(7, catalog, Set.of()), List.of(1L));
 
 		assertThat(result.draft().weeks()).extracting(WeekDraft::curriculumIds)
 				.containsExactly(List.of(11L, 12L), List.of(13L));
@@ -99,7 +98,7 @@ class FallbackPlanBuilderTest {
 		TrainingCatalogResult catalog = catalog(category(1L, EntitlementType.PUPPY,
 				topic(1L, "앉기", curriculum(11L, "앉기 기초", 1, 1))));
 
-		FallbackResult result = builder.buildManual(context(7, catalog, Set.of()), List.of(1L));
+		GeneratedPlan result = builder.buildManual(context(7, catalog, Set.of()), List.of(1L));
 
 		assertThat(result.draft().weeks()).hasSize(1);
 		assertThat(result.draft().weeks().getFirst().weekNo()).isEqualTo(1);
@@ -114,7 +113,7 @@ class FallbackPlanBuilderTest {
 		TrainingCatalogResult catalog = twoTopicCatalog();
 		Set<Long> done = Set.of(111L, 121L, 211L, 221L);
 
-		FallbackResult result = builder.buildManual(context(7, catalog, done), List.of(1L, 2L));
+		GeneratedPlan result = builder.buildManual(context(7, catalog, done), List.of(1L, 2L));
 
 		assertThat(result.adjustedReason()).isEqualTo(PlanAdjustedReason.REVIEW);
 		assertThat(result.durationWeeks()).isEqualTo(2);
@@ -128,7 +127,7 @@ class FallbackPlanBuilderTest {
 				topic(1L, "앉기", curriculum(11L, "앉기 기초", 1, 1), locked(12L, "앉기 심화", 2, 1)),
 				topic(2L, "산책", locked(21L, "산책 기초", 1, 1))));
 
-		FallbackResult result = builder.buildManual(context(7, catalog, Set.of()), List.of(1L, 2L));
+		GeneratedPlan result = builder.buildManual(context(7, catalog, Set.of()), List.of(1L, 2L));
 
 		assertThat(result.draft().weeks()).extracting(WeekDraft::curriculumIds).containsExactly(List.of(11L));
 		assertThat(result.draft().goal()).isEqualTo("1주 동안 앉기를 차근차근 익혀요");
@@ -155,7 +154,7 @@ class FallbackPlanBuilderTest {
 	void 문구는_이름_토픽_월령_학습량으로_만든다() {
 		TrainingCatalogResult catalog = twoTopicCatalog();
 
-		FallbackResult result = builder.buildManual(context(7, catalog, Set.of()), List.of(1L, 2L));
+		GeneratedPlan result = builder.buildManual(context(7, catalog, Set.of()), List.of(1L, 2L));
 
 		assertThat(result.draft().title()).isEqualTo("초코의 2주 앉기 플랜");
 		assertThat(result.draft().goal()).isEqualTo("2주 동안 앉기, 산책을 차근차근 익혀요");
@@ -171,7 +170,7 @@ class FallbackPlanBuilderTest {
 				topic(1L, "앉기", curriculum(11L, "앉기 기초", 1, 1)),
 				topic(2L, "산책", curriculum(21L, "산책 기초", 1, 1), curriculum(22L, "산책 심화", 2, 1))));
 
-		FallbackResult result = builder.buildManual(context(7, catalog, Set.of()), List.of(1L, 2L));
+		GeneratedPlan result = builder.buildManual(context(7, catalog, Set.of()), List.of(1L, 2L));
 
 		assertThat(result.draft().weeks()).extracting(WeekDraft::theme).containsExactly("앉기·산책", "산책");
 	}
@@ -182,7 +181,7 @@ class FallbackPlanBuilderTest {
 		PlanGenerationContext context = new PlanGenerationContext(dog(9, true), null, 10, 3, List.of(), Set.of(),
 				catalog, CatalogBuilder.TODAY);
 
-		FallbackResult result = builder.buildManual(context, List.of(1L));
+		GeneratedPlan result = builder.buildManual(context, List.of(1L));
 
 		assertThat(result.draft().reason()).contains("약 9개월(추정) 초코에게");
 	}
@@ -191,7 +190,7 @@ class FallbackPlanBuilderTest {
 	void 월령을_모르면_이유_문구에서_월령을_뺀다() {
 		TrainingCatalogResult catalog = twoTopicCatalog();
 
-		FallbackResult result = builder.buildManual(context(null, catalog, Set.of()), List.of(1L));
+		GeneratedPlan result = builder.buildManual(context(null, catalog, Set.of()), List.of(1L));
 
 		assertThat(result.draft().reason()).contains("앉기를 초코에게 맞게");
 	}
@@ -206,7 +205,7 @@ class FallbackPlanBuilderTest {
 						topic(3L, "산책", curriculum(31L, "산책 기초", 1, 1)),
 						topic(4L, "배변", curriculum(41L, "배변 기초", 1, 1))));
 
-		FallbackResult result = builder.buildFallback(context(7, catalog, Set.of()));
+		GeneratedPlan result = builder.buildFallback(context(7, catalog, Set.of()));
 
 		assertThat(result.generatorType()).isEqualTo(PlanGeneratorType.FALLBACK);
 		assertThat(result.draft().weeks()).extracting(WeekDraft::curriculumIds)
@@ -224,7 +223,7 @@ class FallbackPlanBuilderTest {
 				category(3L, EntitlementType.ADULT,
 						topic(3L, "어덜트토픽", curriculum(31L, "어덜트 기초", 1, 1))));
 
-		FallbackResult result = builder.buildFallback(context(120, catalog, Set.of()));
+		GeneratedPlan result = builder.buildFallback(context(120, catalog, Set.of()));
 
 		assertThat(result.draft().weeks()).extracting(WeekDraft::curriculumIds)
 				.containsExactly(List.of(31L), List.of(21L));
@@ -240,7 +239,7 @@ class FallbackPlanBuilderTest {
 				category(3L, EntitlementType.ADULT,
 						topic(3L, "어덜트토픽", curriculum(31L, "어덜트 기초", 1, 1))));
 
-		FallbackResult result = builder.buildFallback(context(15, catalog, Set.of()));
+		GeneratedPlan result = builder.buildFallback(context(15, catalog, Set.of()));
 
 		assertThat(result.draft().weeks()).extracting(WeekDraft::curriculumIds)
 				.containsExactly(List.of(21L), List.of(31L));
@@ -253,7 +252,7 @@ class FallbackPlanBuilderTest {
 				topic(2L, "산책", curriculum(21L, "산책 기초", 1, 1)),
 				topic(3L, "배변", curriculum(31L, "배변 기초", 1, 1))));
 
-		FallbackResult result = builder.buildFallback(context(7, catalog, Set.of(111L)));
+		GeneratedPlan result = builder.buildFallback(context(7, catalog, Set.of(111L)));
 
 		assertThat(result.draft().weeks()).extracting(WeekDraft::curriculumIds)
 				.containsExactly(List.of(21L), List.of(31L));
@@ -267,7 +266,7 @@ class FallbackPlanBuilderTest {
 				topic(2L, "산책", curriculum(21L, "산책 기초", 1, 1)),
 				topic(3L, "배변", curriculum(31L, "배변 기초", 1, 1))));
 
-		FallbackResult result = builder.buildFallback(context(7, catalog, completed(111L, 211L, 311L)));
+		GeneratedPlan result = builder.buildFallback(context(7, catalog, completed(111L, 211L, 311L)));
 
 		assertThat(result.adjustedReason()).isEqualTo(PlanAdjustedReason.REVIEW);
 		assertThat(result.draft().weeks()).extracting(WeekDraft::curriculumIds)
@@ -280,7 +279,7 @@ class FallbackPlanBuilderTest {
 				topic(1L, "앉기", locked(11L, "앉기 기초", 1, 1)),
 				topic(2L, "산책", curriculum(21L, "산책 기초", 1, 1), curriculum(22L, "산책 심화", 2, 1))));
 
-		FallbackResult result = builder.buildFallback(context(7, catalog, Set.of()));
+		GeneratedPlan result = builder.buildFallback(context(7, catalog, Set.of()));
 
 		assertThat(result.draft().weeks()).extracting(WeekDraft::curriculumIds)
 				.containsExactly(List.of(21L), List.of(22L));

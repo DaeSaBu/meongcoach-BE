@@ -25,7 +25,7 @@ public class FallbackPlanBuilder {
 	private static final int FALLBACK_TOPIC_LIMIT = 2;
 	private static final int WEEKS = 2;
 
-	public FallbackResult buildManual(PlanGenerationContext context, List<Long> topicIds) {
+	public GeneratedPlan buildManual(PlanGenerationContext context, List<Long> topicIds) {
 		List<CatalogCategory> sortedCategories = context.catalog().categories().stream()
 				.sorted(Comparator.comparingInt(CatalogCategory::sortOrder))
 				.toList();
@@ -43,7 +43,7 @@ public class FallbackPlanBuilder {
 		return arrange(context, selected, PlanGeneratorType.MANUAL);
 	}
 
-	public FallbackResult buildFallback(PlanGenerationContext context) {
+	public GeneratedPlan buildFallback(PlanGenerationContext context) {
 		LifeStage stage = LifeStage.of(context.dog().ageInMonths());
 		List<CatalogTopic> candidates = allTopics(prioritize(context.catalog().categories(), stage)).stream()
 				.filter(FallbackPlanBuilder::hasOpenCurriculum)
@@ -61,7 +61,7 @@ public class FallbackPlanBuilder {
 		return arrange(context, review, PlanGeneratorType.FALLBACK);
 	}
 
-	private FallbackResult arrange(PlanGenerationContext context, List<CatalogTopic> topics,
+	private GeneratedPlan arrange(PlanGenerationContext context, List<CatalogTopic> topics,
 			PlanGeneratorType generatorType) {
 		if (topics.isEmpty()) {
 			throw new PlanCatalogEmptyException();
@@ -74,7 +74,7 @@ public class FallbackPlanBuilder {
 		List<WeekDraft> weeks = splitWeeks(placements, durationWeeks);
 		PlanDraft draft = new PlanDraft(title(context, topics, durationWeeks), goal(topics, durationWeeks),
 				reason(context, topics), weeks);
-		return new FallbackResult(draft, durationWeeks, adjustedReason, generatorType);
+		return new GeneratedPlan(draft, durationWeeks, adjustedReason, generatorType);
 	}
 
 	private List<Placement> arrangeOrder(List<CatalogTopic> topics, Set<Long> completedLessonIds) {
@@ -211,9 +211,6 @@ public class FallbackPlanBuilder {
 				&& curriculum.lessons().stream().allMatch(lesson -> completedLessonIds.contains(lesson.id()));
 	}
 
-	public record FallbackResult(PlanDraft draft, int durationWeeks, PlanAdjustedReason adjustedReason,
-			PlanGeneratorType generatorType) {
-	}
 
 	private record Placement(CatalogTopic topic, CatalogCurriculum curriculum) {
 	}

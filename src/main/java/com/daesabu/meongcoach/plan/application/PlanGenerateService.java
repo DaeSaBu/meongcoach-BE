@@ -2,35 +2,47 @@ package com.daesabu.meongcoach.plan.application;
 
 import com.daesabu.meongcoach.dog.application.provided.DogProfileFinder;
 import com.daesabu.meongcoach.dog.application.provided.DogProfileResult;
-import com.daesabu.meongcoach.plan.application.FallbackPlanBuilder.FallbackResult;
 import com.daesabu.meongcoach.plan.application.provided.PlanCreator;
 import com.daesabu.meongcoach.plan.application.provided.PlanFinder;
 import com.daesabu.meongcoach.plan.application.provided.dto.PlanCreateRequest;
 import com.daesabu.meongcoach.plan.application.provided.dto.PlanDetailResult;
+import com.daesabu.meongcoach.plan.application.required.PlanGenerator;
 import com.daesabu.meongcoach.plan.application.required.TrainingPlanRepository;
+import com.daesabu.meongcoach.plan.domain.PlanDraft;
+import com.daesabu.meongcoach.plan.domain.PlanGeneratorType;
 import com.daesabu.meongcoach.plan.domain.PlanMode;
 import com.daesabu.meongcoach.plan.domain.PlanStatus;
 import com.daesabu.meongcoach.plan.domain.TrainingPlan;
 import com.daesabu.meongcoach.plan.domain.exception.PlanAlreadyActiveException;
+import com.daesabu.meongcoach.plan.domain.exception.PlanGenerationFailedException;
 import com.daesabu.meongcoach.progress.application.provided.LessonProgressFinder;
 import com.daesabu.meongcoach.training.application.provided.TrainingCatalogFinder;
 import com.daesabu.meongcoach.training.application.provided.dto.TrainingCatalogResult;
+import com.daesabu.meongcoach.training.application.provided.dto.TrainingCatalogResult.CatalogCurriculum;
 import com.daesabu.meongcoach.user.application.provided.UserProfileFinder;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 import tools.jackson.databind.ObjectMapper;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Validated
 public class PlanGenerateService implements PlanCreator {
 
+	private static final int AI_MIN_OPEN_CURRICULUMS = 2;
+	private static final int AI_DURATION_WEEKS = 2;
+
 	private final PlanValidator planValidator;
 	private final FallbackPlanBuilder fallbackPlanBuilder;
+	private final PlanGenerator planGenerator;
 	private final PlanStoreService planStoreService;
 	private final PlanFinder planFinder;
 	private final TrainingPlanRepository trainingPlanRepository;
@@ -46,7 +58,7 @@ public class PlanGenerateService implements PlanCreator {
 		planValidator.validateRequest(mode, request);
 		validateNoActivePlan(userId, request);
 		PlanGenerationContext context = createContext(userId, request);
-		FallbackResult result = generate(mode, context, request);
+		GeneratedPlan result = generate(mode, context, request);
 		String interviewJson = objectMapper.writeValueAsString(request);
 		planStoreService.store(userId, mode, request, result, interviewJson);
 		return planFinder.findCurrent(userId).plan();
@@ -84,10 +96,49 @@ public class PlanGenerateService implements PlanCreator {
 				.toList();
 	}
 
-	private FallbackResult generate(PlanMode mode, PlanGenerationContext context, PlanCreateRequest request) {
+	private GeneratedPlan generate(PlanMode mode, PlanGenerationContext context, PlanCreateRequest request) {
 		if (mode == PlanMode.MANUAL) {
 			return fallbackPlanBuilder.buildManual(context, request.topicIds());
 		}
-		return fallbackPlanBuilder.buildFallback(context);
+		return generateWithAi(context);
+	}
+
+	private GeneratedPlan generateWithAi(PlanGenerationContext context) {
+		if (context.catalog().openCurriculums().size() < AI_MIN_OPEN_CURRICULUMS) {
+			return fallbackPlanBuilder.buildFallback(context);
+		}
+		return requestAiPlan(context).orElseGet(() -> fallbackPlanBuilder.buildFallback(context));
+	}
+
+	private Optional<GeneratedPlan> requestAiPlan(PlanGenerationContext context) {
+		Set<Long> openCurriculumIds = context.catalog().openCurriculums().stream()
+				.map(CatalogCurriculum::id)
+				.collect(Collectors.toSet());
+		try {
+			PlanDraft draft = planGenerator.generate(context, "");
+			List<String> violations = planValidator.validateDraft(draft, openCurriculumIds);
+			if (violations.isEmpty()) {
+				return Optional.of(aiPlan(draft));
+			}
+			return retryAiPlan(context, openCurriculumIds, violations);
+		} catch (PlanGenerationFailedException e) {
+			log.warn("AI 플랜 생성에 실패해 대체 플랜으로 넘어갑니다", e);
+			return Optional.empty();
+		}
+	}
+
+	private Optional<GeneratedPlan> retryAiPlan(PlanGenerationContext context, Set<Long> openCurriculumIds,
+			List<String> violations) {
+		PlanDraft retried = planGenerator.generate(context, String.join("; ", violations));
+		List<String> retriedViolations = planValidator.validateDraft(retried, openCurriculumIds);
+		if (retriedViolations.isEmpty()) {
+			return Optional.of(aiPlan(retried));
+		}
+		log.warn("AI 플랜이 재시도 후에도 검증을 통과하지 못해 대체 플랜으로 넘어갑니다: {}", retriedViolations);
+		return Optional.empty();
+	}
+
+	private GeneratedPlan aiPlan(PlanDraft draft) {
+		return new GeneratedPlan(draft, AI_DURATION_WEEKS, null, PlanGeneratorType.AI);
 	}
 }
