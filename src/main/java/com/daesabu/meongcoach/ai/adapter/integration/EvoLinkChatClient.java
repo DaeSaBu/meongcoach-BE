@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.http.client.ClientHttpRequestFactoryBuilder;
 import org.springframework.boot.http.client.HttpClientSettings;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
@@ -76,12 +77,11 @@ class EvoLinkChatClient {
 	}
 
 	private static RestClient buildRestClient(RestClient.Builder builder, Duration readTimeout) {
-		return builder
-				.requestFactory(ClientHttpRequestFactoryBuilder.detect()
-						.build(HttpClientSettings.defaults()
-								.withConnectTimeout(CONNECT_TIMEOUT)
-								.withReadTimeout(readTimeout)))
-				.build();
+		HttpClientSettings settings = HttpClientSettings.defaults()
+				.withConnectTimeout(CONNECT_TIMEOUT)
+				.withReadTimeout(readTimeout);
+		ClientHttpRequestFactory requestFactory = ClientHttpRequestFactoryBuilder.detect().build(settings);
+		return builder.requestFactory(requestFactory).build();
 	}
 
 	private static String extractContent(EvoLinkChatResponse response) {
