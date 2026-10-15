@@ -18,25 +18,30 @@ import java.util.Set;
 public record OnboardingCompleteRequest(
 		@NotBlank @Size(max = 50) String nickname,
 		@Past LocalDate birthDate,
-		@NotBlank String mbti,
-		@NotBlank String gender,
+		@Size(max = 4) String mbti,
+		@Size(max = 10) String gender,
 		@Size(max = 512) String profileImageUrl,
 		@Size(max = 100) List<@NotNull @Positive Long> priorTrainingTopicIds,
 		@Size(max = 100) List<@NotNull @Positive Long> trainingGoalTopicIds,
-		// 최대 크기는 dog 모듈의 사용자당 강아지 수 제한(Dogs.MAX_COUNT_PER_USER)과 같은 값이다.
-		// 모듈 경계를 넘어 상수를 참조하지 않으므로 값이 바뀌면 함께 고친다
 		@NotEmpty @Size(max = 5) @Valid List<DogRequest> dogs) {
 
 	public OnboardingCompleteInfo toInfo() {
 		return new OnboardingCompleteInfo(
 				nickname,
 				birthDate,
-				mbti,
-				gender,
+				nullIfBlank(mbti),
+				nullIfBlank(gender),
 				profileImageUrl,
 				Set.copyOf(emptyIfNull(priorTrainingTopicIds)),
 				Set.copyOf(emptyIfNull(trainingGoalTopicIds)),
 				dogs.stream().map(DogRequest::toInfo).toList());
+	}
+
+	private static String nullIfBlank(String value) {
+		if (value == null || value.isBlank()) {
+			return null;
+		}
+		return value;
 	}
 
 	private static <T> List<T> emptyIfNull(List<T> values) {
