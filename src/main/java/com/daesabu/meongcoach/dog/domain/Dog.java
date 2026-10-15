@@ -143,10 +143,14 @@ public class Dog extends BaseEntity {
 	}
 
 	public Integer getAgeInMonths() {
+		return getAgeInMonths(LocalDate.now());
+	}
+
+	public Integer getAgeInMonths(LocalDate today) {
 		if (birthDate == null) {
 			return null;
 		}
-		Period period = Period.between(birthDate, LocalDate.now());
+		Period period = Period.between(birthDate, today);
 		return period.getYears() * 12 + period.getMonths();
 	}
 }

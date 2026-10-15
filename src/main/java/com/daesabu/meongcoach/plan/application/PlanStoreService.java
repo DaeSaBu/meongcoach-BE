@@ -9,6 +9,7 @@ import com.daesabu.meongcoach.plan.domain.PlanStatus;
 import com.daesabu.meongcoach.plan.domain.TrainingPlan;
 import com.daesabu.meongcoach.plan.domain.TrainingPlanCreateCommand;
 import com.daesabu.meongcoach.plan.domain.exception.PlanAlreadyActiveException;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ public class PlanStoreService {
 	private final TrainingPlanRepository trainingPlanRepository;
 	private final DogProfileFinder dogProfileFinder;
 	private final DogProfileUpdater dogProfileUpdater;
+	private final Clock clock;
 
 	@Transactional
 	public void store(Long userId, PlanMode mode, PlanCreateRequest request, GeneratedPlan result,
@@ -30,7 +32,7 @@ public class PlanStoreService {
 		abandonActivePlans(userId, request.replace());
 		TrainingPlanCreateCommand command = new TrainingPlanCreateCommand(userId, request.dogId(), mode,
 				result.generatorType(), result.adjustedReason(), result.durationWeeks(), request.dailyMinutes(),
-				request.daysPerWeek(), LocalDate.now(), interviewJson, result.draft());
+				request.daysPerWeek(), LocalDate.now(clock), interviewJson, result.draft());
 		trainingPlanRepository.save(TrainingPlan.create(command));
 		updateExpectation(userId, request);
 	}

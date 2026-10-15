@@ -7,6 +7,8 @@ import com.daesabu.meongcoach.dog.domain.Dog;
 import com.daesabu.meongcoach.dog.domain.DogStatus;
 import com.daesabu.meongcoach.dog.domain.exception.DogNotFoundException;
 import com.daesabu.meongcoach.dog.domain.shared.Personality;
+import java.time.Clock;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class DogProfileFinderService implements DogProfileFinder {
 
 	private final DogRepository dogRepository;
+	private final Clock clock;
 
 	@Override
 	public List<Dog> findDogs(Long userId) {
@@ -55,7 +58,7 @@ public class DogProfileFinderService implements DogProfileFinder {
 				.map(Personality::getLabel)
 				.toList();
 		return new DogProfileResult(dog.getId(), dog.getName(), dog.getBirthDate(), dog.isBirthDateEstimated(),
-				dog.getAgeInMonths(), dog.getBreed().label(), dog.getSex().name(), personalityLabels,
+				dog.getAgeInMonths(LocalDate.now(clock)), dog.getBreed().label(), dog.getSex().name(), personalityLabels,
 				dog.getWeightKg(), dog.getExpectation());
 	}
 }
