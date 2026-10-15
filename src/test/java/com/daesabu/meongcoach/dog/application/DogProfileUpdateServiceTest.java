@@ -98,7 +98,7 @@ class DogProfileUpdateServiceTest {
 	@Test
 	void 생년월일과_이미지_기대사항이_없어도_수정할_수_있다() {
 		Dog saved = persistSelectedDog(USER_ID);
-		DogProfileUpdateCommand command = new DogProfileUpdateCommand("보리", Breed.MALTESE, DogSex.FEMALE, null,
+		DogProfileUpdateCommand command = new DogProfileUpdateCommand("보리", Breed.MALTESE, DogSex.FEMALE, null, false,
 				new BigDecimal("3.20"), Set.of(), null, null);
 
 		Dog updated = dogProfileUpdater.update(USER_ID, saved.getId(), command);
@@ -106,6 +106,67 @@ class DogProfileUpdateServiceTest {
 		assertThat(updated.getBirthDate()).isNull();
 		assertThat(updated.getProfileImageUrl()).isEmpty();
 		assertThat(updated.getExpectation()).isEmpty();
+	}
+
+	@Test
+	void 생년월일_추정_여부와_몸무게_없음을_반영해_수정한다() {
+		Dog saved = persistSelectedDog(USER_ID);
+		DogProfileUpdateCommand command = new DogProfileUpdateCommand("보리", Breed.MALTESE, DogSex.FEMALE,
+				LocalDate.of(2023, 1, 15), true, null, Set.of(), null, null);
+
+		dogProfileUpdater.update(USER_ID, saved.getId(), command);
+		entityManager.flush();
+		entityManager.clear();
+
+		Dog updated = dogRepository.findByIdAndUserId(saved.getId(), USER_ID).orElseThrow();
+		assertThat(updated.isBirthDateEstimated()).isTrue();
+		assertThat(updated.getWeightKg()).isNull();
+	}
+
+	@Test
+	void 기대_사항만_갱신하고_나머지_프로필은_유지한다() {
+		Dog saved = persistSelectedDog(USER_ID);
+		entityManager.clear();
+
+		dogProfileUpdater.updateExpectation(USER_ID, saved.getId(), NEW_EXPECTATION);
+		entityManager.flush();
+		entityManager.clear();
+
+		Dog updated = dogRepository.findByIdAndUserId(saved.getId(), USER_ID).orElseThrow();
+		assertThat(updated.getExpectation()).isEqualTo(NEW_EXPECTATION);
+		assertThat(updated.getName()).isEqualTo("초코");
+		assertThat(updated.getProfileImageUrl()).isEqualTo(IMAGE_URL);
+		assertThat(updated.getPersonalities()).containsExactly(Personality.FRIENDLY);
+	}
+
+	@Test
+	void 기대_사항을_null로_갱신하면_빈_문자열로_저장한다() {
+		Dog saved = persistSelectedDog(USER_ID);
+
+		dogProfileUpdater.updateExpectation(USER_ID, saved.getId(), null);
+		entityManager.flush();
+		entityManager.clear();
+
+		Dog updated = dogRepository.findByIdAndUserId(saved.getId(), USER_ID).orElseThrow();
+		assertThat(updated.getExpectation()).isEmpty();
+	}
+
+	@Test
+	void 없는_강아지_ID로_기대_사항을_갱신하면_예외를_던진다() {
+		assertThatThrownBy(() -> dogProfileUpdater.updateExpectation(USER_ID, 999L, NEW_EXPECTATION))
+				.isInstanceOf(DogNotFoundException.class);
+	}
+
+	@Test
+	void 다른_사용자의_강아지_기대_사항은_갱신할_수_없다() {
+		Dog othersDog = persistSelectedDog(OTHER_USER_ID);
+
+		assertThatThrownBy(() -> dogProfileUpdater.updateExpectation(USER_ID, othersDog.getId(), NEW_EXPECTATION))
+				.isInstanceOf(DogNotFoundException.class);
+
+		entityManager.clear();
+		Dog unchanged = dogRepository.findById(othersDog.getId()).orElseThrow();
+		assertThat(unchanged.getExpectation()).isEqualTo(EXPECTATION);
 	}
 
 	@Test
@@ -128,13 +189,13 @@ class DogProfileUpdateServiceTest {
 	}
 
 	private DogProfileUpdateCommand updateCommand(Set<Personality> personalities) {
-		return new DogProfileUpdateCommand("보리", Breed.MALTESE, DogSex.FEMALE, LocalDate.of(2023, 1, 15),
+		return new DogProfileUpdateCommand("보리", Breed.MALTESE, DogSex.FEMALE, LocalDate.of(2023, 1, 15), false,
 				new BigDecimal("3.20"), personalities, NEW_IMAGE_URL, NEW_EXPECTATION);
 	}
 
 	private Dog persistSelectedDog(Long userId) {
 		Dog dog = Dog.register(new DogRegisterCommand(userId, "초코", Breed.POODLE, DogSex.MALE,
-				LocalDate.of(2024, 3, 1), new BigDecimal("4.50"), IMAGE_URL, EXPECTATION));
+				LocalDate.of(2024, 3, 1), false, new BigDecimal("4.50"), IMAGE_URL, EXPECTATION));
 		dog.select();
 		dog.changePersonalities(Set.of(Personality.FRIENDLY));
 		return dogRepository.saveAndFlush(dog);
