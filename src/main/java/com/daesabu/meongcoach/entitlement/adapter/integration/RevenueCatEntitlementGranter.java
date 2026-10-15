@@ -14,11 +14,6 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestClientResponseException;
 
-/**
- * RevenueCat v2 고객 액션으로 프로모션 이용권을 지급한다.
- * 같은 이용권을 더 늦은 만료 시각으로 다시 지급하면 RevenueCat이 기존 지급을 연장한다(기존 만료보다 2시간 이상 뒤여야 함).
- * 앱에서 구매 SDK를 초기화한 적이 없어 고객이 없으면 404가 오므로, 그때는 고객을 만든 뒤 한 번 다시 지급한다.
- */
 @Slf4j
 @Component
 public class RevenueCatEntitlementGranter implements PromotionalEntitlementGranter {
@@ -41,6 +36,10 @@ public class RevenueCatEntitlementGranter implements PromotionalEntitlementGrant
 		try {
 			postGrant(userId, request);
 		} catch (RestClientResponseException e) {
+			if (e.getStatusCode().isSameCodeAs(HttpStatus.CONFLICT)) {
+				log.info("기존 지급과 만료 시각이 겹쳐 이미 지급된 것으로 봅니다: userId={}, type={}", userId, type);
+				return;
+			}
 			if (!e.getStatusCode().isSameCodeAs(HttpStatus.NOT_FOUND)) {
 				throw new EntitlementProviderUnavailableException(e);
 			}
