@@ -30,7 +30,7 @@ final class PlanPromptSections {
 				"월령: " + age(dog),
 				optional("견종", dog.breedLabel()),
 				optional("성별", sex(dog.sex())),
-				optional("성격", String.join(", ", dog.personalityLabels())),
+				optional("성격", personality(dog.personalityLabels())),
 				weight(dog.weightKg()))
 				.filter(part -> !part.isEmpty())
 				.toList();
@@ -85,6 +85,13 @@ final class PlanPromptSections {
 			return "";
 		}
 		return label + ": " + value;
+	}
+
+	private static String personality(List<String> labels) {
+		if (labels == null) {
+			return "";
+		}
+		return String.join(", ", labels);
 	}
 
 	private static String sex(String sex) {
