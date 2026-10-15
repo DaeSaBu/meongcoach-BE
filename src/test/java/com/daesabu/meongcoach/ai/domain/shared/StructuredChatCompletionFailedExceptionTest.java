@@ -1,7 +1,8 @@
-package com.daesabu.meongcoach.ai.domain.exception;
+package com.daesabu.meongcoach.ai.domain.shared;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.daesabu.meongcoach.ai.domain.exception.AiErrorCode;
 import com.daesabu.meongcoach.shared.exception.DomainException;
 import org.junit.jupiter.api.Test;
 

@@ -9,7 +9,7 @@ import static org.mockito.Mockito.times;
 
 import com.daesabu.meongcoach.ai.application.provided.dto.StructuredChatRequest;
 import com.daesabu.meongcoach.ai.application.required.StructuredChatClient;
-import com.daesabu.meongcoach.ai.domain.exception.StructuredChatCompletionFailedException;
+import com.daesabu.meongcoach.ai.domain.shared.StructuredChatCompletionFailedException;
 import com.daesabu.meongcoach.dog.application.provided.DogProfileDeleter;
 import com.daesabu.meongcoach.dog.domain.exception.DogNotFoundException;
 import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;

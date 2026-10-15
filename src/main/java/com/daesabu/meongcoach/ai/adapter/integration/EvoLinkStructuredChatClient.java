@@ -6,7 +6,7 @@ import com.daesabu.meongcoach.ai.adapter.integration.dto.EvoLinkChatRequest.Resp
 import com.daesabu.meongcoach.ai.adapter.integration.dto.EvoLinkChatRequest.Thinking;
 import com.daesabu.meongcoach.ai.application.provided.dto.StructuredChatRequest;
 import com.daesabu.meongcoach.ai.application.required.StructuredChatClient;
-import com.daesabu.meongcoach.ai.domain.exception.StructuredChatCompletionFailedException;
+import com.daesabu.meongcoach.ai.domain.shared.StructuredChatCompletionFailedException;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;

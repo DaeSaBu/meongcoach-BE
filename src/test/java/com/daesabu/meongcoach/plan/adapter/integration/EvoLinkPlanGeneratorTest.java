@@ -8,7 +8,7 @@ import static org.mockito.BDDMockito.then;
 
 import com.daesabu.meongcoach.ai.application.provided.StructuredChatCompleter;
 import com.daesabu.meongcoach.ai.application.provided.dto.StructuredChatRequest;
-import com.daesabu.meongcoach.ai.domain.exception.StructuredChatCompletionFailedException;
+import com.daesabu.meongcoach.ai.domain.shared.StructuredChatCompletionFailedException;
 import com.daesabu.meongcoach.dog.application.provided.DogProfileResult;
 import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;
 import com.daesabu.meongcoach.plan.application.PlanGenerationContext;
