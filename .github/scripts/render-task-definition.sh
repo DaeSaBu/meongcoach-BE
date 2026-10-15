@@ -85,7 +85,9 @@ jq \
 	--arg sentry_dsn "${SENTRY_DSN:-}" \
 	--arg sentry_release "${SENTRY_RELEASE:-}" \
 	--arg app_minimum_version_ios "${APP_MINIMUM_VERSION_IOS:-}" \
-	--arg app_minimum_version_android "${APP_MINIMUM_VERSION_ANDROID:-}" '
+	--arg app_minimum_version_android "${APP_MINIMUM_VERSION_ANDROID:-}" \
+	--arg admin_api_key "${ADMIN_API_KEY:-}" \
+	--arg slack_graduation_webhook_url "${SLACK_GRADUATION_WEBHOOK_URL:-}" '
 	if ([.containerDefinitions[] | select(.name == $container)] | length) != 1 then
 		error("배포 대상 컨테이너는 정확히 하나여야 합니다.")
 	else
@@ -171,7 +173,9 @@ jq \
 								.name != "SENTRY_DSN" and
 								.name != "SENTRY_RELEASE" and
 								.name != "APP_MINIMUM_VERSION_IOS" and
-								.name != "APP_MINIMUM_VERSION_ANDROID"
+								.name != "APP_MINIMUM_VERSION_ANDROID" and
+								.name != "ADMIN_API_KEY" and
+								.name != "SLACK_GRADUATION_WEBHOOK_URL"
 							))) +
 						[
 							{"name": "JWT_SECRET", "value": $jwt_secret},
@@ -235,6 +239,17 @@ jq \
 							[]
 						 else
 							[{"name": "APP_MINIMUM_VERSION_ANDROID", "value": $app_minimum_version_android}]
+						 end) +
+						# 운영자 API 키와 실습 인증 Slack 알림은 선택 사항이다. 비어 있으면 각각 운영자 API 404, 알림 없음으로 기동한다
+						(if $admin_api_key == "" then
+							[]
+						 else
+							[{"name": "ADMIN_API_KEY", "value": $admin_api_key}]
+						 end) +
+						(if $slack_graduation_webhook_url == "" then
+							[]
+						 else
+							[{"name": "SLACK_GRADUATION_WEBHOOK_URL", "value": $slack_graduation_webhook_url}]
 						 end)
 					)
 					| .image = $image
