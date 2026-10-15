@@ -8,6 +8,7 @@ import com.daesabu.meongcoach.dog.domain.DogStatus;
 import com.daesabu.meongcoach.dog.domain.exception.DogNotFoundException;
 import com.daesabu.meongcoach.dog.domain.shared.Personality;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,6 +40,16 @@ public class DogProfileFinderService implements DogProfileFinder {
 	@Override
 	public DogProfileResult findProfile(Long userId, Long dogId) {
 		Dog dog = findDog(userId, dogId);
+		return toProfile(dog);
+	}
+
+	@Override
+	public Optional<DogProfileResult> findProfileIfPresent(Long userId, Long dogId) {
+		return dogRepository.findByIdAndUserId(dogId, userId)
+				.map(this::toProfile);
+	}
+
+	private DogProfileResult toProfile(Dog dog) {
 		List<String> personalityLabels = dog.getPersonalities().stream()
 				.sorted()
 				.map(Personality::getLabel)
