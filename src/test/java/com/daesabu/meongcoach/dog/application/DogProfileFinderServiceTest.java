@@ -17,6 +17,7 @@ import com.daesabu.meongcoach.dog.domain.shared.Personality;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -124,6 +125,25 @@ class DogProfileFinderServiceTest {
 	void 없는_강아지_ID로_프로필을_조회하면_예외를_던진다() {
 		assertThatThrownBy(() -> dogProfileFinder.findProfile(USER_ID, 999L))
 				.isInstanceOf(DogNotFoundException.class);
+	}
+
+	@Test
+	void 있는_강아지는_프로필을_Optional로_반환한다() {
+		Dog saved = persistSelectedDog(USER_ID);
+
+		Optional<DogProfileResult> result = dogProfileFinder.findProfileIfPresent(USER_ID, saved.getId());
+
+		assertThat(result).isPresent();
+		assertThat(result.get().id()).isEqualTo(saved.getId());
+		assertThat(result.get().name()).isEqualTo("초코");
+	}
+
+	@Test
+	void 없거나_다른_사용자의_강아지는_예외_없이_빈_값을_반환한다() {
+		Dog othersDog = persistSelectedDog(OTHER_USER_ID);
+
+		assertThat(dogProfileFinder.findProfileIfPresent(USER_ID, othersDog.getId())).isEmpty();
+		assertThat(dogProfileFinder.findProfileIfPresent(USER_ID, 999L)).isEmpty();
 	}
 
 	@Test
