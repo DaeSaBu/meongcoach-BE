@@ -22,7 +22,6 @@ import java.util.List;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.springframework.util.Assert;
 
 @Getter
 @Entity
@@ -84,6 +83,7 @@ public class TrainingPlan extends BaseEntity {
 
 	@Column(nullable = false)
 	private LocalDate targetEndOn;
+
 	private LocalDateTime completedAt;
 
 	@Enumerated(EnumType.STRING)
@@ -126,7 +126,9 @@ public class TrainingPlan extends BaseEntity {
 	}
 
 	public void abandon() {
-		Assert.state(status == PlanStatus.ACTIVE, "진행 중인 플랜만 포기할 수 있다");
+		if (status != PlanStatus.ACTIVE) {
+			throw new PlanNotActiveException();
+		}
 		this.status = PlanStatus.ABANDONED;
 	}
 
