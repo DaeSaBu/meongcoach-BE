@@ -44,7 +44,6 @@ class DogRepositoryTest {
 		assertThat(found.orElseThrow().getId()).isEqualTo(selected.getId());
 	}
 
-	// 애플리케이션 레이어에서만 불변식을 강제하므로, 선택이 여러 건인 데이터가 남아 있어도 예외 없이 끝나야 한다
 	@Test
 	void 선택된_강아지가_여러_건이어도_가장_먼저_등록된_한_마리를_반환한다() {
 		Dog first = persistSelectedDog(USER_ID);
@@ -142,6 +141,6 @@ class DogRepositoryTest {
 
 	private Dog newDog(Long userId) {
 		return Dog.register(new DogRegisterCommand(userId, "초코", Breed.POODLE, DogSex.MALE,
-				LocalDate.of(2024, 3, 1), new BigDecimal("4.50"), IMAGE_URL, null));
+				LocalDate.of(2024, 3, 1), false, new BigDecimal("4.50"), IMAGE_URL, null));
 	}
 }
