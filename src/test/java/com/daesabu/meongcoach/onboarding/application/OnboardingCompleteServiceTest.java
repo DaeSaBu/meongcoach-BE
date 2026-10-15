@@ -158,6 +158,19 @@ class OnboardingCompleteServiceTest {
 	}
 
 	@Test
+	void MBTI를_전달하지_않으면_미입력으로_저장한다() {
+		OnboardingCompleteInfo info = new OnboardingCompleteInfo("멍멍이집사", null, null, Set.of(), Set.of(),
+				List.of(new DogRegisterInfo("보리", "MALTESE", "FEMALE", null, new BigDecimal("3.20"), Set.of(), null,
+						null)));
+
+		service.complete(userId, info);
+
+		UserProfile profile = userProfileRepository.findById(userId).orElseThrow();
+		assertThat(profile.getMbti()).isNull();
+		assertThat(profile.getProfileImageUrl()).isEmpty();
+	}
+
+	@Test
 	void 사용자_이미지가_우리_스토리지_URL이_아니면_실패한다() {
 		assertThatThrownBy(() -> service.complete(userId,
 				completeInfo("https://evil.example.com/a.jpg", null)))

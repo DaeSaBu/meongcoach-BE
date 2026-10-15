@@ -138,7 +138,8 @@ class OnboardingControllerTest {
 				.andDo(document("onboarding/complete",
 						requestFields(
 								fieldWithPath("nickname").description("사용자 닉네임. 필수 입력, 최대 50자"),
-								fieldWithPath("mbti").description("사용자 MBTI 코드. 필수 입력"),
+								fieldWithPath("mbti").description("사용자 MBTI 코드. 최대 4자, 선택 입력. 미입력·null·공백은 미입력으로 저장")
+										.optional(),
 								fieldWithPath("profileImageUrl").description(
 										"사용자 프로필 이미지 공개 URL. 이미지 업로드 URL 발급 API의 "
 												+ "publicUrl. 최대 512자, 선택 입력").optional(),
@@ -320,29 +321,36 @@ class OnboardingControllerTest {
 	}
 
 	@Test
-	void MBTI가_null이면_검증에_실패한다() throws Exception {
+	void MBTI를_보내지_않아도_온보딩을_완료한다() throws Exception {
+		String request = COMPLETE_REQUEST.replace("\"mbti\": \"INTJ\",", "");
+
+		mockMvc.perform(post("/api/onboarding")
+						.principal(() -> "1")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(request))
+				.andExpect(status().isCreated());
+
+		assertThat(onboardingCompleter.lastInfo.mbti()).isNull();
+	}
+
+	@Test
+	void MBTI가_null이면_미입력으로_전달한다() throws Exception {
 		String request = COMPLETE_REQUEST.replace("\"mbti\": \"INTJ\"", "\"mbti\": null");
 
 		mockMvc.perform(post("/api/onboarding")
 						.principal(() -> "1")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(request))
-				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
-				.andExpect(jsonPath("$.errors[0].field").value("mbti"));
+				.andExpect(status().isCreated());
+
+		assertThat(onboardingCompleter.lastInfo.mbti()).isNull();
 	}
 
 	@Test
-	void MBTI가_공백이면_검증에_실패한다() throws Exception {
-		String request = COMPLETE_REQUEST.replace("\"mbti\": \"INTJ\"", "\"mbti\": \"   \"");
+	void MBTI가_4자를_넘으면_검증에_실패한다() throws Exception {
+		String request = COMPLETE_REQUEST.replace("\"mbti\": \"INTJ\"", "\"mbti\": \"INTJX\"");
 
-		mockMvc.perform(post("/api/onboarding")
-						.principal(() -> "1")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content(request))
-				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
-				.andExpect(jsonPath("$.errors[0].field").value("mbti"));
+		assertValidationFails(request, "mbti");
 	}
 
 	@Test
