@@ -23,4 +23,10 @@ public interface DogProfileFinder {
 	 * 사용자가 선택한 강아지를 조회한다. 선택된 강아지가 없으면 {@code DogNotFoundException}을 던진다.
 	 */
 	Dog findSelectedDog(Long userId);
+
+	/**
+	 * 사용자가 소유한 강아지의 프로필을 다른 모듈이 쓰는 표시용 결과로 조회한다.
+	 * 없거나 본인 소유가 아니면 {@code DogNotFoundException}을 던진다.
+	 */
+	DogProfileResult findProfile(Long userId, Long dogId);
 }
