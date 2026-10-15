@@ -1,5 +1,6 @@
 package com.daesabu.meongcoach.plan.application;
 
+import com.daesabu.meongcoach.dog.application.provided.DogProfileFinder;
 import com.daesabu.meongcoach.dog.application.provided.DogProfileUpdater;
 import com.daesabu.meongcoach.plan.application.FallbackPlanBuilder.FallbackResult;
 import com.daesabu.meongcoach.plan.application.provided.dto.PlanCreateRequest;
@@ -21,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class PlanStoreService {
 
 	private final TrainingPlanRepository trainingPlanRepository;
+	private final DogProfileFinder dogProfileFinder;
 	private final DogProfileUpdater dogProfileUpdater;
 
 	@Transactional
@@ -39,11 +41,16 @@ public class PlanStoreService {
 		if (activePlans.isEmpty()) {
 			return;
 		}
-		if (!replace) {
+		TrainingPlan active = activePlans.getFirst();
+		if (!replace && hasDog(userId, active)) {
 			throw new PlanAlreadyActiveException();
 		}
-		activePlans.forEach(TrainingPlan::abandon);
+		active.abandon();
 		trainingPlanRepository.flush();
+	}
+
+	private boolean hasDog(Long userId, TrainingPlan plan) {
+		return dogProfileFinder.findProfileIfPresent(userId, plan.getDogId()).isPresent();
 	}
 
 	private void updateExpectation(Long userId, PlanCreateRequest request) {
