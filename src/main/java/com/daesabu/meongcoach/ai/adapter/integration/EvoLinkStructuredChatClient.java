@@ -15,10 +15,6 @@ import org.springframework.web.client.RestClientException;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
-/**
- * EvoLink 채팅 API로 json_schema strict 응답을 받는 범용 어댑터.
- * 스키마 파싱 실패와 HTTP·응답 오류는 경계에서 StructuredChatCompletionFailedException으로 번역한다.
- */
 @Component
 @RequiredArgsConstructor
 public class EvoLinkStructuredChatClient implements StructuredChatClient {
