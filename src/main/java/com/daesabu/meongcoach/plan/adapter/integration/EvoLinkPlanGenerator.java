@@ -106,6 +106,9 @@ public class EvoLinkPlanGenerator implements PlanGenerator {
 
 		PlanDraft toDraft() {
 			List<WeekContent> contents = Objects.requireNonNullElse(weeks, List.of());
+			if (contents.stream().anyMatch(Objects::isNull)) {
+				throw new PlanGenerationFailedException("플랜 생성 응답의 weeks에 빈 항목이 있습니다");
+			}
 			List<WeekDraft> weekDrafts = contents.stream()
 					.map(WeekContent::toDraft)
 					.toList();

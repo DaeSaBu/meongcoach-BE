@@ -58,15 +58,25 @@ public class PlanGenerateService implements PlanCreator {
 	private final PlanGenerationProperties generationProperties;
 
 	@Override
-	public PlanDetailResult create(Long userId, PlanCreateRequest request) {
-		PlanMode mode = PlanMode.from(request.mode());
-		planValidator.validateRequest(mode, request);
+	public PlanDetailResult create(Long userId, PlanCreateRequest rawRequest) {
+		PlanMode mode = PlanMode.from(rawRequest.mode());
+		planValidator.validateRequest(mode, rawRequest);
+		PlanCreateRequest request = withoutIgnoredFields(mode, rawRequest);
 		validateNoActivePlan(userId, request);
 		PlanGenerationContext context = createContext(userId, request);
 		GeneratedPlan result = generate(mode, context, request);
 		String interviewJson = objectMapper.writeValueAsString(request);
 		planStoreService.store(userId, mode, request, result, interviewJson);
 		return planFinder.findCurrent(userId).plan();
+	}
+
+	private PlanCreateRequest withoutIgnoredFields(PlanMode mode, PlanCreateRequest request) {
+		if (mode == PlanMode.MANUAL) {
+			return new PlanCreateRequest(request.dogId(), request.mode(), request.topicIds(), null,
+					request.dailyMinutes(), request.daysPerWeek(), request.replace());
+		}
+		return new PlanCreateRequest(request.dogId(), request.mode(), null, request.expectation(),
+				request.dailyMinutes(), request.daysPerWeek(), request.replace());
 	}
 
 	private void validateNoActivePlan(Long userId, PlanCreateRequest request) {
@@ -109,14 +119,14 @@ public class PlanGenerateService implements PlanCreator {
 	}
 
 	private GeneratedPlan generateWithAi(PlanGenerationContext context) {
-		if (context.catalog().openCurriculums().size() < AI_MIN_OPEN_CURRICULUMS) {
+		if (PlanCatalogRules.plannableCurriculums(context.catalog()).size() < AI_MIN_OPEN_CURRICULUMS) {
 			return fallbackPlanBuilder.buildFallback(context);
 		}
 		return requestAiPlan(context).orElseGet(() -> fallbackPlanBuilder.buildFallback(context));
 	}
 
 	private Optional<GeneratedPlan> requestAiPlan(PlanGenerationContext context) {
-		Set<Long> openCurriculumIds = context.catalog().openCurriculums().stream()
+		Set<Long> openCurriculumIds = PlanCatalogRules.plannableCurriculums(context.catalog()).stream()
 				.map(CatalogCurriculum::id)
 				.collect(Collectors.toSet());
 		Instant startedAt = clock.instant();
