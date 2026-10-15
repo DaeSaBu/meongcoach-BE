@@ -4,6 +4,7 @@ import com.daesabu.meongcoach.ai.application.provided.StructuredChatCompleter;
 import com.daesabu.meongcoach.ai.application.provided.dto.StructuredChatRequest;
 import com.daesabu.meongcoach.ai.domain.shared.StructuredChatCompletionFailedException;
 import com.daesabu.meongcoach.plan.application.PlanGenerationContext;
+import com.daesabu.meongcoach.plan.application.PlanGenerationProperties;
 import com.daesabu.meongcoach.plan.application.required.PlanGenerator;
 import com.daesabu.meongcoach.plan.domain.PlanDraft;
 import com.daesabu.meongcoach.plan.domain.PlanDraft.WeekDraft;
@@ -31,13 +32,16 @@ public class EvoLinkPlanGenerator implements PlanGenerator {
 
 	private final StructuredChatCompleter structuredChatCompleter;
 	private final ObjectMapper objectMapper;
+	private final PlanGenerationProperties properties;
 	private final String systemPrompt;
 	private final String userPrompt;
 	private final String schemaJson;
 
-	public EvoLinkPlanGenerator(StructuredChatCompleter structuredChatCompleter, ObjectMapper objectMapper) {
+	public EvoLinkPlanGenerator(StructuredChatCompleter structuredChatCompleter, ObjectMapper objectMapper,
+			PlanGenerationProperties properties) {
 		this.structuredChatCompleter = structuredChatCompleter;
 		this.objectMapper = objectMapper;
+		this.properties = properties;
 		this.systemPrompt = PromptLoader.load(SYSTEM_PROMPT_PATH);
 		this.userPrompt = PromptLoader.load(USER_PROMPT_PATH);
 		this.schemaJson = PromptLoader.load(SCHEMA_PATH);
@@ -47,7 +51,7 @@ public class EvoLinkPlanGenerator implements PlanGenerator {
 	@Override
 	public PlanDraft generate(PlanGenerationContext context, String retryFeedback) {
 		StructuredChatRequest request = new StructuredChatRequest(systemPrompt, userPrompt(context, retryFeedback),
-				SCHEMA_NAME, schemaJson);
+				SCHEMA_NAME, schemaJson, properties.callTimeout());
 		String content = completeOrThrow(request);
 		return parseDraft(content);
 	}
