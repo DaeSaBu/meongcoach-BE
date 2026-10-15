@@ -42,12 +42,29 @@ class PlanStoreServiceConflictTest {
 		PlanStoreService service = new PlanStoreService(trainingPlanRepository, dogProfileFinder, dogProfileUpdater,
 				clock);
 		given(trainingPlanRepository.findByUserIdAndStatus(1L, PlanStatus.ACTIVE)).willReturn(List.of());
-		given(trainingPlanRepository.saveAndFlush(any())).willThrow(new DataIntegrityViolationException("중복"));
+		given(trainingPlanRepository.saveAndFlush(any())).willThrow(new DataIntegrityViolationException(
+				"duplicate key value violates unique constraint \"uk_training_plans_user_id_active\""));
 		PlanDraft draft = new PlanDraft("제목", "목표", "이유", List.of(new WeekDraft(1, "테마", "마일스톤", List.of(1L))));
 		PlanCreateRequest request = new PlanCreateRequest(2L, "MANUAL", List.of(1L), null, 10, 3, false);
 		GeneratedPlan result = new GeneratedPlan(draft, 1, null, PlanGeneratorType.MANUAL);
 
 		assertThatThrownBy(() -> service.store(1L, PlanMode.MANUAL, request, result, "{}"))
 				.isInstanceOf(PlanAlreadyActiveException.class);
+	}
+
+	@Test
+	void 진행_중_플랜_인덱스가_아닌_무결성_위반은_그대로_던진다() {
+		Clock clock = Clock.fixed(Instant.parse("2026-10-15T00:00:00Z"), ZoneId.of("Asia/Seoul"));
+		PlanStoreService service = new PlanStoreService(trainingPlanRepository, dogProfileFinder, dogProfileUpdater,
+				clock);
+		given(trainingPlanRepository.findByUserIdAndStatus(1L, PlanStatus.ACTIVE)).willReturn(List.of());
+		given(trainingPlanRepository.saveAndFlush(any())).willThrow(new DataIntegrityViolationException(
+				"null value in column \"title\" violates not-null constraint"));
+		PlanDraft draft = new PlanDraft("제목", "목표", "이유", List.of(new WeekDraft(1, "테마", "마일스톤", List.of(1L))));
+		PlanCreateRequest request = new PlanCreateRequest(2L, "MANUAL", List.of(1L), null, 10, 3, false);
+		GeneratedPlan result = new GeneratedPlan(draft, 1, null, PlanGeneratorType.MANUAL);
+
+		assertThatThrownBy(() -> service.store(1L, PlanMode.MANUAL, request, result, "{}"))
+				.isInstanceOf(DataIntegrityViolationException.class);
 	}
 }
