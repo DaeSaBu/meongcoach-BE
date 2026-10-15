@@ -148,6 +148,19 @@ class PlanPromptSectionsTest {
 	}
 
 	@Test
+	void 카탈로그에서_레슨이_없는_커리큘럼은_뺀다() {
+		CatalogCurriculum empty = new CatalogCurriculum(77L, "레슨 없음", "설명", 1, false, false, List.of());
+		CatalogCurriculum basic = new CatalogCurriculum(11L, "앉아 기초", "설명", 2, false, false,
+				List.of(new CatalogLesson(111L, "레슨1", 1, 5)));
+		CatalogTopic topic = new CatalogTopic(1L, "앉아", 1, List.of(empty, basic));
+		CatalogCategory category = new CatalogCategory(1L, "퍼피", 1, EntitlementType.PUPPY, List.of(topic));
+
+		String section = PlanPromptSections.catalog(new TrainingCatalogResult(List.of(category)));
+
+		assertThat(section).contains("\"curriculumId\":11").doesNotContain("\"curriculumId\":77");
+	}
+
+	@Test
 	void 피드백이_없으면_빈_문자열이다() {
 		assertThat(PlanPromptSections.retryFeedback("")).isEmpty();
 	}

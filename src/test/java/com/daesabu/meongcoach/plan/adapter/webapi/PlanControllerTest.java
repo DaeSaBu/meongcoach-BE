@@ -321,6 +321,7 @@ class PlanControllerTest {
 		fields.add(fieldWithPath(prefix + "today.curriculumTitle").description("커리큘럼 이름"));
 		fields.add(fieldWithPath(prefix + "today.topicId").description("토픽 ID"));
 		fields.add(fieldWithPath(prefix + "today.topicTitle").description("토픽 이름"));
+		fields.add(fieldWithPath(prefix + "today.locked").description("잠긴 커리큘럼 여부. true면 이용권이 필요해 페이월로 안내한다"));
 		fields.add(fieldWithPath(prefix + "today.lessonId").description("레슨 ID"));
 		fields.add(fieldWithPath(prefix + "today.lessonTitle").description("레슨 이름"));
 		fields.add(fieldWithPath(prefix + "today.estimatedMinutes").optional().type(JsonFieldType.NUMBER)
@@ -338,18 +339,19 @@ class PlanControllerTest {
 		fields.add(fieldWithPath(prefix + "weeks[].items[].topicTitle").description("토픽 이름"));
 		fields.add(fieldWithPath(prefix + "weeks[].items[].totalLessons").description("커리큘럼의 전체 레슨 수"));
 		fields.add(fieldWithPath(prefix + "weeks[].items[].completedLessons").description("완료한 레슨 수"));
+		fields.add(fieldWithPath(prefix + "weeks[].items[].locked").description("잠긴 커리큘럼 여부. true면 이용권이 필요해 페이월로 안내한다"));
 		fields.add(fieldWithPath(prefix + "weeks[].items[].status")
 				.description("커리큘럼 진행 상태(NOT_STARTED, IN_PROGRESS, COMPLETED)"));
 		return fields;
 	}
 
 	private PlanDetailResult detail(PlanAdjustedReason adjustedReason) {
-		Item first = new Item(21L, "앉아 기초", 11L, "앉아", 2, 1, CurriculumStatus.IN_PROGRESS);
-		Item second = new Item(22L, "앉아 심화", 11L, "앉아", 2, 0, CurriculumStatus.NOT_STARTED);
+		Item first = new Item(21L, "앉아 기초", 11L, "앉아", 2, 1, CurriculumStatus.IN_PROGRESS, false);
+		Item second = new Item(22L, "앉아 심화", 11L, "앉아", 2, 0, CurriculumStatus.NOT_STARTED, true);
 		List<Week> weeks = List.of(
 				new Week(1, "앉아", "앉아 기초까지 해내기", CurriculumStatus.IN_PROGRESS, List.of(first)),
 				new Week(2, "앉아", "앉아 심화까지 해내기", CurriculumStatus.NOT_STARTED, List.of(second)));
-		Today today = new Today(21L, "앉아 기초", 11L, "앉아", 211L, "앉아 기초 레슨2", 5);
+		Today today = new Today(21L, "앉아 기초", 11L, "앉아", 211L, "앉아 기초 레슨2", 5, false);
 		return new PlanDetailResult(100L, 7L, "초코", PlanMode.AI, "초코의 2주 앉아 플랜", "2주 동안 앉아를 차근차근 익혀요",
 				"이렇게 짰어요", PlanGeneratorType.FALLBACK, adjustedReason, 2, 10, 3, LocalDate.of(2026, 10, 15),
 				LocalDate.of(2026, 10, 28), 13, 1, 1, new Progress(0, 2), today, weeks);
