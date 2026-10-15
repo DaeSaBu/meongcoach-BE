@@ -11,6 +11,7 @@ import com.daesabu.meongcoach.plan.domain.TrainingPlan;
 import com.daesabu.meongcoach.progress.application.provided.LessonProgressFinder;
 import com.daesabu.meongcoach.training.application.provided.TrainingCatalogFinder;
 import com.daesabu.meongcoach.training.application.provided.dto.TrainingCatalogResult;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -28,6 +29,7 @@ public class PlanQueryService implements PlanFinder {
 	private final DogProfileFinder dogProfileFinder;
 	private final TrainingCatalogFinder trainingCatalogFinder;
 	private final LessonProgressFinder lessonProgressFinder;
+	private final Clock clock;
 
 	@Override
 	public CurrentPlanResult findCurrent(Long userId) {
@@ -47,6 +49,6 @@ public class PlanQueryService implements PlanFinder {
 	private PlanDetailResult assemble(Long userId, TrainingPlan plan, DogProfileResult dog) {
 		TrainingCatalogResult catalog = trainingCatalogFinder.findCatalog(userId);
 		Set<Long> completedLessonIds = lessonProgressFinder.findCompletedLessonIds(userId, catalog.allLessonIds());
-		return PlanDetailAssembler.assemble(plan, dog.name(), catalog, completedLessonIds, LocalDate.now());
+		return PlanDetailAssembler.assemble(plan, dog.name(), catalog, completedLessonIds, LocalDate.now(clock));
 	}
 }

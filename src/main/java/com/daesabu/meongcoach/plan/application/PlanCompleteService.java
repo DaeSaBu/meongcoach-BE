@@ -14,6 +14,7 @@ import com.daesabu.meongcoach.training.application.provided.dto.TrainingCatalogR
 import com.daesabu.meongcoach.training.application.provided.dto.TrainingCatalogResult.CatalogEntry;
 import com.daesabu.meongcoach.training.domain.shared.CurriculumStatus;
 import com.daesabu.meongcoach.user.application.provided.UserProfileUpdater;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -36,6 +37,7 @@ public class PlanCompleteService implements PlanCompleter {
 	private final TrainingCatalogFinder trainingCatalogFinder;
 	private final LessonProgressFinder lessonProgressFinder;
 	private final UserProfileUpdater userProfileUpdater;
+	private final Clock clock;
 
 	@Override
 	@Transactional
@@ -43,7 +45,7 @@ public class PlanCompleteService implements PlanCompleter {
 		PlanOutcome outcome = PlanOutcome.from(request.outcome());
 		TrainingPlan plan = trainingPlanRepository.findByIdAndUserId(planId, userId)
 				.orElseThrow(PlanNotFoundException::new);
-		plan.complete(outcome, LocalDateTime.now());
+		plan.complete(outcome, LocalDateTime.now(clock));
 		TrainingCatalogResult catalog = trainingCatalogFinder.findCatalog(userId);
 		Set<Long> completedLessonIds = lessonProgressFinder.findCompletedLessonIds(userId, catalog.allLessonIds());
 		List<CatalogEntry> entries = plan.curriculumIds().stream()
@@ -58,7 +60,7 @@ public class PlanCompleteService implements PlanCompleter {
 		int totalLessons = entries.stream()
 				.mapToInt(entry -> entry.curriculum().lessons().size())
 				.sum();
-		long daysTaken = ChronoUnit.DAYS.between(plan.getStartedOn(), LocalDate.now()) + 1;
+		long daysTaken = ChronoUnit.DAYS.between(plan.getStartedOn(), LocalDate.now(clock)) + 1;
 		return new PlanCompletionResult(plan.getId(), plan.getTitle(), outcome, completedCurriculums, entries.size(),
 				totalLessons, daysTaken, reflectedTopics);
 	}

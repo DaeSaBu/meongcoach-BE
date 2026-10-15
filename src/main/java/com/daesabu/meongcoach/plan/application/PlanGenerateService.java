@@ -20,6 +20,7 @@ import com.daesabu.meongcoach.training.application.provided.TrainingCatalogFinde
 import com.daesabu.meongcoach.training.application.provided.dto.TrainingCatalogResult;
 import com.daesabu.meongcoach.training.application.provided.dto.TrainingCatalogResult.CatalogCurriculum;
 import com.daesabu.meongcoach.user.application.provided.UserProfileFinder;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -51,6 +52,7 @@ public class PlanGenerateService implements PlanCreator {
 	private final LessonProgressFinder lessonProgressFinder;
 	private final UserProfileFinder userProfileFinder;
 	private final ObjectMapper objectMapper;
+	private final Clock clock;
 
 	@Override
 	public PlanDetailResult create(Long userId, PlanCreateRequest request) {
@@ -85,7 +87,7 @@ public class PlanGenerateService implements PlanCreator {
 		Set<Long> priorTopicIds = userProfileFinder.findPriorTrainingTopicIds(userId);
 		List<String> priorTopicTitles = priorTopicTitles(catalog, priorTopicIds);
 		return new PlanGenerationContext(dog, request.expectation(), request.dailyMinutes(), request.daysPerWeek(),
-				priorTopicTitles, completedLessonIds, catalog, LocalDate.now());
+				priorTopicTitles, completedLessonIds, catalog, LocalDate.now(clock));
 	}
 
 	private List<String> priorTopicTitles(TrainingCatalogResult catalog, Set<Long> priorTopicIds) {
