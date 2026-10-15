@@ -12,6 +12,7 @@ import com.daesabu.meongcoach.ai.domain.shared.StructuredChatCompletionFailedExc
 import com.daesabu.meongcoach.dog.application.provided.DogProfileResult;
 import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;
 import com.daesabu.meongcoach.plan.application.PlanGenerationContext;
+import com.daesabu.meongcoach.plan.application.PlanGenerationProperties;
 import com.daesabu.meongcoach.plan.domain.PlanDraft;
 import com.daesabu.meongcoach.plan.domain.exception.PlanGenerationFailedException;
 import com.daesabu.meongcoach.training.application.provided.dto.TrainingCatalogResult;
@@ -19,6 +20,7 @@ import com.daesabu.meongcoach.training.application.provided.dto.TrainingCatalogR
 import com.daesabu.meongcoach.training.application.provided.dto.TrainingCatalogResult.CatalogCurriculum;
 import com.daesabu.meongcoach.training.application.provided.dto.TrainingCatalogResult.CatalogLesson;
 import com.daesabu.meongcoach.training.application.provided.dto.TrainingCatalogResult.CatalogTopic;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
@@ -42,7 +44,8 @@ class EvoLinkPlanGeneratorTest {
 	private StructuredChatCompleter structuredChatCompleter;
 
 	private EvoLinkPlanGenerator generator() {
-		return new EvoLinkPlanGenerator(structuredChatCompleter, JsonMapper.builder().build());
+		return new EvoLinkPlanGenerator(structuredChatCompleter, JsonMapper.builder().build(),
+				new PlanGenerationProperties(Duration.ofSeconds(30), Duration.ofSeconds(75)));
 	}
 
 	@Test
@@ -60,6 +63,15 @@ class EvoLinkPlanGeneratorTest {
 				.contains("\"산책할 때 줄을 당겨요\"");
 		assertThat(request.schemaName()).isEqualTo("training_plan");
 		assertThat(request.schemaJson()).contains("\"curriculumIds\"");
+	}
+
+	@Test
+	void 호출_한도를_요청_타임아웃으로_싣는다() {
+		given(structuredChatCompleter.complete(any())).willReturn(VALID_JSON);
+
+		generator().generate(context(), "");
+
+		assertThat(captureRequest().timeout()).isEqualTo(Duration.ofSeconds(30));
 	}
 
 	@Test

@@ -2,6 +2,12 @@ package com.daesabu.meongcoach.ai.adapter.integration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.mock;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.jsonPath;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
@@ -132,5 +138,35 @@ class EvoLinkStructuredChatClientTest {
 		assertThatThrownBy(() -> client.complete(request))
 				.isInstanceOf(StructuredChatCompletionFailedException.class);
 		server.verify();
+	}
+
+	@Test
+	void 요청의_타임아웃을_채팅_클라이언트에_전달한다() {
+		EvoLinkChatClient chatClient = mock(EvoLinkChatClient.class);
+		EvoLinkProperties properties = new EvoLinkProperties(BASE_URL, "test-evolink-api-key", MODEL,
+				Duration.ofMinutes(5), 4096, 0.0, "disabled", 1.0);
+		EvoLinkStructuredChatClient timeoutClient = new EvoLinkStructuredChatClient(chatClient, properties,
+				new ObjectMapper());
+		given(chatClient.complete(any(), any())).willReturn("{}");
+		StructuredChatRequest request = new StructuredChatRequest("시스템 지시", "사용자 입력", "plan_draft", SCHEMA_JSON,
+				Duration.ofSeconds(30));
+
+		timeoutClient.complete(request);
+
+		then(chatClient).should().complete(any(), eq(Duration.ofSeconds(30)));
+	}
+
+	@Test
+	void 타임아웃이_없는_요청은_null로_전달해_기본_설정을_따른다() {
+		EvoLinkChatClient chatClient = mock(EvoLinkChatClient.class);
+		EvoLinkProperties properties = new EvoLinkProperties(BASE_URL, "test-evolink-api-key", MODEL,
+				Duration.ofMinutes(5), 4096, 0.0, "disabled", 1.0);
+		EvoLinkStructuredChatClient defaultClient = new EvoLinkStructuredChatClient(chatClient, properties,
+				new ObjectMapper());
+		given(chatClient.complete(any(), any())).willReturn("{}");
+
+		defaultClient.complete(REQUEST);
+
+		then(chatClient).should().complete(any(), isNull());
 	}
 }
