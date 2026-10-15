@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.daesabu.meongcoach.user.domain.exception.InvalidMbtiException;
+import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 
@@ -48,6 +49,62 @@ class UserProfileTest {
 		assertThatThrownBy(() -> UserProfile.create(User.registerUser(),
 				new UserProfileCreateCommand("멍멍이집사", null, "XXXX", Set.of(), Set.of())))
 				.isInstanceOf(InvalidMbtiException.class);
+	}
+
+	@Test
+	void MBTI가_null이면_미입력으로_저장된다() {
+		UserProfile profile = UserProfile.create(User.registerUser(),
+				new UserProfileCreateCommand("멍멍이집사", null, null, Set.of(), Set.of()));
+
+		assertThat(profile.getMbti()).isNull();
+	}
+
+	@Test
+	void MBTI가_공백이면_미입력으로_저장된다() {
+		UserProfile profile = UserProfile.create(User.registerUser(),
+				new UserProfileCreateCommand("멍멍이집사", null, "  ", Set.of(), Set.of()));
+
+		assertThat(profile.getMbti()).isNull();
+	}
+
+	@Test
+	void 프로필을_갱신하면_모든_입력_필드가_교체된다() {
+		UserProfile profile = UserProfile.create(User.registerUser(), command(Set.of(), Set.of()));
+
+		profile.updateProfile(new UserProfileUpdateCommand("새닉네임", "https://cdn.meongcoach.com/new.png", "ENTJ"));
+
+		assertThat(profile.getNickname()).isEqualTo("새닉네임");
+		assertThat(profile.getProfileImageUrl()).isEqualTo("https://cdn.meongcoach.com/new.png");
+		assertThat(profile.getMbti()).isEqualTo(Mbti.ENTJ);
+	}
+
+	@Test
+	void 프로필을_갱신할_때_선택_입력을_비우면_미입력으로_교체된다() {
+		UserProfile profile = UserProfile.create(User.registerUser(), command(Set.of(), Set.of()));
+
+		profile.updateProfile(new UserProfileUpdateCommand("새닉네임", null, null));
+
+		assertThat(profile.getProfileImageUrl()).isEmpty();
+		assertThat(profile.getMbti()).isNull();
+	}
+
+	@Test
+	void 프로필을_갱신할_때_유효하지_않은_MBTI면_예외가_발생하고_값은_유지된다() {
+		UserProfile profile = UserProfile.create(User.registerUser(), command(Set.of(), Set.of()));
+
+		assertThatThrownBy(() -> profile.updateProfile(new UserProfileUpdateCommand("새닉네임", null, "XXXX")))
+				.isInstanceOf(InvalidMbtiException.class);
+		assertThat(profile.getNickname()).isEqualTo("멍멍이집사");
+	}
+
+	@Test
+	void 배운_토픽을_추가하면_기존_토픽에_누적되고_중복은_제거된다() {
+		UserProfile profile = UserProfile.create(User.registerUser(), command(Set.of(1L, 2L), Set.of(9L)));
+
+		profile.addPriorTrainingTopics(List.of(2L, 3L, 3L));
+
+		assertThat(profile.getPriorTrainingTopicIds()).containsExactlyInAnyOrder(1L, 2L, 3L);
+		assertThat(profile.getTrainingGoalTopicIds()).containsExactly(9L);
 	}
 
 	@Test

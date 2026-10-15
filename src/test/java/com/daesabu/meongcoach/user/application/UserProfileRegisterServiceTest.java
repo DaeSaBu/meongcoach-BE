@@ -125,17 +125,19 @@ class UserProfileRegisterServiceTest {
 	}
 
 	@Test
-	void MBTI가_null이면_등록에_실패한다() {
-		assertThatThrownBy(() -> service.register(userId,
-				command("멍멍이집사", null, null)))
-				.isInstanceOf(InvalidMbtiException.class);
+	void MBTI가_null이면_미입력으로_등록한다() {
+		service.register(userId, command("멍멍이집사", null, null));
+
+		UserProfile profile = findPersistedProfile();
+		assertThat(profile.getMbti()).isNull();
 	}
 
 	@Test
-	void MBTI가_공백이면_등록에_실패한다() {
-		assertThatThrownBy(() -> service.register(userId,
-				command("멍멍이집사", "   ", null)))
-				.isInstanceOf(InvalidMbtiException.class);
+	void MBTI가_공백이면_미입력으로_등록한다() {
+		service.register(userId, command("멍멍이집사", "   ", null));
+
+		UserProfile profile = findPersistedProfile();
+		assertThat(profile.getMbti()).isNull();
 	}
 
 	private static UserProfileRegisterRequest command(String nickname, String mbti, String profileImageUrl) {
