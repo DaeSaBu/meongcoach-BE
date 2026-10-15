@@ -6,7 +6,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.daesabu.meongcoach.ai.application.provided.dto.StructuredChatRequest;
 import com.daesabu.meongcoach.ai.application.required.StructuredChatClient;
-import com.daesabu.meongcoach.ai.domain.exception.StructuredChatCompletionFailedException;
+import com.daesabu.meongcoach.ai.domain.shared.StructuredChatCompletionFailedException;
 import com.daesabu.meongcoach.support.ApplicationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

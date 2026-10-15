@@ -2,7 +2,7 @@ package com.daesabu.meongcoach.plan.adapter.integration;
 
 import com.daesabu.meongcoach.ai.application.provided.StructuredChatCompleter;
 import com.daesabu.meongcoach.ai.application.provided.dto.StructuredChatRequest;
-import com.daesabu.meongcoach.ai.domain.exception.StructuredChatCompletionFailedException;
+import com.daesabu.meongcoach.ai.domain.shared.StructuredChatCompletionFailedException;
 import com.daesabu.meongcoach.plan.application.PlanGenerationContext;
 import com.daesabu.meongcoach.plan.application.required.PlanGenerator;
 import com.daesabu.meongcoach.plan.domain.PlanDraft;

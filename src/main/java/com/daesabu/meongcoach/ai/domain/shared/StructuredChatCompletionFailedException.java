@@ -1,4 +1,6 @@
-package com.daesabu.meongcoach.ai.domain.exception;
+package com.daesabu.meongcoach.ai.domain.shared;
+
+import com.daesabu.meongcoach.ai.domain.exception.AiErrorCode;
 
 import com.daesabu.meongcoach.shared.exception.DomainException;
 
