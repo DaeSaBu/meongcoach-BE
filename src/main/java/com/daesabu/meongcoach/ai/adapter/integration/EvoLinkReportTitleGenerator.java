@@ -6,6 +6,7 @@ import com.daesabu.meongcoach.ai.adapter.integration.dto.EvoLinkChatRequest.Resp
 import com.daesabu.meongcoach.ai.adapter.integration.dto.EvoLinkChatRequest.Thinking;
 import com.daesabu.meongcoach.ai.application.required.ReportTitleGenerator;
 import com.daesabu.meongcoach.ai.domain.exception.ReportTitleGenerationFailedException;
+import com.daesabu.meongcoach.shared.prompt.PromptLoader;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.List;
 import java.util.Map;
