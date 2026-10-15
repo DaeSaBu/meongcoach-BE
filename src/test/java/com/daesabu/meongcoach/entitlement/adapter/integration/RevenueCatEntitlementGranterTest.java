@@ -86,6 +86,16 @@ class RevenueCatEntitlementGranterTest {
 	}
 
 	@Test
+	void 기존_지급과_2시간_이내로_겹쳐_중복으로_거절되면_이미_지급된_것으로_보고_넘어간다() {
+		server.expect(once(), requestTo(GRANT_URL))
+				.andRespond(withStatus(HttpStatus.CONFLICT).contentType(MediaType.APPLICATION_JSON).body("{}"));
+
+		assertThatCode(() -> granter.grant(USER_ID, EntitlementType.PUPPY, EXPIRES_AT)).doesNotThrowAnyException();
+
+		server.verify();
+	}
+
+	@Test
 	void 결제_대행이_오류를_돌려주면_지급_불가_예외를_던진다() {
 		server.expect(once(), requestTo(GRANT_URL))
 				.andRespond(withServerError());
