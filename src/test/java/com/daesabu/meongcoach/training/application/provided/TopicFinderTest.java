@@ -1,14 +1,17 @@
 package com.daesabu.meongcoach.training.application.provided;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.daesabu.meongcoach.support.ApplicationTest;
 import com.daesabu.meongcoach.training.application.provided.dto.TopicResult;
 import com.daesabu.meongcoach.training.application.required.TopicRepository;
 import com.daesabu.meongcoach.training.application.required.TrainingCategoryRepository;
+import com.daesabu.meongcoach.training.domain.Topic;
 import com.daesabu.meongcoach.training.domain.TopicFixture;
 import com.daesabu.meongcoach.training.domain.TrainingCategory;
 import com.daesabu.meongcoach.training.domain.TrainingCategoryFixture;
+import com.daesabu.meongcoach.training.domain.exception.TopicNotFoundException;
 import jakarta.persistence.EntityManager;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -42,6 +45,24 @@ class TopicFinderTest {
 				.containsExactly("배변 훈련", "산책 훈련");
 		assertThat(topics).extracting(TopicResult::description)
 				.containsExactly("편안한 배변 습관 만들기", "즐겁고 안전한 첫 산책");
+	}
+
+	@Test
+	void 토픽_ID로_토픽_하나를_조회한다() {
+		TrainingCategory category = saveCategory("기본 훈련", 1);
+		Topic saved = topicRepository.save(TopicFixture.create(category, "배변 훈련", 1, "편안한 배변 습관 만들기", null, null));
+		flushAndClear();
+
+		TopicResult topic = topicFinder.findTopic(saved.getId());
+
+		assertThat(topic.id()).isEqualTo(saved.getId());
+		assertThat(topic.title()).isEqualTo("배변 훈련");
+	}
+
+	@Test
+	void 존재하지_않는_토픽_ID로_조회하면_예외를_던진다() {
+		assertThatThrownBy(() -> topicFinder.findTopic(999L))
+				.isInstanceOf(TopicNotFoundException.class);
 	}
 
 	@Test
