@@ -22,6 +22,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class PlanStoreService {
 
+	private static final String ACTIVE_PLAN_CONSTRAINT = "uk_training_plans_user_id_active";
+
 	private final TrainingPlanRepository trainingPlanRepository;
 	private final DogProfileFinder dogProfileFinder;
 	private final DogProfileUpdater dogProfileUpdater;
@@ -42,8 +44,16 @@ public class PlanStoreService {
 		try {
 			trainingPlanRepository.saveAndFlush(plan);
 		} catch (DataIntegrityViolationException e) {
-			throw new PlanAlreadyActiveException();
+			if (violatesActivePlanConstraint(e)) {
+				throw new PlanAlreadyActiveException();
+			}
+			throw e;
 		}
+	}
+
+	private boolean violatesActivePlanConstraint(DataIntegrityViolationException e) {
+		String message = e.getMostSpecificCause().getMessage();
+		return message != null && message.contains(ACTIVE_PLAN_CONSTRAINT);
 	}
 
 	private void abandonActivePlans(Long userId, boolean replace) {
