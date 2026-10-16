@@ -12,6 +12,7 @@ public interface CurriculumRepository extends JpaRepository<Curriculum, Long> {
 			from Curriculum c
 			join fetch c.topic t
 			join fetch t.trainingCategory
+			left join fetch c.expert
 			where c.id = :curriculumId
 			""")
 	Optional<Curriculum> findWithCategoryById(Long curriculumId);

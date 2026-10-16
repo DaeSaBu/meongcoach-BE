@@ -2,17 +2,30 @@ package com.daesabu.meongcoach.training.adapter.webapi.dto;
 
 import com.daesabu.meongcoach.training.application.provided.dto.CurriculumDetailResult;
 import com.daesabu.meongcoach.training.domain.Curriculum;
+import com.daesabu.meongcoach.training.domain.Expert;
 import java.util.List;
 import java.util.Map;
 
-public record CurriculumDetailResponse(Long curriculumId, String curriculumTitle, List<LessonResponse> lessons) {
+public record CurriculumDetailResponse(Long curriculumId, String curriculumTitle, ExpertResponse expert,
+		List<LessonResponse> lessons) {
 
 	public static CurriculumDetailResponse from(CurriculumDetailResult result) {
 		Curriculum curriculum = result.curriculum();
 		Map<Long, Integer> completedCounts = result.completedCounts();
+		ExpertResponse expert = curriculum.findExpert()
+				.map(ExpertResponse::from)
+				.orElse(null);
 		List<LessonResponse> lessons = curriculum.getLessons().stream()
 				.map(lesson -> LessonResponse.of(lesson, completedCounts.get(lesson.getId())))
 				.toList();
-		return new CurriculumDetailResponse(curriculum.getId(), curriculum.getTitle(), lessons);
+		return new CurriculumDetailResponse(curriculum.getId(), curriculum.getTitle(), expert, lessons);
+	}
+
+	public record ExpertResponse(Long expertId, String name, String title, String description, String imageUrl) {
+
+		public static ExpertResponse from(Expert expert) {
+			return new ExpertResponse(expert.getId(), expert.getName(), expert.getTitle(), expert.getDescription(),
+					expert.getImageUrl());
+		}
 	}
 }
