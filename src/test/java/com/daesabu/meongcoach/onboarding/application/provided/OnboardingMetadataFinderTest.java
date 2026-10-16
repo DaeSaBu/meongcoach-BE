@@ -2,8 +2,8 @@ package com.daesabu.meongcoach.onboarding.application.provided;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.daesabu.meongcoach.dog.domain.shared.Breed;
 import com.daesabu.meongcoach.dog.domain.shared.Personality;
+import com.daesabu.meongcoach.dog.domain.shared.RegisteredBreed;
 import com.daesabu.meongcoach.support.ApplicationTest;
 import com.daesabu.meongcoach.training.application.provided.dto.TopicResult;
 import com.daesabu.meongcoach.training.application.required.TopicRepository;
@@ -43,10 +43,7 @@ class OnboardingMetadataFinderTest {
 
 		assertThat(result.topics()).extracting(TopicResult::title)
 				.containsExactly("배변 훈련", "산책 훈련");
-		assertThat(result.breeds()).extracting(Breed::name)
-				.hasSize(31)
-				.startsWith("MIXED")
-				.endsWith("FRENCH_BULLDOG");
+		assertThat(result.breeds()).containsExactly(RegisteredBreed.values());
 		assertThat(result.personalities()).extracting(Personality::name)
 				.containsExactly("TIMID", "LIVELY", "FRIENDLY", "CALM", "FEARFUL", "AFFECTIONATE",
 						"INDEPENDENT", "PLAYFUL", "EXCITABLE", "STUBBORN");

@@ -13,6 +13,7 @@ import com.daesabu.meongcoach.dog.domain.DogStatus;
 import com.daesabu.meongcoach.dog.domain.exception.DogNotFoundException;
 import com.daesabu.meongcoach.dog.domain.shared.Breed;
 import com.daesabu.meongcoach.dog.domain.shared.Personality;
+import com.daesabu.meongcoach.dog.domain.shared.RegisteredBreed;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Set;
@@ -53,7 +54,7 @@ class DogProfileUpdateServiceTest {
 
 		Dog updated = dogRepository.findByIdAndUserId(saved.getId(), USER_ID).orElseThrow();
 		assertThat(updated.getName()).isEqualTo("보리");
-		assertThat(updated.getBreed()).isEqualTo(Breed.MALTESE);
+		assertThat(updated.getBreed()).isEqualTo(Breed.of(RegisteredBreed.MALTESE));
 		assertThat(updated.getSex()).isEqualTo(DogSex.FEMALE);
 		assertThat(updated.getBirthDate()).isEqualTo(LocalDate.of(2023, 1, 15));
 		assertThat(updated.getWeightKg()).isEqualByComparingTo(new BigDecimal("3.20"));
@@ -98,8 +99,8 @@ class DogProfileUpdateServiceTest {
 	@Test
 	void 생년월일과_이미지_기대사항이_없어도_수정할_수_있다() {
 		Dog saved = persistSelectedDog(USER_ID);
-		DogProfileUpdateCommand command = new DogProfileUpdateCommand("보리", Breed.MALTESE, DogSex.FEMALE, null,
-				new BigDecimal("3.20"), Set.of(), null, null);
+		DogProfileUpdateCommand command = new DogProfileUpdateCommand("보리", Breed.of(RegisteredBreed.MALTESE),
+				DogSex.FEMALE, null, new BigDecimal("3.20"), Set.of(), null, null);
 
 		Dog updated = dogProfileUpdater.update(USER_ID, saved.getId(), command);
 
@@ -128,12 +129,12 @@ class DogProfileUpdateServiceTest {
 	}
 
 	private DogProfileUpdateCommand updateCommand(Set<Personality> personalities) {
-		return new DogProfileUpdateCommand("보리", Breed.MALTESE, DogSex.FEMALE, LocalDate.of(2023, 1, 15),
-				new BigDecimal("3.20"), personalities, NEW_IMAGE_URL, NEW_EXPECTATION);
+		return new DogProfileUpdateCommand("보리", Breed.of(RegisteredBreed.MALTESE), DogSex.FEMALE,
+				LocalDate.of(2023, 1, 15), new BigDecimal("3.20"), personalities, NEW_IMAGE_URL, NEW_EXPECTATION);
 	}
 
 	private Dog persistSelectedDog(Long userId) {
-		Dog dog = Dog.register(new DogRegisterCommand(userId, "초코", Breed.POODLE, DogSex.MALE,
+		Dog dog = Dog.register(new DogRegisterCommand(userId, "초코", Breed.of(RegisteredBreed.POODLE), DogSex.MALE,
 				LocalDate.of(2024, 3, 1), new BigDecimal("4.50"), IMAGE_URL, EXPECTATION));
 		dog.select();
 		dog.changePersonalities(Set.of(Personality.FRIENDLY));
