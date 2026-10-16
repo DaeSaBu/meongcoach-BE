@@ -56,9 +56,7 @@ class OnboardingControllerTest {
 	private static final String COMPLETE_REQUEST = """
 			{
 				"nickname": "멍멍이집사",
-				"birthDate": "1998-01-01",
 				"mbti": "INTJ",
-				"gender": "FEMALE",
 				"profileImageUrl": "https://images.test.meongcoach.com/images/user-profile/1/a.jpg",
 				"priorTrainingTopicIds": [1, 2],
 				"trainingGoalTopicIds": [2, 3],
@@ -81,7 +79,6 @@ class OnboardingControllerTest {
 			{
 				"nickname": "멍멍이집사",
 				"mbti": "INTJ",
-				"gender": "NONE",
 				"priorTrainingTopicIds": null,
 				"trainingGoalTopicIds": [],
 				"dogs": [
@@ -141,10 +138,7 @@ class OnboardingControllerTest {
 				.andDo(document("onboarding/complete",
 						requestFields(
 								fieldWithPath("nickname").description("사용자 닉네임. 필수 입력, 최대 50자"),
-								fieldWithPath("birthDate").description("사용자 생년월일. 과거 날짜, 선택 입력").optional(),
 								fieldWithPath("mbti").description("사용자 MBTI 코드. 필수 입력"),
-								fieldWithPath("gender").description(
-										"사용자 성별. `MALE`/`FEMALE`/`NONE`(응답 안 함). 필수 입력"),
 								fieldWithPath("profileImageUrl").description(
 										"사용자 프로필 이미지 공개 URL. 이미지 업로드 URL 발급 API의 "
 												+ "publicUrl. 최대 512자, 선택 입력").optional(),
@@ -180,6 +174,20 @@ class OnboardingControllerTest {
 		assertThat(info.trainingGoalTopicIds()).containsExactlyInAnyOrder(2L, 3L);
 		assertThat(info.dogs().getFirst().expectation())
 				.isEqualTo("산책할 때 보호자에게 집중하면 좋겠어요.");
+	}
+
+	@Test
+	void 사용자_성별과_생년월일을_보내도_무시하고_온보딩을_완료한다() throws Exception {
+		String request = COMPLETE_REQUEST.replace("\"mbti\": \"INTJ\",",
+				"\"mbti\": \"INTJ\", \"gender\": \"FEMALE\", \"birthDate\": \"1998-01-01\",");
+
+		mockMvc.perform(post("/api/onboarding")
+						.principal(() -> "1")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(request))
+				.andExpect(status().isCreated());
+
+		assertThat(onboardingCompleter.lastInfo.nickname()).isEqualTo("멍멍이집사");
 	}
 
 	@Test
@@ -287,13 +295,6 @@ class OnboardingControllerTest {
 	}
 
 	@Test
-	void 사용자_생년월일이_과거가_아니면_검증에_실패한다() throws Exception {
-		String request = COMPLETE_REQUEST.replace("1998-01-01", "2999-01-01");
-
-		assertValidationFails(request, "birthDate");
-	}
-
-	@Test
 	void 사용자_프로필_이미지_URL이_512자를_넘으면_검증에_실패한다() throws Exception {
 		String request = COMPLETE_REQUEST.replace(
 				"https://images.test.meongcoach.com/images/user-profile/1/a.jpg",
@@ -342,32 +343,6 @@ class OnboardingControllerTest {
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
 				.andExpect(jsonPath("$.errors[0].field").value("mbti"));
-	}
-
-	@Test
-	void 성별이_null이면_검증에_실패한다() throws Exception {
-		String request = COMPLETE_REQUEST.replace("\"gender\": \"FEMALE\"", "\"gender\": null");
-
-		mockMvc.perform(post("/api/onboarding")
-						.principal(() -> "1")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content(request))
-				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
-				.andExpect(jsonPath("$.errors[0].field").value("gender"));
-	}
-
-	@Test
-	void 성별이_공백이면_검증에_실패한다() throws Exception {
-		String request = COMPLETE_REQUEST.replace("\"gender\": \"FEMALE\"", "\"gender\": \"   \"");
-
-		mockMvc.perform(post("/api/onboarding")
-						.principal(() -> "1")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content(request))
-				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
-				.andExpect(jsonPath("$.errors[0].field").value("gender"));
 	}
 
 	@Test
@@ -438,12 +413,21 @@ class OnboardingControllerTest {
 	}
 
 	@Test
+	void 강아지_목록에_null이_있으면_검증에_실패한다() throws Exception {
+		String request = """
+				{"nickname": "멍멍이집사", "mbti": "INTJ", "dogs": [null]}
+				""";
+
+		assertValidationFails(request, "dogs[0]");
+	}
+
+	@Test
 	void 강아지_없이_온보딩을_완료할_수_없다() throws Exception {
 		mockMvc.perform(post("/api/onboarding")
 						.principal(() -> "1")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
-								{"nickname": "멍멍이집사", "mbti": "INTJ", "gender": "FEMALE", "dogs": []}
+								{"nickname": "멍멍이집사", "mbti": "INTJ", "dogs": []}
 								"""))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.errors[0].field").value("dogs"));

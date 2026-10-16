@@ -75,9 +75,7 @@ class OnboardingCompleteServiceTest {
 	private OnboardingCompleteInfo completeInfo(String userImageUrl, String dogImageUrl) {
 		return new OnboardingCompleteInfo(
 				"멍멍이집사",
-				LocalDate.of(1998, 1, 1),
 				"INTJ",
-				"FEMALE",
 				userImageUrl,
 				Set.of(PRIOR_TRAINING_TOPIC_ID),
 				Set.of(TRAINING_GOAL_TOPIC_ID),
