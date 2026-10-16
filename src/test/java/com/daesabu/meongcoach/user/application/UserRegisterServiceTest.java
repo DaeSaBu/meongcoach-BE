@@ -55,12 +55,11 @@ class UserRegisterServiceTest {
 		assertThat(withdrawn.getStatus()).isEqualTo(UserStatus.WITHDRAWN);
 	}
 
-	// 스토어 심사 요건·개인정보 파기 의무: 회원 행은 참조 정합성을 위해 남기되 개인정보인 프로필은 실제로 지운다
 	@Test
 	void 탈퇴하면_프로필_행이_삭제된다() {
 		User user = userRepository.save(User.registerUser());
 		UserProfileCreateCommand command =
-				new UserProfileCreateCommand("멍멍이집사", null, null, "INTJ", "FEMALE", Set.of(), Set.of());
+				new UserProfileCreateCommand("멍멍이집사", null, "INTJ", Set.of(), Set.of());
 		userProfileRepository.save(UserProfile.create(user, command));
 		flushAndClear();
 

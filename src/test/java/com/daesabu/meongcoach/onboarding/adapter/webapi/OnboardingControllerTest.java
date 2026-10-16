@@ -10,8 +10,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.daesabu.meongcoach.dog.domain.shared.Breed;
 import com.daesabu.meongcoach.dog.domain.shared.Personality;
+import com.daesabu.meongcoach.dog.domain.shared.RegisteredBreed;
 import com.daesabu.meongcoach.media.domain.ImageType;
 import com.daesabu.meongcoach.media.domain.ImageUploadTarget;
 import com.daesabu.meongcoach.onboarding.application.provided.OnboardingCompleteInfo;
@@ -56,9 +56,7 @@ class OnboardingControllerTest {
 	private static final String COMPLETE_REQUEST = """
 			{
 				"nickname": "멍멍이집사",
-				"birthDate": "1998-01-01",
 				"mbti": "INTJ",
-				"gender": "FEMALE",
 				"profileImageUrl": "https://images.test.meongcoach.com/images/user-profile/1/a.jpg",
 				"priorTrainingTopicIds": [1, 2],
 				"trainingGoalTopicIds": [2, 3],
@@ -81,7 +79,6 @@ class OnboardingControllerTest {
 			{
 				"nickname": "멍멍이집사",
 				"mbti": "INTJ",
-				"gender": "NONE",
 				"priorTrainingTopicIds": null,
 				"trainingGoalTopicIds": [],
 				"dogs": [
@@ -110,14 +107,18 @@ class OnboardingControllerTest {
 				.andExpect(jsonPath("$.topics[0].title").value("배변 훈련"))
 				.andExpect(jsonPath("$.breeds[0].code").value("POODLE"))
 				.andExpect(jsonPath("$.breeds[0].label").value("푸들"))
+				.andExpect(jsonPath("$.breeds[0].aliases[0]").value("POODLE"))
+				.andExpect(jsonPath("$.breeds[0].aliases[1]").value("CANICHE"))
 				.andExpect(jsonPath("$.personalities[0].code").value("TIMID"))
 				.andExpect(jsonPath("$.mbtis[0]").value("ISTJ"))
 				.andDo(document("onboarding/metadata",
 						responseFields(
 								fieldWithPath("topics[].id").description("토픽 ID"),
 								fieldWithPath("topics[].title").description("토픽 이름"),
+								fieldWithPath("breeds[]").description("등록 견종 목록. 믹스견이 맨 앞이고 나머지는 한글 라벨 가나다순"),
 								fieldWithPath("breeds[].code").description("강아지 견종 코드"),
 								fieldWithPath("breeds[].label").description("강아지 견종 한글 라벨"),
+								fieldWithPath("breeds[].aliases[]").description("견종 검색에 쓰는 한글·영문 별칭 목록. 라벨은 포함하지 않으며 대소문자·띄어쓰기만 다른 값은 하나만 둔다"),
 								fieldWithPath("personalities[].code").description("강아지 성격 코드"),
 								fieldWithPath("personalities[].label").description("강아지 성격 한글 라벨"),
 								fieldWithPath("mbtis[]").description("선택 가능한 사람 MBTI 코드 목록")
@@ -137,10 +138,7 @@ class OnboardingControllerTest {
 				.andDo(document("onboarding/complete",
 						requestFields(
 								fieldWithPath("nickname").description("사용자 닉네임. 필수 입력, 최대 50자"),
-								fieldWithPath("birthDate").description("사용자 생년월일. 과거 날짜, 선택 입력").optional(),
 								fieldWithPath("mbti").description("사용자 MBTI 코드. 필수 입력"),
-								fieldWithPath("gender").description(
-										"사용자 성별. `MALE`/`FEMALE`/`NONE`(응답 안 함). 필수 입력"),
 								fieldWithPath("profileImageUrl").description(
 										"사용자 프로필 이미지 공개 URL. 이미지 업로드 URL 발급 API의 "
 												+ "publicUrl. 최대 512자, 선택 입력").optional(),
@@ -153,7 +151,8 @@ class OnboardingControllerTest {
 								fieldWithPath("dogs[]").description("등록할 강아지 목록. 1마리 이상 5마리 이하"),
 								fieldWithPath("dogs[].name").description("강아지 이름. 필수 입력, 최대 50자"),
 								fieldWithPath("dogs[].breed").description(
-										"메타데이터 조회 응답에서 선택한 강아지 견종 코드. 최대 30자"),
+										"메타데이터 조회 응답에서 선택한 강아지 견종 코드. "
+												+ "목록에 없는 견종은 견종 이름을 직접 입력. 최대 30자"),
 								fieldWithPath("dogs[].sex").description("강아지 성별. `MALE` 또는 `FEMALE`"),
 								fieldWithPath("dogs[].birthDate")
 										.description("강아지 생년월일. 과거 날짜, 선택 입력").optional(),
@@ -175,6 +174,20 @@ class OnboardingControllerTest {
 		assertThat(info.trainingGoalTopicIds()).containsExactlyInAnyOrder(2L, 3L);
 		assertThat(info.dogs().getFirst().expectation())
 				.isEqualTo("산책할 때 보호자에게 집중하면 좋겠어요.");
+	}
+
+	@Test
+	void 사용자_성별과_생년월일을_보내도_무시하고_온보딩을_완료한다() throws Exception {
+		String request = COMPLETE_REQUEST.replace("\"mbti\": \"INTJ\",",
+				"\"mbti\": \"INTJ\", \"gender\": \"FEMALE\", \"birthDate\": \"1998-01-01\",");
+
+		mockMvc.perform(post("/api/onboarding")
+						.principal(() -> "1")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(request))
+				.andExpect(status().isCreated());
+
+		assertThat(onboardingCompleter.lastInfo.nickname()).isEqualTo("멍멍이집사");
 	}
 
 	@Test
@@ -282,13 +295,6 @@ class OnboardingControllerTest {
 	}
 
 	@Test
-	void 사용자_생년월일이_과거가_아니면_검증에_실패한다() throws Exception {
-		String request = COMPLETE_REQUEST.replace("1998-01-01", "2999-01-01");
-
-		assertValidationFails(request, "birthDate");
-	}
-
-	@Test
 	void 사용자_프로필_이미지_URL이_512자를_넘으면_검증에_실패한다() throws Exception {
 		String request = COMPLETE_REQUEST.replace(
 				"https://images.test.meongcoach.com/images/user-profile/1/a.jpg",
@@ -337,32 +343,6 @@ class OnboardingControllerTest {
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
 				.andExpect(jsonPath("$.errors[0].field").value("mbti"));
-	}
-
-	@Test
-	void 성별이_null이면_검증에_실패한다() throws Exception {
-		String request = COMPLETE_REQUEST.replace("\"gender\": \"FEMALE\"", "\"gender\": null");
-
-		mockMvc.perform(post("/api/onboarding")
-						.principal(() -> "1")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content(request))
-				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
-				.andExpect(jsonPath("$.errors[0].field").value("gender"));
-	}
-
-	@Test
-	void 성별이_공백이면_검증에_실패한다() throws Exception {
-		String request = COMPLETE_REQUEST.replace("\"gender\": \"FEMALE\"", "\"gender\": \"   \"");
-
-		mockMvc.perform(post("/api/onboarding")
-						.principal(() -> "1")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content(request))
-				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
-				.andExpect(jsonPath("$.errors[0].field").value("gender"));
 	}
 
 	@Test
@@ -433,12 +413,21 @@ class OnboardingControllerTest {
 	}
 
 	@Test
+	void 강아지_목록에_null이_있으면_검증에_실패한다() throws Exception {
+		String request = """
+				{"nickname": "멍멍이집사", "mbti": "INTJ", "dogs": [null]}
+				""";
+
+		assertValidationFails(request, "dogs[0]");
+	}
+
+	@Test
 	void 강아지_없이_온보딩을_완료할_수_없다() throws Exception {
 		mockMvc.perform(post("/api/onboarding")
 						.principal(() -> "1")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
-								{"nickname": "멍멍이집사", "mbti": "INTJ", "gender": "FEMALE", "dogs": []}
+								{"nickname": "멍멍이집사", "mbti": "INTJ", "dogs": []}
 								"""))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.errors[0].field").value("dogs"));
@@ -562,7 +551,7 @@ class OnboardingControllerTest {
 			return () -> new OnboardingMetadataResult(
 					List.of(new TopicResult(1L, "배변 훈련", "편안한 배변 습관 만들기"),
 							new TopicResult(2L, "산책 훈련", "즐겁고 안전한 첫 산책")),
-					List.of(Breed.POODLE, Breed.MALTESE),
+					List.of(RegisteredBreed.POODLE, RegisteredBreed.MALTESE),
 					List.of(Personality.TIMID, Personality.LIVELY),
 					List.of("ISTJ", "INTJ"));
 		}
@@ -572,7 +561,6 @@ class OnboardingControllerTest {
 			return new RecordingOnboardingCompleter();
 		}
 
-		// target·contentType 검증은 media 도메인이 수행하므로 스텁에서도 실제 변환을 태워 400 경로를 재현한다
 		@Bean
 		OnboardingImageUploadUrlIssuer onboardingImageUploadUrlIssuer() {
 			return (userId, target, contentType) -> {

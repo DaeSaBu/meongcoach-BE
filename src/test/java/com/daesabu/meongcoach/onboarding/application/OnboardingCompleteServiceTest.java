@@ -10,6 +10,7 @@ import com.daesabu.meongcoach.dog.domain.Dog;
 import com.daesabu.meongcoach.dog.domain.DogStatus;
 import com.daesabu.meongcoach.dog.domain.shared.Breed;
 import com.daesabu.meongcoach.dog.domain.shared.Personality;
+import com.daesabu.meongcoach.dog.domain.shared.RegisteredBreed;
 import com.daesabu.meongcoach.media.application.provided.StoredImageUrlValidator;
 import com.daesabu.meongcoach.media.domain.exception.InvalidImageUrlException;
 import com.daesabu.meongcoach.onboarding.application.provided.OnboardingCompleteInfo;
@@ -59,8 +60,6 @@ class OnboardingCompleteServiceTest {
 		userId = userRepository.save(User.registerUser()).getId();
 	}
 
-	// 미설정(null·빈 문자열)은 통과하고
-	// 우리 스토리지 밖 URL은 거부하는 media 모듈 검증기의 스텁
 	private StoredImageUrlValidator prefixValidator() {
 		return url -> {
 			if (url != null && !url.isBlank() && !url.startsWith(STORAGE_BASE_URL)) {
@@ -76,9 +75,7 @@ class OnboardingCompleteServiceTest {
 	private OnboardingCompleteInfo completeInfo(String userImageUrl, String dogImageUrl) {
 		return new OnboardingCompleteInfo(
 				"멍멍이집사",
-				LocalDate.of(1998, 1, 1),
 				"INTJ",
-				"FEMALE",
 				userImageUrl,
 				Set.of(PRIOR_TRAINING_TOPIC_ID),
 				Set.of(TRAINING_GOAL_TOPIC_ID),
@@ -100,7 +97,8 @@ class OnboardingCompleteServiceTest {
 		List<Dog> dogs = dogRepository.findAllById(dogIds);
 		assertThat(dogs).extracting(Dog::getUserId).containsOnly(userId);
 		assertThat(dogs).extracting(Dog::getName).containsExactlyInAnyOrder("초코", "보리");
-		assertThat(dogs).extracting(Dog::getBreed).containsExactlyInAnyOrder(Breed.POODLE, Breed.MALTESE);
+		assertThat(dogs).extracting(Dog::getBreed)
+				.containsExactlyInAnyOrder(Breed.of(RegisteredBreed.POODLE), Breed.of(RegisteredBreed.MALTESE));
 	}
 
 	@Test
