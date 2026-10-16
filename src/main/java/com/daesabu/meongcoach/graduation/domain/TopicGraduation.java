@@ -3,6 +3,7 @@ package com.daesabu.meongcoach.graduation.domain;
 import static java.util.Objects.requireNonNull;
 import static org.springframework.util.Assert.state;
 
+import com.daesabu.meongcoach.graduation.domain.exception.ReviewNoteRequiredException;
 import com.daesabu.meongcoach.shared.domain.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -42,48 +43,77 @@ public class TopicGraduation extends BaseEntity {
 	@Column(nullable = false, length = 30)
 	private GraduationStatus status;
 
-	private Instant approvedAt;
+	@Column(name = "attempt_no", nullable = false)
+	private int attemptNo;
 
-	private Instant rewardClaimedAt;
+	@Column(nullable = false, length = 512)
+	private String videoObjectKey;
+
+	@Column(nullable = false)
+	private Instant submittedAt;
+
+	private Instant reviewedAt;
+
+	@Column(length = 500)
+	private String reviewNote;
+
+	private Instant approvedAt;
 
 	private Instant rewardExpiresAt;
 
-	public static TopicGraduation start(Long userId, Long topicId) {
+	public static TopicGraduation start(Long userId, Long topicId, String videoObjectKey, Instant now) {
 		TopicGraduation graduation = new TopicGraduation();
 		graduation.userId = requireNonNull(userId);
 		graduation.topicId = requireNonNull(topicId);
 		graduation.status = GraduationStatus.SUBMITTED;
+		graduation.attemptNo = 1;
+		graduation.videoObjectKey = requireNonNull(videoObjectKey);
+		graduation.submittedAt = requireNonNull(now);
 		return graduation;
 	}
 
-	public void resubmit() {
+	public void resubmit(String videoObjectKey, Instant now) {
 		state(!isApproved(), "승인된 수료에는 다시 제출할 수 없다");
 		this.status = GraduationStatus.SUBMITTED;
+		this.attemptNo++;
+		this.videoObjectKey = requireNonNull(videoObjectKey);
+		this.submittedAt = requireNonNull(now);
+		this.reviewedAt = null;
+		this.reviewNote = null;
 	}
 
-	public void approve(Instant now) {
-		state(status == GraduationStatus.SUBMITTED, "제출 상태의 수료만 승인할 수 있다");
+	public void approve(String note, Instant now, Instant rewardExpiresAt) {
+		state(isSubmitted(), "제출 상태의 수료만 승인할 수 있다");
 		this.status = GraduationStatus.APPROVED;
-		this.approvedAt = requireNonNull(now);
+		this.reviewedAt = requireNonNull(now);
+		this.reviewNote = normalize(note);
+		this.approvedAt = now;
+		this.rewardExpiresAt = requireNonNull(rewardExpiresAt);
 	}
 
-	public void requestRevision() {
-		state(status == GraduationStatus.SUBMITTED, "제출 상태의 수료만 보완 요청할 수 있다");
+	public void requestRevision(String note, Instant now) {
+		state(isSubmitted(), "제출 상태의 수료만 보완 요청할 수 있다");
+		String normalized = normalize(note);
+		if (normalized == null) {
+			throw new ReviewNoteRequiredException();
+		}
 		this.status = GraduationStatus.REVISION_REQUESTED;
-	}
-
-	public void claimReward(Instant claimedAt, Instant expiresAt) {
-		state(isApproved(), "승인된 수료만 보상을 받을 수 있다");
-		state(!isRewardClaimed(), "보상은 한 번만 받을 수 있다");
-		this.rewardClaimedAt = requireNonNull(claimedAt);
-		this.rewardExpiresAt = requireNonNull(expiresAt);
+		this.reviewedAt = requireNonNull(now);
+		this.reviewNote = normalized;
 	}
 
 	public boolean isApproved() {
 		return status == GraduationStatus.APPROVED;
 	}
 
-	public boolean isRewardClaimed() {
-		return rewardClaimedAt != null;
+	public boolean isSubmitted() {
+		return status == GraduationStatus.SUBMITTED;
+	}
+
+	private static String normalize(String note) {
+		if (note == null || note.isBlank()) {
+			return null;
+		}
+		return note.strip();
 	}
 }
