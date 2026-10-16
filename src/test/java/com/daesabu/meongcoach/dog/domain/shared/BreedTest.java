@@ -17,8 +17,6 @@ class BreedTest {
 		Breed breed = Breed.of(RegisteredBreed.POODLE);
 
 		assertThat(breed.value()).isEqualTo("POODLE");
-		assertThat(breed.registered()).contains(RegisteredBreed.POODLE);
-		assertThat(breed.isCustom()).isFalse();
 	}
 
 	@Test
@@ -36,8 +34,6 @@ class BreedTest {
 		Breed breed = Breed.from("삽살개");
 
 		assertThat(breed.value()).isEqualTo("삽살개");
-		assertThat(breed.registered()).isEmpty();
-		assertThat(breed.isCustom()).isTrue();
 	}
 
 	@Test

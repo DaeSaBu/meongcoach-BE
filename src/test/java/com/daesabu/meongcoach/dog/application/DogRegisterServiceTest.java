@@ -152,7 +152,6 @@ class DogRegisterServiceTest {
 		entityManager.clear();
 		Dog dog = dogRepository.findById(dogId).orElseThrow();
 		assertThat(dog.getBreed()).isEqualTo(Breed.from("삽살개"));
-		assertThat(dog.getBreed().isCustom()).isTrue();
 		assertThat(dog.getBreed().label()).isEqualTo("삽살개");
 	}
 

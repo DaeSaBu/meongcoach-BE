@@ -90,7 +90,7 @@ class DogTest {
 		dog.updateProfile(new DogProfileUpdateCommand("보리", Breed.from("삽살개"), DogSex.FEMALE, null,
 				new BigDecimal("3.20"), Set.of(), null, null));
 
-		assertThat(dog.getBreed().isCustom()).isTrue();
+		assertThat(dog.getBreed()).isEqualTo(Breed.from("삽살개"));
 		assertThat(dog.getBreed().label()).isEqualTo("삽살개");
 	}
 
