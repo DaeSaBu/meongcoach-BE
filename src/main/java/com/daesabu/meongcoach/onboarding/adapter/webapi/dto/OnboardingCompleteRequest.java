@@ -21,7 +21,7 @@ public record OnboardingCompleteRequest(
 		@Size(max = 512) String profileImageUrl,
 		@Size(max = 100) List<@NotNull @Positive Long> priorTrainingTopicIds,
 		@Size(max = 100) List<@NotNull @Positive Long> trainingGoalTopicIds,
-		@NotEmpty @Size(max = 5) @Valid List<DogRequest> dogs) {
+		@NotEmpty @Size(max = 5) List<@NotNull @Valid DogRequest> dogs) {
 
 	public OnboardingCompleteInfo toInfo() {
 		return new OnboardingCompleteInfo(
