@@ -132,7 +132,9 @@ user-invocable: true
 - 사용자가 버전을 알려 주지 않으면 먼저 묻는다. 직전 버전은 `git tag --list 'v*' --sort=-version:refname | head -n 1`로 확인한다.
 - 제목은 `chore(release): vX.Y.Z 출시`로 쓴다. 운영 CD(`cd-prod.yml`)가 merge commit 본문의 버전으로 tag를 만든다.
   - merge commit 본문에 PR 제목이 들어가는 것은 저장소 설정(`merge_commit_message: PR_TITLE`) 덕분이다. 이 설정을 바꾸면 버전을 읽지 못한다.
-  - 제목에 버전이 없으면 직전 tag의 minor를 올린다. 직전 tag보다 높지 않은 버전이면 배포 전에 실패한다.
+  - 제목에 버전이 없으면 직전 tag의 minor를 올린다.
+  - 직전 tag와 major.minor가 같은 버전(예: 직전 `v3.0.1`, 제목 `v3.0.0`)이면 직전 tag의 patch를 올린다(`v3.0.2`). 서버만 고쳐 다시 배포할 때는 앱 버전을 제목에 그대로 쓴다.
+  - 그보다 낮은 버전이면 배포 전에 실패한다.
 - draft 없이 생성하고 base를 확인한다.
   ```bash
   gh pr create --base main --head develop --title "chore(release): vX.Y.Z 출시" --body-file <본문 파일>

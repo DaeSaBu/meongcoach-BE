@@ -61,15 +61,19 @@ jobs:
           REQUESTED_RELEASE=$(git log -1 --format=%b "${GITHUB_SHA}" |
             grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' | head -n 1 || true)
 
-          if [ -n "${REQUESTED_RELEASE}" ]; then
-            HIGHEST=$(printf '%s\n%s\n' "${PREVIOUS_RELEASE#v}" "${REQUESTED_RELEASE#v}" | sort -V | tail -n 1)
-            if [ "${REQUESTED_RELEASE}" = "${PREVIOUS_RELEASE}" ] || [ "${HIGHEST}" != "${REQUESTED_RELEASE#v}" ]; then
-              echo "::error::릴리스 버전 ${REQUESTED_RELEASE}이 직전 버전 ${PREVIOUS_RELEASE}보다 높지 않습니다."
-              exit 1
-            fi
+          IFS='.' read -r MAJOR MINOR PATCH <<< "${PREVIOUS_RELEASE#v}"
+          IFS='.' read -r REQUESTED_MAJOR REQUESTED_MINOR _ <<< "${REQUESTED_RELEASE#v}"
+          HIGHEST=$(printf '%s\n%s\n' "${PREVIOUS_RELEASE#v}" "${REQUESTED_RELEASE#v}" | sort -V | tail -n 1)
+
+          # 직전 버전과 같은 major.minor를 다시 요청하면 직전 버전의 patch를 올린다.
+          if [ -n "${REQUESTED_RELEASE}" ] && [ "${REQUESTED_RELEASE}" != "${PREVIOUS_RELEASE}" ] && [ "${HIGHEST}" = "${REQUESTED_RELEASE#v}" ]; then
             RELEASE_VERSION="${REQUESTED_RELEASE}"
+          elif [ -n "${REQUESTED_RELEASE}" ] && [ "${REQUESTED_MAJOR}.${REQUESTED_MINOR}" = "${MAJOR}.${MINOR}" ]; then
+            RELEASE_VERSION="v${MAJOR}.${MINOR}.$((PATCH + 1))"
+          elif [ -n "${REQUESTED_RELEASE}" ]; then
+            echo "::error::릴리스 버전 ${REQUESTED_RELEASE}이 직전 버전 ${PREVIOUS_RELEASE}보다 낮습니다."
+            exit 1
           elif [ -n "${PREVIOUS_RELEASE}" ]; then
-            IFS='.' read -r MAJOR MINOR _ <<< "${PREVIOUS_RELEASE#v}"
             RELEASE_VERSION="v${MAJOR}.$((MINOR + 1)).0"
           else
             RELEASE_VERSION="v0.1.0"
