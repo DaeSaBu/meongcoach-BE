@@ -413,6 +413,15 @@ class OnboardingControllerTest {
 	}
 
 	@Test
+	void 강아지_목록에_null이_있으면_검증에_실패한다() throws Exception {
+		String request = """
+				{"nickname": "멍멍이집사", "mbti": "INTJ", "dogs": [null]}
+				""";
+
+		assertValidationFails(request, "dogs[0]");
+	}
+
+	@Test
 	void 강아지_없이_온보딩을_완료할_수_없다() throws Exception {
 		mockMvc.perform(post("/api/onboarding")
 						.principal(() -> "1")
