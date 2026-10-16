@@ -3,7 +3,6 @@ package com.daesabu.meongcoach.graduation.application.required;
 import com.daesabu.meongcoach.graduation.domain.TopicGraduation;
 import jakarta.persistence.LockModeType;
 import java.time.Instant;
-import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
@@ -12,8 +11,6 @@ import org.springframework.data.jpa.repository.Query;
 public interface TopicGraduationRepository extends JpaRepository<TopicGraduation, Long> {
 
 	Optional<TopicGraduation> findByUserIdAndTopicId(Long userId, Long topicId);
-
-	List<TopicGraduation> findAllByUserId(Long userId);
 
 	/**
 	 * 회원·토픽의 수료 행을 쓰기 잠금으로 읽는다. 같은 행을 잠근 다른 트랜잭션이 끝날 때까지 기다린다.
@@ -34,14 +31,6 @@ public interface TopicGraduationRepository extends JpaRepository<TopicGraduation
 	 */
 	@Query("select max(g.rewardExpiresAt) from TopicGraduation g where g.userId = :userId")
 	Optional<Instant> findLatestRewardExpiresAt(Long userId);
-
-	@Query("""
-			select g.topicId
-			from TopicGraduation g
-			where g.userId = :userId and g.status = com.daesabu.meongcoach.graduation.domain.GraduationStatus.APPROVED
-			order by g.approvedAt asc, g.id asc
-			""")
-	List<Long> findApprovedTopicIds(Long userId);
 
 	/**
 	 * 회원 ID를 키로 PostgreSQL 트랜잭션 advisory lock을 잡는다. 같은 키를 잠근 다른 트랜잭션이 끝날 때까지 기다리고, 잡은 락은 현재 트랜잭션이 끝날 때 풀린다.

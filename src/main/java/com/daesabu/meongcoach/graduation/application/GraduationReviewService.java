@@ -1,14 +1,14 @@
 package com.daesabu.meongcoach.graduation.application;
 
+import com.daesabu.meongcoach.entitlement.application.provided.EntitlementGranter;
 import com.daesabu.meongcoach.graduation.application.provided.GraduationReviewer;
 import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationReviewRequest;
-import com.daesabu.meongcoach.graduation.application.required.GraduationSubmissionRepository;
 import com.daesabu.meongcoach.graduation.application.required.TopicGraduationRepository;
-import com.daesabu.meongcoach.graduation.domain.GraduationSubmission;
 import com.daesabu.meongcoach.graduation.domain.ReviewDecision;
+import com.daesabu.meongcoach.graduation.domain.RewardPolicy;
 import com.daesabu.meongcoach.graduation.domain.TopicGraduation;
-import com.daesabu.meongcoach.graduation.domain.exception.SubmissionNotFoundException;
-import com.daesabu.meongcoach.graduation.domain.exception.SubmissionNotPendingException;
+import com.daesabu.meongcoach.graduation.domain.exception.GraduationNotFoundException;
+import com.daesabu.meongcoach.graduation.domain.exception.GraduationNotPendingException;
 import java.time.Instant;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -20,28 +20,28 @@ import org.springframework.transaction.annotation.Transactional;
 public class GraduationReviewService implements GraduationReviewer {
 
 	private final TopicGraduationRepository topicGraduationRepository;
-	private final GraduationSubmissionRepository graduationSubmissionRepository;
+	private final EntitlementGranter entitlementGranter;
 
 	@Override
 	@Transactional
-	public GraduationSubmission review(Long submissionId, GraduationReviewRequest request) {
+	public TopicGraduation review(Long graduationId, GraduationReviewRequest request) {
 		ReviewDecision decision = ReviewDecision.from(request.result());
-		Long graduationId = graduationSubmissionRepository.findGraduationIdById(submissionId)
-				.orElseThrow(() -> new SubmissionNotFoundException(submissionId));
-		TopicGraduation graduation = topicGraduationRepository.findForUpdateById(graduationId).orElseThrow();
-		GraduationSubmission submission = graduationSubmissionRepository.findById(submissionId).orElseThrow();
-		if (!submission.isPending()) {
-			throw new SubmissionNotPendingException(submissionId);
+		TopicGraduation graduation = topicGraduationRepository.findForUpdateById(graduationId)
+				.orElseThrow(() -> new GraduationNotFoundException(graduationId));
+		if (!graduation.isSubmitted()) {
+			throw new GraduationNotPendingException(graduationId);
 		}
-
 		Instant now = Instant.now();
-		if (decision == ReviewDecision.APPROVED) {
-			submission.approve(request.note(), now);
-			graduation.approve(now);
-			return submission;
+		if (decision == ReviewDecision.REVISION_REQUESTED) {
+			graduation.requestRevision(request.note(), now);
+			return graduation;
 		}
-		submission.requestRevision(request.note(), now);
-		graduation.requestRevision();
-		return submission;
+		Long userId = graduation.getUserId();
+		topicGraduationRepository.lockByUserId(userId);
+		Instant previousExpiresAt = topicGraduationRepository.findLatestRewardExpiresAt(userId).orElse(null);
+		Instant expiresAt = RewardPolicy.expiresAt(now, previousExpiresAt);
+		entitlementGranter.grant(userId, expiresAt);
+		graduation.approve(request.note(), now, expiresAt);
+		return graduation;
 	}
 }
