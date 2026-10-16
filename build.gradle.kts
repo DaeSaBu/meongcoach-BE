@@ -153,7 +153,7 @@ val postProcessOpenApiSpec = tasks.register("postProcessOpenApiSpec") {
 	val specFile = layout.buildDirectory.file("api-spec/openapi3.json")
 	// 운영자 API는 JWT 대신 X-Admin-Key로 지키고 앱 버전 헤더도 받지 않는다(shared/security/AdminKeyInterceptor)
 	val adminPaths = listOf(
-		"/api/admin/graduations/submissions", "/api/admin/graduations/submissions/{submissionId}/review"
+		"/api/admin/graduations/{graduationId}/review"
 	)
 	val publicPaths = listOf(
 		"/api/health", "/api/auth/login/social", "/api/auth/login/email", "/api/auth/token/refresh", "/api/auth/logout"

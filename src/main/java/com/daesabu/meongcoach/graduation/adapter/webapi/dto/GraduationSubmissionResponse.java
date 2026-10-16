@@ -1,13 +1,11 @@
 package com.daesabu.meongcoach.graduation.adapter.webapi.dto;
 
-import com.daesabu.meongcoach.graduation.domain.GraduationSubmission;
-import com.daesabu.meongcoach.graduation.domain.SubmissionResult;
+import com.daesabu.meongcoach.graduation.domain.TopicGraduation;
 import java.time.Instant;
 
-public record GraduationSubmissionResponse(Long submissionId, int attemptNo, SubmissionResult result, Instant submittedAt) {
+public record GraduationSubmissionResponse(Long graduationId, int attemptNo, Instant submittedAt) {
 
-	public static GraduationSubmissionResponse from(GraduationSubmission submission) {
-		return new GraduationSubmissionResponse(submission.getId(), submission.getAttemptNo(), submission.getResult(),
-				submission.getSubmittedAt());
+	public static GraduationSubmissionResponse from(TopicGraduation graduation) {
+		return new GraduationSubmissionResponse(graduation.getId(), graduation.getAttemptNo(), graduation.getSubmittedAt());
 	}
 }
