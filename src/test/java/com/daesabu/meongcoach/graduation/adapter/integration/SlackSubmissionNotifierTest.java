@@ -20,11 +20,13 @@ import org.springframework.web.client.RestClient;
 class SlackSubmissionNotifierTest {
 
 	private static final String WEBHOOK_URL = "https://hooks.slack.test/services/T000/B000/XXXX";
-	private static final SubmissionNotice NOTICE =
-			new SubmissionNotice(31L, 42L, 7L, "분리불안", 2, Instant.parse("2026-10-14T05:03:00Z"));
+	private static final String VIDEO_KEY = "videos/graduation/42/clip.mp4";
+	private static final String VIDEO_URL = "https://videos.test/" + VIDEO_KEY + "?X-Amz-Signature=example";
+	private static final SubmissionNotice NOTICE = new SubmissionNotice(31L, 42L, 7L, "분리불안", 2,
+			Instant.parse("2026-10-14T05:03:00Z"), VIDEO_KEY, VIDEO_URL);
 
 	@Test
-	void 제출_한_건을_한_줄_메시지로_웹훅에_보낸다() {
+	void 제출_한_건을_영상_링크와_키를_담은_메시지로_웹훅에_보낸다() {
 		RestClient.Builder builder = RestClient.builder();
 		MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
 		SlackSubmissionNotifier notifier = new SlackSubmissionNotifier(new GraduationSlackProperties(WEBHOOK_URL), builder);
@@ -32,7 +34,8 @@ class SlackSubmissionNotifierTest {
 				.andExpect(method(HttpMethod.POST))
 				.andExpect(content().contentType(MediaType.APPLICATION_JSON))
 				.andExpect(jsonPath("$.text")
-						.value("[실습 인증 제출] 토픽 #7 분리불안 · userId 42 · submissionId 31 · 2번째 제출 · 2026-10-14T14:03"))
+						.value("[실습 인증 제출] 토픽 #7 분리불안 · userId 42 · graduationId 31 · 2번째 제출 · 2026-10-14T14:03\n"
+								+ "영상(1시간): " + VIDEO_URL + "\n키: " + VIDEO_KEY))
 				.andRespond(withSuccess("ok", MediaType.TEXT_PLAIN));
 
 		notifier.notifySubmitted(NOTICE);
