@@ -239,6 +239,7 @@ link:{swagger-ui}#/Training/training-curriculum-detail[▶ Swagger에서 Try it 
 레슨은 노출 순서대로 정렬되어 내려가며, 각 레슨에는 액세스 토큰으로 식별한 사용자의
 반복 완료 횟수(`userLessonProgress.completedCount`)가 함께 내려갑니다.
 진행 기록이 없는 레슨의 완료 횟수는 0이고, 레슨이 없는 커리큘럼은 빈 배열로 내려갑니다.
+커리큘럼을 만든 전문가 한 명의 이름·직함·소개·사진 URL이 `expert`로 함께 내려가며, 등록된 전문가가 없으면 `expert`는 `null`입니다.
 
 operation::training/curriculum-detail[snippets='http-request,path-parameters,http-response,response-fields']
 
