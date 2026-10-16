@@ -4,7 +4,6 @@ import com.daesabu.meongcoach.dog.domain.exception.BreedLengthExceededException;
 import com.daesabu.meongcoach.dog.domain.exception.BreedRequiredException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
-import java.util.Optional;
 
 @Embeddable
 public record Breed(@Column(name = "breed", nullable = false, length = Breed.MAX_LENGTH) String value) {
@@ -32,16 +31,8 @@ public record Breed(@Column(name = "breed", nullable = false, length = Breed.MAX
 		return new Breed(value);
 	}
 
-	public Optional<RegisteredBreed> registered() {
-		return RegisteredBreed.find(value);
-	}
-
-	public boolean isCustom() {
-		return registered().isEmpty();
-	}
-
 	public String label() {
-		return registered()
+		return RegisteredBreed.find(value)
 				.map(RegisteredBreed::getLabel)
 				.orElse(value);
 	}
