@@ -41,6 +41,53 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: 릴리스 버전 결정
+        id: release-version
+        run: |
+          # 이미 릴리스 tag가 붙은 commit의 재실행은 새 버전을 만들지 않는다.
+          EXISTING_RELEASE=$(git tag --points-at "${GITHUB_SHA}" |
+            grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1 || true)
+          if [ -n "${EXISTING_RELEASE}" ]; then
+            echo "value=${EXISTING_RELEASE}" >> "${GITHUB_OUTPUT}"
+            echo "existing=true" >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+
+          PREVIOUS_RELEASE=$(git tag --list 'v*' --sort=-version:refname |
+            grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' |
+            head -n 1 || true)
+
+          # merge commit 본문(릴리스 PR 제목)의 버전을 쓰고, 없으면 minor를 올린다.
+          REQUESTED_RELEASE=$(git log -1 --format=%b "${GITHUB_SHA}" |
+            grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' | head -n 1 || true)
+
+          IFS='.' read -r MAJOR MINOR PATCH <<< "${PREVIOUS_RELEASE#v}"
+          IFS='.' read -r REQUESTED_MAJOR REQUESTED_MINOR _ <<< "${REQUESTED_RELEASE#v}"
+          HIGHEST=$(printf '%s\n%s\n' "${PREVIOUS_RELEASE#v}" "${REQUESTED_RELEASE#v}" | sort -V | tail -n 1)
+
+          # 직전 버전과 같은 major.minor를 다시 요청하면 직전 버전의 patch를 올린다.
+          if [ -n "${REQUESTED_RELEASE}" ] && [ "${REQUESTED_RELEASE}" != "${PREVIOUS_RELEASE}" ] && [ "${HIGHEST}" = "${REQUESTED_RELEASE#v}" ]; then
+            RELEASE_VERSION="${REQUESTED_RELEASE}"
+          elif [ -n "${REQUESTED_RELEASE}" ] && [ "${REQUESTED_MAJOR}.${REQUESTED_MINOR}" = "${MAJOR}.${MINOR}" ]; then
+            RELEASE_VERSION="v${MAJOR}.${MINOR}.$((PATCH + 1))"
+          elif [ -n "${REQUESTED_RELEASE}" ]; then
+            echo "::error::릴리스 버전 ${REQUESTED_RELEASE}이 직전 버전 ${PREVIOUS_RELEASE}보다 낮습니다."
+            exit 1
+          elif [ -n "${PREVIOUS_RELEASE}" ]; then
+            RELEASE_VERSION="v${MAJOR}.$((MINOR + 1)).0"
+          else
+            RELEASE_VERSION="v0.1.0"
+          fi
+
+          if [ -n "${PREVIOUS_RELEASE}" ]; then
+            COMMIT_RANGE="${PREVIOUS_RELEASE}..${GITHUB_SHA}"
+          else
+            COMMIT_RANGE="${GITHUB_SHA}"
+          fi
+
+          echo "value=${RELEASE_VERSION}" >> "${GITHUB_OUTPUT}"
+          echo "commit_range=${COMMIT_RANGE}" >> "${GITHUB_OUTPUT}"
+
       - name: 배포 jar 다운로드
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
@@ -178,29 +225,11 @@ jobs:
           exit 1
 
       - name: 운영 배포 tag 생성
-        id: release-version
+        if: steps.release-version.outputs.existing != 'true'
+        env:
+          RELEASE_VERSION: ${{ steps.release-version.outputs.value }}
+          COMMIT_RANGE: ${{ steps.release-version.outputs.commit_range }}
         run: |
-          # 이미 릴리스 tag가 붙은 commit의 재실행은 새 버전을 만들지 않는다.
-          EXISTING_RELEASE=$(git tag --points-at "${GITHUB_SHA}" |
-            grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1 || true)
-          if [ -n "${EXISTING_RELEASE}" ]; then
-            echo "value=${EXISTING_RELEASE}" >> "${GITHUB_OUTPUT}"
-            exit 0
-          fi
-
-          PREVIOUS_RELEASE=$(git tag --list 'v*' --sort=-version:refname |
-            grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' |
-            head -n 1 || true)
-
-          if [ -n "${PREVIOUS_RELEASE}" ]; then
-            IFS='.' read -r MAJOR MINOR _ <<< "${PREVIOUS_RELEASE#v}"
-            RELEASE_VERSION="v${MAJOR}.$((MINOR + 1)).0"
-            COMMIT_RANGE="${PREVIOUS_RELEASE}..${GITHUB_SHA}"
-          else
-            RELEASE_VERSION="v0.1.0"
-            COMMIT_RANGE="${GITHUB_SHA}"
-          fi
-
           {
             echo "주요 작업"
             git log "${COMMIT_RANGE}" --pretty='- %s'
@@ -214,7 +243,6 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git tag --annotate "${RELEASE_VERSION}" --file tag-message.txt "${GITHUB_SHA}"
           git push origin "refs/tags/${RELEASE_VERSION}"
-          echo "value=${RELEASE_VERSION}" >> "${GITHUB_OUTPUT}"
 
   notify:
     needs: [ci, deploy]
