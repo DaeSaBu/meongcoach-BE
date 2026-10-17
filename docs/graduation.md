@@ -12,6 +12,7 @@
 운영자: Slack 링크로 영상 확인
 운영자: PUT /api/admin/graduations/{graduationId}/review             → 승인(이용권 지급 + 동기화) 또는 보완 요청
 앱: GET /api/training/topics/{topicId}/graduation                    → 상태 확인(화면에 들어올 때마다 재조회)
+앱: GET /api/training/graduations                                    → 마이페이지 "내 훈련 영상" 목록(제출한 토픽만, 최근 제출 순)
 ```
 
 업로드 완료를 S3 이벤트로 감지하지 않습니다. 앱이 업로드를 마친 뒤 제출합니다. 같은 버킷의 S3→SQS 이벤트는
