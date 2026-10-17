@@ -1,5 +1,6 @@
 package com.daesabu.meongcoach.graduation.adapter.webapi;
 
+import com.daesabu.meongcoach.graduation.adapter.webapi.dto.GraduationListResponse;
 import com.daesabu.meongcoach.graduation.adapter.webapi.dto.GraduationResponse;
 import com.daesabu.meongcoach.graduation.adapter.webapi.dto.GraduationSubmissionResponse;
 import com.daesabu.meongcoach.graduation.adapter.webapi.dto.GraduationUploadUrlResponse;
@@ -25,7 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.UriComponentsBuilder;
 
 @RestController
-@RequestMapping("/api/training/topics/{topicId}/graduation")
+@RequestMapping("/api/training")
 @RequiredArgsConstructor
 public class GraduationController {
 
@@ -35,19 +36,24 @@ public class GraduationController {
 	private final GraduationUploadUrlIssuer graduationUploadUrlIssuer;
 	private final GraduationSubmitter graduationSubmitter;
 
-	@GetMapping
+	@GetMapping("/graduations")
+	public GraduationListResponse findGraduations(@CurrentUserId Long userId) {
+		return GraduationListResponse.from(graduationFinder.findGraduations(userId));
+	}
+
+	@GetMapping("/topics/{topicId}/graduation")
 	public GraduationResponse findGraduation(@CurrentUserId Long userId, @PathVariable Long topicId) {
 		return GraduationResponse.from(graduationFinder.findGraduation(userId, topicId));
 	}
 
-	@PostMapping("/presigned-urls")
+	@PostMapping("/topics/{topicId}/graduation/presigned-urls")
 	@ResponseStatus(HttpStatus.CREATED)
 	public GraduationUploadUrlResponse issueUploadUrl(@CurrentUserId Long userId, @PathVariable Long topicId,
 	                                                  @Valid @RequestBody GraduationUploadUrlRequest request) {
 		return GraduationUploadUrlResponse.from(graduationUploadUrlIssuer.issue(userId, topicId, request));
 	}
 
-	@PostMapping("/submissions")
+	@PostMapping("/topics/{topicId}/graduation/submissions")
 	public ResponseEntity<GraduationSubmissionResponse> submit(@CurrentUserId Long userId, @PathVariable Long topicId,
 	                                                           @Valid @RequestBody GraduationSubmissionRequest request) {
 		TopicGraduation graduation = graduationSubmitter.submit(userId, topicId, request);

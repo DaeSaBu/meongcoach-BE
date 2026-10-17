@@ -2,13 +2,17 @@ package com.daesabu.meongcoach.graduation.application;
 
 import com.daesabu.meongcoach.graduation.application.provided.GraduationFinder;
 import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationDetailResult;
+import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationSummaryResult;
 import com.daesabu.meongcoach.graduation.application.required.TopicGraduationRepository;
 import com.daesabu.meongcoach.graduation.domain.TopicGraduation;
 import com.daesabu.meongcoach.media.application.provided.VideoDownloadUrlIssuer;
 import com.daesabu.meongcoach.training.application.provided.TopicCompletionChecker;
 import com.daesabu.meongcoach.training.application.provided.TopicFinder;
 import com.daesabu.meongcoach.training.application.provided.dto.TopicResult;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,5 +37,19 @@ public class GraduationQueryService implements GraduationFinder {
 		}
 		String videoUrl = videoDownloadUrlIssuer.issue(graduation.get().getVideoObjectKey()).downloadUrl();
 		return new GraduationDetailResult(topic, eligible, graduation.get(), videoUrl);
+	}
+
+	@Override
+	public List<GraduationSummaryResult> findGraduations(Long userId) {
+		List<TopicGraduation> graduations = topicGraduationRepository.findAllByUserIdOrderBySubmittedAtDescIdDesc(userId);
+		if (graduations.isEmpty()) {
+			return List.of();
+		}
+		Map<Long, String> topicTitles = topicFinder.findAllOrdered().stream()
+				.collect(Collectors.toMap(TopicResult::id, TopicResult::title));
+		return graduations.stream()
+				.map(graduation -> new GraduationSummaryResult(graduation,
+						topicTitles.getOrDefault(graduation.getTopicId(), "")))
+				.toList();
 	}
 }
