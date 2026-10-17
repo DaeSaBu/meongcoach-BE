@@ -20,6 +20,7 @@ import com.daesabu.meongcoach.graduation.application.provided.GraduationSubmitte
 import com.daesabu.meongcoach.graduation.application.provided.GraduationUploadUrlIssuer;
 import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationDetailResult;
 import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationSubmissionRequest;
+import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationSummaryResult;
 import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationUploadUrlRequest;
 import com.daesabu.meongcoach.graduation.domain.GraduationStatus;
 import com.daesabu.meongcoach.graduation.domain.TopicGraduation;
@@ -31,6 +32,7 @@ import com.daesabu.meongcoach.training.application.provided.dto.TopicResult;
 import com.daesabu.meongcoach.training.domain.exception.TopicNotFoundException;
 import java.security.Principal;
 import java.time.Instant;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
@@ -113,6 +115,43 @@ class GraduationControllerTest {
 								fieldWithPath("reviewedAt").optional().description("가장 최근 제출의 판정 시각. 판정 전이면 null"),
 								fieldWithPath("reviewNote").optional().description("운영자 메모. 없으면 null"),
 								fieldWithPath("rewardExpiresAt").optional().description(
+										"승인 때 지급한 전체 이용권 3일의 만료 시각. 승인 전이면 null")
+						)
+				));
+	}
+
+	@Test
+	void 내_훈련_영상_목록을_최근_제출_순으로_반환한다() throws Exception {
+		TopicGraduation graduation = TopicGraduationFixture.create(3L, 42L, TOPIC_ID, GraduationStatus.APPROVED, 2,
+				VIDEO_KEY, SUBMITTED_AT, REVIEWED_AT, "끝까지 함께 시도했어요!", EXPIRES_AT);
+		given(graduationFinder.findGraduations(42L)).willReturn(List.of(new GraduationSummaryResult(graduation, "분리불안")));
+
+		mockMvc.perform(get("/api/training/graduations")
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.graduations[0].graduationId").value(3))
+				.andExpect(jsonPath("$.graduations[0].topicId").value(7))
+				.andExpect(jsonPath("$.graduations[0].topicTitle").value("분리불안"))
+				.andExpect(jsonPath("$.graduations[0].status").value("APPROVED"))
+				.andExpect(jsonPath("$.graduations[0].attemptNo").value(2))
+				.andExpect(jsonPath("$.graduations[0].submittedAt").value("2026-10-14T05:03:00Z"))
+				.andExpect(jsonPath("$.graduations[0].reviewedAt").value("2026-10-15T01:00:00Z"))
+				.andExpect(jsonPath("$.graduations[0].reviewNote").value("끝까지 함께 시도했어요!"))
+				.andExpect(jsonPath("$.graduations[0].rewardExpiresAt").value("2026-10-18T01:00:00Z"))
+				.andDo(document("graduation/list",
+						responseFields(
+								fieldWithPath("graduations[]").description("제출한 적이 있는 토픽의 실습 인증. 가장 최근 제출 순"),
+								fieldWithPath("graduations[].graduationId").description("토픽 수료 ID"),
+								fieldWithPath("graduations[].topicId").description("토픽 ID"),
+								fieldWithPath("graduations[].topicTitle").description("토픽 제목"),
+								fieldWithPath("graduations[].status").description(
+										"수료 상태. SUBMITTED(검수 대기), REVISION_REQUESTED(보완 요청), APPROVED(수료)"),
+								fieldWithPath("graduations[].attemptNo").description("지금까지 제출한 횟수(영상 교체 포함)"),
+								fieldWithPath("graduations[].submittedAt").description("가장 최근 제출 시각(ISO-8601, UTC)"),
+								fieldWithPath("graduations[].reviewedAt").optional().description("가장 최근 제출의 판정 시각. 판정 전이면 null"),
+								fieldWithPath("graduations[].reviewNote").optional().description("운영자 메모. 없으면 null"),
+								fieldWithPath("graduations[].rewardExpiresAt").optional().description(
 										"승인 때 지급한 전체 이용권 3일의 만료 시각. 승인 전이면 null")
 						)
 				));
@@ -246,6 +285,9 @@ class GraduationControllerTest {
 	@Test
 	void 인증_정보가_없으면_401을_반환한다() throws Exception {
 		mockMvc.perform(get("/api/training/topics/{topicId}/graduation", TOPIC_ID))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+		mockMvc.perform(get("/api/training/graduations"))
 				.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
 	}

@@ -5,10 +5,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationDetailResult;
 import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationSubmissionRequest;
+import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationSummaryResult;
 import com.daesabu.meongcoach.graduation.domain.GraduationStatus;
 import com.daesabu.meongcoach.support.ApplicationTest;
 import com.daesabu.meongcoach.training.domain.Topic;
 import com.daesabu.meongcoach.training.domain.exception.TopicNotFoundException;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
@@ -73,6 +75,28 @@ class GraduationFinderTest {
 	void 존재하지_않는_토픽이면_예외를_던진다() {
 		assertThatThrownBy(() -> graduationFinder.findGraduation(USER_ID, 999L))
 				.isInstanceOf(TopicNotFoundException.class);
+	}
+
+	@Test
+	void 내_훈련_영상_목록은_최근_제출_순으로_본인_것만_돌려준다() {
+		Topic first = topicSeeder.completedTopic(USER_ID, "분리불안");
+		Topic second = topicSeeder.completedTopic(USER_ID, "산책 줄 당김");
+		Topic other = topicSeeder.completedTopic(OTHER_USER_ID, "기본 예절");
+		submit(USER_ID, first, "a");
+		submit(USER_ID, second, "b");
+		submit(OTHER_USER_ID, other, "c");
+
+		List<GraduationSummaryResult> results = graduationFinder.findGraduations(USER_ID);
+
+		assertThat(results).extracting(result -> result.graduation().getTopicId())
+				.containsExactly(second.getId(), first.getId());
+		assertThat(results).extracting(GraduationSummaryResult::topicTitle).containsExactly("산책 줄 당김", "분리불안");
+		assertThat(results.getFirst().graduation().getStatus()).isEqualTo(GraduationStatus.SUBMITTED);
+	}
+
+	@Test
+	void 제출한_적이_없으면_빈_목록이다() {
+		assertThat(graduationFinder.findGraduations(USER_ID)).isEmpty();
 	}
 
 	private void submit(Long userId, Topic topic, String name) {
