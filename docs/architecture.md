@@ -19,6 +19,7 @@ com.daesabu.meongcoach
 ├── media        ← 이미지·영상 업로드 URL 발급 (R2/S3)
 ├── onboarding   ← 온보딩 흐름 조합
 ├── entitlement  ← 이용권 동기화. RevenueCat 활성 이용권의 사본을 둠
+├── community    ← 게시글. 훈련 카드 등 다른 모듈의 대상을 멘션할 수 있음
 ├── health       ← 서비스 상태 확인
 └── shared       ← 횡단 관심사 (config / security / webapi / exception / domain)
 ```
@@ -36,7 +37,7 @@ com.daesabu.meongcoach
 └── domain                   // 엔티티, 일급 컬렉션, 값 객체, exception/, 입력 모델(~Command)
 ```
 
-모듈은 필요한 계층만 갖습니다. `dog`·`progress`는 자체 API 없이 `provided` 인터페이스로만 노출되어 `adapter`가 없고, `onboarding`은 다른 모듈을 조합만 하므로 `domain`이 없습니다. 문서나 코드를 생성할 때 없는 계층을 만들어 채우지 않습니다.
+모듈은 필요한 계층만 갖습니다. `progress`는 자체 API 없이 `provided` 인터페이스로만 노출되어 `adapter`가 없고, `onboarding`은 다른 모듈을 조합만 하므로 `domain`이 없습니다. 문서나 코드를 생성할 때 없는 계층을 만들어 채우지 않습니다.
 
 ## 모듈 규칙
 
@@ -44,8 +45,8 @@ com.daesabu.meongcoach
 - 각 모듈 루트에 `package-info.java`를 두고 `@ApplicationModule`을 선언합니다.
 - **모듈 간 호출은 `application/provided`의 인터페이스로만 합니다.** 다른 모듈의 서비스 구현체, `required` 인터페이스, 도메인 내부에 직접 접근하지 않습니다. `verify()`는 `@NamedInterface` 패키지에 **물리적으로 존재하는 타입만** 노출로 인정하며, 인터페이스 시그니처에 등장하는 타입은 전파되지 않습니다. named interface는 모듈당 여러 개 둘 수 있습니다.
 - **모듈 경계를 넘는 값은 두 가지로만 둡니다.** 도메인 타입을 1:1로 옮겨 담는 record는 만들지 않습니다.
-  - enum·값 객체 같은 **도메인 타입은 `domain/shared`에 두고 `package-info.java`에 `@NamedInterface("shared")`를 선언해 그대로 노출**합니다. (선례: `dog/domain/shared`의 `Breed`) 여러 모듈이 함께 해석하는 어휘도 모듈마다 복제하지 않고, 그 개념을 부여·관리하는 모듈 한 곳에 정의해 노출합니다. (선례: 이용권 종류 `entitlement/domain/shared`의 `EntitlementType` — entitlement가 부여·확인하고, 권한 확인이 붙으면 training도 같은 타입으로 콘텐츠와 이용권을 연결) `AnnotationPatternTest`가 `domain`의 스프링 의존을 막으므로 타입에 직접 `@NamedInterface`를 붙일 수 없고 package-info로만 선언합니다. 엔티티·일급 컬렉션은 영속 상태에 묶이므로 노출하지 않습니다.
-  - projection·집계·여러 애그리거트 조합처럼 **도메인 타입 하나로 표현할 수 없는 값만 provided 패키지의 `~Result` record**로 둡니다. `provided/dto`에 두어도 됩니다. (선례: `TopicSummary`, `VideoUploadUrlResult`, `training/application/provided/dto`의 `CurriculumDetailResult`)
+  - enum·값 객체 같은 **도메인 타입은 `domain/shared`에 두고 `package-info.java`에 `@NamedInterface("shared")`를 선언해 그대로 노출**합니다. (선례: `dog/domain/shared`의 `Breed`·`RegisteredBreed`) 여러 모듈이 함께 해석하는 어휘도 모듈마다 복제하지 않고, 그 개념을 부여·관리하는 모듈 한 곳에 정의해 노출합니다. (선례: 이용권 종류 `entitlement/domain/shared`의 `EntitlementType` — entitlement가 부여·확인하고, 권한 확인이 붙으면 training도 같은 타입으로 콘텐츠와 이용권을 연결) `AnnotationPatternTest`가 `domain`의 스프링 의존을 막으므로 타입에 직접 `@NamedInterface`를 붙일 수 없고 package-info로만 선언합니다. 엔티티·일급 컬렉션은 영속 상태에 묶이므로 노출하지 않습니다.
+  - projection·집계·여러 애그리거트 조합처럼 **도메인 타입 하나로 표현할 수 없는 값만 provided 패키지의 `~Result` record**로 둡니다. `provided/dto`에 두어도 됩니다. (선례: `TopicResult`, `VideoUploadUrlResult`, `training/application/provided/dto`의 `CurriculumDetailResult`)
 - **서비스 입력은 provided 패키지의 `~Request` record로 받습니다.** 컨트롤러와 다른 모듈이 같은 record를 넘기며, `domain`의 `~Command`는 노출하지 않고 provided record가 `toCommand()`로 변환합니다. (선례: `auth/application/provided/dto`, `UserProfileRegisterRequest`)
 - **모듈 간 의존은 단방향입니다.** `auth → user`처럼 한쪽만 참조하고, 다른 모듈의 엔티티는 연관 대신 ID로 참조합니다. (선례: `RefreshToken.userId`) 양쪽에 걸친 흐름은 참조하는 쪽이 조율합니다 — 탈퇴는 `auth`의 `AuthenticationService`가 자격증명·토큰을 정리한 뒤 `user`의 `UserRegister.withdraw`를 호출합니다.
 - **`application/provided`에는 `package-info.java`로 `@NamedInterface("provided")`를 선언합니다.** 선언하지 않으면 Modulith가 이 패키지를 모듈 내부로 취급해 다른 모듈에서의 호출이 `verify()`에서 실패합니다.
@@ -106,5 +107,15 @@ HTTP 요청
 `architecture/ModularityTest`가 `ApplicationModules.verify()`로 모듈 경계 위반을 검증합니다.
 
 같은 테스트가 Spring Modulith `Documenter`로 모듈 구조 문서도 만듭니다. 테스트를 실행하면 `build/spring-modulith-docs/`에 모듈 의존 다이어그램(`components.puml`, `module-{모듈}.puml`)과 모듈별 공개 API·빈 목록(`module-{모듈}.adoc`)이 생깁니다. 생성물은 커밋하지 않으며, IntelliJ PlantUML·AsciiDoc 플러그인으로 열어 봅니다.
+
+문서 생성에서는 `shared` 패키지를 뺍니다. 모든 모듈이 참조해 다이어그램에 관계선만 늘리기 때문입니다. `DiagramOptions.withExclusions`는 다이어그램에만 적용되어 캔버스는 계속 생기므로, 문서용 `ApplicationModules`를 따로 만들어 `shared` 패키지를 무시합니다. 경계 검증(`verify()`)은 `shared`를 포함한 전체 모듈로 합니다. 다이어그램에는 모듈과 모듈 간 의존만 나오고 외부 시스템은 나오지 않으며, 외부 시스템 전체 그림은 README의 시스템 구성 다이어그램에 직접 그립니다.
+
+README의 모듈 다이어그램(`docs/images/module-dependencies.svg`)은 `components.puml`을 렌더링한 스냅샷이라 자동으로 갱신되지 않습니다. 모듈 간 의존이 바뀌는 PR에서는 테스트로 `components.puml`을 다시 생성한 뒤 아래 명령으로 다시 렌더링해 함께 커밋합니다.
+
+```bash
+./gradlew test --tests '*ModularityTest'
+docker run --rm -v "$PWD/build/spring-modulith-docs:/data" plantuml/plantuml -tsvg /data/components.puml
+cp build/spring-modulith-docs/components.svg docs/images/module-dependencies.svg
+```
 
 클래스 네이밍 규칙은 [code-convention 스킬](../.claude/skills/code-convention/SKILL.md)을 따릅니다.

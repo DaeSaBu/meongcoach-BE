@@ -8,6 +8,7 @@ import com.daesabu.meongcoach.dog.domain.DogSex;
 import com.daesabu.meongcoach.dog.domain.DogStatus;
 import com.daesabu.meongcoach.dog.domain.shared.Breed;
 import com.daesabu.meongcoach.dog.domain.shared.Personality;
+import com.daesabu.meongcoach.dog.domain.shared.RegisteredBreed;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -18,9 +19,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 
-/**
- * 강아지 리포지토리 검증.
- */
 @DataJpaTest
 class DogRepositoryTest {
 
@@ -44,7 +42,6 @@ class DogRepositoryTest {
 		assertThat(found.orElseThrow().getId()).isEqualTo(selected.getId());
 	}
 
-	// 애플리케이션 레이어에서만 불변식을 강제하므로, 선택이 여러 건인 데이터가 남아 있어도 예외 없이 끝나야 한다
 	@Test
 	void 선택된_강아지가_여러_건이어도_가장_먼저_등록된_한_마리를_반환한다() {
 		Dog first = persistSelectedDog(USER_ID);
@@ -89,9 +86,8 @@ class DogRepositoryTest {
 		assertThat(dogRepository.findAllByUserIdOrderByIdAsc(USER_ID)).isEmpty();
 	}
 
-	// 성격 컬렉션은 LAZY라 트랜잭션 밖(adapter)에서 읽기 전에 선로딩돼야 한다. 영속성 컨텍스트를 비워 실제 쿼리 결과만으로 확인한다
 	@Test
-	void 목록_조회는_성격을_함께_로딩하고_성격이_여러_개여도_강아지를_중복시키지_않는다() {
+	void 목록_조회는_성격이_여러_개여도_강아지를_중복시키지_않는다() {
 		Dog dog = persistDogWithPersonalities(USER_ID, Set.of(Personality.TIMID, Personality.LIVELY));
 		entityManager.clear();
 
@@ -103,7 +99,7 @@ class DogRepositoryTest {
 	}
 
 	@Test
-	void ID와_소유자가_모두_일치하는_강아지를_성격과_함께_조회한다() {
+	void ID와_소유자가_모두_일치하는_강아지를_성격과_조회한다() {
 		Dog dog = persistDogWithPersonalities(USER_ID, Set.of(Personality.FRIENDLY));
 		entityManager.clear();
 
@@ -131,6 +127,34 @@ class DogRepositoryTest {
 		return dogRepository.saveAndFlush(dog);
 	}
 
+	@Test
+	void 등록_견종은_상수_이름으로_breed_컬럼에_저장한다() {
+		Long dogId = dogRepository.saveAndFlush(newDog(USER_ID)).getId();
+		entityManager.clear();
+
+		assertThat(storedBreed(dogId)).isEqualTo("POODLE");
+		assertThat(dogRepository.findById(dogId).orElseThrow().getBreed())
+				.isEqualTo(Breed.of(RegisteredBreed.POODLE));
+	}
+
+	@Test
+	void 직접_입력한_견종은_입력한_이름으로_breed_컬럼에_저장한다() {
+		Dog dog = Dog.register(new DogRegisterCommand(USER_ID, "초코", Breed.from("삽살개"), DogSex.MALE,
+				LocalDate.of(2024, 3, 1), new BigDecimal("4.50"), IMAGE_URL, null));
+		Long dogId = dogRepository.saveAndFlush(dog).getId();
+		entityManager.clear();
+
+		assertThat(storedBreed(dogId)).isEqualTo("삽살개");
+		assertThat(dogRepository.findById(dogId).orElseThrow().getBreed()).isEqualTo(Breed.from("삽살개"));
+	}
+
+	private Object storedBreed(Long dogId) {
+		return entityManager.getEntityManager()
+				.createNativeQuery("SELECT breed FROM dogs WHERE id = :id")
+				.setParameter("id", dogId)
+				.getSingleResult();
+	}
+
 	private Dog persistUnselectedDog(Long userId) {
 		return dogRepository.saveAndFlush(newDog(userId));
 	}
@@ -142,7 +166,7 @@ class DogRepositoryTest {
 	}
 
 	private Dog newDog(Long userId) {
-		return Dog.register(new DogRegisterCommand(userId, "초코", Breed.POODLE, DogSex.MALE,
+		return Dog.register(new DogRegisterCommand(userId, "초코", Breed.of(RegisteredBreed.POODLE), DogSex.MALE,
 				LocalDate.of(2024, 3, 1), new BigDecimal("4.50"), IMAGE_URL, null));
 	}
 }

@@ -185,6 +185,9 @@ operation::onboarding/image-upload-url-error[snippets='http-response,response-fi
 link:{swagger-ui}#/Onboarding/onboarding-metadata[▶ Swagger에서 Try it out,window=swagger]
 
 온보딩 화면에 필요한 토픽·견종·강아지 성격·MBTI 목록을 한 번에 반환합니다.
+견종(`breeds`)은 등록 견종 전체이며 믹스견을 맨 앞에 두고 나머지는 한글 라벨 가나다순입니다.
+각 견종의 `aliases`는 한글·영문 별칭 목록이므로, 앱은 이 목록을 받아 기기에서 견종을 검색합니다.
+`aliases`에는 `label`이 들어 있지 않으므로 검색할 때 `label`과 `aliases`를 함께 비교합니다. 대소문자·띄어쓰기만 다른 별칭은 하나만 내려갑니다.
 
 operation::onboarding/metadata[snippets='http-request,http-response,response-fields']
 
@@ -214,6 +217,7 @@ operation::health/check[snippets='http-request,http-response,response-fields']
 == Training API
 
 모든 엔드포인트는 액세스 토큰 인증이 필요합니다.
+목록 응답은 배열 순서가 곧 노출 순서이므로, 클라이언트는 다시 정렬하지 않고 받은 순서대로 표시합니다.
 
 === 커리큘럼 리스트 조회
 
@@ -222,7 +226,7 @@ link:{swagger-ui}#/Training/training-curriculum-list[▶ Swagger에서 Try it ou
 커리큘럼 탭에 표시할 토픽과 그 토픽의 커리큘럼 목록을 진행 상태와 함께 조회합니다.
 대상 토픽은 액세스 토큰으로 식별한 사용자가 마지막으로 진입한 토픽이며,
 진입 기록이 없거나 기록된 토픽이 더 이상 없으면 카테고리·토픽 노출 순서 기준 첫 토픽으로 폴백합니다.
-커리큘럼은 노출 순서(`sortOrder`) 오름차순으로 정렬되며, 이 요청은 어떤 데이터도 저장하지 않습니다.
+커리큘럼은 노출 순서대로 정렬되어 내려가며, 이 요청은 어떤 데이터도 저장하지 않습니다.
 
 operation::training/curriculum-list[snippets='http-request,http-response,response-fields']
 
@@ -235,7 +239,7 @@ operation::training/curriculum-list-error[snippets='http-response,response-field
 link:{swagger-ui}#/Training/training-curriculum-detail[▶ Swagger에서 Try it out,window=swagger]
 
 커리큘럼 하나와 그 커리큘럼에 속한 레슨 목록을 조회합니다.
-레슨은 노출 순서(`sortOrder`) 오름차순으로 정렬되며, 각 레슨에는 액세스 토큰으로 식별한 사용자의
+레슨은 노출 순서대로 정렬되어 내려가며, 각 레슨에는 액세스 토큰으로 식별한 사용자의
 반복 완료 횟수(`userLessonProgress.completedCount`)가 함께 내려갑니다.
 진행 기록이 없는 레슨의 완료 횟수는 0이고, 레슨이 없는 커리큘럼은 빈 배열로 내려갑니다.
 
@@ -250,7 +254,7 @@ operation::training/curriculum-detail-error[snippets='http-response,response-fie
 link:{swagger-ui}#/Training/training-categories[▶ Swagger에서 Try it out,window=swagger]
 
 전체 교육 카테고리와 각 카테고리에 속한 토픽을 조회합니다.
-카테고리와 토픽 모두 노출 순서(`sortOrder`) 오름차순으로 정렬되며, 토픽이 없는 카테고리는 빈 배열로 내려갑니다.
+카테고리와 토픽 모두 노출 순서대로 정렬되어 내려가며, 토픽이 없는 카테고리는 빈 배열로 내려갑니다.
 
 operation::training/categories[snippets='http-request,http-response,response-fields']
 
@@ -259,7 +263,7 @@ operation::training/categories[snippets='http-request,http-response,response-fie
 link:{swagger-ui}#/Training/training-lesson-cards[▶ Swagger에서 Try it out,window=swagger]
 
 레슨에 속한 카드 전체를 페이지네이션 없이 조회합니다.
-카드와 각 카드의 미디어 모두 노출 순서(`sortOrder`) 오름차순으로 정렬되며, 미디어가 없는 카드는 빈 배열로 내려갑니다.
+카드와 각 카드의 미디어 모두 노출 순서대로 정렬되어 내려가며, 미디어가 없는 카드는 빈 배열로 내려갑니다.
 이 API는 조회만 수행하며 진행 기록을 만들지 않습니다.
 
 operation::training/lesson-cards[snippets='http-request,path-parameters,http-response,response-fields']
@@ -314,7 +318,7 @@ operation::training/topic-select-error[snippets='http-response,response-fields']
 `videoObjectKey`는 분석한 영상을 가리키는 S3 객체 키이며,
 영상 재생 URL은 내려가지 않습니다.
 
-AI 리포트 생성은 무료 체험으로 사용자당 총 3회까지 가능합니다.
+AI 리포트 생성은 무료 체험으로 사용자당 총 30회까지 가능합니다.
 횟수를 소진하면 영상 업로드 URL 발급이 403으로 거부됩니다.
 
 === AI 리포트 영상 업로드 URL 발급
@@ -346,7 +350,7 @@ operation::ai/video-upload-url[snippets='http-request,request-fields,http-respon
 
 ==== 실패 응답
 
-무료 체험 횟수(3회)를 소진하면 403(`AI_REPORT_TRIAL_EXCEEDED`)을 반환합니다.
+무료 체험 횟수(30회)를 소진하면 403(`AI_REPORT_TRIAL_EXCEEDED`)을 반환합니다.
 파일 크기가 상한을 넘으면 `MEDIA_VIDEO_FILE_SIZE_EXCEEDED`, 0 이하면 `MEDIA_INVALID_VIDEO_FILE_SIZE`,
 지원하지 않는 형식이면 `MEDIA_UNSUPPORTED_VIDEO_TYPE`을 400으로 반환합니다.
 
@@ -394,6 +398,8 @@ link:{swagger-ui}#/Dog/dog-register[▶ Swagger에서 Try it out,window=swagger]
 
 온보딩 이후 강아지를 한 마리 추가로 등록합니다. 입력 항목과 검증 규칙은 온보딩 완료 요청의 `dogs[]` 항목과 같으며,
 견종·성격은 온보딩 메타데이터의 `code`로 보냅니다.
+목록에 없는 견종은 `breed`에 견종 이름을 그대로 보내면(최대 30자) 직접 입력한 견종으로 저장됩니다.
+등록 견종의 한글 라벨을 그대로 보내면 해당 견종 `code`로 저장됩니다.
 사용자당 강아지는 **최대 5마리**까지 등록할 수 있습니다(삭제된 강아지는 세지 않음).
 선택된 강아지가 없으면 등록하는 강아지가 선택(`SELECTED`)되고, 이미 있으면 `UNSELECTED`로 등록됩니다.
 응답은 단건 조회와 같은 형태로 등록된 프로필을 201과 함께 내려줍니다.
@@ -403,7 +409,7 @@ operation::dog/register[snippets='http-request,request-fields,http-response,resp
 ==== 실패 응답
 
 강아지가 이미 5마리면 409(`DOG_LIMIT_EXCEEDED`)를 반환하며 강아지는 등록되지 않습니다.
-잘못된 견종·성별·성격 코드는 400(`DOG_INVALID_BREED`, `DOG_INVALID_SEX`, `DOG_INVALID_PERSONALITY`)이며, 필수 입력 누락·형식 오류는 400(`BAD_REQUEST`)에 `errors` 필드로 항목별 원인이 내려갑니다.
+잘못된 성별·성격 코드는 400(`DOG_INVALID_SEX`, `DOG_INVALID_PERSONALITY`)이며, 필수 입력 누락·형식 오류는 400(`BAD_REQUEST`)에 `errors` 필드로 항목별 원인이 내려갑니다.
 
 operation::dog/register-error[snippets='http-response,response-fields']
 
@@ -415,6 +421,7 @@ link:{swagger-ui}#/Dog/dog-list[▶ Swagger에서 Try it out,window=swagger]
 `status`가 `SELECTED`인 강아지가 현재 선택된 강아지이며, 사용자당 한 마리입니다.
 견종(`breed`)과 성격(`personalities`)은 온보딩 메타데이터와 같은 `code`·`label` 쌍으로 내려가므로,
 수정 화면은 `code`를 선택값으로, 표시 화면은 `label`을 그대로 사용합니다.
+직접 입력한 견종은 `code`와 `label`이 모두 입력한 견종 이름이며, 메타데이터 `breeds`에 없는 `code`이면 직접 입력한 견종입니다.
 나이 미상 강아지는 `birthDate`·`age`가 `null`이고, 프로필 이미지·기대 사항을 등록하지 않은 강아지는 빈 문자열(`""`)입니다.
 
 operation::dog/list[snippets='http-request,http-response,response-fields']
@@ -440,14 +447,14 @@ link:{swagger-ui}#/Dog/dog-update[▶ Swagger에서 Try it out,window=swagger]
 
 사용자가 소유한 강아지 한 마리의 프로필을 요청 본문 값으로 **전체 교체**합니다.
 수정 화면은 단건 조회 응답을 초기값으로 받아 모든 필드를 다시 보내며, 생략하거나 `null`로 보낸 선택 필드(`birthDate`, `personalities`, `profileImageUrl`, `expectation`)는 '값 없음'으로 저장됩니다.
-선택 상태(`status`)는 이 API로 바뀌지 않습니다. 견종·성격은 온보딩 메타데이터의 `code`로 보내고, 응답은 단건 조회와 같은 형태로 수정된 프로필을 내려줍니다.
+선택 상태(`status`)는 이 API로 바뀌지 않습니다. 견종·성격은 온보딩 메타데이터의 `code`로 보내고(목록에 없는 견종은 견종 이름을 직접 입력), 응답은 단건 조회와 같은 형태로 수정된 프로필을 내려줍니다.
 
 operation::dog/update[snippets='http-request,path-parameters,request-fields,http-response,response-fields']
 
 ==== 실패 응답
 
 존재하지 않거나 본인 소유가 아닌 강아지를 요청하면 404(`DOG_NOT_FOUND`)를 반환합니다.
-잘못된 견종·성별·성격 코드는 400(`DOG_INVALID_BREED`, `DOG_INVALID_SEX`, `DOG_INVALID_PERSONALITY`)이며, 필수 입력 누락·형식 오류는 400(`BAD_REQUEST`)에 `errors` 필드로 항목별 원인이 내려갑니다.
+잘못된 성별·성격 코드는 400(`DOG_INVALID_SEX`, `DOG_INVALID_PERSONALITY`)이며, 필수 입력 누락·형식 오류는 400(`BAD_REQUEST`)에 `errors` 필드로 항목별 원인이 내려갑니다.
 
 operation::dog/update-error[snippets='http-response,response-fields']
 

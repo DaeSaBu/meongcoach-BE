@@ -1,9 +1,9 @@
 package com.daesabu.meongcoach.onboarding.adapter.webapi.dto;
 
-import com.daesabu.meongcoach.dog.domain.shared.Breed;
 import com.daesabu.meongcoach.dog.domain.shared.Personality;
+import com.daesabu.meongcoach.dog.domain.shared.RegisteredBreed;
 import com.daesabu.meongcoach.onboarding.application.provided.OnboardingMetadataResult;
-import com.daesabu.meongcoach.training.application.provided.TopicSummary;
+import com.daesabu.meongcoach.training.application.provided.dto.TopicResult;
 import java.util.List;
 
 public record OnboardingMetadataResponse(List<TopicResponse> topics, List<BreedResponse> breeds,
@@ -19,15 +19,15 @@ public record OnboardingMetadataResponse(List<TopicResponse> topics, List<BreedR
 
 	public record TopicResponse(Long id, String title) {
 
-		public static TopicResponse from(TopicSummary topic) {
+		public static TopicResponse from(TopicResult topic) {
 			return new TopicResponse(topic.id(), topic.title());
 		}
 	}
 
-	public record BreedResponse(String code, String label) {
+	public record BreedResponse(String code, String label, List<String> aliases) {
 
-		public static BreedResponse from(Breed breed) {
-			return new BreedResponse(breed.name(), breed.getLabel());
+		public static BreedResponse from(RegisteredBreed breed) {
+			return new BreedResponse(breed.name(), breed.getLabel(), breed.getAliases());
 		}
 	}
 

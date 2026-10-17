@@ -9,10 +9,11 @@ import static org.mockito.BDDMockito.given;
 import com.daesabu.meongcoach.entitlement.application.provided.EntitlementSynchronizer;
 import com.daesabu.meongcoach.entitlement.application.required.ActiveEntitlementReader;
 import com.daesabu.meongcoach.entitlement.application.required.EntitlementRepository;
+import com.daesabu.meongcoach.entitlement.domain.ActiveEntitlement;
 import com.daesabu.meongcoach.entitlement.domain.Entitlement;
 import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;
 import com.daesabu.meongcoach.support.NonTransactionalApplicationTest;
-import java.util.Set;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -53,8 +54,8 @@ class EntitlementSynchronizerConcurrencyTest {
 
 	@Test
 	void 같은_회원의_락이_잡혀_있으면_락이_풀릴_때까지_기다린_뒤_동기화한다() throws Exception {
-		given(activeEntitlementReader.readActiveEntitlementTypes(USER_ID))
-				.willReturn(Set.of(EntitlementType.PUPPY));
+		given(activeEntitlementReader.readActiveEntitlements(USER_ID))
+				.willReturn(List.of(new ActiveEntitlement(EntitlementType.PUPPY, null)));
 		holdLock(USER_ID);
 
 		Future<?> synchronization = executor.submit(() -> entitlementSynchronizer.synchronize(USER_ID));
@@ -71,8 +72,8 @@ class EntitlementSynchronizerConcurrencyTest {
 
 	@Test
 	void 다른_회원의_락은_동기화를_막지_않는다() throws Exception {
-		given(activeEntitlementReader.readActiveEntitlementTypes(USER_ID))
-				.willReturn(Set.of(EntitlementType.PUPPY));
+		given(activeEntitlementReader.readActiveEntitlements(USER_ID))
+				.willReturn(List.of(new ActiveEntitlement(EntitlementType.PUPPY, null)));
 		holdLock(OTHER_USER_ID);
 
 		Future<?> synchronization = executor.submit(() -> entitlementSynchronizer.synchronize(USER_ID));

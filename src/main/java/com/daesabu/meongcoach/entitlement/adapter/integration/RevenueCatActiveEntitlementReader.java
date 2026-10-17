@@ -1,12 +1,14 @@
 package com.daesabu.meongcoach.entitlement.adapter.integration;
 
 import com.daesabu.meongcoach.entitlement.adapter.integration.dto.RevenueCatActiveEntitlementsResponse;
+import com.daesabu.meongcoach.entitlement.adapter.integration.dto.RevenueCatActiveEntitlementsResponse.Item;
 import com.daesabu.meongcoach.entitlement.application.required.ActiveEntitlementReader;
+import com.daesabu.meongcoach.entitlement.domain.ActiveEntitlement;
 import com.daesabu.meongcoach.entitlement.domain.exception.EntitlementProviderUnavailableException;
 import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;
+import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -31,15 +33,29 @@ public class RevenueCatActiveEntitlementReader implements ActiveEntitlementReade
 	}
 
 	@Override
-	public Set<EntitlementType> readActiveEntitlementTypes(Long userId) {
+	public List<ActiveEntitlement> readActiveEntitlements(Long userId) {
 		RevenueCatActiveEntitlementsResponse response = fetchActiveEntitlements(userId);
 		if (response == null) {
-			return Set.of();
+			return List.of();
 		}
-		return response.entitlementIds().stream()
-				.map(entitlementId -> toEntitlementType(entitlementId, userId))
+		return response.items().stream()
+				.map(item -> toActiveEntitlement(item, userId))
 				.flatMap(Optional::stream)
-				.collect(Collectors.toUnmodifiableSet());
+				.toList();
+	}
+
+	private Optional<ActiveEntitlement> toActiveEntitlement(Item item, Long userId) {
+		Instant expiresAt = toInstant(item.expiresAt());
+
+		return toEntitlementType(item.entitlementId(), userId)
+				.map(entitlementType -> new ActiveEntitlement(entitlementType, expiresAt));
+	}
+
+	private static Instant toInstant(Long epochMillis) {
+		if (epochMillis == null) {
+			return null;
+		}
+		return Instant.ofEpochMilli(epochMillis);
 	}
 
 	private Optional<EntitlementType> toEntitlementType(String entitlementId, Long userId) {

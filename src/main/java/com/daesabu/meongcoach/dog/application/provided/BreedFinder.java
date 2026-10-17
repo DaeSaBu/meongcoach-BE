@@ -1,6 +1,6 @@
 package com.daesabu.meongcoach.dog.application.provided;
 
-import com.daesabu.meongcoach.dog.domain.shared.Breed;
+import com.daesabu.meongcoach.dog.domain.shared.RegisteredBreed;
 import java.util.List;
 
 /**
@@ -8,5 +8,8 @@ import java.util.List;
  */
 public interface BreedFinder {
 
-	List<Breed> findAll();
+	/**
+	 * 등록 견종 전체를 화면에 표시하는 순서로 반환한다.
+	 */
+	List<RegisteredBreed> findAll();
 }

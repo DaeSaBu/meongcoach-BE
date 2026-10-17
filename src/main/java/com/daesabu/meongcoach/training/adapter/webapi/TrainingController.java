@@ -37,7 +37,7 @@ public class TrainingController {
 
 	@GetMapping("/categories")
 	public TrainingCategoryListResponse findAll() {
-		return TrainingCategoryListResponse.from(trainingCategoryFinder.findAllWithTopics());
+		return TrainingCategoryListResponse.from(trainingCategoryFinder.findAllOrdered());
 	}
 
 	@ResponseStatus(HttpStatus.NO_CONTENT)
@@ -58,8 +58,8 @@ public class TrainingController {
 	}
 
 	@GetMapping("/lessons/{lessonId}/cards")
-	public CardListResponse findCards(@PathVariable Long lessonId) {
-		return CardListResponse.from(lessonFinder.findCards(lessonId));
+	public CardListResponse findCards(@CurrentUserId Long userId, @PathVariable Long lessonId) {
+		return CardListResponse.from(lessonFinder.findCards(userId, lessonId));
 	}
 
 	@PostMapping("/lessons/{lessonId}/completion")

@@ -39,30 +39,29 @@ public class Entitlement extends BaseTimeEntity {
 	@Column(nullable = false, length = 50)
 	private EntitlementType type;
 
-	private Instant revokedAt;
+	private Instant expiresAt;
 
-	static Entitlement grant(Long userId, EntitlementType type) {
+	static Entitlement grant(Long userId, EntitlementType type, Instant expiresAt) {
 		Entitlement entitlement = new Entitlement();
 
 		entitlement.userId = requireNonNull(userId);
 		entitlement.type = requireNonNull(type);
+		entitlement.expiresAt = expiresAt;
 
 		return entitlement;
 	}
 
-	void revoke() {
-		state(isActive(), "이미 회수된 이용권입니다");
-
-		revokedAt = Instant.now();
+	void changeExpiresAt(Instant expiresAt) {
+		this.expiresAt = expiresAt;
 	}
 
-	void restore() {
-		state(!isActive(), "이미 활성인 이용권입니다");
+	void expire(Instant now) {
+		state(isActive(now), "이미 만료된 이용권입니다");
 
-		revokedAt = null;
+		expiresAt = now;
 	}
 
-	public boolean isActive() {
-		return revokedAt == null;
+	public boolean isActive(Instant now) {
+		return expiresAt == null || expiresAt.isAfter(now);
 	}
 }

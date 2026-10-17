@@ -11,12 +11,13 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withTooManyRequests;
 
+import com.daesabu.meongcoach.entitlement.domain.ActiveEntitlement;
 import com.daesabu.meongcoach.entitlement.domain.exception.EntitlementProviderUnavailableException;
 import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;
 import java.io.IOException;
-import java.util.Arrays;
+import java.time.Instant;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpMethod;
@@ -50,16 +51,23 @@ class RevenueCatActiveEntitlementReaderTest {
 				new RevenueCatProperties(BASE_URL, API_KEY, PROJECT_ID, ENTITLEMENT_IDS), builder);
 	}
 
-	private static String activeEntitlements(String... entitlementIds) {
-		String items = String.join(",", Arrays.stream(entitlementIds)
-				.map(entitlementId -> """
-						{"object": "customer.active_entitlement", "entitlement_id": "%s", "expires_at": null}
-						""".formatted(entitlementId))
-				.toList());
+	private static String lifetimeItem(String entitlementId) {
+		return """
+				{"object": "customer.active_entitlement", "entitlement_id": "%s", "expires_at": null}
+				""".formatted(entitlementId);
+	}
+
+	private static String subscriptionItem(String entitlementId, long expiresAtMillis) {
+		return """
+				{"object": "customer.active_entitlement", "entitlement_id": "%s", "expires_at": %d}
+				""".formatted(entitlementId, expiresAtMillis);
+	}
+
+	private static String activeEntitlements(String... items) {
 		return """
 				{"object": "list", "items": [%s], "next_page": null,
 				 "url": "/v2/projects/proj_test/customers/42/active_entitlements"}
-				""".formatted(items);
+				""".formatted(String.join(",", items));
 	}
 
 	@Test
@@ -67,22 +75,49 @@ class RevenueCatActiveEntitlementReaderTest {
 		server.expect(requestTo(ACTIVE_ENTITLEMENTS_URL))
 				.andExpect(method(HttpMethod.GET))
 				.andExpect(header("Authorization", "Bearer " + API_KEY))
-				.andRespond(withSuccess(activeEntitlements("entl_puppy", "entl_junior"), MediaType.APPLICATION_JSON));
+				.andRespond(withSuccess(activeEntitlements(lifetimeItem("entl_puppy"), lifetimeItem("entl_junior")), MediaType.APPLICATION_JSON));
 
-		Set<EntitlementType> activeTypes = reader.readActiveEntitlementTypes(USER_ID);
+		List<ActiveEntitlement> activeEntitlements = reader.readActiveEntitlements(USER_ID);
 
-		assertThat(activeTypes).containsExactlyInAnyOrder(EntitlementType.PUPPY, EntitlementType.JUNIOR);
+		assertThat(activeEntitlements)
+				.extracting(ActiveEntitlement::type)
+				.containsExactlyInAnyOrder(EntitlementType.PUPPY, EntitlementType.JUNIOR);
 		server.verify();
+	}
+
+	@Test
+	void 밀리초로_받은_만료_시각을_Instant로_바꾼다() {
+		long expiresAtMillis = 1_793_923_200_000L;
+		server.expect(requestTo(ACTIVE_ENTITLEMENTS_URL))
+				.andRespond(withSuccess(activeEntitlements(subscriptionItem("entl_puppy", expiresAtMillis)),
+						MediaType.APPLICATION_JSON));
+
+		List<ActiveEntitlement> activeEntitlements = reader.readActiveEntitlements(USER_ID);
+
+		assertThat(activeEntitlements).containsExactly(
+				new ActiveEntitlement(EntitlementType.PUPPY, Instant.ofEpochMilli(expiresAtMillis)));
+	}
+
+	@Test
+	void 만료_시각이_없는_이용권은_만료_시각을_null로_둔다() {
+		server.expect(requestTo(ACTIVE_ENTITLEMENTS_URL))
+				.andRespond(withSuccess(activeEntitlements(lifetimeItem("entl_adult")), MediaType.APPLICATION_JSON));
+
+		List<ActiveEntitlement> activeEntitlements = reader.readActiveEntitlements(USER_ID);
+
+		assertThat(activeEntitlements).containsExactly(new ActiveEntitlement(EntitlementType.ADULT, null));
 	}
 
 	@Test
 	void 설정에_없는_이용권_ID는_무시하고_나머지를_반환한다() {
 		server.expect(requestTo(ACTIVE_ENTITLEMENTS_URL))
-				.andRespond(withSuccess(activeEntitlements("entl_unknown", "entl_adult"), MediaType.APPLICATION_JSON));
+				.andRespond(withSuccess(activeEntitlements(lifetimeItem("entl_unknown"), lifetimeItem("entl_adult")), MediaType.APPLICATION_JSON));
 
-		Set<EntitlementType> activeTypes = reader.readActiveEntitlementTypes(USER_ID);
+		List<ActiveEntitlement> activeEntitlements = reader.readActiveEntitlements(USER_ID);
 
-		assertThat(activeTypes).containsExactly(EntitlementType.ADULT);
+		assertThat(activeEntitlements)
+				.extracting(ActiveEntitlement::type)
+				.containsExactly(EntitlementType.ADULT);
 	}
 
 	@Test
@@ -90,25 +125,25 @@ class RevenueCatActiveEntitlementReaderTest {
 		server.expect(requestTo(ACTIVE_ENTITLEMENTS_URL))
 				.andRespond(withSuccess(activeEntitlements(), MediaType.APPLICATION_JSON));
 
-		Set<EntitlementType> activeTypes = reader.readActiveEntitlementTypes(USER_ID);
+		List<ActiveEntitlement> activeEntitlements = reader.readActiveEntitlements(USER_ID);
 
-		assertThat(activeTypes).isEmpty();
+		assertThat(activeEntitlements).isEmpty();
 	}
 
 	@Test
 	void RevenueCat에_고객이_없으면_빈_집합을_반환한다() {
 		server.expect(requestTo(ACTIVE_ENTITLEMENTS_URL)).andRespond(withResourceNotFound());
 
-		Set<EntitlementType> activeTypes = reader.readActiveEntitlementTypes(USER_ID);
+		List<ActiveEntitlement> activeEntitlements = reader.readActiveEntitlements(USER_ID);
 
-		assertThat(activeTypes).isEmpty();
+		assertThat(activeEntitlements).isEmpty();
 	}
 
 	@Test
 	void RevenueCat_호출_한도를_넘으면_이용권_조회_불가_예외를_던진다() {
 		server.expect(requestTo(ACTIVE_ENTITLEMENTS_URL)).andRespond(withTooManyRequests());
 
-		assertThatThrownBy(() -> reader.readActiveEntitlementTypes(USER_ID))
+		assertThatThrownBy(() -> reader.readActiveEntitlements(USER_ID))
 				.isInstanceOf(EntitlementProviderUnavailableException.class);
 	}
 
@@ -116,7 +151,7 @@ class RevenueCatActiveEntitlementReaderTest {
 	void RevenueCat_서버_오류면_이용권_조회_불가_예외를_던진다() {
 		server.expect(requestTo(ACTIVE_ENTITLEMENTS_URL)).andRespond(withServerError());
 
-		assertThatThrownBy(() -> reader.readActiveEntitlementTypes(USER_ID))
+		assertThatThrownBy(() -> reader.readActiveEntitlements(USER_ID))
 				.isInstanceOf(EntitlementProviderUnavailableException.class);
 	}
 
@@ -125,7 +160,7 @@ class RevenueCatActiveEntitlementReaderTest {
 		server.expect(requestTo(ACTIVE_ENTITLEMENTS_URL))
 				.andRespond(withException(new IOException("connection refused")));
 
-		assertThatThrownBy(() -> reader.readActiveEntitlementTypes(USER_ID))
+		assertThatThrownBy(() -> reader.readActiveEntitlements(USER_ID))
 				.isInstanceOf(EntitlementProviderUnavailableException.class);
 	}
 }

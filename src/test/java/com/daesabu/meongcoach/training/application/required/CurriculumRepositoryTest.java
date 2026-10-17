@@ -10,16 +10,12 @@ import com.daesabu.meongcoach.training.domain.Topic;
 import com.daesabu.meongcoach.training.domain.TopicFixture;
 import com.daesabu.meongcoach.training.domain.TrainingCategory;
 import com.daesabu.meongcoach.training.domain.TrainingCategoryFixture;
-import java.util.List;
 import org.hibernate.Hibernate;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 
-/**
- * 커리큘럼 조회 리포지토리 검증.
- */
 @DataJpaTest
 class CurriculumRepositoryTest {
 
@@ -30,70 +26,7 @@ class CurriculumRepositoryTest {
 	private TestEntityManager entityManager;
 
 	@Test
-	void 토픽의_커리큘럼을_정렬_순서_오름차순으로_조회한다() {
-		Topic topic = persistTopic("기본 교육");
-		persistCurriculum(topic, "셋째", 3);
-		persistCurriculum(topic, "첫째", 1);
-		persistCurriculum(topic, "둘째", 2);
-		entityManager.flush();
-
-		List<Curriculum> curriculums = curriculumRepository.findAllByTopicId(topic.getId());
-
-		assertThat(curriculums).extracting(Curriculum::getTitle)
-				.containsExactly("첫째", "둘째", "셋째");
-	}
-
-	@Test
-	void 정렬_순서가_같으면_id_오름차순으로_조회한다() {
-		Topic topic = persistTopic("기본 교육");
-		Curriculum first = persistCurriculum(topic, "먼저 등록", 1);
-		Curriculum second = persistCurriculum(topic, "나중 등록", 1);
-		entityManager.flush();
-
-		List<Curriculum> curriculums = curriculumRepository.findAllByTopicId(topic.getId());
-
-		assertThat(curriculums).extracting(Curriculum::getId)
-				.containsExactly(first.getId(), second.getId());
-	}
-
-	@Test
-	void 다른_토픽의_커리큘럼은_조회되지_않는다() {
-		Topic topic = persistTopic("기본 교육");
-		Topic otherTopic = persistTopic("문제 행동");
-		persistCurriculum(topic, "대상 커리큘럼", 1);
-		persistCurriculum(otherTopic, "다른 토픽 커리큘럼", 1);
-		entityManager.flush();
-
-		List<Curriculum> curriculums = curriculumRepository.findAllByTopicId(topic.getId());
-
-		assertThat(curriculums).extracting(Curriculum::getTitle)
-				.containsExactly("대상 커리큘럼");
-	}
-
-	@Test
-	void 커리큘럼이_없는_토픽이면_빈_목록을_반환한다() {
-		Topic topic = persistTopic("기본 교육");
-		entityManager.flush();
-
-		List<Curriculum> curriculums = curriculumRepository.findAllByTopicId(topic.getId());
-
-		assertThat(curriculums).isEmpty();
-	}
-
-	@Test
-	void 커리큘럼을_조회할_때_레슨도_함께_로딩한다() {
-		Topic topic = persistTopic("기본 교육");
-		Curriculum curriculum = persistCurriculum(topic, "커리큘럼", 1);
-		persistLesson(curriculum, "레슨", 1);
-		flushAndClear();
-
-		List<Curriculum> curriculums = curriculumRepository.findAllByTopicId(topic.getId());
-
-		assertThat(curriculums).allSatisfy(found -> assertThat(Hibernate.isInitialized(found.getLessons())).isTrue());
-	}
-
-	@Test
-	void 레슨을_정렬_순서_오름차순으로_로딩하고_다른_커리큘럼의_레슨은_제외한다() {
+	void 커리큘럼의_레슨을_정렬_순서_오름차순으로_로딩하고_다른_커리큘럼의_레슨은_제외한다() {
 		Topic topic = persistTopic("기본 교육");
 		Curriculum curriculum = persistCurriculum(topic, "커리큘럼", 1);
 		Curriculum other = persistCurriculum(topic, "다른 커리큘럼", 2);
@@ -103,11 +36,9 @@ class CurriculumRepositoryTest {
 		persistLesson(other, "다른 레슨", 1);
 		flushAndClear();
 
-		List<Curriculum> curriculums = curriculumRepository.findAllByTopicId(topic.getId());
+		Curriculum found = curriculumRepository.findById(curriculum.getId()).orElseThrow();
 
-		assertThat(curriculums).extracting(Curriculum::getTitle)
-				.containsExactly("커리큘럼", "다른 커리큘럼");
-		assertThat(curriculums.getFirst().getLessons()).extracting(Lesson::getTitle)
+		assertThat(found.getLessons()).extracting(Lesson::getTitle)
 				.containsExactly("첫째", "둘째", "셋째");
 	}
 
@@ -119,22 +50,37 @@ class CurriculumRepositoryTest {
 		Lesson second = persistLesson(curriculum, "나중 등록", 1);
 		flushAndClear();
 
-		List<Curriculum> curriculums = curriculumRepository.findAllByTopicId(topic.getId());
+		Curriculum found = curriculumRepository.findById(curriculum.getId()).orElseThrow();
 
-		assertThat(curriculums.getFirst().getLessons()).extracting(Lesson::getId)
+		assertThat(found.getLessons()).extracting(Lesson::getId)
 				.containsExactly(first.getId(), second.getId());
 	}
 
 	@Test
 	void 레슨이_없는_커리큘럼은_빈_레슨_목록으로_로딩한다() {
 		Topic topic = persistTopic("기본 교육");
-		persistCurriculum(topic, "레슨 없는 커리큘럼", 1);
+		Curriculum curriculum = persistCurriculum(topic, "레슨 없는 커리큘럼", 1);
 		flushAndClear();
 
-		List<Curriculum> curriculums = curriculumRepository.findAllByTopicId(topic.getId());
+		Curriculum found = curriculumRepository.findById(curriculum.getId()).orElseThrow();
 
-		assertThat(curriculums).singleElement()
-				.satisfies(found -> assertThat(found.getLessons()).isEmpty());
+		assertThat(found.getLessons()).isEmpty();
+	}
+
+	@Test
+	void 커리큘럼을_토픽_카테고리와_함께_조회한다() {
+		Curriculum curriculum = persistCurriculum(persistTopic("기본 교육"), "커리큘럼", 1);
+		flushAndClear();
+
+		Curriculum found = curriculumRepository.findWithCategoryById(curriculum.getId()).orElseThrow();
+
+		assertThat(Hibernate.isInitialized(found.getTopic())).isTrue();
+		assertThat(Hibernate.isInitialized(found.getTopic().getTrainingCategory())).isTrue();
+	}
+
+	@Test
+	void 없는_커리큘럼을_상위_연관과_함께_조회하면_빈_값을_반환한다() {
+		assertThat(curriculumRepository.findWithCategoryById(999L)).isEmpty();
 	}
 
 	private Topic persistTopic(String title) {

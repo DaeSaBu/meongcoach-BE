@@ -26,9 +26,6 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 
-/**
- * 발급과 함께 UPLOADING 리포트가 저장되는지까지 보려고 실제 DB 슬라이스를 쓴다. 체험 횟수도 실제 COMPLETED row 수로 센다.
- */
 @DataJpaTest
 @Import({AiVideoUploadUrlService.class, AiReportTrialFinderService.class})
 class AiVideoUploadUrlServiceTest {
@@ -63,7 +60,7 @@ class AiVideoUploadUrlServiceTest {
 	}
 
 	@ParameterizedTest
-	@ValueSource(ints = {0, 1, 2})
+	@ValueSource(ints = {0, 1, 29})
 	void 체험_횟수가_남아_있으면_훈련_영상_대상으로_업로드_URL_발급을_위임한다(int usedCount) {
 		persistCompletedReports(usedCount);
 

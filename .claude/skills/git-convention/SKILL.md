@@ -48,7 +48,7 @@ user-invocable: true
 - 여러 모듈에 걸친 변경이나 적절한 이름이 없는 변경은 scope를 생략한다.
 - 영문 소문자와 하이픈으로 작성한다.
 - 이 저장소의 scope 후보는 Spring Modulith 모듈 패키지명과 같다. `auth`(로그인·토큰·자격증명), `user`(회원 역할·상태·프로필), `dog`(반려견 프로필), `training`(훈련 콘텐츠 카탈로그),
-  `progress`(학습 진도), `ai`(AI 영상 분석), `onboarding`(온보딩 흐름 조합), `media`(이미지·영상 업로드), `health`(서비스 상태 확인), `entitlement`(이용권 동기화), `shared`(횡단 관심사).
+  `progress`(학습 진도), `ai`(AI 영상 분석), `onboarding`(온보딩 흐름 조합), `media`(이미지·영상 업로드), `health`(서비스 상태 확인), `entitlement`(이용권 동기화), `community`(게시글·멘션), `shared`(횡단 관심사).
 - 새 모듈을 추가하면 이 목록도 함께 갱신한다.
 
 ### Subject
@@ -126,6 +126,27 @@ user-invocable: true
 - 설명에는 변경 사항 요약, 대상 Linear 이슈의 식별자·링크, 테스트 방법을 포함한다.
 - 최소 1인 이상 승인 후 머지한다.
 - 머지 전략은 저장소별로 통일한다 — Squash merge를 기본, 릴리스 브랜치는 Merge commit.
+
+### 릴리스 PR (`develop → main`)
+
+- 사용자가 버전을 알려 주지 않으면 먼저 묻는다. 직전 버전은 `git tag --list 'v*' --sort=-version:refname | head -n 1`로 확인한다.
+- 제목은 `chore(release): vX.Y.Z 출시`로 쓴다. 운영 CD(`cd-prod.yml`)가 merge commit 본문의 버전으로 tag를 만든다.
+  - merge commit 본문에 PR 제목이 들어가는 것은 저장소 설정(`merge_commit_message: PR_TITLE`) 덕분이다. 이 설정을 바꾸면 버전을 읽지 못한다.
+  - 제목에 버전이 없으면 직전 tag의 minor를 올린다.
+  - 직전 tag와 major.minor가 같은 버전(예: 직전 `v3.0.1`, 제목 `v3.0.0`)이면 직전 tag의 patch를 올린다(`v3.0.2`). 서버만 고쳐 다시 배포할 때는 앱 버전을 제목에 그대로 쓴다.
+  - 그보다 낮은 버전이면 배포 전에 실패한다.
+- draft 없이 생성하고 base를 확인한다.
+  ```bash
+  gh pr create --base main --head develop --title "chore(release): vX.Y.Z 출시" --body-file <본문 파일>
+  ```
+- 변경점은 `git log --first-parent --oneline origin/main..origin/develop`로 머지된 PR을 찾고, 각 PR 본문(`gh pr view <번호>`)에서 옮긴다. 커밋 제목만 보고 쓰지 않는다.
+- 본문은 다음 순서로 쓴다.
+  1. **변경 요약**: 직전 버전 이후 머지된 PR 수·번호 범위, Merge commit으로 머지해야 한다는 안내
+  2. **목차**: 직전 버전 대비 서버 변경점을 번호 매긴 목차로 나열한다. 분류는 추가 / 변경(API 계약) / 변경(데이터·동작) / 리팩토링 / 제거 / 마이그레이션 / 문서 중 해당하는 것만 쓰고, 항목마다 PR 번호를 붙인다.
+  3. **목차 항목별 상세**: 엔드포인트·필드·에러 코드 단위로 쓰고, 구 앱이 깨지는 변경에는 **[호환 깨짐]**을 붙인다.
+  4. **배포 전 확인 ⚠️**: 앱 출시, 최소 앱 버전 Secrets 상향, 롤링 배포 중 마이그레이션 영향 같은 체크리스트
+  5. **테스트 방법**
+- 사용자에게 보고할 때도 본문의 목차를 함께 보여 준다.
 
 ---
 

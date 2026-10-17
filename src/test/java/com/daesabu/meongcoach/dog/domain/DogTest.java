@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.daesabu.meongcoach.dog.domain.shared.Breed;
 import com.daesabu.meongcoach.dog.domain.shared.Personality;
+import com.daesabu.meongcoach.dog.domain.shared.RegisteredBreed;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Set;
@@ -16,8 +17,8 @@ class DogTest {
 	}
 
 	private Dog registerDog(LocalDate birthDate) {
-		return Dog.register(new DogRegisterCommand(1L, "초코", Breed.POODLE, DogSex.MALE, birthDate,
-				new BigDecimal("4.50"), null, null));
+		return Dog.register(new DogRegisterCommand(1L, "초코", Breed.of(RegisteredBreed.POODLE), DogSex.MALE,
+				birthDate, new BigDecimal("4.50"), null, null));
 	}
 
 	@Test
@@ -26,7 +27,7 @@ class DogTest {
 
 		assertThat(dog.getUserId()).isEqualTo(1L);
 		assertThat(dog.getName()).isEqualTo("초코");
-		assertThat(dog.getBreed()).isEqualTo(Breed.POODLE);
+		assertThat(dog.getBreed()).isEqualTo(Breed.of(RegisteredBreed.POODLE));
 		assertThat(dog.getSex()).isEqualTo(DogSex.MALE);
 		assertThat(dog.getBirthDate()).isEqualTo(LocalDate.of(2024, 3, 1));
 		assertThat(dog.getWeightKg()).isEqualByComparingTo("4.50");
@@ -37,8 +38,9 @@ class DogTest {
 
 	@Test
 	void 등록_시_프로필_이미지와_기대사항을_저장한다() {
-		Dog dog = Dog.register(new DogRegisterCommand(1L, "초코", Breed.POODLE, DogSex.MALE, LocalDate.of(2024, 3, 1),
-				new BigDecimal("4.50"), "https://cdn.meongcoach.com/dog.png", "다른 강아지와 편안하게 인사했으면 좋겠어요."));
+		Dog dog = Dog.register(new DogRegisterCommand(1L, "초코", Breed.of(RegisteredBreed.POODLE), DogSex.MALE,
+				LocalDate.of(2024, 3, 1), new BigDecimal("4.50"), "https://cdn.meongcoach.com/dog.png",
+				"다른 강아지와 편안하게 인사했으면 좋겠어요."));
 
 		assertThat(dog.getProfileImageUrl()).isEqualTo("https://cdn.meongcoach.com/dog.png");
 		assertThat(dog.getExpectation()).isEqualTo("다른 강아지와 편안하게 인사했으면 좋겠어요.");
@@ -67,12 +69,12 @@ class DogTest {
 		Dog dog = registerDog();
 		dog.changePersonalities(Set.of(Personality.FRIENDLY));
 
-		dog.updateProfile(new DogProfileUpdateCommand("보리", Breed.MALTESE, DogSex.FEMALE,
+		dog.updateProfile(new DogProfileUpdateCommand("보리", Breed.of(RegisteredBreed.MALTESE), DogSex.FEMALE,
 				LocalDate.of(2023, 1, 15), new BigDecimal("3.20"), Set.of(Personality.TIMID, Personality.LIVELY),
 				"https://cdn.meongcoach.com/bori.png", "산책 예절을 배우고 싶어요."));
 
 		assertThat(dog.getName()).isEqualTo("보리");
-		assertThat(dog.getBreed()).isEqualTo(Breed.MALTESE);
+		assertThat(dog.getBreed()).isEqualTo(Breed.of(RegisteredBreed.MALTESE));
 		assertThat(dog.getSex()).isEqualTo(DogSex.FEMALE);
 		assertThat(dog.getBirthDate()).isEqualTo(LocalDate.of(2023, 1, 15));
 		assertThat(dog.getWeightKg()).isEqualByComparingTo("3.20");
@@ -82,11 +84,22 @@ class DogTest {
 	}
 
 	@Test
+	void 프로필을_수정하면_목록에_없는_견종_이름으로_교체할_수_있다() {
+		Dog dog = registerDog();
+
+		dog.updateProfile(new DogProfileUpdateCommand("보리", Breed.from("삽살개"), DogSex.FEMALE, null,
+				new BigDecimal("3.20"), Set.of(), null, null));
+
+		assertThat(dog.getBreed()).isEqualTo(Breed.from("삽살개"));
+		assertThat(dog.getBreed().label()).isEqualTo("삽살개");
+	}
+
+	@Test
 	void 프로필_수정은_소유자와_선택_상태를_바꾸지_않는다() {
 		Dog dog = registerDog();
 		dog.select();
 
-		dog.updateProfile(new DogProfileUpdateCommand("보리", Breed.MALTESE, DogSex.FEMALE, null,
+		dog.updateProfile(new DogProfileUpdateCommand("보리", Breed.of(RegisteredBreed.MALTESE), DogSex.FEMALE, null,
 				new BigDecimal("3.20"), Set.of(), null, null));
 
 		assertThat(dog.getUserId()).isEqualTo(1L);
@@ -97,7 +110,7 @@ class DogTest {
 	void 프로필_수정_시_생년월일이_null이면_나이_미상으로_바뀐다() {
 		Dog dog = registerDog();
 
-		dog.updateProfile(new DogProfileUpdateCommand("보리", Breed.MALTESE, DogSex.FEMALE, null,
+		dog.updateProfile(new DogProfileUpdateCommand("보리", Breed.of(RegisteredBreed.MALTESE), DogSex.FEMALE, null,
 				new BigDecimal("3.20"), Set.of(), null, null));
 
 		assertThat(dog.getBirthDate()).isNull();
@@ -106,10 +119,10 @@ class DogTest {
 
 	@Test
 	void 프로필_수정_시_이미지와_기대사항이_null이면_빈_문자열로_교체된다() {
-		Dog dog = Dog.register(new DogRegisterCommand(1L, "초코", Breed.POODLE, DogSex.MALE, LocalDate.of(2024, 3, 1),
-				new BigDecimal("4.50"), "https://cdn.meongcoach.com/dog.png", "기존 기대 사항"));
+		Dog dog = Dog.register(new DogRegisterCommand(1L, "초코", Breed.of(RegisteredBreed.POODLE), DogSex.MALE,
+				LocalDate.of(2024, 3, 1), new BigDecimal("4.50"), "https://cdn.meongcoach.com/dog.png", "기존 기대 사항"));
 
-		dog.updateProfile(new DogProfileUpdateCommand("보리", Breed.MALTESE, DogSex.FEMALE, null,
+		dog.updateProfile(new DogProfileUpdateCommand("보리", Breed.of(RegisteredBreed.MALTESE), DogSex.FEMALE, null,
 				new BigDecimal("3.20"), Set.of(), null, null));
 
 		assertThat(dog.getProfileImageUrl()).isEmpty();

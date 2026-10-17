@@ -3,6 +3,10 @@ package com.daesabu.meongcoach.training.application.provided;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.daesabu.meongcoach.entitlement.application.required.EntitlementRepository;
+import com.daesabu.meongcoach.entitlement.domain.EntitlementFixture;
+import com.daesabu.meongcoach.entitlement.domain.exception.EntitlementRequiredException;
+import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;
 import com.daesabu.meongcoach.progress.application.required.LessonProgressRepository;
 import com.daesabu.meongcoach.progress.domain.LessonProgress;
 import com.daesabu.meongcoach.support.ApplicationTest;
@@ -49,6 +53,9 @@ class LessonCompleterTest {
 
 	@Autowired
 	private LessonProgressRepository lessonProgressRepository;
+
+	@Autowired
+	private EntitlementRepository entitlementRepository;
 
 	@Autowired
 	private EntityManager entityManager;
@@ -125,10 +132,43 @@ class LessonCompleterTest {
 		assertThat(findCompletedCount(USER_ID, lesson.getId())).isOne();
 	}
 
+	@Test
+	void 이용권_없이_유료_레슨을_완료하면_예외를_던지고_진행도를_만들지_않는다() {
+		Lesson lesson = savePremiumLesson("앉아", EntitlementType.PUPPY);
+		flushAndClear();
+
+		assertThatThrownBy(() -> lessonCompleter.completeLesson(USER_ID, lesson.getId()))
+				.isInstanceOf(EntitlementRequiredException.class);
+
+		flushAndClear();
+		assertThat(lessonProgressRepository.count()).isZero();
+	}
+
+	@Test
+	void 이용권이_있으면_유료_레슨을_완료한다() {
+		Lesson lesson = savePremiumLesson("앉아", EntitlementType.PUPPY);
+		entitlementRepository.save(EntitlementFixture.create(USER_ID, EntitlementType.PUPPY, null));
+		flushAndClear();
+
+		int completedCount = lessonCompleter.completeLesson(USER_ID, lesson.getId());
+
+		assertThat(completedCount).isOne();
+	}
+
 	private Lesson saveLesson(String title) {
-		TrainingCategory category = trainingCategoryRepository.save(TrainingCategoryFixture.create(title + " 카테고리", 1, null, null));
+		return saveLesson(title, null, false);
+	}
+
+	private Lesson savePremiumLesson(String title, EntitlementType requiredEntitlementType) {
+		return saveLesson(title, requiredEntitlementType, true);
+	}
+
+	private Lesson saveLesson(String title, EntitlementType requiredEntitlementType, boolean isPremium) {
+		TrainingCategory category = trainingCategoryRepository.save(
+				TrainingCategoryFixture.create(title + " 카테고리", 1, null, null, requiredEntitlementType));
 		Topic topic = topicRepository.save(TopicFixture.create(category, title, 1, null, null, null));
-		Curriculum curriculum = curriculumRepository.save(CurriculumFixture.create(topic, title + " 커리큘럼", 1, null, null));
+		Curriculum curriculum = curriculumRepository.save(
+				CurriculumFixture.create(topic, title + " 커리큘럼", 1, null, null, isPremium));
 		return lessonRepository.save(LessonFixture.create(curriculum, title + " 레슨", 1, 5));
 	}
 

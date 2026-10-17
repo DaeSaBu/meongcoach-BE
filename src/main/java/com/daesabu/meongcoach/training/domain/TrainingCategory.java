@@ -15,6 +15,7 @@ import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -48,4 +49,8 @@ public class TrainingCategory extends BaseEntity {
 	@OneToMany(mappedBy = "trainingCategory")
 	@OrderBy("sortOrder ASC, id ASC")
 	private List<Topic> topics = new ArrayList<>();
+
+	public Optional<EntitlementType> findRequiredEntitlementType() {
+		return Optional.ofNullable(requiredEntitlementType);
+	}
 }
