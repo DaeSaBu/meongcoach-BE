@@ -512,3 +512,70 @@ operation::entitlement/synchronize[snippets='http-request,http-response']
 RevenueCat 장애·호출 한도 초과·연결 실패로 이용권을 확인하지 못하면 502(`ENTITLEMENT_PROVIDER_UNAVAILABLE`)를 반환합니다. 이때 이용권은 바뀌지 않으므로 잠시 후 다시 호출합니다.
 
 operation::entitlement/synchronize-error[snippets='http-response,response-fields']
+
+== Graduation API
+
+토픽의 모든 커리큘럼을 마친 회원이 실습 영상을 올리고(실습 인증), 운영자가 판정하며, 승인하는 순간 서버가 전체 이용권 3일을 지급합니다.
+흐름·상태 전이·운영 런북은 `docs/graduation.md`를 참고하세요.
+
+=== 토픽 실습 인증 조회
+
+link:{swagger-ui}#/Graduation/graduation-detail[▶ Swagger에서 Try it out,window=swagger]
+
+토픽 하나의 실습 인증 현황을 조회합니다. 제출한 적이 없어도 200으로 `status: NOT_SUBMITTED`를 돌려주고, 이때 `graduationId`·`videoUrl`·`submittedAt`은 null입니다.
+`eligible`은 토픽의 모든 커리큘럼을 완료했는지 여부이고, `rewardExpiresAt`은 승인 때 지급한 이용권의 만료 시각입니다.
+
+operation::graduation/detail[snippets='http-request,http-response,path-parameters,response-fields']
+
+==== 실패 응답
+
+토픽이 없으면 404(`TRAINING_TOPIC_NOT_FOUND`)를 반환합니다.
+
+operation::graduation/detail-error[snippets='http-response,response-fields']
+
+=== 실습 영상 업로드 URL 발급
+
+link:{swagger-ui}#/Graduation/graduation-upload-url[▶ Swagger에서 Try it out,window=swagger]
+
+실습 영상을 올릴 presigned PUT URL을 발급합니다. DB는 바꾸지 않으므로, 업로드를 끝내지 못해도 흔적이 남지 않습니다. 영상은 50MB 이하입니다.
+
+operation::graduation/upload-url[snippets='http-request,http-response,path-parameters,request-fields,response-fields']
+
+==== 실패 응답
+
+토픽의 커리큘럼을 다 마치지 않았으면 403(`GRADUATION_TOPIC_NOT_COMPLETED`), 이미 수료했으면 409(`GRADUATION_ALREADY_APPROVED`)를 반환합니다.
+
+operation::graduation/upload-url-error[snippets='http-response,response-fields']
+
+=== 실습 인증 제출
+
+link:{swagger-ui}#/Graduation/graduation-submission[▶ Swagger에서 Try it out,window=swagger]
+
+업로드를 마친 영상의 객체 키로 제출합니다. 검수 대기 중이나 보완 요청 뒤에 다시 제출해도 같은 API를 쓰며, 그때는 차수(`attemptNo`)가 올라가고 영상이 바뀌며 이전 판정 메모는 지워집니다.
+제출할 때마다 운영자 Slack 채널에 영상 링크가 담긴 알림이 갑니다.
+
+operation::graduation/submission[snippets='http-request,http-response,path-parameters,request-fields,response-headers,response-fields']
+
+==== 실패 응답
+
+본인의 실습 영상 키가 아니면 400(`GRADUATION_INVALID_VIDEO_KEY`), 커리큘럼을 다 마치지 않았으면 403(`GRADUATION_TOPIC_NOT_COMPLETED`),
+이미 수료했으면 409(`GRADUATION_ALREADY_APPROVED`), 같은 토픽의 첫 제출이 동시에 들어오면 409(`GRADUATION_SUBMISSION_CONFLICT`)를 반환합니다.
+
+operation::graduation/submission-error[snippets='http-response,response-fields']
+
+=== 운영자: 수료 판정
+
+link:{swagger-ui}#/Graduation/graduation-admin-review[▶ Swagger에서 Try it out,window=swagger]
+
+`X-Admin-Key` 헤더로 호출합니다. JWT와 앱 버전 헤더는 필요 없습니다. 키가 없거나 다르면 401, 서버에 키가 설정되지 않았으면 404입니다.
+검수 대기 중인 토픽 수료를 승인하거나 보완 요청합니다. 승인하면 같은 요청 안에서 회원에게 전체 이용권 3일을 RevenueCat에 지급하고 서버 DB에 동기화합니다. 메모는 앱에 그대로 보입니다.
+
+operation::graduation/admin-review[snippets='http-request,http-response,request-headers,path-parameters,request-fields,response-fields']
+
+==== 실패 응답
+
+보완 요청에 메모가 없으면 400(`GRADUATION_REVIEW_NOTE_REQUIRED`), 판정 값이 올바르지 않으면 400(`GRADUATION_INVALID_REVIEW_DECISION`),
+수료가 없으면 404(`GRADUATION_NOT_FOUND`), 검수 대기가 아니면 409(`GRADUATION_NOT_PENDING`)를 반환합니다.
+이용권 지급에 실패하면 502(`ENTITLEMENT_PROVIDER_UNAVAILABLE`)이고 수료는 검수 대기로 남으므로 다시 호출합니다.
+
+operation::graduation/admin-review-error[snippets='http-response,response-fields']

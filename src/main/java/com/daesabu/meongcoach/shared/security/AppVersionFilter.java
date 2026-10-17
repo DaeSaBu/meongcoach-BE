@@ -16,6 +16,7 @@ public class AppVersionFilter extends OncePerRequestFilter {
 
 	private static final String API_PATH_PREFIX = "/api/";
 	private static final String HEALTH_PATH = "/api/health";
+	private static final String ADMIN_PATH_PREFIX = "/api/admin/";
 
 	private final AppVersionProperties properties;
 	private final HandlerExceptionResolver resolver;
@@ -28,7 +29,7 @@ public class AppVersionFilter extends OncePerRequestFilter {
 	@Override
 	protected boolean shouldNotFilter(HttpServletRequest request) {
 		String path = request.getRequestURI();
-		return !path.startsWith(API_PATH_PREFIX) || path.equals(HEALTH_PATH);
+		return !path.startsWith(API_PATH_PREFIX) || path.equals(HEALTH_PATH) || path.startsWith(ADMIN_PATH_PREFIX);
 	}
 
 	@Override

@@ -16,6 +16,13 @@ class VideoObjectKeyTest {
 	}
 
 	@Test
+	void 실습_인증_영상의_객체_키는_graduation_구획을_쓴다() {
+		VideoObjectKey key = VideoObjectKey.create(VideoUploadTarget.GRADUATION_VIDEO, 7L, VideoType.MP4);
+
+		assertThat(key.value()).matches("videos/graduation/7/[0-9a-f-]{36}\\.mp4");
+	}
+
+	@Test
 	void quicktime_영상은_mov_확장자를_쓴다() {
 		VideoObjectKey key = VideoObjectKey.create(VideoUploadTarget.TRAINING_VIDEO, 7L, VideoType.MOV);
 
