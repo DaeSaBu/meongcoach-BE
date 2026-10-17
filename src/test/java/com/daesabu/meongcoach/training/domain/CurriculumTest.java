@@ -116,6 +116,21 @@ class CurriculumTest {
 		assertThat(curriculum.isLocked(false)).isFalse();
 	}
 
+	@Test
+	void 제작_전문가가_있으면_전문가를_반환한다() {
+		Expert expert = ExpertFixture.create("정은겸", "교수", null, null);
+		Curriculum curriculum = CurriculumFixture.create(null, "커리큘럼", 1, null, null, false, expert);
+
+		assertThat(curriculum.findExpert()).contains(expert);
+	}
+
+	@Test
+	void 제작_전문가가_없으면_빈_값을_반환한다() {
+		Curriculum curriculum = CurriculumFixture.create(null, "커리큘럼", 1, null, null);
+
+		assertThat(curriculum.findExpert()).isEmpty();
+	}
+
 	private Curriculum curriculumIn(EntitlementType requiredEntitlementType, boolean isPremium) {
 		TrainingCategory category = TrainingCategoryFixture.create("퍼피 교육", 1, null, null, requiredEntitlementType);
 		Topic topic = TopicFixture.create(category, "앉아", 1, null, null, null);

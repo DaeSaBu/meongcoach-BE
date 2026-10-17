@@ -14,8 +14,14 @@ public final class CurriculumFixture {
 
 	public static Curriculum create(Topic topic, String title, int sortOrder, String thumbnailUrl, String description,
 			boolean isPremium) {
+		return create(topic, title, sortOrder, thumbnailUrl, description, isPremium, null);
+	}
+
+	public static Curriculum create(Topic topic, String title, int sortOrder, String thumbnailUrl, String description,
+			boolean isPremium, Expert expert) {
 		Curriculum curriculum = new Curriculum();
 		ReflectionTestUtils.setField(curriculum, "topic", topic);
+		ReflectionTestUtils.setField(curriculum, "expert", expert);
 		ReflectionTestUtils.setField(curriculum, "title", title);
 		ReflectionTestUtils.setField(curriculum, "sortOrder", sortOrder);
 		ReflectionTestUtils.setField(curriculum, "thumbnailUrl", Objects.requireNonNullElse(thumbnailUrl, ""));
