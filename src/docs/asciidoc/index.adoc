@@ -516,7 +516,7 @@ operation::entitlement/synchronize-error[snippets='http-response,response-fields
 == Graduation API
 
 토픽의 모든 커리큘럼을 마친 회원이 실습 영상을 올리고(실습 인증), 운영자가 판정합니다. 승인하면 토픽 수료로 표시되며 보상은 없습니다.
-판정은 API가 아니라 로컬 관리자 페이지가 DB에 직접 적용합니다. 흐름·상태 전이는 `docs/graduation.md`를 참고하세요.
+판정은 API가 아니라 로컬 관리자 페이지가 DB에 직접 적용합니다.
 
 === 토픽 실습 인증 조회
 
