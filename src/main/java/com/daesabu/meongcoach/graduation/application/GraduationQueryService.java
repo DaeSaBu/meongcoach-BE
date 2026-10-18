@@ -10,9 +10,7 @@ import com.daesabu.meongcoach.training.application.provided.TopicCompletionCheck
 import com.daesabu.meongcoach.training.application.provided.TopicFinder;
 import com.daesabu.meongcoach.training.application.provided.dto.TopicResult;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,11 +43,17 @@ public class GraduationQueryService implements GraduationFinder {
 		if (graduations.isEmpty()) {
 			return List.of();
 		}
-		Map<Long, String> topicTitles = topicFinder.findAllOrdered().stream()
-				.collect(Collectors.toMap(TopicResult::id, TopicResult::title));
+		List<Long> topicIds = graduations.stream().map(TopicGraduation::getTopicId).toList();
+		List<TopicResult> topics = topicFinder.findTopics(topicIds);
 		return graduations.stream()
-				.map(graduation -> new GraduationSummaryResult(graduation,
-						topicTitles.getOrDefault(graduation.getTopicId(), "")))
+				.map(graduation -> new GraduationSummaryResult(graduation, findTopic(topics, graduation.getTopicId())))
 				.toList();
+	}
+
+	private TopicResult findTopic(List<TopicResult> topics, Long topicId) {
+		return topics.stream()
+				.filter(topic -> topic.id().equals(topicId))
+				.findFirst()
+				.orElseThrow();
 	}
 }

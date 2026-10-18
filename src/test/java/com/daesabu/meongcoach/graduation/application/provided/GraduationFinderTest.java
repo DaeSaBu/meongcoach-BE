@@ -90,7 +90,7 @@ class GraduationFinderTest {
 
 		assertThat(results).extracting(result -> result.graduation().getTopicId())
 				.containsExactly(second.getId(), first.getId());
-		assertThat(results).extracting(GraduationSummaryResult::topicTitle).containsExactly("산책 줄 당김", "분리불안");
+		assertThat(results).extracting(result -> result.topic().title()).containsExactly("산책 줄 당김", "분리불안");
 		assertThat(results.getFirst().graduation().getStatus()).isEqualTo(GraduationStatus.SUBMITTED);
 	}
 

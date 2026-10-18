@@ -120,7 +120,7 @@ class GraduationControllerTest {
 	void 내_훈련_영상_목록을_최근_제출_순으로_반환한다() throws Exception {
 		TopicGraduation graduation = TopicGraduationFixture.create(3L, 42L, TOPIC_ID, GraduationStatus.APPROVED, 2,
 				VIDEO_KEY, SUBMITTED_AT, REVIEWED_AT, "끝까지 함께 시도했어요!");
-		given(graduationFinder.findGraduations(42L)).willReturn(List.of(new GraduationSummaryResult(graduation, "분리불안")));
+		given(graduationFinder.findGraduations(42L)).willReturn(List.of(new GraduationSummaryResult(graduation, TOPIC)));
 
 		mockMvc.perform(get("/api/training/graduations")
 						.principal(CURRENT_USER)

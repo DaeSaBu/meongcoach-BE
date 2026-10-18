@@ -9,7 +9,7 @@ public record GraduationItemResponse(Long graduationId, Long topicId, String top
 
 	public static GraduationItemResponse from(GraduationSummaryResult result) {
 		TopicGraduation graduation = result.graduation();
-		return new GraduationItemResponse(graduation.getId(), graduation.getTopicId(), result.topicTitle(),
+		return new GraduationItemResponse(graduation.getId(), graduation.getTopicId(), result.topic().title(),
 				graduation.getStatus().name(), graduation.getAttemptNo(), graduation.getSubmittedAt(),
 				graduation.getReviewedAt(), graduation.getReviewNote());
 	}
