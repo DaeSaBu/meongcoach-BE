@@ -51,7 +51,6 @@ class GraduationControllerTest {
 	private static final Long TOPIC_ID = 7L;
 	private static final Instant SUBMITTED_AT = Instant.parse("2026-10-14T05:03:00Z");
 	private static final Instant REVIEWED_AT = Instant.parse("2026-10-15T01:00:00Z");
-	private static final Instant EXPIRES_AT = Instant.parse("2026-10-18T01:00:00Z");
 	private static final String VIDEO_KEY = "videos/graduation/42/550e8400.mp4";
 	private static final String VIDEO_URL =
 			"https://test-video-bucket.s3.ap-northeast-2.amazonaws.com/" + VIDEO_KEY + "?X-Amz-Signature=example";
@@ -81,7 +80,7 @@ class GraduationControllerTest {
 	@Test
 	void 토픽의_실습_인증_현황을_반환한다() throws Exception {
 		TopicGraduation graduation = TopicGraduationFixture.create(3L, 42L, TOPIC_ID, GraduationStatus.APPROVED, 2,
-				VIDEO_KEY, SUBMITTED_AT, REVIEWED_AT, "끝까지 함께 시도했어요!", EXPIRES_AT);
+				VIDEO_KEY, SUBMITTED_AT, REVIEWED_AT, "끝까지 함께 시도했어요!");
 		given(graduationFinder.findGraduation(42L, TOPIC_ID))
 				.willReturn(new GraduationDetailResult(TOPIC, true, graduation, VIDEO_URL));
 
@@ -99,7 +98,6 @@ class GraduationControllerTest {
 				.andExpect(jsonPath("$.submittedAt").value("2026-10-14T05:03:00Z"))
 				.andExpect(jsonPath("$.reviewedAt").value("2026-10-15T01:00:00Z"))
 				.andExpect(jsonPath("$.reviewNote").value("끝까지 함께 시도했어요!"))
-				.andExpect(jsonPath("$.rewardExpiresAt").value("2026-10-18T01:00:00Z"))
 				.andDo(document("graduation/detail",
 						pathParameters(parameterWithName("topicId").description("토픽 ID")),
 						responseFields(
@@ -113,9 +111,7 @@ class GraduationControllerTest {
 								fieldWithPath("videoUrl").optional().description("가장 최근 제출 영상의 1시간 유효 presigned URL. 제출 전이면 null"),
 								fieldWithPath("submittedAt").optional().description("가장 최근 제출 시각(ISO-8601, UTC). 제출 전이면 null"),
 								fieldWithPath("reviewedAt").optional().description("가장 최근 제출의 판정 시각. 판정 전이면 null"),
-								fieldWithPath("reviewNote").optional().description("운영자 메모. 없으면 null"),
-								fieldWithPath("rewardExpiresAt").optional().description(
-										"승인 때 지급한 전체 이용권 3일의 만료 시각. 승인 전이면 null")
+								fieldWithPath("reviewNote").optional().description("운영자 메모. 없으면 null")
 						)
 				));
 	}
@@ -123,7 +119,7 @@ class GraduationControllerTest {
 	@Test
 	void 내_훈련_영상_목록을_최근_제출_순으로_반환한다() throws Exception {
 		TopicGraduation graduation = TopicGraduationFixture.create(3L, 42L, TOPIC_ID, GraduationStatus.APPROVED, 2,
-				VIDEO_KEY, SUBMITTED_AT, REVIEWED_AT, "끝까지 함께 시도했어요!", EXPIRES_AT);
+				VIDEO_KEY, SUBMITTED_AT, REVIEWED_AT, "끝까지 함께 시도했어요!");
 		given(graduationFinder.findGraduations(42L)).willReturn(List.of(new GraduationSummaryResult(graduation, "분리불안")));
 
 		mockMvc.perform(get("/api/training/graduations")
@@ -138,7 +134,6 @@ class GraduationControllerTest {
 				.andExpect(jsonPath("$.graduations[0].submittedAt").value("2026-10-14T05:03:00Z"))
 				.andExpect(jsonPath("$.graduations[0].reviewedAt").value("2026-10-15T01:00:00Z"))
 				.andExpect(jsonPath("$.graduations[0].reviewNote").value("끝까지 함께 시도했어요!"))
-				.andExpect(jsonPath("$.graduations[0].rewardExpiresAt").value("2026-10-18T01:00:00Z"))
 				.andDo(document("graduation/list",
 						responseFields(
 								fieldWithPath("graduations[]").description("제출한 적이 있는 토픽의 실습 인증. 가장 최근 제출 순"),
@@ -150,9 +145,7 @@ class GraduationControllerTest {
 								fieldWithPath("graduations[].attemptNo").description("지금까지 제출한 횟수(영상 교체 포함)"),
 								fieldWithPath("graduations[].submittedAt").description("가장 최근 제출 시각(ISO-8601, UTC)"),
 								fieldWithPath("graduations[].reviewedAt").optional().description("가장 최근 제출의 판정 시각. 판정 전이면 null"),
-								fieldWithPath("graduations[].reviewNote").optional().description("운영자 메모. 없으면 null"),
-								fieldWithPath("graduations[].rewardExpiresAt").optional().description(
-										"승인 때 지급한 전체 이용권 3일의 만료 시각. 승인 전이면 null")
+								fieldWithPath("graduations[].reviewNote").optional().description("운영자 메모. 없으면 null")
 						)
 				));
 	}
@@ -167,8 +160,7 @@ class GraduationControllerTest {
 				.andExpect(jsonPath("$.eligible").value(false))
 				.andExpect(jsonPath("$.graduationId").isEmpty())
 				.andExpect(jsonPath("$.attemptNo").value(0))
-				.andExpect(jsonPath("$.videoUrl").isEmpty())
-				.andExpect(jsonPath("$.rewardExpiresAt").isEmpty());
+				.andExpect(jsonPath("$.videoUrl").isEmpty());
 	}
 
 	@Test
@@ -233,7 +225,7 @@ class GraduationControllerTest {
 	void 업로드한_영상으로_제출하고_201과_Location을_반환한다() throws Exception {
 		given(graduationSubmitter.submit(42L, TOPIC_ID, new GraduationSubmissionRequest(VIDEO_KEY)))
 				.willReturn(TopicGraduationFixture.create(3L, 42L, TOPIC_ID, GraduationStatus.SUBMITTED, 2, VIDEO_KEY,
-						SUBMITTED_AT, null, null, null));
+						SUBMITTED_AT, null, null));
 
 		mockMvc.perform(post("/api/training/topics/{topicId}/graduation/submissions", TOPIC_ID)
 						.principal(CURRENT_USER)

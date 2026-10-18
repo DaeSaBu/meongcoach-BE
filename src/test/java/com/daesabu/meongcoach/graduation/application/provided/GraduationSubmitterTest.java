@@ -98,7 +98,7 @@ class GraduationSubmitterTest {
 	void 승인된_수료에_다시_제출하면_예외를_던진다() {
 		Topic topic = topicSeeder.completedTopic(USER_ID, "분리불안");
 		TopicGraduation first = graduationSubmitter.submit(USER_ID, topic.getId(), request(FIRST_KEY));
-		first.approve(null, Instant.now(), Instant.now());
+		first.approve(null, Instant.now());
 		topicSeeder.flushAndClear();
 
 		assertThatThrownBy(() -> graduationSubmitter.submit(USER_ID, topic.getId(), request(SECOND_KEY)))

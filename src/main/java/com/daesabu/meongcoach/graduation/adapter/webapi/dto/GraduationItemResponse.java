@@ -5,12 +5,12 @@ import com.daesabu.meongcoach.graduation.domain.TopicGraduation;
 import java.time.Instant;
 
 public record GraduationItemResponse(Long graduationId, Long topicId, String topicTitle, String status, int attemptNo,
-                                     Instant submittedAt, Instant reviewedAt, String reviewNote, Instant rewardExpiresAt) {
+                                     Instant submittedAt, Instant reviewedAt, String reviewNote) {
 
 	public static GraduationItemResponse from(GraduationSummaryResult result) {
 		TopicGraduation graduation = result.graduation();
 		return new GraduationItemResponse(graduation.getId(), graduation.getTopicId(), result.topicTitle(),
 				graduation.getStatus().name(), graduation.getAttemptNo(), graduation.getSubmittedAt(),
-				graduation.getReviewedAt(), graduation.getReviewNote(), graduation.getRewardExpiresAt());
+				graduation.getReviewedAt(), graduation.getReviewNote());
 	}
 }

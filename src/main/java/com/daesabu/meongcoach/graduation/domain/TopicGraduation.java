@@ -59,8 +59,6 @@ public class TopicGraduation extends BaseEntity {
 
 	private Instant approvedAt;
 
-	private Instant rewardExpiresAt;
-
 	public static TopicGraduation start(Long userId, Long topicId, String videoObjectKey, Instant now) {
 		TopicGraduation graduation = new TopicGraduation();
 		graduation.userId = requireNonNull(userId);
@@ -82,13 +80,12 @@ public class TopicGraduation extends BaseEntity {
 		this.reviewNote = null;
 	}
 
-	public void approve(String note, Instant now, Instant rewardExpiresAt) {
+	public void approve(String note, Instant now) {
 		state(isSubmitted(), "제출 상태의 수료만 승인할 수 있다");
 		this.status = GraduationStatus.APPROVED;
 		this.reviewedAt = requireNonNull(now);
 		this.reviewNote = normalize(note);
 		this.approvedAt = now;
-		this.rewardExpiresAt = requireNonNull(rewardExpiresAt);
 	}
 
 	public void requestRevision(String note, Instant now) {

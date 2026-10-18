@@ -1,6 +1,6 @@
 -- 토픽 수료(graduation/domain/TopicGraduation). 회원·토픽당 1행으로 실습 인증의 "지금 상태"와 가장 최근 제출을 적는다.
 -- 이 회원이 이 토픽을 수료했는가는 status = 'APPROVED' 하나로만 판단하고, 다른 모듈은 따로 저장하지 않는다.
--- 운영자 판정(review_note·reviewed_at)과 보상 만료(reward_expires_at)도 이 행에 둔다.
+-- 운영자 판정(review_note·reviewed_at)도 이 행에 둔다.
 -- 이름이 비슷한 topic_progress는 회원당 1행으로 "지금 배우고 있는 토픽"을 가리키므로 단위가 다르다.
 -- user_id·topic_id는 모듈 경계를 넘는 값이라 FK를 걸지 않는다.
 CREATE TABLE "topic_graduations" (
@@ -14,7 +14,6 @@ CREATE TABLE "topic_graduations" (
     "reviewed_at" TIMESTAMPTZ,
     "review_note" VARCHAR(500),
     "approved_at" TIMESTAMPTZ,
-    "reward_expires_at" TIMESTAMPTZ,
     "created_at" TIMESTAMP NOT NULL,
     "updated_at" TIMESTAMP NOT NULL,
     CONSTRAINT "uk_topic_graduations_user_id_topic_id" UNIQUE ("user_id", "topic_id")

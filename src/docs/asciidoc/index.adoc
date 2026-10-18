@@ -515,15 +515,15 @@ operation::entitlement/synchronize-error[snippets='http-response,response-fields
 
 == Graduation API
 
-토픽의 모든 커리큘럼을 마친 회원이 실습 영상을 올리고(실습 인증), 운영자가 판정하며, 승인하는 순간 서버가 전체 이용권 3일을 지급합니다.
-흐름·상태 전이·운영 런북은 `docs/graduation.md`를 참고하세요.
+토픽의 모든 커리큘럼을 마친 회원이 실습 영상을 올리고(실습 인증), 운영자가 판정합니다. 승인하면 토픽 수료로 표시되며 보상은 없습니다.
+판정은 API가 아니라 로컬 관리자 페이지가 DB에 직접 적용합니다. 흐름·상태 전이는 `docs/graduation.md`를 참고하세요.
 
 === 토픽 실습 인증 조회
 
 link:{swagger-ui}#/Graduation/graduation-detail[▶ Swagger에서 Try it out,window=swagger]
 
 토픽 하나의 실습 인증 현황을 조회합니다. 제출한 적이 없어도 200으로 `status: NOT_SUBMITTED`를 돌려주고, 이때 `graduationId`·`videoUrl`·`submittedAt`은 null입니다.
-`eligible`은 토픽의 모든 커리큘럼을 완료했는지 여부이고, `rewardExpiresAt`은 승인 때 지급한 이용권의 만료 시각입니다.
+`eligible`은 토픽의 모든 커리큘럼을 완료했는지 여부입니다.
 
 operation::graduation/detail[snippets='http-request,http-response,path-parameters,response-fields']
 

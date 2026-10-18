@@ -3,7 +3,6 @@ package com.daesabu.meongcoach.graduation.domain;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import java.time.Duration;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
 
@@ -11,7 +10,6 @@ class TopicGraduationTest {
 
 	private static final Instant NOW = Instant.parse("2026-10-15T05:00:00Z");
 	private static final Instant LATER = Instant.parse("2026-10-16T05:00:00Z");
-	private static final Instant EXPIRES_AT = LATER.plus(Duration.ofDays(3));
 	private static final String FIRST_KEY = "videos/graduation/42/first.mp4";
 	private static final String SECOND_KEY = "videos/graduation/42/second.mp4";
 
@@ -50,15 +48,14 @@ class TopicGraduationTest {
 	}
 
 	@Test
-	void 승인하면_승인_시각과_보상_만료_시각과_다듬은_메모를_기록한다() {
+	void 승인하면_승인_시각과_다듬은_메모를_기록한다() {
 		TopicGraduation graduation = TopicGraduation.start(42L, 7L, FIRST_KEY, NOW);
 
-		graduation.approve("  잘했어요  ", LATER, EXPIRES_AT);
+		graduation.approve("  잘했어요  ", LATER);
 
 		assertThat(graduation.isApproved()).isTrue();
 		assertThat(graduation.getReviewedAt()).isEqualTo(LATER);
 		assertThat(graduation.getApprovedAt()).isEqualTo(LATER);
-		assertThat(graduation.getRewardExpiresAt()).isEqualTo(EXPIRES_AT);
 		assertThat(graduation.getReviewNote()).isEqualTo("잘했어요");
 	}
 
@@ -66,7 +63,7 @@ class TopicGraduationTest {
 	void 빈_메모로_승인하면_메모_없이_승인한다() {
 		TopicGraduation graduation = TopicGraduation.start(42L, 7L, FIRST_KEY, NOW);
 
-		graduation.approve(" ", LATER, EXPIRES_AT);
+		graduation.approve(" ", LATER);
 
 		assertThat(graduation.getReviewNote()).isNull();
 	}
@@ -95,13 +92,13 @@ class TopicGraduationTest {
 	void 제출_상태가_아니면_판정할_수_없다() {
 		TopicGraduation graduation = approved();
 
-		assertThatThrownBy(() -> graduation.approve(null, LATER, EXPIRES_AT)).isInstanceOf(IllegalStateException.class);
+		assertThatThrownBy(() -> graduation.approve(null, LATER)).isInstanceOf(IllegalStateException.class);
 		assertThatThrownBy(() -> graduation.requestRevision("메모", LATER)).isInstanceOf(IllegalStateException.class);
 	}
 
 	private TopicGraduation approved() {
 		TopicGraduation graduation = TopicGraduation.start(42L, 7L, FIRST_KEY, NOW);
-		graduation.approve(null, LATER, EXPIRES_AT);
+		graduation.approve(null, LATER);
 		return graduation;
 	}
 }

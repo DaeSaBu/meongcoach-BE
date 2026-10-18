@@ -12,7 +12,6 @@ import com.daesabu.meongcoach.media.application.provided.VideoUploadUrlResult;
 import com.daesabu.meongcoach.support.ApplicationTest;
 import com.daesabu.meongcoach.training.domain.Topic;
 import com.daesabu.meongcoach.training.domain.exception.TopicNotFoundException;
-import java.time.Duration;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,7 +56,7 @@ class GraduationUploadUrlIssuerTest {
 	void 이미_수료한_토픽이면_예외를_던진다() {
 		Topic topic = topicSeeder.completedTopic(USER_ID, "분리불안");
 		TopicGraduation graduation = TopicGraduation.start(USER_ID, topic.getId(), "videos/graduation/42/a.mp4", Instant.now());
-		graduation.approve(null, Instant.now(), Instant.now().plus(Duration.ofDays(3)));
+		graduation.approve(null, Instant.now());
 		topicGraduationRepository.save(graduation);
 		topicSeeder.flushAndClear();
 
