@@ -21,12 +21,13 @@ public class VideoUploadUrlIssueService implements VideoUploadUrlIssuer {
 	private final VideoStorage videoStorage;
 
 	@Override
-	public VideoUploadUrlResult issue(Long userId, String target, String contentType, long fileSizeBytes) {
+	public VideoUploadUrlResult issue(Long userId, String target, Long scopeId, String contentType,
+	                                  long fileSizeBytes) {
 		VideoUploadTarget uploadTarget = VideoUploadTarget.from(target);
 		VideoType videoType = VideoType.fromContentType(contentType);
 		VideoFileSize fileSize = new VideoFileSize(fileSizeBytes);
 
-		VideoObjectKey key = VideoObjectKey.create(uploadTarget, userId, videoType);
+		VideoObjectKey key = VideoObjectKey.create(uploadTarget, userId, scopeId, videoType);
 		VideoUploadUrl uploadUrl = videoStorage.issueUploadUrl(key, videoType.getContentType(), fileSize.bytes());
 		return new VideoUploadUrlResult(uploadUrl.uploadUrl(), uploadUrl.publicUrl(), uploadUrl.objectKey(),
 				uploadUrl.expiresInSeconds());

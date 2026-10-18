@@ -22,4 +22,6 @@ media는 웹 API를 직접 노출하지 않습니다. 업로드 URL은 업로드
 
 객체 키 형식은 도메인 값 객체가 단일 소유합니다 — 영상은 `VideoObjectKey`(`videos/{대상}/{userId}/{UUID}.{확장자}`), 이미지는 `ImageObjectKey`. **사용자 ID를 키 경로에 넣는 것이 설계 포인트입니다.** 다운로드 URL 발급 시 키만으로 소유자를 검증·식별할 수 있어, 별도 매핑 테이블 없이 소유권을 다룹니다.
 
+업로드 대상이 묶음을 요구하면(`VideoUploadTarget.isScoped`) 사용자 ID 다음에 숫자 묶음 ID가 한 단계 더 붙습니다(`videos/{대상}/{userId}/{묶음 ID}/{UUID}.{확장자}`). 지금은 실습 인증 영상(`GRADUATION_VIDEO`)만 묶음을 쓰고, 묶음 ID는 토픽 ID입니다. 호출하는 모듈은 `VideoUploadUrlIssuer.issue(userId, target, scopeId, …)`로 넘깁니다.
+
 다른 모듈이 이미지 URL을 입력으로 받을 때는 `StoredImageUrlValidator`(provided)로 우리 스토리지의 URL인지 검증합니다.
