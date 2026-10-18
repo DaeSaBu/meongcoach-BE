@@ -17,6 +17,7 @@ import com.daesabu.meongcoach.dog.domain.shared.Personality;
 import com.daesabu.meongcoach.dog.domain.shared.RegisteredBreed;
 import com.daesabu.meongcoach.shared.config.ClockConfig;
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -40,6 +41,9 @@ class DogProfileFinderServiceTest {
 
 	@Autowired
 	private DogRepository dogRepository;
+
+	@Autowired
+	private Clock clock;
 
 	@Test
 	void 사용자의_모든_강아지를_등록_순으로_반환한다() {
@@ -91,7 +95,7 @@ class DogProfileFinderServiceTest {
 		assertThat(result.name()).isEqualTo("초코");
 		assertThat(result.birthDate()).isEqualTo(LocalDate.of(2024, 3, 1));
 		assertThat(result.birthDateEstimated()).isTrue();
-		assertThat(result.ageInMonths()).isEqualTo(saved.getAgeInMonths());
+		assertThat(result.ageInMonths()).isEqualTo(saved.getAgeInMonths(LocalDate.now(clock)));
 		assertThat(result.breedLabel()).isEqualTo("푸들");
 		assertThat(result.sex()).isEqualTo("MALE");
 		assertThat(result.personalityLabels()).containsExactly("친화적");

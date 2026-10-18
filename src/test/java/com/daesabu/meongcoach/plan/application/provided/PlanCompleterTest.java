@@ -15,6 +15,7 @@ import com.daesabu.meongcoach.plan.domain.exception.PlanNotFoundException;
 import com.daesabu.meongcoach.progress.application.provided.LessonProgressUpdater;
 import com.daesabu.meongcoach.support.ApplicationTest;
 import com.daesabu.meongcoach.user.domain.UserProfile;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -32,6 +33,9 @@ class PlanCompleterTest extends PlanApplicationTestSupport {
 
 	@Autowired
 	private LessonProgressUpdater lessonProgressUpdater;
+
+	@Autowired
+	private Clock clock;
 
 	@Test
 	void 달성으로_마무리하면_플랜_토픽이_배운_토픽에_누적된다() {
@@ -107,7 +111,7 @@ class PlanCompleterTest extends PlanApplicationTestSupport {
 	void 걸린_일수는_시작일부터_오늘까지_포함해_센다() {
 		Long planId = createManualPlan(sitTopicId);
 		TrainingPlan plan = trainingPlanRepository.findById(planId).orElseThrow();
-		ReflectionTestUtils.setField(plan, "startedOn", LocalDate.now().minusDays(4));
+		ReflectionTestUtils.setField(plan, "startedOn", LocalDate.now(clock).minusDays(4));
 
 		PlanCompletionResult result = planCompleter.complete(userId, planId, new PlanCompleteRequest("ACHIEVED"));
 
