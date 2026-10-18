@@ -10,12 +10,6 @@ class AppVersionFilterTest {
 	private final AppVersionFilter filter = new AppVersionFilter(null, null);
 
 	@Test
-	void 관리자_API_경로는_앱_버전_검사를_건너뛴다() {
-		assertThat(filter.shouldNotFilter(new MockHttpServletRequest("GET", "/api/admin/graduations/submissions")))
-				.isTrue();
-	}
-
-	@Test
 	void 헬스_체크_경로는_앱_버전_검사를_건너뛴다() {
 		assertThat(filter.shouldNotFilter(new MockHttpServletRequest("GET", "/api/health"))).isTrue();
 	}

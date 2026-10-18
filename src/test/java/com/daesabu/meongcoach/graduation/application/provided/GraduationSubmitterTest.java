@@ -3,16 +3,10 @@ package com.daesabu.meongcoach.graduation.application.provided;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.groups.Tuple.tuple;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.then;
 import static org.mockito.BDDMockito.willReturn;
-import static org.mockito.Mockito.never;
 
-import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationReviewRequest;
 import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationSubmissionRequest;
 import com.daesabu.meongcoach.graduation.application.required.GraduationSubmissionRepository;
-import com.daesabu.meongcoach.graduation.application.required.SubmissionNotice;
-import com.daesabu.meongcoach.graduation.application.required.SubmissionNotifier;
 import com.daesabu.meongcoach.graduation.application.required.TopicGraduationRepository;
 import com.daesabu.meongcoach.graduation.domain.GraduationStatus;
 import com.daesabu.meongcoach.graduation.domain.GraduationSubmission;
@@ -26,7 +20,6 @@ import com.daesabu.meongcoach.training.domain.Topic;
 import java.time.Instant;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
@@ -42,9 +35,6 @@ class GraduationSubmitterTest {
 	@Autowired
 	private GraduationSubmitter graduationSubmitter;
 
-	@Autowired
-	private GraduationReviewer graduationReviewer;
-
 	@MockitoSpyBean
 	private TopicGraduationRepository topicGraduationRepository;
 
@@ -52,13 +42,10 @@ class GraduationSubmitterTest {
 	private GraduationSubmissionRepository graduationSubmissionRepository;
 
 	@Autowired
-	private SubmissionNotifier submissionNotifier;
-
-	@Autowired
 	private TopicSeeder topicSeeder;
 
 	@Test
-	void 첫_제출은_1번째_제출로_수료_행을_만들고_기록을_남기고_운영자에게_알린다() {
+	void 첫_제출은_1번째_제출로_수료_행을_만들고_기록을_남긴다() {
 		Topic topic = topicSeeder.completedTopic(USER_ID, "분리불안");
 
 		TopicGraduation graduation = graduationSubmitter.submit(USER_ID, topic.getId(), request(FIRST_KEY));
@@ -71,15 +58,6 @@ class GraduationSubmitterTest {
 				.extracting(GraduationSubmission::getGraduationId, GraduationSubmission::getAttemptNo,
 						GraduationSubmission::getVideoObjectKey)
 				.containsExactly(tuple(graduation.getId(), 1, FIRST_KEY));
-		ArgumentCaptor<SubmissionNotice> notice = ArgumentCaptor.forClass(SubmissionNotice.class);
-		then(submissionNotifier).should().notifySubmitted(notice.capture());
-		assertThat(notice.getValue().graduationId()).isEqualTo(graduation.getId());
-		assertThat(notice.getValue().userId()).isEqualTo(USER_ID);
-		assertThat(notice.getValue().topicId()).isEqualTo(topic.getId());
-		assertThat(notice.getValue().topicTitle()).isEqualTo("분리불안");
-		assertThat(notice.getValue().attemptNo()).isEqualTo(1);
-		assertThat(notice.getValue().videoObjectKey()).isEqualTo(FIRST_KEY);
-		assertThat(notice.getValue().videoUrl()).contains(FIRST_KEY);
 	}
 
 	@Test
@@ -103,7 +81,7 @@ class GraduationSubmitterTest {
 	void 보완_요청을_받은_뒤_다시_제출하면_제출_상태로_돌아가고_메모가_지워진다() {
 		Topic topic = topicSeeder.completedTopic(USER_ID, "분리불안");
 		TopicGraduation first = graduationSubmitter.submit(USER_ID, topic.getId(), request(FIRST_KEY));
-		graduationReviewer.review(first.getId(), new GraduationReviewRequest("REVISION_REQUESTED", "다시 찍어 주세요."));
+		first.requestRevision("다시 찍어 주세요.", Instant.now());
 		topicSeeder.flushAndClear();
 
 		TopicGraduation second = graduationSubmitter.submit(USER_ID, topic.getId(), request(SECOND_KEY));
@@ -120,7 +98,7 @@ class GraduationSubmitterTest {
 	void 승인된_수료에_다시_제출하면_예외를_던진다() {
 		Topic topic = topicSeeder.completedTopic(USER_ID, "분리불안");
 		TopicGraduation first = graduationSubmitter.submit(USER_ID, topic.getId(), request(FIRST_KEY));
-		graduationReviewer.review(first.getId(), new GraduationReviewRequest("APPROVED", null));
+		first.approve(null, Instant.now(), Instant.now());
 		topicSeeder.flushAndClear();
 
 		assertThatThrownBy(() -> graduationSubmitter.submit(USER_ID, topic.getId(), request(SECOND_KEY)))
@@ -134,7 +112,6 @@ class GraduationSubmitterTest {
 		assertThatThrownBy(() -> graduationSubmitter.submit(USER_ID, topic.getId(), request("videos/graduation/43/x.mp4")))
 				.isInstanceOf(InvalidGraduationVideoKeyException.class);
 		assertThat(topicGraduationRepository.findByUserIdAndTopicId(USER_ID, topic.getId())).isEmpty();
-		then(submissionNotifier).should(never()).notifySubmitted(any());
 	}
 
 	@Test

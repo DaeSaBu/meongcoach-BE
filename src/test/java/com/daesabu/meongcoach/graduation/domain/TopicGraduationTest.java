@@ -3,7 +3,6 @@ package com.daesabu.meongcoach.graduation.domain;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.daesabu.meongcoach.graduation.domain.exception.ReviewNoteRequiredException;
 import java.time.Duration;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
@@ -87,8 +86,8 @@ class TopicGraduationTest {
 	void 보완_요청에_메모가_없으면_예외를_던진다() {
 		TopicGraduation graduation = TopicGraduation.start(42L, 7L, FIRST_KEY, NOW);
 
-		assertThatThrownBy(() -> graduation.requestRevision("  ", LATER)).isInstanceOf(ReviewNoteRequiredException.class);
-		assertThatThrownBy(() -> graduation.requestRevision(null, LATER)).isInstanceOf(ReviewNoteRequiredException.class);
+		assertThatThrownBy(() -> graduation.requestRevision("  ", LATER)).isInstanceOf(IllegalArgumentException.class);
+		assertThatThrownBy(() -> graduation.requestRevision(null, LATER)).isInstanceOf(IllegalArgumentException.class);
 		assertThat(graduation.getStatus()).isEqualTo(GraduationStatus.SUBMITTED);
 	}
 

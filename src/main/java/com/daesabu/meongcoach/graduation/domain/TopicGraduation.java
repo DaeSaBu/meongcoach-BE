@@ -1,9 +1,9 @@
 package com.daesabu.meongcoach.graduation.domain;
 
 import static java.util.Objects.requireNonNull;
+import static org.springframework.util.Assert.isTrue;
 import static org.springframework.util.Assert.state;
 
-import com.daesabu.meongcoach.graduation.domain.exception.ReviewNoteRequiredException;
 import com.daesabu.meongcoach.shared.domain.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -94,9 +94,7 @@ public class TopicGraduation extends BaseEntity {
 	public void requestRevision(String note, Instant now) {
 		state(isSubmitted(), "제출 상태의 수료만 보완 요청할 수 있다");
 		String normalized = normalize(note);
-		if (normalized == null) {
-			throw new ReviewNoteRequiredException();
-		}
+		isTrue(normalized != null, "보완 요청에는 메모가 필요하다");
 		this.status = GraduationStatus.REVISION_REQUESTED;
 		this.reviewedAt = requireNonNull(now);
 		this.reviewNote = normalized;

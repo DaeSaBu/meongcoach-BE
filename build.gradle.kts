@@ -151,15 +151,11 @@ val postProcessOpenApiSpec = tasks.register("postProcessOpenApiSpec") {
 	group = "documentation"
 	description = "openapi3.json에 보안·앱 헤더 스킴과 모듈 태그를 주입하고 operationId를 정규화한다"
 	val specFile = layout.buildDirectory.file("api-spec/openapi3.json")
-	// 운영자 API는 JWT 대신 X-Admin-Key로 지키고 앱 버전 헤더도 받지 않는다(shared/security/AdminKeyInterceptor)
-	val adminPaths = listOf(
-		"/api/admin/graduations/{graduationId}/review"
-	)
 	val publicPaths = listOf(
 		"/api/health", "/api/auth/login/social", "/api/auth/login/email", "/api/auth/token/refresh", "/api/auth/logout"
-	) + adminPaths
+	)
 	// 앱 버전 게이트(shared/security/AppVersionFilter)가 검사하지 않는 경로
-	val appHeaderExcludedPaths = setOf("/api/health") + adminPaths
+	val appHeaderExcludedPaths = setOf("/api/health")
 	val appHeaderSecurity = mapOf("appVersion" to emptyList<String>(), "appPlatform" to emptyList<String>())
 	val httpMethods = setOf("get", "post", "put", "patch", "delete", "head", "options")
 	// REST Docs 스니펫 식별자의 모듈 접두어 → Swagger UI 그룹 태그. 선언 순서가 화면 표시 순서다

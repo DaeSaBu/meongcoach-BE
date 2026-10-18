@@ -3,8 +3,6 @@ package com.daesabu.meongcoach.graduation.application;
 import com.daesabu.meongcoach.graduation.application.provided.GraduationSubmitter;
 import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationSubmissionRequest;
 import com.daesabu.meongcoach.graduation.application.required.GraduationSubmissionRepository;
-import com.daesabu.meongcoach.graduation.application.required.SubmissionNotice;
-import com.daesabu.meongcoach.graduation.application.required.SubmissionNotifier;
 import com.daesabu.meongcoach.graduation.application.required.TopicGraduationRepository;
 import com.daesabu.meongcoach.graduation.domain.GraduationSubmission;
 import com.daesabu.meongcoach.graduation.domain.GraduationVideoKey;
@@ -12,10 +10,7 @@ import com.daesabu.meongcoach.graduation.domain.TopicGraduation;
 import com.daesabu.meongcoach.graduation.domain.exception.GraduationAlreadyApprovedException;
 import com.daesabu.meongcoach.graduation.domain.exception.GraduationSubmissionConflictException;
 import com.daesabu.meongcoach.graduation.domain.exception.TopicNotCompletedException;
-import com.daesabu.meongcoach.media.application.provided.VideoDownloadUrlIssuer;
 import com.daesabu.meongcoach.training.application.provided.TopicCompletionChecker;
-import com.daesabu.meongcoach.training.application.provided.TopicFinder;
-import com.daesabu.meongcoach.training.application.provided.dto.TopicResult;
 import java.time.Instant;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -28,11 +23,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class GraduationSubmitService implements GraduationSubmitter {
 
 	private final TopicCompletionChecker topicCompletionChecker;
-	private final TopicFinder topicFinder;
 	private final TopicGraduationRepository topicGraduationRepository;
 	private final GraduationSubmissionRepository graduationSubmissionRepository;
-	private final VideoDownloadUrlIssuer videoDownloadUrlIssuer;
-	private final SubmissionNotifier submissionNotifier;
 
 	@Override
 	@Transactional
@@ -46,7 +38,6 @@ public class GraduationSubmitService implements GraduationSubmitter {
 				.map(existing -> resubmit(existing, videoKey, now))
 				.orElseGet(() -> start(userId, topicId, videoKey, now));
 		graduationSubmissionRepository.save(GraduationSubmission.record(graduation));
-		notifySubmitted(graduation);
 		return graduation;
 	}
 
@@ -64,13 +55,5 @@ public class GraduationSubmitService implements GraduationSubmitter {
 		} catch (DataIntegrityViolationException e) {
 			throw new GraduationSubmissionConflictException(topicId, e);
 		}
-	}
-
-	private void notifySubmitted(TopicGraduation graduation) {
-		TopicResult topic = topicFinder.findTopic(graduation.getTopicId());
-		String videoUrl = videoDownloadUrlIssuer.issue(graduation.getVideoObjectKey()).downloadUrl();
-		submissionNotifier.notifySubmitted(new SubmissionNotice(graduation.getId(), graduation.getUserId(),
-				graduation.getTopicId(), topic.title(), graduation.getAttemptNo(), graduation.getSubmittedAt(),
-				graduation.getVideoObjectKey(), videoUrl));
 	}
 }

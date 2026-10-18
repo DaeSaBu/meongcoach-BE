@@ -561,7 +561,6 @@ operation::graduation/upload-url-error[snippets='http-response,response-fields']
 link:{swagger-ui}#/Graduation/graduation-submission[▶ Swagger에서 Try it out,window=swagger]
 
 업로드를 마친 영상의 객체 키로 제출합니다. 검수 대기 중이나 보완 요청 뒤에 다시 제출해도 같은 API를 쓰며, 그때는 차수(`attemptNo`)가 올라가고 영상이 바뀌며 이전 판정 메모는 지워집니다.
-제출할 때마다 운영자 Slack 채널에 영상 링크가 담긴 알림이 갑니다.
 
 operation::graduation/submission[snippets='http-request,http-response,path-parameters,request-fields,response-headers,response-fields']
 
@@ -571,20 +570,3 @@ operation::graduation/submission[snippets='http-request,http-response,path-param
 이미 수료했으면 409(`GRADUATION_ALREADY_APPROVED`), 같은 토픽의 첫 제출이 동시에 들어오면 409(`GRADUATION_SUBMISSION_CONFLICT`)를 반환합니다.
 
 operation::graduation/submission-error[snippets='http-response,response-fields']
-
-=== 운영자: 수료 판정
-
-link:{swagger-ui}#/Graduation/graduation-admin-review[▶ Swagger에서 Try it out,window=swagger]
-
-`X-Admin-Key` 헤더로 호출합니다. JWT와 앱 버전 헤더는 필요 없습니다. 키가 없거나 다르면 401, 서버에 키가 설정되지 않았으면 404입니다.
-검수 대기 중인 토픽 수료를 승인하거나 보완 요청합니다. 승인하면 같은 요청 안에서 회원에게 전체 이용권 3일을 RevenueCat에 지급하고 서버 DB에 동기화합니다. 메모는 앱에 그대로 보입니다.
-
-operation::graduation/admin-review[snippets='http-request,http-response,request-headers,path-parameters,request-fields,response-fields']
-
-==== 실패 응답
-
-보완 요청에 메모가 없으면 400(`GRADUATION_REVIEW_NOTE_REQUIRED`), 판정 값이 올바르지 않으면 400(`GRADUATION_INVALID_REVIEW_DECISION`),
-수료가 없으면 404(`GRADUATION_NOT_FOUND`), 검수 대기가 아니면 409(`GRADUATION_NOT_PENDING`)를 반환합니다.
-이용권 지급에 실패하면 502(`ENTITLEMENT_PROVIDER_UNAVAILABLE`)이고 수료는 검수 대기로 남으므로 다시 호출합니다.
-
-operation::graduation/admin-review-error[snippets='http-response,response-fields']

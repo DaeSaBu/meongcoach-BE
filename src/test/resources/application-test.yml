@@ -35,11 +35,6 @@ spring:
       mode: never
 
 meongcoach:
-  admin:
-    key: test-admin-key
-  graduation:
-    slack:
-      webhook-url: ""
   ai:
     video-queue: test-video-queue
     evolink:
