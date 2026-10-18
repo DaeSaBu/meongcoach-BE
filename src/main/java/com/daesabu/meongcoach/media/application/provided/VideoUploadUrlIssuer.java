@@ -6,5 +6,12 @@ package com.daesabu.meongcoach.media.application.provided;
  */
 public interface VideoUploadUrlIssuer {
 
-	VideoUploadUrlResult issue(Long userId, String target, String contentType, long fileSizeBytes);
+	default VideoUploadUrlResult issue(Long userId, String target, String contentType, long fileSizeBytes) {
+		return issue(userId, target, null, contentType, fileSizeBytes);
+	}
+
+	/**
+	 * 묶음 ID를 객체 키의 사용자 ID 다음 단계에 넣어 발급한다. 묶음을 쓰지 않는 대상이면 scopeId는 null이다.
+	 */
+	VideoUploadUrlResult issue(Long userId, String target, Long scopeId, String contentType, long fileSizeBytes);
 }

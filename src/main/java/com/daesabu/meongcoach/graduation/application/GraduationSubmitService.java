@@ -29,7 +29,7 @@ public class GraduationSubmitService implements GraduationSubmitter {
 	@Override
 	@Transactional
 	public TopicGraduation submit(Long userId, Long topicId, GraduationSubmissionRequest request) {
-		GraduationVideoKey videoKey = GraduationVideoKey.of(request.objectKey(), userId);
+		GraduationVideoKey videoKey = GraduationVideoKey.of(request.objectKey(), userId, topicId);
 		if (!topicCompletionChecker.isCompleted(userId, topicId)) {
 			throw new TopicNotCompletedException(topicId);
 		}

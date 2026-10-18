@@ -7,7 +7,7 @@
 
 ```
 앱: POST /api/training/topics/{topicId}/graduation/presigned-urls  → presigned PUT URL (DB 변경 없음)
-앱: S3에 영상 PUT (videos/graduation/{userId}/{uuid}.mp4)
+앱: S3에 영상 PUT (videos/graduation/{userId}/{topicId}/{uuid}.mp4)
 앱: POST /api/training/topics/{topicId}/graduation/submissions      → 수료 행 생성·갱신 + 기록 1줄
 운영자: 로컬 관리자 페이지에서 대기 목록·영상 확인                  → 승인 또는 보완 요청을 DB에 직접 적용
 앱: GET /api/training/topics/{topicId}/graduation                    → 상태 확인(화면에 들어올 때마다 재조회)
@@ -38,7 +38,7 @@ AI 분석 소비자(`VideoUploadSqsConsumer`)가 `videos/training/` 접두사만
 - 업로드 URL 발급은 DB를 바꾸지 않습니다. 토픽 미완료면 403(`GRADUATION_TOPIC_NOT_COMPLETED`), 이미 수료면 409(`GRADUATION_ALREADY_APPROVED`)입니다.
 - 제출은 수료 행을 쓰기 잠금(`findForUpdate`)으로 읽습니다. 없으면 1번째 제출로 만들고, 있으면 차수를 올리고 영상 키·제출 시각을 바꾸고 이전 판정 메모와 판정 시각을 지운 뒤 상태를 `SUBMITTED`로 돌립니다. 승인된 행이면 409(`GRADUATION_ALREADY_APPROVED`)입니다.
 - 같은 토픽의 첫 제출 두 건이 동시에 들어오면 둘째는 유니크 제약에 걸리고 409(`GRADUATION_SUBMISSION_CONFLICT`)로 바뀝니다. 앱은 다시 조회하면 됩니다.
-- 제출 키는 `videos/graduation/{본인 userId}/{이름}.{확장자}` 형식이어야 합니다. 아니면 400(`GRADUATION_INVALID_VIDEO_KEY`)입니다. S3에 객체가 실제로 있는지는 확인하지 않습니다.
+- 영상은 토픽 단위로 올리므로 키에 토픽 ID가 들어갑니다. 제출 키는 `videos/graduation/{본인 userId}/{제출하는 topicId}/{이름}.{확장자}` 형식이어야 하고, 다른 회원이나 다른 토픽으로 받은 키면 400(`GRADUATION_INVALID_VIDEO_KEY`)입니다. S3에 객체가 실제로 있는지는 확인하지 않습니다.
 - 판정은 서버 API가 없습니다. 아래 로컬 관리자 페이지가 `SUBMITTED`인 행에만 적용합니다. 엔티티의 `approve`·`requestRevision`은 같은 규칙을 코드로 남겨 둔 것이며 테스트 준비에만 씁니다.
 
 ## 검수: 로컬 관리자 페이지

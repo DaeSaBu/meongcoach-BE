@@ -35,6 +35,7 @@ public class GraduationUploadUrlService implements GraduationUploadUrlIssuer {
 		if (approved) {
 			throw new GraduationAlreadyApprovedException(topicId);
 		}
-		return videoUploadUrlIssuer.issue(userId, UPLOAD_TARGET, request.contentType(), request.fileSizeBytes());
+		// 실습 인증 영상은 토픽 단위로 올리므로 토픽 ID를 키의 묶음 단계(videos/graduation/{userId}/{topicId}/)에 넣는다
+		return videoUploadUrlIssuer.issue(userId, UPLOAD_TARGET, topicId, request.contentType(), request.fileSizeBytes());
 	}
 }
