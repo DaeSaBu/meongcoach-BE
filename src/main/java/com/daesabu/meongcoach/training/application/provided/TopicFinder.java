@@ -15,7 +15,8 @@ public interface TopicFinder {
 	List<TopicResult> findAllOrdered();
 
 	/**
-	 * 토픽 여러 개를 id 목록으로 조회한다. 없는 id는 결과에서 빠지며 순서는 보장하지 않는다.
+	 * 토픽 여러 개를 id 목록으로 조회한다. 순서는 보장하지 않는다.
+	 * 요청한 id 중 하나라도 없으면 TopicNotFoundException을 던진다.
 	 */
 	List<TopicResult> findTopics(Collection<Long> topicIds);
 

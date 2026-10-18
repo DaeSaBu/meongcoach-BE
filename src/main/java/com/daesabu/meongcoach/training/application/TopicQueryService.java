@@ -26,7 +26,13 @@ public class TopicQueryService implements TopicFinder {
 
 	@Override
 	public List<TopicResult> findTopics(Collection<Long> topicIds) {
-		return topicRepository.findAllById(topicIds).stream()
+		List<Topic> topics = topicRepository.findAllById(topicIds);
+		for (Long topicId : topicIds) {
+			if (topics.stream().noneMatch(topic -> topic.getId().equals(topicId))) {
+				throw new TopicNotFoundException(topicId);
+			}
+		}
+		return topics.stream()
 				.map(TopicResult::from)
 				.toList();
 	}
