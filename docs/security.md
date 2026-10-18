@@ -89,21 +89,16 @@ SHA-1 검증용이라 id_token의 `aud`가 되지 않습니다), 애플은 **iOS
 | 순서 | 경로 | 접근 |
 |---|---|---|
 | 1 | `/api/health`, `/api/auth/login/social`, `/api/auth/login/email`, `/api/auth/token/refresh`, `/api/auth/logout` | permitAll |
-| 2 | `/api/admin/**` | permitAll (JWT 대신 `X-Admin-Key` 헤더를 `WebConfig`의 `AdminKeyInterceptor`가 검사) |
-| 3 | `/swagger-ui/**` | 문서 활성 환경 permitAll, 그 외 denyAll |
-| 4 | `/api/onboarding/**`, `/api/dogs/profile/image` | `USER`, `ONBOARDING_USER` |
-| 5 | `DELETE /api/auth/me`, `GET /api/users/me` | `USER`, `ONBOARDING_USER` |
-| 6 | 그 외 전부 | `USER` |
+| 2 | `/swagger-ui/**` | 문서 활성 환경 permitAll, 그 외 denyAll |
+| 3 | `/api/onboarding/**`, `/api/dogs/profile/image` | `USER`, `ONBOARDING_USER` |
+| 4 | `DELETE /api/auth/me`, `GET /api/users/me` | `USER`, `ONBOARDING_USER` |
+| 5 | 그 외 전부 | `USER` |
 
-2번은 운영자가 curl로 부르는 경로입니다. 인증은 보안 필터 체인이 아니라 MVC 인터셉터가 맡습니다. `ADMIN_API_KEY`가
-비어 있으면 경로가 없는 것처럼 404를, 헤더가 없거나 값이 다르면 401(`UNAUTHORIZED`)을 돌려줍니다. 키 비교는
-`MessageDigest.isEqual`의 상수 시간 비교를 씁니다. 이 경로는 `AppVersionFilter`의 앱 버전 헤더 검사도 건너뜁니다.
-
-4번은 온보딩 화면에 필요한 경로입니다 — 온보딩 완료 요청에 프로필 이미지 URL이 들어가므로
+3번은 온보딩 화면에 필요한 경로입니다 — 온보딩 완료 요청에 프로필 이미지 URL이 들어가므로
 기본 프로필 이미지 조회는 온보딩 중에도 열려 있어야 합니다. 이미지 업로드 presigned URL 발급은
 `POST /api/onboarding/presigned-urls`라 `/api/onboarding/**`에 이미 포함됩니다.
 
-5번은 스토어 심사관이 온보딩을 마치지 않은 채 탈퇴를 시험할 수 있어서 둔 예외입니다. `DELETE` 메서드만 열어,
+4번은 스토어 심사관이 온보딩을 마치지 않은 채 탈퇴를 시험할 수 있어서 둔 예외입니다. `DELETE` 메서드만 열어,
 같은 경로에 나중에 생길 회원 조회·수정이 온보딩 회원에게 함께 열리지 않게 합니다.
 
 역할 어휘의 단일 원천은 `shared/security/AuthorityRole`입니다. `TokenType`과 같은 부류
@@ -286,7 +281,6 @@ OIDC 제공자는 모두 "JWKS 디코더 + `iss` + `exp` + `aud`" 동일 형태�
 | `APPLE_PRIVATE_KEY` | `-----BEGIN PRIVATE KEY-----` 머리말·꼬리말을 포함한 위 키의 `.p8` 파일 내용 전체(PKCS#8 PEM). **시크릿.** 줄바꿈은 그대로 두거나 `\n`으로 이스케이프. **비거나, 머리말이 없거나, EC 키가 아니면 기동 실패** |
 | `GOOGLE_WEB_CLIENT_ID` | 구글 id_token의 `aud`(웹 OAuth 클라이언트 ID). 안드로이드 SDK도 이 값을 `aud`로 발급합니다. 시크릿이 아닌 식별자. **빈 값이면 기동 실패** |
 | `GOOGLE_IOS_CLIENT_ID` | 구글 id_token의 `aud`(iOS OAuth 클라이언트 ID). 시크릿이 아닌 식별자. **빈 값이면 기동 실패** |
-| `ADMIN_API_KEY` | 운영자 API(`/api/admin/**`)의 `X-Admin-Key` 값. 32자 이상 랜덤 문자열. **시크릿.** 비어 있어도 기동하며, 그때는 운영자 API 전체가 404로 닫힙니다 |
 
 로컬은 환경 변수로 export하고, 배포는 ECS task definition의 환경변수와 Secrets Manager 참조로 주입합니다.
 테스트는 `src/test/resources/application-test.yml`의 더미 값을 쓰므로 환경 변수가 필요 없습니다.
