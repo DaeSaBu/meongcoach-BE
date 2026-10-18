@@ -51,7 +51,7 @@ class GraduationControllerTest {
 	private static final Long TOPIC_ID = 7L;
 	private static final Instant SUBMITTED_AT = Instant.parse("2026-10-14T05:03:00Z");
 	private static final Instant REVIEWED_AT = Instant.parse("2026-10-15T01:00:00Z");
-	private static final String VIDEO_KEY = "videos/graduation/42/550e8400.mp4";
+	private static final String VIDEO_KEY = "videos/graduation/42/7/550e8400.mp4";
 	private static final String VIDEO_URL =
 			"https://test-video-bucket.s3.ap-northeast-2.amazonaws.com/" + VIDEO_KEY + "?X-Amz-Signature=example";
 	private static final TopicResult TOPIC = new TopicResult(TOPIC_ID, "분리불안", "혼자 있는 시간을 편안하게");
@@ -240,7 +240,7 @@ class GraduationControllerTest {
 				.andDo(document("graduation/submission",
 						pathParameters(parameterWithName("topicId").description("토픽 ID")),
 						requestFields(fieldWithPath("objectKey").description(
-								"필수 입력. 업로드 URL 발급 응답의 objectKey. 본인의 `videos/graduation/{userId}/` 키만 받는다")),
+								"필수 입력. 업로드 URL 발급 응답의 objectKey. 본인이 이 토픽으로 받은 `videos/graduation/{userId}/{topicId}/` 키만 받는다")),
 						responseHeaders(headerWithName(HttpHeaders.LOCATION).description("토픽 수료 현황의 경로")),
 						responseFields(
 								fieldWithPath("graduationId").description("토픽 수료 ID. 운영자 판정에 쓴다"),

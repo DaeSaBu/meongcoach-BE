@@ -124,7 +124,7 @@ class VideoUploadSqsConsumerTest {
 
 	@Test
 	void 훈련_영상_접두사가_아닌_객체_키는_리포트_생성을_시작하지_않는다() throws Exception {
-		consumer.consume(s3Event("ObjectCreated:Put", "videos/graduation/7/key.mp4"));
+		consumer.consume(s3Event("ObjectCreated:Put", "videos/graduation/7/1101/key.mp4"));
 
 		assertThat(aiReportGenerator.objectKeys).isEmpty();
 	}

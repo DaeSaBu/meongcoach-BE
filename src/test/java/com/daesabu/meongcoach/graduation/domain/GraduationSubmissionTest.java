@@ -9,7 +9,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 class GraduationSubmissionTest {
 
 	private static final Instant SUBMITTED_AT = Instant.parse("2026-10-15T05:00:00Z");
-	private static final String VIDEO_KEY = "videos/graduation/42/clip.mp4";
+	private static final String VIDEO_KEY = "videos/graduation/42/7/clip.mp4";
 
 	@Test
 	void 수료_행의_현재_제출을_그대로_기록한다() {

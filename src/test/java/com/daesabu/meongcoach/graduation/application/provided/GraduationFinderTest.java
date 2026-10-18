@@ -60,7 +60,7 @@ class GraduationFinderTest {
 
 		assertThat(result.graduation().getStatus()).isEqualTo(GraduationStatus.SUBMITTED);
 		assertThat(result.graduation().getAttemptNo()).isEqualTo(2);
-		assertThat(result.videoUrl()).contains("videos/graduation/42/second.mp4");
+		assertThat(result.videoUrl()).contains("videos/graduation/42/" + topic.getId() + "/second.mp4");
 	}
 
 	@Test
@@ -101,7 +101,8 @@ class GraduationFinderTest {
 
 	private void submit(Long userId, Topic topic, String name) {
 		graduationSubmitter.submit(userId, topic.getId(),
-				new GraduationSubmissionRequest("videos/graduation/" + userId + "/" + name + ".mp4"));
+				new GraduationSubmissionRequest(
+						"videos/graduation/" + userId + "/" + topic.getId() + "/" + name + ".mp4"));
 		topicSeeder.flushAndClear();
 	}
 }

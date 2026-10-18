@@ -10,8 +10,8 @@ class TopicGraduationTest {
 
 	private static final Instant NOW = Instant.parse("2026-10-15T05:00:00Z");
 	private static final Instant LATER = Instant.parse("2026-10-16T05:00:00Z");
-	private static final String FIRST_KEY = "videos/graduation/42/first.mp4";
-	private static final String SECOND_KEY = "videos/graduation/42/second.mp4";
+	private static final String FIRST_KEY = "videos/graduation/42/7/first.mp4";
+	private static final String SECOND_KEY = "videos/graduation/42/7/second.mp4";
 
 	@Test
 	void 처음_시작한_수료는_1번째_제출로_제출_상태다() {

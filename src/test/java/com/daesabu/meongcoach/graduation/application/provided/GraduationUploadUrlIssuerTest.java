@@ -34,12 +34,12 @@ class GraduationUploadUrlIssuerTest {
 	private TopicSeeder topicSeeder;
 
 	@Test
-	void 토픽을_완료한_회원에게_본인_실습_영상_경로의_업로드_URL을_발급한다() {
+	void 토픽을_완료한_회원에게_본인_토픽_실습_영상_경로의_업로드_URL을_발급한다() {
 		Topic topic = topicSeeder.completedTopic(USER_ID, "분리불안");
 
 		VideoUploadUrlResult result = graduationUploadUrlIssuer.issue(USER_ID, topic.getId(), REQUEST);
 
-		assertThat(result.objectKey()).startsWith("videos/graduation/42/").endsWith(".mp4");
+		assertThat(result.objectKey()).startsWith("videos/graduation/42/" + topic.getId() + "/").endsWith(".mp4");
 		assertThat(result.uploadUrl()).isNotBlank();
 		assertThat(topicGraduationRepository.findByUserIdAndTopicId(USER_ID, topic.getId())).isEmpty();
 	}
@@ -55,7 +55,7 @@ class GraduationUploadUrlIssuerTest {
 	@Test
 	void 이미_수료한_토픽이면_예외를_던진다() {
 		Topic topic = topicSeeder.completedTopic(USER_ID, "분리불안");
-		TopicGraduation graduation = TopicGraduation.start(USER_ID, topic.getId(), "videos/graduation/42/a.mp4", Instant.now());
+		TopicGraduation graduation = TopicGraduation.start(USER_ID, topic.getId(), "videos/graduation/42/" + topic.getId() + "/a.mp4", Instant.now());
 		graduation.approve(null, Instant.now());
 		topicGraduationRepository.save(graduation);
 		topicSeeder.flushAndClear();

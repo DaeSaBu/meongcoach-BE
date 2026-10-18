@@ -135,7 +135,8 @@ class AiVideoUploadUrlServiceTest {
 		private final List<String> issuedRequests = new ArrayList<>();
 
 		@Override
-		public VideoUploadUrlResult issue(Long userId, String target, String contentType, long fileSizeBytes) {
+		public VideoUploadUrlResult issue(Long userId, String target, Long scopeId, String contentType,
+		                                  long fileSizeBytes) {
 			issuedRequests.add(userId + ":" + target + ":" + contentType + ":" + fileSizeBytes);
 			return new VideoUploadUrlResult(UPLOAD_URL, PUBLIC_URL, OBJECT_KEY, EXPIRES_IN_SECONDS);
 		}
