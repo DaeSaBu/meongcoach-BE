@@ -86,16 +86,26 @@ class TopicFinderTest {
 	}
 
 	@Test
-	void 토픽_ID_목록으로_존재하는_토픽만_조회한다() {
+	void 토픽_ID_목록으로_토픽들을_조회한다() {
 		TrainingCategory category = saveCategory("기본 훈련", 1);
 		Topic first = topicRepository.save(TopicFixture.create(category, "배변 훈련", 1, null, null, null));
 		Topic second = topicRepository.save(TopicFixture.create(category, "산책 훈련", 2, null, null, null));
 		topicRepository.save(TopicFixture.create(category, "분리불안", 3, null, null, null));
 		flushAndClear();
 
-		List<TopicResult> topics = topicFinder.findTopics(List.of(first.getId(), second.getId(), 999L));
+		List<TopicResult> topics = topicFinder.findTopics(List.of(first.getId(), second.getId()));
 
 		assertThat(topics).extracting(TopicResult::title).containsExactlyInAnyOrder("배변 훈련", "산책 훈련");
+	}
+
+	@Test
+	void 토픽_ID_목록에_없는_ID가_섞이면_예외를_던진다() {
+		TrainingCategory category = saveCategory("기본 훈련", 1);
+		Topic saved = topicRepository.save(TopicFixture.create(category, "배변 훈련", 1, null, null, null));
+		flushAndClear();
+
+		assertThatThrownBy(() -> topicFinder.findTopics(List.of(saved.getId(), 999L)))
+				.isInstanceOf(TopicNotFoundException.class);
 	}
 
 	private TrainingCategory saveCategory(String title, int sortOrder) {
