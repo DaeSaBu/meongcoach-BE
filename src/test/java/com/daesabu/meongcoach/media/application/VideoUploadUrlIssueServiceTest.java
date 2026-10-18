@@ -44,6 +44,13 @@ class VideoUploadUrlIssueServiceTest {
 	}
 
 	@Test
+	void 묶음_ID를_받으면_객체_키에_사용자_ID_다음_단계로_넣는다() {
+		service.issue(7L, "GRADUATION_VIDEO", 1101L, "video/mp4", VALID_SIZE);
+
+		assertThat(videoStorage.lastKey().value()).startsWith("videos/graduation/7/1101/").endsWith(".mp4");
+	}
+
+	@Test
 	void 요청한_contentType_그대로_스토리지에_전달한다() {
 		service.issue(7L, "TRAINING_VIDEO", "video/quicktime", VALID_SIZE);
 
