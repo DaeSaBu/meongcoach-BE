@@ -85,6 +85,19 @@ class TopicFinderTest {
 		assertThat(topicFinder.findAllOrdered()).isEmpty();
 	}
 
+	@Test
+	void 토픽_ID_목록으로_존재하는_토픽만_조회한다() {
+		TrainingCategory category = saveCategory("기본 훈련", 1);
+		Topic first = topicRepository.save(TopicFixture.create(category, "배변 훈련", 1, null, null, null));
+		Topic second = topicRepository.save(TopicFixture.create(category, "산책 훈련", 2, null, null, null));
+		topicRepository.save(TopicFixture.create(category, "분리불안", 3, null, null, null));
+		flushAndClear();
+
+		List<TopicResult> topics = topicFinder.findTopics(List.of(first.getId(), second.getId(), 999L));
+
+		assertThat(topics).extracting(TopicResult::title).containsExactlyInAnyOrder("배변 훈련", "산책 훈련");
+	}
+
 	private TrainingCategory saveCategory(String title, int sortOrder) {
 		return trainingCategoryRepository.save(TrainingCategoryFixture.create(title, sortOrder, null, null));
 	}
