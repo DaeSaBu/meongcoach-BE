@@ -5,6 +5,7 @@ import com.daesabu.meongcoach.training.application.provided.dto.TopicResult;
 import com.daesabu.meongcoach.training.application.required.TopicRepository;
 import com.daesabu.meongcoach.training.domain.Topic;
 import com.daesabu.meongcoach.training.domain.exception.TopicNotFoundException;
+import java.util.Collection;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,6 +20,13 @@ public class TopicQueryService implements TopicFinder {
 	@Override
 	public List<TopicResult> findAllOrdered() {
 		return topicRepository.findAllOrdered().stream()
+				.map(TopicResult::from)
+				.toList();
+	}
+
+	@Override
+	public List<TopicResult> findTopics(Collection<Long> topicIds) {
+		return topicRepository.findAllById(topicIds).stream()
 				.map(TopicResult::from)
 				.toList();
 	}
