@@ -37,18 +37,20 @@ public class PostQueryService implements PostFinder {
 
 	@Override
 	public PostListResult findPosts(PostListRequest request) {
-		Pageable pageable = PageRequest.of(0, request.size());
-		Slice<Post> slice = findSlice(request.cursor(), pageable);
+		Slice<Post> slice = getSlice(request);
+
 		List<PostResult> posts = compose(slice.getContent());
 		Long nextCursor = nextCursorOf(slice);
 		return new PostListResult(posts, nextCursor);
 	}
 
-	private Slice<Post> findSlice(Long cursor, Pageable pageable) {
-		if (cursor == null) {
+	private Slice<Post> getSlice(PostListRequest request) {
+		Pageable pageable = PageRequest.of(0, request.size());
+
+		if (request.cursor() == null) {
 			return postRepository.findAllByOrderByIdDesc(pageable);
 		}
-		return postRepository.findAllByIdLessThanOrderByIdDesc(cursor, pageable);
+		return postRepository.findAllByIdLessThanOrderByIdDesc(request.cursor(), pageable);
 	}
 
 	private Long nextCursorOf(Slice<Post> slice) {
@@ -85,7 +87,7 @@ public class PostQueryService implements PostFinder {
 	}
 
 	private PostResult toResult(Post post, Map<Long, UserProfileSummaryResult> authors,
-			Map<Long, CardSummaryResult> cards) {
+	                            Map<Long, CardSummaryResult> cards) {
 		UserProfileSummaryResult author = authors.get(post.getUserId());
 		CardSummaryResult mentionedCard = post.findMentionTargetId(MentionTargetType.CARD)
 				.map(cards::get)
