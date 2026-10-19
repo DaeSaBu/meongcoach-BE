@@ -12,10 +12,8 @@ import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationUplo
 import com.daesabu.meongcoach.graduation.domain.TopicGraduation;
 import com.daesabu.meongcoach.shared.security.CurrentUserId;
 import jakarta.validation.Valid;
-import java.net.URI;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -23,14 +21,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.util.UriComponentsBuilder;
 
 @RestController
 @RequestMapping("/api/training")
 @RequiredArgsConstructor
 public class GraduationController {
-
-	private static final String GRADUATION_LOCATION = "/api/training/topics/{topicId}/graduation";
 
 	private final GraduationFinder graduationFinder;
 	private final GraduationUploadUrlIssuer graduationUploadUrlIssuer;
@@ -54,10 +49,10 @@ public class GraduationController {
 	}
 
 	@PostMapping("/topics/{topicId}/graduation/submissions")
-	public ResponseEntity<GraduationSubmissionResponse> submit(@CurrentUserId Long userId, @PathVariable Long topicId,
-	                                                           @Valid @RequestBody GraduationSubmissionRequest request) {
+	@ResponseStatus(HttpStatus.CREATED)
+	public GraduationSubmissionResponse submit(@CurrentUserId Long userId, @PathVariable Long topicId,
+	                                           @Valid @RequestBody GraduationSubmissionRequest request) {
 		TopicGraduation graduation = graduationSubmitter.submit(userId, topicId, request);
-		URI location = UriComponentsBuilder.fromPath(GRADUATION_LOCATION).build(topicId);
-		return ResponseEntity.created(location).body(GraduationSubmissionResponse.from(graduation));
+		return GraduationSubmissionResponse.from(graduation);
 	}
 }
