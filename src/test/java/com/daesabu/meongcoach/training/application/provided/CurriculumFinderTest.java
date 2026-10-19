@@ -20,6 +20,8 @@ import com.daesabu.meongcoach.training.application.required.TopicRepository;
 import com.daesabu.meongcoach.training.application.required.TrainingCategoryRepository;
 import com.daesabu.meongcoach.training.domain.Curriculum;
 import com.daesabu.meongcoach.training.domain.CurriculumFixture;
+import com.daesabu.meongcoach.training.domain.Expert;
+import com.daesabu.meongcoach.training.domain.ExpertFixture;
 import com.daesabu.meongcoach.training.domain.Lesson;
 import com.daesabu.meongcoach.training.domain.LessonFixture;
 import com.daesabu.meongcoach.training.domain.Topic;
@@ -209,6 +211,31 @@ class CurriculumFinderTest {
 		assertThat(detail.curriculum().getId()).isEqualTo(curriculum.getId());
 		assertThat(detail.curriculum().getLessons()).extracting(Lesson::getTitle)
 				.containsExactly("손 위의 간식", "간식 없이 앉아");
+	}
+
+	@Test
+	void 커리큘럼_상세에_제작_전문가를_포함한다() {
+		Topic topic = saveTopicWithCategory();
+		Expert expert = ExpertFixture.create("정은겸", "교수", null, null);
+		entityManager.persist(expert);
+		Curriculum curriculum = curriculumRepository.save(
+				CurriculumFixture.create(topic, "앉아 1단계", 1, null, null, false, expert));
+		flushAndClear();
+
+		CurriculumDetailResult detail = curriculumFinder.findCurriculum(USER_ID, curriculum.getId());
+
+		assertThat(detail.curriculum().findExpert()).map(Expert::getName).contains("정은겸");
+	}
+
+	@Test
+	void 제작_전문가가_없는_커리큘럼_상세는_전문가를_비운다() {
+		Topic topic = saveTopicWithCategory();
+		Curriculum curriculum = saveCurriculum(topic, "앉아 1단계", 1);
+		flushAndClear();
+
+		CurriculumDetailResult detail = curriculumFinder.findCurriculum(USER_ID, curriculum.getId());
+
+		assertThat(detail.curriculum().findExpert()).isEmpty();
 	}
 
 	@Test

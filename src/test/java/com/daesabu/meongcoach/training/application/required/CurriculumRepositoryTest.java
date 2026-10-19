@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.daesabu.meongcoach.training.domain.Curriculum;
 import com.daesabu.meongcoach.training.domain.CurriculumFixture;
+import com.daesabu.meongcoach.training.domain.Expert;
+import com.daesabu.meongcoach.training.domain.ExpertFixture;
 import com.daesabu.meongcoach.training.domain.Lesson;
 import com.daesabu.meongcoach.training.domain.LessonFixture;
 import com.daesabu.meongcoach.training.domain.Topic;
@@ -75,6 +77,30 @@ class CurriculumRepositoryTest {
 		Curriculum found = curriculumRepository.findWithCategoryById(curriculum.getId()).orElseThrow();
 
 		assertThat(Hibernate.isInitialized(found.getTopic())).isTrue();
+		assertThat(Hibernate.isInitialized(found.getTopic().getTrainingCategory())).isTrue();
+	}
+
+	@Test
+	void 커리큘럼을_제작_전문가와_함께_조회한다() {
+		Expert expert = entityManager.persist(ExpertFixture.create("정은겸", "교수", null, null));
+		Curriculum curriculum = entityManager.persist(
+				CurriculumFixture.create(persistTopic("기본 교육"), "커리큘럼", 1, null, null, false, expert));
+		flushAndClear();
+
+		Curriculum found = curriculumRepository.findWithCategoryById(curriculum.getId()).orElseThrow();
+
+		assertThat(Hibernate.isInitialized(found.getExpert())).isTrue();
+		assertThat(found.getExpert().getName()).isEqualTo("정은겸");
+	}
+
+	@Test
+	void 제작_전문가가_없는_커리큘럼도_상위_연관과_함께_조회한다() {
+		Curriculum curriculum = persistCurriculum(persistTopic("기본 교육"), "커리큘럼", 1);
+		flushAndClear();
+
+		Curriculum found = curriculumRepository.findWithCategoryById(curriculum.getId()).orElseThrow();
+
+		assertThat(found.getExpert()).isNull();
 		assertThat(Hibernate.isInitialized(found.getTopic().getTrainingCategory())).isTrue();
 	}
 

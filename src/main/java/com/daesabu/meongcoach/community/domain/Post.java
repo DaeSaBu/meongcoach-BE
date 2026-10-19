@@ -15,6 +15,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import java.util.Optional;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -47,5 +48,11 @@ public class Post extends BaseEntity {
 				.map(PostMention::create)
 				.orElse(null);
 		return post;
+	}
+
+	public Optional<Long> findMentionTargetId(MentionTargetType type) {
+		return ofNullable(mention)
+				.filter(found -> found.isTarget(type))
+				.map(PostMention::getTargetId);
 	}
 }
