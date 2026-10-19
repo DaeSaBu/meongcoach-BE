@@ -41,8 +41,7 @@ public class PostQueryService implements PostFinder {
 		Slice<Post> slice = findSlice(request.cursor(), pageable);
 		List<PostResult> posts = compose(slice.getContent());
 		Long nextCursor = nextCursorOf(slice);
-		boolean hasNext = slice.hasNext();
-		return new PostListResult(posts, nextCursor, hasNext);
+		return new PostListResult(posts, nextCursor);
 	}
 
 	private Slice<Post> findSlice(Long cursor, Pageable pageable) {
