@@ -89,27 +89,28 @@ class GraduationControllerTest {
 				.andExpect(jsonPath("$.topicId").value(7))
 				.andExpect(jsonPath("$.topicTitle").value("분리불안"))
 				.andExpect(jsonPath("$.eligible").value(true))
-				.andExpect(jsonPath("$.status").value("APPROVED"))
-				.andExpect(jsonPath("$.graduationId").value(3))
-				.andExpect(jsonPath("$.attemptNo").value(2))
-				.andExpect(jsonPath("$.videoUrl").value(VIDEO_URL))
-				.andExpect(jsonPath("$.submittedAt").value("2026-10-14T05:03:00Z"))
-				.andExpect(jsonPath("$.reviewedAt").value("2026-10-15T01:00:00Z"))
-				.andExpect(jsonPath("$.reviewNote").value("끝까지 함께 시도했어요!"))
+				.andExpect(jsonPath("$.graduation.graduationId").value(3))
+				.andExpect(jsonPath("$.graduation.status").value("APPROVED"))
+				.andExpect(jsonPath("$.graduation.attemptNo").value(2))
+				.andExpect(jsonPath("$.graduation.videoUrl").value(VIDEO_URL))
+				.andExpect(jsonPath("$.graduation.submittedAt").value("2026-10-14T05:03:00Z"))
+				.andExpect(jsonPath("$.graduation.reviewedAt").value("2026-10-15T01:00:00Z"))
+				.andExpect(jsonPath("$.graduation.reviewNote").value("끝까지 함께 시도했어요!"))
 				.andDo(document("graduation/detail",
 						pathParameters(parameterWithName("topicId").description("토픽 ID")),
 						responseFields(
 								fieldWithPath("topicId").description("토픽 ID"),
 								fieldWithPath("topicTitle").description("토픽 제목"),
 								fieldWithPath("eligible").description("토픽의 모든 커리큘럼을 완료해 실습 인증을 할 수 있으면 true"),
-								fieldWithPath("status").description(
-										"수료 상태. NOT_SUBMITTED(제출 전), SUBMITTED(검수 대기), REVISION_REQUESTED(보완 요청), APPROVED(수료)"),
-								fieldWithPath("graduationId").optional().description("토픽 수료 ID. 제출 전이면 null"),
-								fieldWithPath("attemptNo").description("지금까지 제출한 횟수(영상 교체 포함). 제출 전이면 0"),
-								fieldWithPath("videoUrl").optional().description("가장 최근 제출 영상의 1시간 유효 presigned URL. 제출 전이면 null"),
-								fieldWithPath("submittedAt").optional().description("가장 최근 제출 시각(ISO-8601, UTC). 제출 전이면 null"),
-								fieldWithPath("reviewedAt").optional().description("가장 최근 제출의 판정 시각. 판정 전이면 null"),
-								fieldWithPath("reviewNote").optional().description("운영자 메모. 없으면 null")
+								fieldWithPath("graduation").optional().description("토픽 수료 현황. 제출한 적이 없으면 null"),
+								fieldWithPath("graduation.graduationId").description("토픽 수료 ID"),
+								fieldWithPath("graduation.status").description(
+										"수료 상태. SUBMITTED(검수 대기), REVISION_REQUESTED(보완 요청), APPROVED(수료)"),
+								fieldWithPath("graduation.attemptNo").description("지금까지 제출한 횟수(영상 교체 포함)"),
+								fieldWithPath("graduation.videoUrl").description("가장 최근 제출 영상의 1시간 유효 presigned URL"),
+								fieldWithPath("graduation.submittedAt").description("가장 최근 제출 시각(ISO-8601, UTC)"),
+								fieldWithPath("graduation.reviewedAt").optional().description("가장 최근 제출의 판정 시각. 판정 전이면 null"),
+								fieldWithPath("graduation.reviewNote").optional().description("운영자 메모. 없으면 null")
 						)
 				));
 	}
@@ -149,16 +150,13 @@ class GraduationControllerTest {
 	}
 
 	@Test
-	void 제출한_적이_없으면_NOT_SUBMITTED로_반환한다() throws Exception {
+	void 제출한_적이_없으면_graduation을_null로_반환한다() throws Exception {
 		given(graduationFinder.findGraduation(42L, TOPIC_ID)).willReturn(GraduationDetailResult.notSubmitted(TOPIC, false));
 
 		mockMvc.perform(get("/api/training/topics/{topicId}/graduation", TOPIC_ID).principal(CURRENT_USER))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.status").value("NOT_SUBMITTED"))
 				.andExpect(jsonPath("$.eligible").value(false))
-				.andExpect(jsonPath("$.graduationId").isEmpty())
-				.andExpect(jsonPath("$.attemptNo").value(0))
-				.andExpect(jsonPath("$.videoUrl").isEmpty());
+				.andExpect(jsonPath("$.graduation").isEmpty());
 	}
 
 	@Test
