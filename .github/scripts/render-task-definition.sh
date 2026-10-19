@@ -32,7 +32,7 @@ IMAGE_URI=${3}
 : "${S3_SECRET_ACCESS_KEY:?S3_SECRET_ACCESS_KEY가 필요합니다.}"
 : "${S3_BUCKET:?S3_BUCKET이 필요합니다.}"
 : "${S3_PUBLIC_BASE_URL:?S3_PUBLIC_BASE_URL이 필요합니다.}"
-# EVOLINK_BASE_URL·EVOLINK_MODEL은 application.yml에 기본값이 있어 선택 사항이다.
+# EVOLINK_MODEL은 application.yml에 기본값이 있어 선택 사항이다.
 : "${EVOLINK_API_KEY:?EVOLINK_API_KEY가 필요합니다.}"
 : "${SQS_REGION:?SQS_REGION이 필요합니다.}"
 : "${SQS_ACCESS_KEY_ID:?SQS_ACCESS_KEY_ID가 필요합니다.}"
@@ -70,7 +70,6 @@ jq \
 	--arg s3_bucket "${S3_BUCKET:-}" \
 	--arg s3_public_base_url "${S3_PUBLIC_BASE_URL:-}" \
 	--arg evolink_api_key "${EVOLINK_API_KEY:-}" \
-	--arg evolink_base_url "${EVOLINK_BASE_URL:-}" \
 	--arg evolink_model "${EVOLINK_MODEL:-}" \
 	--arg sqs_region "${SQS_REGION:-}" \
 	--arg sqs_access_key_id "${SQS_ACCESS_KEY_ID:-}" \
@@ -206,11 +205,6 @@ jq \
 							{"name": "REVENUECAT_ENTITLEMENT_ID_SENIOR", "value": $revenuecat_entitlement_id_senior}
 						] +
 						# 미설정 시 application.yml의 기본값을 쓰도록 주입 자체를 생략한다
-						(if $evolink_base_url == "" then
-							[]
-						 else
-							[{"name": "EVOLINK_BASE_URL", "value": $evolink_base_url}]
-						 end) +
 						(if $evolink_model == "" then
 							[]
 						 else

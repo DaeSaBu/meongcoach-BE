@@ -14,7 +14,7 @@ import org.springframework.validation.annotation.Validated;
  * 영상 분석에 쓰는 EvoLink.AI 채팅 API(OpenAI 호환) 연동 설정.
  * 설정 오류는 모두 기동 시점에 드러나야 하므로 모든 필드에 제약을 건다.
  *
- * @param baseUrl         EvoLink API 베이스 URL. 멀티모달(영상) 호출은 api.evolink.ai가 주력 엔드포인트다
+ * @param baseUrl         EvoLink API 베이스 URL. Cloudflare 응답 대기 한도(100초)가 없는 direct.evolink.ai를 쓴다
  * @param apiKey          EvoLink API 키. Bearer 토큰으로 전송한다
  * @param model           호출할 모델 이름 (예: doubao-seed-2.0-pro)
  * @param responseTimeout 모델 응답을 기다리는 시간. 영상 분석은 수십 초가 걸려 전역 read-timeout(3초)으로는 짧다
