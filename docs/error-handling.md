@@ -26,7 +26,6 @@ Content-Type은 항상 `application/problem+json`입니다.
 | `instance` | 에러가 발생한 요청 경로 |
 | `code` (확장) | 클라이언트 분기용 에러 코드. 도메인 예외는 `{모듈}_{원인}`, 프레임워크 예외는 HTTP 상태 enum 이름 |
 | `timestamp` (확장) | 에러 발생 시각 (UTC) |
-| `maxFileSizeBytes` (확장) | `MEDIA_VIDEO_FILE_SIZE_EXCEEDED`일 때 실제 허용 상한(바이트). 앱의 용량 초과 안내에 사용 |
 | `errors` (확장) | 입력값 검증(`@Valid`) 실패 시에만 포함. `[{field, message}]` 목록 |
 
 ## 공통 추상화 (shared)
@@ -36,8 +35,6 @@ Content-Type은 항상 `application/problem+json`입니다.
 | `shared/exception` | `ErrorCode` 인터페이스 | 모듈별 에러 코드 enum이 구현하는 계약 (`code()`, `message()`, `status()`) |
 | `shared/exception` | `DomainException` 추상 클래스 | 모든 도메인 예외의 최상위 타입 |
 | `shared/webapi` | `GlobalExceptionHandler` | 모든 예외 → Problem Details 변환 + 로깅 |
-
-도메인 예외의 `getProperties()`는 응답에 필요한 부가 정보를 Java `Map`으로 반환합니다. 전역 핸들러는 이를 Problem Details 확장 필드로 변환하며, 부가 정보가 없는 예외는 빈 Map을 반환합니다.
 
 ## 전역 핸들러 처리 범위
 

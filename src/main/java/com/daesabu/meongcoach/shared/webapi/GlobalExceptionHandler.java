@@ -42,9 +42,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 	ProblemDetail handleDomainException(DomainException e) {
 		HttpStatus status = HttpStatus.valueOf(e.getErrorCode().status());
 		logDomainException(e, status);
-		ProblemDetail detail = problemDetail(status, e.getErrorCode().code(), e.getMessage());
-		e.getProperties().forEach(detail::setProperty);
-		return detail;
+		return problemDetail(status, e.getErrorCode().code(), e.getMessage());
 	}
 
 	private void logDomainException(DomainException e, HttpStatus status) {
