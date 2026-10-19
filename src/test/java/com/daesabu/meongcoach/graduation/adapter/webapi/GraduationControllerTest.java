@@ -195,7 +195,7 @@ class GraduationControllerTest {
 						requestFields(
 								fieldWithPath("contentType").description("필수 입력. `video/mp4`, `video/quicktime`만 지원"),
 								fieldWithPath("fileSizeBytes").description(
-										"필수 입력. 영상 바이트 수. 1 이상 52428800(50MB) 이하. presigned URL의 Content-Length 서명에 들어간다")
+										"필수 입력. 영상 바이트 수. 1 이상이며 서버 설정 상한 이하(기본 209715200바이트, 200MiB). presigned URL의 Content-Length 서명에 들어간다")
 						),
 						responseFields(
 								fieldWithPath("uploadUrl").description(
