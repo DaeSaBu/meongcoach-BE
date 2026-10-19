@@ -50,6 +50,10 @@ public class Curriculum extends BaseEntity {
 	@JoinColumn(name = "topic_id", nullable = false)
 	private Topic topic;
 
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "expert_id")
+	private Expert expert;
+
 	@OneToMany(mappedBy = "curriculum")
 	@OrderBy("sortOrder ASC, id ASC")
 	private List<Lesson> lessons = new ArrayList<>();
@@ -68,6 +72,10 @@ public class Curriculum extends BaseEntity {
 		int totalLessons = getLessonsSize();
 		int completedLessons = countCompletedLessons(completedLessonIds);
 		return CurriculumStatus.of(totalLessons, completedLessons);
+	}
+
+	public Optional<Expert> findExpert() {
+		return Optional.ofNullable(expert);
 	}
 
 	public Optional<EntitlementType> findRequiredEntitlementType() {

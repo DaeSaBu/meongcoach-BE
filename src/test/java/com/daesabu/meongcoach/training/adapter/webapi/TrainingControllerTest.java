@@ -3,6 +3,7 @@ package com.daesabu.meongcoach.training.adapter.webapi;
 import static com.daesabu.meongcoach.training.domain.MediaType.IMAGE;
 import static com.daesabu.meongcoach.training.domain.MediaType.VIDEO;
 import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.document;
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.BDDMockito.willThrow;
@@ -33,6 +34,8 @@ import com.daesabu.meongcoach.training.domain.CardMedia;
 import com.daesabu.meongcoach.training.domain.CardMediaFixture;
 import com.daesabu.meongcoach.training.domain.Curriculum;
 import com.daesabu.meongcoach.training.domain.CurriculumFixture;
+import com.daesabu.meongcoach.training.domain.Expert;
+import com.daesabu.meongcoach.training.domain.ExpertFixture;
 import com.daesabu.meongcoach.training.domain.Lesson;
 import com.daesabu.meongcoach.training.domain.LessonFixture;
 import com.daesabu.meongcoach.training.domain.Topic;
@@ -365,7 +368,10 @@ class TrainingControllerTest {
 
 	@Test
 	void 커리큘럼과_레슨_목록을_반환한다() throws Exception {
-		Curriculum curriculum = curriculum(10L, topic(1L, "앉아", null, null, null, 1), "앉아 1단계", 1);
+		Expert expert = expert(5L, "정은겸", "교수",
+				"동명대학교 반려동물케어학부 교수. 반려동물의 행동과 복지를 연구하며 학생들을 교육합니다.",
+				"https://images.example.com/experts/jeong.png");
+		Curriculum curriculum = curriculum(10L, topic(1L, "앉아", null, null, null, 1), "앉아 1단계", 1, expert);
 		addLesson(curriculum, 100L, "손 위의 간식", 1, 5);
 		addLesson(curriculum, 101L, "간식 없이 앉아", 2, 10);
 		given(curriculumFinder.findCurriculum(42L, 10L))
@@ -377,6 +383,12 @@ class TrainingControllerTest {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.curriculumId").value(10))
 				.andExpect(jsonPath("$.curriculumTitle").value("앉아 1단계"))
+				.andExpect(jsonPath("$.expert.expertId").value(5))
+				.andExpect(jsonPath("$.expert.name").value("정은겸"))
+				.andExpect(jsonPath("$.expert.title").value("교수"))
+				.andExpect(jsonPath("$.expert.description")
+						.value("동명대학교 반려동물케어학부 교수. 반려동물의 행동과 복지를 연구하며 학생들을 교육합니다."))
+				.andExpect(jsonPath("$.expert.imageUrl").value("https://images.example.com/experts/jeong.png"))
 				.andExpect(jsonPath("$.lessons[0].lessonId").value(100))
 				.andExpect(jsonPath("$.lessons[0].lessonTitle").value("손 위의 간식"))
 				.andExpect(jsonPath("$.lessons[0].estimatedMinutes").value(5))
@@ -391,6 +403,13 @@ class TrainingControllerTest {
 						responseFields(
 								fieldWithPath("curriculumId").description("커리큘럼 ID"),
 								fieldWithPath("curriculumTitle").description("커리큘럼 이름"),
+								fieldWithPath("expert").optional()
+										.description("커리큘럼 제작 전문가. 등록된 전문가가 없으면 null"),
+								fieldWithPath("expert.expertId").description("전문가 ID"),
+								fieldWithPath("expert.name").description("전문가 이름"),
+								fieldWithPath("expert.title").description("전문가 직함. 예: 교수, 훈련사"),
+								fieldWithPath("expert.description").description("전문가 소개"),
+								fieldWithPath("expert.imageUrl").description("전문가 프로필 이미지 URL"),
 								fieldWithPath("lessons[]").description("커리큘럼의 레슨 목록. 노출 순서대로 정렬"),
 								fieldWithPath("lessons[].lessonId").description("레슨 ID"),
 								fieldWithPath("lessons[].lessonTitle").description("레슨 이름"),
@@ -423,6 +442,16 @@ class TrainingControllerTest {
 				.andExpect(jsonPath("$.curriculumId").value(10))
 				.andExpect(jsonPath("$.lessons").isArray())
 				.andExpect(jsonPath("$.lessons").isEmpty());
+	}
+
+	@Test
+	void 제작_전문가가_없는_커리큘럼은_expert를_null로_반환한다() throws Exception {
+		given(curriculumFinder.findCurriculum(42L, 10L))
+				.willReturn(new CurriculumDetailResult(emptyCurriculum(), Map.of()));
+
+		mockMvc.perform(get("/api/training/curriculums/{curriculumId}", 10L).principal(CURRENT_USER))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.expert").value(nullValue()));
 	}
 
 	@Test
@@ -667,6 +696,18 @@ class TrainingControllerTest {
 		Curriculum curriculum = CurriculumFixture.create(topic, title, sortOrder, null, null);
 		ReflectionTestUtils.setField(curriculum, "id", id);
 		return curriculum;
+	}
+
+	private Curriculum curriculum(Long id, Topic topic, String title, int sortOrder, Expert expert) {
+		Curriculum curriculum = CurriculumFixture.create(topic, title, sortOrder, null, null, false, expert);
+		ReflectionTestUtils.setField(curriculum, "id", id);
+		return curriculum;
+	}
+
+	private Expert expert(Long id, String name, String title, String description, String imageUrl) {
+		Expert expert = ExpertFixture.create(name, title, description, imageUrl);
+		ReflectionTestUtils.setField(expert, "id", id);
+		return expert;
 	}
 
 	private Curriculum emptyCurriculum() {
