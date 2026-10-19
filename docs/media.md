@@ -29,6 +29,6 @@ media는 웹 API를 직접 노출하지 않습니다. 업로드 URL은 업로드
 ## 영상 크기 제한
 
 - AI 영상은 `VideoFileSize`에서 최대 50MiB(52,428,800바이트)로 제한합니다.
-- 실습 인증 영상은 `GraduationVideoFileSize`에서 `meongcoach.media.graduation.max-file-size-bytes` 설정으로 제한합니다. 환경 변수 `GRADUATION_VIDEO_MAX_FILE_SIZE_BYTES`의 기본값은 200MiB(209,715,200바이트)입니다. 설정은 양수여야 하며 서버 재시작 후 적용됩니다.
+- 실습 인증 영상은 `GraduationVideoFileSize.MAX_BYTES` 상수로 최대 512MiB(536,870,912바이트)로 제한합니다. 환경 변수는 사용하지 않습니다.
 - 두 경로 모두 발급 요청의 파일 크기를 S3 PUT URL의 Content-Length 서명에 포함합니다.
-- 실습 인증 앱은 고정 용량 상한과 선택 전 용량 안내를 두지 않습니다. 압축 후 URL 발급을 요청하고 서버가 용량을 판단합니다. 초과 시 기존 공통 에러 형식의 `MEDIA_VIDEO_FILE_SIZE_EXCEEDED`를 반환하며, S3 업로드와 제출은 시작하지 않습니다. 앱은 숫자 없는 용량 초과 문구를 표시합니다.
+- 실습 인증 앱도 압축 후 512MiB를 검사하고, 화면 안내와 오류 문구에 512MB를 표시합니다. 서버는 URL 발급 시 같은 상한으로 다시 검증합니다. 초과 시 기존 공통 에러 형식의 `MEDIA_VIDEO_FILE_SIZE_EXCEEDED`를 반환하며, S3 업로드와 제출은 시작하지 않습니다.
