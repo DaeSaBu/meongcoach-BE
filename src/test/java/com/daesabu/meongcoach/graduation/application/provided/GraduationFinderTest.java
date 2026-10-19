@@ -2,11 +2,15 @@ package com.daesabu.meongcoach.graduation.application.provided;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.BDDMockito.given;
 
 import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationDetailResult;
 import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationSubmissionRequest;
 import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationSummaryResult;
 import com.daesabu.meongcoach.graduation.domain.GraduationStatus;
+import com.daesabu.meongcoach.media.application.required.VideoDownloadUrl;
+import com.daesabu.meongcoach.media.application.required.VideoStorage;
+import com.daesabu.meongcoach.media.domain.VideoObjectKey;
 import com.daesabu.meongcoach.support.ApplicationTest;
 import com.daesabu.meongcoach.training.domain.Topic;
 import com.daesabu.meongcoach.training.domain.exception.TopicNotFoundException;
@@ -30,6 +34,9 @@ class GraduationFinderTest {
 
 	@Autowired
 	private TopicSeeder topicSeeder;
+
+	@Autowired
+	private VideoStorage videoStorage;
 
 	@Test
 	void 제출한_적이_없으면_토픽과_자격만_담아_돌려준다() {
@@ -55,6 +62,10 @@ class GraduationFinderTest {
 		Topic topic = topicSeeder.completedTopic(USER_ID, "분리불안");
 		submit(USER_ID, topic, "first");
 		submit(USER_ID, topic, "second");
+		String objectKey = "videos/graduation/42/" + topic.getId() + "/second.mp4";
+		given(videoStorage.issueDownloadUrl(new VideoObjectKey(objectKey)))
+				.willReturn(new VideoDownloadUrl("https://storage.test/" + objectKey,
+						"https://videos.test/" + objectKey, 900L));
 
 		GraduationDetailResult result = graduationFinder.findGraduation(USER_ID, topic.getId());
 

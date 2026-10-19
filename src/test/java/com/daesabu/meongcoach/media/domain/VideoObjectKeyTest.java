@@ -16,21 +16,15 @@ class VideoObjectKeyTest {
 	}
 
 	@Test
-	void 실습_인증_영상의_객체_키는_graduation_구획에_묶음_ID를_한_단계_더_둔다() {
-		VideoObjectKey key = VideoObjectKey.create(VideoUploadTarget.GRADUATION_VIDEO, 7L, 1101L, VideoType.MP4);
+	void 실습_인증_영상의_객체_키는_사용자_ID와_토픽_ID를_담는다() {
+		VideoObjectKey key = VideoObjectKey.createGraduation(7L, 1101L, VideoType.MP4);
 
 		assertThat(key.value()).matches("videos/graduation/7/1101/[0-9a-f-]{36}\\.mp4");
 	}
 
 	@Test
-	void 묶음_ID가_필요한_대상에_묶음_ID가_없으면_만들지_않는다() {
-		assertThatThrownBy(() -> VideoObjectKey.create(VideoUploadTarget.GRADUATION_VIDEO, 7L, VideoType.MP4))
-				.isInstanceOf(IllegalArgumentException.class);
-	}
-
-	@Test
-	void 묶음_ID를_쓰지_않는_대상에_묶음_ID를_주면_만들지_않는다() {
-		assertThatThrownBy(() -> VideoObjectKey.create(VideoUploadTarget.TRAINING_VIDEO, 7L, 1101L, VideoType.MP4))
+	void 실습_인증_영상은_토픽_ID가_없으면_만들지_않는다() {
+		assertThatThrownBy(() -> VideoObjectKey.createGraduation(7L, null, VideoType.MP4))
 				.isInstanceOf(IllegalArgumentException.class);
 	}
 

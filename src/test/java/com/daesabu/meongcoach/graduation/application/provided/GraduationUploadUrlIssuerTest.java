@@ -48,8 +48,9 @@ class GraduationUploadUrlIssuerTest {
 		given(videoStorage.issueUploadUrl(any(), eq(REQUEST.contentType()), eq(REQUEST.fileSizeBytes())))
 				.willAnswer(invocation -> {
 					VideoObjectKey key = invocation.getArgument(0);
-					return new VideoUploadUrl("https://storage.test/upload", "https://videos.test/" + key.value(),
-							key.value(), 900L);
+					String objectKey = key.value();
+					return new VideoUploadUrl("https://storage.test/upload", "https://videos.test/" + objectKey,
+							objectKey, 900L);
 				});
 
 		VideoUploadUrlResult result = graduationUploadUrlIssuer.issue(USER_ID, topic.getId(), REQUEST);
