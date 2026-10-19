@@ -6,6 +6,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -30,6 +31,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 	private static final String PROPERTY_ERRORS = "errors";
 	private static final String INTERNAL_ERROR_CODE = "INTERNAL_SERVER_ERROR";
 	private static final String INTERNAL_ERROR_MESSAGE = "서버 내부 오류가 발생했습니다.";
+	private static final String CONFLICT_MESSAGE = "다른 요청이 데이터를 변경했습니다. 최신 상태를 확인한 뒤 다시 시도해 주세요.";
 	private static final String UNAUTHORIZED_MESSAGE = "인증이 필요합니다.";
 	private static final String FORBIDDEN_MESSAGE = "접근 권한이 없습니다.";
 	private static final String ROLE_ONBOARDING_USER = AuthorityRole.ONBOARDING_USER.authority();
@@ -75,6 +77,13 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 		}
 		return authentication.getAuthorities().stream()
 				.anyMatch(granted -> authority.equals(granted.getAuthority()));
+	}
+
+	@ExceptionHandler(OptimisticLockingFailureException.class)
+	ProblemDetail handleOptimisticLockingFailureException(OptimisticLockingFailureException e) {
+		log.warn("동시 수정 충돌이 발생했습니다: {}", e.getClass().getSimpleName());
+		String code = HttpStatus.CONFLICT.name();
+		return problemDetail(HttpStatus.CONFLICT, code, CONFLICT_MESSAGE);
 	}
 
 	@ExceptionHandler(Exception.class)
