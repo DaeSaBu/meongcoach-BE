@@ -563,7 +563,7 @@ link:{swagger-ui}#/Graduation/graduation-submission[▶ Swagger에서 Try it out
 
 업로드를 마친 영상의 객체 키로 제출합니다. 검수 대기 중이나 보완 요청 뒤에 다시 제출해도 같은 API를 쓰며, 그때는 차수(`attemptNo`)가 올라가고 영상이 바뀌며 이전 판정 메모는 지워집니다.
 
-operation::graduation/submission[snippets='http-request,http-response,path-parameters,request-fields,response-headers,response-fields']
+operation::graduation/submission[snippets='http-request,http-response,path-parameters,request-fields,response-fields']
 
 ==== 실패 응답
 
