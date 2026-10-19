@@ -18,7 +18,6 @@ import tools.jackson.databind.ObjectMapper;
 public class VideoUploadSqsConsumer {
 
 	private static final String OBJECT_CREATED_PREFIX = "ObjectCreated";
-	private static final String GRADUATION_VIDEO_KEY_PREFIX = "videos/graduation/";
 
 	private final AiReportGenerator aiReportGenerator;
 	private final ObjectMapper objectMapper;
@@ -56,10 +55,6 @@ public class VideoUploadSqsConsumer {
 		}
 		String objectKey = objectKeyOf(record);
 		if (objectKey == null) {
-			return;
-		}
-		if (objectKey.startsWith(GRADUATION_VIDEO_KEY_PREFIX)) {
-			log.debug("실습 인증 영상이라 리포트 생성을 건너뛴다: {}", objectKey);
 			return;
 		}
 		try {
