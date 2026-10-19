@@ -62,7 +62,7 @@ class UserProfileFinderTest {
 	private User saveUserWithProfile(String nickname, String profileImageUrl) {
 		User user = userRepository.save(User.registerUser());
 		userProfileRepository.save(UserProfile.create(user,
-				new UserProfileCreateCommand(nickname, profileImageUrl, null, "INFP", "FEMALE", Set.of(), Set.of())));
+				new UserProfileCreateCommand(nickname, profileImageUrl, "INFP", Set.of(), Set.of())));
 		return user;
 	}
 
