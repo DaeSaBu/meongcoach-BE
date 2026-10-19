@@ -84,7 +84,7 @@ meongcoach:
     # 영상 분석에 쓰는 EvoLink 채팅 API(OpenAI 호환) 연동 설정. 영상은 S3 presigned GET URL로 전달한다
     evolink:
       # Cloudflare를 거치지 않는 엔드포인트. api.evolink.ai는 응답 첫 바이트가 100초를 넘으면 Cloudflare가 524로 끊는다
-      base-url: ${EVOLINK_BASE_URL:https://direct.evolink.ai}
+      base-url: https://direct.evolink.ai
       # 기본값을 두지 않아 미주입 시 기동에 실패한다 — 커밋된 키가 배포로 흘러가는 것을 막는다
       api-key: ${EVOLINK_API_KEY}
       model: ${EVOLINK_MODEL:doubao-seed-2.0-pro}
