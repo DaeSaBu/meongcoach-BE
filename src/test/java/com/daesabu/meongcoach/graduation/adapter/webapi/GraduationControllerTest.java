@@ -196,7 +196,7 @@ class GraduationControllerTest {
 						requestFields(
 								fieldWithPath("contentType").description("필수 입력. `video/mp4`, `video/quicktime`만 지원"),
 								fieldWithPath("fileSizeBytes").description(
-										"필수 입력. 영상 바이트 수. 1 이상이며 서버 설정 상한 이하(기본 209715200바이트, 200MiB). presigned URL의 Content-Length 서명에 들어간다")
+										"필수 입력. 영상 바이트 수. 1 이상 536870912바이트(512MiB) 이하. presigned URL의 Content-Length 서명에 들어간다")
 						),
 						responseFields(
 								fieldWithPath("uploadUrl").description(
@@ -209,14 +209,14 @@ class GraduationControllerTest {
 
 	@Test
 	void 영상이_상한을_넘으면_공통_에러_응답으로_발급을_거절한다() throws Exception {
-		given(graduationUploadUrlIssuer.issue(42L, TOPIC_ID, new GraduationUploadUrlRequest("video/mp4", 419430400L)))
-				.willThrow(new VideoFileSizeExceededException(419430400L, 314572800L));
+		given(graduationUploadUrlIssuer.issue(42L, TOPIC_ID, new GraduationUploadUrlRequest("video/mp4", 536870913L)))
+				.willThrow(new VideoFileSizeExceededException(536870913L, 536870912L));
 
 		mockMvc.perform(post("/api/training/topics/{topicId}/graduation/presigned-urls", TOPIC_ID)
 						.principal(CURRENT_USER)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"contentType\": \"video/mp4\", \"fileSizeBytes\": 419430400}"))
+						.content("{\"contentType\": \"video/mp4\", \"fileSizeBytes\": 536870913}"))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.code").value("MEDIA_VIDEO_FILE_SIZE_EXCEEDED"))
 				.andExpect(jsonPath("$.maxFileSizeBytes").doesNotExist())
