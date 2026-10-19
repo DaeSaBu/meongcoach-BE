@@ -12,7 +12,6 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.daesabu.meongcoach.media.application.required.VideoStorage;
 import com.daesabu.meongcoach.media.application.required.VideoUploadUrl;
-import com.daesabu.meongcoach.media.domain.VideoFileSize;
 import com.daesabu.meongcoach.media.domain.VideoObjectKey;
 import com.daesabu.meongcoach.media.domain.VideoType;
 import com.daesabu.meongcoach.media.domain.exception.InvalidVideoFileSizeException;
@@ -21,6 +20,8 @@ import com.daesabu.meongcoach.media.domain.exception.VideoFileSizeExceededExcept
 import com.daesabu.meongcoach.support.ApplicationTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -82,9 +83,17 @@ class GraduationVideoUploadUrlIssuerTest {
 		verifyNoInteractions(videoStorage);
 	}
 
+	@ParameterizedTest
+	@ValueSource(longs = {52_428_801L, 209_715_200L})
+	void AI_영상_상한을_넘어도_실습_인증_상한_이하면_URL을_발급한다(long bytes) {
+		service.issue(7L, 1101L, "video/mp4", bytes);
+
+		verify(videoStorage).issueUploadUrl(any(), eq("video/mp4"), eq(bytes));
+	}
+
 	@Test
-	void 상한을_넘는_파일_크기면_발급에_실패한다() {
-		assertThatThrownBy(() -> service.issue(7L, 1101L, "video/mp4", VideoFileSize.MAX_BYTES + 1))
+	void 실습_인증_상한_200MiB를_넘으면_발급에_실패한다() {
+		assertThatThrownBy(() -> service.issue(7L, 1101L, "video/mp4", 209_715_201L))
 				.isInstanceOf(VideoFileSizeExceededException.class);
 		verifyNoInteractions(videoStorage);
 	}

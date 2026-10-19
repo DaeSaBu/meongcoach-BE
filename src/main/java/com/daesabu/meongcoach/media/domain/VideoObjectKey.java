@@ -8,13 +8,16 @@ import java.util.regex.Pattern;
 
 public record VideoObjectKey(String value) {
 
-	private static final String FORMAT = "videos/%s/%d/%s.%s";
+	private static final String TRAINING_FORMAT = "videos/%s/%d/%s.%s";
 	private static final String GRADUATION_FORMAT = "videos/graduation/%d/%d/%s.%s";
-	private static final Pattern KEY_PATTERN =
-			Pattern.compile("videos/[a-z0-9-]+/([0-9]+)/(?:[0-9]+/)?[^/]+\\.[A-Za-z0-9]+");
+	private static final Pattern TRAINING_PATTERN =
+			Pattern.compile("videos/training/[0-9]+/[^/]+\\.[A-Za-z0-9]+");
+	private static final Pattern GRADUATION_PATTERN =
+			Pattern.compile("videos/graduation/[0-9]+/[0-9]+/[^/]+\\.[A-Za-z0-9]+");
 
 	public static VideoObjectKey create(VideoUploadTarget target, Long userId, VideoType videoType) {
-		String value = FORMAT.formatted(target.getPathSegment(), userId, UUID.randomUUID(), videoType.getExtension());
+		String value = TRAINING_FORMAT.formatted(
+				target.getPathSegment(), userId, UUID.randomUUID(), videoType.getExtension());
 		return new VideoObjectKey(value);
 	}
 
@@ -25,7 +28,10 @@ public record VideoObjectKey(String value) {
 	}
 
 	public static VideoObjectKey parse(String value) {
-		if (value == null || !KEY_PATTERN.matcher(value).matches()) {
+		if (value == null) {
+			throw new InvalidVideoObjectKeyException(value);
+		}
+		if (!TRAINING_PATTERN.matcher(value).matches() && !GRADUATION_PATTERN.matcher(value).matches()) {
 			throw new InvalidVideoObjectKeyException(value);
 		}
 		return new VideoObjectKey(value);
