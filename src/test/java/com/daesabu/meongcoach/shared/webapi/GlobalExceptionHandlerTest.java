@@ -9,12 +9,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.daesabu.meongcoach.media.domain.exception.VideoFileSizeExceededException;
 import com.daesabu.meongcoach.shared.exception.DomainException;
 import com.daesabu.meongcoach.shared.exception.ErrorCode;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -28,6 +31,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @WebMvcTest(GlobalExceptionHandlerTest.ExceptionTriggerController.class)
@@ -57,6 +61,16 @@ class GlobalExceptionHandlerTest {
 								fieldWithPath("timestamp").description("에러 발생 시각(UTC)")
 						)
 				));
+	}
+
+	@ParameterizedTest
+	@ValueSource(longs = {209_715_200L, 314_572_800L})
+	void 영상_용량_초과_응답은_예외의_실제_상한을_포함한다(long maxFileSizeBytes) throws Exception {
+		mockMvc.perform(get("/test/video-size-error").param("maxFileSizeBytes", Long.toString(maxFileSizeBytes)))
+				.andExpect(status().isBadRequest())
+				.andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+				.andExpect(jsonPath("$.code").value("MEDIA_VIDEO_FILE_SIZE_EXCEEDED"))
+				.andExpect(jsonPath("$.maxFileSizeBytes").value(maxFileSizeBytes));
 	}
 
 	@Test
@@ -232,6 +246,12 @@ class GlobalExceptionHandlerTest {
 
 	@RestController
 	static class ExceptionTriggerController {
+
+		@GetMapping("/test/video-size-error")
+		void videoSizeError(@RequestParam long maxFileSizeBytes) {
+			throw new VideoFileSizeExceededException(maxFileSizeBytes + 1, maxFileSizeBytes);
+		}
+
 
 		@GetMapping("/test/domain-error")
 		void domainError() {
