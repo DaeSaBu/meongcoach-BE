@@ -134,7 +134,7 @@ class GraduationSubmitterTest {
 	void 같은_토픽의_첫_제출이_동시에_들어와_유니크_제약에_걸리면_충돌_예외로_바꾼다() {
 		Topic topic = topicSeeder.completedTopic(USER_ID, "분리불안");
 		topicGraduationRepository.saveAndFlush(TopicGraduation.start(USER_ID, topic.getId(), key(topic, "first"), Instant.now()));
-		willReturn(Optional.empty()).given(topicGraduationRepository).findForUpdate(USER_ID, topic.getId());
+		willReturn(Optional.empty()).given(topicGraduationRepository).findByUserIdAndTopicId(USER_ID, topic.getId());
 
 		assertThatThrownBy(() -> graduationSubmitter.submit(USER_ID, topic.getId(), request(key(topic, "second"))))
 				.isInstanceOf(GraduationSubmissionConflictException.class);

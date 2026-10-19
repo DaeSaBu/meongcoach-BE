@@ -27,12 +27,11 @@ public class GraduationUploadUrlService implements GraduationUploadUrlIssuer {
 		if (!topicCompletionChecker.isCompleted(userId, topicId)) {
 			throw new TopicNotCompletedException(topicId);
 		}
-		boolean approved = topicGraduationRepository.findByUserIdAndTopicId(userId, topicId)
+		topicGraduationRepository.findByUserIdAndTopicId(userId, topicId)
 				.filter(TopicGraduation::isApproved)
-				.isPresent();
-		if (approved) {
-			throw new GraduationAlreadyApprovedException(topicId);
-		}
+				.ifPresent(graduation -> {
+					throw new GraduationAlreadyApprovedException(topicId);
+				});
 		return graduationVideoUploadUrlIssuer.issue(userId, topicId, request.contentType(), request.fileSizeBytes());
 	}
 }

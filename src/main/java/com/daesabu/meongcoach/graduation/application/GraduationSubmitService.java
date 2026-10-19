@@ -34,9 +34,10 @@ public class GraduationSubmitService implements GraduationSubmitter {
 			throw new TopicNotCompletedException(topicId);
 		}
 		Instant now = Instant.now();
-		TopicGraduation graduation = topicGraduationRepository.findForUpdate(userId, topicId)
+		TopicGraduation graduation = topicGraduationRepository.findByUserIdAndTopicId(userId, topicId)
 				.map(existing -> resubmit(existing, videoKey, now))
 				.orElseGet(() -> start(userId, topicId, videoKey, now));
+		topicGraduationRepository.flush();
 		graduationSubmissionRepository.save(GraduationSubmission.record(graduation));
 		return graduation;
 	}
