@@ -127,6 +127,27 @@ user-invocable: true
 - 최소 1인 이상 승인 후 머지한다.
 - 머지 전략은 저장소별로 통일한다 — Squash merge를 기본, 릴리스 브랜치는 Merge commit.
 
+### 릴리스 PR (`develop → main`)
+
+- 사용자가 버전을 알려 주지 않으면 먼저 묻는다. 직전 버전은 `git tag --list 'v*' --sort=-version:refname | head -n 1`로 확인한다.
+- 제목은 `chore(release): vX.Y.Z 출시`로 쓴다. 운영 CD(`cd-prod.yml`)가 merge commit 본문의 버전으로 tag를 만든다.
+  - merge commit 본문에 PR 제목이 들어가는 것은 저장소 설정(`merge_commit_message: PR_TITLE`) 덕분이다. 이 설정을 바꾸면 버전을 읽지 못한다.
+  - 제목에 버전이 없으면 직전 tag의 minor를 올린다.
+  - 직전 tag와 major.minor가 같은 버전(예: 직전 `v3.0.1`, 제목 `v3.0.0`)이면 직전 tag의 patch를 올린다(`v3.0.2`). 서버만 고쳐 다시 배포할 때는 앱 버전을 제목에 그대로 쓴다.
+  - 그보다 낮은 버전이면 배포 전에 실패한다.
+- draft 없이 생성하고 base를 확인한다.
+  ```bash
+  gh pr create --base main --head develop --title "chore(release): vX.Y.Z 출시" --body-file <본문 파일>
+  ```
+- 변경점은 `git log --first-parent --oneline origin/main..origin/develop`로 머지된 PR을 찾고, 각 PR 본문(`gh pr view <번호>`)에서 옮긴다. 커밋 제목만 보고 쓰지 않는다.
+- 본문은 다음 순서로 쓴다.
+  1. **변경 요약**: 직전 버전 이후 머지된 PR 수·번호 범위, Merge commit으로 머지해야 한다는 안내
+  2. **목차**: 직전 버전 대비 서버 변경점을 번호 매긴 목차로 나열한다. 분류는 추가 / 변경(API 계약) / 변경(데이터·동작) / 리팩토링 / 제거 / 마이그레이션 / 문서 중 해당하는 것만 쓰고, 항목마다 PR 번호를 붙인다.
+  3. **목차 항목별 상세**: 엔드포인트·필드·에러 코드 단위로 쓰고, 구 앱이 깨지는 변경에는 **[호환 깨짐]**을 붙인다.
+  4. **배포 전 확인 ⚠️**: 앱 출시, 최소 앱 버전 Secrets 상향, 롤링 배포 중 마이그레이션 영향 같은 체크리스트
+  5. **테스트 방법**
+- 사용자에게 보고할 때도 본문의 목차를 함께 보여 준다.
+
 ---
 
 ## 코드 리뷰 규칙
