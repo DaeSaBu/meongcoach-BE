@@ -1,34 +1,34 @@
-package com.daesabu.meongcoach.ai.application;
+package com.daesabu.meongcoach.ai.application.provided;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
-import com.daesabu.meongcoach.ai.application.provided.AiVideoUploadUrlIssuer;
-import com.daesabu.meongcoach.ai.application.provided.AiVideoUploadUrlResult;
 import com.daesabu.meongcoach.ai.application.required.AiReportRepository;
 import com.daesabu.meongcoach.ai.domain.AiReport;
 import com.daesabu.meongcoach.ai.domain.AiReportStatus;
 import com.daesabu.meongcoach.ai.domain.AiReportUploadCommand;
 import com.daesabu.meongcoach.ai.domain.AiTrial;
 import com.daesabu.meongcoach.ai.domain.exception.AiReportTrialExceededException;
-import com.daesabu.meongcoach.media.application.provided.VideoUploadUrlIssuer;
-import com.daesabu.meongcoach.media.application.provided.VideoUploadUrlResult;
+import com.daesabu.meongcoach.media.application.required.VideoStorage;
+import com.daesabu.meongcoach.media.application.required.VideoUploadUrl;
+import com.daesabu.meongcoach.support.ApplicationTest;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
 
-@DataJpaTest
-@Import({AiVideoUploadUrlService.class, AiReportTrialFinderService.class})
-class AiVideoUploadUrlServiceTest {
+@ApplicationTest
+class AiVideoUploadUrlIssuerTest {
 
 	private static final Long USER_ID = 7L;
 	private static final String UPLOAD_URL = "https://storage.test/upload?X-Amz-Signature=abc";
@@ -43,20 +43,12 @@ class AiVideoUploadUrlServiceTest {
 	private AiReportRepository aiReportRepository;
 
 	@Autowired
-	private RecordingVideoUploadUrlIssuer videoUploadUrlIssuer;
-
-	@TestConfiguration
-	static class MediaFakeConfig {
-
-		@Bean
-		RecordingVideoUploadUrlIssuer videoUploadUrlIssuer() {
-			return new RecordingVideoUploadUrlIssuer();
-		}
-	}
+	private VideoStorage videoStorage;
 
 	@BeforeEach
 	void setUp() {
-		videoUploadUrlIssuer.issuedRequests.clear();
+		given(videoStorage.issueUploadUrl(any(), anyString(), anyLong()))
+				.willReturn(new VideoUploadUrl(UPLOAD_URL, PUBLIC_URL, OBJECT_KEY, EXPIRES_IN_SECONDS));
 	}
 
 	@ParameterizedTest
@@ -66,7 +58,8 @@ class AiVideoUploadUrlServiceTest {
 
 		AiVideoUploadUrlResult result = service.issue(USER_ID, "video/mp4", 10485760L);
 
-		assertThat(videoUploadUrlIssuer.issuedRequests).containsExactly("7:TRAINING_VIDEO:video/mp4:10485760");
+		verify(videoStorage).issueUploadUrl(argThat(key -> key.value().startsWith("videos/training/7/")),
+				eq("video/mp4"), eq(10485760L));
 		assertThat(result.uploadUrl()).isEqualTo(UPLOAD_URL);
 		assertThat(result.publicUrl()).isEqualTo(PUBLIC_URL);
 		assertThat(result.objectKey()).isEqualTo(OBJECT_KEY);
@@ -101,7 +94,7 @@ class AiVideoUploadUrlServiceTest {
 
 		assertThatThrownBy(() -> service.issue(USER_ID, "video/mp4", 10485760L))
 				.isInstanceOf(AiReportTrialExceededException.class);
-		assertThat(videoUploadUrlIssuer.issuedRequests).isEmpty();
+		verifyNoInteractions(videoStorage);
 		assertThat(aiReportRepository.findByVideoObjectKey(OBJECT_KEY)).isEmpty();
 	}
 
@@ -130,14 +123,4 @@ class AiVideoUploadUrlServiceTest {
 		aiReportRepository.saveAndFlush(report);
 	}
 
-	static class RecordingVideoUploadUrlIssuer implements VideoUploadUrlIssuer {
-
-		private final List<String> issuedRequests = new ArrayList<>();
-
-		@Override
-		public VideoUploadUrlResult issue(Long userId, String target, String contentType, long fileSizeBytes) {
-			issuedRequests.add(userId + ":" + target + ":" + contentType + ":" + fileSizeBytes);
-			return new VideoUploadUrlResult(UPLOAD_URL, PUBLIC_URL, OBJECT_KEY, EXPIRES_IN_SECONDS);
-		}
-	}
 }

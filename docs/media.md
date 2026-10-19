@@ -22,4 +22,13 @@ media는 웹 API를 직접 노출하지 않습니다. 업로드 URL은 업로드
 
 객체 키 형식은 도메인 값 객체가 단일 소유합니다 — 영상은 `VideoObjectKey`(`videos/{대상}/{userId}/{UUID}.{확장자}`), 이미지는 `ImageObjectKey`. **사용자 ID를 키 경로에 넣는 것이 설계 포인트입니다.** 다운로드 URL 발급 시 키만으로 소유자를 검증·식별할 수 있어, 별도 매핑 테이블 없이 소유권을 다룹니다.
 
+실습 인증 영상은 `GraduationVideoUploadUrlIssuer.issue(userId, topicId, contentType, fileSizeBytes)`로 발급합니다. 객체 키는 `videos/graduation/{userId}/{topicId}/{UUID}.{확장자}`이며, 토픽 ID를 명시적으로 받습니다. 기존 `VideoUploadUrlIssuer`는 토픽 ID 없이 기존 영상 업로드 URL을 발급합니다. 두 이슈어는 영상 형식 검증과 `VideoStorage`의 S3 URL 발급 기능을 공유하며, 파일 크기는 각각 검증합니다. 토픽 존재·완료 여부와 실습 인증 자격은 호출하는 graduation 모듈에서 검증합니다.
+
 다른 모듈이 이미지 URL을 입력으로 받을 때는 `StoredImageUrlValidator`(provided)로 우리 스토리지의 URL인지 검증합니다.
+
+## 영상 크기 제한
+
+- AI 영상은 `VideoFileSize`에서 최대 50MiB(52,428,800바이트)로 제한합니다.
+- 실습 인증 영상은 `GraduationVideoFileSize.MAX_BYTES` 상수로 최대 512MiB(536,870,912바이트)로 제한합니다. 환경 변수는 사용하지 않습니다.
+- 두 경로 모두 발급 요청의 파일 크기를 S3 PUT URL의 Content-Length 서명에 포함합니다.
+- 실습 인증 앱도 압축 후 512MiB를 검사하고, 화면 안내와 오류 문구에 512MB를 표시합니다. 서버는 URL 발급 시 같은 상한으로 다시 검증합니다. 초과 시 기존 공통 에러 형식의 `MEDIA_VIDEO_FILE_SIZE_EXCEEDED`를 반환하며, S3 업로드와 제출은 시작하지 않습니다.

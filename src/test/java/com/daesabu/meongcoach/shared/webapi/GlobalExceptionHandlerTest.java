@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.daesabu.meongcoach.media.domain.exception.VideoFileSizeExceededException;
 import com.daesabu.meongcoach.shared.exception.DomainException;
 import com.daesabu.meongcoach.shared.exception.ErrorCode;
 import jakarta.validation.Valid;
@@ -57,6 +58,15 @@ class GlobalExceptionHandlerTest {
 								fieldWithPath("timestamp").description("에러 발생 시각(UTC)")
 						)
 				));
+	}
+
+	@Test
+	void 영상_용량_초과_응답은_공통_에러_형식만_반환한다() throws Exception {
+		mockMvc.perform(get("/test/video-size-error"))
+				.andExpect(status().isBadRequest())
+				.andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+				.andExpect(jsonPath("$.code").value("MEDIA_VIDEO_FILE_SIZE_EXCEEDED"))
+				.andExpect(jsonPath("$.maxFileSizeBytes").doesNotExist());
 	}
 
 	@Test
@@ -232,6 +242,12 @@ class GlobalExceptionHandlerTest {
 
 	@RestController
 	static class ExceptionTriggerController {
+
+		@GetMapping("/test/video-size-error")
+		void videoSizeError() {
+			throw new VideoFileSizeExceededException(209715201L, 209715200L);
+		}
+
 
 		@GetMapping("/test/domain-error")
 		void domainError() {

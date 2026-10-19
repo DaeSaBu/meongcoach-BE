@@ -10,12 +10,11 @@ import com.daesabu.meongcoach.media.domain.VideoType;
 import com.daesabu.meongcoach.media.domain.VideoUploadTarget;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-/**
- * 업로드 대상·영상 형식·파일 크기를 검증하고, 객체 키 생성을 도메인에 맡겨 스토리지에 업로드 URL 발급을 위임한다.
- */
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class VideoUploadUrlIssueService implements VideoUploadUrlIssuer {
 
 	private final VideoStorage videoStorage;

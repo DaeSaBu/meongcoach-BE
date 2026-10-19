@@ -1,14 +1,17 @@
 package com.daesabu.meongcoach.training.application.provided;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.daesabu.meongcoach.support.ApplicationTest;
 import com.daesabu.meongcoach.training.application.provided.dto.TopicResult;
 import com.daesabu.meongcoach.training.application.required.TopicRepository;
 import com.daesabu.meongcoach.training.application.required.TrainingCategoryRepository;
+import com.daesabu.meongcoach.training.domain.Topic;
 import com.daesabu.meongcoach.training.domain.TopicFixture;
 import com.daesabu.meongcoach.training.domain.TrainingCategory;
 import com.daesabu.meongcoach.training.domain.TrainingCategoryFixture;
+import com.daesabu.meongcoach.training.domain.exception.TopicNotFoundException;
 import jakarta.persistence.EntityManager;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -45,6 +48,24 @@ class TopicFinderTest {
 	}
 
 	@Test
+	void 토픽_ID로_토픽_하나를_조회한다() {
+		TrainingCategory category = saveCategory("기본 훈련", 1);
+		Topic saved = topicRepository.save(TopicFixture.create(category, "배변 훈련", 1, "편안한 배변 습관 만들기", null, null));
+		flushAndClear();
+
+		TopicResult topic = topicFinder.findTopic(saved.getId());
+
+		assertThat(topic.id()).isEqualTo(saved.getId());
+		assertThat(topic.title()).isEqualTo("배변 훈련");
+	}
+
+	@Test
+	void 존재하지_않는_토픽_ID로_조회하면_예외를_던진다() {
+		assertThatThrownBy(() -> topicFinder.findTopic(999L))
+				.isInstanceOf(TopicNotFoundException.class);
+	}
+
+	@Test
 	void 카테고리_정렬_순서가_토픽_정렬_순서보다_우선한다() {
 		TrainingCategory later = saveCategory("나중 카테고리", 2);
 		TrainingCategory earlier = saveCategory("먼저 카테고리", 1);
@@ -62,6 +83,29 @@ class TopicFinderTest {
 	@Test
 	void 토픽이_없으면_빈_목록을_반환한다() {
 		assertThat(topicFinder.findAllOrdered()).isEmpty();
+	}
+
+	@Test
+	void 토픽_ID_목록으로_토픽들을_조회한다() {
+		TrainingCategory category = saveCategory("기본 훈련", 1);
+		Topic first = topicRepository.save(TopicFixture.create(category, "배변 훈련", 1, null, null, null));
+		Topic second = topicRepository.save(TopicFixture.create(category, "산책 훈련", 2, null, null, null));
+		topicRepository.save(TopicFixture.create(category, "분리불안", 3, null, null, null));
+		flushAndClear();
+
+		List<TopicResult> topics = topicFinder.findTopics(List.of(first.getId(), second.getId()));
+
+		assertThat(topics).extracting(TopicResult::title).containsExactlyInAnyOrder("배변 훈련", "산책 훈련");
+	}
+
+	@Test
+	void 토픽_ID_목록에_없는_ID가_섞이면_예외를_던진다() {
+		TrainingCategory category = saveCategory("기본 훈련", 1);
+		Topic saved = topicRepository.save(TopicFixture.create(category, "배변 훈련", 1, null, null, null));
+		flushAndClear();
+
+		assertThatThrownBy(() -> topicFinder.findTopics(List.of(saved.getId(), 999L)))
+				.isInstanceOf(TopicNotFoundException.class);
 	}
 
 	private TrainingCategory saveCategory(String title, int sortOrder) {
