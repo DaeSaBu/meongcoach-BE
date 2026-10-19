@@ -28,6 +28,7 @@ import com.daesabu.meongcoach.graduation.domain.TopicGraduationFixture;
 import com.daesabu.meongcoach.graduation.domain.exception.GraduationAlreadyApprovedException;
 import com.daesabu.meongcoach.graduation.domain.exception.TopicNotCompletedException;
 import com.daesabu.meongcoach.media.application.provided.VideoUploadUrlResult;
+import com.daesabu.meongcoach.media.domain.exception.VideoFileSizeExceededException;
 import com.daesabu.meongcoach.training.application.provided.dto.TopicResult;
 import com.daesabu.meongcoach.training.domain.exception.TopicNotFoundException;
 import java.security.Principal;
@@ -204,6 +205,26 @@ class GraduationControllerTest {
 								fieldWithPath("expiresInSeconds").description("uploadUrl의 유효 시간(초)")
 						)
 				));
+	}
+
+	@Test
+	void 영상이_상한을_넘으면_발급을_거절하고_실제_상한을_반환한다() throws Exception {
+		given(graduationUploadUrlIssuer.issue(42L, TOPIC_ID, new GraduationUploadUrlRequest("video/mp4", 419430400L)))
+				.willThrow(new VideoFileSizeExceededException(419430400L, 314572800L));
+
+		mockMvc.perform(post("/api/training/topics/{topicId}/graduation/presigned-urls", TOPIC_ID)
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"contentType\": \"video/mp4\", \"fileSizeBytes\": 419430400}"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("MEDIA_VIDEO_FILE_SIZE_EXCEEDED"))
+				.andExpect(jsonPath("$.maxFileSizeBytes").value(314572800L))
+				.andExpect(jsonPath("$.uploadUrl").doesNotExist())
+				.andDo(document("graduation/upload-url-size-error",
+						responseFields(ERROR_FIELDS).and(
+								fieldWithPath("maxFileSizeBytes").description("서버가 검증에 사용한 영상 크기 상한(바이트). 앱의 용량 초과 안내에 사용한다")
+						)));
 	}
 
 	@Test
