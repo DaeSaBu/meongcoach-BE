@@ -523,7 +523,7 @@ operation::entitlement/synchronize-error[snippets='http-response,response-fields
 
 link:{swagger-ui}#/Graduation/graduation-detail[▶ Swagger에서 Try it out,window=swagger]
 
-토픽 하나의 실습 인증 현황을 조회합니다. 제출한 적이 없어도 200으로 `status: NOT_SUBMITTED`를 돌려주고, 이때 `graduationId`·`videoUrl`·`submittedAt`은 null입니다.
+토픽 하나의 실습 인증 현황을 조회합니다. 제출한 적이 없어도 200을 돌려주고, 이때 `graduation`은 null입니다.
 `eligible`은 토픽의 모든 커리큘럼을 완료했는지 여부입니다.
 
 operation::graduation/detail[snippets='http-request,http-response,path-parameters,response-fields']
