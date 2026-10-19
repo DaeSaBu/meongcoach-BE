@@ -89,7 +89,6 @@ class PostFinderTest {
 		PostListResult result = postFinder.findPosts(new PostListRequest(null, 20));
 
 		assertThat(result.posts()).extracting(this::contentOf).containsExactly("세 번째", "두 번째", "첫 번째");
-		assertThat(result.hasNext()).isFalse();
 		assertThat(result.nextCursor()).isNull();
 	}
 
@@ -101,7 +100,6 @@ class PostFinderTest {
 		PostListResult result = postFinder.findPosts(new PostListRequest(null, 2));
 
 		assertThat(result.posts()).extracting(this::contentOf).containsExactly("글 3", "글 2");
-		assertThat(result.hasNext()).isTrue();
 		assertThat(result.nextCursor()).isEqualTo(posts.get(1).getId());
 	}
 
@@ -113,7 +111,7 @@ class PostFinderTest {
 		PostListResult result = postFinder.findPosts(new PostListRequest(posts.get(1).getId(), 2));
 
 		assertThat(result.posts()).extracting(this::contentOf).containsExactly("글 1");
-		assertThat(result.hasNext()).isFalse();
+		assertThat(result.nextCursor()).isNull();
 	}
 
 	@Test
@@ -128,7 +126,6 @@ class PostFinderTest {
 		assertThat(first.posts()).extracting(this::contentOf).containsExactly("글 5", "글 4");
 		assertThat(second.posts()).extracting(this::contentOf).containsExactly("글 3", "글 2");
 		assertThat(third.posts()).extracting(this::contentOf).containsExactly("글 1");
-		assertThat(third.hasNext()).isFalse();
 		assertThat(third.nextCursor()).isNull();
 	}
 
@@ -140,7 +137,7 @@ class PostFinderTest {
 		PostListResult result = postFinder.findPosts(new PostListRequest(null, null));
 
 		assertThat(result.posts()).hasSize(20);
-		assertThat(result.hasNext()).isTrue();
+		assertThat(result.nextCursor()).isNotNull();
 	}
 
 	@Test
@@ -222,7 +219,6 @@ class PostFinderTest {
 		PostListResult result = postFinder.findPosts(new PostListRequest(null, 20));
 
 		assertThat(result.posts()).isEmpty();
-		assertThat(result.hasNext()).isFalse();
 		assertThat(result.nextCursor()).isNull();
 	}
 
