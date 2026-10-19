@@ -84,7 +84,7 @@ class GraduationVideoUploadUrlIssuerTest {
 	}
 
 	@ParameterizedTest
-	@ValueSource(longs = {52_428_801L, 209_715_200L})
+	@ValueSource(longs = {52_428_801L, 209_715_201L, 536_870_912L})
 	void AI_영상_상한을_넘어도_실습_인증_상한_이하면_URL을_발급한다(long bytes) {
 		service.issue(7L, 1101L, "video/mp4", bytes);
 
@@ -92,8 +92,8 @@ class GraduationVideoUploadUrlIssuerTest {
 	}
 
 	@Test
-	void 실습_인증_상한_200MiB를_넘으면_발급에_실패한다() {
-		assertThatThrownBy(() -> service.issue(7L, 1101L, "video/mp4", 209_715_201L))
+	void 실습_인증_상한_512MiB를_넘으면_발급에_실패한다() {
+		assertThatThrownBy(() -> service.issue(7L, 1101L, "video/mp4", 536_870_913L))
 				.isInstanceOf(VideoFileSizeExceededException.class);
 		verifyNoInteractions(videoStorage);
 	}
