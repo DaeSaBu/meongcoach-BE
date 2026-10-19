@@ -17,12 +17,11 @@ import org.springframework.transaction.annotation.Transactional;
 public class GraduationVideoUploadUrlIssueService implements GraduationVideoUploadUrlIssuer {
 
 	private final VideoStorage videoStorage;
-	private final GraduationVideoUploadProperties properties;
 
 	@Override
 	public VideoUploadUrlResult issue(Long userId, Long topicId, String contentType, long fileSizeBytes) {
 		VideoType videoType = VideoType.fromContentType(contentType);
-		GraduationVideoFileSize fileSize = new GraduationVideoFileSize(fileSizeBytes, properties.maxFileSizeBytes());
+		GraduationVideoFileSize fileSize = new GraduationVideoFileSize(fileSizeBytes);
 
 		VideoObjectKey key = VideoObjectKey.createGraduation(userId, topicId, videoType);
 		VideoUploadUrl uploadUrl = videoStorage.issueUploadUrl(key, videoType.getContentType(), fileSize.bytes());
