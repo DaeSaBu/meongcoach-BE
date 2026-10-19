@@ -2,8 +2,6 @@ package com.daesabu.meongcoach.graduation.adapter.webapi;
 
 import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.document;
 import static org.mockito.BDDMockito.given;
-import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
-import static org.springframework.restdocs.headers.HeaderDocumentation.responseHeaders;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.get;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.post;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
@@ -11,7 +9,6 @@ import static org.springframework.restdocs.payload.PayloadDocumentation.requestF
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
 import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -241,7 +238,7 @@ class GraduationControllerTest {
 	}
 
 	@Test
-	void 업로드한_영상으로_제출하고_201과_Location을_반환한다() throws Exception {
+	void 업로드한_영상으로_제출하고_201을_반환한다() throws Exception {
 		given(graduationSubmitter.submit(42L, TOPIC_ID, new GraduationSubmissionRequest(VIDEO_KEY)))
 				.willReturn(TopicGraduationFixture.create(3L, 42L, TOPIC_ID, GraduationStatus.SUBMITTED, 2, VIDEO_KEY,
 						SUBMITTED_AT, null, null));
@@ -252,7 +249,6 @@ class GraduationControllerTest {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"objectKey\": \"" + VIDEO_KEY + "\"}"))
 				.andExpect(status().isCreated())
-				.andExpect(header().string(HttpHeaders.LOCATION, "/api/training/topics/7/graduation"))
 				.andExpect(jsonPath("$.graduationId").value(3))
 				.andExpect(jsonPath("$.attemptNo").value(2))
 				.andExpect(jsonPath("$.submittedAt").value("2026-10-14T05:03:00Z"))
@@ -260,7 +256,6 @@ class GraduationControllerTest {
 						pathParameters(parameterWithName("topicId").description("토픽 ID")),
 						requestFields(fieldWithPath("objectKey").description(
 								"필수 입력. 업로드 URL 발급 응답의 objectKey. 본인이 이 토픽으로 받은 `videos/graduation/{userId}/{topicId}/` 키만 받는다")),
-						responseHeaders(headerWithName(HttpHeaders.LOCATION).description("토픽 수료 현황의 경로")),
 						responseFields(
 								fieldWithPath("graduationId").description("토픽 수료 ID. 운영자 판정에 쓴다"),
 								fieldWithPath("attemptNo").description("몇 번째 제출인지(1부터, 영상 교체 포함)"),
