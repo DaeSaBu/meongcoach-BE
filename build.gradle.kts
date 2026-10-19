@@ -170,6 +170,7 @@ val postProcessOpenApiSpec = tasks.register("postProcessOpenApiSpec") {
 		"dog" to "Dog",
 		"entitlement" to "Entitlement",
 		"graduation" to "Graduation",
+		"community" to "Community",
 	)
 	doLast {
 		val file = specFile.get().asFile

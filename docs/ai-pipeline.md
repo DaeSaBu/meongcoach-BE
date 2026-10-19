@@ -40,7 +40,8 @@ VideoUploadSqsConsumer                      (ai/adapter/consumer)
 
 ## EvoLink 연동 (ai/adapter/integration)
 
-- OpenAI 호환 chat API를 씁니다. 멀티모달(영상) 호출은 `api.evolink.ai`가 주력 엔드포인트입니다.
+- OpenAI 호환 chat API를 씁니다.
+- **엔드포인트는 `direct.evolink.ai`입니다.** `api.evolink.ai`는 Cloudflare 뒤에 있어 응답 첫 바이트가 100초를 넘으면 `524`로 끊깁니다. 스트리밍 없이 완성 응답을 기다리는 영상 분석이 여기에 걸려 `FAILED_ANALYSIS`가 됩니다. 문서의 "멀티모달은 api" 안내는 비동기 생성 작업 기준이고, 영상 입력 chat 호출은 direct에서도 동작합니다.
 - **응답은 `json_schema` + `strict`로 강제합니다.** 모델이 스키마를 엄격 준수해야 어댑터의 정제 로직을 줄일 수 있습니다. (`EvoLinkChatRequest.ResponseFormat`)
 - **`responseTimeout`은 전역 HTTP read-timeout(3초)과 별개입니다.** 영상 분석은 수십 초가 걸리므로 전역 값을 줄이거나 이 값을 없애면 분석이 전부 실패합니다. 설정 항목별 의미는 `EvoLinkProperties` javadoc이 원천입니다.
 - 실제 EvoLink 호출이 필요한 수동 테스트는 로컬 전용입니다. (`EvoLinkVideoAnalyzerManualTest`)

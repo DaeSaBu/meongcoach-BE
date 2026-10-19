@@ -29,6 +29,21 @@ class PostTest {
 	}
 
 	@Test
+	void 카드_멘션이_있으면_카드_id를_반환한다() {
+		MentionCommand mention = new MentionCommand(MentionTargetType.CARD, 10L);
+		Post post = Post.write(USER_ID, new PostWriteCommand("이 카드 따라해봤어요", mention));
+
+		assertThat(post.findMentionTargetId(MentionTargetType.CARD)).contains(10L);
+	}
+
+	@Test
+	void 멘션이_없으면_멘션_대상_id가_비어_있다() {
+		Post post = Post.write(USER_ID, new PostWriteCommand("오늘 앉아 훈련 성공!", null));
+
+		assertThat(post.findMentionTargetId(MentionTargetType.CARD)).isEmpty();
+	}
+
+	@Test
 	void 본문이_비어_있으면_작성할_수_없다() {
 		assertThatThrownBy(() -> Post.write(USER_ID, new PostWriteCommand("   ", null)))
 				.isInstanceOf(InvalidPostContentException.class);
