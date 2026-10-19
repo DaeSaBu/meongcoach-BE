@@ -16,8 +16,6 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -32,7 +30,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @WebMvcTest(GlobalExceptionHandlerTest.ExceptionTriggerController.class)
@@ -64,14 +61,13 @@ class GlobalExceptionHandlerTest {
 				));
 	}
 
-	@ParameterizedTest
-	@ValueSource(longs = {209_715_200L, 314_572_800L})
-	void 영상_용량_초과_응답은_예외의_실제_상한을_포함한다(long maxFileSizeBytes) throws Exception {
-		mockMvc.perform(get("/test/video-size-error").param("maxFileSizeBytes", Long.toString(maxFileSizeBytes)))
+	@Test
+	void 영상_용량_초과_응답은_공통_에러_형식만_반환한다() throws Exception {
+		mockMvc.perform(get("/test/video-size-error"))
 				.andExpect(status().isBadRequest())
 				.andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
 				.andExpect(jsonPath("$.code").value("MEDIA_VIDEO_FILE_SIZE_EXCEEDED"))
-				.andExpect(jsonPath("$.maxFileSizeBytes").value(maxFileSizeBytes));
+				.andExpect(jsonPath("$.maxFileSizeBytes").doesNotExist());
 	}
 
 	@Test
@@ -257,8 +253,8 @@ class GlobalExceptionHandlerTest {
 	static class ExceptionTriggerController {
 
 		@GetMapping("/test/video-size-error")
-		void videoSizeError(@RequestParam long maxFileSizeBytes) {
-			throw new VideoFileSizeExceededException(maxFileSizeBytes + 1, maxFileSizeBytes);
+		void videoSizeError() {
+			throw new VideoFileSizeExceededException(209715201L, 209715200L);
 		}
 
 
