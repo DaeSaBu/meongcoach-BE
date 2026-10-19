@@ -1,0 +1,7 @@
+package com.daesabu.meongcoach.graduation.application.provided.dto;
+
+import com.daesabu.meongcoach.graduation.domain.TopicGraduation;
+import com.daesabu.meongcoach.training.application.provided.dto.TopicResult;
+
+public record GraduationSummaryResult(TopicGraduation graduation, TopicResult topic) {
+}

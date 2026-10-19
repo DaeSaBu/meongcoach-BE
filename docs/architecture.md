@@ -20,6 +20,7 @@ com.daesabu.meongcoach
 ├── onboarding   ← 온보딩 흐름 조합
 ├── entitlement  ← 이용권 동기화. RevenueCat 활성 이용권의 사본을 둠
 ├── community    ← 게시글. 훈련 카드 등 다른 모듈의 대상을 멘션할 수 있음
+├── graduation   ← 토픽 수료(실습 인증) 제출·조회. 수료 사실의 유일한 출처
 ├── health       ← 서비스 상태 확인
 └── shared       ← 횡단 관심사 (config / security / webapi / exception / domain)
 ```
@@ -119,3 +120,9 @@ cp build/spring-modulith-docs/components.svg docs/images/module-dependencies.svg
 ```
 
 클래스 네이밍 규칙은 [code-convention 스킬](../.claude/skills/code-convention/SKILL.md)을 따릅니다.
+
+## 실습 인증 동시 수정
+
+`TopicGraduation`은 `@Version`으로 동시 수정을 감지합니다. 재제출은 일반 조회로 읽고, 수료 행을 먼저 flush한 뒤 제출 기록을 저장합니다. 다른 트랜잭션이 먼저 수정했으면 제출 전체를 롤백하며 전역 핸들러가 `409 CONFLICT`로 응답합니다. 첫 제출의 중복 생성은 회원·토픽 유니크 제약으로 막고 `GRADUATION_SUBMISSION_CONFLICT`로 응답합니다.
+
+DB에 직접 판정을 적용하는 로컬 관리자 페이지도 승인·보완 요청 SQL에서 `version = version + 1`을 함께 수행해야 합니다. 직접 SQL은 JPA의 버전 증가를 거치지 않으므로 이 갱신을 생략하면 서버가 동시 판정을 감지할 수 없습니다. 버전 컬럼은 `V17__create_topic_graduations.sql`의 테이블 생성문에 포함하며 기본값은 0입니다.
