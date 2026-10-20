@@ -582,7 +582,7 @@ link:{swagger-ui}#/Community/community-post-list[▶ Swagger에서 Try it out,wi
 `nextCursor`가 null이면 마지막 페이지입니다. `size`는 1~50이며 생략하면 20개씩 내려갑니다.
 게시글이 없으면 빈 배열로 내려갑니다.
 작성자 프로필이 없으면 `author`가, 멘션이 없거나 멘션 대상이 없으면 `mention`이 null입니다.
-`mention.targetType`은 멘션 대상 종류이며 현재는 훈련 카드(`CARD`)만 있습니다.
+`mention.targetType`은 멘션 대상 종류이며 현재는 레슨(`LESSON`)만 있습니다.
 
 operation::community/post-list[snippets='http-request,query-parameters,http-response,response-fields']
 
@@ -598,7 +598,7 @@ link:{swagger-ui}#/Community/community-post-register[▶ Swagger에서 Try it ou
 
 로그인한 회원의 커뮤니티 게시글을 작성합니다. 성공하면 201과 함께 작성한 게시글이 내려갑니다.
 `content`는 필수이며 공백만으로 채울 수 없고 500자 이하입니다.
-훈련 카드를 멘션하려면 `mention`에 대상 종류(`CARD`)와 ID를 담고, 멘션 없이 작성하면 `mention` 필드를 생략합니다.
+레슨을 멘션하려면 `mention`에 대상 종류(`LESSON`)와 ID를 담고, 멘션 없이 작성하면 `mention` 필드를 생략합니다.
 멘션 없이 작성했으면 응답의 `mention`이 null입니다.
 
 operation::community/post-register[snippets='http-request,request-fields,http-response,response-fields']
@@ -607,6 +607,6 @@ operation::community/post-register[snippets='http-request,request-fields,http-re
 
 `content`가 비어 있거나 500자를 넘으면 400(`COMMUNITY_POST_CONTENT_INVALID`), `mention.targetType`이 지원하지 않는 종류면 400(`COMMUNITY_MENTION_TARGET_TYPE_INVALID`)이 내려갑니다.
 `mention.targetType`이 비어 있거나 `mention.targetId`가 양의 정수가 아니면 400(`BAD_REQUEST`)에 `errors` 필드로 항목별 원인이 내려갑니다.
-멘션한 카드가 없으면 404(`COMMUNITY_MENTION_TARGET_NOT_FOUND`)가 내려갑니다.
+멘션한 레슨이 없으면 404(`COMMUNITY_MENTION_TARGET_NOT_FOUND`)가 내려갑니다.
 
 operation::community/post-register-error[snippets='http-response,response-fields']
