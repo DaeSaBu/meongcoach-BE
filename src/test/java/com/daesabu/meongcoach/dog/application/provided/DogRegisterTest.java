@@ -15,6 +15,7 @@ import com.daesabu.meongcoach.dog.domain.exception.InvalidPersonalityException;
 import com.daesabu.meongcoach.dog.domain.shared.Breed;
 import com.daesabu.meongcoach.dog.domain.shared.Personality;
 import com.daesabu.meongcoach.dog.domain.shared.RegisteredBreed;
+import com.daesabu.meongcoach.media.domain.exception.InvalidImageUrlException;
 import com.daesabu.meongcoach.support.ApplicationTest;
 import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;
@@ -106,6 +107,16 @@ class DogRegisterTest {
 
 		Dog dog = dogRepository.findById(dogId).orElseThrow();
 		assertThat(dog.getProfileImageUrl()).isEqualTo(imageUrl);
+	}
+
+	@Test
+	void 우리_스토리지의_URL이_아닌_프로필_이미지면_등록에_실패한다() {
+		DogRegisterInfo info = new DogRegisterInfo("초코", "POODLE", "MALE", null,
+				new BigDecimal("4.50"), Set.of(), "https://evil.example.com/a.jpg", null);
+
+		assertThatThrownBy(() -> dogRegister.register(1L, info))
+				.isInstanceOf(InvalidImageUrlException.class);
+		assertThat(dogRepository.findAllByUserIdOrderByIdAsc(1L)).isEmpty();
 	}
 
 	@Test
