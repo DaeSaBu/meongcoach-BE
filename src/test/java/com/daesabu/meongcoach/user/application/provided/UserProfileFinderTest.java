@@ -3,10 +3,8 @@ package com.daesabu.meongcoach.user.application.provided;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.daesabu.meongcoach.support.ApplicationTest;
-import com.daesabu.meongcoach.user.application.required.UserProfileRepository;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.User;
-import com.daesabu.meongcoach.user.domain.UserProfile;
 import com.daesabu.meongcoach.user.domain.UserProfileCreateCommand;
 import jakarta.persistence.EntityManager;
 import java.util.List;
@@ -22,9 +20,6 @@ class UserProfileFinderTest {
 
 	@Autowired
 	private UserRepository userRepository;
-
-	@Autowired
-	private UserProfileRepository userProfileRepository;
 
 	@Autowired
 	private EntityManager entityManager;
@@ -60,10 +55,9 @@ class UserProfileFinderTest {
 	}
 
 	private User saveUserWithProfile(String nickname, String profileImageUrl) {
-		User user = userRepository.save(User.registerUser());
-		userProfileRepository.save(UserProfile.create(user,
-				new UserProfileCreateCommand(nickname, profileImageUrl, "INFP", Set.of(), Set.of())));
-		return user;
+		User user = User.registerUser();
+		user.completeOnboarding(new UserProfileCreateCommand(nickname, profileImageUrl, "INFP", Set.of(), Set.of()));
+		return userRepository.save(user);
 	}
 
 	private void flushAndClear() {

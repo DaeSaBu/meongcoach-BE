@@ -16,7 +16,6 @@ import com.daesabu.meongcoach.media.domain.exception.InvalidImageUrlException;
 import com.daesabu.meongcoach.onboarding.application.provided.OnboardingCompleteInfo;
 import com.daesabu.meongcoach.user.application.UserProfileRegisterService;
 import com.daesabu.meongcoach.user.application.UserQueryService;
-import com.daesabu.meongcoach.user.application.required.UserProfileRepository;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.User;
 import com.daesabu.meongcoach.user.domain.UserProfile;
@@ -42,9 +41,6 @@ class OnboardingCompleteServiceTest {
 	private UserRepository userRepository;
 
 	@Autowired
-	private UserProfileRepository userProfileRepository;
-
-	@Autowired
 	private DogRepository dogRepository;
 
 	private OnboardingCompleteService service;
@@ -54,7 +50,7 @@ class OnboardingCompleteServiceTest {
 	@BeforeEach
 	void setUp() {
 		service = new OnboardingCompleteService(
-				new UserProfileRegisterService(new UserQueryService(userRepository), userProfileRepository),
+				new UserProfileRegisterService(new UserQueryService(userRepository)),
 				new DogRegisterService(dogRepository),
 				prefixValidator());
 		userId = userRepository.save(User.registerUser()).getId();
@@ -91,7 +87,7 @@ class OnboardingCompleteServiceTest {
 	void 온보딩을_완료하면_프로필과_강아지들이_함께_생성된다() {
 		List<Long> dogIds = service.complete(userId, completeInfo());
 
-		UserProfile profile = userProfileRepository.findById(userId).orElseThrow();
+		UserProfile profile = userRepository.findById(userId).orElseThrow().getProfile();
 		assertThat(profile.getNickname()).isEqualTo("멍멍이집사");
 		assertThat(dogIds).hasSize(2).doesNotContainNull();
 		List<Dog> dogs = dogRepository.findAllById(dogIds);
@@ -137,7 +133,7 @@ class OnboardingCompleteServiceTest {
 	void 교육_이력과_목표가_저장된다() {
 		service.complete(userId, completeInfo());
 
-		UserProfile profile = userProfileRepository.findById(userId).orElseThrow();
+		UserProfile profile = userRepository.findById(userId).orElseThrow().getProfile();
 		assertThat(profile.getPriorTrainingTopicIds()).containsExactly(PRIOR_TRAINING_TOPIC_ID);
 		assertThat(profile.getTrainingGoalTopicIds()).containsExactly(TRAINING_GOAL_TOPIC_ID);
 	}
@@ -149,7 +145,7 @@ class OnboardingCompleteServiceTest {
 
 		List<Long> dogIds = service.complete(userId, completeInfo(userImageUrl, dogImageUrl));
 
-		UserProfile profile = userProfileRepository.findById(userId).orElseThrow();
+		UserProfile profile = userRepository.findById(userId).orElseThrow().getProfile();
 		assertThat(profile.getProfileImageUrl()).isEqualTo(userImageUrl);
 		assertThat(dogRepository.findAllById(dogIds))
 				.filteredOn(dog -> dog.getName().equals("초코"))

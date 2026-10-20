@@ -4,11 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.daesabu.meongcoach.user.application.provided.UserProfileRegisterRequest;
-import com.daesabu.meongcoach.user.application.required.UserProfileRepository;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.Mbti;
 import com.daesabu.meongcoach.user.domain.User;
 import com.daesabu.meongcoach.user.domain.UserProfile;
+import com.daesabu.meongcoach.user.domain.UserProfileCreateCommand;
 import com.daesabu.meongcoach.user.domain.UserRole;
 import com.daesabu.meongcoach.user.domain.exception.AlreadyOnboardedException;
 import com.daesabu.meongcoach.user.domain.exception.InvalidMbtiException;
@@ -29,9 +29,6 @@ class UserProfileRegisterServiceTest {
 	private UserRepository userRepository;
 
 	@Autowired
-	private UserProfileRepository userProfileRepository;
-
-	@Autowired
 	private TestEntityManager entityManager;
 
 	private UserProfileRegisterService service;
@@ -40,7 +37,7 @@ class UserProfileRegisterServiceTest {
 
 	@BeforeEach
 	void setUp() {
-		service = new UserProfileRegisterService(new UserQueryService(userRepository), userProfileRepository);
+		service = new UserProfileRegisterService(new UserQueryService(userRepository));
 		userId = userRepository.save(User.registerUser()).getId();
 	}
 
@@ -63,7 +60,7 @@ class UserProfileRegisterServiceTest {
 		service.register(userId,
 				command("멍멍이집사", VALID_MBTI, imageUrl));
 
-		UserProfile profile = userProfileRepository.findById(userId).orElseThrow();
+		UserProfile profile = findPersistedProfile();
 		assertThat(profile.getProfileImageUrl()).isEqualTo(imageUrl);
 	}
 
@@ -72,7 +69,7 @@ class UserProfileRegisterServiceTest {
 		service.register(userId,
 				command("멍멍이집사", VALID_MBTI, null));
 
-		UserProfile profile = userProfileRepository.findById(userId).orElseThrow();
+		UserProfile profile = findPersistedProfile();
 		assertThat(profile.getProfileImageUrl()).isEmpty();
 	}
 
@@ -102,7 +99,7 @@ class UserProfileRegisterServiceTest {
 	@Test
 	void 이미_정회원이면_등록에_실패한다() {
 		User promoted = User.registerUser();
-		promoted.promoteToUser();
+		promoted.completeOnboarding(new UserProfileCreateCommand("기존회원", null, VALID_MBTI, Set.of(), Set.of()));
 		Long promotedId = userRepository.save(promoted).getId();
 
 		assertThatThrownBy(() -> service.register(promotedId,
@@ -145,6 +142,6 @@ class UserProfileRegisterServiceTest {
 	private UserProfile findPersistedProfile() {
 		entityManager.flush();
 		entityManager.clear();
-		return userProfileRepository.findById(userId).orElseThrow();
+		return userRepository.findById(userId).orElseThrow().getProfile();
 	}
 }

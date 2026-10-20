@@ -3,7 +3,6 @@ package com.daesabu.meongcoach.user.application;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.daesabu.meongcoach.user.application.required.UserProfileRepository;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.User;
 import com.daesabu.meongcoach.user.domain.UserProfile;
@@ -30,9 +29,6 @@ class UserRegisterServiceTest {
 	private UserRepository userRepository;
 
 	@Autowired
-	private UserProfileRepository userProfileRepository;
-
-	@Autowired
 	private TestEntityManager entityManager;
 
 	@Test
@@ -57,16 +53,17 @@ class UserRegisterServiceTest {
 
 	@Test
 	void 탈퇴하면_프로필_행이_삭제된다() {
-		User user = userRepository.save(User.registerUser());
-		UserProfileCreateCommand command =
-				new UserProfileCreateCommand("멍멍이집사", null, "INTJ", Set.of(), Set.of());
-		userProfileRepository.save(UserProfile.create(user, command));
+		User user = User.registerUser();
+		user.completeOnboarding(new UserProfileCreateCommand("멍멍이집사", null, "INTJ", Set.of(), Set.of()));
+		userRepository.save(user);
+		Long profileId = user.getProfile().getId();
 		flushAndClear();
 
 		userRegisterService.withdraw(user.getId());
 		flushAndClear();
 
-		assertThat(userProfileRepository.existsById(user.getId())).isFalse();
+		assertThat(entityManager.find(UserProfile.class, profileId)).isNull();
+		assertThat(userRepository.findById(user.getId()).orElseThrow().getProfile()).isNull();
 	}
 
 	@Test
