@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 
 class CommentClosureTest {
 
-	private final Post post = Post.register(7L, new PostWriteCommand("오늘 앉아 훈련 성공!", null, List.of()));
+	private final Post post = Post.register(7L, new PostRegisterCommand("오늘 앉아 훈련 성공!", null, List.of()));
 
 	@Test
 	void 자기_자신_경로는_조상과_자손이_같고_깊이가_0이다() {
