@@ -146,15 +146,15 @@ AI 분석은 수십 초가 걸리므로 요청-응답이 아니라 S3 업로드 
 
 #### media — 파일 저장소
 
-- **책임**: 이미지(R2)·영상(S3) presigned URL 발급, 객체 키 규칙과 소유권, 클라이언트가 보낸 이미지 URL이 우리 저장소 것인지 검증
-- **역할**: `ImageUploadUrlIssuer`, `VideoUploadUrlIssuer`, `VideoDownloadUrlIssuer`, `StoredImageUrlValidator`
-- **협력**: 다른 모듈을 호출하지 않고, `ai`·`onboarding`이 사용합니다. 저장소의 세부 사항을 이 모듈 안에 가둬 다른 모듈은 파일 업로드를 신경 쓰지 않습니다.
+- **책임**: 공개(R2)·비공개(S3) 스토리지의 presigned URL 발급, 객체 키 구조와 소유권, 클라이언트가 보낸 미디어 URL·객체 키가 본인이 올린 것인지 확인
+- **역할**: `MediaUploadUrlIssuer`, `MediaDownloadUrlIssuer`, `StoredMediaVerifier`
+- **협력**: 다른 모듈을 호출하지 않고, `ai`·`graduation`·`community`·`onboarding`·`dog`가 사용합니다. 경로 범위·크기 상한 같은 용도별 규칙은 각 모듈이 `MediaScope`로 정해 넘기고, media는 스토리지 세부 사항만 가둡니다.
 
 #### onboarding — 온보딩 조합
 
 - **책임**: 온보딩 화면에 필요한 데이터를 모으고, 보호자 프로필과 반려견 등록을 하나의 트랜잭션으로 완료
 - **역할**: `OnboardingMetadataFinder`, `OnboardingCompleter`, `OnboardingImageUploadUrlIssuer`
-- **협력**: 자체 도메인 없이 `user`(프로필·MBTI 목록), `dog`(반려견 등록·견종·성격 목록), `training`(토픽 목록), `media`(프로필 이미지 업로드·검증)를 조합합니다. 여러 모듈에 걸친 화면 흐름을 한 곳에 모아, 각 도메인 모듈이 서로를 알지 않아도 되게 합니다.
+- **협력**: 업로드 대상 매핑 외에는 자체 도메인 없이 `user`(프로필·MBTI 목록), `dog`(반려견 등록·견종·성격 목록), `training`(토픽 목록), `media`(프로필 이미지 업로드·검증)를 조합합니다. 여러 모듈에 걸친 화면 흐름을 한 곳에 모아, 각 도메인 모듈이 서로를 알지 않아도 되게 합니다.
 
 #### entitlement — 이용권
 
