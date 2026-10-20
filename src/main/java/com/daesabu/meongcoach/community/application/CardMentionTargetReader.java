@@ -1,15 +1,16 @@
 package com.daesabu.meongcoach.community.application;
 
+import com.daesabu.meongcoach.community.application.provided.dto.MentionTargetResult;
 import com.daesabu.meongcoach.community.domain.MentionTargetType;
 import com.daesabu.meongcoach.training.application.provided.CardFinder;
-import com.daesabu.meongcoach.training.application.provided.dto.CardSummaryResult;
+import java.util.Collection;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-public class CardMentionTargetVerifier implements MentionTargetVerifier {
+public class CardMentionTargetReader implements MentionTargetReader {
 
 	private final CardFinder cardFinder;
 
@@ -19,8 +20,9 @@ public class CardMentionTargetVerifier implements MentionTargetVerifier {
 	}
 
 	@Override
-	public boolean exists(Long targetId) {
-		List<CardSummaryResult> cards = cardFinder.findSummaries(List.of(targetId));
-		return !cards.isEmpty();
+	public List<MentionTargetResult> findSummaries(Collection<Long> targetIds) {
+		return cardFinder.findSummaries(targetIds).stream()
+				.map(card -> new MentionTargetResult(MentionTargetType.CARD, card.id(), card.title()))
+				.toList();
 	}
 }

@@ -18,7 +18,7 @@ import org.springframework.validation.annotation.Validated;
 public class PostRegisterService implements PostRegister {
 
 	private final PostRepository postRepository;
-	private final MentionTargetVerifiers mentionTargetVerifiers;
+	private final MentionTargetReaders mentionTargetReaders;
 
 	@Override
 	@Transactional
@@ -32,6 +32,6 @@ public class PostRegisterService implements PostRegister {
 
 	private void validateExistingMention(Post post) {
 		ofNullable(post.getMention())
-				.ifPresent(mentionTargetVerifiers::validateExists);
+				.ifPresent(mentionTargetReaders::validateExists);
 	}
 }
