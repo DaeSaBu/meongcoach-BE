@@ -10,6 +10,7 @@ public record VideoObjectKey(String value) {
 
 	private static final String TRAINING_FORMAT = "videos/%s/%d/%s.%s";
 	private static final String GRADUATION_FORMAT = "videos/graduation/%d/%d/%s.%s";
+	private static final String COMMUNITY_FORMAT = "videos/community-post/%d/%s.%s";
 	private static final Pattern TRAINING_PATTERN =
 			Pattern.compile("videos/training/[0-9]+/[^/]+\\.[A-Za-z0-9]+");
 	private static final Pattern GRADUATION_PATTERN =
@@ -24,6 +25,11 @@ public record VideoObjectKey(String value) {
 	public static VideoObjectKey createGraduation(Long userId, Long topicId, VideoType videoType) {
 		isTrue(topicId != null, "실습 인증 영상에는 토픽 ID가 필요하다");
 		String value = GRADUATION_FORMAT.formatted(userId, topicId, UUID.randomUUID(), videoType.getExtension());
+		return new VideoObjectKey(value);
+	}
+
+	public static VideoObjectKey createCommunity(Long userId, VideoType videoType) {
+		String value = COMMUNITY_FORMAT.formatted(userId, UUID.randomUUID(), videoType.getExtension());
 		return new VideoObjectKey(value);
 	}
 
