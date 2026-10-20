@@ -1,7 +1,7 @@
 package com.daesabu.meongcoach.community.application.provided;
 
 import com.daesabu.meongcoach.community.application.provided.dto.PostMediaUploadUrlRequest;
-import com.daesabu.meongcoach.media.application.provided.CommunityMediaUploadUrlResult;
+import com.daesabu.meongcoach.media.application.provided.dto.MediaUploadUrlResult;
 import jakarta.validation.Valid;
 
 /**
@@ -15,5 +15,5 @@ public interface PostMediaUploadUrlIssuer {
 	 * 지원하지 않는 미디어 종류면 InvalidPostMediaTypeException, 종류에 맞지 않는 형식이면
 	 * UnsupportedImageTypeException 또는 UnsupportedVideoTypeException을 던진다.
 	 */
-	CommunityMediaUploadUrlResult issue(Long userId, @Valid PostMediaUploadUrlRequest request);
+	MediaUploadUrlResult issue(Long userId, @Valid PostMediaUploadUrlRequest request);
 }

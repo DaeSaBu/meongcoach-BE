@@ -15,7 +15,7 @@ import com.daesabu.meongcoach.community.application.provided.dto.PostMediaUpload
 import com.daesabu.meongcoach.community.application.provided.dto.PostRegisterRequest;
 import com.daesabu.meongcoach.community.domain.Comment;
 import com.daesabu.meongcoach.community.domain.Post;
-import com.daesabu.meongcoach.media.application.provided.CommunityMediaUploadUrlResult;
+import com.daesabu.meongcoach.media.application.provided.dto.MediaUploadUrlResult;
 import com.daesabu.meongcoach.shared.security.CurrentUserId;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -56,7 +56,7 @@ public class CommunityController {
 	@PostMapping("/presigned-urls")
 	public PostMediaUploadUrlResponse issueMediaUploadUrl(@CurrentUserId Long userId,
 	                                                      @Valid @RequestBody PostMediaUploadUrlRequest request) {
-		CommunityMediaUploadUrlResult result = postMediaUploadUrlIssuer.issue(userId, request);
+		MediaUploadUrlResult result = postMediaUploadUrlIssuer.issue(userId, request);
 		return PostMediaUploadUrlResponse.from(result);
 	}
 

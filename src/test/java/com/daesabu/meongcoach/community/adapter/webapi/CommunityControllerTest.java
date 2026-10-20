@@ -35,7 +35,7 @@ import com.daesabu.meongcoach.community.domain.Post;
 import com.daesabu.meongcoach.community.domain.PostFixture;
 import com.daesabu.meongcoach.community.domain.exception.MentionTargetNotFoundException;
 import com.daesabu.meongcoach.community.domain.exception.PostNotFoundException;
-import com.daesabu.meongcoach.media.application.provided.CommunityMediaUploadUrlResult;
+import com.daesabu.meongcoach.media.application.provided.dto.MediaUploadUrlResult;
 import com.daesabu.meongcoach.media.domain.exception.VideoFileSizeExceededException;
 import com.daesabu.meongcoach.user.application.provided.UserProfileSummaryResult;
 import java.security.Principal;
@@ -397,9 +397,10 @@ class CommunityControllerTest {
 	@Test
 	void 게시글_미디어_업로드_URL을_발급한다() throws Exception {
 		given(postMediaUploadUrlIssuer.issue(42L, new PostMediaUploadUrlRequest("VIDEO", "video/mp4", 10_485_760L)))
-				.willReturn(new CommunityMediaUploadUrlResult(
+				.willReturn(new MediaUploadUrlResult(
 						"https://account.r2.cloudflarestorage.com/bucket/videos/community-post/42/key.mp4?X-Amz-Signature=sig",
-						"https://images.meongcoach.com/videos/community-post/42/key.mp4", 600L));
+						"https://images.meongcoach.com/videos/community-post/42/key.mp4",
+						"videos/community-post/42/key.mp4", 600L));
 
 		mockMvc.perform(post("/api/community/presigned-urls")
 						.principal(CURRENT_USER)

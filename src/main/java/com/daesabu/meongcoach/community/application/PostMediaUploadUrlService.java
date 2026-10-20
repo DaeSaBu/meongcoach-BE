@@ -3,8 +3,9 @@ package com.daesabu.meongcoach.community.application;
 import com.daesabu.meongcoach.community.application.provided.PostMediaUploadUrlIssuer;
 import com.daesabu.meongcoach.community.application.provided.dto.PostMediaUploadUrlRequest;
 import com.daesabu.meongcoach.community.domain.PostMediaType;
-import com.daesabu.meongcoach.media.application.provided.CommunityMediaUploadUrlIssuer;
-import com.daesabu.meongcoach.media.application.provided.CommunityMediaUploadUrlResult;
+import com.daesabu.meongcoach.media.application.provided.MediaUploadUrlIssuer;
+import com.daesabu.meongcoach.media.application.provided.dto.MediaUploadRequest;
+import com.daesabu.meongcoach.media.application.provided.dto.MediaUploadUrlResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
@@ -14,14 +15,13 @@ import org.springframework.validation.annotation.Validated;
 @RequiredArgsConstructor
 public class PostMediaUploadUrlService implements PostMediaUploadUrlIssuer {
 
-	private final CommunityMediaUploadUrlIssuer communityMediaUploadUrlIssuer;
+	private final MediaUploadUrlIssuer mediaUploadUrlIssuer;
 
 	@Override
-	public CommunityMediaUploadUrlResult issue(Long userId, PostMediaUploadUrlRequest request) {
+	public MediaUploadUrlResult issue(Long userId, PostMediaUploadUrlRequest request) {
 		PostMediaType mediaType = PostMediaType.from(request.mediaType());
-		if (mediaType == PostMediaType.VIDEO) {
-			return communityMediaUploadUrlIssuer.issueVideo(userId, request.contentType(), request.fileSizeBytes());
-		}
-		return communityMediaUploadUrlIssuer.issueImage(userId, request.contentType());
+		MediaUploadRequest uploadRequest = new MediaUploadRequest(mediaType.getMediaScope(), userId,
+				request.contentType(), request.fileSizeBytes(), mediaType.getMaxFileSizeBytes());
+		return mediaUploadUrlIssuer.issue(uploadRequest);
 	}
 }
