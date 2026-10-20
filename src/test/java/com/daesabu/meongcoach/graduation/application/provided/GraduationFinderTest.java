@@ -84,9 +84,10 @@ class GraduationFinderTest {
 		submit(USER_ID, topic, "first");
 		Long graduationId = jdbcTemplate.queryForObject(
 				"select id from topic_graduations where user_id = ? and topic_id = ?", Long.class, USER_ID, topic.getId());
-		jdbcTemplate.update("update topic_graduations set status = 'REVISION_REQUESTED', review_note = '다시 찍어 주세요.', "
+		jdbcTemplate.update("update graduation_submissions set status = 'REVISION_REQUESTED', review_note = '다시 찍어 주세요.', "
 				+ "reviewed_at = now(), retake_framing_icon_code = 'ENTRANCE', "
-				+ "retake_instructions = '[\"첫째 지시\", \"둘째 지시\", \"셋째 지시\"]'::jsonb where id = ?", graduationId);
+				+ "retake_instructions = '[\"첫째 지시\", \"둘째 지시\", \"셋째 지시\"]'::jsonb where id = (select current_submission_id from topic_graduations where id = ?)", graduationId);
+		jdbcTemplate.update("update topic_graduations set status = 'REVISION_REQUESTED' where id = ?", graduationId);
 		String objectKey = "videos/graduation/42/" + topic.getId() + "/first.mp4";
 		given(videoStorage.issueDownloadUrl(new VideoObjectKey(objectKey)))
 				.willReturn(new VideoDownloadUrl("https://storage.test/" + objectKey,
@@ -99,18 +100,19 @@ class GraduationFinderTest {
 	}
 
 	@Test
-	void 재제출하면_JSON_재촬영_지시를_빈_배열로_저장한다() {
+	void 재제출하면_새_차수는_빈_안내를_갖고_이전_차수의_JSON_안내는_유지한다() {
 		Topic topic = topicSeeder.completedTopic(USER_ID, "분리불안");
 		submit(USER_ID, topic, "first");
-		jdbcTemplate.update("update topic_graduations set status = 'REVISION_REQUESTED', "
+		jdbcTemplate.update("update graduation_submissions set status = 'REVISION_REQUESTED', "
 				+ "retake_framing_icon_code = 'UNKNOWN', retake_instructions = '[\"다시 찍어 주세요.\"]'::jsonb "
-				+ "where user_id = ? and topic_id = ?", USER_ID, topic.getId());
+				+ "where id = (select current_submission_id from topic_graduations where user_id = ? and topic_id = ?)", USER_ID, topic.getId());
+		jdbcTemplate.update("update topic_graduations set status = 'REVISION_REQUESTED' where user_id = ? and topic_id = ?", USER_ID, topic.getId());
 
 		submit(USER_ID, topic, "second");
 
-		assertThat(jdbcTemplate.queryForObject("select retake_instructions::text from topic_graduations "
+		assertThat(jdbcTemplate.queryForObject("select s.retake_instructions::text from topic_graduations g join graduation_submissions s on s.id = g.current_submission_id "
 				+ "where user_id = ? and topic_id = ?", String.class, USER_ID, topic.getId())).isEqualTo("[]");
-		assertThat(jdbcTemplate.queryForObject("select retake_framing_icon_code from topic_graduations "
+		assertThat(jdbcTemplate.queryForObject("select s.retake_framing_icon_code from topic_graduations g join graduation_submissions s on s.id = g.current_submission_id "
 				+ "where user_id = ? and topic_id = ?", String.class, USER_ID, topic.getId())).isNull();
 	}
 

@@ -16,8 +16,11 @@ public final class TopicGraduationFixture {
 		ReflectionTestUtils.setField(graduation, "id", id);
 		ReflectionTestUtils.setField(graduation, "status", status);
 		ReflectionTestUtils.setField(graduation, "attemptNo", attemptNo);
-		ReflectionTestUtils.setField(graduation, "reviewedAt", reviewedAt);
-		ReflectionTestUtils.setField(graduation, "reviewNote", reviewNote);
+		GraduationSubmission submission = GraduationSubmission.record(graduation);
+		ReflectionTestUtils.setField(submission, "status", GraduationSubmissionStatus.valueOf(status.name()));
+		ReflectionTestUtils.setField(submission, "reviewedAt", reviewedAt);
+		ReflectionTestUtils.setField(submission, "reviewNote", reviewNote);
+		graduation.useSubmission(submission);
 		if (status == GraduationStatus.APPROVED) {
 			ReflectionTestUtils.setField(graduation, "approvedAt", reviewedAt);
 		}
@@ -25,8 +28,8 @@ public final class TopicGraduationFixture {
 	}
 
 	public static TopicGraduation withRetakeGuide(TopicGraduation graduation, String retakeFramingIconCode, List<String> retakeInstructions) {
-		ReflectionTestUtils.setField(graduation, "retakeFramingIconCode", retakeFramingIconCode);
-		ReflectionTestUtils.setField(graduation, "retakeInstructions", new ArrayList<>(retakeInstructions));
+		ReflectionTestUtils.setField(graduation.getCurrentSubmission(), "retakeFramingIconCode", retakeFramingIconCode);
+		ReflectionTestUtils.setField(graduation.getCurrentSubmission(), "retakeInstructions", new ArrayList<>(retakeInstructions));
 		return graduation;
 	}
 }

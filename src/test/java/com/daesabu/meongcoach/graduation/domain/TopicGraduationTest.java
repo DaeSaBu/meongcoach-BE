@@ -16,7 +16,7 @@ class TopicGraduationTest {
 
 	@Test
 	void 처음_시작한_수료는_1번째_제출로_제출_상태다() {
-		TopicGraduation graduation = TopicGraduation.start(42L, 7L, FIRST_KEY, NOW);
+		TopicGraduation graduation = started();
 
 		assertThat(graduation.getUserId()).isEqualTo(42L);
 		assertThat(graduation.getTopicId()).isEqualTo(7L);
@@ -28,7 +28,7 @@ class TopicGraduationTest {
 
 	@Test
 	void 검수_대기_중에_다시_제출하면_차수를_유지하고_영상만_바꾼다() {
-		TopicGraduation graduation = TopicGraduation.start(42L, 7L, FIRST_KEY, NOW);
+		TopicGraduation graduation = started();
 
 		graduation.resubmit(SECOND_KEY, LATER);
 
@@ -40,7 +40,7 @@ class TopicGraduationTest {
 
 	@Test
 	void 보완_요청_뒤에_다시_제출하면_차수를_올리고_영상을_바꾸고_이전_판정을_지운다() {
-		TopicGraduation graduation = TopicGraduation.start(42L, 7L, FIRST_KEY, NOW);
+		TopicGraduation graduation = started();
 		graduation.requestRevision("현관 장면부터 다시 찍어 주세요.", LATER);
 		TopicGraduationFixture.withRetakeGuide(graduation, "ENTRANCE", List.of("현관이 함께 보이게 찍어 주세요."));
 
@@ -65,7 +65,7 @@ class TopicGraduationTest {
 
 	@Test
 	void 승인하면_승인_시각과_다듬은_메모를_기록한다() {
-		TopicGraduation graduation = TopicGraduation.start(42L, 7L, FIRST_KEY, NOW);
+		TopicGraduation graduation = started();
 
 		graduation.approve("  잘했어요  ", LATER);
 
@@ -77,7 +77,7 @@ class TopicGraduationTest {
 
 	@Test
 	void 빈_메모로_승인하면_메모_없이_승인한다() {
-		TopicGraduation graduation = TopicGraduation.start(42L, 7L, FIRST_KEY, NOW);
+		TopicGraduation graduation = started();
 
 		graduation.approve(" ", LATER);
 
@@ -86,7 +86,7 @@ class TopicGraduationTest {
 
 	@Test
 	void 보완_요청은_메모와_판정_시각을_기록한다() {
-		TopicGraduation graduation = TopicGraduation.start(42L, 7L, FIRST_KEY, NOW);
+		TopicGraduation graduation = started();
 
 		graduation.requestRevision("현관 장면부터 다시 찍어 주세요.", LATER);
 
@@ -97,7 +97,7 @@ class TopicGraduationTest {
 
 	@Test
 	void 보완_요청에_메모가_없으면_예외를_던진다() {
-		TopicGraduation graduation = TopicGraduation.start(42L, 7L, FIRST_KEY, NOW);
+		TopicGraduation graduation = started();
 
 		assertThatThrownBy(() -> graduation.requestRevision("  ", LATER)).isInstanceOf(IllegalArgumentException.class);
 		assertThatThrownBy(() -> graduation.requestRevision(null, LATER)).isInstanceOf(IllegalArgumentException.class);
@@ -112,8 +112,12 @@ class TopicGraduationTest {
 		assertThatThrownBy(() -> graduation.requestRevision("메모", LATER)).isInstanceOf(IllegalStateException.class);
 	}
 
+	private TopicGraduation started() {
+		return TopicGraduationFixture.create(1L, 42L, 7L, GraduationStatus.SUBMITTED, 1, FIRST_KEY, NOW, null, null);
+	}
+
 	private TopicGraduation approved() {
-		TopicGraduation graduation = TopicGraduation.start(42L, 7L, FIRST_KEY, NOW);
+		TopicGraduation graduation = started();
 		graduation.approve(null, LATER);
 		return graduation;
 	}

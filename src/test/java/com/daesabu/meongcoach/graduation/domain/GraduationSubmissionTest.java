@@ -46,9 +46,32 @@ class GraduationSubmissionTest {
 		TopicGraduation graduation = TopicGraduation.start(42L, 7L, VIDEO_KEY, SUBMITTED_AT);
 		ReflectionTestUtils.setField(graduation, "id", 1L);
 		GraduationSubmission submission = GraduationSubmission.record(graduation);
+		graduation.useSubmission(submission);
 		graduation.requestRevision("다시 찍어 주세요.", REPLACED_AT);
 		graduation.resubmit(REPLACED_KEY, REPLACED_AT);
 
 		assertThatThrownBy(() -> submission.replaceVideo(graduation)).isInstanceOf(IllegalStateException.class);
 	}
+	@Test
+	void 판정한_제출의_영상은_교체할_수_없다() {
+		TopicGraduation graduation = TopicGraduationFixture.create(1L, 42L, 7L,
+				GraduationStatus.SUBMITTED, 1, VIDEO_KEY, SUBMITTED_AT, null, null);
+		GraduationSubmission submission = graduation.getCurrentSubmission();
+		graduation.approve("잘했어요.", REPLACED_AT);
+
+		assertThatThrownBy(() -> submission.replaceVideo(graduation)).isInstanceOf(IllegalStateException.class);
+		assertThat(submission.getVideoObjectKey()).isEqualTo(VIDEO_KEY);
+		assertThat(submission.getReviewNote()).isEqualTo("잘했어요.");
+	}
+
+	@Test
+	void 다른_수료의_같은_차수로_영상을_교체할_수_없다() {
+		TopicGraduation first = TopicGraduationFixture.create(1L, 42L, 7L,
+				GraduationStatus.SUBMITTED, 1, VIDEO_KEY, SUBMITTED_AT, null, null);
+		TopicGraduation other = TopicGraduationFixture.create(2L, 42L, 8L,
+				GraduationStatus.SUBMITTED, 1, REPLACED_KEY, REPLACED_AT, null, null);
+
+		assertThatThrownBy(() -> first.getCurrentSubmission().replaceVideo(other)).isInstanceOf(IllegalStateException.class);
+	}
+
 }

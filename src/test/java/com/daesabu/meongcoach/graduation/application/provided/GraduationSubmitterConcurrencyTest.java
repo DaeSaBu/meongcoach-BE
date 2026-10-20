@@ -70,6 +70,7 @@ class GraduationSubmitterConcurrencyTest {
 	@AfterEach
 	void cleanUp() {
 		transaction.executeWithoutResult(status -> {
+			jdbcTemplate.update("update topic_graduations set current_submission_id = null where id = ?", graduationId);
 			jdbcTemplate.update("delete from graduation_submissions where graduation_id = ?", graduationId);
 			jdbcTemplate.update("delete from topic_graduations where id = ?", graduationId);
 			jdbcTemplate.update("delete from lesson_progress where user_id = ?", USER_ID);
@@ -103,9 +104,10 @@ class GraduationSubmitterConcurrencyTest {
 	void 먼저_승인된_수료는_이전_버전의_재제출로_덮어쓰지_않는다() {
 		assertThatThrownBy(() -> transaction.executeWithoutResult(status -> {
 			topicGraduationRepository.findByUserIdAndTopicId(USER_ID, topicId).orElseThrow();
-			newTransaction.executeWithoutResult(winner -> jdbcTemplate.update(
-					"update topic_graduations set status = 'APPROVED', reviewed_at = now(), approved_at = now(), version = version + 1 where id = ?",
-					graduationId));
+			newTransaction.executeWithoutResult(winner -> {
+				TopicGraduation approved = topicGraduationRepository.findById(graduationId).orElseThrow();
+				approved.approve("잘했어요.", java.time.Instant.now());
+			});
 
 			graduationSubmitter.submit(USER_ID, topicId, request("stale"));
 		})).isInstanceOf(OptimisticLockingFailureException.class);

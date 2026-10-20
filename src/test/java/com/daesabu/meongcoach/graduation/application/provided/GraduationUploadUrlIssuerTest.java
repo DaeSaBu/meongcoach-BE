@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 
+import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationSubmissionRequest;
 import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationUploadUrlRequest;
 import com.daesabu.meongcoach.graduation.application.required.TopicGraduationRepository;
 import com.daesabu.meongcoach.graduation.domain.TopicGraduation;
@@ -32,6 +33,9 @@ class GraduationUploadUrlIssuerTest {
 
 	@Autowired
 	private GraduationUploadUrlIssuer graduationUploadUrlIssuer;
+
+	@Autowired
+	private GraduationSubmitter graduationSubmitter;
 
 	@Autowired
 	private TopicGraduationRepository topicGraduationRepository;
@@ -71,7 +75,8 @@ class GraduationUploadUrlIssuerTest {
 	@Test
 	void 이미_수료한_토픽이면_예외를_던진다() {
 		Topic topic = topicSeeder.completedTopic(USER_ID, "분리불안");
-		TopicGraduation graduation = TopicGraduation.start(USER_ID, topic.getId(), "videos/graduation/42/" + topic.getId() + "/a.mp4", Instant.now());
+		TopicGraduation graduation = graduationSubmitter.submit(USER_ID, topic.getId(),
+				new GraduationSubmissionRequest("videos/graduation/42/" + topic.getId() + "/a.mp4"));
 		graduation.approve(null, Instant.now());
 		topicGraduationRepository.save(graduation);
 		topicSeeder.flushAndClear();
