@@ -106,7 +106,7 @@ class GraduationControllerTest {
 								fieldWithPath("graduation.graduationId").description("토픽 수료 ID"),
 								fieldWithPath("graduation.status").description(
 										"수료 상태. SUBMITTED(검수 대기), REVISION_REQUESTED(보완 요청), APPROVED(수료)"),
-								fieldWithPath("graduation.attemptNo").description("지금까지 제출한 횟수(영상 교체 포함)"),
+								fieldWithPath("graduation.attemptNo").description("몇 번째 제출인지(보완 요청 뒤 다시 제출하면 1 증가, 검수 대기 중 영상 교체는 유지)"),
 								fieldWithPath("graduation.videoUrl").description("가장 최근 제출 영상의 1시간 유효 presigned URL"),
 								fieldWithPath("graduation.submittedAt").description("가장 최근 제출 시각(ISO-8601, UTC)"),
 								fieldWithPath("graduation.reviewedAt").optional().description("가장 최근 제출의 판정 시각. 판정 전이면 null"),
@@ -141,7 +141,7 @@ class GraduationControllerTest {
 								fieldWithPath("graduations[].topicTitle").description("토픽 제목"),
 								fieldWithPath("graduations[].status").description(
 										"수료 상태. SUBMITTED(검수 대기), REVISION_REQUESTED(보완 요청), APPROVED(수료)"),
-								fieldWithPath("graduations[].attemptNo").description("지금까지 제출한 횟수(영상 교체 포함)"),
+								fieldWithPath("graduations[].attemptNo").description("몇 번째 제출인지(보완 요청 뒤 다시 제출하면 1 증가, 검수 대기 중 영상 교체는 유지)"),
 								fieldWithPath("graduations[].submittedAt").description("가장 최근 제출 시각(ISO-8601, UTC)"),
 								fieldWithPath("graduations[].reviewedAt").optional().description("가장 최근 제출의 판정 시각. 판정 전이면 null"),
 								fieldWithPath("graduations[].reviewNote").optional().description("운영자 메모. 없으면 null")
@@ -256,7 +256,7 @@ class GraduationControllerTest {
 								"필수 입력. 업로드 URL 발급 응답의 objectKey. 본인이 이 토픽으로 받은 `videos/graduation/{userId}/{topicId}/` 키만 받는다")),
 						responseFields(
 								fieldWithPath("graduationId").description("토픽 수료 ID. 운영자 판정에 쓴다"),
-								fieldWithPath("attemptNo").description("몇 번째 제출인지(1부터, 영상 교체 포함)"),
+								fieldWithPath("attemptNo").description("몇 번째 제출인지(1부터, 보완 요청 뒤 다시 제출하면 1 증가, 검수 대기 중 영상 교체는 유지)"),
 								fieldWithPath("submittedAt").description("제출 시각(ISO-8601, UTC)")
 						)
 				));

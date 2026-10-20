@@ -561,7 +561,7 @@ operation::graduation/upload-url-error[snippets='http-response,response-fields']
 
 link:{swagger-ui}#/Graduation/graduation-submission[▶ Swagger에서 Try it out,window=swagger]
 
-업로드를 마친 영상의 객체 키로 제출합니다. 검수 대기 중이나 보완 요청 뒤에 다시 제출해도 같은 API를 쓰며, 그때는 차수(`attemptNo`)가 올라가고 영상이 바뀌며 이전 판정 메모는 지워집니다.
+업로드를 마친 영상의 객체 키로 제출합니다. 검수 대기 중이나 보완 요청 뒤에 다시 제출해도 같은 API를 씁니다. 검수 대기 중에 다시 제출하면 차수(`attemptNo`)는 그대로 두고 영상만 바꿉니다. 보완 요청 뒤에 다시 제출하면 차수가 1 올라가고 영상이 바뀌며 이전 판정 메모는 지워집니다.
 
 operation::graduation/submission[snippets='http-request,http-response,path-parameters,request-fields,response-fields']
 
