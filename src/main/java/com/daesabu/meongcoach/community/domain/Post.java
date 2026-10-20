@@ -21,6 +21,7 @@ import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -65,6 +66,10 @@ public class Post extends BaseEntity {
 				.orElse(null);
 		post.media = createMedia(media);
 		return post;
+	}
+
+	public List<PostMedia> getMedia() {
+		return Collections.unmodifiableList(media);
 	}
 
 	private static void validateMediaCount(List<PostMediaCommand> media) {
