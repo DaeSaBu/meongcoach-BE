@@ -1,20 +1,27 @@
 package com.daesabu.meongcoach.graduation.domain;
 
 import static java.util.Objects.requireNonNull;
+import static org.springframework.util.Assert.isTrue;
 import static org.springframework.util.Assert.state;
 
 import com.daesabu.meongcoach.shared.domain.BaseTimeEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Getter
 @Entity
@@ -43,8 +50,25 @@ public class GraduationSubmission extends BaseTimeEntity {
 	@Column(nullable = false)
 	private Instant submittedAt;
 
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false, length = 30)
+	private GraduationSubmissionStatus status;
+
+	private Instant reviewedAt;
+
+	@Column(length = 500)
+	private String reviewNote;
+
+	@Column(length = 30)
+	private String retakeFramingIconCode;
+
+	@JdbcTypeCode(SqlTypes.JSON)
+	@Column(nullable = false, columnDefinition = "jsonb")
+	private List<String> retakeInstructions = new ArrayList<>();
+
 	public static GraduationSubmission record(TopicGraduation graduation) {
 		GraduationSubmission submission = new GraduationSubmission();
+		submission.status = GraduationSubmissionStatus.SUBMITTED;
 		submission.graduationId = requireNonNull(graduation.getId());
 		submission.attemptNo = graduation.getAttemptNo();
 		submission.videoObjectKey = requireNonNull(graduation.getVideoObjectKey());
@@ -53,8 +77,41 @@ public class GraduationSubmission extends BaseTimeEntity {
 	}
 
 	public void replaceVideo(TopicGraduation graduation) {
+		state(status == GraduationSubmissionStatus.SUBMITTED, "판정 전 제출의 영상만 바꿀 수 있다");
+		state(graduationId.equals(graduation.getId()), "같은 수료의 기록만 바꿀 수 있다");
 		state(attemptNo == graduation.getAttemptNo(), "같은 차수의 기록만 바꿀 수 있다");
 		this.videoObjectKey = requireNonNull(graduation.getVideoObjectKey());
 		this.submittedAt = requireNonNull(graduation.getSubmittedAt());
+	}
+
+	public List<String> getRetakeInstructions() {
+		return List.copyOf(retakeInstructions);
+	}
+
+	void approve(String note, Instant now) {
+		state(status == GraduationSubmissionStatus.SUBMITTED, "제출 상태에서만 판정할 수 있다");
+		Instant reviewedAt = requireNonNull(now);
+		this.reviewNote = normalize(note);
+		this.reviewedAt = reviewedAt;
+		this.status = GraduationSubmissionStatus.APPROVED;
+	}
+
+	void requestRevision(GraduationRevisionCommand command) {
+		state(status == GraduationSubmissionStatus.SUBMITTED, "제출 상태에서만 판정할 수 있다");
+		String normalized = normalize(command.note());
+		isTrue(normalized != null, "보완 요청에는 메모가 필요하다");
+		Instant reviewedAt = requireNonNull(command.reviewedAt());
+		this.reviewNote = normalized;
+		this.reviewedAt = reviewedAt;
+		this.retakeInstructions = new ArrayList<>(command.retakeInstructions());
+		this.retakeFramingIconCode = command.retakeFramingIconCode();
+		this.status = GraduationSubmissionStatus.REVISION_REQUESTED;
+	}
+
+	private static String normalize(String note) {
+		if (note == null || note.isBlank()) {
+			return null;
+		}
+		return note.strip();
 	}
 }

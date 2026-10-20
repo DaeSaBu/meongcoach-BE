@@ -15,6 +15,7 @@ import com.daesabu.meongcoach.support.ApplicationTest;
 import com.daesabu.meongcoach.training.domain.Topic;
 import com.daesabu.meongcoach.training.domain.exception.TopicNotFoundException;
 import java.util.List;
+import org.hibernate.Hibernate;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
@@ -86,7 +87,8 @@ class GraduationFinderTest {
 				"select id from topic_graduations where user_id = ? and topic_id = ?", Long.class, USER_ID, topic.getId());
 		jdbcTemplate.update("update graduation_submissions set status = 'REVISION_REQUESTED', review_note = '다시 찍어 주세요.', "
 				+ "reviewed_at = now(), retake_framing_icon_code = 'ENTRANCE', "
-				+ "retake_instructions = '[\"첫째 지시\", \"둘째 지시\", \"셋째 지시\"]'::jsonb where id = (select current_submission_id from topic_graduations where id = ?)", graduationId);
+				+ "retake_instructions = '[\"첫째 지시\", \"둘째 지시\", \"셋째 지시\"]'::jsonb "
+				+ "where id = (select current_submission_id from topic_graduations where id = ?)", graduationId);
 		jdbcTemplate.update("update topic_graduations set status = 'REVISION_REQUESTED' where id = ?", graduationId);
 		String objectKey = "videos/graduation/42/" + topic.getId() + "/first.mp4";
 		given(videoStorage.issueDownloadUrl(new VideoObjectKey(objectKey)))
@@ -106,13 +108,16 @@ class GraduationFinderTest {
 		jdbcTemplate.update("update graduation_submissions set status = 'REVISION_REQUESTED', "
 				+ "retake_framing_icon_code = 'UNKNOWN', retake_instructions = '[\"다시 찍어 주세요.\"]'::jsonb "
 				+ "where id = (select current_submission_id from topic_graduations where user_id = ? and topic_id = ?)", USER_ID, topic.getId());
-		jdbcTemplate.update("update topic_graduations set status = 'REVISION_REQUESTED' where user_id = ? and topic_id = ?", USER_ID, topic.getId());
+		jdbcTemplate.update("update topic_graduations set status = 'REVISION_REQUESTED' "
+				+ "where user_id = ? and topic_id = ?", USER_ID, topic.getId());
 
 		submit(USER_ID, topic, "second");
 
-		assertThat(jdbcTemplate.queryForObject("select s.retake_instructions::text from topic_graduations g join graduation_submissions s on s.id = g.current_submission_id "
+		assertThat(jdbcTemplate.queryForObject("select s.retake_instructions::text from topic_graduations g "
+				+ "join graduation_submissions s on s.id = g.current_submission_id "
 				+ "where user_id = ? and topic_id = ?", String.class, USER_ID, topic.getId())).isEqualTo("[]");
-		assertThat(jdbcTemplate.queryForObject("select s.retake_framing_icon_code from topic_graduations g join graduation_submissions s on s.id = g.current_submission_id "
+		assertThat(jdbcTemplate.queryForObject("select s.retake_framing_icon_code from topic_graduations g "
+				+ "join graduation_submissions s on s.id = g.current_submission_id "
 				+ "where user_id = ? and topic_id = ?", String.class, USER_ID, topic.getId())).isNull();
 	}
 
@@ -145,6 +150,8 @@ class GraduationFinderTest {
 				.containsExactly(second.getId(), first.getId());
 		assertThat(results).extracting(result -> result.topic().title()).containsExactly("산책 줄 당김", "분리불안");
 		assertThat(results.getFirst().graduation().getStatus()).isEqualTo(GraduationStatus.SUBMITTED);
+		assertThat(results).allSatisfy(result ->
+				assertThat(Hibernate.isInitialized(result.graduation().getCurrentSubmission())).isTrue());
 	}
 
 	@Test

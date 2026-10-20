@@ -1,7 +1,6 @@
 package com.daesabu.meongcoach.graduation.domain;
 
 import static java.util.Objects.requireNonNull;
-import static org.springframework.util.Assert.isTrue;
 import static org.springframework.util.Assert.state;
 
 import com.daesabu.meongcoach.shared.domain.BaseEntity;
@@ -9,20 +8,20 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import jakarta.persistence.Version;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
 @Getter
 @Entity
@@ -61,19 +60,11 @@ public class TopicGraduation extends BaseEntity {
 	@Column(nullable = false)
 	private Instant submittedAt;
 
-	private Instant reviewedAt;
-
-	@Column(length = 500)
-	private String reviewNote;
-
 	private Instant approvedAt;
 
-	@Column(length = 30)
-	private String retakeFramingIconCode;
-
-	@JdbcTypeCode(SqlTypes.JSON)
-	@Column(nullable = false, columnDefinition = "jsonb")
-	private List<String> retakeInstructions = new ArrayList<>();
+	@OneToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "current_submission_id", unique = true)
+	private GraduationSubmission currentSubmission;
 
 	public static TopicGraduation start(Long userId, Long topicId, String videoObjectKey, Instant now) {
 		TopicGraduation graduation = new TopicGraduation();
@@ -90,31 +81,63 @@ public class TopicGraduation extends BaseEntity {
 		state(!isApproved(), "승인된 수료에는 다시 제출할 수 없다");
 		if (status == GraduationStatus.REVISION_REQUESTED) {
 			this.attemptNo++;
+			this.currentSubmission = null;
 		}
 		this.status = GraduationStatus.SUBMITTED;
 		this.videoObjectKey = requireNonNull(videoObjectKey);
 		this.submittedAt = requireNonNull(now);
-		this.reviewedAt = null;
-		this.reviewNote = null;
-		this.retakeFramingIconCode = null;
-		this.retakeInstructions.clear();
+	}
+
+	public void useSubmission(GraduationSubmission submission) {
+		requireNonNull(submission);
+		state(id.equals(submission.getGraduationId()), "같은 수료의 기록만 연결할 수 있다");
+		state(attemptNo == submission.getAttemptNo(), "현재 차수의 기록만 연결할 수 있다");
+		this.currentSubmission = submission;
 	}
 
 	public void approve(String note, Instant now) {
 		state(isSubmitted(), "제출 상태의 수료만 승인할 수 있다");
+		requireNonNull(currentSubmission).approve(note, now);
 		this.status = GraduationStatus.APPROVED;
-		this.reviewedAt = requireNonNull(now);
-		this.reviewNote = normalize(note);
 		this.approvedAt = now;
 	}
 
 	public void requestRevision(String note, Instant now) {
+		requestRevision(new GraduationRevisionCommand(note, List.of(), null, now));
+	}
+
+	public void requestRevision(GraduationRevisionCommand command) {
 		state(isSubmitted(), "제출 상태의 수료만 보완 요청할 수 있다");
-		String normalized = normalize(note);
-		isTrue(normalized != null, "보완 요청에는 메모가 필요하다");
+		requireNonNull(currentSubmission).requestRevision(command);
 		this.status = GraduationStatus.REVISION_REQUESTED;
-		this.reviewedAt = requireNonNull(now);
-		this.reviewNote = normalized;
+	}
+
+	public Instant getReviewedAt() {
+		if (currentSubmission == null) {
+			return null;
+		}
+		return currentSubmission.getReviewedAt();
+	}
+
+	public String getReviewNote() {
+		if (currentSubmission == null) {
+			return null;
+		}
+		return currentSubmission.getReviewNote();
+	}
+
+	public List<String> getRetakeInstructions() {
+		if (currentSubmission == null) {
+			return List.of();
+		}
+		return currentSubmission.getRetakeInstructions();
+	}
+
+	public String getRetakeFramingIconCode() {
+		if (currentSubmission == null) {
+			return null;
+		}
+		return currentSubmission.getRetakeFramingIconCode();
 	}
 
 	public boolean isApproved() {
@@ -123,12 +146,5 @@ public class TopicGraduation extends BaseEntity {
 
 	public boolean isSubmitted() {
 		return status == GraduationStatus.SUBMITTED;
-	}
-
-	private static String normalize(String note) {
-		if (note == null || note.isBlank()) {
-			return null;
-		}
-		return note.strip();
 	}
 }
