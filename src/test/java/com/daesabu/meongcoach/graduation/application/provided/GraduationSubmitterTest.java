@@ -8,8 +8,10 @@ import static org.mockito.BDDMockito.willReturn;
 import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationSubmissionRequest;
 import com.daesabu.meongcoach.graduation.application.required.GraduationSubmissionRepository;
 import com.daesabu.meongcoach.graduation.application.required.TopicGraduationRepository;
+import com.daesabu.meongcoach.graduation.domain.GraduationRevisionCommand;
 import com.daesabu.meongcoach.graduation.domain.GraduationStatus;
 import com.daesabu.meongcoach.graduation.domain.GraduationSubmission;
+import com.daesabu.meongcoach.graduation.domain.GraduationSubmissionStatus;
 import com.daesabu.meongcoach.graduation.domain.TopicGraduation;
 import com.daesabu.meongcoach.graduation.domain.exception.GraduationAlreadyApprovedException;
 import com.daesabu.meongcoach.graduation.domain.exception.GraduationSubmissionConflictException;
@@ -18,6 +20,7 @@ import com.daesabu.meongcoach.graduation.domain.exception.TopicNotCompletedExcep
 import com.daesabu.meongcoach.support.ApplicationTest;
 import com.daesabu.meongcoach.training.domain.Topic;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -76,10 +79,12 @@ class GraduationSubmitterTest {
 	}
 
 	@Test
-	void 보완_요청을_받은_뒤_다시_제출하면_제출_상태로_돌아가고_메모가_지워진다() {
+	void 재제출하면_이전_차수의_판정과_재촬영_지시를_보존하고_새_차수는_판정_대기다() {
 		Topic topic = topicSeeder.completedTopic(USER_ID, "분리불안");
 		TopicGraduation first = graduationSubmitter.submit(USER_ID, topic.getId(), request(key(topic, "first")));
-		first.requestRevision("다시 찍어 주세요.", Instant.now());
+		Instant reviewedAt = Instant.parse("2026-10-20T01:00:00Z");
+		first.requestRevision(new GraduationRevisionCommand("다시 찍어 주세요.",
+				List.of("현관을 보여 주세요.", "강아지 전신을 찍어 주세요."), "ENTRANCE", reviewedAt));
 		topicSeeder.flushAndClear();
 
 		TopicGraduation second = graduationSubmitter.submit(USER_ID, topic.getId(), request(key(topic, "second")));
@@ -93,6 +98,37 @@ class GraduationSubmitterTest {
 		assertThat(graduationSubmissionRepository.findAll())
 				.extracting(GraduationSubmission::getAttemptNo, GraduationSubmission::getVideoObjectKey)
 				.containsExactlyInAnyOrder(tuple(1, key(topic, "first")), tuple(2, key(topic, "second")));
+		GraduationSubmission previous = graduationSubmissionRepository
+				.findByGraduationIdAndAttemptNo(saved.getId(), 1).orElseThrow();
+		assertThat(previous.getStatus()).isEqualTo(GraduationSubmissionStatus.REVISION_REQUESTED);
+		assertThat(previous.getReviewNote()).isEqualTo("다시 찍어 주세요.");
+		assertThat(previous.getReviewedAt()).isEqualTo(reviewedAt);
+		assertThat(previous.getRetakeInstructions()).containsExactly("현관을 보여 주세요.", "강아지 전신을 찍어 주세요.");
+		assertThat(previous.getRetakeFramingIconCode()).isEqualTo("ENTRANCE");
+		assertThat(saved.getCurrentSubmission().getAttemptNo()).isEqualTo(2);
+		assertThat(saved.getCurrentSubmission().getStatus()).isEqualTo(GraduationSubmissionStatus.SUBMITTED);
+		assertThat(saved.getRetakeInstructions()).isEmpty();
+		assertThat(saved.getRetakeFramingIconCode()).isNull();
+	}
+
+	@Test
+	void 새_차수를_승인해도_이전_차수의_보완_요청은_유지한다() {
+		Topic topic = topicSeeder.completedTopic(USER_ID, "분리불안");
+		TopicGraduation first = graduationSubmitter.submit(USER_ID, topic.getId(), request(key(topic, "first")));
+		first.requestRevision("현관을 보여 주세요.", Instant.now());
+		topicSeeder.flushAndClear();
+		TopicGraduation second = graduationSubmitter.submit(USER_ID, topic.getId(), request(key(topic, "second")));
+
+		second.approve("잘했어요.", Instant.now());
+		topicSeeder.flushAndClear();
+
+		assertThat(graduationSubmissionRepository.findByGraduationIdAndAttemptNo(second.getId(), 1).orElseThrow()
+				.getStatus()).isEqualTo(GraduationSubmissionStatus.REVISION_REQUESTED);
+		GraduationSubmission approved = graduationSubmissionRepository
+				.findByGraduationIdAndAttemptNo(second.getId(), 2).orElseThrow();
+		assertThat(approved.getStatus()).isEqualTo(GraduationSubmissionStatus.APPROVED);
+		assertThat(approved.getReviewNote()).isEqualTo("잘했어요.");
+		assertThat(approved.getReviewedAt()).isNotNull();
 	}
 
 	@Test
