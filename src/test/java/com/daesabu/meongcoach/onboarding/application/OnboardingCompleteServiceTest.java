@@ -14,8 +14,8 @@ import com.daesabu.meongcoach.dog.domain.shared.RegisteredBreed;
 import com.daesabu.meongcoach.media.application.provided.StoredImageUrlValidator;
 import com.daesabu.meongcoach.media.domain.exception.InvalidImageUrlException;
 import com.daesabu.meongcoach.onboarding.application.provided.OnboardingCompleteInfo;
-import com.daesabu.meongcoach.user.application.UserProfileRegisterService;
 import com.daesabu.meongcoach.user.application.UserQueryService;
+import com.daesabu.meongcoach.user.application.UserRegisterService;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.User;
 import com.daesabu.meongcoach.user.domain.UserProfile;
@@ -50,7 +50,7 @@ class OnboardingCompleteServiceTest {
 	@BeforeEach
 	void setUp() {
 		service = new OnboardingCompleteService(
-				new UserProfileRegisterService(new UserQueryService(userRepository)),
+				new UserRegisterService(new UserQueryService(userRepository), userRepository),
 				new DogRegisterService(dogRepository),
 				prefixValidator());
 		userId = userRepository.save(User.registerUser()).getId();
