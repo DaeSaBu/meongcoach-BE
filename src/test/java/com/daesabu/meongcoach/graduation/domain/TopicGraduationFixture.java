@@ -1,6 +1,8 @@
 package com.daesabu.meongcoach.graduation.domain;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import org.springframework.test.util.ReflectionTestUtils;
 
 public final class TopicGraduationFixture {
@@ -19,6 +21,12 @@ public final class TopicGraduationFixture {
 		if (status == GraduationStatus.APPROVED) {
 			ReflectionTestUtils.setField(graduation, "approvedAt", reviewedAt);
 		}
+		return graduation;
+	}
+
+	public static TopicGraduation withRetakeGuide(TopicGraduation graduation, String retakeFraming, List<String> retakeTips) {
+		ReflectionTestUtils.setField(graduation, "retakeFraming", retakeFraming);
+		ReflectionTestUtils.setField(graduation, "retakeTips", new ArrayList<>(retakeTips));
 		return graduation;
 	}
 }

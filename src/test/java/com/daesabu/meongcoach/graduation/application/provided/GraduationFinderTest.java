@@ -18,6 +18,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 @ApplicationTest
 @Import(TopicSeeder.class)
@@ -37,6 +38,9 @@ class GraduationFinderTest {
 
 	@Autowired
 	private VideoStorage videoStorage;
+
+	@Autowired
+	private JdbcTemplate jdbcTemplate;
 
 	@Test
 	void 제출한_적이_없으면_토픽과_자격만_담아_돌려준다() {
@@ -72,6 +76,27 @@ class GraduationFinderTest {
 		assertThat(result.graduation().getStatus()).isEqualTo(GraduationStatus.SUBMITTED);
 		assertThat(result.graduation().getAttemptNo()).isEqualTo(1);
 		assertThat(result.videoUrl()).contains("videos/graduation/42/" + topic.getId() + "/second.mp4");
+	}
+
+	@Test
+	void 운영자가_남긴_재촬영_팁을_순서대로_돌려준다() {
+		Topic topic = topicSeeder.completedTopic(USER_ID, "분리불안");
+		submit(USER_ID, topic, "first");
+		Long graduationId = jdbcTemplate.queryForObject(
+				"select id from topic_graduations where user_id = ? and topic_id = ?", Long.class, USER_ID, topic.getId());
+		jdbcTemplate.update("update topic_graduations set status = 'REVISION_REQUESTED', review_note = '다시 찍어 주세요.', "
+				+ "reviewed_at = now(), retake_framing = 'ENTRANCE' where id = ?", graduationId);
+		jdbcTemplate.update("insert into graduation_retake_tips (graduation_id, sort_order, tip) values (?, 1, '둘째 팁'), "
+				+ "(?, 0, '첫째 팁'), (?, 2, '셋째 팁')", graduationId, graduationId, graduationId);
+		String objectKey = "videos/graduation/42/" + topic.getId() + "/first.mp4";
+		given(videoStorage.issueDownloadUrl(new VideoObjectKey(objectKey)))
+				.willReturn(new VideoDownloadUrl("https://storage.test/" + objectKey,
+						"https://videos.test/" + objectKey, 900L));
+
+		GraduationDetailResult result = graduationFinder.findGraduation(USER_ID, topic.getId());
+
+		assertThat(result.graduation().getRetakeFraming()).isEqualTo("ENTRANCE");
+		assertThat(result.graduation().getRetakeTips()).containsExactly("첫째 팁", "둘째 팁", "셋째 팁");
 	}
 
 	@Test

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Instant;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class TopicGraduationTest {
@@ -41,6 +42,7 @@ class TopicGraduationTest {
 	void 보완_요청_뒤에_다시_제출하면_차수를_올리고_영상을_바꾸고_이전_판정을_지운다() {
 		TopicGraduation graduation = TopicGraduation.start(42L, 7L, FIRST_KEY, NOW);
 		graduation.requestRevision("현관 장면부터 다시 찍어 주세요.", LATER);
+		TopicGraduationFixture.withRetakeGuide(graduation, "ENTRANCE", List.of("현관이 함께 보이게 찍어 주세요."));
 
 		graduation.resubmit(SECOND_KEY, LATER);
 
@@ -50,6 +52,8 @@ class TopicGraduationTest {
 		assertThat(graduation.getSubmittedAt()).isEqualTo(LATER);
 		assertThat(graduation.getReviewedAt()).isNull();
 		assertThat(graduation.getReviewNote()).isNull();
+		assertThat(graduation.getRetakeFraming()).isNull();
+		assertThat(graduation.getRetakeTips()).isEmpty();
 	}
 
 	@Test
