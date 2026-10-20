@@ -591,3 +591,22 @@ operation::community/post-list[snippets='http-request,query-parameters,http-resp
 `size`가 1~50을 벗어나거나 `cursor`가 양의 정수가 아니면 400(`BAD_REQUEST`)에 `errors` 필드로 항목별 원인이 내려갑니다.
 
 operation::community/post-list-error[snippets='http-response,response-fields']
+
+=== 게시글 작성
+
+link:{swagger-ui}#/Community/community-post-register[▶ Swagger에서 Try it out,window=swagger]
+
+로그인한 회원의 커뮤니티 게시글을 작성합니다. 성공하면 201과 함께 작성한 게시글이 내려갑니다.
+`content`는 필수이며 공백만으로 채울 수 없고 500자 이하입니다.
+훈련 카드를 멘션하려면 `mention`에 대상 종류(`CARD`)와 ID를 담고, 멘션 없이 작성하면 `mention` 필드를 생략합니다.
+멘션 없이 작성했으면 응답의 `mention`이 null입니다.
+
+operation::community/post-register[snippets='http-request,request-fields,http-response,response-fields']
+
+==== 실패 응답
+
+`content`가 비어 있거나 500자를 넘으면 400(`COMMUNITY_POST_CONTENT_INVALID`), `mention.targetType`이 지원하지 않는 종류면 400(`COMMUNITY_MENTION_TARGET_TYPE_INVALID`)이 내려갑니다.
+`mention.targetType`이 비어 있거나 `mention.targetId`가 양의 정수가 아니면 400(`BAD_REQUEST`)에 `errors` 필드로 항목별 원인이 내려갑니다.
+멘션한 카드가 없으면 404(`COMMUNITY_MENTION_TARGET_NOT_FOUND`)가 내려갑니다.
+
+operation::community/post-register-error[snippets='http-response,response-fields']
