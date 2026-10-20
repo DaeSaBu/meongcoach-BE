@@ -10,7 +10,7 @@ import com.daesabu.meongcoach.dog.domain.DogStatus;
 import com.daesabu.meongcoach.dog.domain.shared.Breed;
 import com.daesabu.meongcoach.dog.domain.shared.Personality;
 import com.daesabu.meongcoach.dog.domain.shared.RegisteredBreed;
-import com.daesabu.meongcoach.media.domain.exception.InvalidImageUrlException;
+import com.daesabu.meongcoach.media.domain.exception.InvalidMediaUrlException;
 import com.daesabu.meongcoach.support.ApplicationTest;
 import com.daesabu.meongcoach.user.application.required.UserProfileRepository;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
@@ -145,14 +145,22 @@ class OnboardingCompleterTest {
 	void 사용자_이미지가_우리_스토리지_URL이_아니면_실패한다() {
 		assertThatThrownBy(() -> onboardingCompleter.complete(userId,
 				completeInfo("https://evil.example.com/a.jpg", null)))
-				.isInstanceOf(InvalidImageUrlException.class);
+				.isInstanceOf(InvalidMediaUrlException.class);
 	}
 
 	@Test
 	void 강아지_이미지가_우리_스토리지_URL이_아니면_실패한다() {
 		assertThatThrownBy(() -> onboardingCompleter.complete(userId,
 				completeInfo(null, "https://evil.example.com/b.jpg")))
-				.isInstanceOf(InvalidImageUrlException.class);
+				.isInstanceOf(InvalidMediaUrlException.class);
+	}
+
+	@Test
+	void 사용자_이미지가_본인이_사용자_프로필_경로에_올린_URL이_아니면_실패한다() {
+		String otherUsersImageUrl = STORAGE_BASE_URL + "images/user-profile/" + (userId + 1) + "/a.jpg";
+
+		assertThatThrownBy(() -> onboardingCompleter.complete(userId, completeInfo(otherUsersImageUrl, null)))
+				.isInstanceOf(InvalidMediaUrlException.class);
 	}
 
 	@Test
