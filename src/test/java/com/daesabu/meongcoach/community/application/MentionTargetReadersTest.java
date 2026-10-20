@@ -73,7 +73,7 @@ class MentionTargetReadersTest {
 
 	private static PostMention mentionOf(MentionTargetType targetType, Long targetId) {
 		MentionCommand mention = new MentionCommand(targetType, targetId);
-		Post post = Post.write(42L, new PostWriteCommand("본문", mention));
+		Post post = Post.register(42L, new PostWriteCommand("본문", mention));
 		return post.getMention();
 	}
 

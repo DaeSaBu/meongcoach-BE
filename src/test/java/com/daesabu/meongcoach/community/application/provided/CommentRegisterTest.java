@@ -156,7 +156,7 @@ class CommentRegisterTest {
 	}
 
 	private Post savePost() {
-		return postRepository.save(Post.write(OTHER_USER_ID, new PostWriteCommand("오늘 앉아 훈련 성공!", null)));
+		return postRepository.save(Post.register(OTHER_USER_ID, new PostWriteCommand("오늘 앉아 훈련 성공!", null)));
 	}
 
 	private Comment saveRootComment(Post post) {
