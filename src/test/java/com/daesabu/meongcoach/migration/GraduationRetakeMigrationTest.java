@@ -11,7 +11,7 @@ class GraduationRetakeMigrationTest {
 
 	@Test
 	void 기존_재촬영_팁의_순서와_구도_코드를_JSON_컬럼으로_이전한다() {
-		var dataSource = new DriverManagerDataSource("jdbc:tc:postgresql:18.3:///graduation_retake_migration", "test", "test");
+		var dataSource = new DriverManagerDataSource("jdbc:tc:postgresql:18.3:///graduation_retake_migration?TC_DAEMON=true", "test", "test");
 		Flyway.configure().dataSource(dataSource).target("18").load().migrate();
 		var jdbc = new JdbcTemplate(dataSource);
 		jdbc.update("insert into topic_graduations (id, user_id, topic_id, status, attempt_no, video_object_key, "
