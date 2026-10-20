@@ -6,7 +6,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.get;
+import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.post;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
+import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
 import static org.springframework.restdocs.request.RequestDocumentation.queryParameters;
@@ -14,12 +16,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.daesabu.meongcoach.community.application.provided.PostFinder;
+import com.daesabu.meongcoach.community.application.provided.PostRegister;
+import com.daesabu.meongcoach.community.application.provided.dto.MentionRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.MentionTargetResult;
 import com.daesabu.meongcoach.community.application.provided.dto.PostListRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.PostListResult;
+import com.daesabu.meongcoach.community.application.provided.dto.PostRegisterRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.PostResult;
+import com.daesabu.meongcoach.community.domain.MentionCommand;
 import com.daesabu.meongcoach.community.domain.MentionTargetType;
 import com.daesabu.meongcoach.community.domain.PostFixture;
+import com.daesabu.meongcoach.community.domain.exception.MentionTargetNotFoundException;
 import com.daesabu.meongcoach.user.application.provided.UserProfileSummaryResult;
 import java.security.Principal;
 import java.time.LocalDateTime;
@@ -29,6 +36,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -43,6 +51,9 @@ class CommunityControllerTest {
 
 	@MockitoBean
 	private PostFinder postFinder;
+
+	@MockitoBean
+	private PostRegister postRegister;
 
 	@Test
 	void 게시글_목록을_다음_커서와_함께_반환한다() throws Exception {
@@ -161,5 +172,100 @@ class CommunityControllerTest {
 				.andExpect(jsonPath("$.errors[0].field").value("cursor"));
 
 		then(postFinder).shouldHaveNoInteractions();
+	}
+
+	@Test
+	void 게시글을_작성하면_201과_작성한_게시글을_반환한다() throws Exception {
+		PostRegisterRequest request = new PostRegisterRequest("이 카드 따라해봤어요", new MentionRequest("CARD", 101L));
+		given(postRegister.register(42L, request)).willReturn(PostFixture.create(30L, 42L, "이 카드 따라해봤어요",
+				new MentionCommand(MentionTargetType.CARD, 101L), LocalDateTime.of(2026, 10, 20, 10, 30, 0)));
+
+		mockMvc.perform(post("/api/community/posts")
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{"content": "이 카드 따라해봤어요", "mention": {"targetType": "CARD", "targetId": 101}}
+								"""))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.postId").value(30))
+				.andExpect(jsonPath("$.userId").value(42))
+				.andExpect(jsonPath("$.content").value("이 카드 따라해봤어요"))
+				.andExpect(jsonPath("$.mention.targetType").value("CARD"))
+				.andExpect(jsonPath("$.mention.targetId").value(101))
+				.andExpect(jsonPath("$.createdAt").value("2026-10-20T10:30:00"))
+				.andDo(document("community/post-register",
+						requestFields(
+								fieldWithPath("content").description("필수 입력. 게시글 본문. 공백만으로 채울 수 없고 500자 이하"),
+								fieldWithPath("mention").optional().description("멘션 대상. 멘션 없이 작성하면 생략한다"),
+								fieldWithPath("mention.targetType").description("멘션 대상 종류. 현재 CARD(훈련 카드)만 받는다"),
+								fieldWithPath("mention.targetId").description("멘션 대상 ID(양의 정수)")
+						),
+						responseFields(
+								fieldWithPath("postId").description("작성한 게시글 ID"),
+								fieldWithPath("userId").description("작성자 회원 ID"),
+								fieldWithPath("content").description("게시글 본문"),
+								fieldWithPath("mention").optional().description("멘션 대상. 멘션 없이 작성했으면 null"),
+								fieldWithPath("mention.targetType").description("멘션 대상 종류"),
+								fieldWithPath("mention.targetId").description("멘션 대상 ID"),
+								fieldWithPath("createdAt").description("게시글 작성 시각(ISO-8601, 초 단위)")
+						)
+				));
+	}
+
+	@Test
+	void 멘션_없이_작성하면_mention을_null로_반환한다() throws Exception {
+		given(postRegister.register(42L, new PostRegisterRequest("오늘 산책 성공!", null)))
+				.willReturn(PostFixture.create(31L, 42L, "오늘 산책 성공!", LocalDateTime.of(2026, 10, 20, 11, 0, 0)));
+
+		mockMvc.perform(post("/api/community/posts")
+						.principal(CURRENT_USER)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{"content": "오늘 산책 성공!"}
+								"""))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.postId").value(31))
+				.andExpect(jsonPath("$.mention").value(nullValue()));
+	}
+
+	@Test
+	void 멘션한_카드가_없으면_404를_반환한다() throws Exception {
+		PostRegisterRequest request = new PostRegisterRequest("이 카드 따라해봤어요", new MentionRequest("CARD", 999L));
+		given(postRegister.register(42L, request)).willThrow(new MentionTargetNotFoundException(999L));
+
+		mockMvc.perform(post("/api/community/posts")
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{"content": "이 카드 따라해봤어요", "mention": {"targetType": "CARD", "targetId": 999}}
+								"""))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.code").value("COMMUNITY_MENTION_TARGET_NOT_FOUND"))
+				.andDo(document("community/post-register-error",
+						responseFields(
+								fieldWithPath("title").description("HTTP 상태 이름"),
+								fieldWithPath("status").description("HTTP 상태 코드"),
+								fieldWithPath("detail").description("사람이 읽을 수 있는 에러 설명"),
+								fieldWithPath("instance").description("에러가 발생한 요청 경로"),
+								fieldWithPath("code").description("클라이언트 분기용 에러 코드"),
+								fieldWithPath("timestamp").description("에러 발생 시각(UTC)")
+						)
+				));
+	}
+
+	@Test
+	void 멘션_대상_종류가_비어_있으면_400을_반환한다() throws Exception {
+		mockMvc.perform(post("/api/community/posts")
+						.principal(CURRENT_USER)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{"content": "본문", "mention": {"targetType": " ", "targetId": 101}}
+								"""))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.errors[0].field").value("mention.targetType"));
+
+		then(postRegister).shouldHaveNoInteractions();
 	}
 }
