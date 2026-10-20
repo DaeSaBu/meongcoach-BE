@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 import com.daesabu.meongcoach.ai.application.provided.AiReportGenerator;
-import com.daesabu.meongcoach.media.domain.exception.InvalidVideoObjectKeyException;
+import com.daesabu.meongcoach.media.domain.exception.InvalidMediaObjectKeyException;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -138,7 +138,7 @@ class VideoUploadSqsConsumerTest {
 
 	@Test
 	void 도메인_검증에_실패한_키는_버리고_정상_반환한다() throws Exception {
-		aiReportGenerator.failure = new InvalidVideoObjectKeyException("images/profile/7/key.png");
+		aiReportGenerator.failure = new InvalidMediaObjectKeyException("images/profile/7/key.png");
 
 		consumer.consume(s3Event("ObjectCreated:Put", "images/profile/7/key.png"));
 	}

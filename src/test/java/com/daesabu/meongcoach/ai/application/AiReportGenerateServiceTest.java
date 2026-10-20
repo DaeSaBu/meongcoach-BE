@@ -19,11 +19,11 @@ import com.daesabu.meongcoach.ai.domain.AiReport;
 import com.daesabu.meongcoach.ai.domain.AiReportStatus;
 import com.daesabu.meongcoach.ai.domain.AiReportUploadCommand;
 import com.daesabu.meongcoach.ai.domain.AiTrial;
+import com.daesabu.meongcoach.ai.domain.AiVideo;
 import com.daesabu.meongcoach.ai.domain.exception.ReportTitleGenerationFailedException;
 import com.daesabu.meongcoach.ai.domain.exception.VideoAnalysisFailedException;
-import com.daesabu.meongcoach.media.application.provided.VideoDownloadUrlIssuer;
-import com.daesabu.meongcoach.media.application.provided.VideoDownloadUrlResult;
-import com.daesabu.meongcoach.media.domain.exception.InvalidVideoObjectKeyException;
+import com.daesabu.meongcoach.media.application.provided.MediaDownloadUrlIssuer;
+import com.daesabu.meongcoach.media.domain.exception.InvalidMediaObjectKeyException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -41,13 +41,12 @@ class AiReportGenerateServiceTest {
 	private static final Long USER_ID = 7L;
 	private static final String OBJECT_KEY = "videos/training/7/key.mp4";
 	private static final String DOWNLOAD_URL = "https://storage.test/download?X-Amz-Signature=abc";
-	private static final String PUBLIC_URL = "https://videos.test/videos/training/7/key.mp4";
 	private static final String ANALYZED_CONTENT = "{\"recommend\":[],\"report\":[{\"subTitle\":\"영상에서 이런 행동이 보여요\","
 			+ "\"description\":\"분리불안 징후가 관찰됩니다.\"}],\"solution\":[]}";
 	private static final String GENERATED_TITLE = "분리불안 징후 행동 분석";
 	private static final IllegalStateException SAVE_FAILURE = new IllegalStateException("DB 저장 실패");
 
-	private VideoDownloadUrlIssuer downloadUrlIssuer;
+	private MediaDownloadUrlIssuer downloadUrlIssuer;
 	private VideoAnalyzer videoAnalyzer;
 	private ReportTitleGenerator reportTitleGenerator;
 	private AiReportRepository aiReportRepository;
@@ -69,7 +68,7 @@ class AiReportGenerateServiceTest {
 
 	@BeforeEach
 	void setUp() {
-		downloadUrlIssuer = mock(VideoDownloadUrlIssuer.class);
+		downloadUrlIssuer = mock(MediaDownloadUrlIssuer.class);
 		videoAnalyzer = mock(VideoAnalyzer.class);
 		reportTitleGenerator = mock(ReportTitleGenerator.class);
 		aiReportRepository = mock(AiReportRepository.class);
@@ -81,8 +80,7 @@ class AiReportGenerateServiceTest {
 		issuedReport = AiReport.uploading(
 				new AiReportUploadCommand(USER_ID, OBJECT_KEY, LocalDateTime.now().plusMinutes(15)));
 		when(aiReportRepository.findByVideoObjectKey(OBJECT_KEY)).thenReturn(Optional.of(issuedReport));
-		when(downloadUrlIssuer.issue(OBJECT_KEY))
-				.thenReturn(new VideoDownloadUrlResult(DOWNLOAD_URL, PUBLIC_URL, USER_ID, 3600L));
+		when(downloadUrlIssuer.issue(AiVideo.SCOPE, OBJECT_KEY)).thenReturn(DOWNLOAD_URL);
 		when(aiTrialFinder.findTrial(USER_ID)).thenReturn(new AiTrial(0));
 		when(videoAnalyzer.analyze(DOWNLOAD_URL)).thenReturn(ANALYZED_CONTENT);
 		when(reportTitleGenerator.generateTitle(ANALYZED_CONTENT)).thenReturn(GENERATED_TITLE);
@@ -139,11 +137,11 @@ class AiReportGenerateServiceTest {
 
 	@Test
 	void 객체_키_검증에_실패하면_PENDING으로_전이하지_않고_예외를_그대로_던진다() {
-		when(downloadUrlIssuer.issue(OBJECT_KEY)).thenThrow(new InvalidVideoObjectKeyException(OBJECT_KEY));
+		when(downloadUrlIssuer.issue(AiVideo.SCOPE, OBJECT_KEY)).thenThrow(new InvalidMediaObjectKeyException(OBJECT_KEY));
 
 		// row는 UPLOADING으로 남아 만료 뒤 FAILED_UPLOAD로 조회된다. 컨슈머가 warn 로그로 버린다
 		assertThatThrownBy(() -> service.generate(OBJECT_KEY))
-				.isInstanceOf(InvalidVideoObjectKeyException.class);
+				.isInstanceOf(InvalidMediaObjectKeyException.class);
 		verify(aiReportRepository, never()).save(any());
 		assertThat(issuedReport.getStatus()).isEqualTo(AiReportStatus.UPLOADING);
 	}
