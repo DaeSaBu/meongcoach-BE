@@ -1,6 +1,7 @@
 package com.daesabu.meongcoach.graduation.domain;
 
 import static java.util.Objects.requireNonNull;
+import static org.springframework.util.Assert.state;
 
 import com.daesabu.meongcoach.shared.domain.BaseTimeEntity;
 import jakarta.persistence.Column;
@@ -49,5 +50,11 @@ public class GraduationSubmission extends BaseTimeEntity {
 		submission.videoObjectKey = requireNonNull(graduation.getVideoObjectKey());
 		submission.submittedAt = requireNonNull(graduation.getSubmittedAt());
 		return submission;
+	}
+
+	public void replaceVideo(TopicGraduation graduation) {
+		state(attemptNo == graduation.getAttemptNo(), "같은 차수의 기록만 바꿀 수 있다");
+		this.videoObjectKey = requireNonNull(graduation.getVideoObjectKey());
+		this.submittedAt = requireNonNull(graduation.getSubmittedAt());
 	}
 }

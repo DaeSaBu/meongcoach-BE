@@ -38,8 +38,15 @@ public class GraduationSubmitService implements GraduationSubmitter {
 				.map(existing -> resubmit(existing, videoKey, now))
 				.orElseGet(() -> start(userId, topicId, videoKey, now));
 		topicGraduationRepository.flush();
-		graduationSubmissionRepository.save(GraduationSubmission.record(graduation));
+		record(graduation);
 		return graduation;
+	}
+
+	private void record(TopicGraduation graduation) {
+		graduationSubmissionRepository.findByGraduationIdAndAttemptNo(graduation.getId(), graduation.getAttemptNo())
+				.ifPresentOrElse(
+						submission -> submission.replaceVideo(graduation),
+						() -> graduationSubmissionRepository.save(GraduationSubmission.record(graduation)));
 	}
 
 	private TopicGraduation resubmit(TopicGraduation graduation, GraduationVideoKey videoKey, Instant now) {

@@ -77,8 +77,10 @@ public class TopicGraduation extends BaseEntity {
 
 	public void resubmit(String videoObjectKey, Instant now) {
 		state(!isApproved(), "승인된 수료에는 다시 제출할 수 없다");
+		if (status == GraduationStatus.REVISION_REQUESTED) {
+			this.attemptNo++;
+		}
 		this.status = GraduationStatus.SUBMITTED;
-		this.attemptNo++;
 		this.videoObjectKey = requireNonNull(videoObjectKey);
 		this.submittedAt = requireNonNull(now);
 		this.reviewedAt = null;
