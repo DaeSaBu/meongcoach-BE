@@ -158,6 +158,7 @@ operation::user/me-error[snippets='http-response,response-fields']
 액세스 토큰 인증이 필요합니다.
 
 AI 리포트용 영상 업로드 URL 발급은 무료 체험 횟수 검증과 함께 <<_ai_api,AI API>>에서 제공합니다.
+게시글 사진·영상 업로드 URL 발급은 <<_community_api,Community API>>에서 제공합니다.
 
 이미지 업로드는 다음 순서로 진행합니다.
 
@@ -592,6 +593,31 @@ operation::community/post-list[snippets='http-request,query-parameters,http-resp
 `size`가 1~50을 벗어나거나 `cursor`·`lessonId`가 양의 정수가 아니면 400(`BAD_REQUEST`)에 `errors` 필드로 항목별 원인이 내려갑니다.
 
 operation::community/post-list-error[snippets='http-response,response-fields']
+
+=== 게시글 미디어 업로드 URL 발급
+
+link:{swagger-ui}#/Community/community-post-media-upload-url[▶ Swagger에서 Try it out,window=swagger]
+
+게시글에 첨부할 사진·영상을 Cloudflare R2에 직접 올리기 위한 업로드 URL을 파일 하나당 하나씩 발급합니다.
+여러 파일을 첨부하면 파일 수만큼 호출합니다.
+
+1. `mediaType`(`IMAGE`·`VIDEO`), `contentType`, `fileSizeBytes`를 보내 `uploadUrl`과 `publicUrl`을 받습니다.
+2. `uploadUrl`로 파일을 HTTP `PUT` 합니다. `Content-Type` 헤더는 발급 요청의 `contentType`과 같아야 하고, 영상은 `fileSizeBytes`와 같은 크기로 올려야 합니다.
+3. 업로드가 성공하면 `publicUrl`을 게시글 작성 요청에 담아 등록합니다.
+
+사진은 `image/jpeg`·`image/png`·`image/webp`, 영상은 `video/mp4`·`video/quicktime`을 받습니다.
+영상은 512MiB(536,870,912바이트) 이하만 발급하며, 사진은 크기 상한이 없습니다.
+`uploadUrl`은 `expiresInSeconds`초 뒤에 만료되므로 만료되면 다시 발급받습니다.
+
+operation::community/post-media-upload-url[snippets='http-request,request-fields,http-response,response-fields']
+
+==== 실패 응답
+
+`mediaType`이 지원하지 않는 종류면 400(`COMMUNITY_POST_MEDIA_TYPE_INVALID`), `contentType`이 미디어 종류에 맞지 않으면 400(`MEDIA_UNSUPPORTED_IMAGE_TYPE` 또는 `MEDIA_UNSUPPORTED_VIDEO_TYPE`)이 내려갑니다.
+영상이 512MiB를 넘으면 400(`MEDIA_VIDEO_FILE_SIZE_EXCEEDED`)이 내려갑니다.
+필드가 비어 있거나 `fileSizeBytes`가 양의 정수가 아니면 400(`BAD_REQUEST`)에 `errors` 필드로 항목별 원인이 내려갑니다.
+
+operation::community/post-media-upload-url-error[snippets='http-response,response-fields']
 
 === 게시글 작성
 
