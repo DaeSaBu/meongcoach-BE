@@ -6,6 +6,7 @@ import com.daesabu.meongcoach.community.domain.Comment;
 import com.daesabu.meongcoach.community.domain.CommentClosure;
 import com.daesabu.meongcoach.community.domain.Post;
 import com.daesabu.meongcoach.community.domain.PostWriteCommand;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -55,7 +56,7 @@ class CommentClosureRepositoryTest {
 	}
 
 	private Comment persistComment() {
-		Post post = entityManager.persist(Post.register(USER_ID, new PostWriteCommand("오늘 앉아 훈련 성공!", null)));
+		Post post = entityManager.persist(Post.register(USER_ID, new PostWriteCommand("오늘 앉아 훈련 성공!", null, List.of())));
 		return entityManager.persist(Comment.register(post, USER_ID, "축하해요!"));
 	}
 }
