@@ -1,7 +1,7 @@
 package com.daesabu.meongcoach.graduation.application.provided;
 
 import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationUploadUrlRequest;
-import com.daesabu.meongcoach.media.application.provided.VideoUploadUrlResult;
+import com.daesabu.meongcoach.media.application.provided.dto.MediaUploadUrlResult;
 
 /**
  * 실습 인증 영상 업로드 URL 발급 공개 API.
@@ -13,5 +13,5 @@ public interface GraduationUploadUrlIssuer {
 	 * 토픽이 없으면 TopicNotFoundException, 토픽의 커리큘럼을 다 마치지 않았으면 TopicNotCompletedException,
 	 * 이미 수료한 토픽이면 GraduationAlreadyApprovedException을 던진다.
 	 */
-	VideoUploadUrlResult issue(Long userId, Long topicId, GraduationUploadUrlRequest request);
+	MediaUploadUrlResult issue(Long userId, Long topicId, GraduationUploadUrlRequest request);
 }

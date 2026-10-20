@@ -2,19 +2,13 @@ package com.daesabu.meongcoach.graduation.application.provided;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.BDDMockito.given;
 
 import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationUploadUrlRequest;
 import com.daesabu.meongcoach.graduation.application.required.TopicGraduationRepository;
 import com.daesabu.meongcoach.graduation.domain.TopicGraduation;
 import com.daesabu.meongcoach.graduation.domain.exception.GraduationAlreadyApprovedException;
 import com.daesabu.meongcoach.graduation.domain.exception.TopicNotCompletedException;
-import com.daesabu.meongcoach.media.application.provided.VideoUploadUrlResult;
-import com.daesabu.meongcoach.media.application.required.VideoStorage;
-import com.daesabu.meongcoach.media.application.required.VideoUploadUrl;
-import com.daesabu.meongcoach.media.domain.VideoObjectKey;
+import com.daesabu.meongcoach.media.application.provided.dto.MediaUploadUrlResult;
 import com.daesabu.meongcoach.support.ApplicationTest;
 import com.daesabu.meongcoach.training.domain.Topic;
 import com.daesabu.meongcoach.training.domain.exception.TopicNotFoundException;
@@ -39,21 +33,11 @@ class GraduationUploadUrlIssuerTest {
 	@Autowired
 	private TopicSeeder topicSeeder;
 
-	@Autowired
-	private VideoStorage videoStorage;
-
 	@Test
 	void 토픽을_완료한_회원에게_본인_토픽_실습_영상_경로의_업로드_URL을_발급한다() {
 		Topic topic = topicSeeder.completedTopic(USER_ID, "분리불안");
-		given(videoStorage.issueUploadUrl(any(), eq(REQUEST.contentType()), eq(REQUEST.fileSizeBytes())))
-				.willAnswer(invocation -> {
-					VideoObjectKey key = invocation.getArgument(0);
-					String objectKey = key.value();
-					return new VideoUploadUrl("https://storage.test/upload", "https://videos.test/" + objectKey,
-							objectKey, 900L);
-				});
 
-		VideoUploadUrlResult result = graduationUploadUrlIssuer.issue(USER_ID, topic.getId(), REQUEST);
+		MediaUploadUrlResult result = graduationUploadUrlIssuer.issue(USER_ID, topic.getId(), REQUEST);
 
 		assertThat(result.objectKey()).startsWith("videos/graduation/42/" + topic.getId() + "/").endsWith(".mp4");
 		assertThat(result.uploadUrl()).isNotBlank();
