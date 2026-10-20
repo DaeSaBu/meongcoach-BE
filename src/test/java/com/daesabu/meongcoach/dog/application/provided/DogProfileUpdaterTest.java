@@ -1,9 +1,8 @@
-package com.daesabu.meongcoach.dog.application;
+package com.daesabu.meongcoach.dog.application.provided;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.daesabu.meongcoach.dog.application.provided.DogProfileUpdater;
 import com.daesabu.meongcoach.dog.application.required.DogRepository;
 import com.daesabu.meongcoach.dog.domain.Dog;
 import com.daesabu.meongcoach.dog.domain.DogProfileUpdateCommand;
@@ -14,18 +13,16 @@ import com.daesabu.meongcoach.dog.domain.exception.DogNotFoundException;
 import com.daesabu.meongcoach.dog.domain.shared.Breed;
 import com.daesabu.meongcoach.dog.domain.shared.Personality;
 import com.daesabu.meongcoach.dog.domain.shared.RegisteredBreed;
+import com.daesabu.meongcoach.support.ApplicationTest;
+import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
-import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
-import org.springframework.context.annotation.Import;
 
-@DataJpaTest
-@Import(DogProfileUpdateService.class)
-class DogProfileUpdateServiceTest {
+@ApplicationTest
+class DogProfileUpdaterTest {
 
 	private static final Long USER_ID = 42L;
 	private static final Long OTHER_USER_ID = 99L;
@@ -41,7 +38,7 @@ class DogProfileUpdateServiceTest {
 	private DogRepository dogRepository;
 
 	@Autowired
-	private TestEntityManager entityManager;
+	private EntityManager entityManager;
 
 	@Test
 	void 소유_강아지의_프로필_전체를_교체해_저장한다() {
