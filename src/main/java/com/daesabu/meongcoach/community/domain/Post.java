@@ -53,7 +53,7 @@ public class Post extends BaseEntity {
 	@OrderBy("sortOrder ASC")
 	private List<PostMedia> media = new ArrayList<>();
 
-	public static Post register(Long userId, PostWriteCommand command) {
+	public static Post register(Long userId, PostRegisterCommand command) {
 		List<PostMediaCommand> media = requireNonNullElse(command.media(), List.of());
 		validateMediaCount(media);
 
