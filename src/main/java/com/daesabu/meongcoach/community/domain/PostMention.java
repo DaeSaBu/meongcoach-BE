@@ -38,8 +38,4 @@ public class PostMention extends BaseTimeEntity {
 		mention.targetId = requireNonNull(command.targetId());
 		return mention;
 	}
-
-	public boolean isTarget(MentionTargetType type) {
-		return this.targetType == type;
-	}
 }

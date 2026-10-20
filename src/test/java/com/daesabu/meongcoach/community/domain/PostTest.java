@@ -24,7 +24,7 @@ class PostTest {
 
 		Post post = Post.write(USER_ID, new PostWriteCommand("이 카드 따라해봤어요", mention));
 
-		assertThat(post.getMention().isTarget(MentionTargetType.CARD)).isTrue();
+		assertThat(post.getMention().getTargetType()).isEqualTo(MentionTargetType.CARD);
 		assertThat(post.getMention().getTargetId()).isEqualTo(10L);
 	}
 
