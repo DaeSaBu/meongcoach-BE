@@ -17,6 +17,7 @@ import com.daesabu.meongcoach.community.domain.exception.PostNotFoundException;
 import com.daesabu.meongcoach.support.ApplicationTest;
 import jakarta.persistence.EntityManager;
 import jakarta.validation.ConstraintViolationException;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -156,7 +157,7 @@ class CommentRegisterTest {
 	}
 
 	private Post savePost() {
-		return postRepository.save(Post.register(OTHER_USER_ID, new PostWriteCommand("오늘 앉아 훈련 성공!", null)));
+		return postRepository.save(Post.register(OTHER_USER_ID, new PostWriteCommand("오늘 앉아 훈련 성공!", null, List.of())));
 	}
 
 	private Comment saveRootComment(Post post) {
