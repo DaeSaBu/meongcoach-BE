@@ -68,8 +68,8 @@ public class TopicGraduation extends BaseEntity {
 
 	private Instant approvedAt;
 
-	@Column(length = 30)
-	private String retakeFramingIconCode;
+	@Column(length = 512)
+	private String retakeImageUrl;
 
 	@JdbcTypeCode(SqlTypes.JSON)
 	@Column(nullable = false, columnDefinition = "jsonb")
@@ -96,7 +96,7 @@ public class TopicGraduation extends BaseEntity {
 		this.submittedAt = requireNonNull(now);
 		this.reviewedAt = null;
 		this.reviewNote = null;
-		this.retakeFramingIconCode = null;
+		this.retakeImageUrl = null;
 		this.retakeInstructions.clear();
 	}
 
