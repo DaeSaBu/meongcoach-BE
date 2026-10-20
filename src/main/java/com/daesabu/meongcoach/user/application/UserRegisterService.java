@@ -1,6 +1,7 @@
 package com.daesabu.meongcoach.user.application;
 
 import com.daesabu.meongcoach.user.application.provided.UserFinder;
+import com.daesabu.meongcoach.user.application.provided.UserProfileRegisterRequest;
 import com.daesabu.meongcoach.user.application.provided.UserRegister;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.User;
@@ -21,6 +22,16 @@ public class UserRegisterService implements UserRegister {
 		User user = userRepository.save(User.registerUser());
 
 		return user.getId();
+	}
+
+	@Override
+	@Transactional
+	public void completeOnboarding(Long userId, UserProfileRegisterRequest request) {
+		User user = userFinder.findById(userId);
+
+		user.completeOnboarding(request.toCommand());
+
+		userRepository.save(user);
 	}
 
 	@Override
