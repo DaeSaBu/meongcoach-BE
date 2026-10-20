@@ -581,7 +581,8 @@ link:{swagger-ui}#/Community/community-post-list[▶ Swagger에서 Try it out,wi
 첫 페이지는 `cursor`를 생략하고, 이후에는 직전 응답의 `nextCursor`를 `cursor`로 보내 이어서 조회합니다.
 `nextCursor`가 null이면 마지막 페이지입니다. `size`는 1~50이며 생략하면 20개씩 내려갑니다.
 게시글이 없으면 빈 배열로 내려갑니다.
-작성자 프로필이 없으면 `author`가, 멘션이 없거나 멘션한 카드가 없으면 `mentionedCard`가 null입니다.
+작성자 프로필이 없으면 `author`가, 멘션이 없거나 멘션 대상이 없으면 `mention`이 null입니다.
+`mention.targetType`은 멘션 대상 종류이며 현재는 훈련 카드(`CARD`)만 있습니다.
 
 operation::community/post-list[snippets='http-request,query-parameters,http-response,response-fields']
 
