@@ -1,10 +1,11 @@
 package com.daesabu.meongcoach.community.application;
 
+import static java.util.Optional.ofNullable;
+
 import com.daesabu.meongcoach.community.application.provided.PostRegister;
 import com.daesabu.meongcoach.community.application.provided.dto.PostRegisterRequest;
 import com.daesabu.meongcoach.community.application.required.PostRepository;
 import com.daesabu.meongcoach.community.domain.Post;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,8 +24,14 @@ public class PostRegisterService implements PostRegister {
 	@Transactional
 	public Post register(Long userId, PostRegisterRequest request) {
 		Post post = Post.write(userId, request.toCommand());
-		Optional.ofNullable(post.getMention())
-				.ifPresent(mentionTargetVerifiers::validateExists);
+
+		validateExistingMention(post);
+
 		return postRepository.save(post);
+	}
+
+	private void validateExistingMention(Post post) {
+		ofNullable(post.getMention())
+				.ifPresent(mentionTargetVerifiers::validateExists);
 	}
 }
