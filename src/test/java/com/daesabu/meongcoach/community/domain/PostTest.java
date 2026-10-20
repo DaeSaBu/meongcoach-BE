@@ -99,6 +99,14 @@ class PostTest {
 		assertThat(post.getMedia()).hasSize(5);
 	}
 
+	@Test
+	void 미디어_목록은_밖에서_바꿀_수_없다() {
+		Post post = Post.register(USER_ID, new PostRegisterCommand(CONTENT, null, images(2)));
+
+		assertThatThrownBy(() -> post.getMedia().clear())
+				.isInstanceOf(UnsupportedOperationException.class);
+	}
+
 	private List<PostMediaCommand> images(int count) {
 		return Collections.nCopies(count, new PostMediaCommand(PostMediaType.IMAGE, IMAGE_URL));
 	}
