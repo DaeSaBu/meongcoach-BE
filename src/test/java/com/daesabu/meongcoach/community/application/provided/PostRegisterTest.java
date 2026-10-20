@@ -13,13 +13,10 @@ import com.daesabu.meongcoach.community.domain.exception.InvalidMentionTargetTyp
 import com.daesabu.meongcoach.community.domain.exception.InvalidPostContentException;
 import com.daesabu.meongcoach.community.domain.exception.MentionTargetNotFoundException;
 import com.daesabu.meongcoach.support.ApplicationTest;
-import com.daesabu.meongcoach.training.application.required.CardRepository;
 import com.daesabu.meongcoach.training.application.required.CurriculumRepository;
 import com.daesabu.meongcoach.training.application.required.LessonRepository;
 import com.daesabu.meongcoach.training.application.required.TopicRepository;
 import com.daesabu.meongcoach.training.application.required.TrainingCategoryRepository;
-import com.daesabu.meongcoach.training.domain.Card;
-import com.daesabu.meongcoach.training.domain.CardFixture;
 import com.daesabu.meongcoach.training.domain.Curriculum;
 import com.daesabu.meongcoach.training.domain.CurriculumFixture;
 import com.daesabu.meongcoach.training.domain.Lesson;
@@ -57,9 +54,6 @@ class PostRegisterTest {
 	private LessonRepository lessonRepository;
 
 	@Autowired
-	private CardRepository cardRepository;
-
-	@Autowired
 	private EntityManager entityManager;
 
 	@Test
@@ -74,21 +68,21 @@ class PostRegisterTest {
 	}
 
 	@Test
-	void 카드를_멘션한_게시글을_등록한다() {
-		Card card = saveCard("앉아 준비");
+	void 레슨을_멘션한_게시글을_등록한다() {
+		Lesson lesson = saveLesson("앉아 기초");
 
 		Post registered = postRegister.register(USER_ID,
-				new PostRegisterRequest("본문", new MentionRequest("CARD", card.getId())));
+				new PostRegisterRequest("본문", new MentionRequest("LESSON", lesson.getId())));
 		flushAndClear();
 
 		PostMention mention = postRepository.findById(registered.getId()).orElseThrow().getMention();
-		assertThat(mention.getTargetType()).isEqualTo(MentionTargetType.CARD);
-		assertThat(mention.getTargetId()).isEqualTo(card.getId());
+		assertThat(mention.getTargetType()).isEqualTo(MentionTargetType.LESSON);
+		assertThat(mention.getTargetId()).isEqualTo(lesson.getId());
 	}
 
 	@Test
-	void 멘션한_카드가_없으면_예외를_던지고_저장하지_않는다() {
-		PostRegisterRequest request = new PostRegisterRequest("본문", new MentionRequest("CARD", 999_999L));
+	void 멘션한_레슨이_없으면_예외를_던지고_저장하지_않는다() {
+		PostRegisterRequest request = new PostRegisterRequest("본문", new MentionRequest("LESSON", 999_999L));
 
 		assertThatThrownBy(() -> postRegister.register(USER_ID, request))
 				.isInstanceOf(MentionTargetNotFoundException.class);
@@ -97,7 +91,7 @@ class PostRegisterTest {
 
 	@Test
 	void 지원하지_않는_멘션_대상_종류면_예외를_던진다() {
-		PostRegisterRequest request = new PostRegisterRequest("본문", new MentionRequest("LESSON", 1L));
+		PostRegisterRequest request = new PostRegisterRequest("본문", new MentionRequest("CARD", 1L));
 
 		assertThatThrownBy(() -> postRegister.register(USER_ID, request))
 				.isInstanceOf(InvalidMentionTargetTypeException.class);
@@ -121,19 +115,18 @@ class PostRegisterTest {
 
 	@Test
 	void 멘션에_targetId가_없으면_예외를_던진다() {
-		PostRegisterRequest request = new PostRegisterRequest("본문", new MentionRequest("CARD", null));
+		PostRegisterRequest request = new PostRegisterRequest("본문", new MentionRequest("LESSON", null));
 
 		assertThatThrownBy(() -> postRegister.register(USER_ID, request))
 				.isInstanceOf(ConstraintViolationException.class);
 	}
 
-	private Card saveCard(String title) {
+	private Lesson saveLesson(String title) {
 		TrainingCategory category = trainingCategoryRepository.save(
 				TrainingCategoryFixture.create("기본 카테고리", 1, null, null));
 		Topic topic = topicRepository.save(TopicFixture.create(category, "기본 토픽", 1, null, null, null));
 		Curriculum curriculum = curriculumRepository.save(CurriculumFixture.create(topic, "기본 커리큘럼", 1, null, null));
-		Lesson lesson = lessonRepository.save(LessonFixture.create(curriculum, "기본 레슨", 1, 5));
-		return cardRepository.save(CardFixture.create(lesson, title, 1, "지시문"));
+		return lessonRepository.save(LessonFixture.create(curriculum, title, 1, 5));
 	}
 
 	private void flushAndClear() {

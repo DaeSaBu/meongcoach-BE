@@ -58,9 +58,9 @@ class CommunityControllerTest {
 	@Test
 	void 게시글_목록을_다음_커서와_함께_반환한다() throws Exception {
 		PostResult withMention = new PostResult(
-				PostFixture.create(30L, 7L, "이 카드 따라해봤어요", LocalDateTime.of(2026, 10, 19, 10, 30, 0)),
+				PostFixture.create(30L, 7L, "이 레슨 따라해봤어요", LocalDateTime.of(2026, 10, 19, 10, 30, 0)),
 				new UserProfileSummaryResult(7L, "멍멍이집사", "https://cdn.example.com/profile.png"),
-				new MentionTargetResult(MentionTargetType.CARD, 101L, "앉아 준비"));
+				new MentionTargetResult(MentionTargetType.LESSON, 101L, "앉아 기초"));
 		PostResult withoutMention = new PostResult(
 				PostFixture.create(29L, 8L, "오늘 산책 성공!", LocalDateTime.of(2026, 10, 19, 9, 0, 0)),
 				new UserProfileSummaryResult(8L, "콩이엄마", "https://cdn.example.com/kong.png"),
@@ -75,13 +75,13 @@ class CommunityControllerTest {
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.posts[0].postId").value(30))
-				.andExpect(jsonPath("$.posts[0].content").value("이 카드 따라해봤어요"))
+				.andExpect(jsonPath("$.posts[0].content").value("이 레슨 따라해봤어요"))
 				.andExpect(jsonPath("$.posts[0].author.userId").value(7))
 				.andExpect(jsonPath("$.posts[0].author.nickname").value("멍멍이집사"))
 				.andExpect(jsonPath("$.posts[0].author.profileImageUrl").value("https://cdn.example.com/profile.png"))
-				.andExpect(jsonPath("$.posts[0].mention.targetType").value("CARD"))
+				.andExpect(jsonPath("$.posts[0].mention.targetType").value("LESSON"))
 				.andExpect(jsonPath("$.posts[0].mention.targetId").value(101))
-				.andExpect(jsonPath("$.posts[0].mention.title").value("앉아 준비"))
+				.andExpect(jsonPath("$.posts[0].mention.title").value("앉아 기초"))
 				.andExpect(jsonPath("$.posts[0].createdAt").value("2026-10-19T10:30:00"))
 				.andExpect(jsonPath("$.posts[1].postId").value(29))
 				.andExpect(jsonPath("$.posts[1].mention").value(nullValue()))
@@ -103,7 +103,7 @@ class CommunityControllerTest {
 								fieldWithPath("posts[].author.profileImageUrl").description("작성자 프로필 이미지 URL"),
 								fieldWithPath("posts[].mention").optional()
 										.description("멘션 대상 요약. 멘션이 없거나 멘션 대상이 없으면 null"),
-								fieldWithPath("posts[].mention.targetType").description("멘션 대상 종류. 현재 CARD(훈련 카드)만 있다"),
+								fieldWithPath("posts[].mention.targetType").description("멘션 대상 종류. 현재 LESSON(레슨)만 있다"),
 								fieldWithPath("posts[].mention.targetId").description("멘션 대상 ID"),
 								fieldWithPath("posts[].mention.title").description("멘션 대상 제목"),
 								fieldWithPath("posts[].createdAt").description("게시글 작성 시각(ISO-8601, 초 단위)"),
@@ -176,29 +176,29 @@ class CommunityControllerTest {
 
 	@Test
 	void 게시글을_작성하면_201과_작성한_게시글을_반환한다() throws Exception {
-		PostRegisterRequest request = new PostRegisterRequest("이 카드 따라해봤어요", new MentionRequest("CARD", 101L));
-		given(postRegister.register(42L, request)).willReturn(PostFixture.create(30L, 42L, "이 카드 따라해봤어요",
-				new MentionCommand(MentionTargetType.CARD, 101L), LocalDateTime.of(2026, 10, 20, 10, 30, 0)));
+		PostRegisterRequest request = new PostRegisterRequest("이 레슨 따라해봤어요", new MentionRequest("LESSON", 101L));
+		given(postRegister.register(42L, request)).willReturn(PostFixture.create(30L, 42L, "이 레슨 따라해봤어요",
+				new MentionCommand(MentionTargetType.LESSON, 101L), LocalDateTime.of(2026, 10, 20, 10, 30, 0)));
 
 		mockMvc.perform(post("/api/community/posts")
 						.principal(CURRENT_USER)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
-								{"content": "이 카드 따라해봤어요", "mention": {"targetType": "CARD", "targetId": 101}}
+								{"content": "이 레슨 따라해봤어요", "mention": {"targetType": "LESSON", "targetId": 101}}
 								"""))
 				.andExpect(status().isCreated())
 				.andExpect(jsonPath("$.postId").value(30))
 				.andExpect(jsonPath("$.userId").value(42))
-				.andExpect(jsonPath("$.content").value("이 카드 따라해봤어요"))
-				.andExpect(jsonPath("$.mention.targetType").value("CARD"))
+				.andExpect(jsonPath("$.content").value("이 레슨 따라해봤어요"))
+				.andExpect(jsonPath("$.mention.targetType").value("LESSON"))
 				.andExpect(jsonPath("$.mention.targetId").value(101))
 				.andExpect(jsonPath("$.createdAt").value("2026-10-20T10:30:00"))
 				.andDo(document("community/post-register",
 						requestFields(
 								fieldWithPath("content").description("필수 입력. 게시글 본문. 공백만으로 채울 수 없고 500자 이하"),
 								fieldWithPath("mention").optional().description("멘션 대상. 멘션 없이 작성하면 생략한다"),
-								fieldWithPath("mention.targetType").description("멘션 대상 종류. 현재 CARD(훈련 카드)만 받는다"),
+								fieldWithPath("mention.targetType").description("멘션 대상 종류. 현재 LESSON(레슨)만 받는다"),
 								fieldWithPath("mention.targetId").description("멘션 대상 ID(양의 정수)")
 						),
 						responseFields(
@@ -230,8 +230,8 @@ class CommunityControllerTest {
 	}
 
 	@Test
-	void 멘션한_카드가_없으면_404를_반환한다() throws Exception {
-		PostRegisterRequest request = new PostRegisterRequest("이 카드 따라해봤어요", new MentionRequest("CARD", 999L));
+	void 멘션한_레슨이_없으면_404를_반환한다() throws Exception {
+		PostRegisterRequest request = new PostRegisterRequest("이 레슨 따라해봤어요", new MentionRequest("LESSON", 999L));
 		given(postRegister.register(42L, request)).willThrow(new MentionTargetNotFoundException(999L));
 
 		mockMvc.perform(post("/api/community/posts")
@@ -239,7 +239,7 @@ class CommunityControllerTest {
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
-								{"content": "이 카드 따라해봤어요", "mention": {"targetType": "CARD", "targetId": 999}}
+								{"content": "이 레슨 따라해봤어요", "mention": {"targetType": "LESSON", "targetId": 999}}
 								"""))
 				.andExpect(status().isNotFound())
 				.andExpect(jsonPath("$.code").value("COMMUNITY_MENTION_TARGET_NOT_FOUND"))
