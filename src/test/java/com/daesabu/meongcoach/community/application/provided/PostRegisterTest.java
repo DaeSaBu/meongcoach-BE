@@ -8,6 +8,7 @@ import com.daesabu.meongcoach.community.application.provided.dto.PostRegisterReq
 import com.daesabu.meongcoach.community.application.required.PostRepository;
 import com.daesabu.meongcoach.community.domain.MentionTargetType;
 import com.daesabu.meongcoach.community.domain.Post;
+import com.daesabu.meongcoach.community.domain.PostMention;
 import com.daesabu.meongcoach.community.domain.exception.InvalidMentionTargetTypeException;
 import com.daesabu.meongcoach.community.domain.exception.InvalidPostContentException;
 import com.daesabu.meongcoach.community.domain.exception.MentionTargetNotFoundException;
@@ -80,8 +81,9 @@ class PostRegisterTest {
 				new PostRegisterRequest("본문", new MentionRequest("CARD", card.getId())));
 		flushAndClear();
 
-		Post found = postRepository.findById(registered.getId()).orElseThrow();
-		assertThat(found.findMentionTargetId(MentionTargetType.CARD)).contains(card.getId());
+		PostMention mention = postRepository.findById(registered.getId()).orElseThrow().getMention();
+		assertThat(mention.getTargetType()).isEqualTo(MentionTargetType.CARD);
+		assertThat(mention.getTargetId()).isEqualTo(card.getId());
 	}
 
 	@Test

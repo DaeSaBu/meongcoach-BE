@@ -14,11 +14,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.daesabu.meongcoach.community.application.provided.PostFinder;
+import com.daesabu.meongcoach.community.application.provided.dto.MentionTargetResult;
 import com.daesabu.meongcoach.community.application.provided.dto.PostListRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.PostListResult;
 import com.daesabu.meongcoach.community.application.provided.dto.PostResult;
+import com.daesabu.meongcoach.community.domain.MentionTargetType;
 import com.daesabu.meongcoach.community.domain.PostFixture;
-import com.daesabu.meongcoach.training.application.provided.dto.CardSummaryResult;
 import com.daesabu.meongcoach.user.application.provided.UserProfileSummaryResult;
 import java.security.Principal;
 import java.time.LocalDateTime;
@@ -48,7 +49,7 @@ class CommunityControllerTest {
 		PostResult withMention = new PostResult(
 				PostFixture.create(30L, 7L, "이 카드 따라해봤어요", LocalDateTime.of(2026, 10, 19, 10, 30, 0)),
 				new UserProfileSummaryResult(7L, "멍멍이집사", "https://cdn.example.com/profile.png"),
-				new CardSummaryResult(101L, "앉아 준비"));
+				new MentionTargetResult(MentionTargetType.CARD, 101L, "앉아 준비"));
 		PostResult withoutMention = new PostResult(
 				PostFixture.create(29L, 8L, "오늘 산책 성공!", LocalDateTime.of(2026, 10, 19, 9, 0, 0)),
 				new UserProfileSummaryResult(8L, "콩이엄마", "https://cdn.example.com/kong.png"),
@@ -67,11 +68,12 @@ class CommunityControllerTest {
 				.andExpect(jsonPath("$.posts[0].author.userId").value(7))
 				.andExpect(jsonPath("$.posts[0].author.nickname").value("멍멍이집사"))
 				.andExpect(jsonPath("$.posts[0].author.profileImageUrl").value("https://cdn.example.com/profile.png"))
-				.andExpect(jsonPath("$.posts[0].mentionedCard.cardId").value(101))
-				.andExpect(jsonPath("$.posts[0].mentionedCard.title").value("앉아 준비"))
+				.andExpect(jsonPath("$.posts[0].mention.targetType").value("CARD"))
+				.andExpect(jsonPath("$.posts[0].mention.targetId").value(101))
+				.andExpect(jsonPath("$.posts[0].mention.title").value("앉아 준비"))
 				.andExpect(jsonPath("$.posts[0].createdAt").value("2026-10-19T10:30:00"))
 				.andExpect(jsonPath("$.posts[1].postId").value(29))
-				.andExpect(jsonPath("$.posts[1].mentionedCard").value(nullValue()))
+				.andExpect(jsonPath("$.posts[1].mention").value(nullValue()))
 				.andExpect(jsonPath("$.nextCursor").value(29))
 				.andDo(document("community/post-list",
 						queryParameters(
@@ -88,10 +90,11 @@ class CommunityControllerTest {
 								fieldWithPath("posts[].author.userId").description("작성자 회원 ID"),
 								fieldWithPath("posts[].author.nickname").description("작성자 닉네임"),
 								fieldWithPath("posts[].author.profileImageUrl").description("작성자 프로필 이미지 URL"),
-								fieldWithPath("posts[].mentionedCard").optional()
-										.description("멘션한 훈련 카드 요약. 멘션이 없거나 멘션한 카드가 없으면 null"),
-								fieldWithPath("posts[].mentionedCard.cardId").description("멘션한 카드 ID"),
-								fieldWithPath("posts[].mentionedCard.title").description("멘션한 카드 제목"),
+								fieldWithPath("posts[].mention").optional()
+										.description("멘션 대상 요약. 멘션이 없거나 멘션 대상이 없으면 null"),
+								fieldWithPath("posts[].mention.targetType").description("멘션 대상 종류. 현재 CARD(훈련 카드)만 있다"),
+								fieldWithPath("posts[].mention.targetId").description("멘션 대상 ID"),
+								fieldWithPath("posts[].mention.title").description("멘션 대상 제목"),
 								fieldWithPath("posts[].createdAt").description("게시글 작성 시각(ISO-8601, 초 단위)"),
 								fieldWithPath("nextCursor").optional()
 										.description("다음 페이지 요청에 cursor로 보낼 값. 마지막 페이지면 null")
@@ -112,7 +115,7 @@ class CommunityControllerTest {
 	}
 
 	@Test
-	void 작성자_프로필이나_멘션한_카드가_없으면_null로_반환한다() throws Exception {
+	void 작성자_프로필이나_멘션_대상이_없으면_null로_반환한다() throws Exception {
 		PostResult orphan = new PostResult(
 				PostFixture.create(1L, 7L, "본문", LocalDateTime.of(2026, 10, 19, 9, 0, 0)), null, null);
 		given(postFinder.findPosts(any(PostListRequest.class))).willReturn(new PostListResult(List.of(orphan), null));
@@ -121,7 +124,7 @@ class CommunityControllerTest {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.posts[0].postId").value(1))
 				.andExpect(jsonPath("$.posts[0].author").value(nullValue()))
-				.andExpect(jsonPath("$.posts[0].mentionedCard").value(nullValue()));
+				.andExpect(jsonPath("$.posts[0].mention").value(nullValue()));
 	}
 
 	@Test
