@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 
+import com.daesabu.meongcoach.community.application.provided.dto.MentionTargetResult;
 import com.daesabu.meongcoach.community.application.provided.dto.PostListRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.PostListResult;
 import com.daesabu.meongcoach.community.application.provided.dto.PostResult;
@@ -14,7 +15,6 @@ import com.daesabu.meongcoach.community.domain.Post;
 import com.daesabu.meongcoach.community.domain.PostContent;
 import com.daesabu.meongcoach.community.domain.PostWriteCommand;
 import com.daesabu.meongcoach.support.ApplicationTest;
-import com.daesabu.meongcoach.training.application.provided.dto.CardSummaryResult;
 import com.daesabu.meongcoach.training.application.required.CardRepository;
 import com.daesabu.meongcoach.training.application.required.CurriculumRepository;
 import com.daesabu.meongcoach.training.application.required.LessonRepository;
@@ -181,7 +181,7 @@ class PostFinderTest {
 	}
 
 	@Test
-	void 멘션한_카드_요약을_함께_반환한다() {
+	void 멘션_대상_요약을_함께_반환한다() {
 		Lesson lesson = saveLesson("기본 교육");
 		Card card = saveCard(lesson, "앉아 준비");
 		savePost(USER_ID, "본문", card.getId());
@@ -189,29 +189,29 @@ class PostFinderTest {
 
 		PostListResult result = postFinder.findPosts(new PostListRequest(null, 20));
 
-		assertThat(result.posts()).extracting(PostResult::mentionedCard)
-				.extracting(CardSummaryResult::id, CardSummaryResult::title)
-				.containsExactly(tuple(card.getId(), "앉아 준비"));
+		assertThat(result.posts()).extracting(PostResult::mentionTarget)
+				.extracting(MentionTargetResult::targetType, MentionTargetResult::targetId, MentionTargetResult::title)
+				.containsExactly(tuple(MentionTargetType.CARD, card.getId(), "앉아 준비"));
 	}
 
 	@Test
-	void 멘션이_없는_게시글은_mentionedCard가_null이다() {
+	void 멘션이_없는_게시글은_mentionTarget이_null이다() {
 		savePost(USER_ID, "본문");
 		flushAndClear();
 
 		PostListResult result = postFinder.findPosts(new PostListRequest(null, 20));
 
-		assertThat(result.posts().getFirst().mentionedCard()).isNull();
+		assertThat(result.posts().getFirst().mentionTarget()).isNull();
 	}
 
 	@Test
-	void 멘션한_카드가_없으면_mentionedCard가_null이다() {
+	void 멘션_대상이_없으면_mentionTarget이_null이다() {
 		savePost(USER_ID, "본문", -1L);
 		flushAndClear();
 
 		PostListResult result = postFinder.findPosts(new PostListRequest(null, 20));
 
-		assertThat(result.posts().getFirst().mentionedCard()).isNull();
+		assertThat(result.posts().getFirst().mentionTarget()).isNull();
 	}
 
 	@Test

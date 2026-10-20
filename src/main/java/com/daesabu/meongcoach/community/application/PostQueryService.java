@@ -1,19 +1,21 @@
 package com.daesabu.meongcoach.community.application;
 
+import static java.util.Optional.ofNullable;
+
 import com.daesabu.meongcoach.community.application.provided.PostFinder;
+import com.daesabu.meongcoach.community.application.provided.dto.MentionTargetResult;
 import com.daesabu.meongcoach.community.application.provided.dto.PostListRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.PostListResult;
 import com.daesabu.meongcoach.community.application.provided.dto.PostResult;
 import com.daesabu.meongcoach.community.application.required.PostRepository;
 import com.daesabu.meongcoach.community.domain.MentionTargetType;
 import com.daesabu.meongcoach.community.domain.Post;
-import com.daesabu.meongcoach.training.application.provided.CardFinder;
-import com.daesabu.meongcoach.training.application.provided.dto.CardSummaryResult;
+import com.daesabu.meongcoach.community.domain.PostMention;
 import com.daesabu.meongcoach.user.application.provided.UserProfileFinder;
 import com.daesabu.meongcoach.user.application.provided.UserProfileSummaryResult;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -33,7 +35,7 @@ public class PostQueryService implements PostFinder {
 
 	private final PostRepository postRepository;
 	private final UserProfileFinder userProfileFinder;
-	private final CardFinder cardFinder;
+	private final MentionTargetReaders mentionTargetReaders;
 
 	@Override
 	public PostListResult findPosts(PostListRequest request) {
@@ -63,9 +65,9 @@ public class PostQueryService implements PostFinder {
 
 	private List<PostResult> compose(List<Post> posts) {
 		Map<Long, UserProfileSummaryResult> authors = findAuthors(posts);
-		Map<Long, CardSummaryResult> cards = findMentionedCards(posts);
+		Map<MentionTargetType, Map<Long, MentionTargetResult>> mentionTargets = findMentionTargets(posts);
 		return posts.stream()
-				.map(post -> toResult(post, authors, cards))
+				.map(post -> toResult(post, authors, mentionTargets))
 				.toList();
 	}
 
@@ -77,21 +79,20 @@ public class PostQueryService implements PostFinder {
 				.collect(Collectors.toMap(UserProfileSummaryResult::userId, Function.identity()));
 	}
 
-	private Map<Long, CardSummaryResult> findMentionedCards(List<Post> posts) {
-		Set<Long> cardIds = posts.stream()
-				.map(post -> post.findMentionTargetId(MentionTargetType.CARD))
-				.flatMap(Optional::stream)
-				.collect(Collectors.toSet());
-		return cardFinder.findSummaries(cardIds).stream()
-				.collect(Collectors.toMap(CardSummaryResult::id, Function.identity()));
+	private Map<MentionTargetType, Map<Long, MentionTargetResult>> findMentionTargets(List<Post> posts) {
+		List<PostMention> mentions = posts.stream()
+				.map(Post::getMention)
+				.filter(Objects::nonNull)
+				.toList();
+		return mentionTargetReaders.findSummaries(mentions);
 	}
 
 	private PostResult toResult(Post post, Map<Long, UserProfileSummaryResult> authors,
-	                            Map<Long, CardSummaryResult> cards) {
+	                            Map<MentionTargetType, Map<Long, MentionTargetResult>> mentionTargets) {
 		UserProfileSummaryResult author = authors.get(post.getUserId());
-		CardSummaryResult mentionedCard = post.findMentionTargetId(MentionTargetType.CARD)
-				.map(cards::get)
+		MentionTargetResult mentionTarget = ofNullable(post.getMention())
+				.map(mention -> mentionTargets.get(mention.getTargetType()).get(mention.getTargetId()))
 				.orElse(null);
-		return new PostResult(post, author, mentionedCard);
+		return new PostResult(post, author, mentionTarget);
 	}
 }
