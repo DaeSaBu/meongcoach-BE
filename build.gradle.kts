@@ -1,6 +1,8 @@
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
+import org.objectweb.asm.AnnotationVisitor
 import org.objectweb.asm.ClassReader
+import org.objectweb.asm.ClassVisitor
 import org.objectweb.asm.Opcodes
 
 // 커버리지 제외 판별용 클래스 파일 파서. Java 25 클래스(major 69)를 읽으려면 ASM 9.8 이상이어야 한다
@@ -249,10 +251,29 @@ val jacocoExcludes = listOf(
 fun isEnumClassFile(file: File): Boolean =
 	file.extension == "class" && file.inputStream().use { (ClassReader(it).access and Opcodes.ACC_ENUM) != 0 }
 
+// QueryDSL Q 클래스는 엔티티마다 생성되는 코드라 이름 대신 클래스에 붙는 com.querydsl @Generated(CLASS 보존)로 판별한다
+fun isQuerydslGeneratedClassFile(file: File): Boolean {
+	if (file.extension != "class") {
+		return false
+	}
+	var generated = false
+	file.inputStream().use {
+		ClassReader(it).accept(object : ClassVisitor(Opcodes.ASM9) {
+			override fun visitAnnotation(descriptor: String, visible: Boolean): AnnotationVisitor? {
+				if (descriptor == "Lcom/querydsl/core/annotations/Generated;") {
+					generated = true
+				}
+				return null
+			}
+		}, ClassReader.SKIP_CODE)
+	}
+	return generated
+}
+
 // FileCollection.filter는 지연 평가되므로 컴파일 이후(태스크 실행 시점)에 클래스 파일을 읽는다
 val jacocoClassDirectories = sourceSets.main.get().output.asFileTree
 	.matching { exclude(jacocoExcludes) }
-	.filter { !isEnumClassFile(it) }
+	.filter { !isEnumClassFile(it) && !isQuerydslGeneratedClassFile(it) }
 
 // 리포트(CI의 PR 코멘트)와 검증이 같은 분모를 쓰도록 둘 다 같은 컬렉션을 사용한다
 tasks.jacocoTestReport {
