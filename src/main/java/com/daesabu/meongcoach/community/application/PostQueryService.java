@@ -7,7 +7,7 @@ import com.daesabu.meongcoach.community.application.provided.dto.MentionTargetRe
 import com.daesabu.meongcoach.community.application.provided.dto.PostListRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.PostListResult;
 import com.daesabu.meongcoach.community.application.provided.dto.PostResult;
-import com.daesabu.meongcoach.community.application.required.PostRepository;
+import com.daesabu.meongcoach.community.application.required.PostQueryRepository;
 import com.daesabu.meongcoach.community.domain.MentionTargetType;
 import com.daesabu.meongcoach.community.domain.Post;
 import com.daesabu.meongcoach.community.domain.PostMention;
@@ -20,8 +20,6 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,7 +31,7 @@ import org.springframework.validation.annotation.Validated;
 @Transactional(readOnly = true)
 public class PostQueryService implements PostFinder {
 
-	private final PostRepository postRepository;
+	private final PostQueryRepository postQueryRepository;
 	private final UserProfileFinder userProfileFinder;
 	private final MentionTargetReaders mentionTargetReaders;
 
@@ -47,12 +45,7 @@ public class PostQueryService implements PostFinder {
 	}
 
 	private Slice<Post> getSlice(PostListRequest request) {
-		Pageable pageable = PageRequest.of(0, request.size());
-
-		if (request.cursor() == null) {
-			return postRepository.findAllByOrderByIdDesc(pageable);
-		}
-		return postRepository.findAllByIdLessThanOrderByIdDesc(request.cursor(), pageable);
+		return postQueryRepository.findPosts(request.cursor(), request.size());
 	}
 
 	private Long nextCursorOf(Slice<Post> slice) {
