@@ -70,6 +70,10 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-flyway")
 	implementation("org.flywaydb:flyway-database-postgresql")
 	annotationProcessor("org.projectlombok:lombok")
+	// Boot BOM의 com.querydsl 5.1.0은 2024-01 이후 릴리스가 없어 Hibernate 7을 따라가는 OpenFeign 포크를 쓴다
+	implementation("io.github.openfeign.querydsl:querydsl-jpa:7.7")
+	annotationProcessor("io.github.openfeign.querydsl:querydsl-apt:7.7:jpa")
+	annotationProcessor("jakarta.persistence:jakarta.persistence-api")
 	asciidoctorExt("org.springframework.restdocs:spring-restdocs-asciidoctor")
 	testImplementation("org.springframework.boot:spring-boot-restdocs")
 	testImplementation("org.springframework.boot:spring-boot-starter-data-jpa-test")
