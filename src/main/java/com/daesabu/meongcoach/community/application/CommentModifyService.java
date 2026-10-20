@@ -21,7 +21,7 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class CommentRegisterService implements CommentRegister {
+public class CommentModifyService implements CommentRegister {
 
 	private final PostFinder postFinder;
 	private final CommentRepository commentRepository;
