@@ -283,12 +283,12 @@ class PostFinderTest {
 	}
 
 	private Post savePost(Long userId, String content) {
-		return postRepository.save(Post.write(userId, new PostWriteCommand(content, null)));
+		return postRepository.save(Post.register(userId, new PostWriteCommand(content, null)));
 	}
 
 	private Post savePost(Long userId, String content, Long lessonId) {
 		MentionCommand mention = new MentionCommand(MentionTargetType.LESSON, lessonId);
-		return postRepository.save(Post.write(userId, new PostWriteCommand(content, mention)));
+		return postRepository.save(Post.register(userId, new PostWriteCommand(content, mention)));
 	}
 
 	private User saveUserWithProfile(String nickname, String profileImageUrl) {

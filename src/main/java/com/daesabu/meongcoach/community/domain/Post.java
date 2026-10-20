@@ -39,7 +39,7 @@ public class Post extends BaseEntity {
 	@JoinColumn(name = "mention_id", unique = true)
 	private PostMention mention;
 
-	public static Post write(Long userId, PostWriteCommand command) {
+	public static Post register(Long userId, PostWriteCommand command) {
 		Post post = new Post();
 		post.userId = requireNonNull(userId);
 		post.content = new PostContent(command.content());

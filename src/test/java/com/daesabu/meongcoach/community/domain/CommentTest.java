@@ -10,7 +10,7 @@ class CommentTest {
 
 	private static final Long USER_ID = 42L;
 
-	private final Post post = Post.write(7L, new PostWriteCommand("오늘 앉아 훈련 성공!", null));
+	private final Post post = Post.register(7L, new PostWriteCommand("오늘 앉아 훈련 성공!", null));
 
 	@Test
 	void 등록하면_게시글과_작성자와_본문이_채워진다() {
