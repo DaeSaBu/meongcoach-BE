@@ -14,6 +14,7 @@ import com.daesabu.meongcoach.community.domain.MentionTargetType;
 import com.daesabu.meongcoach.community.domain.Post;
 import com.daesabu.meongcoach.community.domain.PostContent;
 import com.daesabu.meongcoach.community.domain.PostWriteCommand;
+import com.daesabu.meongcoach.community.domain.exception.PostNotFoundException;
 import com.daesabu.meongcoach.support.ApplicationTest;
 import com.daesabu.meongcoach.training.application.required.CurriculumRepository;
 import com.daesabu.meongcoach.training.application.required.LessonRepository;
@@ -251,6 +252,23 @@ class PostFinderTest {
 
 		assertThat(result.posts()).isEmpty();
 		assertThat(result.nextCursor()).isNull();
+	}
+
+	@Test
+	void 게시글_하나를_id로_조회한다() {
+		Post saved = savePost(USER_ID, "본문");
+		flushAndClear();
+
+		Post found = postFinder.findPost(saved.getId());
+
+		assertThat(found.getId()).isEqualTo(saved.getId());
+		assertThat(found.getContent().value()).isEqualTo("본문");
+	}
+
+	@Test
+	void 조회한_게시글이_없으면_예외를_던진다() {
+		assertThatThrownBy(() -> postFinder.findPost(999_999L))
+				.isInstanceOf(PostNotFoundException.class);
 	}
 
 	private String contentOf(PostResult result) {
