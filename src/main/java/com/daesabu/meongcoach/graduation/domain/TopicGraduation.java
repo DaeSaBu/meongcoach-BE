@@ -5,18 +5,13 @@ import static org.springframework.util.Assert.isTrue;
 import static org.springframework.util.Assert.state;
 
 import com.daesabu.meongcoach.shared.domain.BaseEntity;
-import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
-import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OrderColumn;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import jakarta.persistence.Version;
@@ -26,6 +21,8 @@ import java.util.List;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Getter
 @Entity
@@ -72,13 +69,11 @@ public class TopicGraduation extends BaseEntity {
 	private Instant approvedAt;
 
 	@Column(length = 30)
-	private String retakeFraming;
+	private String retakeFramingIconCode;
 
-	@ElementCollection(fetch = FetchType.LAZY)
-	@CollectionTable(name = "graduation_retake_tips", joinColumns = @JoinColumn(name = "graduation_id"))
-	@OrderColumn(name = "sort_order")
-	@Column(name = "tip", nullable = false, length = 60)
-	private List<String> retakeTips = new ArrayList<>();
+	@JdbcTypeCode(SqlTypes.JSON)
+	@Column(nullable = false, columnDefinition = "jsonb")
+	private List<String> retakeInstructions = new ArrayList<>();
 
 	public static TopicGraduation start(Long userId, Long topicId, String videoObjectKey, Instant now) {
 		TopicGraduation graduation = new TopicGraduation();
@@ -101,8 +96,8 @@ public class TopicGraduation extends BaseEntity {
 		this.submittedAt = requireNonNull(now);
 		this.reviewedAt = null;
 		this.reviewNote = null;
-		this.retakeFraming = null;
-		this.retakeTips.clear();
+		this.retakeFramingIconCode = null;
+		this.retakeInstructions.clear();
 	}
 
 	public void approve(String note, Instant now) {

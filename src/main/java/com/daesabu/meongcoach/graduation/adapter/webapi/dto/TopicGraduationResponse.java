@@ -7,11 +7,11 @@ import java.util.List;
 
 public record TopicGraduationResponse(Long graduationId, GraduationStatus status, int attemptNo, String videoUrl,
                                       Instant submittedAt, Instant reviewedAt, String reviewNote,
-                                      List<String> retakeTips, String retakeFraming) {
+                                      List<String> retakeInstructions, String retakeFramingIconCode) {
 
 	public static TopicGraduationResponse of(TopicGraduation graduation, String videoUrl) {
 		return new TopicGraduationResponse(graduation.getId(), graduation.getStatus(), graduation.getAttemptNo(),
 				videoUrl, graduation.getSubmittedAt(), graduation.getReviewedAt(), graduation.getReviewNote(),
-				List.copyOf(graduation.getRetakeTips()), graduation.getRetakeFraming());
+				List.copyOf(graduation.getRetakeInstructions()), graduation.getRetakeFramingIconCode());
 	}
 }
