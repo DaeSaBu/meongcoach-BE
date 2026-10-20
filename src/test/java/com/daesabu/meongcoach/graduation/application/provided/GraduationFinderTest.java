@@ -85,7 +85,7 @@ class GraduationFinderTest {
 		Long graduationId = jdbcTemplate.queryForObject(
 				"select id from topic_graduations where user_id = ? and topic_id = ?", Long.class, USER_ID, topic.getId());
 		jdbcTemplate.update("update topic_graduations set status = 'REVISION_REQUESTED', review_note = '다시 찍어 주세요.', "
-				+ "reviewed_at = now(), retake_framing_icon_code = 'ENTRANCE', "
+				+ "reviewed_at = now(), retake_image_url = 'https://images.test/images/graduation-retake/3/example.jpg', "
 				+ "retake_instructions = '[\"첫째 지시\", \"둘째 지시\", \"셋째 지시\"]'::jsonb where id = ?", graduationId);
 		String objectKey = "videos/graduation/42/" + topic.getId() + "/first.mp4";
 		given(videoStorage.issueDownloadUrl(new VideoObjectKey(objectKey)))
@@ -94,7 +94,7 @@ class GraduationFinderTest {
 
 		GraduationDetailResult result = graduationFinder.findGraduation(USER_ID, topic.getId());
 
-		assertThat(result.graduation().getRetakeFramingIconCode()).isEqualTo("ENTRANCE");
+		assertThat(result.graduation().getRetakeImageUrl()).isEqualTo("https://images.test/images/graduation-retake/3/example.jpg");
 		assertThat(result.graduation().getRetakeInstructions()).containsExactly("첫째 지시", "둘째 지시", "셋째 지시");
 	}
 
@@ -103,14 +103,14 @@ class GraduationFinderTest {
 		Topic topic = topicSeeder.completedTopic(USER_ID, "분리불안");
 		submit(USER_ID, topic, "first");
 		jdbcTemplate.update("update topic_graduations set status = 'REVISION_REQUESTED', "
-				+ "retake_framing_icon_code = 'UNKNOWN', retake_instructions = '[\"다시 찍어 주세요.\"]'::jsonb "
+				+ "retake_image_url = 'https://images.test/images/graduation-retake/3/example.jpg', retake_instructions = '[\"다시 찍어 주세요.\"]'::jsonb "
 				+ "where user_id = ? and topic_id = ?", USER_ID, topic.getId());
 
 		submit(USER_ID, topic, "second");
 
 		assertThat(jdbcTemplate.queryForObject("select retake_instructions::text from topic_graduations "
 				+ "where user_id = ? and topic_id = ?", String.class, USER_ID, topic.getId())).isEqualTo("[]");
-		assertThat(jdbcTemplate.queryForObject("select retake_framing_icon_code from topic_graduations "
+		assertThat(jdbcTemplate.queryForObject("select retake_image_url from topic_graduations "
 				+ "where user_id = ? and topic_id = ?", String.class, USER_ID, topic.getId())).isNull();
 	}
 

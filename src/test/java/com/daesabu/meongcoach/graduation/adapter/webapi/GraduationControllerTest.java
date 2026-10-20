@@ -97,7 +97,7 @@ class GraduationControllerTest {
 				.andExpect(jsonPath("$.graduation.reviewedAt").value("2026-10-15T01:00:00Z"))
 				.andExpect(jsonPath("$.graduation.reviewNote").value("끝까지 함께 시도했어요!"))
 				.andExpect(jsonPath("$.graduation.retakeInstructions").isEmpty())
-				.andExpect(jsonPath("$.graduation.retakeFramingIconCode").isEmpty())
+				.andExpect(jsonPath("$.graduation.retakeImageUrl").isEmpty())
 				.andDo(document("graduation/detail",
 						pathParameters(parameterWithName("topicId").description("토픽 ID")),
 						responseFields(
@@ -114,19 +114,18 @@ class GraduationControllerTest {
 								fieldWithPath("graduation.reviewedAt").optional().description("가장 최근 제출의 판정 시각. 판정 전이면 null"),
 								fieldWithPath("graduation.reviewNote").optional().description("운영자 메모. 없으면 null"),
 								fieldWithPath("graduation.retakeInstructions").description("보완 요청 때 운영자가 남긴 재촬영 팁(최대 3개, 순서대로). 없으면 빈 배열"),
-								fieldWithPath("graduation.retakeFramingIconCode").optional().description(
-										"보완 요청 때 운영자가 고른 촬영 구도 코드(FULL_BODY, DOG_CENTER, SIDE_VIEW, LOW_ANGLE, ENTRANCE, WALK). "
-												+ "없으면 null이고, 앱이 모르는 코드는 기본 그림으로 보여 준다")
+								fieldWithPath("graduation.retakeImageUrl").optional().description(
+										"보완 요청 때 운영자가 올린 촬영 예시 이미지의 공개 URL. 없으면 null이고, 앱은 기본 그림을 보여 준다")
 						)
 				));
 	}
 
 	@Test
-	void 보완_요청이면_재촬영_팁과_촬영_구도를_함께_반환한다() throws Exception {
+	void 보완_요청이면_재촬영_팁과_촬영_예시_이미지를_함께_반환한다() throws Exception {
 		TopicGraduation graduation = TopicGraduationFixture.withRetakeGuide(
 				TopicGraduationFixture.create(3L, 42L, TOPIC_ID, GraduationStatus.REVISION_REQUESTED, 1,
 						VIDEO_KEY, SUBMITTED_AT, REVIEWED_AT, "현관 장면부터 다시 찍어 주세요."),
-				"ENTRANCE", List.of("현관이 함께 보이게 찍어 주세요.", "보호자가 나가는 순간부터 찍어 주세요."));
+				"https://images.test/images/graduation-retake/3/example.jpg", List.of("현관이 함께 보이게 찍어 주세요.", "보호자가 나가는 순간부터 찍어 주세요."));
 		given(graduationFinder.findGraduation(42L, TOPIC_ID))
 				.willReturn(new GraduationDetailResult(TOPIC, true, graduation, VIDEO_URL));
 
@@ -135,7 +134,7 @@ class GraduationControllerTest {
 				.andExpect(jsonPath("$.graduation.status").value("REVISION_REQUESTED"))
 				.andExpect(jsonPath("$.graduation.retakeInstructions[0]").value("현관이 함께 보이게 찍어 주세요."))
 				.andExpect(jsonPath("$.graduation.retakeInstructions[1]").value("보호자가 나가는 순간부터 찍어 주세요."))
-				.andExpect(jsonPath("$.graduation.retakeFramingIconCode").value("ENTRANCE"));
+				.andExpect(jsonPath("$.graduation.retakeImageUrl").value("https://images.test/images/graduation-retake/3/example.jpg"));
 	}
 
 	@Test
