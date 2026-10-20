@@ -15,7 +15,7 @@ import com.daesabu.meongcoach.dog.domain.exception.InvalidPersonalityException;
 import com.daesabu.meongcoach.dog.domain.shared.Breed;
 import com.daesabu.meongcoach.dog.domain.shared.Personality;
 import com.daesabu.meongcoach.dog.domain.shared.RegisteredBreed;
-import com.daesabu.meongcoach.media.domain.exception.InvalidImageUrlException;
+import com.daesabu.meongcoach.media.domain.exception.InvalidMediaUrlException;
 import com.daesabu.meongcoach.support.ApplicationTest;
 import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;
@@ -115,8 +115,26 @@ class DogRegisterTest {
 				new BigDecimal("4.50"), Set.of(), "https://evil.example.com/a.jpg", null);
 
 		assertThatThrownBy(() -> dogRegister.register(1L, info))
-				.isInstanceOf(InvalidImageUrlException.class);
+				.isInstanceOf(InvalidMediaUrlException.class);
 		assertThat(dogRepository.findAllByUserIdOrderByIdAsc(1L)).isEmpty();
+	}
+
+	@Test
+	void 다른_사용자가_올린_프로필_이미지면_등록에_실패한다() {
+		DogRegisterInfo info = new DogRegisterInfo("초코", "POODLE", "MALE", null,
+				new BigDecimal("4.50"), Set.of(), "https://images.test.meongcoach.com/images/dog-profile/2/a.jpg", null);
+
+		assertThatThrownBy(() -> dogRegister.register(1L, info))
+				.isInstanceOf(InvalidMediaUrlException.class);
+	}
+
+	@Test
+	void 강아지_프로필_경로가_아닌_이미지면_등록에_실패한다() {
+		DogRegisterInfo info = new DogRegisterInfo("초코", "POODLE", "MALE", null,
+				new BigDecimal("4.50"), Set.of(), "https://images.test.meongcoach.com/images/user-profile/1/a.jpg", null);
+
+		assertThatThrownBy(() -> dogRegister.register(1L, info))
+				.isInstanceOf(InvalidMediaUrlException.class);
 	}
 
 	@Test

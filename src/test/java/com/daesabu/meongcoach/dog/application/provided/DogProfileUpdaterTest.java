@@ -13,7 +13,7 @@ import com.daesabu.meongcoach.dog.domain.exception.DogNotFoundException;
 import com.daesabu.meongcoach.dog.domain.shared.Breed;
 import com.daesabu.meongcoach.dog.domain.shared.Personality;
 import com.daesabu.meongcoach.dog.domain.shared.RegisteredBreed;
-import com.daesabu.meongcoach.media.domain.exception.InvalidImageUrlException;
+import com.daesabu.meongcoach.media.domain.exception.InvalidMediaUrlException;
 import com.daesabu.meongcoach.support.ApplicationTest;
 import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;
@@ -114,11 +114,22 @@ class DogProfileUpdaterTest {
 				DogSex.FEMALE, null, new BigDecimal("3.20"), Set.of(), "https://evil.example.com/a.jpg", null);
 
 		assertThatThrownBy(() -> dogProfileUpdater.update(USER_ID, saved.getId(), command))
-				.isInstanceOf(InvalidImageUrlException.class);
+				.isInstanceOf(InvalidMediaUrlException.class);
 
 		entityManager.clear();
 		Dog unchanged = dogRepository.findById(saved.getId()).orElseThrow();
 		assertThat(unchanged.getProfileImageUrl()).isEqualTo(IMAGE_URL);
+	}
+
+	@Test
+	void 다른_사용자가_올린_프로필_이미지면_수정에_실패한다() {
+		Dog saved = persistSelectedDog(USER_ID);
+		DogProfileUpdateCommand command = new DogProfileUpdateCommand("보리", Breed.of(RegisteredBreed.MALTESE),
+				DogSex.FEMALE, null, new BigDecimal("3.20"), Set.of(),
+				"https://images.test.meongcoach.com/images/dog-profile/99/a.jpg", null);
+
+		assertThatThrownBy(() -> dogProfileUpdater.update(USER_ID, saved.getId(), command))
+				.isInstanceOf(InvalidMediaUrlException.class);
 	}
 
 	@Test
