@@ -1,5 +1,7 @@
 package com.daesabu.meongcoach.community.domain;
 
+import com.daesabu.meongcoach.community.domain.exception.InvalidPostMediaTypeException;
+import java.util.Arrays;
 import lombok.Getter;
 
 @Getter
@@ -13,5 +15,12 @@ public enum PostMediaType {
 	PostMediaType(String displayName, int maxCount) {
 		this.displayName = displayName;
 		this.maxCount = maxCount;
+	}
+
+	public static PostMediaType from(String code) {
+		return Arrays.stream(values())
+				.filter(type -> type.name().equalsIgnoreCase(code))
+				.findFirst()
+				.orElseThrow(() -> new InvalidPostMediaTypeException(code));
 	}
 }
