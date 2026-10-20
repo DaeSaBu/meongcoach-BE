@@ -96,8 +96,8 @@ class GraduationControllerTest {
 				.andExpect(jsonPath("$.graduation.submittedAt").value("2026-10-14T05:03:00Z"))
 				.andExpect(jsonPath("$.graduation.reviewedAt").value("2026-10-15T01:00:00Z"))
 				.andExpect(jsonPath("$.graduation.reviewNote").value("끝까지 함께 시도했어요!"))
-				.andExpect(jsonPath("$.graduation.retakeTips").isEmpty())
-				.andExpect(jsonPath("$.graduation.retakeFraming").isEmpty())
+				.andExpect(jsonPath("$.graduation.retakeInstructions").isEmpty())
+				.andExpect(jsonPath("$.graduation.retakeFramingIconCode").isEmpty())
 				.andDo(document("graduation/detail",
 						pathParameters(parameterWithName("topicId").description("토픽 ID")),
 						responseFields(
@@ -113,8 +113,8 @@ class GraduationControllerTest {
 								fieldWithPath("graduation.submittedAt").description("가장 최근 제출 시각(ISO-8601, UTC)"),
 								fieldWithPath("graduation.reviewedAt").optional().description("가장 최근 제출의 판정 시각. 판정 전이면 null"),
 								fieldWithPath("graduation.reviewNote").optional().description("운영자 메모. 없으면 null"),
-								fieldWithPath("graduation.retakeTips").description("보완 요청 때 운영자가 남긴 재촬영 팁(최대 3개, 순서대로). 없으면 빈 배열"),
-								fieldWithPath("graduation.retakeFraming").optional().description(
+								fieldWithPath("graduation.retakeInstructions").description("보완 요청 때 운영자가 남긴 재촬영 팁(최대 3개, 순서대로). 없으면 빈 배열"),
+								fieldWithPath("graduation.retakeFramingIconCode").optional().description(
 										"보완 요청 때 운영자가 고른 촬영 구도 코드(FULL_BODY, DOG_CENTER, SIDE_VIEW, LOW_ANGLE, ENTRANCE, WALK). "
 												+ "없으면 null이고, 앱이 모르는 코드는 기본 그림으로 보여 준다")
 						)
@@ -133,9 +133,9 @@ class GraduationControllerTest {
 		mockMvc.perform(get("/api/training/topics/{topicId}/graduation", TOPIC_ID).principal(CURRENT_USER))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.graduation.status").value("REVISION_REQUESTED"))
-				.andExpect(jsonPath("$.graduation.retakeTips[0]").value("현관이 함께 보이게 찍어 주세요."))
-				.andExpect(jsonPath("$.graduation.retakeTips[1]").value("보호자가 나가는 순간부터 찍어 주세요."))
-				.andExpect(jsonPath("$.graduation.retakeFraming").value("ENTRANCE"));
+				.andExpect(jsonPath("$.graduation.retakeInstructions[0]").value("현관이 함께 보이게 찍어 주세요."))
+				.andExpect(jsonPath("$.graduation.retakeInstructions[1]").value("보호자가 나가는 순간부터 찍어 주세요."))
+				.andExpect(jsonPath("$.graduation.retakeFramingIconCode").value("ENTRANCE"));
 	}
 
 	@Test

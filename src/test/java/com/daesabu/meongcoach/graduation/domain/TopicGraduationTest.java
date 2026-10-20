@@ -52,8 +52,8 @@ class TopicGraduationTest {
 		assertThat(graduation.getSubmittedAt()).isEqualTo(LATER);
 		assertThat(graduation.getReviewedAt()).isNull();
 		assertThat(graduation.getReviewNote()).isNull();
-		assertThat(graduation.getRetakeFraming()).isNull();
-		assertThat(graduation.getRetakeTips()).isEmpty();
+		assertThat(graduation.getRetakeFramingIconCode()).isNull();
+		assertThat(graduation.getRetakeInstructions()).isEmpty();
 	}
 
 	@Test
