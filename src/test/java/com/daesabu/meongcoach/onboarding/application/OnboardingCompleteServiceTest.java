@@ -55,7 +55,7 @@ class OnboardingCompleteServiceTest {
 	void setUp() {
 		service = new OnboardingCompleteService(
 				new UserProfileRegisterService(new UserQueryService(userRepository), userProfileRepository),
-				new DogRegisterService(dogRepository),
+				new DogRegisterService(dogRepository, prefixValidator()),
 				prefixValidator());
 		userId = userRepository.save(User.registerUser()).getId();
 	}

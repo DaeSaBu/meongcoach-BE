@@ -10,7 +10,8 @@ public interface DogProfileUpdater {
 
 	/**
 	 * 사용자가 소유한 강아지의 프로필을 Command 값으로 전체 교체하고 수정된 강아지를 반환한다.
-	 * 없거나 본인 소유가 아니면 {@code DogNotFoundException}을 던진다.
+	 * 없거나 본인 소유가 아니면 {@code DogNotFoundException}을, 프로필 이미지가 우리 스토리지의 URL이 아니면
+	 * {@code InvalidImageUrlException}을 던진다.
 	 */
 	Dog update(Long userId, Long dogId, DogProfileUpdateCommand command);
 }

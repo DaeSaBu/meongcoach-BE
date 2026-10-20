@@ -9,6 +9,7 @@ import com.daesabu.meongcoach.dog.domain.DogSex;
 import com.daesabu.meongcoach.dog.domain.Dogs;
 import com.daesabu.meongcoach.dog.domain.shared.Breed;
 import com.daesabu.meongcoach.dog.domain.shared.Personality;
+import com.daesabu.meongcoach.media.application.provided.StoredImageUrlValidator;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -23,10 +24,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class DogRegisterService implements DogRegister {
 
 	private final DogRepository dogRepository;
+	private final StoredImageUrlValidator storedImageUrlValidator;
 
 	@Override
 	@Transactional
 	public Long register(Long userId, DogRegisterInfo info) {
+		storedImageUrlValidator.validate(info.profileImageUrl());
 		// 마리 수 상한·선택 여부는 사용자 단위 규칙이라 Dogs가 판단한다.
 		// 소프트 딜리트된 강아지는 엔티티의 @SQLRestriction으로 조회에서 제외되므로 살아있는 강아지만 담긴다
 		List<Dog> owned = dogRepository.findAllByUserIdOrderByIdAsc(userId);
