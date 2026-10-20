@@ -43,15 +43,15 @@ class GraduationSubmissionTest {
 
 	@Test
 	void 차수가_다른_수료_행으로는_기록을_바꿀_수_없다() {
-		TopicGraduation graduation = TopicGraduation.start(42L, 7L, VIDEO_KEY, SUBMITTED_AT);
-		ReflectionTestUtils.setField(graduation, "id", 1L);
-		GraduationSubmission submission = GraduationSubmission.record(graduation);
-		graduation.useSubmission(submission);
-		graduation.requestRevision("다시 찍어 주세요.", REPLACED_AT);
-		graduation.resubmit(REPLACED_KEY, REPLACED_AT);
+		TopicGraduation graduation = TopicGraduationFixture.create(1L, 42L, 7L,
+				GraduationStatus.SUBMITTED, 1, VIDEO_KEY, SUBMITTED_AT, null, null);
+		GraduationSubmission submission = graduation.getCurrentSubmission();
+		TopicGraduation nextAttempt = TopicGraduationFixture.create(1L, 42L, 7L,
+				GraduationStatus.SUBMITTED, 2, REPLACED_KEY, REPLACED_AT, null, null);
 
-		assertThatThrownBy(() -> submission.replaceVideo(graduation)).isInstanceOf(IllegalStateException.class);
+		assertThatThrownBy(() -> submission.replaceVideo(nextAttempt)).isInstanceOf(IllegalStateException.class);
 	}
+
 	@Test
 	void 판정한_제출의_영상은_교체할_수_없다() {
 		TopicGraduation graduation = TopicGraduationFixture.create(1L, 42L, 7L,

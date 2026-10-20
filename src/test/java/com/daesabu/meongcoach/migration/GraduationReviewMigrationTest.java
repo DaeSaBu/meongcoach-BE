@@ -13,7 +13,7 @@ class GraduationReviewMigrationTest {
 	void 최신_판정만_해당_차수로_이전하고_과거_판정은_미상으로_남긴다() {
 		var dataSource = new DriverManagerDataSource(
 				"jdbc:tc:postgresql:18.3:///graduation_review_migration?TC_DAEMON=true", "test", "test");
-		Flyway.configure().dataSource(dataSource).target("19").load().migrate();
+		Flyway.configure().dataSource(dataSource).target("18").load().migrate();
 		var jdbc = new JdbcTemplate(dataSource);
 		jdbc.update("insert into topic_graduations (id, user_id, topic_id, status, attempt_no, video_object_key, "
 				+ "submitted_at, created_at, updated_at, reviewed_at, review_note, "
@@ -25,7 +25,7 @@ class GraduationReviewMigrationTest {
 		jdbc.update("insert into graduation_submissions (graduation_id, attempt_no, video_object_key, submitted_at, created_at) "
 				+ "values (1, 1, 'first.mp4', now(), now()), (1, 2, 'second.mp4', now(), now())");
 
-		Flyway.configure().dataSource(dataSource).target("20").load().migrate();
+		Flyway.configure().dataSource(dataSource).target("19").load().migrate();
 
 		assertThat(jdbc.queryForObject("select status from graduation_submissions where graduation_id = 1 "
 				+ "and attempt_no = 1", String.class)).isEqualTo("UNKNOWN");
