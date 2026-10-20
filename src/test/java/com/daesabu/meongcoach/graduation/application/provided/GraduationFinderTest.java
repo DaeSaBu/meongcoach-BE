@@ -70,7 +70,7 @@ class GraduationFinderTest {
 		GraduationDetailResult result = graduationFinder.findGraduation(USER_ID, topic.getId());
 
 		assertThat(result.graduation().getStatus()).isEqualTo(GraduationStatus.SUBMITTED);
-		assertThat(result.graduation().getAttemptNo()).isEqualTo(2);
+		assertThat(result.graduation().getAttemptNo()).isEqualTo(1);
 		assertThat(result.videoUrl()).contains("videos/graduation/42/" + topic.getId() + "/second.mp4");
 	}
 

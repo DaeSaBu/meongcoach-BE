@@ -59,7 +59,7 @@ class GraduationSubmitterTest {
 	}
 
 	@Test
-	void 검수_대기_중에_다시_제출하면_같은_행의_차수를_올리고_영상을_바꾸고_기록을_한_줄_더_남긴다() {
+	void 검수_대기_중에_다시_제출하면_같은_행의_차수를_유지하고_영상과_기록을_바꾼다() {
 		Topic topic = topicSeeder.completedTopic(USER_ID, "분리불안");
 		TopicGraduation first = graduationSubmitter.submit(USER_ID, topic.getId(), request(key(topic, "first")));
 		topicSeeder.flushAndClear();
@@ -68,11 +68,11 @@ class GraduationSubmitterTest {
 		topicSeeder.flushAndClear();
 
 		assertThat(second.getId()).isEqualTo(first.getId());
-		assertThat(second.getAttemptNo()).isEqualTo(2);
+		assertThat(second.getAttemptNo()).isEqualTo(1);
 		assertThat(second.getVideoObjectKey()).isEqualTo(key(topic, "second"));
 		assertThat(graduationSubmissionRepository.findAll())
 				.extracting(GraduationSubmission::getAttemptNo, GraduationSubmission::getVideoObjectKey)
-				.containsExactlyInAnyOrder(tuple(1, key(topic, "first")), tuple(2, key(topic, "second")));
+				.containsExactly(tuple(1, key(topic, "second")));
 	}
 
 	@Test
@@ -90,6 +90,9 @@ class GraduationSubmitterTest {
 		assertThat(saved.getAttemptNo()).isEqualTo(2);
 		assertThat(saved.getReviewNote()).isNull();
 		assertThat(saved.getReviewedAt()).isNull();
+		assertThat(graduationSubmissionRepository.findAll())
+				.extracting(GraduationSubmission::getAttemptNo, GraduationSubmission::getVideoObjectKey)
+				.containsExactlyInAnyOrder(tuple(1, key(topic, "first")), tuple(2, key(topic, "second")));
 	}
 
 	@Test

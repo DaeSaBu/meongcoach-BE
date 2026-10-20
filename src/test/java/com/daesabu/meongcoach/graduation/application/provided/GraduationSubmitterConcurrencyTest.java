@@ -91,12 +91,12 @@ class GraduationSubmitterConcurrencyTest {
 		})).isInstanceOf(OptimisticLockingFailureException.class);
 
 		TopicGraduation saved = topicGraduationRepository.findById(graduationId).orElseThrow();
-		assertThat(saved.getAttemptNo()).isEqualTo(2);
+		assertThat(saved.getAttemptNo()).isEqualTo(1);
 		assertThat(saved.getVideoObjectKey()).isEqualTo(key("winner"));
 		assertThat(graduationSubmissionRepository.findAll())
 				.filteredOn(submission -> submission.getGraduationId().equals(graduationId))
 				.extracting(GraduationSubmission::getAttemptNo, GraduationSubmission::getVideoObjectKey)
-				.containsExactlyInAnyOrder(tuple(1, key("first")), tuple(2, key("winner")));
+				.containsExactly(tuple(1, key("winner")));
 	}
 
 	@Test

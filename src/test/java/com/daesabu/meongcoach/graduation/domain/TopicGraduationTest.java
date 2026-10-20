@@ -26,7 +26,19 @@ class TopicGraduationTest {
 	}
 
 	@Test
-	void 다시_제출하면_차수를_올리고_영상을_바꾸고_이전_판정을_지운다() {
+	void 검수_대기_중에_다시_제출하면_차수를_유지하고_영상만_바꾼다() {
+		TopicGraduation graduation = TopicGraduation.start(42L, 7L, FIRST_KEY, NOW);
+
+		graduation.resubmit(SECOND_KEY, LATER);
+
+		assertThat(graduation.getStatus()).isEqualTo(GraduationStatus.SUBMITTED);
+		assertThat(graduation.getAttemptNo()).isEqualTo(1);
+		assertThat(graduation.getVideoObjectKey()).isEqualTo(SECOND_KEY);
+		assertThat(graduation.getSubmittedAt()).isEqualTo(LATER);
+	}
+
+	@Test
+	void 보완_요청_뒤에_다시_제출하면_차수를_올리고_영상을_바꾸고_이전_판정을_지운다() {
 		TopicGraduation graduation = TopicGraduation.start(42L, 7L, FIRST_KEY, NOW);
 		graduation.requestRevision("현관 장면부터 다시 찍어 주세요.", LATER);
 
