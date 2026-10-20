@@ -5,7 +5,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Positive;
 import java.util.Objects;
 
-public record PostListRequest(@Positive Long cursor, @Min(1) @Max(50) Integer size) {
+public record PostListRequest(@Positive Long cursor, @Min(1) @Max(50) Integer size, @Positive Long lessonId) {
 
 	public static final int DEFAULT_SIZE = 20;
 

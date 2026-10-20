@@ -45,7 +45,7 @@ public class PostQueryService implements PostFinder {
 	}
 
 	private Slice<Post> getSlice(PostListRequest request) {
-		return postQueryRepository.findPosts(request.cursor(), request.size());
+		return postQueryRepository.findPosts(request.cursor(), request.lessonId(), request.size());
 	}
 
 	private Long nextCursorOf(Slice<Post> slice) {
