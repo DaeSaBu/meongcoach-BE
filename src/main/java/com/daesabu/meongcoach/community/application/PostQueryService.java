@@ -11,7 +11,7 @@ import com.daesabu.meongcoach.community.application.required.PostQueryRepository
 import com.daesabu.meongcoach.community.domain.MentionTargetType;
 import com.daesabu.meongcoach.community.domain.Post;
 import com.daesabu.meongcoach.community.domain.PostMention;
-import com.daesabu.meongcoach.user.application.provided.UserProfileFinder;
+import com.daesabu.meongcoach.user.application.provided.UserFinder;
 import com.daesabu.meongcoach.user.application.provided.UserProfileSummaryResult;
 import java.util.List;
 import java.util.Map;
@@ -32,7 +32,7 @@ import org.springframework.validation.annotation.Validated;
 public class PostQueryService implements PostFinder {
 
 	private final PostQueryRepository postQueryRepository;
-	private final UserProfileFinder userProfileFinder;
+	private final UserFinder userFinder;
 	private final MentionTargetReaders mentionTargetReaders;
 
 	@Override
@@ -68,7 +68,7 @@ public class PostQueryService implements PostFinder {
 		Set<Long> userIds = posts.stream()
 				.map(Post::getUserId)
 				.collect(Collectors.toSet());
-		return userProfileFinder.findSummaries(userIds).stream()
+		return userFinder.findProfileSummaries(userIds).stream()
 				.collect(Collectors.toMap(UserProfileSummaryResult::userId, Function.identity()));
 	}
 
