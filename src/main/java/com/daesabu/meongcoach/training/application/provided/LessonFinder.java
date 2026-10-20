@@ -1,7 +1,9 @@
 package com.daesabu.meongcoach.training.application.provided;
 
+import com.daesabu.meongcoach.training.application.provided.dto.LessonSummaryResult;
 import com.daesabu.meongcoach.training.domain.Card;
 import com.daesabu.meongcoach.training.domain.Lesson;
+import java.util.Collection;
 import java.util.List;
 
 public interface LessonFinder {
@@ -16,4 +18,9 @@ public interface LessonFinder {
 	 * 레슨을 조회한다. 레슨이 없으면 {@code LessonNotFoundException}을 던진다.
 	 */
 	Lesson find(Long lessonId);
+
+	/**
+	 * 레슨 ID 목록에 해당하는 레슨의 ID와 제목을 반환한다. 존재하지 않는 ID는 결과에서 빠진다.
+	 */
+	List<LessonSummaryResult> findSummaries(Collection<Long> lessonIds);
 }

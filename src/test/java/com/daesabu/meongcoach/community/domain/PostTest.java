@@ -20,11 +20,11 @@ class PostTest {
 
 	@Test
 	void 멘션과_함께_작성하면_멘션이_채워진다() {
-		MentionCommand mention = new MentionCommand(MentionTargetType.CARD, 10L);
+		MentionCommand mention = new MentionCommand(MentionTargetType.LESSON, 10L);
 
-		Post post = Post.write(USER_ID, new PostWriteCommand("이 카드 따라해봤어요", mention));
+		Post post = Post.write(USER_ID, new PostWriteCommand("이 레슨 따라해봤어요", mention));
 
-		assertThat(post.getMention().getTargetType()).isEqualTo(MentionTargetType.CARD);
+		assertThat(post.getMention().getTargetType()).isEqualTo(MentionTargetType.LESSON);
 		assertThat(post.getMention().getTargetId()).isEqualTo(10L);
 	}
 

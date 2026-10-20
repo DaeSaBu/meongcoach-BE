@@ -19,11 +19,11 @@ import org.junit.jupiter.api.Test;
 class MentionTargetReadersTest {
 
 	private static final MentionTargetReaders READERS = new MentionTargetReaders(
-			List.of(new StubMentionTargetReader(MentionTargetType.CARD, Map.of(1L, "앉아 준비", 2L, "기다려"))));
+			List.of(new StubMentionTargetReader(MentionTargetType.LESSON, Map.of(1L, "앉아 기초", 2L, "기다려"))));
 
 	@Test
 	void 대상이_있으면_존재_확인을_통과한다() {
-		PostMention mention = mentionOf(MentionTargetType.CARD, 1L);
+		PostMention mention = mentionOf(MentionTargetType.LESSON, 1L);
 
 		assertThatCode(() -> READERS.validateExists(mention))
 				.doesNotThrowAnyException();
@@ -31,7 +31,7 @@ class MentionTargetReadersTest {
 
 	@Test
 	void 대상이_없으면_예외를_던진다() {
-		PostMention mention = mentionOf(MentionTargetType.CARD, 999L);
+		PostMention mention = mentionOf(MentionTargetType.LESSON, 999L);
 
 		assertThatThrownBy(() -> READERS.validateExists(mention))
 				.isInstanceOf(MentionTargetNotFoundException.class);
@@ -40,26 +40,26 @@ class MentionTargetReadersTest {
 	@Test
 	void 멘션을_대상_종류별로_묶어_요약을_조회한다() {
 		List<PostMention> mentions = List.of(
-				mentionOf(MentionTargetType.CARD, 1L),
-				mentionOf(MentionTargetType.CARD, 2L),
-				mentionOf(MentionTargetType.CARD, 1L));
+				mentionOf(MentionTargetType.LESSON, 1L),
+				mentionOf(MentionTargetType.LESSON, 2L),
+				mentionOf(MentionTargetType.LESSON, 1L));
 
 		Map<MentionTargetType, Map<Long, MentionTargetResult>> summaries = READERS.findSummaries(mentions);
 
-		assertThat(summaries.get(MentionTargetType.CARD)).containsOnly(
-				Map.entry(1L, new MentionTargetResult(MentionTargetType.CARD, 1L, "앉아 준비")),
-				Map.entry(2L, new MentionTargetResult(MentionTargetType.CARD, 2L, "기다려")));
+		assertThat(summaries.get(MentionTargetType.LESSON)).containsOnly(
+				Map.entry(1L, new MentionTargetResult(MentionTargetType.LESSON, 1L, "앉아 기초")),
+				Map.entry(2L, new MentionTargetResult(MentionTargetType.LESSON, 2L, "기다려")));
 	}
 
 	@Test
 	void 없는_대상은_요약에서_빠진다() {
 		List<PostMention> mentions = List.of(
-				mentionOf(MentionTargetType.CARD, 1L),
-				mentionOf(MentionTargetType.CARD, 999L));
+				mentionOf(MentionTargetType.LESSON, 1L),
+				mentionOf(MentionTargetType.LESSON, 999L));
 
 		Map<MentionTargetType, Map<Long, MentionTargetResult>> summaries = READERS.findSummaries(mentions);
 
-		assertThat(summaries.get(MentionTargetType.CARD)).containsOnlyKeys(1L);
+		assertThat(summaries.get(MentionTargetType.LESSON)).containsOnlyKeys(1L);
 	}
 
 	@Test
@@ -68,7 +68,7 @@ class MentionTargetReadersTest {
 
 		assertThatThrownBy(() -> new MentionTargetReaders(readers))
 				.isInstanceOf(IllegalStateException.class)
-				.hasMessageContaining("CARD");
+				.hasMessageContaining("LESSON");
 	}
 
 	private static PostMention mentionOf(MentionTargetType targetType, Long targetId) {

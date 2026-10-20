@@ -15,13 +15,10 @@ import com.daesabu.meongcoach.community.domain.Post;
 import com.daesabu.meongcoach.community.domain.PostContent;
 import com.daesabu.meongcoach.community.domain.PostWriteCommand;
 import com.daesabu.meongcoach.support.ApplicationTest;
-import com.daesabu.meongcoach.training.application.required.CardRepository;
 import com.daesabu.meongcoach.training.application.required.CurriculumRepository;
 import com.daesabu.meongcoach.training.application.required.LessonRepository;
 import com.daesabu.meongcoach.training.application.required.TopicRepository;
 import com.daesabu.meongcoach.training.application.required.TrainingCategoryRepository;
-import com.daesabu.meongcoach.training.domain.Card;
-import com.daesabu.meongcoach.training.domain.CardFixture;
 import com.daesabu.meongcoach.training.domain.Curriculum;
 import com.daesabu.meongcoach.training.domain.CurriculumFixture;
 import com.daesabu.meongcoach.training.domain.Lesson;
@@ -72,9 +69,6 @@ class PostFinderTest {
 
 	@Autowired
 	private LessonRepository lessonRepository;
-
-	@Autowired
-	private CardRepository cardRepository;
 
 	@Autowired
 	private EntityManager entityManager;
@@ -183,15 +177,14 @@ class PostFinderTest {
 	@Test
 	void 멘션_대상_요약을_함께_반환한다() {
 		Lesson lesson = saveLesson("기본 교육");
-		Card card = saveCard(lesson, "앉아 준비");
-		savePost(USER_ID, "본문", card.getId());
+		savePost(USER_ID, "본문", lesson.getId());
 		flushAndClear();
 
 		PostListResult result = postFinder.findPosts(new PostListRequest(null, 20));
 
 		assertThat(result.posts()).extracting(PostResult::mentionTarget)
 				.extracting(MentionTargetResult::targetType, MentionTargetResult::targetId, MentionTargetResult::title)
-				.containsExactly(tuple(MentionTargetType.CARD, card.getId(), "앉아 준비"));
+				.containsExactly(tuple(MentionTargetType.LESSON, lesson.getId(), "기본 교육 레슨"));
 	}
 
 	@Test
@@ -237,8 +230,8 @@ class PostFinderTest {
 		return postRepository.save(Post.write(userId, new PostWriteCommand(content, null)));
 	}
 
-	private Post savePost(Long userId, String content, Long cardId) {
-		MentionCommand mention = new MentionCommand(MentionTargetType.CARD, cardId);
+	private Post savePost(Long userId, String content, Long lessonId) {
+		MentionCommand mention = new MentionCommand(MentionTargetType.LESSON, lessonId);
 		return postRepository.save(Post.write(userId, new PostWriteCommand(content, mention)));
 	}
 
@@ -256,10 +249,6 @@ class PostFinderTest {
 		Curriculum curriculum = curriculumRepository.save(
 				CurriculumFixture.create(topic, title + " 커리큘럼", 1, null, null));
 		return lessonRepository.save(LessonFixture.create(curriculum, title + " 레슨", 1, 5));
-	}
-
-	private Card saveCard(Lesson lesson, String title) {
-		return cardRepository.save(CardFixture.create(lesson, title, 1, "지시문"));
 	}
 
 	private void flushAndClear() {

@@ -8,6 +8,7 @@ import com.daesabu.meongcoach.entitlement.domain.EntitlementFixture;
 import com.daesabu.meongcoach.entitlement.domain.exception.EntitlementRequiredException;
 import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;
 import com.daesabu.meongcoach.support.ApplicationTest;
+import com.daesabu.meongcoach.training.application.provided.dto.LessonSummaryResult;
 import com.daesabu.meongcoach.training.application.required.CardRepository;
 import com.daesabu.meongcoach.training.application.required.CurriculumRepository;
 import com.daesabu.meongcoach.training.application.required.LessonRepository;
@@ -29,6 +30,7 @@ import com.daesabu.meongcoach.training.domain.TrainingCategoryFixture;
 import com.daesabu.meongcoach.training.domain.exception.LessonNotFoundException;
 import jakarta.persistence.EntityManager;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -197,6 +199,45 @@ class LessonFinderTest {
 		List<Card> cards = lessonFinder.findCards(USER_ID, lesson.getId());
 
 		assertThat(cards).extracting(Card::getInstruction).containsExactly("지시문");
+	}
+
+	@Test
+	void 레슨의_id와_제목을_요약으로_반환한다() {
+		Lesson lesson = saveLesson("기본 교육");
+		flushAndClear();
+
+		List<LessonSummaryResult> summaries = lessonFinder.findSummaries(Set.of(lesson.getId()));
+
+		assertThat(summaries).containsExactly(new LessonSummaryResult(lesson.getId(), "기본 교육 레슨"));
+	}
+
+	@Test
+	void 여러_레슨의_요약을_한_번에_반환한다() {
+		Lesson first = saveLesson("기본 교육");
+		Lesson second = saveLesson("산책 교육");
+		flushAndClear();
+
+		List<LessonSummaryResult> summaries = lessonFinder.findSummaries(Set.of(first.getId(), second.getId()));
+
+		assertThat(summaries).extracting(LessonSummaryResult::title)
+				.containsExactlyInAnyOrder("기본 교육 레슨", "산책 교육 레슨");
+	}
+
+	@Test
+	void 존재하지_않는_레슨_id는_요약_결과에서_빠진다() {
+		Lesson lesson = saveLesson("기본 교육");
+		flushAndClear();
+
+		List<LessonSummaryResult> summaries = lessonFinder.findSummaries(Set.of(lesson.getId(), -1L));
+
+		assertThat(summaries).extracting(LessonSummaryResult::id).containsExactly(lesson.getId());
+	}
+
+	@Test
+	void 빈_id_목록이면_빈_요약_목록을_반환한다() {
+		List<LessonSummaryResult> summaries = lessonFinder.findSummaries(Set.of());
+
+		assertThat(summaries).isEmpty();
 	}
 
 	private Lesson saveLesson(String title) {
