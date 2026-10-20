@@ -2,7 +2,7 @@ package com.daesabu.meongcoach.community.application;
 
 import com.daesabu.meongcoach.community.application.provided.dto.MentionTargetResult;
 import com.daesabu.meongcoach.community.domain.MentionTargetType;
-import com.daesabu.meongcoach.training.application.provided.CardFinder;
+import com.daesabu.meongcoach.training.application.provided.LessonFinder;
 import java.util.Collection;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -10,19 +10,19 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-public class CardMentionTargetReader implements MentionTargetReader {
+public class LessonMentionTargetReader implements MentionTargetReader {
 
-	private final CardFinder cardFinder;
+	private final LessonFinder lessonFinder;
 
 	@Override
 	public MentionTargetType targetType() {
-		return MentionTargetType.CARD;
+		return MentionTargetType.LESSON;
 	}
 
 	@Override
 	public List<MentionTargetResult> findSummaries(Collection<Long> targetIds) {
-		return cardFinder.findSummaries(targetIds).stream()
-				.map(card -> new MentionTargetResult(MentionTargetType.CARD, card.id(), card.title()))
+		return lessonFinder.findSummaries(targetIds).stream()
+				.map(lesson -> new MentionTargetResult(MentionTargetType.LESSON, lesson.id(), lesson.title()))
 				.toList();
 	}
 }
