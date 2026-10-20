@@ -13,8 +13,8 @@ class CommentTest {
 	private final Post post = Post.write(7L, new PostWriteCommand("오늘 앉아 훈련 성공!", null));
 
 	@Test
-	void 작성하면_게시글과_작성자와_본문이_채워진다() {
-		Comment comment = Comment.write(post, USER_ID, "저희 강아지도 성공했어요!");
+	void 등록하면_게시글과_작성자와_본문이_채워진다() {
+		Comment comment = Comment.register(post, USER_ID, "저희 강아지도 성공했어요!");
 
 		assertThat(comment.getPost()).isSameAs(post);
 		assertThat(comment.getUserId()).isEqualTo(USER_ID);
@@ -23,14 +23,14 @@ class CommentTest {
 	}
 
 	@Test
-	void 본문이_비어_있으면_작성할_수_없다() {
-		assertThatThrownBy(() -> Comment.write(post, USER_ID, "   "))
+	void 본문이_비어_있으면_등록할_수_없다() {
+		assertThatThrownBy(() -> Comment.register(post, USER_ID, "   "))
 				.isInstanceOf(InvalidCommentContentException.class);
 	}
 
 	@Test
 	void 삭제하면_삭제_시각이_기록된다() {
-		Comment comment = Comment.write(post, USER_ID, "저희 강아지도 성공했어요!");
+		Comment comment = Comment.register(post, USER_ID, "저희 강아지도 성공했어요!");
 
 		comment.delete();
 

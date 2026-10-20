@@ -33,7 +33,7 @@ public class CommentRegisterService implements CommentRegister {
 	public Comment register(Long userId, Long postId, CommentRegisterRequest request) {
 		Post post = postRepository.findById(postId)
 				.orElseThrow(() -> new PostNotFoundException(postId));
-		Comment comment = Comment.write(post, userId, request.content());
+		Comment comment = Comment.register(post, userId, request.content());
 		Optional<Comment> root = findRoot(postId, request.parentId());
 
 		commentRepository.save(comment);
