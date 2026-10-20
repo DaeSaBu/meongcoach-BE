@@ -21,6 +21,13 @@ class ImageObjectKeyTest {
 	}
 
 	@Test
+	void 커뮤니티_게시글_이미지의_객체_키는_커뮤니티_경로_구획을_쓴다() {
+		ImageObjectKey key = ImageObjectKey.createCommunity(7L, ImageType.WEBP);
+
+		assertThat(key.value()).matches("images/community-post/7/[0-9a-f-]{36}\\.webp");
+	}
+
+	@Test
 	void 생성할_때마다_서로_다른_객체_키를_만든다() {
 		ImageObjectKey first = ImageObjectKey.create(ImageUploadTarget.USER_PROFILE, 7L, ImageType.JPEG);
 		ImageObjectKey second = ImageObjectKey.create(ImageUploadTarget.USER_PROFILE, 7L, ImageType.JPEG);
