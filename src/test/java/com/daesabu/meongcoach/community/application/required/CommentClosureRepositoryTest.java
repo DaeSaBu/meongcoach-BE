@@ -56,6 +56,6 @@ class CommentClosureRepositoryTest {
 
 	private Comment persistComment() {
 		Post post = entityManager.persist(Post.write(USER_ID, new PostWriteCommand("오늘 앉아 훈련 성공!", null)));
-		return entityManager.persist(Comment.write(post, USER_ID, "축하해요!"));
+		return entityManager.persist(Comment.register(post, USER_ID, "축하해요!"));
 	}
 }

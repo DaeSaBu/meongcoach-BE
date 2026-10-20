@@ -10,7 +10,7 @@ class CommentClosureTest {
 
 	@Test
 	void 자기_자신_경로는_조상과_자손이_같고_깊이가_0이다() {
-		Comment comment = Comment.write(post, 42L, "저희 강아지도 성공했어요!");
+		Comment comment = Comment.register(post, 42L, "저희 강아지도 성공했어요!");
 
 		CommentClosure closure = CommentClosure.self(comment);
 
@@ -21,8 +21,8 @@ class CommentClosureTest {
 
 	@Test
 	void 답글_경로는_루트가_조상이고_답글이_자손이며_깊이가_1이다() {
-		Comment root = Comment.write(post, 42L, "저희 강아지도 성공했어요!");
-		Comment reply = Comment.write(post, 43L, "축하해요!");
+		Comment root = Comment.register(post, 42L, "저희 강아지도 성공했어요!");
+		Comment reply = Comment.register(post, 43L, "축하해요!");
 
 		CommentClosure closure = CommentClosure.reply(root, reply);
 

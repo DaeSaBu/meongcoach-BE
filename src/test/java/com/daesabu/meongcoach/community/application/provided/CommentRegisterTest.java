@@ -160,13 +160,13 @@ class CommentRegisterTest {
 	}
 
 	private Comment saveRootComment(Post post) {
-		Comment root = commentRepository.save(Comment.write(post, OTHER_USER_ID, "축하해요!"));
+		Comment root = commentRepository.save(Comment.register(post, OTHER_USER_ID, "축하해요!"));
 		commentClosureRepository.save(CommentClosure.self(root));
 		return root;
 	}
 
 	private Comment saveReply(Comment root) {
-		Comment reply = commentRepository.save(Comment.write(root.getPost(), OTHER_USER_ID, "감사해요!"));
+		Comment reply = commentRepository.save(Comment.register(root.getPost(), OTHER_USER_ID, "감사해요!"));
 		commentClosureRepository.save(CommentClosure.self(reply));
 		commentClosureRepository.save(CommentClosure.reply(root, reply));
 		return reply;
