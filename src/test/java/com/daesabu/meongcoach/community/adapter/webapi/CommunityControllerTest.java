@@ -65,12 +65,13 @@ class CommunityControllerTest {
 				PostFixture.create(29L, 8L, "오늘 산책 성공!", LocalDateTime.of(2026, 10, 19, 9, 0, 0)),
 				new UserProfileSummaryResult(8L, "콩이엄마", "https://cdn.example.com/kong.png"),
 				null);
-		given(postFinder.findPosts(new PostListRequest(31L, 2)))
+		given(postFinder.findPosts(new PostListRequest(31L, 2, 12L)))
 				.willReturn(new PostListResult(List.of(withMention, withoutMention), 29L));
 
 		mockMvc.perform(get("/api/community/posts")
 						.param("cursor", "31")
 						.param("size", "2")
+						.param("lessonId", "12")
 						.principal(CURRENT_USER)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isOk())
@@ -90,7 +91,9 @@ class CommunityControllerTest {
 						queryParameters(
 								parameterWithName("cursor").optional()
 										.description("이전 응답의 nextCursor. 첫 페이지는 생략하며, 이 ID보다 작은 게시글부터 조회한다"),
-								parameterWithName("size").optional().description("한 번에 조회할 게시글 수. 1~50, 기본 20")
+								parameterWithName("size").optional().description("한 번에 조회할 게시글 수. 1~50, 기본 20"),
+								parameterWithName("lessonId").optional()
+										.description("이 레슨을 멘션한 게시글만 조회한다. 생략하면 전체 게시글을 조회한다")
 						),
 						responseFields(
 								fieldWithPath("posts[]").description("게시글 목록. 최신순(게시글 ID 내림차순)"),
@@ -122,7 +125,7 @@ class CommunityControllerTest {
 				.andExpect(jsonPath("$.posts").isEmpty())
 				.andExpect(jsonPath("$.nextCursor").value(nullValue()));
 
-		then(postFinder).should().findPosts(new PostListRequest(null, PostListRequest.DEFAULT_SIZE));
+		then(postFinder).should().findPosts(new PostListRequest(null, PostListRequest.DEFAULT_SIZE, null));
 	}
 
 	@Test
@@ -170,6 +173,17 @@ class CommunityControllerTest {
 						.principal(CURRENT_USER))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.errors[0].field").value("cursor"));
+
+		then(postFinder).shouldHaveNoInteractions();
+	}
+
+	@Test
+	void lessonId가_숫자가_아니면_400을_반환한다() throws Exception {
+		mockMvc.perform(get("/api/community/posts")
+						.param("lessonId", "abc")
+						.principal(CURRENT_USER))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.errors[0].field").value("lessonId"));
 
 		then(postFinder).shouldHaveNoInteractions();
 	}
