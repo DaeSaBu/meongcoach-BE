@@ -13,10 +13,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @ApplicationTest
-class UserProfileFinderTest {
+class UserFinderTest {
 
 	@Autowired
-	private UserProfileFinder userProfileFinder;
+	private UserFinder userFinder;
 
 	@Autowired
 	private UserRepository userRepository;
@@ -29,7 +29,7 @@ class UserProfileFinderTest {
 		User user = saveUserWithProfile("멍멍이집사", "https://cdn.example.com/profile.png");
 		flushAndClear();
 
-		List<UserProfileSummaryResult> summaries = userProfileFinder.findSummaries(Set.of(user.getId()));
+		List<UserProfileSummaryResult> summaries = userFinder.findProfileSummaries(Set.of(user.getId()));
 
 		assertThat(summaries).containsExactly(
 				new UserProfileSummaryResult(user.getId(), "멍멍이집사", "https://cdn.example.com/profile.png"));
@@ -41,7 +41,7 @@ class UserProfileFinderTest {
 		User withoutProfile = userRepository.save(User.registerUser());
 		flushAndClear();
 
-		List<UserProfileSummaryResult> summaries = userProfileFinder.findSummaries(
+		List<UserProfileSummaryResult> summaries = userFinder.findProfileSummaries(
 				Set.of(withProfile.getId(), withoutProfile.getId()));
 
 		assertThat(summaries).extracting(UserProfileSummaryResult::userId).containsExactly(withProfile.getId());
@@ -49,7 +49,7 @@ class UserProfileFinderTest {
 
 	@Test
 	void 빈_id_목록이면_빈_목록을_반환한다() {
-		List<UserProfileSummaryResult> summaries = userProfileFinder.findSummaries(Set.of());
+		List<UserProfileSummaryResult> summaries = userFinder.findProfileSummaries(Set.of());
 
 		assertThat(summaries).isEmpty();
 	}
