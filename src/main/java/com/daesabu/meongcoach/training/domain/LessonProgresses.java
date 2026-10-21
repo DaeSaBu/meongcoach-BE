@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -27,15 +28,9 @@ public class LessonProgresses {
 	}
 
 	public Map<Long, Integer> completedCounts(Collection<Long> lessonIds) {
-		Map<Long, Integer> counts = new LinkedHashMap<>();
-		for (Long lessonId : lessonIds) {
-			LessonProgress progress = progresses.get(lessonId);
-			int count = 0;
-			if (progress != null) {
-				count = progress.getCompletedCount();
-			}
-			counts.put(lessonId, count);
-		}
-		return counts;
+		return lessonIds.stream().collect(Collectors.toMap(Function.identity(),
+				lessonId -> Optional.ofNullable(progresses.get(lessonId))
+						.map(LessonProgress::getCompletedCount).orElse(0),
+				(first, repeated) -> repeated, LinkedHashMap::new));
 	}
 }
