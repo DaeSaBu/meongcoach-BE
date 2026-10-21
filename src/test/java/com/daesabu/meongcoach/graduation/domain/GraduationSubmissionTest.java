@@ -49,7 +49,7 @@ class GraduationSubmissionTest {
 		TopicGraduation nextAttempt = TopicGraduationFixture.create(1L, 42L, 7L,
 				GraduationStatus.SUBMITTED, 2, REPLACED_KEY, REPLACED_AT, null, null);
 
-		assertThatThrownBy(() -> submission.replaceVideo(nextAttempt)).isInstanceOf(IllegalStateException.class);
+		assertThatThrownBy(() -> submission.replaceVideo(nextAttempt)).isInstanceOf(IllegalArgumentException.class);
 	}
 
 	@Test
@@ -71,7 +71,7 @@ class GraduationSubmissionTest {
 		TopicGraduation other = TopicGraduationFixture.create(2L, 42L, 8L,
 				GraduationStatus.SUBMITTED, 1, REPLACED_KEY, REPLACED_AT, null, null);
 
-		assertThatThrownBy(() -> first.getCurrentSubmission().replaceVideo(other)).isInstanceOf(IllegalStateException.class);
+		assertThatThrownBy(() -> first.getCurrentSubmission().replaceVideo(other)).isInstanceOf(IllegalArgumentException.class);
 	}
 
 }
