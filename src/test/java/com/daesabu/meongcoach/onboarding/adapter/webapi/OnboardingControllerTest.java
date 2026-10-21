@@ -137,7 +137,7 @@ class OnboardingControllerTest {
 				.andExpect(jsonPath("$.dogIds[0]").value(1))
 				.andDo(document("onboarding/complete",
 						requestFields(
-								fieldWithPath("nickname").description("사용자 닉네임. 필수 입력, 최대 50자"),
+								fieldWithPath("nickname").description("사용자 닉네임. 필수 입력, 최대 12자"),
 								fieldWithPath("mbti").description("사용자 MBTI 코드. 필수 입력"),
 								fieldWithPath("profileImageUrl").description(
 										"사용자 프로필 이미지 공개 URL. 이미지 업로드 URL 발급 API의 "
@@ -149,7 +149,7 @@ class OnboardingControllerTest {
 										"앞으로 교육할 양수 목표 토픽 ID 배열 (최대 100개). "
 												+ "미입력·null·빈 배열은 선택 없음").optional(),
 								fieldWithPath("dogs[]").description("등록할 강아지 목록. 1마리 이상 5마리 이하"),
-								fieldWithPath("dogs[].name").description("강아지 이름. 필수 입력, 최대 50자"),
+								fieldWithPath("dogs[].name").description("강아지 이름. 필수 입력, 최대 12자"),
 								fieldWithPath("dogs[].breed").description(
 										"메타데이터 조회 응답에서 선택한 강아지 견종 코드. "
 												+ "목록에 없는 견종은 견종 이름을 직접 입력. 최대 30자"),

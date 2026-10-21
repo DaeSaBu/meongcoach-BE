@@ -16,7 +16,7 @@ import java.util.Objects;
 import java.util.Set;
 
 public record OnboardingCompleteRequest(
-		@NotBlank @Size(max = 50) String nickname,
+		@NotBlank @Size(max = 12) String nickname,
 		@NotBlank String mbti,
 		@Size(max = 512) String profileImageUrl,
 		@Size(max = 100) List<@NotNull @Positive Long> priorTrainingTopicIds,
@@ -38,7 +38,7 @@ public record OnboardingCompleteRequest(
 	}
 
 	public record DogRequest(
-			@NotBlank @Size(max = 50) String name,
+			@NotBlank @Size(max = 12) String name,
 			@NotBlank @Size(max = 30) String breed,
 			@NotBlank String sex,
 			@Past LocalDate birthDate,
