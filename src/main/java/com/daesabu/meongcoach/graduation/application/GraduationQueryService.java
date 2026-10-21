@@ -14,7 +14,6 @@ import com.daesabu.meongcoach.training.application.provided.dto.TopicResult;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -56,7 +55,7 @@ public class GraduationQueryService implements GraduationFinder {
 		List<Long> graduationIds = graduations.stream().map(TopicGraduation::getId).toList();
 		Map<Long, GraduationSubmission> submissions = graduationSubmissionRepository
 				.findCurrentSubmissionsByGraduationIdIn(graduationIds).stream()
-				.collect(Collectors.toMap(submission -> submission.getGraduation().getId(), Function.identity()));
+				.collect(Collectors.toMap(submission -> submission.getGraduation().getId(), submission -> submission));
 		return graduations.stream()
 				.map(graduation -> new GraduationSummaryResult(graduation,
 						submissions.get(graduation.getId()), findTopic(topics, graduation.getTopicId())))
