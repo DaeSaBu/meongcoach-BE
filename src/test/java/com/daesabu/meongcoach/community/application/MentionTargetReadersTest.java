@@ -9,7 +9,7 @@ import com.daesabu.meongcoach.community.domain.MentionCommand;
 import com.daesabu.meongcoach.community.domain.MentionTargetType;
 import com.daesabu.meongcoach.community.domain.Post;
 import com.daesabu.meongcoach.community.domain.PostMention;
-import com.daesabu.meongcoach.community.domain.PostWriteCommand;
+import com.daesabu.meongcoach.community.domain.PostRegisterCommand;
 import com.daesabu.meongcoach.community.domain.exception.MentionTargetNotFoundException;
 import java.util.Collection;
 import java.util.List;
@@ -73,7 +73,7 @@ class MentionTargetReadersTest {
 
 	private static PostMention mentionOf(MentionTargetType targetType, Long targetId) {
 		MentionCommand mention = new MentionCommand(targetType, targetId);
-		Post post = Post.write(42L, new PostWriteCommand("본문", mention));
+		Post post = Post.register(42L, new PostRegisterCommand("본문", mention, List.of()));
 		return post.getMention();
 	}
 

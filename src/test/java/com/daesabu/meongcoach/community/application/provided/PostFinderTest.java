@@ -13,7 +13,7 @@ import com.daesabu.meongcoach.community.domain.MentionCommand;
 import com.daesabu.meongcoach.community.domain.MentionTargetType;
 import com.daesabu.meongcoach.community.domain.Post;
 import com.daesabu.meongcoach.community.domain.PostContent;
-import com.daesabu.meongcoach.community.domain.PostWriteCommand;
+import com.daesabu.meongcoach.community.domain.PostRegisterCommand;
 import com.daesabu.meongcoach.community.domain.exception.PostNotFoundException;
 import com.daesabu.meongcoach.support.ApplicationTest;
 import com.daesabu.meongcoach.training.application.required.CurriculumRepository;
@@ -283,12 +283,12 @@ class PostFinderTest {
 	}
 
 	private Post savePost(Long userId, String content) {
-		return postRepository.save(Post.write(userId, new PostWriteCommand(content, null)));
+		return postRepository.save(Post.register(userId, new PostRegisterCommand(content, null, List.of())));
 	}
 
 	private Post savePost(Long userId, String content, Long lessonId) {
 		MentionCommand mention = new MentionCommand(MentionTargetType.LESSON, lessonId);
-		return postRepository.save(Post.write(userId, new PostWriteCommand(content, mention)));
+		return postRepository.save(Post.register(userId, new PostRegisterCommand(content, mention, List.of())));
 	}
 
 	private User saveUserWithProfile(String nickname, String profileImageUrl) {

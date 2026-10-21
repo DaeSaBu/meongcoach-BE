@@ -10,13 +10,14 @@ import com.daesabu.meongcoach.community.application.required.PostRepository;
 import com.daesabu.meongcoach.community.domain.Comment;
 import com.daesabu.meongcoach.community.domain.CommentClosure;
 import com.daesabu.meongcoach.community.domain.Post;
-import com.daesabu.meongcoach.community.domain.PostWriteCommand;
+import com.daesabu.meongcoach.community.domain.PostRegisterCommand;
 import com.daesabu.meongcoach.community.domain.exception.CommentNotFoundException;
 import com.daesabu.meongcoach.community.domain.exception.InvalidCommentContentException;
 import com.daesabu.meongcoach.community.domain.exception.PostNotFoundException;
 import com.daesabu.meongcoach.support.ApplicationTest;
 import jakarta.persistence.EntityManager;
 import jakarta.validation.ConstraintViolationException;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -156,7 +157,7 @@ class CommentRegisterTest {
 	}
 
 	private Post savePost() {
-		return postRepository.save(Post.write(OTHER_USER_ID, new PostWriteCommand("오늘 앉아 훈련 성공!", null)));
+		return postRepository.save(Post.register(OTHER_USER_ID, new PostRegisterCommand("오늘 앉아 훈련 성공!", null, List.of())));
 	}
 
 	private Comment saveRootComment(Post post) {
