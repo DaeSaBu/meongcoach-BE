@@ -66,7 +66,7 @@ public class GraduationSubmission extends BaseTimeEntity {
 	@Column(nullable = false, columnDefinition = "jsonb")
 	private List<String> retakeInstructions = new ArrayList<>();
 
-	public static GraduationSubmission record(TopicGraduation graduation) {
+	public static GraduationSubmission from(TopicGraduation graduation) {
 		GraduationSubmission submission = new GraduationSubmission();
 		submission.status = GraduationSubmissionStatus.SUBMITTED;
 		submission.graduationId = requireNonNull(graduation.getId());

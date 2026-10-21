@@ -19,7 +19,7 @@ class GraduationSubmissionTest {
 		TopicGraduation graduation = TopicGraduation.start(42L, 7L, VIDEO_KEY, SUBMITTED_AT);
 		ReflectionTestUtils.setField(graduation, "id", 1L);
 
-		GraduationSubmission submission = GraduationSubmission.record(graduation);
+		GraduationSubmission submission = GraduationSubmission.from(graduation);
 
 		assertThat(submission.getGraduationId()).isEqualTo(1L);
 		assertThat(submission.getAttemptNo()).isEqualTo(1);
@@ -31,7 +31,7 @@ class GraduationSubmissionTest {
 	void 같은_차수의_기록을_수료_행의_새_영상으로_바꾼다() {
 		TopicGraduation graduation = TopicGraduation.start(42L, 7L, VIDEO_KEY, SUBMITTED_AT);
 		ReflectionTestUtils.setField(graduation, "id", 1L);
-		GraduationSubmission submission = GraduationSubmission.record(graduation);
+		GraduationSubmission submission = GraduationSubmission.from(graduation);
 		graduation.resubmit(REPLACED_KEY, REPLACED_AT);
 
 		submission.replaceVideo(graduation);

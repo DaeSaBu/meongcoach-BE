@@ -16,7 +16,7 @@ public final class TopicGraduationFixture {
 		ReflectionTestUtils.setField(graduation, "id", id);
 		ReflectionTestUtils.setField(graduation, "status", status);
 		ReflectionTestUtils.setField(graduation, "attemptNo", attemptNo);
-		GraduationSubmission submission = GraduationSubmission.record(graduation);
+		GraduationSubmission submission = GraduationSubmission.from(graduation);
 		ReflectionTestUtils.setField(submission, "status", GraduationSubmissionStatus.valueOf(status.name()));
 		ReflectionTestUtils.setField(submission, "reviewedAt", reviewedAt);
 		ReflectionTestUtils.setField(submission, "reviewNote", reviewNote);
