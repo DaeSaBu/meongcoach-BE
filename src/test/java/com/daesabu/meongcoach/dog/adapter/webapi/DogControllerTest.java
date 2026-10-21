@@ -201,6 +201,40 @@ class DogControllerTest {
 	}
 
 	@Test
+	void 이름이_12자이면_강아지를_등록할_수_있다() throws Exception {
+		String request = REGISTER_BODY.replace(
+				"\"name\": \"초코\"",
+				"\"name\": \"" + "가".repeat(12) + "\"");
+		given(dogRegister.register(eq(42L), any(DogRegisterInfo.class)))
+				.willReturn(10L);
+		given(dogProfileFinder.findDog(42L, 10L))
+				.willReturn(selectedDog(10L));
+
+		mockMvc.perform(post("/api/dogs")
+						.principal(CURRENT_USER)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(request))
+				.andExpect(status().isCreated());
+	}
+
+	@Test
+	void 이름이_12자를_넘으면_등록은_검증에_실패한다() throws Exception {
+		String request = REGISTER_BODY.replace(
+				"\"name\": \"초코\"",
+				"\"name\": \"" + "가".repeat(13) + "\"");
+
+		mockMvc.perform(post("/api/dogs")
+						.principal(CURRENT_USER)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(request))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
+				.andExpect(jsonPath("$.errors[0].field").value("name"));
+
+		then(dogRegister).shouldHaveNoInteractions();
+	}
+
+	@Test
 	void 이름이_비어_있으면_등록은_검증에_실패한다() throws Exception {
 		mockMvc.perform(post("/api/dogs")
 						.principal(CURRENT_USER)
@@ -649,6 +683,39 @@ class DogControllerTest {
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
 				.andExpect(jsonPath("$.errors[0].field").value("breed"));
+
+		then(dogProfileUpdater).shouldHaveNoInteractions();
+	}
+
+	@Test
+	void 이름이_12자이면_강아지_프로필을_수정할_수_있다() throws Exception {
+		String request = UPDATE_BODY.replace(
+				"\"name\": \"보리\"",
+				"\"name\": \"" + "가".repeat(12) + "\"");
+		given(dogProfileUpdater.update(eq(42L), eq(10L),
+				any(DogProfileUpdateCommand.class)))
+				.willReturn(updatedDog(10L));
+
+		mockMvc.perform(put("/api/dogs/{dogId}", 10L)
+						.principal(CURRENT_USER)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(request))
+				.andExpect(status().isOk());
+	}
+
+	@Test
+	void 이름이_12자를_넘으면_수정은_검증에_실패한다() throws Exception {
+		String request = UPDATE_BODY.replace(
+				"\"name\": \"보리\"",
+				"\"name\": \"" + "가".repeat(13) + "\"");
+
+		mockMvc.perform(put("/api/dogs/{dogId}", 10L)
+						.principal(CURRENT_USER)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(request))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
+				.andExpect(jsonPath("$.errors[0].field").value("name"));
 
 		then(dogProfileUpdater).shouldHaveNoInteractions();
 	}
