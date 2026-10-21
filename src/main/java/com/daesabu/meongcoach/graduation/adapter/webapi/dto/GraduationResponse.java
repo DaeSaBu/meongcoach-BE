@@ -5,11 +5,11 @@ import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationDeta
 public record GraduationResponse(Long topicId, String topicTitle, boolean eligible, TopicGraduationResponse graduation) {
 
 	public static GraduationResponse from(GraduationDetailResult result) {
-		if (result.graduation() == null) {
+		if (result.submission() == null) {
 			return new GraduationResponse(result.topic().id(), result.topic().title(), result.eligible(), null);
 		}
 		TopicGraduationResponse graduation = TopicGraduationResponse.of(
-				result.graduation(), result.submission(), result.videoUrl());
+				result.submission(), result.videoUrl());
 		return new GraduationResponse(result.topic().id(), result.topic().title(), result.eligible(), graduation);
 	}
 }

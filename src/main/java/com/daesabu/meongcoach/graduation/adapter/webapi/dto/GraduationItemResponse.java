@@ -1,16 +1,16 @@
 package com.daesabu.meongcoach.graduation.adapter.webapi.dto;
 
 import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationSummaryResult;
-import com.daesabu.meongcoach.graduation.domain.TopicGraduation;
+import com.daesabu.meongcoach.graduation.domain.GraduationSubmission;
 import java.time.Instant;
 
-public record GraduationItemResponse(Long graduationId, Long topicId, String topicTitle, String status,
-                                     Instant submittedAt, Instant reviewedAt, String reviewNote) {
+public record GraduationItemResponse(Long submissionId, Long topicId, String topicTitle, String status,
+                                     Instant submittedAt, Instant reviewedAt, com.daesabu.meongcoach.graduation.domain.GraduationReview review) {
 
 	public static GraduationItemResponse from(GraduationSummaryResult result) {
-		TopicGraduation graduation = result.graduation();
+		GraduationSubmission graduation = result.submission();
 		return new GraduationItemResponse(graduation.getId(), graduation.getTopicId(), result.topic().title(),
 				graduation.getStatus().name(), graduation.getSubmittedAt(),
-				result.submission().getReviewedAt(), result.submission().getReviewNote());
+				result.submission().getReviewedAt(), result.submission().getReview());
 	}
 }

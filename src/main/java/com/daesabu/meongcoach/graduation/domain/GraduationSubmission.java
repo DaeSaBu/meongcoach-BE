@@ -9,15 +9,11 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -35,9 +31,13 @@ public class GraduationSubmission extends BaseTimeEntity {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@ManyToOne(fetch = FetchType.LAZY, optional = false)
-	@JoinColumn(name = "graduation_id", nullable = false)
-	private TopicGraduation graduation;
+ @jakarta.persistence.Version
+ @Column(nullable = false)
+ private Long version;
+ @Column(nullable = false)
+ private Long userId;
+ @Column(nullable = false)
+ private Long topicId;
 
 	@Column(nullable = false, length = 512)
 	private String videoObjectKey;
@@ -51,52 +51,47 @@ public class GraduationSubmission extends BaseTimeEntity {
 
 	private Instant reviewedAt;
 
-	@Column(length = 500)
-	private String reviewNote;
 
 	@Column(length = 512)
 	private String retakeImageUrl;
 
 	@JdbcTypeCode(SqlTypes.JSON)
 	@Column(nullable = false, columnDefinition = "jsonb")
-	private List<String> retakeInstructions = new ArrayList<>();
+ private GraduationReview review = new GraduationReview(null, List.of());
 
-	public static GraduationSubmission from(TopicGraduation graduation) {
-		GraduationSubmission submission = new GraduationSubmission();
-		submission.status = GraduationSubmissionStatus.SUBMITTED;
-		submission.graduation = requireNonNull(graduation);
-		submission.videoObjectKey = requireNonNull(graduation.getVideoObjectKey());
-		submission.submittedAt = requireNonNull(graduation.getSubmittedAt());
-		return submission;
-	}
+ public static GraduationSubmission create(GraduationSubmissionCommand command) {
+  GraduationSubmission submission = new GraduationSubmission();
+  submission.userId = requireNonNull(command.userId());
+  submission.topicId = requireNonNull(command.topicId());
+  submission.videoObjectKey = requireNonNull(command.videoObjectKey());
+  submission.submittedAt = requireNonNull(command.submittedAt());
+  submission.status = GraduationSubmissionStatus.SUBMITTED;
+  return submission;
+ }
+ public void validateCanSubmit() {
+  if (status == GraduationSubmissionStatus.APPROVED) {
+   throw new com.daesabu.meongcoach.graduation.domain.exception.GraduationAlreadyApprovedException(topicId);
+  }
+  if (status == GraduationSubmissionStatus.SUBMITTED) {
+   throw new com.daesabu.meongcoach.graduation.domain.exception.GraduationReviewPendingException();
+  }
+ }
 
-	public void replaceVideo(TopicGraduation graduation) {
-		state(status == GraduationSubmissionStatus.SUBMITTED, "판정 전 제출의 영상만 바꿀 수 있다");
-		isTrue(this.graduation.getId().equals(graduation.getId()), "같은 수료의 기록만 바꿀 수 있다");
-		this.videoObjectKey = requireNonNull(graduation.getVideoObjectKey());
-		this.submittedAt = requireNonNull(graduation.getSubmittedAt());
-	}
-
-	public List<String> getRetakeInstructions() {
-		return List.copyOf(retakeInstructions);
-	}
-
-	void approve(String note, Instant now) {
+	public void approve(String note, Instant now) {
 		state(status == GraduationSubmissionStatus.SUBMITTED, "제출 상태에서만 판정할 수 있다");
 		Instant reviewedAt = requireNonNull(now);
-		this.reviewNote = normalize(note);
+		this.review = new GraduationReview(normalize(note), List.of());
 		this.reviewedAt = reviewedAt;
 		this.status = GraduationSubmissionStatus.APPROVED;
 	}
 
-	void requestRevision(GraduationRevisionCommand command) {
+	public void requestRevision(GraduationRevisionCommand command) {
 		state(status == GraduationSubmissionStatus.SUBMITTED, "제출 상태에서만 판정할 수 있다");
 		String normalized = normalize(command.note());
 		isTrue(normalized != null, "보완 요청에는 메모가 필요하다");
 		Instant reviewedAt = requireNonNull(command.reviewedAt());
-		this.reviewNote = normalized;
+		this.review = new GraduationReview(normalized, command.retakeInstructions());
 		this.reviewedAt = reviewedAt;
-		this.retakeInstructions = new ArrayList<>(command.retakeInstructions());
 		this.retakeImageUrl = command.retakeImageUrl();
 		this.status = GraduationSubmissionStatus.REVISION_REQUESTED;
 	}
