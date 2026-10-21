@@ -86,6 +86,7 @@ class OnboardingControllerTest {
 						"name": "초코",
 						"breed": "POODLE",
 						"sex": "MALE",
+						"birthDate": "2024-03-01",
 						"weightKg": 4.50
 					}
 				]
@@ -235,7 +236,14 @@ class OnboardingControllerTest {
 	@Test
 	void 강아지가_5마리를_넘으면_온보딩_완료에_실패한다() throws Exception {
 		String dog = """
-				{ "name": "초코", "breed": "POODLE", "sex": "MALE", "weightKg": 4.50 }""";
+				{
+				    "name": "초코",
+				    "breed": "POODLE",
+				    "sex": "MALE",
+				    "birthDate": "2024-03-01",
+				    "weightKg": 4.50
+				}
+				""";
 		String request = COMPLETE_REQUEST_WITH_NULL_ARRAYS.replace(
 				"\"dogs\": [", "\"dogs\": [" + (dog + ", ").repeat(5));
 
@@ -408,6 +416,14 @@ class OnboardingControllerTest {
 	}
 
 	@Test
+	void 강아지_생년월일이_없으면_검증에_실패한다() throws Exception {
+		String request = COMPLETE_REQUEST.replace(
+				"\"birthDate\": \"2024-03-01\",", "");
+
+		assertValidationFails(request, "dogs[0].birthDate");
+	}
+
+	@Test
 	void 강아지_생년월일이_과거가_아니면_검증에_실패한다() throws Exception {
 		String request = COMPLETE_REQUEST.replace("2024-03-01", "2999-01-01");
 
@@ -457,12 +473,14 @@ class OnboardingControllerTest {
 				            "name": "초코",
 				            "breed": "POODLE",
 				            "sex": "MALE",
+				            "birthDate": "2024-03-01",
 				            "weightKg": 3.5
 				        },
 				        {
 				            "name": "보리",
 				            "breed": "POODLE",
 				            "sex": "FEMALE",
+				            "birthDate": "2024-03-01",
 				            "weightKg": 4.0
 				        }
 				    ]
