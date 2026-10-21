@@ -18,6 +18,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 @ApplicationTest
 @Import(TopicSeeder.class)
@@ -37,6 +38,9 @@ class GraduationFinderTest {
 
 	@Autowired
 	private VideoStorage videoStorage;
+
+	@Autowired
+	private JdbcTemplate jdbcTemplate;
 
 	@Test
 	void 제출한_적이_없으면_토픽과_자격만_담아_돌려준다() {
@@ -70,8 +74,44 @@ class GraduationFinderTest {
 		GraduationDetailResult result = graduationFinder.findGraduation(USER_ID, topic.getId());
 
 		assertThat(result.graduation().getStatus()).isEqualTo(GraduationStatus.SUBMITTED);
-		assertThat(result.graduation().getAttemptNo()).isEqualTo(2);
+		assertThat(result.graduation().getAttemptNo()).isEqualTo(1);
 		assertThat(result.videoUrl()).contains("videos/graduation/42/" + topic.getId() + "/second.mp4");
+	}
+
+	@Test
+	void 운영자가_남긴_JSON_재촬영_지시를_순서대로_돌려준다() {
+		Topic topic = topicSeeder.completedTopic(USER_ID, "분리불안");
+		submit(USER_ID, topic, "first");
+		Long graduationId = jdbcTemplate.queryForObject(
+				"select id from topic_graduations where user_id = ? and topic_id = ?", Long.class, USER_ID, topic.getId());
+		jdbcTemplate.update("update topic_graduations set status = 'REVISION_REQUESTED', review_note = '다시 찍어 주세요.', "
+				+ "reviewed_at = now(), retake_image_url = 'https://images.test/images/graduation-retake/3/example.jpg', "
+				+ "retake_instructions = '[\"첫째 지시\", \"둘째 지시\", \"셋째 지시\"]'::jsonb where id = ?", graduationId);
+		String objectKey = "videos/graduation/42/" + topic.getId() + "/first.mp4";
+		given(videoStorage.issueDownloadUrl(new VideoObjectKey(objectKey)))
+				.willReturn(new VideoDownloadUrl("https://storage.test/" + objectKey,
+						"https://videos.test/" + objectKey, 900L));
+
+		GraduationDetailResult result = graduationFinder.findGraduation(USER_ID, topic.getId());
+
+		assertThat(result.graduation().getRetakeImageUrl()).isEqualTo("https://images.test/images/graduation-retake/3/example.jpg");
+		assertThat(result.graduation().getRetakeInstructions()).containsExactly("첫째 지시", "둘째 지시", "셋째 지시");
+	}
+
+	@Test
+	void 재제출하면_JSON_재촬영_지시를_빈_배열로_저장한다() {
+		Topic topic = topicSeeder.completedTopic(USER_ID, "분리불안");
+		submit(USER_ID, topic, "first");
+		jdbcTemplate.update("update topic_graduations set status = 'REVISION_REQUESTED', "
+				+ "retake_image_url = 'https://images.test/images/graduation-retake/3/example.jpg', retake_instructions = '[\"다시 찍어 주세요.\"]'::jsonb "
+				+ "where user_id = ? and topic_id = ?", USER_ID, topic.getId());
+
+		submit(USER_ID, topic, "second");
+
+		assertThat(jdbcTemplate.queryForObject("select retake_instructions::text from topic_graduations "
+				+ "where user_id = ? and topic_id = ?", String.class, USER_ID, topic.getId())).isEqualTo("[]");
+		assertThat(jdbcTemplate.queryForObject("select retake_image_url from topic_graduations "
+				+ "where user_id = ? and topic_id = ?", String.class, USER_ID, topic.getId())).isNull();
 	}
 
 	@Test
