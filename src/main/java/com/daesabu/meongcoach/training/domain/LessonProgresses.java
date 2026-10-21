@@ -28,9 +28,15 @@ public class LessonProgresses {
 	}
 
 	public Map<Long, Integer> completedCounts(Collection<Long> lessonIds) {
-		return lessonIds.stream().collect(Collectors.toMap(Function.identity(),
-				lessonId -> Optional.ofNullable(progresses.get(lessonId))
-						.map(LessonProgress::getCompletedCount).orElse(0),
-				(first, repeated) -> repeated, LinkedHashMap::new));
+		Map<Long, Integer> counts = new LinkedHashMap<>();
+		lessonIds.stream().distinct()
+				.forEach(lessonId -> counts.put(lessonId, completedCount(lessonId)));
+		return counts;
+	}
+
+	private int completedCount(Long lessonId) {
+		return Optional.ofNullable(progresses.get(lessonId))
+				.map(LessonProgress::getCompletedCount)
+				.orElse(0);
 	}
 }
