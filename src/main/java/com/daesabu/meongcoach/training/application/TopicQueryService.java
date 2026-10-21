@@ -1,10 +1,11 @@
 package com.daesabu.meongcoach.training.application;
 
-import com.daesabu.meongcoach.training.application.provided.LessonProgressFinder;
 import com.daesabu.meongcoach.training.application.provided.TopicCompletionChecker;
 import com.daesabu.meongcoach.training.application.provided.TopicFinder;
 import com.daesabu.meongcoach.training.application.provided.dto.TopicResult;
+import com.daesabu.meongcoach.training.application.required.LessonProgressRepository;
 import com.daesabu.meongcoach.training.application.required.TopicRepository;
+import com.daesabu.meongcoach.training.domain.LessonProgress;
 import com.daesabu.meongcoach.training.domain.LessonProgresses;
 import com.daesabu.meongcoach.training.domain.Topic;
 import com.daesabu.meongcoach.training.domain.exception.TopicNotFoundException;
@@ -22,7 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class TopicQueryService implements TopicFinder, TopicCompletionChecker {
-	private final LessonProgressFinder lessonProgressFinder;
+	private final LessonProgressRepository lessonProgressRepository;
 	private final TopicRepository topicRepository;
 
 	@Override
@@ -51,7 +52,7 @@ public class TopicQueryService implements TopicFinder, TopicCompletionChecker {
 	@Override
 	public boolean isCompleted(Long userId, Long topicId) {
 		Topic topic = loadTopic(topicId);
-		LessonProgresses progresses = lessonProgressFinder.findProgresses(userId, topic.getAllLessonIds());
+		LessonProgresses progresses = findProgresses(userId, topic.getAllLessonIds());
 		return topic.isCompleted(progresses);
 	}
 
@@ -62,7 +63,7 @@ public class TopicQueryService implements TopicFinder, TopicCompletionChecker {
 			return List.of();
 		}
 		List<Long> lessonIds = topics.stream().flatMap(topic -> topic.getAllLessonIds().stream()).toList();
-		LessonProgresses progresses = lessonProgressFinder.findProgresses(userId, lessonIds);
+		LessonProgresses progresses = findProgresses(userId, lessonIds);
 		return topics.stream()
 				.filter(topic -> topic.isCompleted(progresses))
 				.map(TopicResult::from)
@@ -71,6 +72,11 @@ public class TopicQueryService implements TopicFinder, TopicCompletionChecker {
 
 	private Topic loadTopic(Long topicId) {
 		return topicRepository.findById(topicId).orElseThrow(() -> new TopicNotFoundException(topicId));
+	}
+
+	private LessonProgresses findProgresses(Long userId, List<Long> lessonIds) {
+		List<LessonProgress> progresses = lessonProgressRepository.findAllByUserIdAndLessonIdIn(userId, lessonIds);
+		return LessonProgresses.from(progresses);
 	}
 
 }
