@@ -17,7 +17,7 @@ public enum Mbti {
 	 */
 	public static Mbti from(String value) {
 		if (value == null) {
-			throw new InvalidMbtiException(null);
+			return null;
 		}
 		try {
 			return valueOf(value);
