@@ -52,6 +52,7 @@ public class TopicQueryService implements TopicFinder, TopicCompletionChecker {
 		Topic topic = loadTopic(topicId);
 		return TopicResult.from(topic);
 	}
+
 	@Override
 	public boolean isCompleted(Long userId, Long topicId) {
 		Topic topic = loadTopic(topicId);

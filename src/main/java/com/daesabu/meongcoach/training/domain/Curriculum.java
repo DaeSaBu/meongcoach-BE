@@ -77,7 +77,6 @@ public class Curriculum extends BaseEntity {
 		return lessons.size();
 	}
 
-
 	public Optional<Expert> findExpert() {
 		return Optional.ofNullable(expert);
 	}
