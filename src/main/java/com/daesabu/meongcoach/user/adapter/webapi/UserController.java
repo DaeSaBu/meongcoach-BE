@@ -16,8 +16,6 @@ public class UserController {
 
 	private final UserFinder userFinder;
 
-	// 로그인 응답은 토큰만 내려주므로, 클라이언트는 로그인 직후 이 응답으로 온보딩 화면 진입 여부를 정한다.
-	// 온보딩 상태의 단일 원천은 users.role이라 프로필 존재 여부는 보지 않는다
 	@GetMapping("/me")
 	public UserMeResponse me(@CurrentUserId Long userId) {
 		User user = userFinder.findById(userId);

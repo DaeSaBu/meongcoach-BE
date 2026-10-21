@@ -12,7 +12,6 @@ import com.daesabu.meongcoach.dog.domain.shared.Personality;
 import com.daesabu.meongcoach.dog.domain.shared.RegisteredBreed;
 import com.daesabu.meongcoach.media.domain.exception.InvalidMediaUrlException;
 import com.daesabu.meongcoach.support.ApplicationTest;
-import com.daesabu.meongcoach.user.application.required.UserProfileRepository;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.User;
 import com.daesabu.meongcoach.user.domain.UserProfile;
@@ -35,9 +34,6 @@ class OnboardingCompleterTest {
 
 	@Autowired
 	private UserRepository userRepository;
-
-	@Autowired
-	private UserProfileRepository userProfileRepository;
 
 	@Autowired
 	private DogRepository dogRepository;
@@ -75,7 +71,7 @@ class OnboardingCompleterTest {
 	void 온보딩을_완료하면_프로필과_강아지들이_함께_생성된다() {
 		List<Long> dogIds = onboardingCompleter.complete(userId, completeInfo());
 
-		UserProfile profile = userProfileRepository.findById(userId).orElseThrow();
+		UserProfile profile = userRepository.findById(userId).orElseThrow().getProfile();
 		assertThat(profile.getNickname()).isEqualTo("멍멍이집사");
 		assertThat(dogIds).hasSize(2).doesNotContainNull();
 		List<Dog> dogs = dogRepository.findAllById(dogIds);
@@ -121,7 +117,7 @@ class OnboardingCompleterTest {
 	void 교육_이력과_목표가_저장된다() {
 		onboardingCompleter.complete(userId, completeInfo());
 
-		UserProfile profile = userProfileRepository.findById(userId).orElseThrow();
+		UserProfile profile = userRepository.findById(userId).orElseThrow().getProfile();
 		assertThat(profile.getPriorTrainingTopicIds()).containsExactly(PRIOR_TRAINING_TOPIC_ID);
 		assertThat(profile.getTrainingGoalTopicIds()).containsExactly(TRAINING_GOAL_TOPIC_ID);
 	}
@@ -133,7 +129,7 @@ class OnboardingCompleterTest {
 
 		List<Long> dogIds = onboardingCompleter.complete(userId, completeInfo(userImageUrl, dogImageUrl));
 
-		UserProfile profile = userProfileRepository.findById(userId).orElseThrow();
+		UserProfile profile = userRepository.findById(userId).orElseThrow().getProfile();
 		assertThat(profile.getProfileImageUrl()).isEqualTo(userImageUrl);
 		assertThat(dogRepository.findAllById(dogIds))
 				.filteredOn(dog -> dog.getName().equals("초코"))

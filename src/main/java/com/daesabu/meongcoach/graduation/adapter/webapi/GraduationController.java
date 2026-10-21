@@ -9,7 +9,7 @@ import com.daesabu.meongcoach.graduation.application.provided.GraduationSubmitte
 import com.daesabu.meongcoach.graduation.application.provided.GraduationUploadUrlIssuer;
 import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationSubmissionRequest;
 import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationUploadUrlRequest;
-import com.daesabu.meongcoach.graduation.domain.TopicGraduation;
+import com.daesabu.meongcoach.graduation.domain.GraduationSubmission;
 import com.daesabu.meongcoach.shared.security.CurrentUserId;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -52,7 +52,7 @@ public class GraduationController {
 	@ResponseStatus(HttpStatus.CREATED)
 	public GraduationSubmissionResponse submit(@CurrentUserId Long userId, @PathVariable Long topicId,
 	                                           @Valid @RequestBody GraduationSubmissionRequest request) {
-		TopicGraduation graduation = graduationSubmitter.submit(userId, topicId, request);
+		GraduationSubmission graduation = graduationSubmitter.submit(userId, topicId, request);
 		return GraduationSubmissionResponse.from(graduation);
 	}
 }

@@ -10,7 +10,6 @@ import com.daesabu.meongcoach.auth.domain.EmailAccountFixture;
 import com.daesabu.meongcoach.auth.domain.SocialProvider;
 import com.daesabu.meongcoach.user.application.UserQueryService;
 import com.daesabu.meongcoach.user.application.UserRegisterService;
-import com.daesabu.meongcoach.user.application.required.UserProfileRepository;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.User;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,9 +30,6 @@ class AccountModifyServiceTest {
 	private UserRepository userRepository;
 
 	@Autowired
-	private UserProfileRepository userProfileRepository;
-
-	@Autowired
 	private SocialAccountRepository socialAccountRepository;
 
 	@Autowired
@@ -47,7 +43,7 @@ class AccountModifyServiceTest {
 	@BeforeEach
 	void setUp() {
 		UserRegisterService userRegister = new UserRegisterService(new UserQueryService(userRepository),
-				userRepository, userProfileRepository);
+				userRepository);
 		service = new AccountModifyService(socialAccountRepository, userRegister, emailAccountRepository);
 	}
 

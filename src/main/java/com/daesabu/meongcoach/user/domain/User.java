@@ -2,13 +2,17 @@ package com.daesabu.meongcoach.user.domain;
 
 import com.daesabu.meongcoach.shared.domain.BaseEntity;
 import com.daesabu.meongcoach.user.domain.exception.AlreadyOnboardedException;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -32,6 +36,10 @@ public class User extends BaseEntity {
 	@Column(nullable = false, length = 20)
 	private UserStatus status;
 
+	@OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+	@JoinColumn(name = "profile_id", unique = true)
+	private UserProfile profile;
+
 	public static User registerUser() {
 		User user = new User();
 
@@ -41,10 +49,11 @@ public class User extends BaseEntity {
 		return user;
 	}
 
-	public void promoteToUser() {
+	public void completeOnboarding(UserProfileCreateCommand command) {
 		if (this.role == UserRole.USER) {
 			throw new AlreadyOnboardedException();
 		}
+		this.profile = UserProfile.create(command);
 		this.role = UserRole.USER;
 	}
 
@@ -58,5 +67,6 @@ public class User extends BaseEntity {
 
 	public void withdraw() {
 		this.status = UserStatus.WITHDRAWN;
+		this.profile = null;
 	}
 }

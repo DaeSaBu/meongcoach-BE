@@ -5,6 +5,7 @@ import com.daesabu.meongcoach.shared.exception.ErrorCode;
 public enum GraduationErrorCode implements ErrorCode {
 
 	GRADUATION_TOPIC_NOT_COMPLETED(403, "토픽의 모든 커리큘럼을 완료해야 실습 인증을 할 수 있습니다."),
+	GRADUATION_REVIEW_PENDING(409, "검수가 끝날 때까지 영상을 수정하거나 다시 제출할 수 없습니다."),
 	GRADUATION_ALREADY_APPROVED(409, "이미 수료한 토픽입니다."),
 	GRADUATION_SUBMISSION_CONFLICT(409, "같은 토픽의 실습 인증 제출이 동시에 처리되었습니다. 다시 시도해 주세요."),
 	GRADUATION_INVALID_VIDEO_KEY(400, "실습 인증 영상의 객체 키가 올바르지 않습니다.");

@@ -2,19 +2,26 @@ package com.daesabu.meongcoach.graduation.application.provided;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.groups.Tuple.tuple;
 
 import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationSubmissionRequest;
 import com.daesabu.meongcoach.graduation.application.required.GraduationSubmissionRepository;
-import com.daesabu.meongcoach.graduation.application.required.TopicGraduationRepository;
-import com.daesabu.meongcoach.graduation.domain.GraduationStatus;
+import com.daesabu.meongcoach.graduation.domain.GraduationRevisionCommand;
 import com.daesabu.meongcoach.graduation.domain.GraduationSubmission;
-import com.daesabu.meongcoach.graduation.domain.TopicGraduation;
+import com.daesabu.meongcoach.graduation.domain.GraduationSubmissionStatus;
+import com.daesabu.meongcoach.graduation.domain.exception.GraduationSubmissionConflictException;
 import com.daesabu.meongcoach.support.NonTransactionalApplicationTest;
 import com.daesabu.meongcoach.training.domain.Topic;
+import java.time.Instant;
+import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.dao.OptimisticLockingFailureException;
@@ -32,8 +39,6 @@ class GraduationSubmitterConcurrencyTest {
 	@Autowired
 	private GraduationSubmitter graduationSubmitter;
 
-	@Autowired
-	private TopicGraduationRepository topicGraduationRepository;
 
 	@Autowired
 	private GraduationSubmissionRepository graduationSubmissionRepository;
@@ -51,7 +56,7 @@ class GraduationSubmitterConcurrencyTest {
 	private TransactionTemplate newTransaction;
 	private Long topicId;
 	private Long categoryId;
-	private Long graduationId;
+	private Long submissionId;
 
 	@BeforeEach
 	void setUp() {
@@ -62,19 +67,20 @@ class GraduationSubmitterConcurrencyTest {
 			Topic topic = topicSeeder.completedTopic(USER_ID, "동시 제출 검증");
 			topicId = topic.getId();
 			categoryId = topic.getTrainingCategory().getId();
-			TopicGraduation graduation = graduationSubmitter.submit(USER_ID, topicId, request("first"));
-			graduationId = graduation.getId();
+			GraduationSubmission graduation = graduationSubmitter.submit(USER_ID, topicId, request("first"));
+			submissionId = graduation.getId();
 		});
 	}
 
 	@AfterEach
 	void cleanUp() {
 		transaction.executeWithoutResult(status -> {
-			jdbcTemplate.update("delete from graduation_submissions where graduation_id = ?", graduationId);
-			jdbcTemplate.update("delete from topic_graduations where id = ?", graduationId);
+			jdbcTemplate.update("delete from graduation_submissions where user_id = ?", USER_ID);
 			jdbcTemplate.update("delete from lesson_progress where user_id = ?", USER_ID);
 			jdbcTemplate.update("delete from topic_progress where user_id = ?", USER_ID);
-			jdbcTemplate.update("delete from lessons where curriculum_id in (select id from curriculums where topic_id = ?)", topicId);
+			jdbcTemplate.update(
+					"delete from lessons where curriculum_id in (select id from curriculums where topic_id = ?)",
+					topicId);
 			jdbcTemplate.update("delete from curriculums where topic_id = ?", topicId);
 			jdbcTemplate.update("delete from topics where id = ?", topicId);
 			jdbcTemplate.update("delete from training_categories where id = ?", categoryId);
@@ -82,41 +88,66 @@ class GraduationSubmitterConcurrencyTest {
 	}
 
 	@Test
-	void 같은_수료를_먼저_재제출하면_이전_버전의_재제출은_실패하고_기록이_남지_않는다() {
+	void 동시에_판정하면_이전_버전은_저장되지_않는다() {
 		assertThatThrownBy(() -> transaction.executeWithoutResult(status -> {
-			topicGraduationRepository.findByUserIdAndTopicId(USER_ID, topicId).orElseThrow();
-			newTransaction.executeWithoutResult(winner -> graduationSubmitter.submit(USER_ID, topicId, request("winner")));
-
-			graduationSubmitter.submit(USER_ID, topicId, request("stale"));
+			GraduationSubmission stale = graduationSubmissionRepository.findById(submissionId).orElseThrow();
+			newTransaction.executeWithoutResult(winner -> {
+				GraduationSubmission fresh = graduationSubmissionRepository.findById(submissionId).orElseThrow();
+				fresh.approve("승인", Instant.now());
+			});
+			stale.requestRevision(
+					new GraduationRevisionCommand("보완", List.of(),
+							null, Instant.now()));
 		})).isInstanceOf(OptimisticLockingFailureException.class);
-
-		TopicGraduation saved = topicGraduationRepository.findById(graduationId).orElseThrow();
-		assertThat(saved.getAttemptNo()).isEqualTo(2);
-		assertThat(saved.getVideoObjectKey()).isEqualTo(key("winner"));
-		assertThat(graduationSubmissionRepository.findAll())
-				.filteredOn(submission -> submission.getGraduationId().equals(graduationId))
-				.extracting(GraduationSubmission::getAttemptNo, GraduationSubmission::getVideoObjectKey)
-				.containsExactlyInAnyOrder(tuple(1, key("first")), tuple(2, key("winner")));
+		GraduationSubmission saved = graduationSubmissionRepository.findById(submissionId).orElseThrow();
+		assertThat(saved.getStatus()).isEqualTo(GraduationSubmissionStatus.APPROVED);
+		assertThat(saved.getReview().note()).isEqualTo("승인");
 	}
 
-	@Test
-	void 먼저_승인된_수료는_이전_버전의_재제출로_덮어쓰지_않는다() {
-		assertThatThrownBy(() -> transaction.executeWithoutResult(status -> {
-			topicGraduationRepository.findByUserIdAndTopicId(USER_ID, topicId).orElseThrow();
-			newTransaction.executeWithoutResult(winner -> jdbcTemplate.update(
-					"update topic_graduations set status = 'APPROVED', reviewed_at = now(), approved_at = now(), version = version + 1 where id = ?",
-					graduationId));
-
-			graduationSubmitter.submit(USER_ID, topicId, request("stale"));
-		})).isInstanceOf(OptimisticLockingFailureException.class);
-
-		TopicGraduation saved = topicGraduationRepository.findById(graduationId).orElseThrow();
-		assertThat(saved.getStatus()).isEqualTo(GraduationStatus.APPROVED);
-		assertThat(saved.getAttemptNo()).isEqualTo(1);
-		assertThat(graduationSubmissionRepository.findAll())
-				.filteredOn(submission -> submission.getGraduationId().equals(graduationId))
-				.extracting(GraduationSubmission::getVideoObjectKey)
-				.containsExactly(key("first"));
+	@ParameterizedTest
+	@ValueSource(booleans = {false, true})
+	void 최초_제출과_보완_후_동시_제출은_한_건만_저장한다(boolean revision) throws Exception {
+		jdbcTemplate.execute(
+				"create unique index if not exists uk_graduation_submissions_active on graduation_submissions(user_id, topic_id) where status in ('SUBMITTED', 'APPROVED')");
+		transaction.executeWithoutResult(status -> {
+			if (revision) {
+				GraduationSubmission first = graduationSubmissionRepository.findById(submissionId).orElseThrow();
+				first.requestRevision(new GraduationRevisionCommand("보완",
+						List.of(), null, Instant.now()));
+				return;
+			}
+			graduationSubmissionRepository.deleteById(submissionId);
+		});
+		try (var executor = Executors.newSingleThreadExecutor()) {
+			var loser = new AtomicReference<Future<?>>();
+			transaction.executeWithoutResult(status -> {
+				graduationSubmitter.submit(USER_ID, topicId, request("winner"));
+				loser.set(executor.submit(() -> graduationSubmitter.submit(USER_ID, topicId, request("loser"))));
+				long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+				boolean waiting = false;
+				while (System.nanoTime() < deadline && !waiting) {
+					waiting = Boolean.TRUE.equals(jdbcTemplate.queryForObject(
+							"select exists(select 1 from pg_stat_activity where datname = current_database() and wait_event = 'transactionid')",
+							Boolean.class));
+				}
+				assertThat(waiting).isTrue();
+				assertThat(loser.get().isDone()).isFalse();
+			});
+			assertThatThrownBy(() -> loser.get().get(10, TimeUnit.SECONDS))
+					.hasCauseInstanceOf(
+							GraduationSubmissionConflictException.class);
+		}
+		assertThat(jdbcTemplate.queryForObject(
+				"select count(*) from graduation_submissions where user_id = ? and status = 'SUBMITTED'", Integer.class,
+				USER_ID)).isEqualTo(1);
+		assertThat(
+				graduationSubmissionRepository.findFirstByUserIdAndTopicIdOrderByIdDesc(USER_ID, topicId).orElseThrow()
+						.getVideoObjectKey()).isEqualTo(key("winner"));
+		if (revision) {
+			assertThat(
+					graduationSubmissionRepository.findById(submissionId).orElseThrow().getReview().note()).isEqualTo(
+					"보완");
+		}
 	}
 
 	private GraduationSubmissionRequest request(String name) {
