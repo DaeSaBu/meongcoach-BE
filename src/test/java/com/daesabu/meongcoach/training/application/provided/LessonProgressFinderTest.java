@@ -5,9 +5,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.daesabu.meongcoach.support.ApplicationTest;
 import com.daesabu.meongcoach.training.application.required.LessonProgressRepository;
 import com.daesabu.meongcoach.training.domain.LessonProgress;
+import com.daesabu.meongcoach.training.domain.LessonProgresses;
 import jakarta.persistence.EntityManager;
 import java.util.List;
-import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -32,9 +32,10 @@ class LessonProgressFinderTest {
 		saveProgress(USER_ID, 10L, 2);
 		flushAndClear();
 
-		Map<Long, Integer> completedCounts = lessonProgressFinder.findCompletedCounts(USER_ID, List.of(10L, 20L));
+		LessonProgresses progresses = lessonProgressFinder.findProgresses(USER_ID, List.of(10L, 20L));
 
-		assertThat(completedCounts).containsExactlyInAnyOrderEntriesOf(Map.of(10L, 2, 20L, 0));
+		assertThat(progresses.completedCount(10L)).isEqualTo(2);
+		assertThat(progresses.completedCount(20L)).isZero();
 	}
 
 	@Test
@@ -42,9 +43,9 @@ class LessonProgressFinderTest {
 		saveProgress(OTHER_USER_ID, 10L, 3);
 		flushAndClear();
 
-		Map<Long, Integer> completedCounts = lessonProgressFinder.findCompletedCounts(USER_ID, List.of(10L));
+		LessonProgresses progresses = lessonProgressFinder.findProgresses(USER_ID, List.of(10L));
 
-		assertThat(completedCounts).containsExactlyInAnyOrderEntriesOf(Map.of(10L, 0));
+		assertThat(progresses.completedCount(10L)).isZero();
 	}
 
 	private void saveProgress(Long userId, Long lessonId, int completedCount) {

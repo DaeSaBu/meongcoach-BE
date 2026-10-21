@@ -40,6 +40,8 @@ import com.daesabu.meongcoach.training.domain.Expert;
 import com.daesabu.meongcoach.training.domain.ExpertFixture;
 import com.daesabu.meongcoach.training.domain.Lesson;
 import com.daesabu.meongcoach.training.domain.LessonFixture;
+import com.daesabu.meongcoach.training.domain.LessonProgress;
+import com.daesabu.meongcoach.training.domain.LessonProgresses;
 import com.daesabu.meongcoach.training.domain.ProgressStatus;
 import com.daesabu.meongcoach.training.domain.Topic;
 import com.daesabu.meongcoach.training.domain.TopicFixture;
@@ -51,7 +53,6 @@ import com.daesabu.meongcoach.training.domain.exception.TopicNotConfiguredExcept
 import com.daesabu.meongcoach.training.domain.exception.TopicNotFoundException;
 import java.security.Principal;
 import java.util.List;
-import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
@@ -379,8 +380,12 @@ class TrainingControllerTest {
 		Curriculum curriculum = curriculum(10L, topic(1L, "앉아", null, null, null, 1), "앉아 1단계", 1, expert);
 		addLesson(curriculum, 100L, "손 위의 간식", 1, 5);
 		addLesson(curriculum, 101L, "간식 없이 앉아", 2, 10);
+		LessonProgress progress = LessonProgress.start(42L, 100L);
+		progress.complete();
+		progress.complete();
+		progress.complete();
 		given(curriculumFinder.findCurriculum(42L, 10L))
-				.willReturn(new CurriculumDetailResult(curriculum, Map.of(100L, 3, 101L, 0)));
+				.willReturn(new CurriculumDetailResult(curriculum, LessonProgresses.from(List.of(progress))));
 
 		mockMvc.perform(get("/api/training/curriculums/{curriculumId}", 10L)
 						.principal(CURRENT_USER)
@@ -429,7 +434,7 @@ class TrainingControllerTest {
 	@Test
 	void 인증_주체에서_읽은_사용자로_커리큘럼_세부_조회를_위임한다() throws Exception {
 		given(curriculumFinder.findCurriculum(42L, 10L))
-				.willReturn(new CurriculumDetailResult(emptyCurriculum(), Map.of()));
+				.willReturn(new CurriculumDetailResult(emptyCurriculum(), LessonProgresses.from(List.of())));
 
 		mockMvc.perform(get("/api/training/curriculums/{curriculumId}", 10L).principal(CURRENT_USER))
 				.andExpect(status().isOk());
@@ -440,7 +445,7 @@ class TrainingControllerTest {
 	@Test
 	void 레슨이_없는_커리큘럼은_빈_배열과_200을_반환한다() throws Exception {
 		given(curriculumFinder.findCurriculum(42L, 10L))
-				.willReturn(new CurriculumDetailResult(emptyCurriculum(), Map.of()));
+				.willReturn(new CurriculumDetailResult(emptyCurriculum(), LessonProgresses.from(List.of())));
 
 		mockMvc.perform(get("/api/training/curriculums/{curriculumId}", 10L).principal(CURRENT_USER))
 				.andExpect(status().isOk())
@@ -452,7 +457,7 @@ class TrainingControllerTest {
 	@Test
 	void 제작_전문가가_없는_커리큘럼은_expert를_null로_반환한다() throws Exception {
 		given(curriculumFinder.findCurriculum(42L, 10L))
-				.willReturn(new CurriculumDetailResult(emptyCurriculum(), Map.of()));
+				.willReturn(new CurriculumDetailResult(emptyCurriculum(), LessonProgresses.from(List.of())));
 
 		mockMvc.perform(get("/api/training/curriculums/{curriculumId}", 10L).principal(CURRENT_USER))
 				.andExpect(status().isOk())

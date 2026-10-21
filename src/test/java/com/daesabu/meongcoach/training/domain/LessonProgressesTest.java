@@ -1,7 +1,6 @@
 package com.daesabu.meongcoach.training.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.entry;
 
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -28,7 +27,7 @@ class LessonProgressesTest {
 	}
 
 	@Test
-	void 요청한_레슨_순서로_완료_횟수를_반환하고_미기록은_0으로_채운다() {
+	void 레슨별_완료_횟수를_반환하고_미기록은_0이다() {
 		LessonProgress twice = LessonProgress.start(1L, 1001L);
 		twice.complete();
 		twice.complete();
@@ -37,15 +36,16 @@ class LessonProgressesTest {
 		other.complete();
 		LessonProgresses progresses = LessonProgresses.from(List.of(twice, uncompleted, other));
 
-		assertThat(progresses.completedCounts(List.of(1003L, 1001L, 1002L, 1001L)))
-				.containsExactly(entry(1003L, 0), entry(1001L, 2), entry(1002L, 0));
+		assertThat(progresses.completedCount(1003L)).isZero();
+		assertThat(progresses.completedCount(1001L)).isEqualTo(2);
+		assertThat(progresses.completedCount(1002L)).isZero();
 	}
 
 	@Test
-	void 조회할_레슨이_없으면_완료_횟수도_비어_있다() {
+	void 진행_기록이_없으면_완료_횟수와_개수는_0이다() {
 		LessonProgresses progresses = LessonProgresses.from(List.of());
 
-		assertThat(progresses.completedCounts(List.of())).isEmpty();
+		assertThat(progresses.completedCount(1001L)).isZero();
 		assertThat(progresses.countCompletedIn(List.of())).isZero();
 	}
 }

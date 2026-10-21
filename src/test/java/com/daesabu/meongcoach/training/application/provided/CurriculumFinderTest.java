@@ -296,8 +296,9 @@ class CurriculumFinderTest {
 
 		CurriculumDetailResult detail = curriculumFinder.findCurriculum(USER_ID, curriculum.getId());
 
-		assertThat(detail.completedCounts())
-				.containsExactly(entry(twice.getId(), 2), entry(once.getId(), 1), entry(none.getId(), 0));
+		assertThat(detail.progresses().completedCount(twice.getId())).isEqualTo(2);
+		assertThat(detail.progresses().completedCount(once.getId())).isEqualTo(1);
+		assertThat(detail.progresses().completedCount(none.getId())).isZero();
 	}
 
 	@Test
@@ -311,7 +312,7 @@ class CurriculumFinderTest {
 
 		CurriculumDetailResult detail = curriculumFinder.findCurriculum(USER_ID, curriculum.getId());
 
-		assertThat(detail.completedCounts()).containsExactly(entry(lesson.getId(), 0));
+		assertThat(detail.progresses().completedCount(lesson.getId())).isZero();
 	}
 
 	@Test
@@ -331,7 +332,6 @@ class CurriculumFinderTest {
 		CurriculumDetailResult detail = curriculumFinder.findCurriculum(USER_ID, empty.getId());
 
 		assertThat(detail.curriculum().getLessons()).isEmpty();
-		assertThat(detail.completedCounts()).isEmpty();
 	}
 
 	@Test
