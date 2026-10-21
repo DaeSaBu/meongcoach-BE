@@ -13,7 +13,7 @@ class LessonProgressTest {
 		assertThat(progress.getUserId()).isEqualTo(1L);
 		assertThat(progress.getLessonId()).isEqualTo(10L);
 		assertThat(progress.getCompletedCount()).isZero();
-		assertThat(progress.status()).isEqualTo(ProgressStatus.NOT_STARTED);
+		assertThat(progress.isCompleted()).isFalse();
 	}
 
 	@Test
@@ -24,6 +24,6 @@ class LessonProgressTest {
 		progress.complete();
 
 		assertThat(progress.getCompletedCount()).isEqualTo(2);
-		assertThat(progress.status()).isEqualTo(ProgressStatus.COMPLETED);
+		assertThat(progress.isCompleted()).isTrue();
 	}
 }
