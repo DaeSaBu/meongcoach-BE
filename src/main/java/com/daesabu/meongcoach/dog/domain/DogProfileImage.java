@@ -1,4 +1,4 @@
-package com.daesabu.meongcoach.dog.domain.shared;
+package com.daesabu.meongcoach.dog.domain;
 
 import com.daesabu.meongcoach.media.domain.shared.MediaKind;
 import com.daesabu.meongcoach.media.domain.shared.MediaScope;

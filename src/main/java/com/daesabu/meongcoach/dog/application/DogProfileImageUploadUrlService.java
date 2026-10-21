@@ -1,7 +1,7 @@
 package com.daesabu.meongcoach.dog.application;
 
 import com.daesabu.meongcoach.dog.application.provided.DogProfileImageUploadUrlIssuer;
-import com.daesabu.meongcoach.dog.domain.shared.DogProfileImage;
+import com.daesabu.meongcoach.dog.domain.DogProfileImage;
 import com.daesabu.meongcoach.media.application.provided.MediaUploadUrlIssuer;
 import com.daesabu.meongcoach.media.application.provided.dto.MediaUploadRequest;
 import com.daesabu.meongcoach.media.application.provided.dto.MediaUploadUrlResult;
