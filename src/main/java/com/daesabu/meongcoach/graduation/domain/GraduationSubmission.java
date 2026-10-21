@@ -9,9 +9,12 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.time.Instant;
@@ -38,8 +41,9 @@ public class GraduationSubmission extends BaseTimeEntity {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@Column(name = "graduation_id", nullable = false)
-	private Long graduationId;
+	@ManyToOne(fetch = FetchType.LAZY, optional = false)
+	@JoinColumn(name = "graduation_id", nullable = false)
+	private TopicGraduation graduation;
 
 	@Column(name = "attempt_no", nullable = false)
 	private int attemptNo;
@@ -69,7 +73,7 @@ public class GraduationSubmission extends BaseTimeEntity {
 	public static GraduationSubmission from(TopicGraduation graduation) {
 		GraduationSubmission submission = new GraduationSubmission();
 		submission.status = GraduationSubmissionStatus.SUBMITTED;
-		submission.graduationId = requireNonNull(graduation.getId());
+		submission.graduation = requireNonNull(graduation);
 		submission.attemptNo = graduation.getAttemptNo();
 		submission.videoObjectKey = requireNonNull(graduation.getVideoObjectKey());
 		submission.submittedAt = requireNonNull(graduation.getSubmittedAt());
@@ -78,7 +82,7 @@ public class GraduationSubmission extends BaseTimeEntity {
 
 	public void replaceVideo(TopicGraduation graduation) {
 		state(status == GraduationSubmissionStatus.SUBMITTED, "판정 전 제출의 영상만 바꿀 수 있다");
-		isTrue(graduationId.equals(graduation.getId()), "같은 수료의 기록만 바꿀 수 있다");
+		isTrue(this.graduation.getId().equals(graduation.getId()), "같은 수료의 기록만 바꿀 수 있다");
 		isTrue(attemptNo == graduation.getAttemptNo(), "같은 차수의 기록만 바꿀 수 있다");
 		this.videoObjectKey = requireNonNull(graduation.getVideoObjectKey());
 		this.submittedAt = requireNonNull(graduation.getSubmittedAt());

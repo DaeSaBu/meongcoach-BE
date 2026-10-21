@@ -47,7 +47,6 @@ public class GraduationSubmitService implements GraduationSubmitter {
 				.findByGraduationIdAndAttemptNo(graduation.getId(), graduation.getAttemptNo())
 				.orElseGet(() -> graduationSubmissionRepository.save(GraduationSubmission.from(graduation)));
 		submission.replaceVideo(graduation);
-		graduation.useSubmission(submission);
 	}
 
 	private TopicGraduation resubmit(TopicGraduation graduation, GraduationVideoKey videoKey, Instant now) {

@@ -11,6 +11,6 @@ public record GraduationItemResponse(Long graduationId, Long topicId, String top
 		TopicGraduation graduation = result.graduation();
 		return new GraduationItemResponse(graduation.getId(), graduation.getTopicId(), result.topic().title(),
 				graduation.getStatus().name(), graduation.getAttemptNo(), graduation.getSubmittedAt(),
-				graduation.getReviewedAt(), graduation.getReviewNote());
+				result.submission().getReviewedAt(), result.submission().getReviewNote());
 	}
 }

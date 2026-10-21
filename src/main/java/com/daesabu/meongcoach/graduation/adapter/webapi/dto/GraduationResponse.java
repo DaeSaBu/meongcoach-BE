@@ -8,7 +8,8 @@ public record GraduationResponse(Long topicId, String topicTitle, boolean eligib
 		if (result.graduation() == null) {
 			return new GraduationResponse(result.topic().id(), result.topic().title(), result.eligible(), null);
 		}
-		TopicGraduationResponse graduation = TopicGraduationResponse.of(result.graduation(), result.videoUrl());
+		TopicGraduationResponse graduation = TopicGraduationResponse.of(
+				result.graduation(), result.submission(), result.videoUrl());
 		return new GraduationResponse(result.topic().id(), result.topic().title(), result.eligible(), graduation);
 	}
 }

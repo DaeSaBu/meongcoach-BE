@@ -3,14 +3,19 @@ package com.daesabu.meongcoach.graduation.application;
 import com.daesabu.meongcoach.graduation.application.provided.GraduationFinder;
 import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationDetailResult;
 import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationSummaryResult;
+import com.daesabu.meongcoach.graduation.application.required.GraduationSubmissionRepository;
 import com.daesabu.meongcoach.graduation.application.required.TopicGraduationRepository;
+import com.daesabu.meongcoach.graduation.domain.GraduationSubmission;
 import com.daesabu.meongcoach.graduation.domain.TopicGraduation;
 import com.daesabu.meongcoach.media.application.provided.VideoDownloadUrlIssuer;
 import com.daesabu.meongcoach.training.application.provided.TopicCompletionChecker;
 import com.daesabu.meongcoach.training.application.provided.TopicFinder;
 import com.daesabu.meongcoach.training.application.provided.dto.TopicResult;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class GraduationQueryService implements GraduationFinder {
 
 	private final TopicGraduationRepository topicGraduationRepository;
+	private final GraduationSubmissionRepository graduationSubmissionRepository;
 	private final TopicFinder topicFinder;
 	private final TopicCompletionChecker topicCompletionChecker;
 	private final VideoDownloadUrlIssuer videoDownloadUrlIssuer;
@@ -34,7 +40,9 @@ public class GraduationQueryService implements GraduationFinder {
 			return GraduationDetailResult.notSubmitted(topic, eligible);
 		}
 		String videoUrl = videoDownloadUrlIssuer.issue(graduation.get().getVideoObjectKey()).downloadUrl();
-		return new GraduationDetailResult(topic, eligible, graduation.get(), videoUrl);
+		GraduationSubmission submission = graduationSubmissionRepository
+				.findByGraduationIdAndAttemptNo(graduation.get().getId(), graduation.get().getAttemptNo()).orElseThrow();
+		return new GraduationDetailResult(topic, eligible, graduation.get(), submission, videoUrl);
 	}
 
 	@Override
@@ -45,8 +53,13 @@ public class GraduationQueryService implements GraduationFinder {
 		}
 		List<Long> topicIds = graduations.stream().map(TopicGraduation::getTopicId).toList();
 		List<TopicResult> topics = topicFinder.findTopics(topicIds);
+		List<Long> graduationIds = graduations.stream().map(TopicGraduation::getId).toList();
+		Map<Long, GraduationSubmission> submissions = graduationSubmissionRepository
+				.findCurrentSubmissionsByGraduationIdIn(graduationIds).stream()
+				.collect(Collectors.toMap(submission -> submission.getGraduation().getId(), Function.identity()));
 		return graduations.stream()
-				.map(graduation -> new GraduationSummaryResult(graduation, findTopic(topics, graduation.getTopicId())))
+				.map(graduation -> new GraduationSummaryResult(graduation,
+						submissions.get(graduation.getId()), findTopic(topics, graduation.getTopicId())))
 				.toList();
 	}
 

@@ -1,6 +1,7 @@
 package com.daesabu.meongcoach.graduation.domain;
 
 import static java.util.Objects.requireNonNull;
+import static org.springframework.util.Assert.isTrue;
 import static org.springframework.util.Assert.state;
 
 import com.daesabu.meongcoach.shared.domain.BaseEntity;
@@ -8,12 +9,9 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import jakarta.persistence.Version;
@@ -62,10 +60,6 @@ public class TopicGraduation extends BaseEntity {
 
 	private Instant approvedAt;
 
-	@OneToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "current_submission_id", unique = true)
-	private GraduationSubmission currentSubmission;
-
 	public static TopicGraduation start(Long userId, Long topicId, String videoObjectKey, Instant now) {
 		TopicGraduation graduation = new TopicGraduation();
 		graduation.userId = requireNonNull(userId);
@@ -81,63 +75,35 @@ public class TopicGraduation extends BaseEntity {
 		state(!isApproved(), "승인된 수료에는 다시 제출할 수 없다");
 		if (status == GraduationStatus.REVISION_REQUESTED) {
 			this.attemptNo++;
-			this.currentSubmission = null;
 		}
 		this.status = GraduationStatus.SUBMITTED;
 		this.videoObjectKey = requireNonNull(videoObjectKey);
 		this.submittedAt = requireNonNull(now);
 	}
 
-	public void useSubmission(GraduationSubmission submission) {
-		requireNonNull(submission);
-		state(id.equals(submission.getGraduationId()), "같은 수료의 기록만 연결할 수 있다");
-		state(attemptNo == submission.getAttemptNo(), "현재 차수의 기록만 연결할 수 있다");
-		this.currentSubmission = submission;
-	}
-
-	public void approve(String note, Instant now) {
+	public void approve(GraduationSubmission submission, String note, Instant now) {
 		state(isSubmitted(), "제출 상태의 수료만 승인할 수 있다");
-		requireNonNull(currentSubmission).approve(note, now);
+		validateCurrentSubmission(submission);
+		submission.approve(note, now);
 		this.status = GraduationStatus.APPROVED;
 		this.approvedAt = now;
 	}
 
-	public void requestRevision(String note, Instant now) {
-		requestRevision(new GraduationRevisionCommand(note, List.of(), null, now));
+	public void requestRevision(GraduationSubmission submission, String note, Instant now) {
+		requestRevision(submission, new GraduationRevisionCommand(note, List.of(), null, now));
 	}
 
-	public void requestRevision(GraduationRevisionCommand command) {
+	public void requestRevision(GraduationSubmission submission, GraduationRevisionCommand command) {
 		state(isSubmitted(), "제출 상태의 수료만 보완 요청할 수 있다");
-		requireNonNull(currentSubmission).requestRevision(command);
+		validateCurrentSubmission(submission);
+		submission.requestRevision(command);
 		this.status = GraduationStatus.REVISION_REQUESTED;
 	}
 
-	public Instant getReviewedAt() {
-		if (currentSubmission == null) {
-			return null;
-		}
-		return currentSubmission.getReviewedAt();
-	}
-
-	public String getReviewNote() {
-		if (currentSubmission == null) {
-			return null;
-		}
-		return currentSubmission.getReviewNote();
-	}
-
-	public List<String> getRetakeInstructions() {
-		if (currentSubmission == null) {
-			return List.of();
-		}
-		return currentSubmission.getRetakeInstructions();
-	}
-
-	public String getRetakeImageUrl() {
-		if (currentSubmission == null) {
-			return null;
-		}
-		return currentSubmission.getRetakeImageUrl();
+	private void validateCurrentSubmission(GraduationSubmission submission) {
+		requireNonNull(submission);
+		isTrue(id.equals(submission.getGraduation().getId()), "같은 수료의 기록만 판정할 수 있다");
+		isTrue(attemptNo == submission.getAttemptNo(), "현재 차수의 기록만 판정할 수 있다");
 	}
 
 	public boolean isApproved() {
