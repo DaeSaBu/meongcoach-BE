@@ -46,23 +46,22 @@ class GraduationSubmitterTest {
 	private TopicSeeder topicSeeder;
 
 	@Test
-	void 첫_제출은_1번째_제출로_수료_행을_만들고_기록을_남긴다() {
+	void 첫_제출은_수료_행을_만들고_기록을_남긴다() {
 		Topic topic = topicSeeder.completedTopic(USER_ID, "분리불안");
 
 		TopicGraduation graduation = graduationSubmitter.submit(USER_ID, topic.getId(), request(key(topic, "first")));
 		topicSeeder.flushAndClear();
 
 		assertThat(graduation.getStatus()).isEqualTo(GraduationStatus.SUBMITTED);
-		assertThat(graduation.getAttemptNo()).isEqualTo(1);
 		assertThat(graduation.getVideoObjectKey()).isEqualTo(key(topic, "first"));
 		assertThat(graduationSubmissionRepository.findAll())
-				.extracting(submission -> submission.getGraduation().getId(), GraduationSubmission::getAttemptNo,
+				.extracting(submission -> submission.getGraduation().getId(),
 						GraduationSubmission::getVideoObjectKey)
-				.containsExactly(tuple(graduation.getId(), 1, key(topic, "first")));
+				.containsExactly(tuple(graduation.getId(), key(topic, "first")));
 	}
 
 	@Test
-	void 검수_대기_중에_다시_제출하면_같은_행의_차수를_유지하고_영상과_기록을_바꾼다() {
+	void 검수_대기_중에_다시_제출하면_같은_행의_영상과_기록을_바꾼다() {
 		Topic topic = topicSeeder.completedTopic(USER_ID, "분리불안");
 		TopicGraduation first = graduationSubmitter.submit(USER_ID, topic.getId(), request(key(topic, "first")));
 		topicSeeder.flushAndClear();
@@ -71,19 +70,19 @@ class GraduationSubmitterTest {
 		topicSeeder.flushAndClear();
 
 		assertThat(second.getId()).isEqualTo(first.getId());
-		assertThat(second.getAttemptNo()).isEqualTo(1);
 		assertThat(second.getVideoObjectKey()).isEqualTo(key(topic, "second"));
 		assertThat(graduationSubmissionRepository.findAll())
-				.extracting(GraduationSubmission::getAttemptNo, GraduationSubmission::getVideoObjectKey)
-				.containsExactly(tuple(1, key(topic, "second")));
+				.extracting(GraduationSubmission::getVideoObjectKey)
+				.containsExactly(key(topic, "second"));
 	}
 
 	@Test
-	void 재제출하면_이전_차수의_판정과_재촬영_지시를_보존하고_새_차수는_판정_대기다() {
+	void 재제출하면_이전_판정과_재촬영_지시를_보존하고_새_제출은_판정_대기다() {
 		Topic topic = topicSeeder.completedTopic(USER_ID, "분리불안");
 		TopicGraduation first = graduationSubmitter.submit(USER_ID, topic.getId(), request(key(topic, "first")));
 		Instant reviewedAt = Instant.parse("2026-10-20T01:00:00Z");
-		first.requestRevision(currentSubmission(first), new GraduationRevisionCommand("다시 찍어 주세요.",
+		GraduationSubmission previous = currentSubmission(first);
+		first.requestRevision(previous, new GraduationRevisionCommand("다시 찍어 주세요.",
 				List.of("현관을 보여 주세요.", "강아지 전신을 찍어 주세요."), "https://images.test/images/graduation-retake/3/example.jpg", reviewedAt));
 		topicSeeder.flushAndClear();
 
@@ -92,40 +91,38 @@ class GraduationSubmitterTest {
 
 		TopicGraduation saved = topicGraduationRepository.findById(second.getId()).orElseThrow();
 		assertThat(saved.getStatus()).isEqualTo(GraduationStatus.SUBMITTED);
-		assertThat(saved.getAttemptNo()).isEqualTo(2);
 		assertThat(currentSubmission(saved).getReviewNote()).isNull();
 		assertThat(currentSubmission(saved).getReviewedAt()).isNull();
 		assertThat(graduationSubmissionRepository.findAll())
-				.extracting(GraduationSubmission::getAttemptNo, GraduationSubmission::getVideoObjectKey)
-				.containsExactlyInAnyOrder(tuple(1, key(topic, "first")), tuple(2, key(topic, "second")));
-		GraduationSubmission previous = graduationSubmissionRepository
-				.findByGraduationIdAndAttemptNo(saved.getId(), 1).orElseThrow();
+				.extracting(GraduationSubmission::getVideoObjectKey)
+				.containsExactlyInAnyOrder(key(topic, "first"), key(topic, "second"));
+		previous = graduationSubmissionRepository.findById(previous.getId()).orElseThrow();
 		assertThat(previous.getStatus()).isEqualTo(GraduationSubmissionStatus.REVISION_REQUESTED);
 		assertThat(previous.getReviewNote()).isEqualTo("다시 찍어 주세요.");
 		assertThat(previous.getReviewedAt()).isEqualTo(reviewedAt);
 		assertThat(previous.getRetakeInstructions()).containsExactly("현관을 보여 주세요.", "강아지 전신을 찍어 주세요.");
 		assertThat(previous.getRetakeImageUrl()).isEqualTo("https://images.test/images/graduation-retake/3/example.jpg");
-		assertThat(currentSubmission(saved).getAttemptNo()).isEqualTo(2);
 		assertThat(currentSubmission(saved).getStatus()).isEqualTo(GraduationSubmissionStatus.SUBMITTED);
 		assertThat(currentSubmission(saved).getRetakeInstructions()).isEmpty();
 		assertThat(currentSubmission(saved).getRetakeImageUrl()).isNull();
 	}
 
 	@Test
-	void 새_차수를_승인해도_이전_차수의_보완_요청은_유지한다() {
+	void 새_제출을_승인해도_이전_보완_요청은_유지한다() {
 		Topic topic = topicSeeder.completedTopic(USER_ID, "분리불안");
 		TopicGraduation first = graduationSubmitter.submit(USER_ID, topic.getId(), request(key(topic, "first")));
-		first.requestRevision(currentSubmission(first), "현관을 보여 주세요.", Instant.now());
+		GraduationSubmission previous = currentSubmission(first);
+		first.requestRevision(previous, "현관을 보여 주세요.", Instant.now());
 		topicSeeder.flushAndClear();
 		TopicGraduation second = graduationSubmitter.submit(USER_ID, topic.getId(), request(key(topic, "second")));
 
 		second.approve(currentSubmission(second), "잘했어요.", Instant.now());
 		topicSeeder.flushAndClear();
 
-		assertThat(graduationSubmissionRepository.findByGraduationIdAndAttemptNo(second.getId(), 1).orElseThrow()
+		assertThat(graduationSubmissionRepository.findById(previous.getId()).orElseThrow()
 				.getStatus()).isEqualTo(GraduationSubmissionStatus.REVISION_REQUESTED);
 		GraduationSubmission approved = graduationSubmissionRepository
-				.findByGraduationIdAndAttemptNo(second.getId(), 2).orElseThrow();
+				.findFirstByGraduationIdOrderByIdDesc(second.getId()).orElseThrow();
 		assertThat(approved.getStatus()).isEqualTo(GraduationSubmissionStatus.APPROVED);
 		assertThat(approved.getReviewNote()).isEqualTo("잘했어요.");
 		assertThat(approved.getReviewedAt()).isNotNull();
@@ -188,7 +185,7 @@ class GraduationSubmitterTest {
 	}
 	private GraduationSubmission currentSubmission(TopicGraduation graduation) {
 		return graduationSubmissionRepository
-				.findByGraduationIdAndAttemptNo(graduation.getId(), graduation.getAttemptNo()).orElseThrow();
+				.findFirstByGraduationIdOrderByIdDesc(graduation.getId()).orElseThrow();
 	}
 
 }

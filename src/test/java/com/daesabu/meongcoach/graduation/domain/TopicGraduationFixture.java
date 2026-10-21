@@ -10,12 +10,11 @@ public final class TopicGraduationFixture {
 	private TopicGraduationFixture() {
 	}
 
-	public static TopicGraduation create(Long id, Long userId, Long topicId, GraduationStatus status, int attemptNo,
+	public static TopicGraduation create(Long id, Long userId, Long topicId, GraduationStatus status,
 	                                     String videoObjectKey, Instant submittedAt, Instant reviewedAt, String reviewNote) {
 		TopicGraduation graduation = TopicGraduation.start(userId, topicId, videoObjectKey, submittedAt);
 		ReflectionTestUtils.setField(graduation, "id", id);
 		ReflectionTestUtils.setField(graduation, "status", status);
-		ReflectionTestUtils.setField(graduation, "attemptNo", attemptNo);
 		if (status == GraduationStatus.APPROVED) {
 			ReflectionTestUtils.setField(graduation, "approvedAt", reviewedAt);
 		}

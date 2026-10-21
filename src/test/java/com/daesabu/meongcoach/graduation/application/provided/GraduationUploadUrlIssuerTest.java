@@ -97,7 +97,7 @@ class GraduationUploadUrlIssuerTest {
 	}
 	private GraduationSubmission currentSubmission(TopicGraduation graduation) {
 		return graduationSubmissionRepository
-				.findByGraduationIdAndAttemptNo(graduation.getId(), graduation.getAttemptNo()).orElseThrow();
+				.findFirstByGraduationIdOrderByIdDesc(graduation.getId()).orElseThrow();
 	}
 
 }

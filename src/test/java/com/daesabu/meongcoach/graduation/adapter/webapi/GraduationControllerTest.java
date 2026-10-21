@@ -78,7 +78,7 @@ class GraduationControllerTest {
 
 	@Test
 	void 토픽의_실습_인증_현황을_반환한다() throws Exception {
-		TopicGraduation graduation = TopicGraduationFixture.create(3L, 42L, TOPIC_ID, GraduationStatus.APPROVED, 2,
+		TopicGraduation graduation = TopicGraduationFixture.create(3L, 42L, TOPIC_ID, GraduationStatus.APPROVED,
 				VIDEO_KEY, SUBMITTED_AT, REVIEWED_AT, "끝까지 함께 시도했어요!");
 		given(graduationFinder.findGraduation(42L, TOPIC_ID))
 				.willReturn(new GraduationDetailResult(TOPIC, true, graduation,
@@ -93,7 +93,7 @@ class GraduationControllerTest {
 				.andExpect(jsonPath("$.eligible").value(true))
 				.andExpect(jsonPath("$.graduation.graduationId").value(3))
 				.andExpect(jsonPath("$.graduation.status").value("APPROVED"))
-				.andExpect(jsonPath("$.graduation.attemptNo").value(2))
+				.andExpect(jsonPath("$.graduation.attemptNo").doesNotExist())
 				.andExpect(jsonPath("$.graduation.videoUrl").value(VIDEO_URL))
 				.andExpect(jsonPath("$.graduation.submittedAt").value("2026-10-14T05:03:00Z"))
 				.andExpect(jsonPath("$.graduation.reviewedAt").value("2026-10-15T01:00:00Z"))
@@ -110,7 +110,6 @@ class GraduationControllerTest {
 								fieldWithPath("graduation.graduationId").description("토픽 수료 ID"),
 								fieldWithPath("graduation.status").description(
 										"수료 상태. SUBMITTED(검수 대기), REVISION_REQUESTED(보완 요청), APPROVED(수료)"),
-								fieldWithPath("graduation.attemptNo").description("몇 번째 제출인지(보완 요청 뒤 다시 제출하면 1 증가, 검수 대기 중 영상 교체는 유지)"),
 								fieldWithPath("graduation.videoUrl").description("가장 최근 제출 영상의 1시간 유효 presigned URL"),
 								fieldWithPath("graduation.submittedAt").description("가장 최근 제출 시각(ISO-8601, UTC)"),
 								fieldWithPath("graduation.reviewedAt").optional().description("가장 최근 제출의 판정 시각. 판정 전이면 null"),
@@ -125,7 +124,7 @@ class GraduationControllerTest {
 	@Test
 	void 보완_요청이면_재촬영_팁과_촬영_예시_이미지를_함께_반환한다() throws Exception {
 		TopicGraduation graduation = TopicGraduationFixture.create(3L, 42L, TOPIC_ID,
-				GraduationStatus.REVISION_REQUESTED, 1, VIDEO_KEY, SUBMITTED_AT, REVIEWED_AT, "현관 장면부터 다시 찍어 주세요.");
+				GraduationStatus.REVISION_REQUESTED, VIDEO_KEY, SUBMITTED_AT, REVIEWED_AT, "현관 장면부터 다시 찍어 주세요.");
 		GraduationSubmission submission = TopicGraduationFixture.withRetakeGuide(
 				TopicGraduationFixture.submission(graduation, REVIEWED_AT, "현관 장면부터 다시 찍어 주세요."),
 				"https://images.test/images/graduation-retake/3/example.jpg",
@@ -143,7 +142,7 @@ class GraduationControllerTest {
 
 	@Test
 	void 내_훈련_영상_목록을_최근_제출_순으로_반환한다() throws Exception {
-		TopicGraduation graduation = TopicGraduationFixture.create(3L, 42L, TOPIC_ID, GraduationStatus.APPROVED, 2,
+		TopicGraduation graduation = TopicGraduationFixture.create(3L, 42L, TOPIC_ID, GraduationStatus.APPROVED,
 				VIDEO_KEY, SUBMITTED_AT, REVIEWED_AT, "끝까지 함께 시도했어요!");
 		given(graduationFinder.findGraduations(42L)).willReturn(List.of(new GraduationSummaryResult(graduation,
 				TopicGraduationFixture.submission(graduation, REVIEWED_AT, "끝까지 함께 시도했어요!"), TOPIC)));
@@ -156,7 +155,7 @@ class GraduationControllerTest {
 				.andExpect(jsonPath("$.graduations[0].topicId").value(7))
 				.andExpect(jsonPath("$.graduations[0].topicTitle").value("분리불안"))
 				.andExpect(jsonPath("$.graduations[0].status").value("APPROVED"))
-				.andExpect(jsonPath("$.graduations[0].attemptNo").value(2))
+				.andExpect(jsonPath("$.graduations[0].attemptNo").doesNotExist())
 				.andExpect(jsonPath("$.graduations[0].submittedAt").value("2026-10-14T05:03:00Z"))
 				.andExpect(jsonPath("$.graduations[0].reviewedAt").value("2026-10-15T01:00:00Z"))
 				.andExpect(jsonPath("$.graduations[0].reviewNote").value("끝까지 함께 시도했어요!"))
@@ -168,7 +167,6 @@ class GraduationControllerTest {
 								fieldWithPath("graduations[].topicTitle").description("토픽 제목"),
 								fieldWithPath("graduations[].status").description(
 										"수료 상태. SUBMITTED(검수 대기), REVISION_REQUESTED(보완 요청), APPROVED(수료)"),
-								fieldWithPath("graduations[].attemptNo").description("몇 번째 제출인지(보완 요청 뒤 다시 제출하면 1 증가, 검수 대기 중 영상 교체는 유지)"),
 								fieldWithPath("graduations[].submittedAt").description("가장 최근 제출 시각(ISO-8601, UTC)"),
 								fieldWithPath("graduations[].reviewedAt").optional().description("가장 최근 제출의 판정 시각. 판정 전이면 null"),
 								fieldWithPath("graduations[].reviewNote").optional().description("운영자 메모. 없으면 null")
@@ -265,7 +263,7 @@ class GraduationControllerTest {
 	@Test
 	void 업로드한_영상으로_제출하고_201을_반환한다() throws Exception {
 		given(graduationSubmitter.submit(42L, TOPIC_ID, new GraduationSubmissionRequest(VIDEO_KEY)))
-				.willReturn(TopicGraduationFixture.create(3L, 42L, TOPIC_ID, GraduationStatus.SUBMITTED, 2, VIDEO_KEY,
+				.willReturn(TopicGraduationFixture.create(3L, 42L, TOPIC_ID, GraduationStatus.SUBMITTED, VIDEO_KEY,
 						SUBMITTED_AT, null, null));
 
 		mockMvc.perform(post("/api/training/topics/{topicId}/graduation/submissions", TOPIC_ID)
@@ -275,7 +273,7 @@ class GraduationControllerTest {
 						.content("{\"objectKey\": \"" + VIDEO_KEY + "\"}"))
 				.andExpect(status().isCreated())
 				.andExpect(jsonPath("$.graduationId").value(3))
-				.andExpect(jsonPath("$.attemptNo").value(2))
+				.andExpect(jsonPath("$.attemptNo").doesNotExist())
 				.andExpect(jsonPath("$.submittedAt").value("2026-10-14T05:03:00Z"))
 				.andDo(document("graduation/submission",
 						pathParameters(parameterWithName("topicId").description("토픽 ID")),
@@ -283,7 +281,6 @@ class GraduationControllerTest {
 								"필수 입력. 업로드 URL 발급 응답의 objectKey. 본인이 이 토픽으로 받은 `videos/graduation/{userId}/{topicId}/` 키만 받는다")),
 						responseFields(
 								fieldWithPath("graduationId").description("토픽 수료 ID. 운영자 판정에 쓴다"),
-								fieldWithPath("attemptNo").description("몇 번째 제출인지(1부터, 보완 요청 뒤 다시 제출하면 1 증가, 검수 대기 중 영상 교체는 유지)"),
 								fieldWithPath("submittedAt").description("제출 시각(ISO-8601, UTC)")
 						)
 				));

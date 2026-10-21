@@ -2,7 +2,6 @@ package com.daesabu.meongcoach.graduation.application.provided;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.groups.Tuple.tuple;
 
 import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationSubmissionRequest;
 import com.daesabu.meongcoach.graduation.application.required.GraduationSubmissionRepository;
@@ -91,12 +90,35 @@ class GraduationSubmitterConcurrencyTest {
 		})).isInstanceOf(OptimisticLockingFailureException.class);
 
 		TopicGraduation saved = topicGraduationRepository.findById(graduationId).orElseThrow();
-		assertThat(saved.getAttemptNo()).isEqualTo(1);
 		assertThat(saved.getVideoObjectKey()).isEqualTo(key("winner"));
 		assertThat(graduationSubmissionRepository.findAll())
 				.filteredOn(submission -> submission.getGraduation().getId().equals(graduationId))
-				.extracting(GraduationSubmission::getAttemptNo, GraduationSubmission::getVideoObjectKey)
-				.containsExactly(tuple(1, key("winner")));
+				.extracting(GraduationSubmission::getVideoObjectKey)
+				.containsExactly(key("winner"));
+	}
+
+	@Test
+	void 보완_요청_뒤_동시_재제출은_새_기록을_하나만_남긴다() {
+		transaction.executeWithoutResult(status -> {
+			TopicGraduation graduation = topicGraduationRepository.findById(graduationId).orElseThrow();
+			graduation.requestRevision(currentSubmission(graduation), "다시 촬영해 주세요.", java.time.Instant.now());
+		});
+
+		assertThatThrownBy(() -> transaction.executeWithoutResult(status -> {
+			topicGraduationRepository.findByUserIdAndTopicId(USER_ID, topicId).orElseThrow();
+			newTransaction.executeWithoutResult(winner -> graduationSubmitter.submit(USER_ID, topicId, request("winner")));
+
+			graduationSubmitter.submit(USER_ID, topicId, request("stale"));
+		})).isInstanceOf(OptimisticLockingFailureException.class);
+
+		assertThat(graduationSubmissionRepository.findAll())
+				.filteredOn(submission -> submission.getGraduation().getId().equals(graduationId))
+				.extracting(GraduationSubmission::getVideoObjectKey)
+				.containsExactlyInAnyOrder(key("first"), key("winner"));
+		GraduationSubmission latest = graduationSubmissionRepository
+				.findFirstByGraduationIdOrderByIdDesc(graduationId).orElseThrow();
+		assertThat(latest.getVideoObjectKey()).isEqualTo(key("winner"));
+		assertThat(latest.getReviewNote()).isNull();
 	}
 
 	@Test
@@ -113,7 +135,6 @@ class GraduationSubmitterConcurrencyTest {
 
 		TopicGraduation saved = topicGraduationRepository.findById(graduationId).orElseThrow();
 		assertThat(saved.getStatus()).isEqualTo(GraduationStatus.APPROVED);
-		assertThat(saved.getAttemptNo()).isEqualTo(1);
 		assertThat(graduationSubmissionRepository.findAll())
 				.filteredOn(submission -> submission.getGraduation().getId().equals(graduationId))
 				.extracting(GraduationSubmission::getVideoObjectKey)
@@ -130,7 +151,7 @@ class GraduationSubmitterConcurrencyTest {
 	}
 	private GraduationSubmission currentSubmission(TopicGraduation graduation) {
 		return graduationSubmissionRepository
-				.findByGraduationIdAndAttemptNo(graduation.getId(), graduation.getAttemptNo()).orElseThrow();
+				.findFirstByGraduationIdOrderByIdDesc(graduation.getId()).orElseThrow();
 	}
 
 }

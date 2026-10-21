@@ -15,31 +15,29 @@ class TopicGraduationTest {
 	private static final String SECOND_KEY = "videos/graduation/42/7/second.mp4";
 
 	@Test
-	void 처음_시작한_수료는_1번째_제출로_제출_상태다() {
+	void 처음_시작한_수료는_제출_상태다() {
 		TopicGraduation graduation = started();
 
 		assertThat(graduation.getUserId()).isEqualTo(42L);
 		assertThat(graduation.getTopicId()).isEqualTo(7L);
 		assertThat(graduation.getStatus()).isEqualTo(GraduationStatus.SUBMITTED);
-		assertThat(graduation.getAttemptNo()).isEqualTo(1);
 		assertThat(graduation.getVideoObjectKey()).isEqualTo(FIRST_KEY);
 		assertThat(graduation.getSubmittedAt()).isEqualTo(NOW);
 	}
 
 	@Test
-	void 검수_대기_중에_다시_제출하면_차수를_유지하고_영상만_바꾼다() {
+	void 검수_대기_중에_다시_제출하면_영상만_바꾼다() {
 		TopicGraduation graduation = started();
 
 		graduation.resubmit(SECOND_KEY, LATER);
 
 		assertThat(graduation.getStatus()).isEqualTo(GraduationStatus.SUBMITTED);
-		assertThat(graduation.getAttemptNo()).isEqualTo(1);
 		assertThat(graduation.getVideoObjectKey()).isEqualTo(SECOND_KEY);
 		assertThat(graduation.getSubmittedAt()).isEqualTo(LATER);
 	}
 
 	@Test
-	void 보완_요청_뒤에_다시_제출하면_차수를_올리고_이전_제출의_판정을_보존한다() {
+	void 보완_요청_뒤에_다시_제출하면_이전_제출의_판정을_보존한다() {
 		TopicGraduation graduation = started();
 		GraduationSubmission submission = GraduationSubmission.from(graduation);
 		graduation.requestRevision(submission, "현관 장면부터 다시 찍어 주세요.", LATER);
@@ -48,7 +46,6 @@ class TopicGraduationTest {
 		graduation.resubmit(SECOND_KEY, LATER);
 
 		assertThat(graduation.getStatus()).isEqualTo(GraduationStatus.SUBMITTED);
-		assertThat(graduation.getAttemptNo()).isEqualTo(2);
 		assertThat(graduation.getVideoObjectKey()).isEqualTo(SECOND_KEY);
 		assertThat(graduation.getSubmittedAt()).isEqualTo(LATER);
 		assertThat(submission.getReviewedAt()).isEqualTo(LATER);
@@ -122,7 +119,7 @@ class TopicGraduationTest {
 	void 다른_수료의_제출로_승인하거나_보완_요청할_수_없다() {
 		TopicGraduation graduation = started();
 		TopicGraduation other = TopicGraduationFixture.create(2L, 42L, 8L,
-				GraduationStatus.SUBMITTED, 1, FIRST_KEY, NOW, null, null);
+				GraduationStatus.SUBMITTED, FIRST_KEY, NOW, null, null);
 		GraduationSubmission submission = GraduationSubmission.from(other);
 
 		assertThatThrownBy(() -> graduation.approve(submission, "승인", LATER))
@@ -134,22 +131,22 @@ class TopicGraduationTest {
 	}
 
 	@Test
-	void 이전_차수의_제출로_현재_수료를_판정할_수_없다() {
+	void 이전_제출로_현재_수료를_판정할_수_없다() {
 		TopicGraduation graduation = started();
 		GraduationSubmission previous = GraduationSubmission.from(graduation);
 		graduation.requestRevision(previous, "다시 촬영", LATER);
 		graduation.resubmit(SECOND_KEY, LATER);
 
 		assertThatThrownBy(() -> graduation.approve(previous, "승인", LATER))
-				.isInstanceOf(IllegalArgumentException.class);
+				.isInstanceOf(IllegalStateException.class);
 		assertThatThrownBy(() -> graduation.requestRevision(previous, "보완", LATER))
-				.isInstanceOf(IllegalArgumentException.class);
+				.isInstanceOf(IllegalStateException.class);
 		assertThat(graduation.getStatus()).isEqualTo(GraduationStatus.SUBMITTED);
 		assertThat(previous.getStatus()).isEqualTo(GraduationSubmissionStatus.REVISION_REQUESTED);
 	}
 
 	private TopicGraduation started() {
-		return TopicGraduationFixture.create(1L, 42L, 7L, GraduationStatus.SUBMITTED, 1, FIRST_KEY, NOW, null, null);
+		return TopicGraduationFixture.create(1L, 42L, 7L, GraduationStatus.SUBMITTED, FIRST_KEY, NOW, null, null);
 	}
 
 	private TopicGraduation approved() {
