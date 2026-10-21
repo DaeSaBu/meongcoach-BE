@@ -1,11 +1,5 @@
--- 이전 제출에는 판정이 저장되지 않아 여러 이력의 상태를 임의로 복원하지 않는다.
-DO $$
-BEGIN
-    IF EXISTS (SELECT 1 FROM graduation_submissions GROUP BY graduation_id HAVING count(*) > 1) THEN
-        RAISE EXCEPTION '이전 제출의 판정 이력을 확인한 뒤 단일 제출 구조로 이관해야 합니다.';
-    END IF;
-END $$;
-
+-- 보완 요청 뒤 재제출할 때만 차수가 올랐으므로 최신 차수보다 낮은 차수는 모두 보완 요청을 받은 제출이다.
+-- 그 판정 메모·시각은 재제출 때 덮어써져 복원할 수 없으므로 빈 판정으로 남기고, 최신 차수만 부모 상태를 이어받는다.
 ALTER TABLE graduation_submissions
     ADD COLUMN user_id BIGINT,
     ADD COLUMN topic_id BIGINT,
@@ -24,7 +18,20 @@ SET user_id = g.user_id,
     retake_image_url = g.retake_image_url,
     review = jsonb_build_object('note', g.review_note, 'retakeInstructions', g.retake_instructions)
 FROM topic_graduations g
-WHERE s.graduation_id = g.id;
+WHERE s.graduation_id = g.id
+  AND s.attempt_no = g.attempt_no;
+
+UPDATE graduation_submissions s
+SET user_id = g.user_id,
+    topic_id = g.topic_id,
+    version = 0,
+    status = 'REVISION_REQUESTED',
+    reviewed_at = NULL,
+    retake_image_url = NULL,
+    review = '{"note": null, "retakeInstructions": []}'::jsonb
+FROM topic_graduations g
+WHERE s.graduation_id = g.id
+  AND s.attempt_no < g.attempt_no;
 
 INSERT INTO graduation_submissions
     (graduation_id, attempt_no, user_id, topic_id, version, status, video_object_key,
@@ -33,7 +40,9 @@ SELECT g.id, g.attempt_no, g.user_id, g.topic_id, g.version, g.status, g.video_o
        g.submitted_at, COALESCE(g.reviewed_at, g.approved_at), g.retake_image_url, g.created_at,
        jsonb_build_object('note', g.review_note, 'retakeInstructions', g.retake_instructions)
 FROM topic_graduations g
-WHERE NOT EXISTS (SELECT 1 FROM graduation_submissions s WHERE s.graduation_id = g.id);
+WHERE NOT EXISTS (
+    SELECT 1 FROM graduation_submissions s WHERE s.graduation_id = g.id AND s.attempt_no = g.attempt_no
+);
 
 ALTER TABLE graduation_submissions
     ALTER COLUMN user_id SET NOT NULL,
