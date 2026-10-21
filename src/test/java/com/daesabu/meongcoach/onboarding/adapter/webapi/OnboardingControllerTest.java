@@ -120,7 +120,7 @@ class OnboardingControllerTest {
 				.andExpect(jsonPath("$.breeds[0].aliases[0]").value("POODLE"))
 				.andExpect(jsonPath("$.breeds[0].aliases[1]").value("CANICHE"))
 				.andExpect(jsonPath("$.personalities[0].code").value("TIMID"))
-				.andExpect(jsonPath("$.mbtis[0]").value("ISTJ"))
+				.andExpect(jsonPath("$.mbtis").doesNotExist())
 				.andDo(document("onboarding/metadata",
 						responseFields(
 								fieldWithPath("topics[].id").description("토픽 ID"),
@@ -602,8 +602,7 @@ class OnboardingControllerTest {
 					List.of(new TopicResult(1L, "배변 훈련", "편안한 배변 습관 만들기"),
 							new TopicResult(2L, "산책 훈련", "즐겁고 안전한 첫 산책")),
 					List.of(RegisteredBreed.POODLE, RegisteredBreed.MALTESE),
-					List.of(Personality.TIMID, Personality.LIVELY),
-					List.of("ISTJ", "INTJ"));
+					List.of(Personality.TIMID, Personality.LIVELY));
 		}
 
 		@Bean

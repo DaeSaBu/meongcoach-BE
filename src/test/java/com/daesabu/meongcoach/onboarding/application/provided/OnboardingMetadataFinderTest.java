@@ -31,7 +31,7 @@ class OnboardingMetadataFinderTest {
 	private EntityManager entityManager;
 
 	@Test
-	void 토픽_견종_성격_MBTI_목록을_한_번에_모아_반환한다() {
+	void 토픽_견종_성격_목록을_한_번에_모아_반환한다() {
 		TrainingCategory category = trainingCategoryRepository.save(
 				TrainingCategoryFixture.create("기본 훈련", 1, null, null));
 		topicRepository.save(TopicFixture.create(category, "산책 훈련", 2, null, null, null));
@@ -47,16 +47,14 @@ class OnboardingMetadataFinderTest {
 		assertThat(result.personalities()).extracting(Personality::name)
 				.containsExactly("TIMID", "LIVELY", "FRIENDLY", "CALM", "FEARFUL", "AFFECTIONATE",
 						"INDEPENDENT", "PLAYFUL", "EXCITABLE", "STUBBORN");
-		assertThat(result.mbtis()).hasSize(16).contains("ISTJ", "ENFP");
 	}
 
 	@Test
-	void 토픽이_없어도_견종_성격_MBTI_목록은_그대로_반환한다() {
+	void 토픽이_없어도_견종_성격_목록은_그대로_반환한다() {
 		OnboardingMetadataResult result = onboardingMetadataFinder.find();
 
 		assertThat(result.topics()).isEmpty();
 		assertThat(result.breeds()).isNotEmpty();
 		assertThat(result.personalities()).isNotEmpty();
-		assertThat(result.mbtis()).isNotEmpty();
 	}
 }
