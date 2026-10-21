@@ -1,4 +1,4 @@
-package com.daesabu.meongcoach.progress.domain;
+package com.daesabu.meongcoach.training.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -13,15 +13,17 @@ class LessonProgressTest {
 		assertThat(progress.getUserId()).isEqualTo(1L);
 		assertThat(progress.getLessonId()).isEqualTo(10L);
 		assertThat(progress.getCompletedCount()).isZero();
+		assertThat(progress.status()).isEqualTo(ProgressStatus.NOT_STARTED);
 	}
 
 	@Test
 	void 완료_횟수를_올리면_1씩_증가한다() {
 		LessonProgress progress = LessonProgress.start(1L, 10L);
 
-		progress.increaseCompletedCount();
-		progress.increaseCompletedCount();
+		progress.complete();
+		progress.complete();
 
 		assertThat(progress.getCompletedCount()).isEqualTo(2);
+		assertThat(progress.status()).isEqualTo(ProgressStatus.COMPLETED);
 	}
 }

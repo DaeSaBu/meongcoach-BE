@@ -19,4 +19,10 @@ public final class TopicFixture {
 		ReflectionTestUtils.setField(topic, "iconUrl", Objects.requireNonNullElse(iconUrl, ""));
 		return topic;
 	}
+
+	public static Topic create(Long id) {
+		Topic topic = create(null, "토픽", 1, null, null, null);
+		ReflectionTestUtils.setField(topic, "id", id);
+		return topic;
+	}
 }

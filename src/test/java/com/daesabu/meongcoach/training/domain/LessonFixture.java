@@ -15,4 +15,11 @@ public final class LessonFixture {
 		ReflectionTestUtils.setField(lesson, "estimatedMinutes", estimatedMinutes);
 		return lesson;
 	}
+
+	public static Lesson create(Curriculum curriculum, Long id) {
+		Lesson lesson = create(curriculum, "레슨", 1, 5);
+		ReflectionTestUtils.setField(lesson, "id", id);
+		curriculum.getLessons().add(lesson);
+		return lesson;
+	}
 }
