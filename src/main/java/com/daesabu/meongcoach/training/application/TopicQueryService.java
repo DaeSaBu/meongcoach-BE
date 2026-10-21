@@ -34,14 +34,7 @@ public class TopicQueryService implements TopicFinder, TopicCompletionChecker {
 	@Override
 	public List<TopicResult> findTopics(Collection<Long> topicIds) {
 		List<Topic> topics = topicRepository.findAllById(topicIds);
-		Set<Long> foundIds = topics.stream()
-				.map(Topic::getId)
-				.collect(Collectors.toSet());
-		for (Long topicId : topicIds) {
-			if (!foundIds.contains(topicId)) {
-				throw new TopicNotFoundException(topicId);
-			}
-		}
+		validateTopicsExist(topicIds, topics);
 		return topics.stream()
 				.map(TopicResult::from)
 				.toList();
@@ -72,6 +65,18 @@ public class TopicQueryService implements TopicFinder, TopicCompletionChecker {
 				.filter(topic -> topic.isCompleted(progresses))
 				.map(TopicResult::from)
 				.toList();
+	}
+
+	private void validateTopicsExist(Collection<Long> topicIds, List<Topic> topics) {
+		Set<Long> foundIds = topics.stream()
+				.map(Topic::getId)
+				.collect(Collectors.toSet());
+
+		for (Long topicId : topicIds) {
+			if (!foundIds.contains(topicId)) {
+				throw new TopicNotFoundException(topicId);
+			}
+		}
 	}
 
 	private Topic loadTopic(Long topicId) {
