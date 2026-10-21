@@ -11,8 +11,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.daesabu.meongcoach.user.application.provided.UserFinder;
 import com.daesabu.meongcoach.user.domain.User;
+import com.daesabu.meongcoach.user.domain.UserProfileCreateCommand;
 import com.daesabu.meongcoach.user.domain.exception.UserNotFoundException;
 import java.security.Principal;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
@@ -53,7 +55,7 @@ class UserControllerTest {
 	@Test
 	void 정회원이_내_정보를_조회하면_온보딩이_필요하지_않다고_응답한다() throws Exception {
 		User user = User.registerUser();
-		user.promoteToUser();
+		user.completeOnboarding(new UserProfileCreateCommand("멍멍이집사", null, "INFP", Set.of(), Set.of()));
 		given(userFinder.findById(42L)).willReturn(user);
 
 		mockMvc.perform(get("/api/users/me").principal(CURRENT_USER))
