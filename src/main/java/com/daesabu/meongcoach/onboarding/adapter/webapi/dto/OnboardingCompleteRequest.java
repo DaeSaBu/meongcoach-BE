@@ -41,7 +41,7 @@ public record OnboardingCompleteRequest(
 			@NotBlank @Size(max = 12) String name,
 			@NotBlank @Size(max = 30) String breed,
 			@NotBlank String sex,
-			@Past LocalDate birthDate,
+			@NotNull @Past LocalDate birthDate,
 			@NotNull @Positive BigDecimal weightKg,
 			Set<String> personalities,
 			@Size(max = 512) String profileImageUrl,
