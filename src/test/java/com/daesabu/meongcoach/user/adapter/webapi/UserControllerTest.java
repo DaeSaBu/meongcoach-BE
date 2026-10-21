@@ -1,6 +1,7 @@
 package com.daesabu.meongcoach.user.adapter.webapi;
 
 import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.document;
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.get;
@@ -21,13 +22,13 @@ import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDoc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(UserController.class)
 @AutoConfigureRestDocs
 class UserControllerTest {
 
-	// 컨트롤러 슬라이스에는 필터 체인이 없으므로 인증 주체를 요청에 직접 실어 보낸다
 	private static final Principal CURRENT_USER = () -> "42";
 
 	@Autowired
@@ -37,30 +38,43 @@ class UserControllerTest {
 	private UserFinder userFinder;
 
 	@Test
-	void 온보딩_전_회원이_내_정보를_조회하면_온보딩이_필요하다고_응답한다() throws Exception {
-		given(userFinder.findById(42L)).willReturn(User.registerUser());
+	void 온보딩_전_회원이_내_정보를_조회하면_온보딩이_필요하고_프로필은_null로_응답한다() throws Exception {
+		User user = User.registerUser();
+		ReflectionTestUtils.setField(user, "id", 42L);
+		given(userFinder.findById(42L)).willReturn(user);
+
+		mockMvc.perform(get("/api/users/me").principal(CURRENT_USER))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.userId").value(42))
+				.andExpect(jsonPath("$.needsOnboarding").value(true))
+				.andExpect(jsonPath("$.profile").value(nullValue()));
+	}
+
+	@Test
+	void 정회원이_내_정보를_조회하면_회원_ID와_프로필을_응답한다() throws Exception {
+		User user = User.registerUser();
+		ReflectionTestUtils.setField(user, "id", 42L);
+		user.completeOnboarding(new UserProfileCreateCommand(
+				"멍멍이집사", "https://cdn.example.com/profile.png", "INFP", Set.of(), Set.of()));
+		given(userFinder.findById(42L)).willReturn(user);
 
 		mockMvc.perform(get("/api/users/me")
 						.principal(CURRENT_USER)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.needsOnboarding").value(true))
+				.andExpect(jsonPath("$.userId").value(42))
+				.andExpect(jsonPath("$.needsOnboarding").value(false))
+				.andExpect(jsonPath("$.profile.nickname").value("멍멍이집사"))
+				.andExpect(jsonPath("$.profile.profileImageUrl").value("https://cdn.example.com/profile.png"))
 				.andDo(document("user/me",
 						responseFields(
-								fieldWithPath("needsOnboarding").description("온보딩 화면으로 보내야 하는지 여부")
+								fieldWithPath("userId").description("회원 ID"),
+								fieldWithPath("needsOnboarding").description("온보딩 화면으로 보내야 하는지 여부"),
+								fieldWithPath("profile").optional().description("회원 프로필. 온보딩 전이면 null"),
+								fieldWithPath("profile.nickname").description("닉네임"),
+								fieldWithPath("profile.profileImageUrl").description("프로필 이미지 URL. 등록하지 않았으면 빈 문자열")
 						)
 				));
-	}
-
-	@Test
-	void 정회원이_내_정보를_조회하면_온보딩이_필요하지_않다고_응답한다() throws Exception {
-		User user = User.registerUser();
-		user.completeOnboarding(new UserProfileCreateCommand("멍멍이집사", null, "INFP", Set.of(), Set.of()));
-		given(userFinder.findById(42L)).willReturn(user);
-
-		mockMvc.perform(get("/api/users/me").principal(CURRENT_USER))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.needsOnboarding").value(false));
 	}
 
 	@Test
