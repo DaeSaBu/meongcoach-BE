@@ -223,6 +223,74 @@ class CommunityControllerTest {
 	}
 
 	@Test
+	void 게시글_하나를_반환한다() throws Exception {
+		List<PostMediaCommand> media = List.of(
+				new PostMediaCommand(PostMediaType.IMAGE, "https://media.meongcoach.com/images/community-post/7/photo.jpg"));
+		PostResult result = new PostResult(
+				PostFixture.create(30L, 7L, "이 레슨 따라해봤어요", null, media, LocalDateTime.of(2026, 10, 19, 10, 30, 0)),
+				new UserProfileSummaryResult(7L, "멍멍이집사", "https://cdn.example.com/profile.png"),
+				new MentionTargetResult(MentionTargetType.LESSON, 101L, "앉아 기초"));
+		given(postFinder.findPostDetail(30L)).willReturn(result);
+
+		mockMvc.perform(get("/api/community/posts/{postId}", 30L)
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.postId").value(30))
+				.andExpect(jsonPath("$.content").value("이 레슨 따라해봤어요"))
+				.andExpect(jsonPath("$.author.userId").value(7))
+				.andExpect(jsonPath("$.author.nickname").value("멍멍이집사"))
+				.andExpect(jsonPath("$.mention.targetType").value("LESSON"))
+				.andExpect(jsonPath("$.mention.title").value("앉아 기초"))
+				.andExpect(jsonPath("$.media[0].type").value("IMAGE"))
+				.andExpect(jsonPath("$.media[0].url")
+						.value("https://media.meongcoach.com/images/community-post/7/photo.jpg"))
+				.andExpect(jsonPath("$.createdAt").value("2026-10-19T10:30:00"))
+				.andDo(document("community/post-detail",
+						pathParameters(parameterWithName("postId").description("조회할 게시글 ID")),
+						responseFields(
+								fieldWithPath("postId").description("게시글 ID"),
+								fieldWithPath("content").description("게시글 본문"),
+								fieldWithPath("author").optional()
+										.description("작성자 프로필 요약. 작성자 프로필이 없으면 null"),
+								fieldWithPath("author.userId").description("작성자 회원 ID"),
+								fieldWithPath("author.nickname").description("작성자 닉네임"),
+								fieldWithPath("author.profileImageUrl").description("작성자 프로필 이미지 URL"),
+								fieldWithPath("mention").optional()
+										.description("멘션 대상 요약. 멘션이 없거나 멘션 대상이 없으면 null"),
+								fieldWithPath("mention.targetType").description("멘션 대상 종류. 현재 LESSON(레슨)만 있다"),
+								fieldWithPath("mention.targetId").description("멘션 대상 ID"),
+								fieldWithPath("mention.title").description("멘션 대상 제목"),
+								fieldWithPath("media[]").description("게시글 사진·영상 목록. 배열 순서가 표시 순서이고, 없으면 빈 배열"),
+								fieldWithPath("media[].type").description("미디어 종류. IMAGE(사진), VIDEO(영상)"),
+								fieldWithPath("media[].url").description("미디어 공개 URL"),
+								fieldWithPath("createdAt").description("게시글 작성 시각(ISO-8601, 초 단위)")
+						)
+				));
+	}
+
+	@Test
+	void 게시글이_없으면_404를_반환한다() throws Exception {
+		given(postFinder.findPostDetail(999L)).willThrow(new PostNotFoundException(999L));
+
+		mockMvc.perform(get("/api/community/posts/{postId}", 999L)
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.code").value("COMMUNITY_POST_NOT_FOUND"))
+				.andDo(document("community/post-detail-error",
+						responseFields(
+								fieldWithPath("title").description("HTTP 상태 이름"),
+								fieldWithPath("status").description("HTTP 상태 코드"),
+								fieldWithPath("detail").description("사람이 읽을 수 있는 에러 설명"),
+								fieldWithPath("instance").description("에러가 발생한 요청 경로"),
+								fieldWithPath("code").description("클라이언트 분기용 에러 코드"),
+								fieldWithPath("timestamp").description("에러 발생 시각(UTC)")
+						)
+				));
+	}
+
+	@Test
 	void 게시글을_작성하면_201과_작성한_게시글을_반환한다() throws Exception {
 		String imageUrl = "https://media.meongcoach.com/images/community-post/42/photo.jpg";
 		String videoUrl = "https://media.meongcoach.com/videos/community-post/42/clip.mp4";
