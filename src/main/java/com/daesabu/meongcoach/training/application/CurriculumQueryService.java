@@ -32,13 +32,9 @@ public class CurriculumQueryService implements CurriculumFinder {
 
 	@Override
 	public CurriculumListResult findCurriculums(Long userId) {
-		Topic topic = topicSelectionRepository.findByUserId(userId)
-				.map(TopicSelection::getTopicId)
-				.flatMap(topicRepository::findById)
-				.orElseGet(() -> topicRepository.findFirstBy(TopicRepository.EDUCATION_ORDER).orElseThrow(TopicNotConfiguredException::new));
+		Topic topic = findSelectedOrFirstTopic(userId);
 		LessonProgresses progresses = findProgresses(userId, topic.getAllLessonIds());
-		boolean hasEntitlement = topic.findRequiredEntitlementType()
-				.map(type -> entitlementChecker.hasEntitlement(userId, type)).orElse(true);
+		boolean hasEntitlement = hasEntitlement(userId, topic);
 		return CurriculumListResult.of(topic, progresses, hasEntitlement);
 	}
 
@@ -46,9 +42,28 @@ public class CurriculumQueryService implements CurriculumFinder {
 	public CurriculumDetailResult findCurriculum(Long userId, Long curriculumId) {
 		Curriculum curriculum = curriculumRepository.findById(curriculumId)
 				.orElseThrow(() -> new CurriculumNotFoundException(curriculumId));
-		curriculum.findRequiredEntitlementType().ifPresent(type -> entitlementChecker.validateEntitlement(userId, type));
+		curriculum.findRequiredEntitlementType()
+				.ifPresent(type -> entitlementChecker.validateEntitlement(userId, type));
 		LessonProgresses progresses = findProgresses(userId, curriculum.getLessonIds());
 		return new CurriculumDetailResult(curriculum, progresses);
+	}
+
+	private Topic findSelectedOrFirstTopic(Long userId) {
+		return topicSelectionRepository.findByUserId(userId)
+				.map(TopicSelection::getTopicId)
+				.flatMap(topicRepository::findById)
+				.orElseGet(this::findFirstTopic);
+	}
+
+	private Topic findFirstTopic() {
+		return topicRepository.findFirstBy(TopicRepository.EDUCATION_ORDER)
+				.orElseThrow(TopicNotConfiguredException::new);
+	}
+
+	private boolean hasEntitlement(Long userId, Topic topic) {
+		return topic.findRequiredEntitlementType()
+				.map(type -> entitlementChecker.hasEntitlement(userId, type))
+				.orElse(true);
 	}
 
 	private LessonProgresses findProgresses(Long userId, List<Long> lessonIds) {
