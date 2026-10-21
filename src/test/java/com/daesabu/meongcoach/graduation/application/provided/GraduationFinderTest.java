@@ -164,6 +164,31 @@ class GraduationFinderTest {
 		assertThat(results.getLast().submission()).isNull();
 	}
 
+	@Test
+	void 같은_토픽의_다른_회원_제출은_제외하고_동일_시각이면_최신_ID_순으로_정렬한다() {
+		Topic first = topicSeeder.completedTopic(USER_ID, "분리불안");
+		Topic second = topicSeeder.completedTopic(USER_ID, "산책");
+		submit(USER_ID, first, "old");
+		revise(first);
+		submit(USER_ID, second, "walk");
+		submit(USER_ID, first, "latest");
+		jdbcTemplate.update("update graduation_submissions set submitted_at = '2026-10-20T00:00:00Z'");
+		jdbcTemplate.update("update graduation_submissions set submitted_at = '2026-10-21T00:00:00Z' "
+				+ "where status = 'REVISION_REQUESTED'");
+		jdbcTemplate.update("insert into graduation_submissions "
+				+ "(user_id, topic_id, version, video_object_key, submitted_at, created_at, status, review) "
+				+ "select ?, topic_id, 0, video_object_key, submitted_at, created_at, status, review "
+				+ "from graduation_submissions where user_id = ? and topic_id = ? and status = 'SUBMITTED'",
+				OTHER_USER_ID, USER_ID, first.getId());
+		topicSeeder.flushAndClear();
+
+		List<GraduationSummaryResult> results = graduationFinder.findGraduations(USER_ID);
+
+		assertThat(results).extracting(result -> result.topic().id()).containsExactly(first.getId(), second.getId());
+		assertThat(results).allSatisfy(result -> assertThat(result.submission().getUserId()).isEqualTo(USER_ID));
+		assertThat(results.getFirst().submission().getVideoObjectKey()).endsWith("/latest.mp4");
+	}
+
 	private void revise(Topic topic) {
 		jdbcTemplate.update(
 				"update graduation_submissions set status = 'REVISION_REQUESTED', review = '{\"note\":\"이전 판정\",\"retakeInstructions\":[\"전신\"]}'::jsonb, reviewed_at = now() where user_id = ? and topic_id = ?",
