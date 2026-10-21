@@ -16,6 +16,7 @@ public class LessonProgressModifyService implements LessonProgressUpdater {
 	@Override
 	@Transactional
 	public int updateCompletion(Long userId, Long lessonId) {
+		lessonProgressRepository.lockByUserId(userId);
 		LessonProgress progress = lessonProgressRepository.findByUserIdAndLessonId(userId, lessonId)
 				.orElseGet(() -> LessonProgress.start(userId, lessonId));
 

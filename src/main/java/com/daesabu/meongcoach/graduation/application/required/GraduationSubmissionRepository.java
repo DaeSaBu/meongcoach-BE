@@ -7,6 +7,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
 public interface GraduationSubmissionRepository extends JpaRepository<GraduationSubmission, Long> {
+	boolean existsByUserIdAndTopicId(Long userId, Long topicId);
+
 	Optional<GraduationSubmission> findFirstByUserIdAndTopicIdOrderByIdDesc(Long userId, Long topicId);
 
 	@Query("""
@@ -18,7 +20,7 @@ public interface GraduationSubmissionRepository extends JpaRepository<Graduation
 				where submission.userId = :userId
 				group by submission.topicId
 			)
-			order by s.submittedAt desc, s.id desc
+			order by s.submittedAt desc nulls last, s.id desc
 			""")
 	List<GraduationSubmission> findLatestByUserId(Long userId);
 }

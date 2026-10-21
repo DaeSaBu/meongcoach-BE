@@ -9,10 +9,8 @@ import com.daesabu.meongcoach.media.application.provided.VideoDownloadUrlIssuer;
 import com.daesabu.meongcoach.training.application.provided.TopicCompletionChecker;
 import com.daesabu.meongcoach.training.application.provided.TopicFinder;
 import com.daesabu.meongcoach.training.application.provided.dto.TopicResult;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,6 +35,9 @@ public class GraduationQueryService implements GraduationFinder {
 			return GraduationDetailResult.notSubmitted(topic, eligible);
 		}
 		GraduationSubmission submission = graduation.get();
+		if (submission.getVideoObjectKey() == null) {
+			return new GraduationDetailResult(topic, eligible, submission, null);
+		}
 		String videoUrl = videoDownloadUrlIssuer.issue(submission.getVideoObjectKey()).downloadUrl();
 		return new GraduationDetailResult(topic, eligible, submission, videoUrl);
 	}
@@ -46,15 +47,8 @@ public class GraduationQueryService implements GraduationFinder {
 		List<GraduationSubmission> submissions = graduationSubmissionRepository.findLatestByUserId(userId);
 		List<Long> topicIds = submissions.stream().map(GraduationSubmission::getTopicId).toList();
 		List<TopicResult> topics = topicFinder.findTopics(topicIds);
-		List<GraduationSummaryResult> results = new ArrayList<>(submissions.stream()
-				.map(submission -> summarize(submission, topics)).toList());
-		Set<Long> submittedTopicIds = Set.copyOf(topicIds);
-		List<GraduationSummaryResult> unsubmitted = topicCompletionChecker.findCompletedTopics(userId).stream()
-				.filter(topic -> !submittedTopicIds.contains(topic.id()))
-				.map(topic -> new GraduationSummaryResult(null, topic))
-				.toList();
-		results.addAll(unsubmitted);
-		return List.copyOf(results);
+		return submissions.stream()
+				.map(submission -> summarize(submission, topics)).toList();
 	}
 
 	private GraduationSummaryResult summarize(GraduationSubmission submission, List<TopicResult> topics) {

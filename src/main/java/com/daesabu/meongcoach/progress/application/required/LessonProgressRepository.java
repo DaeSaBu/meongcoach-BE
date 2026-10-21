@@ -22,6 +22,9 @@ public interface LessonProgressRepository extends JpaRepository<LessonProgress, 
 	 */
 	Optional<LessonProgress> findByUserIdAndLessonId(Long userId, Long lessonId);
 
+	@Query(value = "SELECT 1 FROM pg_advisory_xact_lock(hashtextextended('lesson-progress:' || CAST(:userId AS text), 0))", nativeQuery = true)
+	int lockByUserId(Long userId);
+
 	@Query("""
 			select lp
 			from LessonProgress lp
