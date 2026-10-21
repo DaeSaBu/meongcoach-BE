@@ -87,6 +87,29 @@ class TopicCompletionCheckerTest {
 				.isInstanceOf(TopicNotFoundException.class);
 	}
 
+	@Test
+	void 본인이_모든_레슨을_완료한_토픽만_일괄_조회한다() {
+		Topic completed = saveTopic();
+		Lesson first = saveLesson(saveCurriculum(completed, 1), "완료");
+		Topic partial = saveTopic();
+		Lesson partialLesson = saveLesson(saveCurriculum(partial, 1), "일부 완료");
+		saveLesson(saveCurriculum(partial, 2), "미완료");
+		Topic emptyCurriculum = saveTopic();
+		saveCurriculum(emptyCurriculum, 1);
+		saveTopic();
+		Topic otherUser = saveTopic();
+		Lesson otherLesson = saveLesson(saveCurriculum(otherUser, 1), "다른 회원");
+		flushAndClear();
+		lessonProgressUpdater.updateCompletion(USER_ID, first.getId());
+		lessonProgressUpdater.updateCompletion(USER_ID, partialLesson.getId());
+		lessonProgressUpdater.updateCompletion(43L, otherLesson.getId());
+		flushAndClear();
+
+		assertThat(topicCompletionChecker.findCompletedTopics(USER_ID))
+				.extracting(com.daesabu.meongcoach.training.application.provided.dto.TopicResult::id)
+				.containsExactly(completed.getId());
+	}
+
 	private Topic saveTopic() {
 		TrainingCategory category = trainingCategoryRepository.save(
 				TrainingCategoryFixture.create("기본 교육", 1, null, null));
