@@ -83,7 +83,7 @@ AI 분석은 수십 초가 걸리므로 요청-응답이 아니라 S3 업로드 
 - 실용적인 타협이 두 가지 있습니다.
   - **리포지토리 포트는 Spring Data JPA가 직접 구현합니다.** `required/UserRepository` 같은 인터페이스가 곧 Spring Data 리포지토리이며, 별도 영속성 어댑터 클래스는 두지 않습니다.
   - **다른 모듈의 기능은 그 모듈의 `provided` 인터페이스를 직접 주입받아 씁니다.** 호출하는 모듈 쪽에 `required` 포트와 어댑터를 따로 두지 않습니다. 모듈 간 결합은 `provided` 인터페이스로 좁혀 두고, 분리가 필요해지는 시점에 해당 호출부만 원격 호출 어댑터로 바꾸는 것을 전제로 합니다.
-- 모듈은 필요한 계층만 갖습니다. 다른 모듈의 기능을 조합만 하는 `onboarding`에는 `domain`이 없고, 다른 모듈에서만 호출하는 `progress`·`media`에는 웹 API가 없습니다.
+- 모듈은 필요한 계층만 갖습니다. 다른 모듈의 기능을 조합만 하는 `onboarding`에는 `domain`이 없고, 다른 모듈에서만 호출하는 `media`에는 웹 API가 없습니다.
 
 ### 완화된 계층형 아키텍처
 
@@ -126,17 +126,11 @@ AI 분석은 수십 초가 걸리므로 요청-응답이 아니라 S3 업로드 
 - **역할**: `DogRegister`, `DogProfileFinder`, `DogProfileUpdater`, `DogProfileDeleter`, `BreedFinder`, `PersonalityFinder`. 견종(`Breed`)·성격(`Personality`)은 `domain/shared`로 노출합니다.
 - **협력**: 다른 모듈을 호출하지 않습니다. `onboarding`이 반려견 등록과 견종·성격 목록 조회에 사용합니다.
 
-#### training — 훈련 콘텐츠
+#### training — 훈련 콘텐츠와 사용자별 진행
 
-- **책임**: 카테고리·토픽·커리큘럼·레슨·카드로 구성된 훈련 카탈로그와 사용자의 토픽 선택
-- **역할**: `TrainingCategoryFinder`, `TopicFinder`, `TopicSelector`, `CurriculumFinder`, `LessonFinder`, `LessonCompleter`
-- **협력**: 학습 기록은 직접 갖지 않고 `progress`에 맡깁니다. 커리큘럼을 조회할 때 `progress`에서 완료한 레슨과 마지막 진입 토픽을 받아 함께 내려주고, 레슨을 완료하면 `progress`에 기록합니다. 카테고리는 열람에 필요한 이용권 종류를 `entitlement`의 `EntitlementType`으로 표현합니다.
-
-#### progress — 학습 진도
-
-- **책임**: 레슨 완료 횟수와 사용자가 마지막으로 진입한 토픽 기록
-- **역할**: `LessonProgressFinder`·`LessonProgressUpdater`, `TopicProgressFinder`·`TopicProgressUpdater`. 시그니처에는 JDK 타입만 씁니다.
-- **협력**: `training`만 사용하며, 웹 API 없이 `provided` 인터페이스로만 동작합니다.
+콘텐츠 구성·순서·이용권 요구 조건과 사용자별 Topic 선택·훈련 이력을 관리합니다.
+공용 콘텐츠와 사용자별 레슨 진행은 별도 애그리거트로 두며 진행 도메인이 완료 상태를 계산합니다.
+애그리거트와 완료 조건은 [아키텍처 문서](docs/architecture.md#훈련-콘텐츠와-사용자-진행)에 있습니다.
 
 #### ai — AI 행동 분석
 
