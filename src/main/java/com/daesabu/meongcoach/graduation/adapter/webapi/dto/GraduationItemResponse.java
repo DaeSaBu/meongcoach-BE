@@ -4,13 +4,13 @@ import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationSumm
 import com.daesabu.meongcoach.graduation.domain.TopicGraduation;
 import java.time.Instant;
 
-public record GraduationItemResponse(Long graduationId, Long topicId, String topicTitle, String status, int attemptNo,
+public record GraduationItemResponse(Long graduationId, Long topicId, String topicTitle, String status,
                                      Instant submittedAt, Instant reviewedAt, String reviewNote) {
 
 	public static GraduationItemResponse from(GraduationSummaryResult result) {
 		TopicGraduation graduation = result.graduation();
 		return new GraduationItemResponse(graduation.getId(), graduation.getTopicId(), result.topic().title(),
-				graduation.getStatus().name(), graduation.getAttemptNo(), graduation.getSubmittedAt(),
+				graduation.getStatus().name(), graduation.getSubmittedAt(),
 				result.submission().getReviewedAt(), result.submission().getReviewNote());
 	}
 }

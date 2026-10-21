@@ -49,9 +49,6 @@ public class TopicGraduation extends BaseEntity {
 	@Column(nullable = false, length = 30)
 	private GraduationStatus status;
 
-	@Column(name = "attempt_no", nullable = false)
-	private int attemptNo;
-
 	@Column(nullable = false, length = 512)
 	private String videoObjectKey;
 
@@ -65,7 +62,6 @@ public class TopicGraduation extends BaseEntity {
 		graduation.userId = requireNonNull(userId);
 		graduation.topicId = requireNonNull(topicId);
 		graduation.status = GraduationStatus.SUBMITTED;
-		graduation.attemptNo = 1;
 		graduation.videoObjectKey = requireNonNull(videoObjectKey);
 		graduation.submittedAt = requireNonNull(now);
 		return graduation;
@@ -73,9 +69,6 @@ public class TopicGraduation extends BaseEntity {
 
 	public void resubmit(String videoObjectKey, Instant now) {
 		state(!isApproved(), "승인된 수료에는 다시 제출할 수 없다");
-		if (status == GraduationStatus.REVISION_REQUESTED) {
-			this.attemptNo++;
-		}
 		this.status = GraduationStatus.SUBMITTED;
 		this.videoObjectKey = requireNonNull(videoObjectKey);
 		this.submittedAt = requireNonNull(now);
@@ -83,7 +76,7 @@ public class TopicGraduation extends BaseEntity {
 
 	public void approve(GraduationSubmission submission, String note, Instant now) {
 		state(isSubmitted(), "제출 상태의 수료만 승인할 수 있다");
-		validateCurrentSubmission(submission);
+		validateSubmission(submission);
 		submission.approve(note, now);
 		this.status = GraduationStatus.APPROVED;
 		this.approvedAt = now;
@@ -95,15 +88,14 @@ public class TopicGraduation extends BaseEntity {
 
 	public void requestRevision(GraduationSubmission submission, GraduationRevisionCommand command) {
 		state(isSubmitted(), "제출 상태의 수료만 보완 요청할 수 있다");
-		validateCurrentSubmission(submission);
+		validateSubmission(submission);
 		submission.requestRevision(command);
 		this.status = GraduationStatus.REVISION_REQUESTED;
 	}
 
-	private void validateCurrentSubmission(GraduationSubmission submission) {
+	private void validateSubmission(GraduationSubmission submission) {
 		requireNonNull(submission);
 		isTrue(id.equals(submission.getGraduation().getId()), "같은 수료의 기록만 판정할 수 있다");
-		isTrue(attemptNo == submission.getAttemptNo(), "현재 차수의 기록만 판정할 수 있다");
 	}
 
 	public boolean isApproved() {

@@ -5,6 +5,7 @@ import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationSubm
 import com.daesabu.meongcoach.graduation.application.required.GraduationSubmissionRepository;
 import com.daesabu.meongcoach.graduation.application.required.TopicGraduationRepository;
 import com.daesabu.meongcoach.graduation.domain.GraduationSubmission;
+import com.daesabu.meongcoach.graduation.domain.GraduationSubmissionStatus;
 import com.daesabu.meongcoach.graduation.domain.GraduationVideoKey;
 import com.daesabu.meongcoach.graduation.domain.TopicGraduation;
 import com.daesabu.meongcoach.graduation.domain.exception.GraduationAlreadyApprovedException;
@@ -44,7 +45,8 @@ public class GraduationSubmitService implements GraduationSubmitter {
 
 	private void record(TopicGraduation graduation) {
 		GraduationSubmission submission = graduationSubmissionRepository
-				.findByGraduationIdAndAttemptNo(graduation.getId(), graduation.getAttemptNo())
+				.findFirstByGraduationIdOrderByIdDesc(graduation.getId())
+				.filter(existing -> existing.getStatus() == GraduationSubmissionStatus.SUBMITTED)
 				.orElseGet(() -> graduationSubmissionRepository.save(GraduationSubmission.from(graduation)));
 		submission.replaceVideo(graduation);
 	}

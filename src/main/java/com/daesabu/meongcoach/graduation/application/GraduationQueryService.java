@@ -40,7 +40,7 @@ public class GraduationQueryService implements GraduationFinder {
 		}
 		String videoUrl = videoDownloadUrlIssuer.issue(graduation.get().getVideoObjectKey()).downloadUrl();
 		GraduationSubmission submission = graduationSubmissionRepository
-				.findByGraduationIdAndAttemptNo(graduation.get().getId(), graduation.get().getAttemptNo()).orElseThrow();
+				.findFirstByGraduationIdOrderByIdDesc(graduation.get().getId()).orElseThrow();
 		return new GraduationDetailResult(topic, eligible, graduation.get(), submission, videoUrl);
 	}
 
