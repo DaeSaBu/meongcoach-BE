@@ -19,11 +19,59 @@ class CurriculumTest {
 		assertThat(lessonIds).containsExactly(3L, 1L, 2L);
 	}
 
+	@Test
+	void 완료한_레슨_id에_속한_레슨만_센다() {
+		Curriculum curriculum = curriculumWithLessonIds(1L, 2L, 3L);
 
+		int completed = curriculum.completion(completedProgresses(1L, 3L)).completedLessons();
 
+		assertThat(completed).isEqualTo(2);
+	}
 
+	@Test
+	void 다른_커리큘럼의_레슨_id는_세지_않는다() {
+		Curriculum curriculum = curriculumWithLessonIds(1L, 2L);
 
+		int completed = curriculum.completion(completedProgresses(2L, 99L)).completedLessons();
 
+		assertThat(completed).isEqualTo(1);
+	}
+
+	@Test
+	void 레슨이_없으면_완료한_레슨은_0개다() {
+		Curriculum curriculum = curriculumWithLessonIds();
+
+		int completed = curriculum.completion(completedProgresses(1L)).completedLessons();
+
+		assertThat(completed).isZero();
+	}
+
+	@Test
+	void 레슨이_없으면_시작_전_상태다() {
+		Curriculum curriculum = curriculumWithLessonIds();
+
+		ProgressStatus status = curriculum.completion(completedProgresses()).status();
+
+		assertThat(status).isEqualTo(ProgressStatus.NOT_STARTED);
+	}
+
+	@Test
+	void 일부_레슨만_완료하면_진행_중_상태다() {
+		Curriculum curriculum = curriculumWithLessonIds(1L, 2L);
+
+		ProgressStatus status = curriculum.completion(completedProgresses(1L)).status();
+
+		assertThat(status).isEqualTo(ProgressStatus.IN_PROGRESS);
+	}
+
+	@Test
+	void 모든_레슨을_완료하면_완료_상태다() {
+		Curriculum curriculum = curriculumWithLessonIds(1L, 2L);
+
+		ProgressStatus status = curriculum.completion(completedProgresses(1L, 2L)).status();
+
+		assertThat(status).isEqualTo(ProgressStatus.COMPLETED);
+	}
 
 	@Test
 	void 유료_커리큘럼은_카테고리의_이용권을_요구한다() {
@@ -98,5 +146,15 @@ class CurriculumTest {
 		}
 		ReflectionTestUtils.setField(curriculum, "lessons", lessons);
 		return curriculum;
+	}
+
+	private LessonProgresses completedProgresses(Long... lessonIds) {
+		List<LessonProgress> progresses = new ArrayList<>();
+		for (Long lessonId : lessonIds) {
+			LessonProgress progress = LessonProgress.start(1L, lessonId);
+			progress.complete();
+			progresses.add(progress);
+		}
+		return LessonProgresses.from(progresses);
 	}
 }
