@@ -42,16 +42,30 @@ class GraduationSubmissionMigrationTest {
 	}
 
 	@Test
-	void 판정을_복원할_수_없는_과거_이력이_있으면_삭제하지_않고_이관에_실패한다() {
-		var source = source("single_submission_conflict");
+	void 여러_차수_이력은_최신_차수에만_부모_상태를_옮기고_과거_차수는_보완_요청으로_복원한다() {
+		var source = source("single_submission_history");
 		var jdbc = new JdbcTemplate(source);
 		parents(jdbc);
 		jdbc.update(
 				"insert into graduation_submissions (graduation_id, attempt_no, video_object_key, submitted_at, created_at) values (3, 1, 'a', now(), now()), (3, 2, 'b', now(), now())");
-		assertThatThrownBy(() -> Flyway.configure().dataSource(source).load().migrate()).isInstanceOf(
-				org.flywaydb.core.api.FlywayException.class);
-		assertThat(jdbc.queryForObject("select count(*) from graduation_submissions", Integer.class)).isEqualTo(2);
-		assertThat(jdbc.queryForObject("select count(*) from topic_graduations", Integer.class)).isEqualTo(3);
+		Flyway.configure().dataSource(source).load().migrate();
+		assertThat(jdbc.queryForObject("select count(*) from graduation_submissions where user_id = 42 and topic_id = 3",
+				Integer.class)).isEqualTo(2);
+		assertThat(jdbc.queryForObject(
+				"select status from graduation_submissions where video_object_key = 'a'", String.class))
+				.isEqualTo("REVISION_REQUESTED");
+		assertThat(jdbc.queryForObject(
+				"select reviewed_at is null and retake_image_url is null from graduation_submissions where video_object_key = 'a'",
+				Boolean.class)).isTrue();
+		assertThat(jdbc.queryForObject(
+				"select review::text from graduation_submissions where video_object_key = 'a'", String.class))
+				.isEqualTo("{\"note\": null, \"retakeInstructions\": []}");
+		assertThat(jdbc.queryForObject(
+				"select status from graduation_submissions where video_object_key = 'b'", String.class))
+				.isEqualTo("SUBMITTED");
+		assertThat(jdbc.queryForObject(
+				"select video_object_key from graduation_submissions where user_id = 42 and topic_id = 3 order by id desc limit 1",
+				String.class)).isEqualTo("b");
 	}
 
 	private DriverManagerDataSource source(String name) {
