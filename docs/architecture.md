@@ -53,48 +53,6 @@ com.daesabu.meongcoach
   - `application/provided/dto`에도 같은 이름으로 따로 선언합니다. 패키지에 선언한 `@NamedInterface`는 하위 패키지로 전파되지 않아, 선언이 없으면 다른 모듈이 `~Request`·`~Result`를 쓰는 순간 `verify()`가 실패합니다. 같은 이름의 named interface는 Modulith가 하나로 합칩니다.
 - `shared`는 보안·설정 등 횡단 관심사만 담습니다. 모든 모듈이 `shared`를 참조할 수 있지만, `shared`는 어떤 모듈도 참조하지 않습니다.
 
-## 훈련 콘텐츠와 사용자 진행
-
-`training`은 훈련 콘텐츠와 사용자별 선택·진행을 소유합니다.
-공용 콘텐츠 `Topic`·`Curriculum`·`Lesson`과 사용자별 `LessonProgress` 애그리거트는 분리합니다.
-`LessonProgress`는 사용자 ID·레슨 ID·완료 횟수를 저장합니다.
-
-`LessonCompleteService`는 레슨 존재와 이용권을 확인하고 사용자·레슨별 잠금을 잡습니다.
-`LessonProgress.complete()`가 완료 횟수를 증가시키며 서비스가 기록을 저장합니다.
-다른 레슨의 완료는 같은 토픽이나 커리큘럼에 속해도 같은 잠금을 사용하지 않습니다.
-
-`ProgressStatus`는 완료 개수로 `NOT_STARTED`·`IN_PROGRESS`·`COMPLETED`를 계산합니다.
-상태는 저장하지 않으며 반복 완료는 완료 레슨 수를 늘리지 않습니다.
-`LessonProgresses`는 레슨별 진행 기록을 보관하고 완료 레슨 수와 반복 완료 횟수를 계산합니다.
-`LessonQueryService`가 진행 기록을 일괄 조회해 `LessonProgresses`로 반환합니다.
-`Curriculum`은 소속 레슨의 진행 상태를 계산합니다.
-`Topic`은 모든 커리큘럼의 완료 여부를 판단합니다.
-
-```mermaid
-flowchart LR
-    Topic --> Curriculum --> Lesson
-    LessonProgresses --> LessonProgress
-    Curriculum -. 완료 개수 .-> LessonProgresses
-    Topic -. 완료 판단 .-> Curriculum
-    LessonProgress -. 레슨 ID .-> Lesson
-```
-
-Curriculum은 현재 소속 Lesson이 모두 완료되면 완료입니다.
-Topic은 현재 소속 Curriculum이 모두 완료되면 완료이며 빈 Topic·Curriculum은 미완료입니다.
-추가된 레슨은 미완료로 반영하고 삭제된 레슨의 기록은 완료 판단에서 제외합니다.
-
-`CurriculumFinder.findCurriculums(userId)`는 선택한 토픽의 커리큘럼별 완료 레슨 수와 상태를 함께 반환합니다.
-`LessonQueryService`·`CurriculumQueryService`·`TopicQueryService`가 각 콘텐츠와 진행을 조회합니다.
-커리큘럼·토픽 진행은 대상 레슨 ID로 사용자 진행을 한 번에 조회합니다.
-완료 토픽 목록도 전체 대상 레슨의 진행을 일괄 조회하며 교육 순서를 유지합니다.
-
-`TopicSelection`은 진행과 별개로 마지막 선택을 보관합니다.
-`TopicSelectService`가 선택을 변경하고 `CurriculumQueryService`가 마지막 선택을 조회합니다.
-`CurriculumListResult`는 커리큘럼별 콘텐츠·완료 정보·잠금 여부를 묶어 전달합니다.
-
-`TrainingController`는 콘텐츠 조회·토픽 선택·레슨 완료 API와 훈련 응답 DTO를 담당합니다.
-URL은 `/api/training/...`을 사용하며 응답 DTO는 조회 결과를 매핑합니다.
-
 ## 모듈 내부 계층
 
 | 계층 | 책임 | 내용 |

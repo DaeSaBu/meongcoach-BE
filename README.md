@@ -130,7 +130,7 @@ AI 분석은 수십 초가 걸리므로 요청-응답이 아니라 S3 업로드 
 
 콘텐츠 구성·순서·이용권 요구 조건과 사용자별 Topic 선택·훈련 이력을 관리합니다.
 공용 콘텐츠와 사용자별 레슨 진행은 별도 애그리거트로 두며 진행 도메인이 완료 상태를 계산합니다.
-애그리거트와 완료 조건은 [아키텍처 문서](docs/architecture.md#훈련-콘텐츠와-사용자-진행)에 있습니다.
+애그리거트와 완료 조건은 [docs/training.md](docs/training.md)에 있습니다.
 
 #### ai — AI 행동 분석
 
@@ -190,4 +190,5 @@ AI 분석은 수십 초가 걸리므로 요청-응답이 아니라 S3 업로드 
 | [docs/security.md](docs/security.md) | JWT 토큰 정책과 검증 체인, 필터 체인 |
 | [docs/error-handling.md](docs/error-handling.md) | Problem Details 에러 응답 형식 |
 | [docs/media.md](docs/media.md) | presigned URL 발급과 객체 키 소유권 규칙 |
+| [docs/training.md](docs/training.md) | 훈련 콘텐츠와 사용자 진행 애그리거트, 완료 판단, 레슨 완료 잠금 |
 | [AGENTS.md](AGENTS.md) | 팀 개발 규칙 전체 목록 |
