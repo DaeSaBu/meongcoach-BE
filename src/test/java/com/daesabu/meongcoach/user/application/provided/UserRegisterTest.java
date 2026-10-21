@@ -1,9 +1,10 @@
-package com.daesabu.meongcoach.user.application;
+package com.daesabu.meongcoach.user.application.provided;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.daesabu.meongcoach.user.application.provided.UserProfileRegisterRequest;
+import com.daesabu.meongcoach.media.domain.exception.InvalidMediaUrlException;
+import com.daesabu.meongcoach.support.ApplicationTest;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.Mbti;
 import com.daesabu.meongcoach.user.domain.User;
@@ -14,32 +15,30 @@ import com.daesabu.meongcoach.user.domain.UserStatus;
 import com.daesabu.meongcoach.user.domain.exception.AlreadyOnboardedException;
 import com.daesabu.meongcoach.user.domain.exception.InvalidMbtiException;
 import com.daesabu.meongcoach.user.domain.exception.UserNotFoundException;
+import jakarta.persistence.EntityManager;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
-import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
-import org.springframework.context.annotation.Import;
 
-@DataJpaTest
-@Import({UserRegisterService.class, UserQueryService.class})
-class UserRegisterServiceTest {
+@ApplicationTest
+class UserRegisterTest {
 
 	private static final Long UNREGISTERED_USER_ID = 999L;
 	private static final String VALID_MBTI = "INTJ";
+	private static final String STORAGE_BASE_URL = "https://images.test.meongcoach.com/";
 
 	@Autowired
-	private UserRegisterService userRegisterService;
+	private UserRegister userRegister;
 
 	@Autowired
 	private UserRepository userRepository;
 
 	@Autowired
-	private TestEntityManager entityManager;
+	private EntityManager entityManager;
 
 	@Test
 	void 등록하면_온보딩_전_활성_회원이_저장되고_ID를_반환한다() {
-		Long userId = userRegisterService.register();
+		Long userId = userRegister.register();
 
 		User user = userRepository.findById(userId).orElseThrow();
 		assertThat(user.isOnboarding()).isTrue();
@@ -50,7 +49,7 @@ class UserRegisterServiceTest {
 	void 온보딩을_완료하면_필수_정보로_프로필을_생성한다() {
 		Long userId = saveOnboardingUser();
 
-		userRegisterService.completeOnboarding(userId, request(VALID_MBTI, null));
+		userRegister.completeOnboarding(userId, request(VALID_MBTI, null));
 
 		UserProfile profile = findPersistedProfile(userId);
 		assertThat(profile.getNickname()).isEqualTo("멍멍이집사");
@@ -62,18 +61,46 @@ class UserRegisterServiceTest {
 	@Test
 	void 온보딩을_완료하면_프로필_이미지_URL을_함께_저장한다() {
 		Long userId = saveOnboardingUser();
-		String imageUrl = "https://images.test.meongcoach.com/images/user-profile/1/a.jpg";
+		String imageUrl = STORAGE_BASE_URL + "images/user-profile/" + userId + "/a.jpg";
 
-		userRegisterService.completeOnboarding(userId, request(VALID_MBTI, imageUrl));
+		userRegister.completeOnboarding(userId, request(VALID_MBTI, imageUrl));
 
 		assertThat(findPersistedProfile(userId).getProfileImageUrl()).isEqualTo(imageUrl);
+	}
+
+	@Test
+	void 우리_스토리지의_URL이_아닌_프로필_이미지면_온보딩_완료에_실패한다() {
+		Long userId = saveOnboardingUser();
+
+		assertThatThrownBy(() -> userRegister.completeOnboarding(userId,
+				request(VALID_MBTI, "https://evil.example.com/a.jpg")))
+				.isInstanceOf(InvalidMediaUrlException.class);
+		assertThat(userRepository.findById(userId).orElseThrow().getProfile()).isNull();
+	}
+
+	@Test
+	void 다른_사용자가_올린_프로필_이미지면_온보딩_완료에_실패한다() {
+		Long userId = saveOnboardingUser();
+		String otherUsersImageUrl = STORAGE_BASE_URL + "images/user-profile/" + (userId + 1) + "/a.jpg";
+
+		assertThatThrownBy(() -> userRegister.completeOnboarding(userId, request(VALID_MBTI, otherUsersImageUrl)))
+				.isInstanceOf(InvalidMediaUrlException.class);
+	}
+
+	@Test
+	void 사용자_프로필_경로가_아닌_이미지면_온보딩_완료에_실패한다() {
+		Long userId = saveOnboardingUser();
+		String dogImageUrl = STORAGE_BASE_URL + "images/dog-profile/" + userId + "/a.jpg";
+
+		assertThatThrownBy(() -> userRegister.completeOnboarding(userId, request(VALID_MBTI, dogImageUrl)))
+				.isInstanceOf(InvalidMediaUrlException.class);
 	}
 
 	@Test
 	void 프로필_이미지가_없으면_빈_문자열로_저장한다() {
 		Long userId = saveOnboardingUser();
 
-		userRegisterService.completeOnboarding(userId, request(VALID_MBTI, null));
+		userRegister.completeOnboarding(userId, request(VALID_MBTI, null));
 
 		assertThat(findPersistedProfile(userId).getProfileImageUrl()).isEmpty();
 	}
@@ -84,7 +111,7 @@ class UserRegisterServiceTest {
 		UserProfileRegisterRequest request = new UserProfileRegisterRequest(
 				"멍멍이집사", null, VALID_MBTI, Set.of(1L, 2L), Set.of(2L, 3L));
 
-		userRegisterService.completeOnboarding(userId, request);
+		userRegister.completeOnboarding(userId, request);
 
 		UserProfile profile = findPersistedProfile(userId);
 		assertThat(profile.getPriorTrainingTopicIds()).containsExactlyInAnyOrder(1L, 2L);
@@ -95,7 +122,7 @@ class UserRegisterServiceTest {
 	void 온보딩을_완료하면_정회원으로_승격된다() {
 		Long userId = saveOnboardingUser();
 
-		userRegisterService.completeOnboarding(userId, request(VALID_MBTI, null));
+		userRegister.completeOnboarding(userId, request(VALID_MBTI, null));
 		flushAndClear();
 
 		assertThat(userRepository.findById(userId).orElseThrow().getRole()).isEqualTo(UserRole.USER);
@@ -107,13 +134,13 @@ class UserRegisterServiceTest {
 		promoted.completeOnboarding(new UserProfileCreateCommand("기존회원", null, VALID_MBTI, Set.of(), Set.of()));
 		Long promotedId = userRepository.save(promoted).getId();
 
-		assertThatThrownBy(() -> userRegisterService.completeOnboarding(promotedId, request(VALID_MBTI, null)))
+		assertThatThrownBy(() -> userRegister.completeOnboarding(promotedId, request(VALID_MBTI, null)))
 				.isInstanceOf(AlreadyOnboardedException.class);
 	}
 
 	@Test
 	void 회원이_없으면_온보딩_완료에_실패한다() {
-		assertThatThrownBy(() -> userRegisterService.completeOnboarding(UNREGISTERED_USER_ID,
+		assertThatThrownBy(() -> userRegister.completeOnboarding(UNREGISTERED_USER_ID,
 				request(VALID_MBTI, null)))
 				.isInstanceOf(UserNotFoundException.class);
 	}
@@ -122,7 +149,7 @@ class UserRegisterServiceTest {
 	void 잘못된_MBTI_값이면_온보딩_완료에_실패한다() {
 		Long userId = saveOnboardingUser();
 
-		assertThatThrownBy(() -> userRegisterService.completeOnboarding(userId, request("XXXX", null)))
+		assertThatThrownBy(() -> userRegister.completeOnboarding(userId, request("XXXX", null)))
 				.isInstanceOf(InvalidMbtiException.class);
 	}
 
@@ -130,7 +157,7 @@ class UserRegisterServiceTest {
 	void MBTI가_null이면_온보딩_완료에_실패한다() {
 		Long userId = saveOnboardingUser();
 
-		assertThatThrownBy(() -> userRegisterService.completeOnboarding(userId, request(null, null)))
+		assertThatThrownBy(() -> userRegister.completeOnboarding(userId, request(null, null)))
 				.isInstanceOf(InvalidMbtiException.class);
 	}
 
@@ -138,7 +165,7 @@ class UserRegisterServiceTest {
 	void MBTI가_공백이면_온보딩_완료에_실패한다() {
 		Long userId = saveOnboardingUser();
 
-		assertThatThrownBy(() -> userRegisterService.completeOnboarding(userId, request("   ", null)))
+		assertThatThrownBy(() -> userRegister.completeOnboarding(userId, request("   ", null)))
 				.isInstanceOf(InvalidMbtiException.class);
 	}
 
@@ -146,7 +173,7 @@ class UserRegisterServiceTest {
 	void 탈퇴하면_회원_상태가_WITHDRAWN이_되고_행은_남는다() {
 		Long userId = userRepository.save(User.registerUser()).getId();
 
-		userRegisterService.withdraw(userId);
+		userRegister.withdraw(userId);
 		flushAndClear();
 
 		User withdrawn = userRepository.findById(userId).orElseThrow();
@@ -161,7 +188,7 @@ class UserRegisterServiceTest {
 		Long profileId = user.getProfile().getId();
 		flushAndClear();
 
-		userRegisterService.withdraw(user.getId());
+		userRegister.withdraw(user.getId());
 		flushAndClear();
 
 		assertThat(entityManager.find(UserProfile.class, profileId)).isNull();
@@ -172,7 +199,7 @@ class UserRegisterServiceTest {
 	void 온보딩_미완료_회원은_프로필이_없어도_탈퇴할_수_있다() {
 		Long userId = userRepository.save(User.registerUser()).getId();
 
-		userRegisterService.withdraw(userId);
+		userRegister.withdraw(userId);
 		flushAndClear();
 
 		assertThat(userRepository.findById(userId).orElseThrow().getStatus()).isEqualTo(UserStatus.WITHDRAWN);
@@ -180,7 +207,7 @@ class UserRegisterServiceTest {
 
 	@Test
 	void 없는_회원_ID로_탈퇴하면_예외를_던진다() {
-		assertThatThrownBy(() -> userRegisterService.withdraw(UNREGISTERED_USER_ID))
+		assertThatThrownBy(() -> userRegister.withdraw(UNREGISTERED_USER_ID))
 				.isInstanceOf(UserNotFoundException.class);
 	}
 
