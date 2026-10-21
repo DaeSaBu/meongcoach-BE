@@ -54,36 +54,6 @@ class GraduationSubmissionMigrationTest {
 		assertThat(jdbc.queryForObject("select count(*) from topic_graduations", Integer.class)).isEqualTo(3);
 	}
 
-	@Test
-	void 학습만_완료한_회원은_미제출로_이관하고_미완료와_기존_제출은_중복하지_않는다() {
-		var source = source("completed_without_submission");
-		var jdbc = new JdbcTemplate(source);
-		parents(jdbc);
-		jdbc.update("insert into training_categories (id, title, description, icon_url, sort_order, created_at, updated_at) "
-				+ "values (1, '교육', '', '', 1, now(), now())");
-		jdbc.update("insert into topics (id, training_category_id, title, description, detail, icon_url, sort_order, created_at, updated_at) "
-				+ "values (1, 1, '기본', '', '', '', 1, now(), now())");
-		jdbc.update("insert into curriculums (id, topic_id, title, thumbnail_url, description, sort_order, created_at, updated_at, is_premium) "
-				+ "values (1, 1, '기본', '', '', 1, now(), now(), false)");
-		jdbc.update("insert into lessons (id, curriculum_id, title, sort_order, estimated_minutes, created_at, updated_at) "
-				+ "values (1, 1, '앉아', 1, 5, now(), now()), (2, 1, '기다려', 2, 5, now(), now())");
-		jdbc.update("insert into lesson_progress (user_id, lesson_id, completed_count, created_at, updated_at) "
-				+ "values (42, 1, 1, now(), now()), (42, 2, 1, now(), now()), "
-				+ "(43, 1, 1, now(), now()), (43, 2, 1, now(), now()), (44, 1, 1, now(), now())");
-
-		Flyway.configure().dataSource(source).load().migrate();
-
-		assertThat(jdbc.queryForList("select user_id from graduation_submissions where status = 'NOT_SUBMITTED'", Long.class))
-				.containsExactly(43L);
-		assertThat(jdbc.queryForObject("select video_object_key is null and submitted_at is null "
-				+ "from graduation_submissions where user_id = 43", Boolean.class)).isTrue();
-		assertThat(jdbc.queryForObject("select count(*) from graduation_submissions where user_id = 42", Integer.class))
-				.isEqualTo(3);
-		assertThatThrownBy(() -> jdbc.update("insert into graduation_submissions (user_id, topic_id, status, created_at) "
-				+ "values (43, 1, 'NOT_SUBMITTED', now())"))
-				.isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
-	}
-
 	private DriverManagerDataSource source(String name) {
 		var source = new DriverManagerDataSource("jdbc:tc:postgresql:18.3:///" + name + "?TC_DAEMON=true", "test",
 				"test");

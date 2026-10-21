@@ -7,8 +7,6 @@ import com.daesabu.meongcoach.entitlement.application.required.EntitlementReposi
 import com.daesabu.meongcoach.entitlement.domain.EntitlementFixture;
 import com.daesabu.meongcoach.entitlement.domain.exception.EntitlementRequiredException;
 import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;
-import com.daesabu.meongcoach.graduation.application.required.GraduationSubmissionRepository;
-import com.daesabu.meongcoach.graduation.domain.GraduationSubmissionStatus;
 import com.daesabu.meongcoach.progress.application.required.LessonProgressRepository;
 import com.daesabu.meongcoach.progress.domain.LessonProgress;
 import com.daesabu.meongcoach.support.ApplicationTest;
@@ -37,9 +35,6 @@ class LessonCompleterTest {
 	private static final Long OTHER_USER_ID = 2L;
 
 	private static final Long ABSENT_LESSON_ID = 999L;
-
-	@Autowired
-	private GraduationSubmissionRepository graduationSubmissionRepository;
 
 	@Autowired
 	private LessonCompleter lessonCompleter;
@@ -158,28 +153,6 @@ class LessonCompleterTest {
 		int completedCount = lessonCompleter.completeLesson(USER_ID, lesson.getId());
 
 		assertThat(completedCount).isOne();
-	}
-
-	@Test
-	void 마지막_레슨_완료시에만_미제출_이력을_한번_생성한다() {
-		Lesson first = saveLesson("앉아");
-		Lesson last = lessonRepository.save(LessonFixture.create(first.getCurriculum(), "기다려", 2, 5));
-		Long topicId = first.getCurriculum().getTopic().getId();
-		flushAndClear();
-
-		lessonCompleter.completeLesson(USER_ID, first.getId());
-		assertThat(graduationSubmissionRepository.findAll()).isEmpty();
-		lessonCompleter.completeLesson(USER_ID, last.getId());
-		lessonCompleter.completeLesson(USER_ID, last.getId());
-		flushAndClear();
-
-		assertThat(graduationSubmissionRepository.findAll()).singleElement().satisfies(submission -> {
-			assertThat(submission.getUserId()).isEqualTo(USER_ID);
-			assertThat(submission.getTopicId()).isEqualTo(topicId);
-			assertThat(submission.getStatus()).isEqualTo(GraduationSubmissionStatus.NOT_SUBMITTED);
-			assertThat(submission.getVideoObjectKey()).isNull();
-			assertThat(submission.getSubmittedAt()).isNull();
-		});
 	}
 
 	private Lesson saveLesson(String title) {

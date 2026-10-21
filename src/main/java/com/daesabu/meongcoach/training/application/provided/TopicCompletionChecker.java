@@ -1,5 +1,8 @@
 package com.daesabu.meongcoach.training.application.provided;
 
+import com.daesabu.meongcoach.training.application.provided.dto.TopicResult;
+import java.util.List;
+
 /**
  * 토픽 학습 완료 판정 공개 API. 완료 여부는 저장하지 않고 요청마다 레슨 진도로 계산한다.
  */
@@ -11,4 +14,8 @@ public interface TopicCompletionChecker {
 	 */
 	boolean isCompleted(Long userId, Long topicId);
 
+	/**
+	 * 회원이 모든 커리큘럼의 레슨을 완료한 토픽을 교육 순서로 조회한다.
+	 */
+	List<TopicResult> findCompletedTopics(Long userId);
 }

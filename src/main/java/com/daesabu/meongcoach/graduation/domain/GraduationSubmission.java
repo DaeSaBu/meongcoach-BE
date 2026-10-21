@@ -42,9 +42,10 @@ public class GraduationSubmission extends BaseTimeEntity {
 	@Column(nullable = false)
 	private Long topicId;
 
-	@Column(length = 512)
+	@Column(nullable = false, length = 512)
 	private String videoObjectKey;
 
+	@Column(nullable = false)
 	private Instant submittedAt;
 
 	@Enumerated(EnumType.STRING)
@@ -60,14 +61,6 @@ public class GraduationSubmission extends BaseTimeEntity {
 	@JdbcTypeCode(SqlTypes.JSON)
 	@Column(nullable = false, columnDefinition = "jsonb")
 	private GraduationReview review = new GraduationReview(null, List.of());
-
-	public static GraduationSubmission notSubmitted(Long userId, Long topicId) {
-		GraduationSubmission submission = new GraduationSubmission();
-		submission.userId = requireNonNull(userId);
-		submission.topicId = requireNonNull(topicId);
-		submission.status = GraduationSubmissionStatus.NOT_SUBMITTED;
-		return submission;
-	}
 
 	public static GraduationSubmission create(GraduationSubmissionCommand command) {
 		GraduationSubmission submission = new GraduationSubmission();

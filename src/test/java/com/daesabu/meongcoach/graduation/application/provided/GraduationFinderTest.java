@@ -43,15 +43,14 @@ class GraduationFinderTest {
 	private JdbcTemplate jdbcTemplate;
 
 	@Test
-	void 학습을_완료하면_영상_없는_미제출_이력을_돌려준다() {
+	void 제출한_적이_없으면_토픽과_자격만_담아_돌려준다() {
 		Topic topic = topicSeeder.completedTopic(USER_ID, "분리불안");
 
 		GraduationDetailResult result = graduationFinder.findGraduation(USER_ID, topic.getId());
 
 		assertThat(result.topic().title()).isEqualTo("분리불안");
 		assertThat(result.eligible()).isTrue();
-		assertThat(result.submission().getStatus()).isEqualTo(GraduationSubmissionStatus.NOT_SUBMITTED);
-		assertThat(result.submission().getId()).isNotNull();
+		assertThat(result.submission()).isNull();
 		assertThat(result.videoUrl()).isNull();
 	}
 
@@ -147,8 +146,8 @@ class GraduationFinderTest {
 		List<GraduationSummaryResult> results = graduationFinder.findGraduations(USER_ID);
 
 		assertThat(results).extracting(result -> result.topic().id()).containsExactly(completed.getId());
-		assertThat(results.getFirst().submission().getStatus()).isEqualTo(GraduationSubmissionStatus.NOT_SUBMITTED);
-		assertThat(jdbcTemplate.queryForObject("select count(*) from graduation_submissions", Integer.class)).isEqualTo(2);
+		assertThat(results.getFirst().submission()).isNull();
+		assertThat(jdbcTemplate.queryForObject("select count(*) from graduation_submissions", Integer.class)).isZero();
 	}
 
 	@Test
@@ -162,7 +161,7 @@ class GraduationFinderTest {
 		assertThat(results).extracting(result -> result.topic().id())
 				.containsExactly(submitted.getId(), unsubmitted.getId());
 		assertThat(results.getFirst().submission()).isNotNull();
-		assertThat(results.getLast().submission().getStatus()).isEqualTo(GraduationSubmissionStatus.NOT_SUBMITTED);
+		assertThat(results.getLast().submission()).isNull();
 	}
 
 	@Test
@@ -173,7 +172,7 @@ class GraduationFinderTest {
 		revise(first);
 		submit(USER_ID, second, "walk");
 		submit(USER_ID, first, "latest");
-		jdbcTemplate.update("update graduation_submissions set submitted_at = '2026-10-20T00:00:00Z' where status <> 'NOT_SUBMITTED'");
+		jdbcTemplate.update("update graduation_submissions set submitted_at = '2026-10-20T00:00:00Z'");
 		jdbcTemplate.update("update graduation_submissions set submitted_at = '2026-10-21T00:00:00Z' "
 				+ "where status = 'REVISION_REQUESTED'");
 		jdbcTemplate.update("insert into graduation_submissions "
@@ -192,7 +191,7 @@ class GraduationFinderTest {
 
 	private void revise(Topic topic) {
 		jdbcTemplate.update(
-				"update graduation_submissions set status = 'REVISION_REQUESTED', review = '{\"note\":\"이전 판정\",\"retakeInstructions\":[\"전신\"]}'::jsonb, reviewed_at = now() where user_id = ? and topic_id = ? and status = 'SUBMITTED'",
+				"update graduation_submissions set status = 'REVISION_REQUESTED', review = '{\"note\":\"이전 판정\",\"retakeInstructions\":[\"전신\"]}'::jsonb, reviewed_at = now() where user_id = ? and topic_id = ?",
 				USER_ID, topic.getId());
 		topicSeeder.flushAndClear();
 	}

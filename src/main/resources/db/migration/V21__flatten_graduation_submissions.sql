@@ -36,8 +36,6 @@ FROM topic_graduations g
 WHERE NOT EXISTS (SELECT 1 FROM graduation_submissions s WHERE s.graduation_id = g.id);
 
 ALTER TABLE graduation_submissions
-    ALTER COLUMN video_object_key DROP NOT NULL,
-    ALTER COLUMN submitted_at DROP NOT NULL,
     ALTER COLUMN user_id SET NOT NULL,
     ALTER COLUMN topic_id SET NOT NULL,
     ALTER COLUMN status SET NOT NULL,
@@ -59,32 +57,3 @@ CREATE INDEX idx_graduation_submissions_user_topic_id
     ON graduation_submissions (user_id, topic_id, id DESC);
 
 DROP TABLE topic_graduations;
-
-CREATE UNIQUE INDEX uk_graduation_submissions_initial
-    ON graduation_submissions (user_id, topic_id)
-    WHERE status = 'NOT_SUBMITTED';
-
-INSERT INTO graduation_submissions (user_id, topic_id, status, created_at)
-SELECT DISTINCT p.user_id, c.topic_id, 'NOT_SUBMITTED', now()
-FROM lesson_progress p
-JOIN lessons l ON l.id = p.lesson_id
-JOIN curriculums c ON c.id = l.curriculum_id
-WHERE p.completed_count > 0
-  AND NOT EXISTS (
-    SELECT 1 FROM graduation_submissions s WHERE s.user_id = p.user_id AND s.topic_id = c.topic_id
-  )
-  AND NOT EXISTS (
-    SELECT 1 FROM curriculums curriculum
-    WHERE curriculum.topic_id = c.topic_id
-      AND (
-        NOT EXISTS (SELECT 1 FROM lessons lesson WHERE lesson.curriculum_id = curriculum.id)
-        OR EXISTS (
-          SELECT 1 FROM lessons lesson
-          WHERE lesson.curriculum_id = curriculum.id
-            AND NOT EXISTS (
-              SELECT 1 FROM lesson_progress progress
-              WHERE progress.user_id = p.user_id AND progress.lesson_id = lesson.id AND progress.completed_count > 0
-            )
-        )
-      )
-  );

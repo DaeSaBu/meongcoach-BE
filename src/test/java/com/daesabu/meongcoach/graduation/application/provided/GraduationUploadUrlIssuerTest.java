@@ -64,8 +64,7 @@ class GraduationUploadUrlIssuerTest {
 		assertThat(result.objectKey()).startsWith("videos/graduation/42/" + topic.getId() + "/").endsWith(".mp4");
 		assertThat(result.uploadUrl()).isNotBlank();
 		assertThat(graduationSubmissionRepository.findFirstByUserIdAndTopicIdOrderByIdDesc(USER_ID,
-				topic.getId())).get().extracting(com.daesabu.meongcoach.graduation.domain.GraduationSubmission::getStatus)
-				.isEqualTo(com.daesabu.meongcoach.graduation.domain.GraduationSubmissionStatus.NOT_SUBMITTED);
+				topic.getId())).isEmpty();
 	}
 
 	@Test

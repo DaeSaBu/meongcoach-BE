@@ -1,6 +1,6 @@
 package com.daesabu.meongcoach.graduation.application.provided;
 
-import com.daesabu.meongcoach.training.application.provided.LessonCompleter;
+import com.daesabu.meongcoach.progress.application.provided.LessonProgressUpdater;
 import com.daesabu.meongcoach.training.application.required.CurriculumRepository;
 import com.daesabu.meongcoach.training.application.required.LessonRepository;
 import com.daesabu.meongcoach.training.application.required.TopicRepository;
@@ -33,7 +33,7 @@ class TopicSeeder {
 	private LessonRepository lessonRepository;
 
 	@Autowired
-	private LessonCompleter lessonCompleter;
+	private LessonProgressUpdater lessonProgressUpdater;
 
 	@Autowired
 	private EntityManager entityManager;
@@ -42,7 +42,7 @@ class TopicSeeder {
 		Topic topic = saveTopic(title);
 		Lesson lesson = saveLesson(topic);
 		flushAndClear();
-		lessonCompleter.completeLesson(userId, lesson.getId());
+		lessonProgressUpdater.updateCompletion(userId, lesson.getId());
 		flushAndClear();
 		return topic;
 	}

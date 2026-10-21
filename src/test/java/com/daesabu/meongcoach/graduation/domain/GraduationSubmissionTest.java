@@ -15,20 +15,6 @@ class GraduationSubmissionTest {
 	}
 
 	@Test
-	void 미제출_이력은_제출을_허용하지만_판정은_거절한다() {
-		GraduationSubmission initial = GraduationSubmission.notSubmitted(42L, 7L);
-
-		initial.validateCanSubmit();
-
-		assertThat(initial.getStatus()).isEqualTo(GraduationSubmissionStatus.NOT_SUBMITTED);
-		assertThat(initial.getVideoObjectKey()).isNull();
-		assertThat(initial.getSubmittedAt()).isNull();
-		assertThatThrownBy(() -> initial.approve(null, Instant.now())).isInstanceOf(IllegalStateException.class);
-		assertThatThrownBy(() -> initial.requestRevision(new GraduationRevisionCommand("보완", List.of(), null, Instant.now())))
-				.isInstanceOf(IllegalStateException.class);
-	}
-
-	@Test
 	void 검수_대기_중_추가_제출을_거절한다() {
 		assertThatThrownBy(() -> submission().validateCanSubmit()).isInstanceOf(GraduationReviewPendingException.class);
 	}

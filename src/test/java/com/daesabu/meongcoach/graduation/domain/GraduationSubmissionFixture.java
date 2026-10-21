@@ -8,12 +8,6 @@ public final class GraduationSubmissionFixture {
 	private GraduationSubmissionFixture() {
 	}
 
-	public static GraduationSubmission notSubmitted(Long id, Long userId, Long topicId) {
-		GraduationSubmission submission = GraduationSubmission.notSubmitted(userId, topicId);
-		ReflectionTestUtils.setField(submission, "id", id);
-		return submission;
-	}
-
 	public static GraduationSubmission create(Long id, Long userId, Long topicId, GraduationSubmissionStatus status,
 	                                          String videoObjectKey, Instant submittedAt, Instant reviewedAt,
 	                                          String reviewNote) {
