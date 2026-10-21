@@ -57,7 +57,7 @@ class GraduationSubmissionMigrationTest {
 	private DriverManagerDataSource source(String name) {
 		var source = new DriverManagerDataSource("jdbc:tc:postgresql:18.3:///" + name + "?TC_DAEMON=true", "test",
 				"test");
-		Flyway.configure().dataSource(source).target("18").load().migrate();
+		Flyway.configure().dataSource(source).target("20").load().migrate();
 		return source;
 	}
 
