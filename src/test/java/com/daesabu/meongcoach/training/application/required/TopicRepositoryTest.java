@@ -34,7 +34,7 @@ class TopicRepositoryTest {
 		persistTopic(earlier, "먼저-첫째", 1);
 		entityManager.flush();
 
-		Optional<Topic> topic = topicRepository.findFirstTopic();
+		Optional<Topic> topic = topicRepository.findFirstBy(TopicRepository.EDUCATION_ORDER);
 
 		assertThat(topic).isPresent();
 		assertThat(topic.get().getTitle()).isEqualTo("먼저-첫째");
@@ -48,7 +48,7 @@ class TopicRepositoryTest {
 		persistTopic(second, "나중-첫째", 1);
 		entityManager.flush();
 
-		Optional<Topic> topic = topicRepository.findFirstTopic();
+		Optional<Topic> topic = topicRepository.findFirstBy(TopicRepository.EDUCATION_ORDER);
 
 		assertThat(topic).map(Topic::getTitle).contains("먼저-둘째");
 	}
@@ -58,7 +58,7 @@ class TopicRepositoryTest {
 		persistTopic(persistCategory("기본 교육", 1), "앉아", 1);
 		flushAndClear();
 
-		Topic topic = topicRepository.findFirstTopic().orElseThrow();
+		Topic topic = topicRepository.findFirstBy(TopicRepository.EDUCATION_ORDER).orElseThrow();
 
 		assertThat(Hibernate.isInitialized(topic.getTrainingCategory())).isTrue();
 	}
@@ -68,19 +68,19 @@ class TopicRepositoryTest {
 		Topic topic = persistTopic(persistCategory("기본 교육", 1), "앉아", 1);
 		flushAndClear();
 
-		Topic found = topicRepository.findWithCategoryById(topic.getId()).orElseThrow();
+		Topic found = topicRepository.findById(topic.getId()).orElseThrow();
 
 		assertThat(Hibernate.isInitialized(found.getTrainingCategory())).isTrue();
 	}
 
 	@Test
 	void 없는_토픽을_카테고리와_함께_조회하면_빈_값을_반환한다() {
-		assertThat(topicRepository.findWithCategoryById(999L)).isEmpty();
+		assertThat(topicRepository.findById(999L)).isEmpty();
 	}
 
 	@Test
 	void 등록된_토픽이_없으면_빈_값을_반환한다() {
-		Optional<Topic> topic = topicRepository.findFirstTopic();
+		Optional<Topic> topic = topicRepository.findFirstBy(TopicRepository.EDUCATION_ORDER);
 
 		assertThat(topic).isEmpty();
 	}
@@ -94,7 +94,7 @@ class TopicRepositoryTest {
 		persistTopic(earlier, "먼저-첫째", 1);
 		entityManager.flush();
 
-		List<Topic> topics = topicRepository.findAllOrdered();
+		List<Topic> topics = topicRepository.findAll(TopicRepository.EDUCATION_ORDER);
 
 		assertThat(topics).extracting(Topic::getTitle)
 				.containsExactly("먼저-첫째", "먼저-둘째", "나중-첫째");
@@ -108,7 +108,7 @@ class TopicRepositoryTest {
 		persistTopic(first, "먼저-둘째", 2);
 		entityManager.flush();
 
-		List<Topic> topics = topicRepository.findAllOrdered();
+		List<Topic> topics = topicRepository.findAll(TopicRepository.EDUCATION_ORDER);
 
 		assertThat(topics).extracting(Topic::getTitle)
 				.containsExactly("먼저-둘째", "나중-첫째");
@@ -121,7 +121,7 @@ class TopicRepositoryTest {
 		Topic second = persistTopic(category, "나중 등록", 1);
 		entityManager.flush();
 
-		List<Topic> topics = topicRepository.findAllOrdered();
+		List<Topic> topics = topicRepository.findAll(TopicRepository.EDUCATION_ORDER);
 
 		assertThat(topics).extracting(Topic::getId)
 				.containsExactly(first.getId(), second.getId());
