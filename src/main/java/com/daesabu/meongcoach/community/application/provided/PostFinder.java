@@ -2,6 +2,7 @@ package com.daesabu.meongcoach.community.application.provided;
 
 import com.daesabu.meongcoach.community.application.provided.dto.PostListRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.PostListResult;
+import com.daesabu.meongcoach.community.domain.Post;
 import jakarta.validation.Valid;
 
 /**
@@ -17,4 +18,9 @@ public interface PostFinder {
 	 * 프로필이 없는 작성자는 author가 null이고, 멘션이 없거나 멘션 대상이 없으면 mentionTarget이 null이다.
 	 */
 	PostListResult findPosts(@Valid PostListRequest request);
+
+	/**
+	 * 게시글 하나를 id로 조회한다. 없으면 PostNotFoundException을 던진다.
+	 */
+	Post findPost(Long postId);
 }

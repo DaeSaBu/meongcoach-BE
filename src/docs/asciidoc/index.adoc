@@ -622,3 +622,21 @@ operation::community/post-register[snippets='http-request,request-fields,http-re
 멘션한 레슨이 없으면 404(`COMMUNITY_MENTION_TARGET_NOT_FOUND`)가 내려갑니다.
 
 operation::community/post-register-error[snippets='http-response,response-fields']
+
+=== 댓글 작성
+
+link:{swagger-ui}#/Community/community-comment-register[▶ Swagger에서 Try it out,window=swagger]
+
+로그인한 회원의 댓글을 게시글에 작성합니다. 성공하면 201과 함께 작성한 댓글이 내려갑니다.
+`content`는 필수이며 공백만으로 채울 수 없고 500자 이하입니다.
+답글을 달려면 `parentId`에 답글을 달 댓글 ID를 담고, 댓글이면 `parentId` 필드를 생략합니다.
+답글은 한 단계만 있어서, 답글에 다시 답글을 달면 그 답글의 루트 댓글에 대한 답글로 작성됩니다.
+
+operation::community/comment-register[snippets='http-request,path-parameters,request-fields,http-response,response-fields']
+
+==== 실패 응답
+
+`content`가 비어 있거나 500자를 넘으면 400(`COMMUNITY_COMMENT_CONTENT_INVALID`), `parentId`가 양의 정수가 아니면 400(`BAD_REQUEST`)에 `errors` 필드로 항목별 원인이 내려갑니다.
+게시글이 없으면 404(`COMMUNITY_POST_NOT_FOUND`), `parentId`의 댓글이 없거나 삭제됐거나 다른 게시글의 댓글이면 404(`COMMUNITY_COMMENT_NOT_FOUND`)가 내려갑니다.
+
+operation::community/comment-register-error[snippets='http-response,response-fields']
