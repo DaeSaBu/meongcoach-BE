@@ -8,7 +8,9 @@ import static org.mockito.BDDMockito.given;
 
 import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationSubmissionRequest;
 import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationUploadUrlRequest;
+import com.daesabu.meongcoach.graduation.application.required.GraduationSubmissionRepository;
 import com.daesabu.meongcoach.graduation.application.required.TopicGraduationRepository;
+import com.daesabu.meongcoach.graduation.domain.GraduationSubmission;
 import com.daesabu.meongcoach.graduation.domain.TopicGraduation;
 import com.daesabu.meongcoach.graduation.domain.exception.GraduationAlreadyApprovedException;
 import com.daesabu.meongcoach.graduation.domain.exception.TopicNotCompletedException;
@@ -36,6 +38,9 @@ class GraduationUploadUrlIssuerTest {
 
 	@Autowired
 	private GraduationSubmitter graduationSubmitter;
+
+	@Autowired
+	private GraduationSubmissionRepository graduationSubmissionRepository;
 
 	@Autowired
 	private TopicGraduationRepository topicGraduationRepository;
@@ -77,7 +82,7 @@ class GraduationUploadUrlIssuerTest {
 		Topic topic = topicSeeder.completedTopic(USER_ID, "분리불안");
 		TopicGraduation graduation = graduationSubmitter.submit(USER_ID, topic.getId(),
 				new GraduationSubmissionRequest("videos/graduation/42/" + topic.getId() + "/a.mp4"));
-		graduation.approve(null, Instant.now());
+		graduation.approve(currentSubmission(graduation), null, Instant.now());
 		topicGraduationRepository.save(graduation);
 		topicSeeder.flushAndClear();
 
@@ -90,4 +95,9 @@ class GraduationUploadUrlIssuerTest {
 		assertThatThrownBy(() -> graduationUploadUrlIssuer.issue(USER_ID, 999L, REQUEST))
 				.isInstanceOf(TopicNotFoundException.class);
 	}
+	private GraduationSubmission currentSubmission(TopicGraduation graduation) {
+		return graduationSubmissionRepository
+				.findByGraduationIdAndAttemptNo(graduation.getId(), graduation.getAttemptNo()).orElseThrow();
+	}
+
 }

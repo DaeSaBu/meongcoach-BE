@@ -16,20 +16,24 @@ public final class TopicGraduationFixture {
 		ReflectionTestUtils.setField(graduation, "id", id);
 		ReflectionTestUtils.setField(graduation, "status", status);
 		ReflectionTestUtils.setField(graduation, "attemptNo", attemptNo);
-		GraduationSubmission submission = GraduationSubmission.from(graduation);
-		ReflectionTestUtils.setField(submission, "status", GraduationSubmissionStatus.valueOf(status.name()));
-		ReflectionTestUtils.setField(submission, "reviewedAt", reviewedAt);
-		ReflectionTestUtils.setField(submission, "reviewNote", reviewNote);
-		graduation.useSubmission(submission);
 		if (status == GraduationStatus.APPROVED) {
 			ReflectionTestUtils.setField(graduation, "approvedAt", reviewedAt);
 		}
 		return graduation;
 	}
 
-	public static TopicGraduation withRetakeGuide(TopicGraduation graduation, String retakeImageUrl, List<String> retakeInstructions) {
-		ReflectionTestUtils.setField(graduation.getCurrentSubmission(), "retakeImageUrl", retakeImageUrl);
-		ReflectionTestUtils.setField(graduation.getCurrentSubmission(), "retakeInstructions", new ArrayList<>(retakeInstructions));
-		return graduation;
+	public static GraduationSubmission submission(TopicGraduation graduation, Instant reviewedAt, String reviewNote) {
+		GraduationSubmission submission = GraduationSubmission.from(graduation);
+		ReflectionTestUtils.setField(submission, "status", GraduationSubmissionStatus.valueOf(graduation.getStatus().name()));
+		ReflectionTestUtils.setField(submission, "reviewedAt", reviewedAt);
+		ReflectionTestUtils.setField(submission, "reviewNote", reviewNote);
+		return submission;
+	}
+
+	public static GraduationSubmission withRetakeGuide(GraduationSubmission submission, String retakeImageUrl,
+	                                                  List<String> retakeInstructions) {
+		ReflectionTestUtils.setField(submission, "retakeImageUrl", retakeImageUrl);
+		ReflectionTestUtils.setField(submission, "retakeInstructions", new ArrayList<>(retakeInstructions));
+		return submission;
 	}
 }

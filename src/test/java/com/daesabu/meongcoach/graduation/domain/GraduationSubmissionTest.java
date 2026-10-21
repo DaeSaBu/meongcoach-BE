@@ -21,7 +21,7 @@ class GraduationSubmissionTest {
 
 		GraduationSubmission submission = GraduationSubmission.from(graduation);
 
-		assertThat(submission.getGraduationId()).isEqualTo(1L);
+		assertThat(submission.getGraduation().getId()).isEqualTo(1L);
 		assertThat(submission.getAttemptNo()).isEqualTo(1);
 		assertThat(submission.getVideoObjectKey()).isEqualTo(VIDEO_KEY);
 		assertThat(submission.getSubmittedAt()).isEqualTo(SUBMITTED_AT);
@@ -45,7 +45,7 @@ class GraduationSubmissionTest {
 	void 차수가_다른_수료_행으로는_기록을_바꿀_수_없다() {
 		TopicGraduation graduation = TopicGraduationFixture.create(1L, 42L, 7L,
 				GraduationStatus.SUBMITTED, 1, VIDEO_KEY, SUBMITTED_AT, null, null);
-		GraduationSubmission submission = graduation.getCurrentSubmission();
+		GraduationSubmission submission = GraduationSubmission.from(graduation);
 		TopicGraduation nextAttempt = TopicGraduationFixture.create(1L, 42L, 7L,
 				GraduationStatus.SUBMITTED, 2, REPLACED_KEY, REPLACED_AT, null, null);
 
@@ -56,8 +56,8 @@ class GraduationSubmissionTest {
 	void 판정한_제출의_영상은_교체할_수_없다() {
 		TopicGraduation graduation = TopicGraduationFixture.create(1L, 42L, 7L,
 				GraduationStatus.SUBMITTED, 1, VIDEO_KEY, SUBMITTED_AT, null, null);
-		GraduationSubmission submission = graduation.getCurrentSubmission();
-		graduation.approve("잘했어요.", REPLACED_AT);
+		GraduationSubmission submission = GraduationSubmission.from(graduation);
+		graduation.approve(submission, "잘했어요.", REPLACED_AT);
 
 		assertThatThrownBy(() -> submission.replaceVideo(graduation)).isInstanceOf(IllegalStateException.class);
 		assertThat(submission.getVideoObjectKey()).isEqualTo(VIDEO_KEY);
@@ -71,7 +71,7 @@ class GraduationSubmissionTest {
 		TopicGraduation other = TopicGraduationFixture.create(2L, 42L, 8L,
 				GraduationStatus.SUBMITTED, 1, REPLACED_KEY, REPLACED_AT, null, null);
 
-		assertThatThrownBy(() -> first.getCurrentSubmission().replaceVideo(other)).isInstanceOf(IllegalArgumentException.class);
+		assertThatThrownBy(() -> GraduationSubmission.from(first).replaceVideo(other)).isInstanceOf(IllegalArgumentException.class);
 	}
 
 }

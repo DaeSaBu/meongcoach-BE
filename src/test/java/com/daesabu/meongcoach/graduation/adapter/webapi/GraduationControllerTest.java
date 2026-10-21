@@ -20,6 +20,7 @@ import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationSubm
 import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationSummaryResult;
 import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationUploadUrlRequest;
 import com.daesabu.meongcoach.graduation.domain.GraduationStatus;
+import com.daesabu.meongcoach.graduation.domain.GraduationSubmission;
 import com.daesabu.meongcoach.graduation.domain.TopicGraduation;
 import com.daesabu.meongcoach.graduation.domain.TopicGraduationFixture;
 import com.daesabu.meongcoach.graduation.domain.exception.GraduationAlreadyApprovedException;
@@ -80,7 +81,8 @@ class GraduationControllerTest {
 		TopicGraduation graduation = TopicGraduationFixture.create(3L, 42L, TOPIC_ID, GraduationStatus.APPROVED, 2,
 				VIDEO_KEY, SUBMITTED_AT, REVIEWED_AT, "끝까지 함께 시도했어요!");
 		given(graduationFinder.findGraduation(42L, TOPIC_ID))
-				.willReturn(new GraduationDetailResult(TOPIC, true, graduation, VIDEO_URL));
+				.willReturn(new GraduationDetailResult(TOPIC, true, graduation,
+						TopicGraduationFixture.submission(graduation, REVIEWED_AT, "끝까지 함께 시도했어요!"), VIDEO_URL));
 
 		mockMvc.perform(get("/api/training/topics/{topicId}/graduation", TOPIC_ID)
 						.principal(CURRENT_USER)
@@ -122,12 +124,14 @@ class GraduationControllerTest {
 
 	@Test
 	void 보완_요청이면_재촬영_팁과_촬영_예시_이미지를_함께_반환한다() throws Exception {
-		TopicGraduation graduation = TopicGraduationFixture.withRetakeGuide(
-				TopicGraduationFixture.create(3L, 42L, TOPIC_ID, GraduationStatus.REVISION_REQUESTED, 1,
-						VIDEO_KEY, SUBMITTED_AT, REVIEWED_AT, "현관 장면부터 다시 찍어 주세요."),
-				"https://images.test/images/graduation-retake/3/example.jpg", List.of("현관이 함께 보이게 찍어 주세요.", "보호자가 나가는 순간부터 찍어 주세요."));
+		TopicGraduation graduation = TopicGraduationFixture.create(3L, 42L, TOPIC_ID,
+				GraduationStatus.REVISION_REQUESTED, 1, VIDEO_KEY, SUBMITTED_AT, REVIEWED_AT, "현관 장면부터 다시 찍어 주세요.");
+		GraduationSubmission submission = TopicGraduationFixture.withRetakeGuide(
+				TopicGraduationFixture.submission(graduation, REVIEWED_AT, "현관 장면부터 다시 찍어 주세요."),
+				"https://images.test/images/graduation-retake/3/example.jpg",
+				List.of("현관이 함께 보이게 찍어 주세요.", "보호자가 나가는 순간부터 찍어 주세요."));
 		given(graduationFinder.findGraduation(42L, TOPIC_ID))
-				.willReturn(new GraduationDetailResult(TOPIC, true, graduation, VIDEO_URL));
+				.willReturn(new GraduationDetailResult(TOPIC, true, graduation, submission, VIDEO_URL));
 
 		mockMvc.perform(get("/api/training/topics/{topicId}/graduation", TOPIC_ID).principal(CURRENT_USER))
 				.andExpect(status().isOk())
@@ -141,7 +145,8 @@ class GraduationControllerTest {
 	void 내_훈련_영상_목록을_최근_제출_순으로_반환한다() throws Exception {
 		TopicGraduation graduation = TopicGraduationFixture.create(3L, 42L, TOPIC_ID, GraduationStatus.APPROVED, 2,
 				VIDEO_KEY, SUBMITTED_AT, REVIEWED_AT, "끝까지 함께 시도했어요!");
-		given(graduationFinder.findGraduations(42L)).willReturn(List.of(new GraduationSummaryResult(graduation, TOPIC)));
+		given(graduationFinder.findGraduations(42L)).willReturn(List.of(new GraduationSummaryResult(graduation,
+				TopicGraduationFixture.submission(graduation, REVIEWED_AT, "끝까지 함께 시도했어요!"), TOPIC)));
 
 		mockMvc.perform(get("/api/training/graduations")
 						.principal(CURRENT_USER)

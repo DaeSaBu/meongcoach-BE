@@ -15,7 +15,6 @@ import com.daesabu.meongcoach.support.ApplicationTest;
 import com.daesabu.meongcoach.training.domain.Topic;
 import com.daesabu.meongcoach.training.domain.exception.TopicNotFoundException;
 import java.util.List;
-import org.hibernate.Hibernate;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
@@ -88,7 +87,7 @@ class GraduationFinderTest {
 		jdbcTemplate.update("update graduation_submissions set status = 'REVISION_REQUESTED', review_note = '다시 찍어 주세요.', "
 				+ "reviewed_at = now(), retake_image_url = 'https://images.test/images/graduation-retake/3/example.jpg', "
 				+ "retake_instructions = '[\"첫째 지시\", \"둘째 지시\", \"셋째 지시\"]'::jsonb "
-				+ "where id = (select current_submission_id from topic_graduations where id = ?)", graduationId);
+				+ "where graduation_id = ? and attempt_no = 1", graduationId);
 		jdbcTemplate.update("update topic_graduations set status = 'REVISION_REQUESTED' where id = ?", graduationId);
 		String objectKey = "videos/graduation/42/" + topic.getId() + "/first.mp4";
 		given(videoStorage.issueDownloadUrl(new VideoObjectKey(objectKey)))
@@ -97,8 +96,8 @@ class GraduationFinderTest {
 
 		GraduationDetailResult result = graduationFinder.findGraduation(USER_ID, topic.getId());
 
-		assertThat(result.graduation().getRetakeImageUrl()).isEqualTo("https://images.test/images/graduation-retake/3/example.jpg");
-		assertThat(result.graduation().getRetakeInstructions()).containsExactly("첫째 지시", "둘째 지시", "셋째 지시");
+		assertThat(result.submission().getRetakeImageUrl()).isEqualTo("https://images.test/images/graduation-retake/3/example.jpg");
+		assertThat(result.submission().getRetakeInstructions()).containsExactly("첫째 지시", "둘째 지시", "셋째 지시");
 	}
 
 	@Test
@@ -107,18 +106,45 @@ class GraduationFinderTest {
 		submit(USER_ID, topic, "first");
 		jdbcTemplate.update("update graduation_submissions set status = 'REVISION_REQUESTED', "
 				+ "retake_image_url = 'https://images.test/images/graduation-retake/3/example.jpg', retake_instructions = '[\"다시 찍어 주세요.\"]'::jsonb "
-				+ "where id = (select current_submission_id from topic_graduations where user_id = ? and topic_id = ?)", USER_ID, topic.getId());
+				+ "where graduation_id = (select id from topic_graduations where user_id = ? and topic_id = ?) and attempt_no = 1", USER_ID, topic.getId());
 		jdbcTemplate.update("update topic_graduations set status = 'REVISION_REQUESTED' "
 				+ "where user_id = ? and topic_id = ?", USER_ID, topic.getId());
 
 		submit(USER_ID, topic, "second");
 
 		assertThat(jdbcTemplate.queryForObject("select s.retake_instructions::text from topic_graduations g "
-				+ "join graduation_submissions s on s.id = g.current_submission_id "
+				+ "join graduation_submissions s on s.graduation_id = g.id and s.attempt_no = g.attempt_no "
 				+ "where user_id = ? and topic_id = ?", String.class, USER_ID, topic.getId())).isEqualTo("[]");
 		assertThat(jdbcTemplate.queryForObject("select s.retake_image_url from topic_graduations g "
-				+ "join graduation_submissions s on s.id = g.current_submission_id "
+				+ "join graduation_submissions s on s.graduation_id = g.id and s.attempt_no = g.attempt_no "
 				+ "where user_id = ? and topic_id = ?", String.class, USER_ID, topic.getId())).isNull();
+	}
+
+	@Test
+	void 재제출_후_상세와_목록은_이전_판정_대신_현재_차수의_제출을_반환한다() {
+		Topic topic = topicSeeder.completedTopic(USER_ID, "분리불안");
+		submit(USER_ID, topic, "first");
+		jdbcTemplate.update("update graduation_submissions set status = 'REVISION_REQUESTED', "
+				+ "review_note = '이전 판정', reviewed_at = now() where graduation_id = "
+				+ "(select id from topic_graduations where user_id = ? and topic_id = ?)", USER_ID, topic.getId());
+		jdbcTemplate.update("update topic_graduations set status = 'REVISION_REQUESTED' "
+				+ "where user_id = ? and topic_id = ?", USER_ID, topic.getId());
+		submit(USER_ID, topic, "second");
+
+		String objectKey = "videos/graduation/42/" + topic.getId() + "/second.mp4";
+		given(videoStorage.issueDownloadUrl(new VideoObjectKey(objectKey)))
+				.willReturn(new VideoDownloadUrl("https://storage.test/" + objectKey,
+						"https://videos.test/" + objectKey, 900L));
+
+		GraduationDetailResult detail = graduationFinder.findGraduation(USER_ID, topic.getId());
+		List<GraduationSummaryResult> summaries = graduationFinder.findGraduations(USER_ID);
+
+		assertThat(detail.submission().getAttemptNo()).isEqualTo(2);
+		assertThat(detail.submission().getReviewNote()).isNull();
+		assertThat(detail.submission().getRetakeInstructions()).isEmpty();
+		assertThat(summaries).hasSize(1);
+		assertThat(summaries.getFirst().submission().getAttemptNo()).isEqualTo(2);
+		assertThat(summaries.getFirst().submission().getReviewNote()).isNull();
 	}
 
 	@Test
@@ -151,7 +177,7 @@ class GraduationFinderTest {
 		assertThat(results).extracting(result -> result.topic().title()).containsExactly("산책 줄 당김", "분리불안");
 		assertThat(results.getFirst().graduation().getStatus()).isEqualTo(GraduationStatus.SUBMITTED);
 		assertThat(results).allSatisfy(result ->
-				assertThat(Hibernate.isInitialized(result.graduation().getCurrentSubmission())).isTrue());
+				assertThat(result.submission().getGraduation().getId()).isEqualTo(result.graduation().getId()));
 	}
 
 	@Test

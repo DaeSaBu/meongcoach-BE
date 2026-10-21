@@ -44,5 +44,17 @@ class GraduationReviewMigrationTest {
 		assertThat(jdbc.queryForObject("select count(*) from information_schema.columns "
 				+ "where table_name = 'topic_graduations' and column_name in "
 				+ "('review_note', 'reviewed_at', 'retake_instructions', 'retake_image_url')", Integer.class)).isZero();
+
+		Flyway.configure().dataSource(dataSource).target("20").load().migrate();
+
+		assertThat(jdbc.queryForObject("select count(*) from information_schema.columns "
+				+ "where table_name = 'topic_graduations' and column_name = 'current_submission_id'", Integer.class)).isZero();
+		assertThat(jdbc.queryForObject("select count(*) from graduation_submissions", Integer.class)).isEqualTo(4);
+		assertThat(jdbc.queryForObject("select s.review_note from graduation_submissions s "
+				+ "join topic_graduations g on s.graduation_id = g.id and s.attempt_no = g.attempt_no "
+				+ "where g.id = 1", String.class)).isEqualTo("보완 요청");
+		assertThat(jdbc.queryForList("select jsonb_array_elements_text(retake_instructions) from graduation_submissions "
+				+ "where graduation_id = 1 and attempt_no = 2", String.class)).containsExactly("첫째 지시", "둘째 지시");
+
 	}
 }

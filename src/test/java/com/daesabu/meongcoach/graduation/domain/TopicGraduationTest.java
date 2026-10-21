@@ -39,10 +39,11 @@ class TopicGraduationTest {
 	}
 
 	@Test
-	void 보완_요청_뒤에_다시_제출하면_차수를_올리고_영상을_바꾸고_이전_판정을_지운다() {
+	void 보완_요청_뒤에_다시_제출하면_차수를_올리고_이전_제출의_판정을_보존한다() {
 		TopicGraduation graduation = started();
-		graduation.requestRevision("현관 장면부터 다시 찍어 주세요.", LATER);
-		TopicGraduationFixture.withRetakeGuide(graduation, "https://images.test/images/graduation-retake/3/example.jpg", List.of("현관이 함께 보이게 찍어 주세요."));
+		GraduationSubmission submission = GraduationSubmission.from(graduation);
+		graduation.requestRevision(submission, "현관 장면부터 다시 찍어 주세요.", LATER);
+		TopicGraduationFixture.withRetakeGuide(submission, "https://images.test/images/graduation-retake/3/example.jpg", List.of("현관이 함께 보이게 찍어 주세요."));
 
 		graduation.resubmit(SECOND_KEY, LATER);
 
@@ -50,10 +51,10 @@ class TopicGraduationTest {
 		assertThat(graduation.getAttemptNo()).isEqualTo(2);
 		assertThat(graduation.getVideoObjectKey()).isEqualTo(SECOND_KEY);
 		assertThat(graduation.getSubmittedAt()).isEqualTo(LATER);
-		assertThat(graduation.getReviewedAt()).isNull();
-		assertThat(graduation.getReviewNote()).isNull();
-		assertThat(graduation.getRetakeImageUrl()).isNull();
-		assertThat(graduation.getRetakeInstructions()).isEmpty();
+		assertThat(submission.getReviewedAt()).isEqualTo(LATER);
+		assertThat(submission.getReviewNote()).isEqualTo("현관 장면부터 다시 찍어 주세요.");
+		assertThat(submission.getRetakeImageUrl()).isEqualTo("https://images.test/images/graduation-retake/3/example.jpg");
+		assertThat(submission.getRetakeInstructions()).containsExactly("현관이 함께 보이게 찍어 주세요.");
 	}
 
 	@Test
@@ -66,50 +67,85 @@ class TopicGraduationTest {
 	@Test
 	void 승인하면_승인_시각과_다듬은_메모를_기록한다() {
 		TopicGraduation graduation = started();
+		GraduationSubmission submission = GraduationSubmission.from(graduation);
 
-		graduation.approve("  잘했어요  ", LATER);
+		graduation.approve(submission, "  잘했어요  ", LATER);
 
 		assertThat(graduation.isApproved()).isTrue();
-		assertThat(graduation.getReviewedAt()).isEqualTo(LATER);
+		assertThat(submission.getReviewedAt()).isEqualTo(LATER);
 		assertThat(graduation.getApprovedAt()).isEqualTo(LATER);
-		assertThat(graduation.getReviewNote()).isEqualTo("잘했어요");
+		assertThat(submission.getReviewNote()).isEqualTo("잘했어요");
 	}
 
 	@Test
 	void 빈_메모로_승인하면_메모_없이_승인한다() {
 		TopicGraduation graduation = started();
+		GraduationSubmission submission = GraduationSubmission.from(graduation);
 
-		graduation.approve(" ", LATER);
+		graduation.approve(submission, " ", LATER);
 
-		assertThat(graduation.getReviewNote()).isNull();
+		assertThat(submission.getReviewNote()).isNull();
 	}
 
 	@Test
 	void 보완_요청은_메모와_판정_시각을_기록한다() {
 		TopicGraduation graduation = started();
+		GraduationSubmission submission = GraduationSubmission.from(graduation);
 
-		graduation.requestRevision("현관 장면부터 다시 찍어 주세요.", LATER);
+		graduation.requestRevision(submission, "현관 장면부터 다시 찍어 주세요.", LATER);
 
 		assertThat(graduation.getStatus()).isEqualTo(GraduationStatus.REVISION_REQUESTED);
-		assertThat(graduation.getReviewedAt()).isEqualTo(LATER);
-		assertThat(graduation.getReviewNote()).isEqualTo("현관 장면부터 다시 찍어 주세요.");
+		assertThat(submission.getReviewedAt()).isEqualTo(LATER);
+		assertThat(submission.getReviewNote()).isEqualTo("현관 장면부터 다시 찍어 주세요.");
 	}
 
 	@Test
 	void 보완_요청에_메모가_없으면_예외를_던진다() {
 		TopicGraduation graduation = started();
+		GraduationSubmission submission = GraduationSubmission.from(graduation);
 
-		assertThatThrownBy(() -> graduation.requestRevision("  ", LATER)).isInstanceOf(IllegalArgumentException.class);
-		assertThatThrownBy(() -> graduation.requestRevision(null, LATER)).isInstanceOf(IllegalArgumentException.class);
+		assertThatThrownBy(() -> graduation.requestRevision(submission, "  ", LATER)).isInstanceOf(IllegalArgumentException.class);
+		assertThatThrownBy(() -> graduation.requestRevision(submission, null, LATER)).isInstanceOf(IllegalArgumentException.class);
 		assertThat(graduation.getStatus()).isEqualTo(GraduationStatus.SUBMITTED);
 	}
 
 	@Test
 	void 제출_상태가_아니면_판정할_수_없다() {
 		TopicGraduation graduation = approved();
+		GraduationSubmission submission = TopicGraduationFixture.submission(graduation, LATER, null);
 
-		assertThatThrownBy(() -> graduation.approve(null, LATER)).isInstanceOf(IllegalStateException.class);
-		assertThatThrownBy(() -> graduation.requestRevision("메모", LATER)).isInstanceOf(IllegalStateException.class);
+		assertThatThrownBy(() -> graduation.approve(submission, null, LATER)).isInstanceOf(IllegalStateException.class);
+		assertThatThrownBy(() -> graduation.requestRevision(submission, "메모", LATER)).isInstanceOf(IllegalStateException.class);
+	}
+
+	@Test
+	void 다른_수료의_제출로_승인하거나_보완_요청할_수_없다() {
+		TopicGraduation graduation = started();
+		TopicGraduation other = TopicGraduationFixture.create(2L, 42L, 8L,
+				GraduationStatus.SUBMITTED, 1, FIRST_KEY, NOW, null, null);
+		GraduationSubmission submission = GraduationSubmission.from(other);
+
+		assertThatThrownBy(() -> graduation.approve(submission, "승인", LATER))
+				.isInstanceOf(IllegalArgumentException.class);
+		assertThatThrownBy(() -> graduation.requestRevision(submission, "보완", LATER))
+				.isInstanceOf(IllegalArgumentException.class);
+		assertThat(graduation.getStatus()).isEqualTo(GraduationStatus.SUBMITTED);
+		assertThat(submission.getStatus()).isEqualTo(GraduationSubmissionStatus.SUBMITTED);
+	}
+
+	@Test
+	void 이전_차수의_제출로_현재_수료를_판정할_수_없다() {
+		TopicGraduation graduation = started();
+		GraduationSubmission previous = GraduationSubmission.from(graduation);
+		graduation.requestRevision(previous, "다시 촬영", LATER);
+		graduation.resubmit(SECOND_KEY, LATER);
+
+		assertThatThrownBy(() -> graduation.approve(previous, "승인", LATER))
+				.isInstanceOf(IllegalArgumentException.class);
+		assertThatThrownBy(() -> graduation.requestRevision(previous, "보완", LATER))
+				.isInstanceOf(IllegalArgumentException.class);
+		assertThat(graduation.getStatus()).isEqualTo(GraduationStatus.SUBMITTED);
+		assertThat(previous.getStatus()).isEqualTo(GraduationSubmissionStatus.REVISION_REQUESTED);
 	}
 
 	private TopicGraduation started() {
@@ -118,7 +154,8 @@ class TopicGraduationTest {
 
 	private TopicGraduation approved() {
 		TopicGraduation graduation = started();
-		graduation.approve(null, LATER);
+		GraduationSubmission submission = GraduationSubmission.from(graduation);
+		graduation.approve(submission, null, LATER);
 		return graduation;
 	}
 }

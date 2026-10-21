@@ -56,7 +56,7 @@ class GraduationSubmitterTest {
 		assertThat(graduation.getAttemptNo()).isEqualTo(1);
 		assertThat(graduation.getVideoObjectKey()).isEqualTo(key(topic, "first"));
 		assertThat(graduationSubmissionRepository.findAll())
-				.extracting(GraduationSubmission::getGraduationId, GraduationSubmission::getAttemptNo,
+				.extracting(submission -> submission.getGraduation().getId(), GraduationSubmission::getAttemptNo,
 						GraduationSubmission::getVideoObjectKey)
 				.containsExactly(tuple(graduation.getId(), 1, key(topic, "first")));
 	}
@@ -83,7 +83,7 @@ class GraduationSubmitterTest {
 		Topic topic = topicSeeder.completedTopic(USER_ID, "분리불안");
 		TopicGraduation first = graduationSubmitter.submit(USER_ID, topic.getId(), request(key(topic, "first")));
 		Instant reviewedAt = Instant.parse("2026-10-20T01:00:00Z");
-		first.requestRevision(new GraduationRevisionCommand("다시 찍어 주세요.",
+		first.requestRevision(currentSubmission(first), new GraduationRevisionCommand("다시 찍어 주세요.",
 				List.of("현관을 보여 주세요.", "강아지 전신을 찍어 주세요."), "https://images.test/images/graduation-retake/3/example.jpg", reviewedAt));
 		topicSeeder.flushAndClear();
 
@@ -93,8 +93,8 @@ class GraduationSubmitterTest {
 		TopicGraduation saved = topicGraduationRepository.findById(second.getId()).orElseThrow();
 		assertThat(saved.getStatus()).isEqualTo(GraduationStatus.SUBMITTED);
 		assertThat(saved.getAttemptNo()).isEqualTo(2);
-		assertThat(saved.getReviewNote()).isNull();
-		assertThat(saved.getReviewedAt()).isNull();
+		assertThat(currentSubmission(saved).getReviewNote()).isNull();
+		assertThat(currentSubmission(saved).getReviewedAt()).isNull();
 		assertThat(graduationSubmissionRepository.findAll())
 				.extracting(GraduationSubmission::getAttemptNo, GraduationSubmission::getVideoObjectKey)
 				.containsExactlyInAnyOrder(tuple(1, key(topic, "first")), tuple(2, key(topic, "second")));
@@ -105,21 +105,21 @@ class GraduationSubmitterTest {
 		assertThat(previous.getReviewedAt()).isEqualTo(reviewedAt);
 		assertThat(previous.getRetakeInstructions()).containsExactly("현관을 보여 주세요.", "강아지 전신을 찍어 주세요.");
 		assertThat(previous.getRetakeImageUrl()).isEqualTo("https://images.test/images/graduation-retake/3/example.jpg");
-		assertThat(saved.getCurrentSubmission().getAttemptNo()).isEqualTo(2);
-		assertThat(saved.getCurrentSubmission().getStatus()).isEqualTo(GraduationSubmissionStatus.SUBMITTED);
-		assertThat(saved.getRetakeInstructions()).isEmpty();
-		assertThat(saved.getRetakeImageUrl()).isNull();
+		assertThat(currentSubmission(saved).getAttemptNo()).isEqualTo(2);
+		assertThat(currentSubmission(saved).getStatus()).isEqualTo(GraduationSubmissionStatus.SUBMITTED);
+		assertThat(currentSubmission(saved).getRetakeInstructions()).isEmpty();
+		assertThat(currentSubmission(saved).getRetakeImageUrl()).isNull();
 	}
 
 	@Test
 	void 새_차수를_승인해도_이전_차수의_보완_요청은_유지한다() {
 		Topic topic = topicSeeder.completedTopic(USER_ID, "분리불안");
 		TopicGraduation first = graduationSubmitter.submit(USER_ID, topic.getId(), request(key(topic, "first")));
-		first.requestRevision("현관을 보여 주세요.", Instant.now());
+		first.requestRevision(currentSubmission(first), "현관을 보여 주세요.", Instant.now());
 		topicSeeder.flushAndClear();
 		TopicGraduation second = graduationSubmitter.submit(USER_ID, topic.getId(), request(key(topic, "second")));
 
-		second.approve("잘했어요.", Instant.now());
+		second.approve(currentSubmission(second), "잘했어요.", Instant.now());
 		topicSeeder.flushAndClear();
 
 		assertThat(graduationSubmissionRepository.findByGraduationIdAndAttemptNo(second.getId(), 1).orElseThrow()
@@ -135,7 +135,7 @@ class GraduationSubmitterTest {
 	void 승인된_수료에_다시_제출하면_예외를_던진다() {
 		Topic topic = topicSeeder.completedTopic(USER_ID, "분리불안");
 		TopicGraduation first = graduationSubmitter.submit(USER_ID, topic.getId(), request(key(topic, "first")));
-		first.approve(null, Instant.now());
+		first.approve(currentSubmission(first), null, Instant.now());
 		topicSeeder.flushAndClear();
 
 		assertThatThrownBy(() -> graduationSubmitter.submit(USER_ID, topic.getId(), request(key(topic, "second"))))
@@ -186,4 +186,9 @@ class GraduationSubmitterTest {
 	private GraduationSubmissionRequest request(String objectKey) {
 		return new GraduationSubmissionRequest(objectKey);
 	}
+	private GraduationSubmission currentSubmission(TopicGraduation graduation) {
+		return graduationSubmissionRepository
+				.findByGraduationIdAndAttemptNo(graduation.getId(), graduation.getAttemptNo()).orElseThrow();
+	}
+
 }
