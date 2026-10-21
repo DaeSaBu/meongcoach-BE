@@ -56,7 +56,6 @@ class OnboardingControllerTest {
 	private static final String COMPLETE_REQUEST = """
 			{
 				"nickname": "멍멍이집사",
-				"mbti": "INTJ",
 				"profileImageUrl": "https://images.test.meongcoach.com/images/user-profile/1/a.jpg",
 				"priorTrainingTopicIds": [1, 2],
 				"trainingGoalTopicIds": [2, 3],
@@ -78,7 +77,6 @@ class OnboardingControllerTest {
 	private static final String COMPLETE_REQUEST_WITH_NULL_ARRAYS = """
 			{
 				"nickname": "멍멍이집사",
-				"mbti": "INTJ",
 				"priorTrainingTopicIds": null,
 				"trainingGoalTopicIds": [],
 				"dogs": [
@@ -98,6 +96,17 @@ class OnboardingControllerTest {
 
 	@Autowired
 	private RecordingOnboardingCompleter onboardingCompleter;
+
+	@Test
+	void MBTI_없이_온보딩을_완료한다() throws Exception {
+		mockMvc.perform(post("/api/onboarding")
+						.principal(() -> "1")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(COMPLETE_REQUEST))
+				.andExpect(status().isCreated());
+
+		assertThat(onboardingCompleter.lastInfo.mbti()).isNull();
+	}
 
 	@Test
 	void 온보딩_메타데이터를_조회한다() throws Exception {
@@ -179,8 +188,8 @@ class OnboardingControllerTest {
 
 	@Test
 	void 사용자_성별과_생년월일을_보내도_무시하고_온보딩을_완료한다() throws Exception {
-		String request = COMPLETE_REQUEST.replace("\"mbti\": \"INTJ\",",
-				"\"mbti\": \"INTJ\", \"gender\": \"FEMALE\", \"birthDate\": \"1998-01-01\",");
+		String request = COMPLETE_REQUEST.replace("\"nickname\": \"멍멍이집사\",",
+				"\"nickname\": \"멍멍이집사\", \"gender\": \"FEMALE\", \"birthDate\": \"1998-01-01\",");
 
 		mockMvc.perform(post("/api/onboarding")
 						.principal(() -> "1")
@@ -339,32 +348,6 @@ class OnboardingControllerTest {
 	}
 
 	@Test
-	void MBTI가_null이면_검증에_실패한다() throws Exception {
-		String request = COMPLETE_REQUEST.replace("\"mbti\": \"INTJ\"", "\"mbti\": null");
-
-		mockMvc.perform(post("/api/onboarding")
-						.principal(() -> "1")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content(request))
-				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
-				.andExpect(jsonPath("$.errors[0].field").value("mbti"));
-	}
-
-	@Test
-	void MBTI가_공백이면_검증에_실패한다() throws Exception {
-		String request = COMPLETE_REQUEST.replace("\"mbti\": \"INTJ\"", "\"mbti\": \"   \"");
-
-		mockMvc.perform(post("/api/onboarding")
-						.principal(() -> "1")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content(request))
-				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
-				.andExpect(jsonPath("$.errors[0].field").value("mbti"));
-	}
-
-	@Test
 	void 강아지_이름이_12자이면_온보딩을_완료할_수_있다() throws Exception {
 		String request = COMPLETE_REQUEST.replace(
 				"\"name\": \"초코\"",
@@ -456,7 +439,7 @@ class OnboardingControllerTest {
 	@Test
 	void 강아지_목록에_null이_있으면_검증에_실패한다() throws Exception {
 		String request = """
-				{"nickname": "멍멍이집사", "mbti": "INTJ", "dogs": [null]}
+				{"nickname": "멍멍이집사", "dogs": [null]}
 				""";
 
 		assertValidationFails(request, "dogs[0]");
@@ -467,7 +450,6 @@ class OnboardingControllerTest {
 		String request = """
 				{
 				    "nickname": "멍멍이집사",
-				    "mbti": "INTJ",
 				    "dogs": [
 				        {
 				            "name": "초코",
@@ -496,7 +478,7 @@ class OnboardingControllerTest {
 						.principal(() -> "1")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
-								{"nickname": "멍멍이집사", "mbti": "INTJ", "dogs": []}
+								{"nickname": "멍멍이집사", "dogs": []}
 								"""))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.errors[0].field").value("dogs"));
