@@ -11,9 +11,7 @@ import com.daesabu.meongcoach.training.domain.Topic;
 import com.daesabu.meongcoach.training.domain.exception.TopicNotFoundException;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.function.Function;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -36,9 +34,14 @@ public class TopicQueryService implements TopicFinder, TopicCompletionChecker {
 	@Override
 	public List<TopicResult> findTopics(Collection<Long> topicIds) {
 		List<Topic> topics = topicRepository.findAllById(topicIds);
-		Map<Long, Topic> byId = topics.stream().collect(Collectors.toMap(Topic::getId, Function.identity()));
-		topicIds.forEach(topicId -> Optional.ofNullable(byId.get(topicId))
-				.orElseThrow(() -> new TopicNotFoundException(topicId)));
+		Set<Long> foundIds = topics.stream()
+				.map(Topic::getId)
+				.collect(Collectors.toSet());
+		for (Long topicId : topicIds) {
+			if (!foundIds.contains(topicId)) {
+				throw new TopicNotFoundException(topicId);
+			}
+		}
 		return topics.stream()
 				.map(TopicResult::from)
 				.toList();
