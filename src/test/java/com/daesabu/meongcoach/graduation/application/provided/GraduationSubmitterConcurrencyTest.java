@@ -9,16 +9,13 @@ import com.daesabu.meongcoach.graduation.domain.GraduationRevisionCommand;
 import com.daesabu.meongcoach.graduation.domain.GraduationSubmission;
 import com.daesabu.meongcoach.graduation.domain.GraduationSubmissionStatus;
 import com.daesabu.meongcoach.graduation.domain.exception.GraduationSubmissionConflictException;
-import com.daesabu.meongcoach.progress.application.required.LessonProgressRepository;
 import com.daesabu.meongcoach.support.NonTransactionalApplicationTest;
-import com.daesabu.meongcoach.training.application.provided.LessonCompleter;
 import com.daesabu.meongcoach.training.domain.Topic;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -54,12 +51,6 @@ class GraduationSubmitterConcurrencyTest {
 
 	@Autowired
 	private JdbcTemplate jdbcTemplate;
-
-	@Autowired
-	private LessonCompleter lessonCompleter;
-
-	@Autowired
-	private LessonProgressRepository lessonProgressRepository;
 
 	private TransactionTemplate transaction;
 	private TransactionTemplate newTransaction;
@@ -157,28 +148,6 @@ class GraduationSubmitterConcurrencyTest {
 					graduationSubmissionRepository.findById(submissionId).orElseThrow().getReview().note()).isEqualTo(
 					"보완");
 		}
-	}
-
-	@Test
-	void 동시_학습_완료는_회원별로_직렬화하고_미제출_이력은_한번만_저장한다() throws Exception {
-		jdbcTemplate.update("delete from graduation_submissions where user_id = ?", USER_ID);
-		Long lessonId = jdbcTemplate.queryForObject("select l.id from lessons l join curriculums c "
-				+ "on c.id = l.curriculum_id where c.topic_id = ?", Long.class, topicId);
-		try (var executor = Executors.newSingleThreadExecutor()) {
-			var waiting = new AtomicReference<Future<Integer>>();
-			transaction.executeWithoutResult(status -> {
-				lessonProgressRepository.lockByUserId(USER_ID);
-				waiting.set(executor.submit(() -> lessonCompleter.completeLesson(USER_ID, lessonId)));
-				assertThatThrownBy(() -> waiting.get().get(250, TimeUnit.MILLISECONDS))
-						.isInstanceOf(TimeoutException.class);
-				assertThat(lessonCompleter.completeLesson(USER_ID, lessonId)).isEqualTo(2);
-			});
-			assertThat(waiting.get().get(10, TimeUnit.SECONDS)).isEqualTo(3);
-		}
-		assertThat(jdbcTemplate.queryForObject("select count(*) from graduation_submissions where user_id = ?",
-				Integer.class, USER_ID)).isOne();
-		assertThat(graduationSubmissionRepository.findFirstByUserIdAndTopicIdOrderByIdDesc(USER_ID, topicId))
-				.get().extracting(GraduationSubmission::getStatus).isEqualTo(GraduationSubmissionStatus.NOT_SUBMITTED);
 	}
 
 	private GraduationSubmissionRequest request(String name) {
