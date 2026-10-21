@@ -447,6 +447,32 @@ class OnboardingControllerTest {
 	}
 
 	@Test
+	void 강아지를_두_마리_등록하면_검증에_실패한다() throws Exception {
+		String request = """
+				{
+				    "nickname": "멍멍이집사",
+				    "mbti": "INTJ",
+				    "dogs": [
+				        {
+				            "name": "초코",
+				            "breed": "POODLE",
+				            "sex": "MALE",
+				            "weightKg": 3.5
+				        },
+				        {
+				            "name": "보리",
+				            "breed": "POODLE",
+				            "sex": "FEMALE",
+				            "weightKg": 4.0
+				        }
+				    ]
+				}
+				""";
+
+		assertValidationFails(request, "dogs");
+	}
+
+	@Test
 	void 강아지_없이_온보딩을_완료할_수_없다() throws Exception {
 		mockMvc.perform(post("/api/onboarding")
 						.principal(() -> "1")
