@@ -127,11 +127,13 @@ class UserRegisterServiceTest {
 	}
 
 	@Test
-	void MBTI가_null이면_온보딩_완료에_실패한다() {
+	void MBTI가_null이면_미입력_상태로_저장한다() {
 		Long userId = saveOnboardingUser();
 
-		assertThatThrownBy(() -> userRegisterService.completeOnboarding(userId, request(null, null)))
-				.isInstanceOf(InvalidMbtiException.class);
+		userRegisterService.completeOnboarding(userId, request(null, null));
+
+		UserProfile profile = findPersistedProfile(userId);
+		assertThat(profile.getMbti()).isNull();
 	}
 
 	@Test
