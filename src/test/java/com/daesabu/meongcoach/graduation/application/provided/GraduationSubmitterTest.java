@@ -24,12 +24,14 @@ import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 @ApplicationTest
 @Import(TopicSeeder.class)
 class GraduationSubmitterTest {
- @Autowired private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
+	@Autowired
+	private JdbcTemplate jdbcTemplate;
 
 	private static final Long USER_ID = 42L;
 
@@ -47,7 +49,8 @@ class GraduationSubmitterTest {
 	void 첫_제출은_수료_행을_만들고_기록을_남긴다() {
 		Topic topic = topicSeeder.completedTopic(USER_ID, "분리불안");
 
-		GraduationSubmission graduation = graduationSubmitter.submit(USER_ID, topic.getId(), request(key(topic, "first")));
+		GraduationSubmission graduation = graduationSubmitter.submit(USER_ID, topic.getId(),
+				request(key(topic, "first")));
 		topicSeeder.flushAndClear();
 
 		assertThat(graduation.getStatus()).isEqualTo(GraduationSubmissionStatus.SUBMITTED);
@@ -59,14 +62,15 @@ class GraduationSubmitterTest {
 	}
 
 	@Test
- void 검수_대기_중에는_영상을_바꾸지_않고_추가_제출을_거절한다() {
-  Topic topic = topicSeeder.completedTopic(USER_ID, "분리불안");
-  graduationSubmitter.submit(USER_ID, topic.getId(), request(key(topic, "first")));
-  topicSeeder.flushAndClear();
-  assertThatThrownBy(() -> graduationSubmitter.submit(USER_ID, topic.getId(), request(key(topic, "second"))))
-    .isInstanceOf(GraduationReviewPendingException.class);
-  assertThat(graduationSubmissionRepository.findAll()).extracting(GraduationSubmission::getVideoObjectKey).containsExactly(key(topic, "first"));
- }
+	void 검수_대기_중에는_영상을_바꾸지_않고_추가_제출을_거절한다() {
+		Topic topic = topicSeeder.completedTopic(USER_ID, "분리불안");
+		graduationSubmitter.submit(USER_ID, topic.getId(), request(key(topic, "first")));
+		topicSeeder.flushAndClear();
+		assertThatThrownBy(() -> graduationSubmitter.submit(USER_ID, topic.getId(), request(key(topic, "second"))))
+				.isInstanceOf(GraduationReviewPendingException.class);
+		assertThat(graduationSubmissionRepository.findAll()).extracting(GraduationSubmission::getVideoObjectKey)
+				.containsExactly(key(topic, "first"));
+	}
 
 	@Test
 	void 재제출하면_이전_판정과_재촬영_지시를_보존하고_새_제출은_판정_대기다() {
@@ -75,7 +79,8 @@ class GraduationSubmitterTest {
 		Instant reviewedAt = Instant.parse("2026-10-20T01:00:00Z");
 		GraduationSubmission previous = first;
 		first.requestRevision(new GraduationRevisionCommand("다시 찍어 주세요.",
-				List.of("현관을 보여 주세요.", "강아지 전신을 찍어 주세요."), "https://images.test/images/graduation-retake/3/example.jpg", reviewedAt));
+				List.of("현관을 보여 주세요.", "강아지 전신을 찍어 주세요."), "https://images.test/images/graduation-retake/3/example.jpg",
+				reviewedAt));
 		topicSeeder.flushAndClear();
 
 		GraduationSubmission second = graduationSubmitter.submit(USER_ID, topic.getId(), request(key(topic, "second")));
@@ -93,7 +98,8 @@ class GraduationSubmitterTest {
 		assertThat(previous.getReview().note()).isEqualTo("다시 찍어 주세요.");
 		assertThat(previous.getReviewedAt()).isEqualTo(reviewedAt);
 		assertThat(previous.getReview().retakeInstructions()).containsExactly("현관을 보여 주세요.", "강아지 전신을 찍어 주세요.");
-		assertThat(previous.getRetakeImageUrl()).isEqualTo("https://images.test/images/graduation-retake/3/example.jpg");
+		assertThat(previous.getRetakeImageUrl()).isEqualTo(
+				"https://images.test/images/graduation-retake/3/example.jpg");
 		assertThat(saved.getStatus()).isEqualTo(GraduationSubmissionStatus.SUBMITTED);
 		assertThat(saved.getReview().retakeInstructions()).isEmpty();
 		assertThat(saved.getRetakeImageUrl()).isNull();
@@ -135,9 +141,11 @@ class GraduationSubmitterTest {
 	void 다른_사용자의_영상_키로_제출하면_예외를_던지고_아무것도_만들지_않는다() {
 		Topic topic = topicSeeder.completedTopic(USER_ID, "분리불안");
 
-		assertThatThrownBy(() -> graduationSubmitter.submit(USER_ID, topic.getId(), request("videos/graduation/43/" + topic.getId() + "/x.mp4")))
+		assertThatThrownBy(() -> graduationSubmitter.submit(USER_ID, topic.getId(),
+				request("videos/graduation/43/" + topic.getId() + "/x.mp4")))
 				.isInstanceOf(InvalidGraduationVideoKeyException.class);
-		assertThat(graduationSubmissionRepository.findFirstByUserIdAndTopicIdOrderByIdDesc(USER_ID, topic.getId())).isEmpty();
+		assertThat(graduationSubmissionRepository.findFirstByUserIdAndTopicIdOrderByIdDesc(USER_ID,
+				topic.getId())).isEmpty();
 	}
 
 	@Test
@@ -147,7 +155,8 @@ class GraduationSubmitterTest {
 
 		assertThatThrownBy(() -> graduationSubmitter.submit(USER_ID, topic.getId(), request(otherTopicKey)))
 				.isInstanceOf(InvalidGraduationVideoKeyException.class);
-		assertThat(graduationSubmissionRepository.findFirstByUserIdAndTopicIdOrderByIdDesc(USER_ID, topic.getId())).isEmpty();
+		assertThat(graduationSubmissionRepository.findFirstByUserIdAndTopicIdOrderByIdDesc(USER_ID,
+				topic.getId())).isEmpty();
 	}
 
 	@Test
@@ -161,9 +170,12 @@ class GraduationSubmitterTest {
 	@Test
 	void 같은_토픽의_첫_제출이_동시에_들어와_유니크_제약에_걸리면_충돌_예외로_바꾼다() {
 		Topic topic = topicSeeder.completedTopic(USER_ID, "분리불안");
-		jdbcTemplate.execute("create unique index if not exists uk_graduation_submissions_active on graduation_submissions(user_id, topic_id) where status in ('SUBMITTED', 'APPROVED')");
-		graduationSubmissionRepository.saveAndFlush(GraduationSubmission.create(new GraduationSubmissionCommand(USER_ID, topic.getId(), key(topic, "first"), Instant.now())));
-		willReturn(Optional.empty()).given(graduationSubmissionRepository).findFirstByUserIdAndTopicIdOrderByIdDesc(USER_ID, topic.getId());
+		jdbcTemplate.execute(
+				"create unique index if not exists uk_graduation_submissions_active on graduation_submissions(user_id, topic_id) where status in ('SUBMITTED', 'APPROVED')");
+		graduationSubmissionRepository.saveAndFlush(GraduationSubmission.create(
+				new GraduationSubmissionCommand(USER_ID, topic.getId(), key(topic, "first"), Instant.now())));
+		willReturn(Optional.empty()).given(graduationSubmissionRepository)
+				.findFirstByUserIdAndTopicIdOrderByIdDesc(USER_ID, topic.getId());
 
 		assertThatThrownBy(() -> graduationSubmitter.submit(USER_ID, topic.getId(), request(key(topic, "second"))))
 				.isInstanceOf(GraduationSubmissionConflictException.class);
@@ -176,5 +188,4 @@ class GraduationSubmitterTest {
 	private GraduationSubmissionRequest request(String objectKey) {
 		return new GraduationSubmissionRequest(objectKey);
 	}
-
 }

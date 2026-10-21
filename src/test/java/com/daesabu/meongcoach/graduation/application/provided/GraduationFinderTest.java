@@ -65,7 +65,7 @@ class GraduationFinderTest {
 	void 제출이_있으면_수료_상태와_가장_최근_영상의_다운로드_URL을_돌려준다() {
 		Topic topic = topicSeeder.completedTopic(USER_ID, "분리불안");
 		submit(USER_ID, topic, "first");
- revise(topic);
+		revise(topic);
 		submit(USER_ID, topic, "second");
 		String objectKey = "videos/graduation/42/" + topic.getId() + "/second.mp4";
 		given(videoStorage.issueDownloadUrl(new VideoObjectKey(objectKey)))
@@ -137,10 +137,12 @@ class GraduationFinderTest {
 		assertThat(graduationFinder.findGraduations(USER_ID)).isEmpty();
 	}
 
- private void revise(Topic topic) {
-  jdbcTemplate.update("update graduation_submissions set status = 'REVISION_REQUESTED', review = '{\"note\":\"이전 판정\",\"retakeInstructions\":[\"전신\"]}'::jsonb, reviewed_at = now() where user_id = ? and topic_id = ?", USER_ID, topic.getId());
-  topicSeeder.flushAndClear();
- }
+	private void revise(Topic topic) {
+		jdbcTemplate.update(
+				"update graduation_submissions set status = 'REVISION_REQUESTED', review = '{\"note\":\"이전 판정\",\"retakeInstructions\":[\"전신\"]}'::jsonb, reviewed_at = now() where user_id = ? and topic_id = ?",
+				USER_ID, topic.getId());
+		topicSeeder.flushAndClear();
+	}
 
 	private void submit(Long userId, Topic topic, String name) {
 		graduationSubmitter.submit(userId, topic.getId(),

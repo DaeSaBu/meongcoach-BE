@@ -23,6 +23,7 @@ import com.daesabu.meongcoach.graduation.domain.GraduationSubmission;
 import com.daesabu.meongcoach.graduation.domain.GraduationSubmissionFixture;
 import com.daesabu.meongcoach.graduation.domain.GraduationSubmissionStatus;
 import com.daesabu.meongcoach.graduation.domain.exception.GraduationAlreadyApprovedException;
+import com.daesabu.meongcoach.graduation.domain.exception.GraduationReviewPendingException;
 import com.daesabu.meongcoach.graduation.domain.exception.TopicNotCompletedException;
 import com.daesabu.meongcoach.media.application.provided.VideoUploadUrlResult;
 import com.daesabu.meongcoach.media.domain.exception.VideoFileSizeExceededException;
@@ -77,7 +78,8 @@ class GraduationControllerTest {
 
 	@Test
 	void 토픽의_실습_인증_현황을_반환한다() throws Exception {
-		GraduationSubmission graduation = GraduationSubmissionFixture.create(3L, 42L, TOPIC_ID, GraduationSubmissionStatus.APPROVED,
+		GraduationSubmission graduation = GraduationSubmissionFixture.create(3L, 42L, TOPIC_ID,
+				GraduationSubmissionStatus.APPROVED,
 				VIDEO_KEY, SUBMITTED_AT, REVIEWED_AT, "끝까지 함께 시도했어요!");
 		given(graduationFinder.findGraduation(42L, TOPIC_ID))
 				.willReturn(new GraduationDetailResult(TOPIC, true, graduation, VIDEO_URL));
@@ -110,9 +112,11 @@ class GraduationControllerTest {
 										"수료 상태. SUBMITTED(검수 대기), REVISION_REQUESTED(보완 요청), APPROVED(수료)"),
 								fieldWithPath("graduation.videoUrl").description("가장 최근 제출 영상의 1시간 유효 presigned URL"),
 								fieldWithPath("graduation.submittedAt").description("가장 최근 제출 시각(ISO-8601, UTC)"),
-								fieldWithPath("graduation.reviewedAt").optional().description("가장 최근 제출의 판정 시각. 판정 전이면 null"),
+								fieldWithPath("graduation.reviewedAt").optional()
+										.description("가장 최근 제출의 판정 시각. 판정 전이면 null"),
 								fieldWithPath("graduation.review.note").optional().description("운영자 메모. 없으면 null"),
-								fieldWithPath("graduation.review.retakeInstructions").description("보완 요청 때 운영자가 남긴 재촬영 팁(최대 3개, 순서대로). 없으면 빈 배열"),
+								fieldWithPath("graduation.review.retakeInstructions").description(
+										"보완 요청 때 운영자가 남긴 재촬영 팁(최대 3개, 순서대로). 없으면 빈 배열"),
 								fieldWithPath("graduation.retakeImageUrl").optional().description(
 										"보완 요청 때 운영자가 올린 촬영 예시 이미지의 공개 URL. 없으면 null이고, 앱은 기본 그림을 보여 준다")
 						)
@@ -122,7 +126,8 @@ class GraduationControllerTest {
 	@Test
 	void 보완_요청이면_재촬영_팁과_촬영_예시_이미지를_함께_반환한다() throws Exception {
 		GraduationSubmission graduation = GraduationSubmissionFixture.create(3L, 42L, TOPIC_ID,
-				GraduationSubmissionStatus.REVISION_REQUESTED, VIDEO_KEY, SUBMITTED_AT, REVIEWED_AT, "현관 장면부터 다시 찍어 주세요.");
+				GraduationSubmissionStatus.REVISION_REQUESTED, VIDEO_KEY, SUBMITTED_AT, REVIEWED_AT,
+				"현관 장면부터 다시 찍어 주세요.");
 		GraduationSubmission submission = GraduationSubmissionFixture.withRetakeGuide(
 				GraduationSubmissionFixture.submission(graduation, REVIEWED_AT, "현관 장면부터 다시 찍어 주세요."),
 				"https://images.test/images/graduation-retake/3/example.jpg",
@@ -135,12 +140,14 @@ class GraduationControllerTest {
 				.andExpect(jsonPath("$.graduation.status").value("REVISION_REQUESTED"))
 				.andExpect(jsonPath("$.graduation.review.retakeInstructions[0]").value("현관이 함께 보이게 찍어 주세요."))
 				.andExpect(jsonPath("$.graduation.review.retakeInstructions[1]").value("보호자가 나가는 순간부터 찍어 주세요."))
-				.andExpect(jsonPath("$.graduation.retakeImageUrl").value("https://images.test/images/graduation-retake/3/example.jpg"));
+				.andExpect(jsonPath("$.graduation.retakeImageUrl").value(
+						"https://images.test/images/graduation-retake/3/example.jpg"));
 	}
 
 	@Test
 	void 내_훈련_영상_목록을_최근_제출_순으로_반환한다() throws Exception {
-		GraduationSubmission graduation = GraduationSubmissionFixture.create(3L, 42L, TOPIC_ID, GraduationSubmissionStatus.APPROVED,
+		GraduationSubmission graduation = GraduationSubmissionFixture.create(3L, 42L, TOPIC_ID,
+				GraduationSubmissionStatus.APPROVED,
 				VIDEO_KEY, SUBMITTED_AT, REVIEWED_AT, "끝까지 함께 시도했어요!");
 		given(graduationFinder.findGraduations(42L)).willReturn(List.of(new GraduationSummaryResult(
 				GraduationSubmissionFixture.submission(graduation, REVIEWED_AT, "끝까지 함께 시도했어요!"), TOPIC)));
@@ -166,16 +173,18 @@ class GraduationControllerTest {
 								fieldWithPath("graduations[].status").description(
 										"수료 상태. SUBMITTED(검수 대기), REVISION_REQUESTED(보완 요청), APPROVED(수료)"),
 								fieldWithPath("graduations[].submittedAt").description("가장 최근 제출 시각(ISO-8601, UTC)"),
-								fieldWithPath("graduations[].reviewedAt").optional().description("가장 최근 제출의 판정 시각. 판정 전이면 null"),
+								fieldWithPath("graduations[].reviewedAt").optional()
+										.description("가장 최근 제출의 판정 시각. 판정 전이면 null"),
 								fieldWithPath("graduations[].review.note").optional().description("운영자 메모. 없으면 null"),
- fieldWithPath("graduations[].review.retakeInstructions").description("재촬영 지시")
+								fieldWithPath("graduations[].review.retakeInstructions").description("재촬영 지시")
 						)
 				));
 	}
 
 	@Test
 	void 제출한_적이_없으면_graduation을_null로_반환한다() throws Exception {
-		given(graduationFinder.findGraduation(42L, TOPIC_ID)).willReturn(GraduationDetailResult.notSubmitted(TOPIC, false));
+		given(graduationFinder.findGraduation(42L, TOPIC_ID)).willReturn(
+				GraduationDetailResult.notSubmitted(TOPIC, false));
 
 		mockMvc.perform(get("/api/training/topics/{topicId}/graduation", TOPIC_ID).principal(CURRENT_USER))
 				.andExpect(status().isOk())
@@ -262,7 +271,8 @@ class GraduationControllerTest {
 	@Test
 	void 업로드한_영상으로_제출하고_201을_반환한다() throws Exception {
 		given(graduationSubmitter.submit(42L, TOPIC_ID, new GraduationSubmissionRequest(VIDEO_KEY)))
-				.willReturn(GraduationSubmissionFixture.create(3L, 42L, TOPIC_ID, GraduationSubmissionStatus.SUBMITTED, VIDEO_KEY,
+				.willReturn(GraduationSubmissionFixture.create(3L, 42L, TOPIC_ID, GraduationSubmissionStatus.SUBMITTED,
+						VIDEO_KEY,
 						SUBMITTED_AT, null, null));
 
 		mockMvc.perform(post("/api/training/topics/{topicId}/graduation/submissions", TOPIC_ID)
@@ -298,6 +308,25 @@ class GraduationControllerTest {
 				.andExpect(status().isConflict())
 				.andExpect(jsonPath("$.code").value("GRADUATION_ALREADY_APPROVED"))
 				.andDo(document("graduation/submission-error", responseFields(ERROR_FIELDS)));
+	}
+
+	@Test
+	void 검수_대기_중에는_발급과_제출을_409로_거절한다() throws Exception {
+		given(graduationSubmitter.submit(42L, TOPIC_ID, new GraduationSubmissionRequest(VIDEO_KEY)))
+				.willThrow(new GraduationReviewPendingException());
+		given(graduationUploadUrlIssuer.issue(42L, TOPIC_ID, new GraduationUploadUrlRequest("video/mp4", 1024L)))
+				.willThrow(new GraduationReviewPendingException());
+		mockMvc.perform(post("/api/training/topics/{topicId}/graduation/submissions", TOPIC_ID)
+						.principal(CURRENT_USER).header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
+						.contentType(MediaType.APPLICATION_JSON).content("{\"objectKey\": \"" + VIDEO_KEY + "\"}"))
+				.andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("GRADUATION_REVIEW_PENDING"))
+				.andDo(document("graduation/submission-pending-error", responseFields(ERROR_FIELDS)));
+		mockMvc.perform(post("/api/training/topics/{topicId}/graduation/presigned-urls", TOPIC_ID)
+						.principal(CURRENT_USER).header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"contentType\": \"video/mp4\", \"fileSizeBytes\": 1024}"))
+				.andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("GRADUATION_REVIEW_PENDING"))
+				.andDo(document("graduation/upload-url-pending-error", responseFields(ERROR_FIELDS)));
 	}
 
 	@Test
