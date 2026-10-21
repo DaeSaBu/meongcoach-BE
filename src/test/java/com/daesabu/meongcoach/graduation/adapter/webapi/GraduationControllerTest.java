@@ -19,10 +19,11 @@ import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationDeta
 import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationSubmissionRequest;
 import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationSummaryResult;
 import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationUploadUrlRequest;
-import com.daesabu.meongcoach.graduation.domain.GraduationStatus;
-import com.daesabu.meongcoach.graduation.domain.TopicGraduation;
-import com.daesabu.meongcoach.graduation.domain.TopicGraduationFixture;
+import com.daesabu.meongcoach.graduation.domain.GraduationSubmission;
+import com.daesabu.meongcoach.graduation.domain.GraduationSubmissionFixture;
+import com.daesabu.meongcoach.graduation.domain.GraduationSubmissionStatus;
 import com.daesabu.meongcoach.graduation.domain.exception.GraduationAlreadyApprovedException;
+import com.daesabu.meongcoach.graduation.domain.exception.GraduationReviewPendingException;
 import com.daesabu.meongcoach.graduation.domain.exception.TopicNotCompletedException;
 import com.daesabu.meongcoach.media.application.provided.VideoUploadUrlResult;
 import com.daesabu.meongcoach.media.domain.exception.VideoFileSizeExceededException;
@@ -77,7 +78,8 @@ class GraduationControllerTest {
 
 	@Test
 	void 토픽의_실습_인증_현황을_반환한다() throws Exception {
-		TopicGraduation graduation = TopicGraduationFixture.create(3L, 42L, TOPIC_ID, GraduationStatus.APPROVED, 2,
+		GraduationSubmission graduation = GraduationSubmissionFixture.create(3L, 42L, TOPIC_ID,
+				GraduationSubmissionStatus.APPROVED,
 				VIDEO_KEY, SUBMITTED_AT, REVIEWED_AT, "끝까지 함께 시도했어요!");
 		given(graduationFinder.findGraduation(42L, TOPIC_ID))
 				.willReturn(new GraduationDetailResult(TOPIC, true, graduation, VIDEO_URL));
@@ -89,14 +91,14 @@ class GraduationControllerTest {
 				.andExpect(jsonPath("$.topicId").value(7))
 				.andExpect(jsonPath("$.topicTitle").value("분리불안"))
 				.andExpect(jsonPath("$.eligible").value(true))
-				.andExpect(jsonPath("$.graduation.graduationId").value(3))
+				.andExpect(jsonPath("$.graduation.submissionId").value(3))
 				.andExpect(jsonPath("$.graduation.status").value("APPROVED"))
-				.andExpect(jsonPath("$.graduation.attemptNo").value(2))
+				.andExpect(jsonPath("$.graduation.attemptNo").doesNotExist())
 				.andExpect(jsonPath("$.graduation.videoUrl").value(VIDEO_URL))
 				.andExpect(jsonPath("$.graduation.submittedAt").value("2026-10-14T05:03:00Z"))
 				.andExpect(jsonPath("$.graduation.reviewedAt").value("2026-10-15T01:00:00Z"))
-				.andExpect(jsonPath("$.graduation.reviewNote").value("끝까지 함께 시도했어요!"))
-				.andExpect(jsonPath("$.graduation.retakeInstructions").isEmpty())
+				.andExpect(jsonPath("$.graduation.review.note").value("끝까지 함께 시도했어요!"))
+				.andExpect(jsonPath("$.graduation.review.retakeInstructions").isEmpty())
 				.andExpect(jsonPath("$.graduation.retakeImageUrl").isEmpty())
 				.andDo(document("graduation/detail",
 						pathParameters(parameterWithName("topicId").description("토픽 ID")),
@@ -105,15 +107,16 @@ class GraduationControllerTest {
 								fieldWithPath("topicTitle").description("토픽 제목"),
 								fieldWithPath("eligible").description("토픽의 모든 커리큘럼을 완료해 실습 인증을 할 수 있으면 true"),
 								fieldWithPath("graduation").optional().description("토픽 수료 현황. 제출한 적이 없으면 null"),
-								fieldWithPath("graduation.graduationId").description("토픽 수료 ID"),
+								fieldWithPath("graduation.submissionId").description("토픽 수료 ID"),
 								fieldWithPath("graduation.status").description(
 										"수료 상태. SUBMITTED(검수 대기), REVISION_REQUESTED(보완 요청), APPROVED(수료)"),
-								fieldWithPath("graduation.attemptNo").description("몇 번째 제출인지(보완 요청 뒤 다시 제출하면 1 증가, 검수 대기 중 영상 교체는 유지)"),
 								fieldWithPath("graduation.videoUrl").description("가장 최근 제출 영상의 1시간 유효 presigned URL"),
 								fieldWithPath("graduation.submittedAt").description("가장 최근 제출 시각(ISO-8601, UTC)"),
-								fieldWithPath("graduation.reviewedAt").optional().description("가장 최근 제출의 판정 시각. 판정 전이면 null"),
-								fieldWithPath("graduation.reviewNote").optional().description("운영자 메모. 없으면 null"),
-								fieldWithPath("graduation.retakeInstructions").description("보완 요청 때 운영자가 남긴 재촬영 팁(최대 3개, 순서대로). 없으면 빈 배열"),
+								fieldWithPath("graduation.reviewedAt").optional()
+										.description("가장 최근 제출의 판정 시각. 판정 전이면 null"),
+								fieldWithPath("graduation.review.note").optional().description("운영자 메모. 없으면 null"),
+								fieldWithPath("graduation.review.retakeInstructions").description(
+										"보완 요청 때 운영자가 남긴 재촬영 팁(최대 3개, 순서대로). 없으면 빈 배열"),
 								fieldWithPath("graduation.retakeImageUrl").optional().description(
 										"보완 요청 때 운영자가 올린 촬영 예시 이미지의 공개 URL. 없으면 null이고, 앱은 기본 그림을 보여 준다")
 						)
@@ -122,58 +125,74 @@ class GraduationControllerTest {
 
 	@Test
 	void 보완_요청이면_재촬영_팁과_촬영_예시_이미지를_함께_반환한다() throws Exception {
-		TopicGraduation graduation = TopicGraduationFixture.withRetakeGuide(
-				TopicGraduationFixture.create(3L, 42L, TOPIC_ID, GraduationStatus.REVISION_REQUESTED, 1,
-						VIDEO_KEY, SUBMITTED_AT, REVIEWED_AT, "현관 장면부터 다시 찍어 주세요."),
-				"https://images.test/images/graduation-retake/3/example.jpg", List.of("현관이 함께 보이게 찍어 주세요.", "보호자가 나가는 순간부터 찍어 주세요."));
+		GraduationSubmission graduation = GraduationSubmissionFixture.create(3L, 42L, TOPIC_ID,
+				GraduationSubmissionStatus.REVISION_REQUESTED, VIDEO_KEY, SUBMITTED_AT, REVIEWED_AT,
+				"현관 장면부터 다시 찍어 주세요.");
+		GraduationSubmission submission = GraduationSubmissionFixture.withRetakeGuide(
+				GraduationSubmissionFixture.submission(graduation, REVIEWED_AT, "현관 장면부터 다시 찍어 주세요."),
+				"https://images.test/images/graduation-retake/3/example.jpg",
+				List.of("현관이 함께 보이게 찍어 주세요.", "보호자가 나가는 순간부터 찍어 주세요."));
 		given(graduationFinder.findGraduation(42L, TOPIC_ID))
-				.willReturn(new GraduationDetailResult(TOPIC, true, graduation, VIDEO_URL));
+				.willReturn(new GraduationDetailResult(TOPIC, true, submission, VIDEO_URL));
 
 		mockMvc.perform(get("/api/training/topics/{topicId}/graduation", TOPIC_ID).principal(CURRENT_USER))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.graduation.status").value("REVISION_REQUESTED"))
-				.andExpect(jsonPath("$.graduation.retakeInstructions[0]").value("현관이 함께 보이게 찍어 주세요."))
-				.andExpect(jsonPath("$.graduation.retakeInstructions[1]").value("보호자가 나가는 순간부터 찍어 주세요."))
-				.andExpect(jsonPath("$.graduation.retakeImageUrl").value("https://images.test/images/graduation-retake/3/example.jpg"));
+				.andExpect(jsonPath("$.graduation.review.retakeInstructions[0]").value("현관이 함께 보이게 찍어 주세요."))
+				.andExpect(jsonPath("$.graduation.review.retakeInstructions[1]").value("보호자가 나가는 순간부터 찍어 주세요."))
+				.andExpect(jsonPath("$.graduation.retakeImageUrl").value(
+						"https://images.test/images/graduation-retake/3/example.jpg"));
 	}
 
 	@Test
 	void 내_훈련_영상_목록을_최근_제출_순으로_반환한다() throws Exception {
-		TopicGraduation graduation = TopicGraduationFixture.create(3L, 42L, TOPIC_ID, GraduationStatus.APPROVED, 2,
+		GraduationSubmission graduation = GraduationSubmissionFixture.create(3L, 42L, TOPIC_ID,
+				GraduationSubmissionStatus.APPROVED,
 				VIDEO_KEY, SUBMITTED_AT, REVIEWED_AT, "끝까지 함께 시도했어요!");
-		given(graduationFinder.findGraduations(42L)).willReturn(List.of(new GraduationSummaryResult(graduation, TOPIC)));
+		given(graduationFinder.findGraduations(42L)).willReturn(List.of(new GraduationSummaryResult(
+				GraduationSubmissionFixture.submission(graduation, REVIEWED_AT, "끝까지 함께 시도했어요!"), TOPIC),
+				new GraduationSummaryResult(null, new TopicResult(8L, "학습 완료", "미제출"))));
 
 		mockMvc.perform(get("/api/training/graduations")
 						.principal(CURRENT_USER)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.graduations[0].graduationId").value(3))
+				.andExpect(jsonPath("$.graduations[0].submissionId").value(3))
 				.andExpect(jsonPath("$.graduations[0].topicId").value(7))
 				.andExpect(jsonPath("$.graduations[0].topicTitle").value("분리불안"))
 				.andExpect(jsonPath("$.graduations[0].status").value("APPROVED"))
-				.andExpect(jsonPath("$.graduations[0].attemptNo").value(2))
+				.andExpect(jsonPath("$.graduations[0].attemptNo").doesNotExist())
 				.andExpect(jsonPath("$.graduations[0].submittedAt").value("2026-10-14T05:03:00Z"))
 				.andExpect(jsonPath("$.graduations[0].reviewedAt").value("2026-10-15T01:00:00Z"))
-				.andExpect(jsonPath("$.graduations[0].reviewNote").value("끝까지 함께 시도했어요!"))
+				.andExpect(jsonPath("$.graduations[0].review.note").value("끝까지 함께 시도했어요!"))
+				.andExpect(jsonPath("$.graduations[1].topicId").value(8))
+				.andExpect(jsonPath("$.graduations[1].status").value("NOT_SUBMITTED"))
+				.andExpect(jsonPath("$.graduations[1].submissionId").isEmpty())
+				.andExpect(jsonPath("$.graduations[1].submittedAt").isEmpty())
+				.andExpect(jsonPath("$.graduations[1].reviewedAt").isEmpty())
+				.andExpect(jsonPath("$.graduations[1].review.note").isEmpty())
+				.andExpect(jsonPath("$.graduations[1].review.retakeInstructions").isEmpty())
 				.andDo(document("graduation/list",
 						responseFields(
-								fieldWithPath("graduations[]").description("제출한 적이 있는 토픽의 실습 인증. 가장 최근 제출 순"),
-								fieldWithPath("graduations[].graduationId").description("토픽 수료 ID"),
+								fieldWithPath("graduations[]").description("제출 이력 또는 학습 완료가 있는 토픽. 최신 제출 순이며 미제출 토픽은 뒤에 교육 순서로 표시"),
+								fieldWithPath("graduations[].submissionId").optional().description("최신 제출 ID. 미제출이면 null"),
 								fieldWithPath("graduations[].topicId").description("토픽 ID"),
 								fieldWithPath("graduations[].topicTitle").description("토픽 제목"),
 								fieldWithPath("graduations[].status").description(
-										"수료 상태. SUBMITTED(검수 대기), REVISION_REQUESTED(보완 요청), APPROVED(수료)"),
-								fieldWithPath("graduations[].attemptNo").description("몇 번째 제출인지(보완 요청 뒤 다시 제출하면 1 증가, 검수 대기 중 영상 교체는 유지)"),
-								fieldWithPath("graduations[].submittedAt").description("가장 최근 제출 시각(ISO-8601, UTC)"),
-								fieldWithPath("graduations[].reviewedAt").optional().description("가장 최근 제출의 판정 시각. 판정 전이면 null"),
-								fieldWithPath("graduations[].reviewNote").optional().description("운영자 메모. 없으면 null")
+										"상태. NOT_SUBMITTED(학습 완료·미제출), SUBMITTED(검수 대기), REVISION_REQUESTED(보완 요청), APPROVED(수료)"),
+								fieldWithPath("graduations[].submittedAt").optional().description("가장 최근 제출 시각(ISO-8601, UTC). 미제출이면 null"),
+								fieldWithPath("graduations[].reviewedAt").optional()
+										.description("가장 최근 제출의 판정 시각. 판정 전이면 null"),
+								fieldWithPath("graduations[].review.note").optional().description("운영자 메모. 없으면 null"),
+								fieldWithPath("graduations[].review.retakeInstructions").description("재촬영 지시")
 						)
 				));
 	}
 
 	@Test
 	void 제출한_적이_없으면_graduation을_null로_반환한다() throws Exception {
-		given(graduationFinder.findGraduation(42L, TOPIC_ID)).willReturn(GraduationDetailResult.notSubmitted(TOPIC, false));
+		given(graduationFinder.findGraduation(42L, TOPIC_ID)).willReturn(
+				GraduationDetailResult.notSubmitted(TOPIC, false));
 
 		mockMvc.perform(get("/api/training/topics/{topicId}/graduation", TOPIC_ID).principal(CURRENT_USER))
 				.andExpect(status().isOk())
@@ -260,7 +279,8 @@ class GraduationControllerTest {
 	@Test
 	void 업로드한_영상으로_제출하고_201을_반환한다() throws Exception {
 		given(graduationSubmitter.submit(42L, TOPIC_ID, new GraduationSubmissionRequest(VIDEO_KEY)))
-				.willReturn(TopicGraduationFixture.create(3L, 42L, TOPIC_ID, GraduationStatus.SUBMITTED, 2, VIDEO_KEY,
+				.willReturn(GraduationSubmissionFixture.create(3L, 42L, TOPIC_ID, GraduationSubmissionStatus.SUBMITTED,
+						VIDEO_KEY,
 						SUBMITTED_AT, null, null));
 
 		mockMvc.perform(post("/api/training/topics/{topicId}/graduation/submissions", TOPIC_ID)
@@ -269,16 +289,15 @@ class GraduationControllerTest {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"objectKey\": \"" + VIDEO_KEY + "\"}"))
 				.andExpect(status().isCreated())
-				.andExpect(jsonPath("$.graduationId").value(3))
-				.andExpect(jsonPath("$.attemptNo").value(2))
+				.andExpect(jsonPath("$.submissionId").value(3))
+				.andExpect(jsonPath("$.attemptNo").doesNotExist())
 				.andExpect(jsonPath("$.submittedAt").value("2026-10-14T05:03:00Z"))
 				.andDo(document("graduation/submission",
 						pathParameters(parameterWithName("topicId").description("토픽 ID")),
 						requestFields(fieldWithPath("objectKey").description(
 								"필수 입력. 업로드 URL 발급 응답의 objectKey. 본인이 이 토픽으로 받은 `videos/graduation/{userId}/{topicId}/` 키만 받는다")),
 						responseFields(
-								fieldWithPath("graduationId").description("토픽 수료 ID. 운영자 판정에 쓴다"),
-								fieldWithPath("attemptNo").description("몇 번째 제출인지(1부터, 보완 요청 뒤 다시 제출하면 1 증가, 검수 대기 중 영상 교체는 유지)"),
+								fieldWithPath("submissionId").description("토픽 수료 ID. 운영자 판정에 쓴다"),
 								fieldWithPath("submittedAt").description("제출 시각(ISO-8601, UTC)")
 						)
 				));
@@ -297,6 +316,25 @@ class GraduationControllerTest {
 				.andExpect(status().isConflict())
 				.andExpect(jsonPath("$.code").value("GRADUATION_ALREADY_APPROVED"))
 				.andDo(document("graduation/submission-error", responseFields(ERROR_FIELDS)));
+	}
+
+	@Test
+	void 검수_대기_중에는_발급과_제출을_409로_거절한다() throws Exception {
+		given(graduationSubmitter.submit(42L, TOPIC_ID, new GraduationSubmissionRequest(VIDEO_KEY)))
+				.willThrow(new GraduationReviewPendingException());
+		given(graduationUploadUrlIssuer.issue(42L, TOPIC_ID, new GraduationUploadUrlRequest("video/mp4", 1024L)))
+				.willThrow(new GraduationReviewPendingException());
+		mockMvc.perform(post("/api/training/topics/{topicId}/graduation/submissions", TOPIC_ID)
+						.principal(CURRENT_USER).header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
+						.contentType(MediaType.APPLICATION_JSON).content("{\"objectKey\": \"" + VIDEO_KEY + "\"}"))
+				.andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("GRADUATION_REVIEW_PENDING"))
+				.andDo(document("graduation/submission-pending-error", responseFields(ERROR_FIELDS)));
+		mockMvc.perform(post("/api/training/topics/{topicId}/graduation/presigned-urls", TOPIC_ID)
+						.principal(CURRENT_USER).header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"contentType\": \"video/mp4\", \"fileSizeBytes\": 1024}"))
+				.andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("GRADUATION_REVIEW_PENDING"))
+				.andDo(document("graduation/upload-url-pending-error", responseFields(ERROR_FIELDS)));
 	}
 
 	@Test
