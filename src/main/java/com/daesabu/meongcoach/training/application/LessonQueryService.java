@@ -2,13 +2,18 @@ package com.daesabu.meongcoach.training.application;
 
 import com.daesabu.meongcoach.entitlement.application.provided.EntitlementChecker;
 import com.daesabu.meongcoach.training.application.provided.LessonFinder;
+import com.daesabu.meongcoach.training.application.provided.LessonProgressFinder;
 import com.daesabu.meongcoach.training.application.provided.dto.LessonSummaryResult;
+import com.daesabu.meongcoach.training.application.required.LessonProgressRepository;
 import com.daesabu.meongcoach.training.application.required.LessonRepository;
 import com.daesabu.meongcoach.training.domain.Card;
 import com.daesabu.meongcoach.training.domain.Lesson;
+import com.daesabu.meongcoach.training.domain.LessonProgress;
+import com.daesabu.meongcoach.training.domain.LessonProgresses;
 import com.daesabu.meongcoach.training.domain.exception.LessonNotFoundException;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,7 +21,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class LessonQueryService implements LessonFinder {
+public class LessonQueryService implements LessonFinder, LessonProgressFinder {
+	private final LessonProgressRepository lessonProgressRepository;
 	private final LessonRepository lessonRepository;
 	private final EntitlementChecker entitlementChecker;
 
@@ -32,7 +38,7 @@ public class LessonQueryService implements LessonFinder {
 
 	@Override
 	public Lesson find(Long lessonId) {
-		return lessonRepository.findWithCategoryById(lessonId)
+		return lessonRepository.findById(lessonId)
 				.orElseThrow(() -> new LessonNotFoundException(lessonId));
 	}
 
@@ -44,5 +50,16 @@ public class LessonQueryService implements LessonFinder {
 		return lessonRepository.findAllById(lessonIds).stream()
 				.map(LessonSummaryResult::from)
 				.toList();
+	}
+	@Override
+	public LessonProgresses findProgresses(Long userId, Collection<Long> lessonIds) {
+		List<LessonProgress> progresses = lessonProgressRepository.findAllByUserIdAndLessonIdIn(userId, lessonIds);
+		return LessonProgresses.from(progresses);
+	}
+
+	@Override
+	public Map<Long, Integer> findCompletedCounts(Long userId, Collection<Long> lessonIds) {
+		LessonProgresses progresses = findProgresses(userId, lessonIds);
+		return progresses.completedCounts(lessonIds);
 	}
 }
