@@ -9,10 +9,9 @@ import static org.mockito.BDDMockito.given;
 import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationSubmissionRequest;
 import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationUploadUrlRequest;
 import com.daesabu.meongcoach.graduation.application.required.GraduationSubmissionRepository;
-import com.daesabu.meongcoach.graduation.application.required.TopicGraduationRepository;
 import com.daesabu.meongcoach.graduation.domain.GraduationSubmission;
-import com.daesabu.meongcoach.graduation.domain.TopicGraduation;
 import com.daesabu.meongcoach.graduation.domain.exception.GraduationAlreadyApprovedException;
+import com.daesabu.meongcoach.graduation.domain.exception.GraduationReviewPendingException;
 import com.daesabu.meongcoach.graduation.domain.exception.TopicNotCompletedException;
 import com.daesabu.meongcoach.media.application.provided.VideoUploadUrlResult;
 import com.daesabu.meongcoach.media.application.required.VideoStorage;
@@ -39,11 +38,9 @@ class GraduationUploadUrlIssuerTest {
 	@Autowired
 	private GraduationSubmitter graduationSubmitter;
 
-	@Autowired
-	private GraduationSubmissionRepository graduationSubmissionRepository;
 
 	@Autowired
-	private TopicGraduationRepository topicGraduationRepository;
+	private GraduationSubmissionRepository graduationSubmissionRepository;
 
 	@Autowired
 	private TopicSeeder topicSeeder;
@@ -66,7 +63,7 @@ class GraduationUploadUrlIssuerTest {
 
 		assertThat(result.objectKey()).startsWith("videos/graduation/42/" + topic.getId() + "/").endsWith(".mp4");
 		assertThat(result.uploadUrl()).isNotBlank();
-		assertThat(topicGraduationRepository.findByUserIdAndTopicId(USER_ID, topic.getId())).isEmpty();
+		assertThat(graduationSubmissionRepository.findFirstByUserIdAndTopicIdOrderByIdDesc(USER_ID, topic.getId())).isEmpty();
 	}
 
 	@Test
@@ -77,13 +74,18 @@ class GraduationUploadUrlIssuerTest {
 				.isInstanceOf(TopicNotCompletedException.class);
 	}
 
+ @Test void 검수_대기_중에는_URL_발급을_거절한다() {
+  Topic topic = topicSeeder.completedTopic(USER_ID, "분리불안");
+  graduationSubmitter.submit(USER_ID, topic.getId(), new GraduationSubmissionRequest("videos/graduation/42/" + topic.getId() + "/a.mp4"));
+  assertThatThrownBy(() -> graduationUploadUrlIssuer.issue(USER_ID, topic.getId(), REQUEST)).isInstanceOf(GraduationReviewPendingException.class);
+ }
 	@Test
 	void 이미_수료한_토픽이면_예외를_던진다() {
 		Topic topic = topicSeeder.completedTopic(USER_ID, "분리불안");
-		TopicGraduation graduation = graduationSubmitter.submit(USER_ID, topic.getId(),
+		GraduationSubmission graduation = graduationSubmitter.submit(USER_ID, topic.getId(),
 				new GraduationSubmissionRequest("videos/graduation/42/" + topic.getId() + "/a.mp4"));
-		graduation.approve(currentSubmission(graduation), null, Instant.now());
-		topicGraduationRepository.save(graduation);
+		graduation.approve(null, Instant.now());
+		graduationSubmissionRepository.save(graduation);
 		topicSeeder.flushAndClear();
 
 		assertThatThrownBy(() -> graduationUploadUrlIssuer.issue(USER_ID, topic.getId(), REQUEST))
@@ -94,10 +96,6 @@ class GraduationUploadUrlIssuerTest {
 	void 존재하지_않는_토픽이면_예외를_던진다() {
 		assertThatThrownBy(() -> graduationUploadUrlIssuer.issue(USER_ID, 999L, REQUEST))
 				.isInstanceOf(TopicNotFoundException.class);
-	}
-	private GraduationSubmission currentSubmission(TopicGraduation graduation) {
-		return graduationSubmissionRepository
-				.findFirstByGraduationIdOrderByIdDesc(graduation.getId()).orElseThrow();
 	}
 
 }

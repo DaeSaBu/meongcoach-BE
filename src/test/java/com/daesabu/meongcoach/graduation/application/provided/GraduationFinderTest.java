@@ -7,7 +7,7 @@ import static org.mockito.BDDMockito.given;
 import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationDetailResult;
 import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationSubmissionRequest;
 import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationSummaryResult;
-import com.daesabu.meongcoach.graduation.domain.GraduationStatus;
+import com.daesabu.meongcoach.graduation.domain.GraduationSubmissionStatus;
 import com.daesabu.meongcoach.media.application.required.VideoDownloadUrl;
 import com.daesabu.meongcoach.media.application.required.VideoStorage;
 import com.daesabu.meongcoach.media.domain.VideoObjectKey;
@@ -50,7 +50,7 @@ class GraduationFinderTest {
 
 		assertThat(result.topic().title()).isEqualTo("분리불안");
 		assertThat(result.eligible()).isTrue();
-		assertThat(result.graduation()).isNull();
+		assertThat(result.submission()).isNull();
 		assertThat(result.videoUrl()).isNull();
 	}
 
@@ -65,6 +65,7 @@ class GraduationFinderTest {
 	void 제출이_있으면_수료_상태와_가장_최근_영상의_다운로드_URL을_돌려준다() {
 		Topic topic = topicSeeder.completedTopic(USER_ID, "분리불안");
 		submit(USER_ID, topic, "first");
+ revise(topic);
 		submit(USER_ID, topic, "second");
 		String objectKey = "videos/graduation/42/" + topic.getId() + "/second.mp4";
 		given(videoStorage.issueDownloadUrl(new VideoObjectKey(objectKey)))
@@ -73,61 +74,15 @@ class GraduationFinderTest {
 
 		GraduationDetailResult result = graduationFinder.findGraduation(USER_ID, topic.getId());
 
-		assertThat(result.graduation().getStatus()).isEqualTo(GraduationStatus.SUBMITTED);
+		assertThat(result.submission().getStatus()).isEqualTo(GraduationSubmissionStatus.SUBMITTED);
 		assertThat(result.videoUrl()).contains("videos/graduation/42/" + topic.getId() + "/second.mp4");
-	}
-
-	@Test
-	void 운영자가_남긴_JSON_재촬영_지시를_순서대로_돌려준다() {
-		Topic topic = topicSeeder.completedTopic(USER_ID, "분리불안");
-		submit(USER_ID, topic, "first");
-		Long graduationId = jdbcTemplate.queryForObject(
-				"select id from topic_graduations where user_id = ? and topic_id = ?", Long.class, USER_ID, topic.getId());
-		jdbcTemplate.update("update graduation_submissions set status = 'REVISION_REQUESTED', review_note = '다시 찍어 주세요.', "
-				+ "reviewed_at = now(), retake_image_url = 'https://images.test/images/graduation-retake/3/example.jpg', "
-				+ "retake_instructions = '[\"첫째 지시\", \"둘째 지시\", \"셋째 지시\"]'::jsonb "
-				+ "where graduation_id = ?", graduationId);
-		jdbcTemplate.update("update topic_graduations set status = 'REVISION_REQUESTED' where id = ?", graduationId);
-		String objectKey = "videos/graduation/42/" + topic.getId() + "/first.mp4";
-		given(videoStorage.issueDownloadUrl(new VideoObjectKey(objectKey)))
-				.willReturn(new VideoDownloadUrl("https://storage.test/" + objectKey,
-						"https://videos.test/" + objectKey, 900L));
-
-		GraduationDetailResult result = graduationFinder.findGraduation(USER_ID, topic.getId());
-
-		assertThat(result.submission().getRetakeImageUrl()).isEqualTo("https://images.test/images/graduation-retake/3/example.jpg");
-		assertThat(result.submission().getRetakeInstructions()).containsExactly("첫째 지시", "둘째 지시", "셋째 지시");
-	}
-
-	@Test
-	void 재제출하면_새_제출은_빈_안내를_갖고_이전_JSON_안내는_유지한다() {
-		Topic topic = topicSeeder.completedTopic(USER_ID, "분리불안");
-		submit(USER_ID, topic, "first");
-		jdbcTemplate.update("update graduation_submissions set status = 'REVISION_REQUESTED', "
-				+ "retake_image_url = 'https://images.test/images/graduation-retake/3/example.jpg', retake_instructions = '[\"다시 찍어 주세요.\"]'::jsonb "
-				+ "where graduation_id = (select id from topic_graduations where user_id = ? and topic_id = ?)", USER_ID, topic.getId());
-		jdbcTemplate.update("update topic_graduations set status = 'REVISION_REQUESTED' "
-				+ "where user_id = ? and topic_id = ?", USER_ID, topic.getId());
-
-		submit(USER_ID, topic, "second");
-
-		assertThat(jdbcTemplate.queryForObject("select s.retake_instructions::text from topic_graduations g "
-				+ "join graduation_submissions s on s.graduation_id = g.id and s.id = (select max(latest.id) from graduation_submissions latest where latest.graduation_id = g.id) "
-				+ "where user_id = ? and topic_id = ?", String.class, USER_ID, topic.getId())).isEqualTo("[]");
-		assertThat(jdbcTemplate.queryForObject("select s.retake_image_url from topic_graduations g "
-				+ "join graduation_submissions s on s.graduation_id = g.id and s.id = (select max(latest.id) from graduation_submissions latest where latest.graduation_id = g.id) "
-				+ "where user_id = ? and topic_id = ?", String.class, USER_ID, topic.getId())).isNull();
 	}
 
 	@Test
 	void 재제출_후_상세와_목록은_이전_판정_대신_최신_제출을_반환한다() {
 		Topic topic = topicSeeder.completedTopic(USER_ID, "분리불안");
 		submit(USER_ID, topic, "first");
-		jdbcTemplate.update("update graduation_submissions set status = 'REVISION_REQUESTED', "
-				+ "review_note = '이전 판정', reviewed_at = now() where graduation_id = "
-				+ "(select id from topic_graduations where user_id = ? and topic_id = ?)", USER_ID, topic.getId());
-		jdbcTemplate.update("update topic_graduations set status = 'REVISION_REQUESTED' "
-				+ "where user_id = ? and topic_id = ?", USER_ID, topic.getId());
+		revise(topic);
 		submit(USER_ID, topic, "second");
 
 		String objectKey = "videos/graduation/42/" + topic.getId() + "/second.mp4";
@@ -139,11 +94,11 @@ class GraduationFinderTest {
 		List<GraduationSummaryResult> summaries = graduationFinder.findGraduations(USER_ID);
 
 		assertThat(detail.submission().getVideoObjectKey()).isEqualTo(objectKey);
-		assertThat(detail.submission().getReviewNote()).isNull();
-		assertThat(detail.submission().getRetakeInstructions()).isEmpty();
+		assertThat(detail.submission().getReview().note()).isNull();
+		assertThat(detail.submission().getReview().retakeInstructions()).isEmpty();
 		assertThat(summaries).hasSize(1);
 		assertThat(summaries.getFirst().submission().getId()).isEqualTo(detail.submission().getId());
-		assertThat(summaries.getFirst().submission().getReviewNote()).isNull();
+		assertThat(summaries.getFirst().submission().getReview().note()).isNull();
 	}
 
 	@Test
@@ -151,7 +106,7 @@ class GraduationFinderTest {
 		Topic topic = topicSeeder.completedTopic(OTHER_USER_ID, "분리불안");
 		submit(OTHER_USER_ID, topic, "a");
 
-		assertThat(graduationFinder.findGraduation(USER_ID, topic.getId()).graduation()).isNull();
+		assertThat(graduationFinder.findGraduation(USER_ID, topic.getId()).submission()).isNull();
 	}
 
 	@Test
@@ -171,18 +126,21 @@ class GraduationFinderTest {
 
 		List<GraduationSummaryResult> results = graduationFinder.findGraduations(USER_ID);
 
-		assertThat(results).extracting(result -> result.graduation().getTopicId())
+		assertThat(results).extracting(result -> result.submission().getTopicId())
 				.containsExactly(second.getId(), first.getId());
 		assertThat(results).extracting(result -> result.topic().title()).containsExactly("산책 줄 당김", "분리불안");
-		assertThat(results.getFirst().graduation().getStatus()).isEqualTo(GraduationStatus.SUBMITTED);
-		assertThat(results).allSatisfy(result ->
-				assertThat(result.submission().getGraduation().getId()).isEqualTo(result.graduation().getId()));
+		assertThat(results.getFirst().submission().getStatus()).isEqualTo(GraduationSubmissionStatus.SUBMITTED);
 	}
 
 	@Test
 	void 제출한_적이_없으면_빈_목록이다() {
 		assertThat(graduationFinder.findGraduations(USER_ID)).isEmpty();
 	}
+
+ private void revise(Topic topic) {
+  jdbcTemplate.update("update graduation_submissions set status = 'REVISION_REQUESTED', review = '{\"note\":\"이전 판정\",\"retakeInstructions\":[\"전신\"]}'::jsonb, reviewed_at = now() where user_id = ? and topic_id = ?", USER_ID, topic.getId());
+  topicSeeder.flushAndClear();
+ }
 
 	private void submit(Long userId, Topic topic, String name) {
 		graduationSubmitter.submit(userId, topic.getId(),
