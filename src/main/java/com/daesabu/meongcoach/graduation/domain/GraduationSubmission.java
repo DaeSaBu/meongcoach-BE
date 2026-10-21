@@ -59,8 +59,8 @@ public class GraduationSubmission extends BaseTimeEntity {
 	@Column(length = 500)
 	private String reviewNote;
 
-	@Column(length = 30)
-	private String retakeFramingIconCode;
+	@Column(length = 512)
+	private String retakeImageUrl;
 
 	@JdbcTypeCode(SqlTypes.JSON)
 	@Column(nullable = false, columnDefinition = "jsonb")
@@ -104,7 +104,7 @@ public class GraduationSubmission extends BaseTimeEntity {
 		this.reviewNote = normalized;
 		this.reviewedAt = reviewedAt;
 		this.retakeInstructions = new ArrayList<>(command.retakeInstructions());
-		this.retakeFramingIconCode = command.retakeFramingIconCode();
+		this.retakeImageUrl = command.retakeImageUrl();
 		this.status = GraduationSubmissionStatus.REVISION_REQUESTED;
 	}
 

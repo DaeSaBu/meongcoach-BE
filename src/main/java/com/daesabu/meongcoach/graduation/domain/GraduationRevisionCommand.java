@@ -4,7 +4,7 @@ import java.time.Instant;
 import java.util.List;
 
 public record GraduationRevisionCommand(String note, List<String> retakeInstructions,
-                                        String retakeFramingIconCode, Instant reviewedAt) {
+                                        String retakeImageUrl, Instant reviewedAt) {
 
 	public GraduationRevisionCommand {
 		retakeInstructions = List.copyOf(retakeInstructions);

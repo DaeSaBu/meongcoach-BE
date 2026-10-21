@@ -17,9 +17,9 @@ class GraduationReviewMigrationTest {
 		var jdbc = new JdbcTemplate(dataSource);
 		jdbc.update("insert into topic_graduations (id, user_id, topic_id, status, attempt_no, video_object_key, "
 				+ "submitted_at, created_at, updated_at, reviewed_at, review_note, "
-				+ "retake_framing_icon_code, retake_instructions) values "
+				+ "retake_image_url, retake_instructions) values "
 				+ "(1, 42, 7, 'REVISION_REQUESTED', 2, 'second.mp4', now(), now(), now(), now(), '보완 요청', "
-				+ "'ENTRANCE', '[\"첫째 지시\", \"둘째 지시\"]'::jsonb), "
+				+ "'https://images.test/images/graduation-retake/3/example.jpg', '[\"첫째 지시\", \"둘째 지시\"]'::jsonb), "
 				+ "(2, 42, 8, 'APPROVED', 1, 'approved.mp4', now(), now(), now(), now(), '승인', null, '[]'::jsonb), "
 				+ "(3, 42, 9, 'SUBMITTED', 1, 'pending.mp4', now(), now(), now(), null, null, null, '[]'::jsonb)");
 		jdbc.update("insert into graduation_submissions (graduation_id, attempt_no, video_object_key, submitted_at, created_at) "
@@ -36,13 +36,13 @@ class GraduationReviewMigrationTest {
 				.isEqualTo("보완 요청");
 		assertThat(jdbc.queryForList("select jsonb_array_elements_text(retake_instructions) from graduation_submissions "
 				+ "where graduation_id = 1 and attempt_no = 2", String.class)).containsExactly("첫째 지시", "둘째 지시");
-		assertThat(jdbc.queryForObject("select retake_framing_icon_code from graduation_submissions "
-				+ "where graduation_id = 1 and attempt_no = 2", String.class)).isEqualTo("ENTRANCE");
+		assertThat(jdbc.queryForObject("select retake_image_url from graduation_submissions "
+				+ "where graduation_id = 1 and attempt_no = 2", String.class)).isEqualTo("https://images.test/images/graduation-retake/3/example.jpg");
 		assertThat(jdbc.queryForObject("select count(*) from topic_graduations g join graduation_submissions s "
 				+ "on s.id = g.current_submission_id and s.graduation_id = g.id and s.attempt_no = g.attempt_no "
 				+ "and s.status = g.status", Integer.class)).isEqualTo(3);
 		assertThat(jdbc.queryForObject("select count(*) from information_schema.columns "
 				+ "where table_name = 'topic_graduations' and column_name in "
-				+ "('review_note', 'reviewed_at', 'retake_instructions', 'retake_framing_icon_code')", Integer.class)).isZero();
+				+ "('review_note', 'reviewed_at', 'retake_instructions', 'retake_image_url')", Integer.class)).isZero();
 	}
 }

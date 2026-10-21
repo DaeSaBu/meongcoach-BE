@@ -42,7 +42,7 @@ class TopicGraduationTest {
 	void 보완_요청_뒤에_다시_제출하면_차수를_올리고_영상을_바꾸고_이전_판정을_지운다() {
 		TopicGraduation graduation = started();
 		graduation.requestRevision("현관 장면부터 다시 찍어 주세요.", LATER);
-		TopicGraduationFixture.withRetakeGuide(graduation, "ENTRANCE", List.of("현관이 함께 보이게 찍어 주세요."));
+		TopicGraduationFixture.withRetakeGuide(graduation, "https://images.test/images/graduation-retake/3/example.jpg", List.of("현관이 함께 보이게 찍어 주세요."));
 
 		graduation.resubmit(SECOND_KEY, LATER);
 
@@ -52,7 +52,7 @@ class TopicGraduationTest {
 		assertThat(graduation.getSubmittedAt()).isEqualTo(LATER);
 		assertThat(graduation.getReviewedAt()).isNull();
 		assertThat(graduation.getReviewNote()).isNull();
-		assertThat(graduation.getRetakeFramingIconCode()).isNull();
+		assertThat(graduation.getRetakeImageUrl()).isNull();
 		assertThat(graduation.getRetakeInstructions()).isEmpty();
 	}
 

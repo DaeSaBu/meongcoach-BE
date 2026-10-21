@@ -84,7 +84,7 @@ class GraduationSubmitterTest {
 		TopicGraduation first = graduationSubmitter.submit(USER_ID, topic.getId(), request(key(topic, "first")));
 		Instant reviewedAt = Instant.parse("2026-10-20T01:00:00Z");
 		first.requestRevision(new GraduationRevisionCommand("다시 찍어 주세요.",
-				List.of("현관을 보여 주세요.", "강아지 전신을 찍어 주세요."), "ENTRANCE", reviewedAt));
+				List.of("현관을 보여 주세요.", "강아지 전신을 찍어 주세요."), "https://images.test/images/graduation-retake/3/example.jpg", reviewedAt));
 		topicSeeder.flushAndClear();
 
 		TopicGraduation second = graduationSubmitter.submit(USER_ID, topic.getId(), request(key(topic, "second")));
@@ -104,11 +104,11 @@ class GraduationSubmitterTest {
 		assertThat(previous.getReviewNote()).isEqualTo("다시 찍어 주세요.");
 		assertThat(previous.getReviewedAt()).isEqualTo(reviewedAt);
 		assertThat(previous.getRetakeInstructions()).containsExactly("현관을 보여 주세요.", "강아지 전신을 찍어 주세요.");
-		assertThat(previous.getRetakeFramingIconCode()).isEqualTo("ENTRANCE");
+		assertThat(previous.getRetakeImageUrl()).isEqualTo("https://images.test/images/graduation-retake/3/example.jpg");
 		assertThat(saved.getCurrentSubmission().getAttemptNo()).isEqualTo(2);
 		assertThat(saved.getCurrentSubmission().getStatus()).isEqualTo(GraduationSubmissionStatus.SUBMITTED);
 		assertThat(saved.getRetakeInstructions()).isEmpty();
-		assertThat(saved.getRetakeFramingIconCode()).isNull();
+		assertThat(saved.getRetakeImageUrl()).isNull();
 	}
 
 	@Test

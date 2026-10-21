@@ -133,11 +133,11 @@ public class TopicGraduation extends BaseEntity {
 		return currentSubmission.getRetakeInstructions();
 	}
 
-	public String getRetakeFramingIconCode() {
+	public String getRetakeImageUrl() {
 		if (currentSubmission == null) {
 			return null;
 		}
-		return currentSubmission.getRetakeFramingIconCode();
+		return currentSubmission.getRetakeImageUrl();
 	}
 
 	public boolean isApproved() {

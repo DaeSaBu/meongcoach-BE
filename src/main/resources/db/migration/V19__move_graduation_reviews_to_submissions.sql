@@ -3,7 +3,7 @@ ALTER TABLE "graduation_submissions"
     ADD COLUMN "status" VARCHAR(30) NOT NULL DEFAULT 'UNKNOWN',
     ADD COLUMN "reviewed_at" TIMESTAMPTZ,
     ADD COLUMN "review_note" VARCHAR(500),
-    ADD COLUMN "retake_framing_icon_code" VARCHAR(30),
+    ADD COLUMN "retake_image_url" VARCHAR(512),
     ADD COLUMN "retake_instructions" JSONB NOT NULL DEFAULT '[]'::jsonb;
 
 -- 현재 차수의 기록이 없는 기존 데이터도 최신 영상 정보로 복원한다.
@@ -16,7 +16,7 @@ UPDATE "graduation_submissions" s
 SET "status" = g."status",
     "reviewed_at" = g."reviewed_at",
     "review_note" = g."review_note",
-    "retake_framing_icon_code" = g."retake_framing_icon_code",
+    "retake_image_url" = g."retake_image_url",
     "retake_instructions" = g."retake_instructions"
 FROM "topic_graduations" g
 WHERE s."graduation_id" = g."id" AND s."attempt_no" = g."attempt_no";
@@ -35,5 +35,5 @@ WHERE s."graduation_id" = g."id" AND s."attempt_no" = g."attempt_no";
 ALTER TABLE "topic_graduations"
     DROP COLUMN "reviewed_at",
     DROP COLUMN "review_note",
-    DROP COLUMN "retake_framing_icon_code",
+    DROP COLUMN "retake_image_url",
     DROP COLUMN "retake_instructions";

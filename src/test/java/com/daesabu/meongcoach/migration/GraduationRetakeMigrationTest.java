@@ -21,7 +21,7 @@ class GraduationRetakeMigrationTest {
 
 		Flyway.configure().dataSource(dataSource).target("18").load().migrate();
 
-		assertThat(jdbc.queryForObject("select retake_framing_icon_code from topic_graduations where id = 1", String.class))
+		assertThat(jdbc.queryForObject("select retake_image_url from topic_graduations where id = 1", String.class))
 				.isNull();
 		assertThat(jdbc.queryForList("select retake_instructions::text from topic_graduations order by id", String.class))
 				.containsExactly("[]", "[]");

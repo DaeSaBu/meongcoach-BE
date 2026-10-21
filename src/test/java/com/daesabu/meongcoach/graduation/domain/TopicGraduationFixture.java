@@ -27,8 +27,8 @@ public final class TopicGraduationFixture {
 		return graduation;
 	}
 
-	public static TopicGraduation withRetakeGuide(TopicGraduation graduation, String retakeFramingIconCode, List<String> retakeInstructions) {
-		ReflectionTestUtils.setField(graduation.getCurrentSubmission(), "retakeFramingIconCode", retakeFramingIconCode);
+	public static TopicGraduation withRetakeGuide(TopicGraduation graduation, String retakeImageUrl, List<String> retakeInstructions) {
+		ReflectionTestUtils.setField(graduation.getCurrentSubmission(), "retakeImageUrl", retakeImageUrl);
 		ReflectionTestUtils.setField(graduation.getCurrentSubmission(), "retakeInstructions", new ArrayList<>(retakeInstructions));
 		return graduation;
 	}
