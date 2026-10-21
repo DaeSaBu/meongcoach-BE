@@ -33,6 +33,8 @@ import com.daesabu.meongcoach.community.domain.MentionCommand;
 import com.daesabu.meongcoach.community.domain.MentionTargetType;
 import com.daesabu.meongcoach.community.domain.Post;
 import com.daesabu.meongcoach.community.domain.PostFixture;
+import com.daesabu.meongcoach.community.domain.PostMediaCommand;
+import com.daesabu.meongcoach.community.domain.PostMediaType;
 import com.daesabu.meongcoach.community.domain.exception.MentionTargetNotFoundException;
 import com.daesabu.meongcoach.community.domain.exception.PostNotFoundException;
 import com.daesabu.meongcoach.media.application.provided.dto.MediaUploadUrlResult;
@@ -73,8 +75,11 @@ class CommunityControllerTest {
 
 	@Test
 	void 게시글_목록을_다음_커서와_함께_반환한다() throws Exception {
+		List<PostMediaCommand> media = List.of(
+				new PostMediaCommand(PostMediaType.IMAGE, "https://media.meongcoach.com/images/community-post/7/photo.jpg"),
+				new PostMediaCommand(PostMediaType.VIDEO, "https://media.meongcoach.com/videos/community-post/7/clip.mp4"));
 		PostResult withMention = new PostResult(
-				PostFixture.create(30L, 7L, "이 레슨 따라해봤어요", LocalDateTime.of(2026, 10, 19, 10, 30, 0)),
+				PostFixture.create(30L, 7L, "이 레슨 따라해봤어요", null, media, LocalDateTime.of(2026, 10, 19, 10, 30, 0)),
 				new UserProfileSummaryResult(7L, "멍멍이집사", "https://cdn.example.com/profile.png"),
 				new MentionTargetResult(MentionTargetType.LESSON, 101L, "앉아 기초"));
 		PostResult withoutMention = new PostResult(
@@ -99,9 +104,16 @@ class CommunityControllerTest {
 				.andExpect(jsonPath("$.posts[0].mention.targetType").value("LESSON"))
 				.andExpect(jsonPath("$.posts[0].mention.targetId").value(101))
 				.andExpect(jsonPath("$.posts[0].mention.title").value("앉아 기초"))
+				.andExpect(jsonPath("$.posts[0].media[0].type").value("IMAGE"))
+				.andExpect(jsonPath("$.posts[0].media[0].url")
+						.value("https://media.meongcoach.com/images/community-post/7/photo.jpg"))
+				.andExpect(jsonPath("$.posts[0].media[1].type").value("VIDEO"))
+				.andExpect(jsonPath("$.posts[0].media[1].url")
+						.value("https://media.meongcoach.com/videos/community-post/7/clip.mp4"))
 				.andExpect(jsonPath("$.posts[0].createdAt").value("2026-10-19T10:30:00"))
 				.andExpect(jsonPath("$.posts[1].postId").value(29))
 				.andExpect(jsonPath("$.posts[1].mention").value(nullValue()))
+				.andExpect(jsonPath("$.posts[1].media").isEmpty())
 				.andExpect(jsonPath("$.nextCursor").value(29))
 				.andDo(document("community/post-list",
 						queryParameters(
@@ -125,6 +137,9 @@ class CommunityControllerTest {
 								fieldWithPath("posts[].mention.targetType").description("멘션 대상 종류. 현재 LESSON(레슨)만 있다"),
 								fieldWithPath("posts[].mention.targetId").description("멘션 대상 ID"),
 								fieldWithPath("posts[].mention.title").description("멘션 대상 제목"),
+								fieldWithPath("posts[].media[]").description("게시글 사진·영상 목록. 배열 순서가 표시 순서이고, 없으면 빈 배열"),
+								fieldWithPath("posts[].media[].type").description("미디어 종류. IMAGE(사진), VIDEO(영상)"),
+								fieldWithPath("posts[].media[].url").description("미디어 공개 URL"),
 								fieldWithPath("posts[].createdAt").description("게시글 작성 시각(ISO-8601, 초 단위)"),
 								fieldWithPath("nextCursor").optional()
 										.description("다음 페이지 요청에 cursor로 보낼 값. 마지막 페이지면 null")

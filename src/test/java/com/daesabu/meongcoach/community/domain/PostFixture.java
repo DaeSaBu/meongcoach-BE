@@ -14,7 +14,12 @@ public final class PostFixture {
 	}
 
 	public static Post create(Long id, Long userId, String content, MentionCommand mention, LocalDateTime createdAt) {
-		Post post = Post.register(userId, new PostRegisterCommand(content, mention, List.of()));
+		return create(id, userId, content, mention, List.of(), createdAt);
+	}
+
+	public static Post create(Long id, Long userId, String content, MentionCommand mention,
+	                          List<PostMediaCommand> media, LocalDateTime createdAt) {
+		Post post = Post.register(userId, new PostRegisterCommand(content, mention, media));
 		ReflectionTestUtils.setField(post, "id", id);
 		ReflectionTestUtils.setField(post, "createdAt", createdAt);
 		return post;
