@@ -40,13 +40,13 @@ media는 소비 모듈의 이름이나 용도를 모릅니다. 용도별 규칙�
 
 | 경로 범위 | 종류·공개 | 영상 상한 | 정의 위치 | 사용처 |
 |---|---|---|---|---|
-| `user-profile` | 이미지·공개 | — | `onboarding/domain/OnboardingImageTarget` | 온보딩 발급·완료 검증 |
-| `dog-profile` | 이미지·공개 | — | `dog/domain/shared/DogProfileImage` | 온보딩 발급, 강아지 등록·수정 검증 |
+| `user-profile` | 이미지·공개 | — | `user/domain/UserProfileImage` | 사용자 프로필 이미지 발급, 온보딩 완료 검증 |
+| `dog-profile` | 이미지·공개 | — | `dog/domain/DogProfileImage` | 강아지 프로필 이미지 발급, 강아지 등록·수정 검증 |
 | `community-post` | 이미지·영상·공개 | 512MiB | `community/domain/PostMediaType` | 게시글 미디어 발급 |
 | `training` | 영상·비공개 | 50MiB | `ai/domain/AiVideo` | AI 분석 영상 발급·다운로드 |
 | `graduation` + 하위 경로 `{topicId}` | 영상·비공개 | 512MiB | `graduation/domain/GraduationVideo` | 실습 인증 발급·제출 검증·다운로드 |
 
-- 온보딩은 클라이언트가 보낸 target(`USER_PROFILE`·`DOG_PROFILE`)을 직접 범위로 바꿉니다. 클라이언트가 범위를 고를 수 없게 하려는 것이므로, **target 문자열을 media나 범위로 그대로 흘려보내지 않습니다.**
+- 범위는 그 이미지를 저장하는 모듈 안에 두고 밖에 노출하지 않습니다. 온보딩은 클라이언트가 보낸 target(`USER_PROFILE`·`DOG_PROFILE`)에 따라 user·dog의 발급 API(`UserProfileImageUploadUrlIssuer`·`DogProfileImageUploadUrlIssuer`)를 고르기만 합니다. 클라이언트가 범위를 고를 수 없게 하려는 것이므로, **target 문자열을 media나 범위로 그대로 흘려보내지 않습니다.**
 - 크기 위반은 어느 모듈에서 발급하든 `MEDIA_VIDEO_FILE_SIZE_EXCEEDED`·`MEDIA_INVALID_VIDEO_FILE_SIZE`로 내려갑니다. 앱이 이 코드로 안내 문구를 고르므로, 소비 모듈은 상한 값만 정하고 검증은 media에 넘깁니다. 자기 에러 코드로 직접 검증하면 앱 분기가 깨집니다.
 - 사진은 크기 상한이 없어 Content-Type만 서명합니다. 상한이 있는 요청만 Content-Length를 서명에 넣고, 이때 앱은 chunked 전송이 아니라 길이를 아는 body로 PUT해야 합니다.
 
