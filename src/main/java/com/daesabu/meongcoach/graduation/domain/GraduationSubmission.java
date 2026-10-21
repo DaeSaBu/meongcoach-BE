@@ -78,8 +78,8 @@ public class GraduationSubmission extends BaseTimeEntity {
 
 	public void replaceVideo(TopicGraduation graduation) {
 		state(status == GraduationSubmissionStatus.SUBMITTED, "판정 전 제출의 영상만 바꿀 수 있다");
-		state(graduationId.equals(graduation.getId()), "같은 수료의 기록만 바꿀 수 있다");
-		state(attemptNo == graduation.getAttemptNo(), "같은 차수의 기록만 바꿀 수 있다");
+		isTrue(graduationId.equals(graduation.getId()), "같은 수료의 기록만 바꿀 수 있다");
+		isTrue(attemptNo == graduation.getAttemptNo(), "같은 차수의 기록만 바꿀 수 있다");
 		this.videoObjectKey = requireNonNull(graduation.getVideoObjectKey());
 		this.submittedAt = requireNonNull(graduation.getSubmittedAt());
 	}
