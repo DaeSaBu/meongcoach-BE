@@ -288,8 +288,19 @@ class OnboardingControllerTest {
 	}
 
 	@Test
-	void 닉네임이_50자를_넘으면_검증에_실패한다() throws Exception {
-		String request = COMPLETE_REQUEST.replace("멍멍이집사", "가".repeat(51));
+	void 닉네임이_12자이면_온보딩을_완료할_수_있다() throws Exception {
+		String request = COMPLETE_REQUEST.replace("멍멍이집사", "가".repeat(12));
+
+		mockMvc.perform(post("/api/onboarding")
+						.principal(() -> "1")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(request))
+				.andExpect(status().isCreated());
+	}
+
+	@Test
+	void 닉네임이_12자를_넘으면_검증에_실패한다() throws Exception {
+		String request = COMPLETE_REQUEST.replace("멍멍이집사", "가".repeat(13));
 
 		assertValidationFails(request, "nickname");
 	}
@@ -346,9 +357,23 @@ class OnboardingControllerTest {
 	}
 
 	@Test
-	void 강아지_이름이_50자를_넘으면_검증에_실패한다() throws Exception {
-		String request = COMPLETE_REQUEST.replace("\"name\": \"초코\"",
-				"\"name\": \"" + "가".repeat(51) + "\"");
+	void 강아지_이름이_12자이면_온보딩을_완료할_수_있다() throws Exception {
+		String request = COMPLETE_REQUEST.replace(
+				"\"name\": \"초코\"",
+				"\"name\": \"" + "가".repeat(12) + "\"");
+
+		mockMvc.perform(post("/api/onboarding")
+						.principal(() -> "1")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(request))
+				.andExpect(status().isCreated());
+	}
+
+	@Test
+	void 강아지_이름이_12자를_넘으면_검증에_실패한다() throws Exception {
+		String request = COMPLETE_REQUEST.replace(
+				"\"name\": \"초코\"",
+				"\"name\": \"" + "가".repeat(13) + "\"");
 
 		assertValidationFails(request, "dogs[0].name");
 	}
