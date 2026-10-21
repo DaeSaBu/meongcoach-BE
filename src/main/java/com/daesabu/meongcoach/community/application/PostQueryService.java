@@ -13,13 +13,11 @@ import com.daesabu.meongcoach.community.domain.MentionTargetType;
 import com.daesabu.meongcoach.community.domain.Post;
 import com.daesabu.meongcoach.community.domain.PostMention;
 import com.daesabu.meongcoach.community.domain.exception.PostNotFoundException;
-import com.daesabu.meongcoach.user.application.provided.UserFinder;
 import com.daesabu.meongcoach.user.application.provided.UserProfileSummaryResult;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Slice;
@@ -35,7 +33,7 @@ public class PostQueryService implements PostFinder {
 
 	private final PostRepository postRepository;
 	private final PostQueryRepository postQueryRepository;
-	private final UserFinder userFinder;
+	private final AuthorProfiles authorProfiles;
 	private final MentionTargetReaders mentionTargetReaders;
 
 	@Override
@@ -85,8 +83,7 @@ public class PostQueryService implements PostFinder {
 		Set<Long> userIds = posts.stream()
 				.map(Post::getUserId)
 				.collect(Collectors.toSet());
-		return userFinder.findProfileSummaries(userIds).stream()
-				.collect(Collectors.toMap(UserProfileSummaryResult::userId, Function.identity()));
+		return authorProfiles.findByUserIds(userIds);
 	}
 
 	private Map<MentionTargetType, Map<Long, MentionTargetResult>> findMentionTargets(List<Post> posts) {
