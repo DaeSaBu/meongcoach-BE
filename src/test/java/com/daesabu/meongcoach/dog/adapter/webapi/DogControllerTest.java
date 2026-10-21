@@ -128,7 +128,7 @@ class DogControllerTest {
 				.andExpect(jsonPath("$.personalities[1].code").value("FRIENDLY"))
 				.andDo(document("dog/register",
 						requestFields(
-								fieldWithPath("name").description("필수 입력. 강아지 이름(최대 50자)"),
+								fieldWithPath("name").description("필수 입력. 강아지 이름(최대 12자)"),
 								fieldWithPath("breed").description(
 										"필수 입력. 견종 코드(온보딩 메타데이터 breeds의 code). 목록에 없는 견종은 견종 이름을 직접 입력(최대 30자)"),
 								fieldWithPath("sex").description("필수 입력. 성별(MALE, FEMALE)"),
@@ -587,7 +587,7 @@ class DogControllerTest {
 								parameterWithName("dogId").description("수정할 강아지 ID")
 						),
 						requestFields(
-								fieldWithPath("name").description("필수 입력. 강아지 이름(최대 50자)"),
+								fieldWithPath("name").description("필수 입력. 강아지 이름(최대 12자)"),
 								fieldWithPath("breed").description(
 										"필수 입력. 견종 코드(온보딩 메타데이터 breeds의 code). 목록에 없는 견종은 견종 이름을 직접 입력(최대 30자)"),
 								fieldWithPath("sex").description("필수 입력. 성별(MALE, FEMALE)"),

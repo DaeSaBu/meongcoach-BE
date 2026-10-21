@@ -15,7 +15,7 @@ import java.util.Set;
  * 견종·성별·성격 코드는 온보딩과 같은 경로(DogRegisterService)에서 도메인 enum으로 변환하며, 잘못된 코드는 도메인 예외로 400이 된다.
  */
 public record DogRegisterRequest(
-		@NotBlank @Size(max = 50) String name,
+		@NotBlank @Size(max = 12) String name,
 		@NotBlank @Size(max = 30) String breed,
 		@NotBlank String sex,
 		@Past LocalDate birthDate,
