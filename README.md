@@ -128,8 +128,10 @@ AI 분석은 수십 초가 걸리므로 요청-응답이 아니라 S3 업로드 
 
 #### training — 훈련 콘텐츠와 사용자별 진행
 
-콘텐츠 구성·순서·이용권 요구 조건과 사용자별 Topic 선택·훈련 이력을 관리합니다.
-공용 콘텐츠와 사용자별 레슨 진행은 별도 애그리거트로 두며 진행 도메인이 완료 상태를 계산합니다.
+- **책임**: 카테고리·토픽·커리큘럼·레슨·카드로 구성된 훈련 카탈로그, 사용자의 토픽 선택과 레슨별 완료 횟수, 이 진행으로 계산하는 커리큘럼·토픽 완료 판단
+- **역할**: `TrainingCategoryFinder`, `TopicFinder`, `TopicSelector`, `CurriculumFinder`, `LessonFinder`, `LessonCompleter`, `TopicCompletionChecker`
+- **협력**: 카테고리는 열람에 필요한 이용권 종류를 `entitlement`의 `EntitlementType`으로 표현하고, 유료 콘텐츠를 조회·완료할 때 `entitlement`의 `EntitlementChecker`로 이용권을 확인합니다. `graduation`이 토픽 완료 판단과 토픽 조회에, `ai`·`onboarding`이 토픽 목록 조회에, `community`가 레슨 멘션 조회에 사용합니다.
+
 애그리거트와 완료 조건은 [docs/training.md](docs/training.md)에 있습니다.
 
 #### ai — AI 행동 분석
