@@ -17,11 +17,15 @@ import static org.springframework.restdocs.request.RequestDocumentation.queryPar
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.daesabu.meongcoach.community.application.provided.CommentFinder;
 import com.daesabu.meongcoach.community.application.provided.CommentRegister;
 import com.daesabu.meongcoach.community.application.provided.PostFinder;
 import com.daesabu.meongcoach.community.application.provided.PostMediaUploadUrlIssuer;
 import com.daesabu.meongcoach.community.application.provided.PostRegister;
+import com.daesabu.meongcoach.community.application.provided.dto.CommentListRequest;
+import com.daesabu.meongcoach.community.application.provided.dto.CommentListResult;
 import com.daesabu.meongcoach.community.application.provided.dto.CommentRegisterRequest;
+import com.daesabu.meongcoach.community.application.provided.dto.CommentResult;
 import com.daesabu.meongcoach.community.application.provided.dto.MentionRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.MentionTargetResult;
 import com.daesabu.meongcoach.community.application.provided.dto.PostListRequest;
@@ -72,6 +76,9 @@ class CommunityControllerTest {
 
 	@MockitoBean
 	private CommentRegister commentRegister;
+
+	@MockitoBean
+	private CommentFinder commentFinder;
 
 	@MockitoBean
 	private PostMediaUploadUrlIssuer postMediaUploadUrlIssuer;
@@ -538,6 +545,101 @@ class CommunityControllerTest {
 				.andExpect(jsonPath("$.errors[0].field").value("parentId"));
 
 		then(commentRegister).shouldHaveNoInteractions();
+	}
+
+	@Test
+	void 댓글_목록을_다음_커서와_함께_반환한다() throws Exception {
+		Post post = PostFixture.create(30L, 7L, "이 레슨 따라해봤어요", LocalDateTime.of(2026, 10, 19, 10, 30, 0));
+		CommentResult withProfile = new CommentResult(
+				CommentFixture.create(100L, post, 7L, "저희 강아지도 성공했어요!", LocalDateTime.of(2026, 10, 19, 11, 0, 0)),
+				new UserProfileSummaryResult(7L, "멍멍이집사", "https://cdn.example.com/profile.png"));
+		CommentResult withoutProfile = new CommentResult(
+				CommentFixture.create(101L, post, 8L, "축하해요!", LocalDateTime.of(2026, 10, 19, 12, 0, 0)), null);
+		given(commentFinder.findComments(30L, new CommentListRequest(99L, 2)))
+				.willReturn(new CommentListResult(List.of(withProfile, withoutProfile), 101L));
+
+		mockMvc.perform(get("/api/community/posts/{postId}/comments", 30L)
+						.param("cursor", "99")
+						.param("size", "2")
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.comments[0].commentId").value(100))
+				.andExpect(jsonPath("$.comments[0].content").value("저희 강아지도 성공했어요!"))
+				.andExpect(jsonPath("$.comments[0].author.userId").value(7))
+				.andExpect(jsonPath("$.comments[0].author.nickname").value("멍멍이집사"))
+				.andExpect(jsonPath("$.comments[0].createdAt").value("2026-10-19T11:00:00"))
+				.andExpect(jsonPath("$.comments[1].commentId").value(101))
+				.andExpect(jsonPath("$.comments[1].author").value(nullValue()))
+				.andExpect(jsonPath("$.nextCursor").value(101))
+				.andDo(document("community/comment-list",
+						pathParameters(parameterWithName("postId").description("댓글을 조회할 게시글 ID")),
+						queryParameters(
+								parameterWithName("cursor").optional()
+										.description("이전 응답의 nextCursor. 첫 페이지는 생략하며, 이 ID보다 큰 댓글부터 조회한다"),
+								parameterWithName("size").optional().description("한 번에 조회할 댓글 수. 1~50, 기본 20")
+						),
+						responseFields(
+								fieldWithPath("comments[]")
+										.description("루트 댓글 목록. 오래된 순(댓글 ID 오름차순). 답글과 삭제된 댓글은 담기지 않는다"),
+								fieldWithPath("comments[].commentId").description("댓글 ID"),
+								fieldWithPath("comments[].content").description("댓글 본문"),
+								fieldWithPath("comments[].author").optional()
+										.description("작성자 프로필 요약. 작성자 프로필이 없으면 null"),
+								fieldWithPath("comments[].author.userId").description("작성자 회원 ID"),
+								fieldWithPath("comments[].author.nickname").description("작성자 닉네임"),
+								fieldWithPath("comments[].author.profileImageUrl").description("작성자 프로필 이미지 URL"),
+								fieldWithPath("comments[].createdAt").description("댓글 작성 시각(ISO-8601, 초 단위)"),
+								fieldWithPath("nextCursor").optional()
+										.description("다음 페이지 요청에 cursor로 보낼 값. 마지막 페이지면 null")
+						)
+				));
+	}
+
+	@Test
+	void 댓글을_조회할_게시글이_없으면_404를_반환한다() throws Exception {
+		given(commentFinder.findComments(eq(999L), any(CommentListRequest.class)))
+				.willThrow(new PostNotFoundException(999L));
+
+		mockMvc.perform(get("/api/community/posts/{postId}/comments", 999L)
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.code").value("COMMUNITY_POST_NOT_FOUND"))
+				.andDo(document("community/comment-list-error",
+						responseFields(
+								fieldWithPath("title").description("HTTP 상태 이름"),
+								fieldWithPath("status").description("HTTP 상태 코드"),
+								fieldWithPath("detail").description("사람이 읽을 수 있는 에러 설명"),
+								fieldWithPath("instance").description("에러가 발생한 요청 경로"),
+								fieldWithPath("code").description("클라이언트 분기용 에러 코드"),
+								fieldWithPath("timestamp").description("에러 발생 시각(UTC)")
+						)
+				));
+	}
+
+	@Test
+	void 댓글_목록의_커서와_size를_생략하면_첫_페이지를_기본_크기로_조회한다() throws Exception {
+		given(commentFinder.findComments(eq(30L), any(CommentListRequest.class)))
+				.willReturn(new CommentListResult(List.of(), null));
+
+		mockMvc.perform(get("/api/community/posts/{postId}/comments", 30L).principal(CURRENT_USER))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.comments").isEmpty())
+				.andExpect(jsonPath("$.nextCursor").value(nullValue()));
+
+		then(commentFinder).should().findComments(30L, new CommentListRequest(null, CommentListRequest.DEFAULT_SIZE));
+	}
+
+	@Test
+	void 댓글_목록의_size가_허용_범위를_벗어나면_400을_반환한다() throws Exception {
+		mockMvc.perform(get("/api/community/posts/{postId}/comments", 30L)
+						.param("size", "51")
+						.principal(CURRENT_USER))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.errors[0].field").value("size"));
+
+		then(commentFinder).shouldHaveNoInteractions();
 	}
 
 	@Test
