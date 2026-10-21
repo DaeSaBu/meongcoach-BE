@@ -123,6 +123,8 @@ cp build/spring-modulith-docs/components.svg docs/images/module-dependencies.svg
 
 ## 실습 인증 동시 수정
 
-`TopicGraduation`은 `@Version`으로 동시 수정을 감지합니다. 재제출은 일반 조회로 읽고, 수료 행을 먼저 flush한 뒤 제출 기록을 저장합니다. 다른 트랜잭션이 먼저 수정했으면 제출 전체를 롤백하며 전역 핸들러가 `409 CONFLICT`로 응답합니다. 첫 제출의 중복 생성은 회원·토픽 유니크 제약으로 막고 `GRADUATION_SUBMISSION_CONFLICT`로 응답합니다.
+`GraduationSubmission` 하나가 회원·토픽과 판정 상태를 보관하며, 회원·토픽별 최대 제출 ID가 현재 상태입니다. 검수 대기 중에는 URL 발급과 제출을 거절합니다. 보완 요청 뒤에는 이전 제출을 보존하고 새 제출을 생성합니다.
 
-DB에 직접 판정을 적용하는 로컬 관리자 페이지도 승인·보완 요청 SQL에서 `version = version + 1`을 함께 수행해야 합니다. 직접 SQL은 JPA의 버전 증가를 거치지 않으므로 이 갱신을 생략하면 서버가 동시 판정을 감지할 수 없습니다. 버전 컬럼은 `V17__create_topic_graduations.sql`의 테이블 생성문에 포함하며 기본값은 0입니다.
+`SUBMITTED` 또는 `APPROVED` 제출만 대상으로 하는 회원·토픽 부분 유니크 인덱스가 동시 제출을 막습니다. 저장 충돌은 `GRADUATION_SUBMISSION_CONFLICT`로 응답합니다. 판정끼리의 충돌은 제출의 `@Version`으로 감지합니다. 관리자 SQL도 읽은 버전을 WHERE 조건에 넣고 버전을 증가시켜야 합니다.
+
+JSON 판정 계약과 V22 이관·관리자 연동은 [실습 인증 문서](graduation.md)를 참고합니다.
