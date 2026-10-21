@@ -23,7 +23,7 @@ public class PostRegisterService implements PostRegister {
 	@Override
 	@Transactional
 	public Post register(Long userId, PostRegisterRequest request) {
-		Post post = Post.write(userId, request.toCommand());
+		Post post = Post.register(userId, request.toCommand());
 
 		validateExistingMention(post);
 

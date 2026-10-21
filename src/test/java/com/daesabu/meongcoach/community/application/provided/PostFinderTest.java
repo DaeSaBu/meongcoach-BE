@@ -13,7 +13,8 @@ import com.daesabu.meongcoach.community.domain.MentionCommand;
 import com.daesabu.meongcoach.community.domain.MentionTargetType;
 import com.daesabu.meongcoach.community.domain.Post;
 import com.daesabu.meongcoach.community.domain.PostContent;
-import com.daesabu.meongcoach.community.domain.PostWriteCommand;
+import com.daesabu.meongcoach.community.domain.PostRegisterCommand;
+import com.daesabu.meongcoach.community.domain.exception.PostNotFoundException;
 import com.daesabu.meongcoach.support.ApplicationTest;
 import com.daesabu.meongcoach.training.application.required.CurriculumRepository;
 import com.daesabu.meongcoach.training.application.required.LessonRepository;
@@ -253,6 +254,23 @@ class PostFinderTest {
 		assertThat(result.nextCursor()).isNull();
 	}
 
+	@Test
+	void 게시글_하나를_id로_조회한다() {
+		Post saved = savePost(USER_ID, "본문");
+		flushAndClear();
+
+		Post found = postFinder.findPost(saved.getId());
+
+		assertThat(found.getId()).isEqualTo(saved.getId());
+		assertThat(found.getContent().value()).isEqualTo("본문");
+	}
+
+	@Test
+	void 조회한_게시글이_없으면_예외를_던진다() {
+		assertThatThrownBy(() -> postFinder.findPost(999_999L))
+				.isInstanceOf(PostNotFoundException.class);
+	}
+
 	private String contentOf(PostResult result) {
 		PostContent content = result.post().getContent();
 		return content.value();
@@ -265,12 +283,12 @@ class PostFinderTest {
 	}
 
 	private Post savePost(Long userId, String content) {
-		return postRepository.save(Post.write(userId, new PostWriteCommand(content, null)));
+		return postRepository.save(Post.register(userId, new PostRegisterCommand(content, null, List.of())));
 	}
 
 	private Post savePost(Long userId, String content, Long lessonId) {
 		MentionCommand mention = new MentionCommand(MentionTargetType.LESSON, lessonId);
-		return postRepository.save(Post.write(userId, new PostWriteCommand(content, mention)));
+		return postRepository.save(Post.register(userId, new PostRegisterCommand(content, mention, List.of())));
 	}
 
 	private User saveUserWithProfile(String nickname, String profileImageUrl) {
