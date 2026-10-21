@@ -151,7 +151,9 @@ class GraduationControllerTest {
 				VIDEO_KEY, SUBMITTED_AT, REVIEWED_AT, "끝까지 함께 시도했어요!");
 		given(graduationFinder.findGraduations(42L)).willReturn(List.of(new GraduationSummaryResult(
 				GraduationSubmissionFixture.submission(graduation, REVIEWED_AT, "끝까지 함께 시도했어요!"), TOPIC),
-				new GraduationSummaryResult(null, new TopicResult(8L, "학습 완료", "미제출"))));
+				new GraduationSummaryResult(GraduationSubmissionFixture.create(4L, 42L, 8L,
+						GraduationSubmissionStatus.NOT_SUBMITTED, null, null, null, null),
+						new TopicResult(8L, "학습 완료", "미제출"))));
 
 		mockMvc.perform(get("/api/training/graduations")
 						.principal(CURRENT_USER)
@@ -167,15 +169,15 @@ class GraduationControllerTest {
 				.andExpect(jsonPath("$.graduations[0].review.note").value("끝까지 함께 시도했어요!"))
 				.andExpect(jsonPath("$.graduations[1].topicId").value(8))
 				.andExpect(jsonPath("$.graduations[1].status").value("NOT_SUBMITTED"))
-				.andExpect(jsonPath("$.graduations[1].submissionId").isEmpty())
+				.andExpect(jsonPath("$.graduations[1].submissionId").value(4))
 				.andExpect(jsonPath("$.graduations[1].submittedAt").isEmpty())
 				.andExpect(jsonPath("$.graduations[1].reviewedAt").isEmpty())
 				.andExpect(jsonPath("$.graduations[1].review.note").isEmpty())
 				.andExpect(jsonPath("$.graduations[1].review.retakeInstructions").isEmpty())
 				.andDo(document("graduation/list",
 						responseFields(
-								fieldWithPath("graduations[]").description("제출 이력 또는 학습 완료가 있는 토픽. 최신 제출 순이며 미제출 토픽은 뒤에 교육 순서로 표시"),
-								fieldWithPath("graduations[].submissionId").optional().description("최신 제출 ID. 미제출이면 null"),
+								fieldWithPath("graduations[]").description("제출 이력 또는 학습 완료가 있는 토픽. 최신 제출 순이며 미제출 토픽은 뒤에 최신 이력 ID 순서로 표시"),
+								fieldWithPath("graduations[].submissionId").optional().description("최신 이력 ID"),
 								fieldWithPath("graduations[].topicId").description("토픽 ID"),
 								fieldWithPath("graduations[].topicTitle").description("토픽 제목"),
 								fieldWithPath("graduations[].status").description(
@@ -190,7 +192,7 @@ class GraduationControllerTest {
 	}
 
 	@Test
-	void 제출한_적이_없으면_graduation을_null로_반환한다() throws Exception {
+	void 학습_완료_이력이_없으면_graduation을_null로_반환한다() throws Exception {
 		given(graduationFinder.findGraduation(42L, TOPIC_ID)).willReturn(
 				GraduationDetailResult.notSubmitted(TOPIC, false));
 
@@ -198,6 +200,21 @@ class GraduationControllerTest {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.eligible").value(false))
 				.andExpect(jsonPath("$.graduation").isEmpty());
+	}
+
+	@Test
+	void 미제출_상세에는_이력_ID와_상태를_반환하고_영상은_없다() throws Exception {
+		GraduationSubmission initial = GraduationSubmissionFixture.create(4L, 42L, TOPIC_ID,
+				GraduationSubmissionStatus.NOT_SUBMITTED, null, null, null, null);
+		given(graduationFinder.findGraduation(42L, TOPIC_ID))
+				.willReturn(new GraduationDetailResult(TOPIC, true, initial, null));
+
+		mockMvc.perform(get("/api/training/topics/{topicId}/graduation", TOPIC_ID).principal(CURRENT_USER))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.graduation.submissionId").value(4))
+				.andExpect(jsonPath("$.graduation.status").value("NOT_SUBMITTED"))
+				.andExpect(jsonPath("$.graduation.videoUrl").isEmpty())
+				.andExpect(jsonPath("$.graduation.submittedAt").isEmpty());
 	}
 
 	@Test

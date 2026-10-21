@@ -63,11 +63,11 @@ class GraduationSubmissionMigrationTest {
 				+ "values (1, '교육', '', '', 1, now(), now())");
 		jdbc.update("insert into topics (id, training_category_id, title, description, detail, icon_url, sort_order, created_at, updated_at) "
 				+ "values (1, 1, '기본', '', '', '', 1, now(), now())");
-		jdbc.update("insert into curriculums (id, topic_id, title, thumbnail_url, description, sort_order, created_at, updated_at) "
-				+ "values (1, 1, '기본', '', '', 1, now(), now())");
+		jdbc.update("insert into curriculums (id, topic_id, title, thumbnail_url, description, sort_order, created_at, updated_at, is_premium) "
+				+ "values (1, 1, '기본', '', '', 1, now(), now(), false)");
 		jdbc.update("insert into lessons (id, curriculum_id, title, sort_order, estimated_minutes, created_at, updated_at) "
 				+ "values (1, 1, '앉아', 1, 5, now(), now()), (2, 1, '기다려', 2, 5, now(), now())");
-		jdbc.update("insert into user_lesson_progress (user_id, lesson_id, completed_count, created_at, updated_at) "
+		jdbc.update("insert into lesson_progress (user_id, lesson_id, completed_count, created_at, updated_at) "
 				+ "values (42, 1, 1, now(), now()), (42, 2, 1, now(), now()), "
 				+ "(43, 1, 1, now(), now()), (43, 2, 1, now(), now()), (44, 1, 1, now(), now())");
 
