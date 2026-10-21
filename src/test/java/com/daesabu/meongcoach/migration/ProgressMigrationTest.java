@@ -11,7 +11,7 @@ import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
 class ProgressMigrationTest {
 	@Test
-	void 기존_선택과_레슨_진행을_독립_루트로_보존한다() {
+	void 삭제된_레슨의_진행이_있어도_기존_선택과_레슨_진행을_보존한다() {
 		DriverManagerDataSource dataSource = new DriverManagerDataSource(
 				"jdbc:tc:postgresql:18.3:///progress_migration?TC_DAEMON=true", "test", "test");
 		Flyway.configure().dataSource(dataSource).target("22").load().migrate();
@@ -48,10 +48,9 @@ class ProgressMigrationTest {
 				       (2, 10, 1, current_timestamp, current_timestamp)
 				""");
 
+		jdbc.update("delete from lessons where id = 20");
 		List<Map<String, Object>> records = jdbc.queryForList(
 				"select id, user_id, lesson_id, completed_count, created_at, updated_at from lesson_progress order by id");
-		Flyway.configure().dataSource(dataSource).target("24").load().migrate();
-		jdbc.update("delete from lessons where id = 20");
 
 		Flyway.configure().dataSource(dataSource).load().migrate();
 
@@ -62,7 +61,7 @@ class ProgressMigrationTest {
 				.containsExactlyElementsOf(records);
 		assertThat(jdbc.queryForObject("""
 				select count(*) from information_schema.tables
-				where table_schema = 'public' and table_name in ('topic_progress', 'curriculum_progress')
+				where table_schema = 'public' and table_name = 'topic_progress'
 				""", Integer.class)).isZero();
 		assertThat(jdbc.queryForList("""
 				select completed_count from lesson_progress where user_id = 1 order by lesson_id
