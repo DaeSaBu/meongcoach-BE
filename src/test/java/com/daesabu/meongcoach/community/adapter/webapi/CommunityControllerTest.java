@@ -11,22 +11,28 @@ import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWit
 import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
+import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
 import static org.springframework.restdocs.request.RequestDocumentation.queryParameters;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.daesabu.meongcoach.community.application.provided.CommentRegister;
 import com.daesabu.meongcoach.community.application.provided.PostFinder;
 import com.daesabu.meongcoach.community.application.provided.PostRegister;
+import com.daesabu.meongcoach.community.application.provided.dto.CommentRegisterRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.MentionRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.MentionTargetResult;
 import com.daesabu.meongcoach.community.application.provided.dto.PostListRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.PostListResult;
 import com.daesabu.meongcoach.community.application.provided.dto.PostRegisterRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.PostResult;
+import com.daesabu.meongcoach.community.domain.CommentFixture;
 import com.daesabu.meongcoach.community.domain.MentionCommand;
 import com.daesabu.meongcoach.community.domain.MentionTargetType;
+import com.daesabu.meongcoach.community.domain.Post;
 import com.daesabu.meongcoach.community.domain.PostFixture;
 import com.daesabu.meongcoach.community.domain.exception.MentionTargetNotFoundException;
+import com.daesabu.meongcoach.community.domain.exception.PostNotFoundException;
 import com.daesabu.meongcoach.user.application.provided.UserProfileSummaryResult;
 import java.security.Principal;
 import java.time.LocalDateTime;
@@ -54,6 +60,9 @@ class CommunityControllerTest {
 
 	@MockitoBean
 	private PostRegister postRegister;
+
+	@MockitoBean
+	private CommentRegister commentRegister;
 
 	@Test
 	void 게시글_목록을_다음_커서와_함께_반환한다() throws Exception {
@@ -281,5 +290,100 @@ class CommunityControllerTest {
 				.andExpect(jsonPath("$.errors[0].field").value("mention.targetType"));
 
 		then(postRegister).shouldHaveNoInteractions();
+	}
+
+	@Test
+	void 댓글을_작성하면_201과_작성한_댓글을_반환한다() throws Exception {
+		Post post = PostFixture.create(30L, 7L, "이 레슨 따라해봤어요", LocalDateTime.of(2026, 10, 20, 10, 30, 0));
+		given(commentRegister.register(42L, 30L, new CommentRegisterRequest("저희 강아지도 성공했어요!", 100L)))
+				.willReturn(CommentFixture.create(101L, post, 42L, "저희 강아지도 성공했어요!",
+						LocalDateTime.of(2026, 10, 21, 9, 0, 0)));
+
+		mockMvc.perform(post("/api/community/posts/{postId}/comments", 30L)
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{"content": "저희 강아지도 성공했어요!", "parentId": 100}
+								"""))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.commentId").value(101))
+				.andExpect(jsonPath("$.postId").value(30))
+				.andExpect(jsonPath("$.userId").value(42))
+				.andExpect(jsonPath("$.content").value("저희 강아지도 성공했어요!"))
+				.andExpect(jsonPath("$.createdAt").value("2026-10-21T09:00:00"))
+				.andDo(document("community/comment-register",
+						pathParameters(parameterWithName("postId").description("댓글을 작성할 게시글 ID")),
+						requestFields(
+								fieldWithPath("content").description("필수 입력. 댓글 본문. 공백만으로 채울 수 없고 500자 이하"),
+								fieldWithPath("parentId").optional()
+										.description("답글을 달 댓글 ID(양의 정수). 답글은 그 댓글의 루트 댓글에 대한 답글로 작성된다. 댓글이면 생략한다")
+						),
+						responseFields(
+								fieldWithPath("commentId").description("작성한 댓글 ID"),
+								fieldWithPath("postId").description("게시글 ID"),
+								fieldWithPath("userId").description("작성자 회원 ID"),
+								fieldWithPath("content").description("댓글 본문"),
+								fieldWithPath("createdAt").description("댓글 작성 시각(ISO-8601, 초 단위)")
+						)
+				));
+	}
+
+	@Test
+	void parentId_없이_작성하면_루트_댓글로_작성을_요청한다() throws Exception {
+		Post post = PostFixture.create(30L, 7L, "이 레슨 따라해봤어요", LocalDateTime.of(2026, 10, 20, 10, 30, 0));
+		given(commentRegister.register(42L, 30L, new CommentRegisterRequest("축하해요!", null)))
+				.willReturn(CommentFixture.create(100L, post, 42L, "축하해요!", LocalDateTime.of(2026, 10, 21, 9, 0, 0)));
+
+		mockMvc.perform(post("/api/community/posts/{postId}/comments", 30L)
+						.principal(CURRENT_USER)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{"content": "축하해요!"}
+								"""))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.commentId").value(100));
+
+		then(commentRegister).should().register(42L, 30L, new CommentRegisterRequest("축하해요!", null));
+	}
+
+	@Test
+	void 댓글을_작성할_게시글이_없으면_404를_반환한다() throws Exception {
+		given(commentRegister.register(42L, 999L, new CommentRegisterRequest("축하해요!", null)))
+				.willThrow(new PostNotFoundException(999L));
+
+		mockMvc.perform(post("/api/community/posts/{postId}/comments", 999L)
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{"content": "축하해요!"}
+								"""))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.code").value("COMMUNITY_POST_NOT_FOUND"))
+				.andDo(document("community/comment-register-error",
+						responseFields(
+								fieldWithPath("title").description("HTTP 상태 이름"),
+								fieldWithPath("status").description("HTTP 상태 코드"),
+								fieldWithPath("detail").description("사람이 읽을 수 있는 에러 설명"),
+								fieldWithPath("instance").description("에러가 발생한 요청 경로"),
+								fieldWithPath("code").description("클라이언트 분기용 에러 코드"),
+								fieldWithPath("timestamp").description("에러 발생 시각(UTC)")
+						)
+				));
+	}
+
+	@Test
+	void parentId가_양수가_아니면_400을_반환한다() throws Exception {
+		mockMvc.perform(post("/api/community/posts/{postId}/comments", 30L)
+						.principal(CURRENT_USER)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{"content": "축하해요!", "parentId": 0}
+								"""))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.errors[0].field").value("parentId"));
+
+		then(commentRegister).shouldHaveNoInteractions();
 	}
 }

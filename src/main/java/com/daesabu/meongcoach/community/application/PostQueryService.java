@@ -8,9 +8,11 @@ import com.daesabu.meongcoach.community.application.provided.dto.PostListRequest
 import com.daesabu.meongcoach.community.application.provided.dto.PostListResult;
 import com.daesabu.meongcoach.community.application.provided.dto.PostResult;
 import com.daesabu.meongcoach.community.application.required.PostQueryRepository;
+import com.daesabu.meongcoach.community.application.required.PostRepository;
 import com.daesabu.meongcoach.community.domain.MentionTargetType;
 import com.daesabu.meongcoach.community.domain.Post;
 import com.daesabu.meongcoach.community.domain.PostMention;
+import com.daesabu.meongcoach.community.domain.exception.PostNotFoundException;
 import com.daesabu.meongcoach.user.application.provided.UserFinder;
 import com.daesabu.meongcoach.user.application.provided.UserProfileSummaryResult;
 import java.util.List;
@@ -31,6 +33,7 @@ import org.springframework.validation.annotation.Validated;
 @Transactional(readOnly = true)
 public class PostQueryService implements PostFinder {
 
+	private final PostRepository postRepository;
 	private final PostQueryRepository postQueryRepository;
 	private final UserFinder userFinder;
 	private final MentionTargetReaders mentionTargetReaders;
@@ -42,6 +45,12 @@ public class PostQueryService implements PostFinder {
 		List<PostResult> posts = compose(slice.getContent());
 		Long nextCursor = nextCursorOf(slice);
 		return new PostListResult(posts, nextCursor);
+	}
+
+	@Override
+	public Post findPost(Long postId) {
+		return postRepository.findById(postId)
+				.orElseThrow(() -> new PostNotFoundException(postId));
 	}
 
 	private Slice<Post> getSlice(PostListRequest request) {
