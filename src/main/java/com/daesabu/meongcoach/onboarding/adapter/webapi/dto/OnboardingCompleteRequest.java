@@ -17,7 +17,6 @@ import java.util.Set;
 
 public record OnboardingCompleteRequest(
 		@NotBlank @Size(max = 12) String nickname,
-		@NotBlank String mbti,
 		@Size(max = 512) String profileImageUrl,
 		@Size(max = 100) List<@NotNull @Positive Long> priorTrainingTopicIds,
 		@Size(max = 100) List<@NotNull @Positive Long> trainingGoalTopicIds,
@@ -26,7 +25,7 @@ public record OnboardingCompleteRequest(
 	public OnboardingCompleteInfo toInfo() {
 		return new OnboardingCompleteInfo(
 				nickname,
-				mbti,
+				null,
 				profileImageUrl,
 				Set.copyOf(emptyIfNull(priorTrainingTopicIds)),
 				Set.copyOf(emptyIfNull(trainingGoalTopicIds)),

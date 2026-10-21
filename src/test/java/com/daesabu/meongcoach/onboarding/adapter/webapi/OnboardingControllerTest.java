@@ -148,7 +148,6 @@ class OnboardingControllerTest {
 				.andDo(document("onboarding/complete",
 						requestFields(
 								fieldWithPath("nickname").description("사용자 닉네임. 필수 입력, 최대 12자"),
-								fieldWithPath("mbti").description("사용자 MBTI 코드. 필수 입력"),
 								fieldWithPath("profileImageUrl").description(
 										"사용자 프로필 이미지 공개 URL. 이미지 업로드 URL 발급 API의 "
 												+ "publicUrl. 최대 512자, 선택 입력").optional(),
