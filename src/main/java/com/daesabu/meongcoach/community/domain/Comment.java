@@ -40,7 +40,7 @@ public class Comment extends BaseEntity {
 
 	private LocalDateTime deletedAt;
 
-	public static Comment write(Post post, Long userId, String content) {
+	public static Comment register(Post post, Long userId, String content) {
 		Comment comment = new Comment();
 		comment.post = requireNonNull(post);
 		comment.userId = requireNonNull(userId);
