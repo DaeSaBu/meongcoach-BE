@@ -106,12 +106,12 @@ class GraduationControllerTest {
 								fieldWithPath("topicId").description("토픽 ID"),
 								fieldWithPath("topicTitle").description("토픽 제목"),
 								fieldWithPath("eligible").description("토픽의 모든 커리큘럼을 완료해 실습 인증을 할 수 있으면 true"),
-								fieldWithPath("graduation").optional().description("토픽 수료 현황. 제출한 적이 없으면 null"),
-								fieldWithPath("graduation.submissionId").description("토픽 수료 ID"),
+								fieldWithPath("graduation").optional().description("토픽 실습 인증 현황. 학습 완료 이력이 없으면 null"),
+								fieldWithPath("graduation.submissionId").description("최신 이력 ID"),
 								fieldWithPath("graduation.status").description(
-										"수료 상태. SUBMITTED(검수 대기), REVISION_REQUESTED(보완 요청), APPROVED(수료)"),
-								fieldWithPath("graduation.videoUrl").description("가장 최근 제출 영상의 1시간 유효 presigned URL"),
-								fieldWithPath("graduation.submittedAt").description("가장 최근 제출 시각(ISO-8601, UTC)"),
+										"수료 상태. NOT_SUBMITTED(학습 완료·미제출), SUBMITTED(검수 대기), REVISION_REQUESTED(보완 요청), APPROVED(수료)"),
+								fieldWithPath("graduation.videoUrl").optional().description("가장 최근 제출 영상의 1시간 유효 presigned URL"),
+								fieldWithPath("graduation.submittedAt").optional().description("가장 최근 제출 시각(ISO-8601, UTC)"),
 								fieldWithPath("graduation.reviewedAt").optional()
 										.description("가장 최근 제출의 판정 시각. 판정 전이면 null"),
 								fieldWithPath("graduation.review.note").optional().description("운영자 메모. 없으면 null"),
@@ -151,8 +151,7 @@ class GraduationControllerTest {
 				VIDEO_KEY, SUBMITTED_AT, REVIEWED_AT, "끝까지 함께 시도했어요!");
 		given(graduationFinder.findGraduations(42L)).willReturn(List.of(new GraduationSummaryResult(
 				GraduationSubmissionFixture.submission(graduation, REVIEWED_AT, "끝까지 함께 시도했어요!"), TOPIC),
-				new GraduationSummaryResult(GraduationSubmissionFixture.create(4L, 42L, 8L,
-						GraduationSubmissionStatus.NOT_SUBMITTED, null, null, null, null),
+				new GraduationSummaryResult(GraduationSubmissionFixture.notSubmitted(4L, 42L, 8L),
 						new TopicResult(8L, "학습 완료", "미제출"))));
 
 		mockMvc.perform(get("/api/training/graduations")
@@ -177,7 +176,7 @@ class GraduationControllerTest {
 				.andDo(document("graduation/list",
 						responseFields(
 								fieldWithPath("graduations[]").description("제출 이력 또는 학습 완료가 있는 토픽. 최신 제출 순이며 미제출 토픽은 뒤에 최신 이력 ID 순서로 표시"),
-								fieldWithPath("graduations[].submissionId").optional().description("최신 이력 ID"),
+								fieldWithPath("graduations[].submissionId").description("최신 이력 ID"),
 								fieldWithPath("graduations[].topicId").description("토픽 ID"),
 								fieldWithPath("graduations[].topicTitle").description("토픽 제목"),
 								fieldWithPath("graduations[].status").description(
@@ -204,8 +203,7 @@ class GraduationControllerTest {
 
 	@Test
 	void 미제출_상세에는_이력_ID와_상태를_반환하고_영상은_없다() throws Exception {
-		GraduationSubmission initial = GraduationSubmissionFixture.create(4L, 42L, TOPIC_ID,
-				GraduationSubmissionStatus.NOT_SUBMITTED, null, null, null, null);
+		GraduationSubmission initial = GraduationSubmissionFixture.notSubmitted(4L, 42L, TOPIC_ID);
 		given(graduationFinder.findGraduation(42L, TOPIC_ID))
 				.willReturn(new GraduationDetailResult(TOPIC, true, initial, null));
 
