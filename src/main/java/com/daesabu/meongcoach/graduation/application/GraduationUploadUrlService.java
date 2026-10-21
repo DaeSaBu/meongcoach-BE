@@ -23,11 +23,11 @@ public class GraduationUploadUrlService implements GraduationUploadUrlIssuer {
 
 	@Override
 	public VideoUploadUrlResult issue(Long userId, Long topicId, GraduationUploadUrlRequest request) {
-  graduationSubmissionRepository.findFirstByUserIdAndTopicIdOrderByIdDesc(userId, topicId)
-    .ifPresent(GraduationSubmission::validateCanSubmit);
-  if (!topicCompletionChecker.isCompleted(userId, topicId)) {
-   throw new TopicNotCompletedException(topicId);
-  }
+		graduationSubmissionRepository.findFirstByUserIdAndTopicIdOrderByIdDesc(userId, topicId)
+				.ifPresent(GraduationSubmission::validateCanSubmit);
+		if (!topicCompletionChecker.isCompleted(userId, topicId)) {
+			throw new TopicNotCompletedException(topicId);
+		}
 		return graduationVideoUploadUrlIssuer.issue(userId, topicId, request.contentType(), request.fileSizeBytes());
 	}
 }

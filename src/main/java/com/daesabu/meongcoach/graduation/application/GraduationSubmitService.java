@@ -23,21 +23,21 @@ public class GraduationSubmitService implements GraduationSubmitter {
 	private final TopicCompletionChecker topicCompletionChecker;
 	private final GraduationSubmissionRepository graduationSubmissionRepository;
 
- @Override
- @Transactional
- public GraduationSubmission submit(Long userId, Long topicId, GraduationSubmissionRequest request) {
-  GraduationVideoKey videoKey = GraduationVideoKey.of(request.objectKey(), userId, topicId);
-  graduationSubmissionRepository.findFirstByUserIdAndTopicIdOrderByIdDesc(userId, topicId)
-   .ifPresent(GraduationSubmission::validateCanSubmit);
-  if (!topicCompletionChecker.isCompleted(userId, topicId)) {
-   throw new TopicNotCompletedException(topicId);
-  }
-  GraduationSubmission submission = GraduationSubmission.create(
-   new GraduationSubmissionCommand(userId, topicId, videoKey.value(), Instant.now()));
-  try {
-   return graduationSubmissionRepository.saveAndFlush(submission);
-  } catch (DataIntegrityViolationException e) {
-   throw new GraduationSubmissionConflictException(topicId, e);
-  }
- }
+	@Override
+	@Transactional
+	public GraduationSubmission submit(Long userId, Long topicId, GraduationSubmissionRequest request) {
+		GraduationVideoKey videoKey = GraduationVideoKey.of(request.objectKey(), userId, topicId);
+		graduationSubmissionRepository.findFirstByUserIdAndTopicIdOrderByIdDesc(userId, topicId)
+				.ifPresent(GraduationSubmission::validateCanSubmit);
+		if (!topicCompletionChecker.isCompleted(userId, topicId)) {
+			throw new TopicNotCompletedException(topicId);
+		}
+		GraduationSubmission submission = GraduationSubmission.create(
+				new GraduationSubmissionCommand(userId, topicId, videoKey.value(), Instant.now()));
+		try {
+			return graduationSubmissionRepository.saveAndFlush(submission);
+		} catch (DataIntegrityViolationException e) {
+			throw new GraduationSubmissionConflictException(topicId, e);
+		}
+	}
 }

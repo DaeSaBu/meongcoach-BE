@@ -4,6 +4,8 @@ import static java.util.Objects.requireNonNull;
 import static org.springframework.util.Assert.isTrue;
 import static org.springframework.util.Assert.state;
 
+import com.daesabu.meongcoach.graduation.domain.exception.GraduationAlreadyApprovedException;
+import com.daesabu.meongcoach.graduation.domain.exception.GraduationReviewPendingException;
 import com.daesabu.meongcoach.shared.domain.BaseTimeEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -13,6 +15,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import java.time.Instant;
 import java.util.List;
 import lombok.AccessLevel;
@@ -31,13 +34,13 @@ public class GraduationSubmission extends BaseTimeEntity {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
- @jakarta.persistence.Version
- @Column(nullable = false)
- private Long version;
- @Column(nullable = false)
- private Long userId;
- @Column(nullable = false)
- private Long topicId;
+	@Version
+	@Column(nullable = false)
+	private Long version;
+	@Column(nullable = false)
+	private Long userId;
+	@Column(nullable = false)
+	private Long topicId;
 
 	@Column(nullable = false, length = 512)
 	private String videoObjectKey;
@@ -57,25 +60,26 @@ public class GraduationSubmission extends BaseTimeEntity {
 
 	@JdbcTypeCode(SqlTypes.JSON)
 	@Column(nullable = false, columnDefinition = "jsonb")
- private GraduationReview review = new GraduationReview(null, List.of());
+	private GraduationReview review = new GraduationReview(null, List.of());
 
- public static GraduationSubmission create(GraduationSubmissionCommand command) {
-  GraduationSubmission submission = new GraduationSubmission();
-  submission.userId = requireNonNull(command.userId());
-  submission.topicId = requireNonNull(command.topicId());
-  submission.videoObjectKey = requireNonNull(command.videoObjectKey());
-  submission.submittedAt = requireNonNull(command.submittedAt());
-  submission.status = GraduationSubmissionStatus.SUBMITTED;
-  return submission;
- }
- public void validateCanSubmit() {
-  if (status == GraduationSubmissionStatus.APPROVED) {
-   throw new com.daesabu.meongcoach.graduation.domain.exception.GraduationAlreadyApprovedException(topicId);
-  }
-  if (status == GraduationSubmissionStatus.SUBMITTED) {
-   throw new com.daesabu.meongcoach.graduation.domain.exception.GraduationReviewPendingException();
-  }
- }
+	public static GraduationSubmission create(GraduationSubmissionCommand command) {
+		GraduationSubmission submission = new GraduationSubmission();
+		submission.userId = requireNonNull(command.userId());
+		submission.topicId = requireNonNull(command.topicId());
+		submission.videoObjectKey = requireNonNull(command.videoObjectKey());
+		submission.submittedAt = requireNonNull(command.submittedAt());
+		submission.status = GraduationSubmissionStatus.SUBMITTED;
+		return submission;
+	}
+
+	public void validateCanSubmit() {
+		if (status == GraduationSubmissionStatus.APPROVED) {
+			throw new GraduationAlreadyApprovedException(topicId);
+		}
+		if (status == GraduationSubmissionStatus.SUBMITTED) {
+			throw new GraduationReviewPendingException();
+		}
+	}
 
 	public void approve(String note, Instant now) {
 		state(status == GraduationSubmissionStatus.SUBMITTED, "제출 상태에서만 판정할 수 있다");

@@ -31,7 +31,8 @@ public class GraduationQueryService implements GraduationFinder {
 	public GraduationDetailResult findGraduation(Long userId, Long topicId) {
 		TopicResult topic = topicFinder.findTopic(topicId);
 		boolean eligible = topicCompletionChecker.isCompleted(userId, topicId);
-		Optional<GraduationSubmission> graduation = graduationSubmissionRepository.findFirstByUserIdAndTopicIdOrderByIdDesc(userId, topicId);
+		Optional<GraduationSubmission> graduation = graduationSubmissionRepository.findFirstByUserIdAndTopicIdOrderByIdDesc(
+				userId, topicId);
 		if (graduation.isEmpty()) {
 			return GraduationDetailResult.notSubmitted(topic, eligible);
 		}
@@ -41,13 +42,15 @@ public class GraduationQueryService implements GraduationFinder {
 
 	@Override
 	public List<GraduationSummaryResult> findGraduations(Long userId) {
-  List<GraduationSubmission> submissions = graduationSubmissionRepository.findLatestByUserId(userId);
-  if (submissions.isEmpty()) { return List.of(); }
-  List<Long> topicIds = submissions.stream().map(GraduationSubmission::getTopicId).toList();
-  List<TopicResult> topics = topicFinder.findTopics(topicIds);
-  return submissions.stream().map(submission -> new GraduationSummaryResult(submission,
-   findTopic(topics, submission.getTopicId()))).toList();
- }
+		List<GraduationSubmission> submissions = graduationSubmissionRepository.findLatestByUserId(userId);
+		if (submissions.isEmpty()) {
+			return List.of();
+		}
+		List<Long> topicIds = submissions.stream().map(GraduationSubmission::getTopicId).toList();
+		List<TopicResult> topics = topicFinder.findTopics(topicIds);
+		return submissions.stream().map(submission -> new GraduationSummaryResult(submission,
+				findTopic(topics, submission.getTopicId()))).toList();
+	}
 
 	private TopicResult findTopic(List<TopicResult> topics, Long topicId) {
 		return topics.stream()
