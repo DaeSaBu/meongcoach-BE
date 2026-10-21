@@ -51,7 +51,7 @@ public class LessonProgress extends BaseEntity {
 		return completedCount;
 	}
 
-	public ProgressStatus status() {
-		return ProgressStatus.of(1, completedCount);
+	public boolean isCompleted() {
+		return completedCount > 0;
 	}
 }

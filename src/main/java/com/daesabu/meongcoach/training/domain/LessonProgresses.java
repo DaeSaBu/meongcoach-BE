@@ -22,8 +22,11 @@ public class LessonProgresses {
 	}
 
 	public int countCompletedIn(Collection<Long> lessonIds) {
-		return (int) lessonIds.stream().map(progresses::get).filter(Objects::nonNull)
-				.filter(progress -> progress.status() == ProgressStatus.COMPLETED).count();
+		return (int) lessonIds.stream()
+				.map(progresses::get)
+				.filter(Objects::nonNull)
+				.filter(LessonProgress::isCompleted)
+				.count();
 	}
 
 	public int completedCount(Long lessonId) {
