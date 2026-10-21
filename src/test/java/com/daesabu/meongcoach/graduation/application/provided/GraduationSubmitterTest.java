@@ -2,7 +2,6 @@ package com.daesabu.meongcoach.graduation.application.provided;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.groups.Tuple.tuple;
 import static org.mockito.BDDMockito.willReturn;
 
 import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationSubmissionRequest;
@@ -46,7 +45,7 @@ class GraduationSubmitterTest {
 	private TopicSeeder topicSeeder;
 
 	@Test
-	void 첫_제출은_수료_행을_만들고_기록을_남긴다() {
+	void 첫_영상은_미제출_이력을_보존하고_두번째_이력으로_저장한다() {
 		Topic topic = topicSeeder.completedTopic(USER_ID, "분리불안");
 
 		GraduationSubmission graduation = graduationSubmitter.submit(USER_ID, topic.getId(),
@@ -56,9 +55,8 @@ class GraduationSubmitterTest {
 		assertThat(graduation.getStatus()).isEqualTo(GraduationSubmissionStatus.SUBMITTED);
 		assertThat(graduation.getVideoObjectKey()).isEqualTo(key(topic, "first"));
 		assertThat(graduationSubmissionRepository.findAll())
-				.extracting(GraduationSubmission::getId,
-						GraduationSubmission::getVideoObjectKey)
-				.containsExactly(tuple(graduation.getId(), key(topic, "first")));
+				.extracting(GraduationSubmission::getStatus)
+				.containsExactly(GraduationSubmissionStatus.NOT_SUBMITTED, GraduationSubmissionStatus.SUBMITTED);
 	}
 
 	@Test
@@ -69,7 +67,7 @@ class GraduationSubmitterTest {
 		assertThatThrownBy(() -> graduationSubmitter.submit(USER_ID, topic.getId(), request(key(topic, "second"))))
 				.isInstanceOf(GraduationReviewPendingException.class);
 		assertThat(graduationSubmissionRepository.findAll()).extracting(GraduationSubmission::getVideoObjectKey)
-				.containsExactly(key(topic, "first"));
+				.containsExactly(null, key(topic, "first"));
 	}
 
 	@Test
@@ -92,7 +90,7 @@ class GraduationSubmitterTest {
 		assertThat(saved.getReviewedAt()).isNull();
 		assertThat(graduationSubmissionRepository.findAll())
 				.extracting(GraduationSubmission::getVideoObjectKey)
-				.containsExactlyInAnyOrder(key(topic, "first"), key(topic, "second"));
+				.containsExactlyInAnyOrder(null, key(topic, "first"), key(topic, "second"));
 		previous = graduationSubmissionRepository.findById(previous.getId()).orElseThrow();
 		assertThat(previous.getStatus()).isEqualTo(GraduationSubmissionStatus.REVISION_REQUESTED);
 		assertThat(previous.getReview().note()).isEqualTo("다시 찍어 주세요.");
@@ -145,7 +143,8 @@ class GraduationSubmitterTest {
 				request("videos/graduation/43/" + topic.getId() + "/x.mp4")))
 				.isInstanceOf(InvalidGraduationVideoKeyException.class);
 		assertThat(graduationSubmissionRepository.findFirstByUserIdAndTopicIdOrderByIdDesc(USER_ID,
-				topic.getId())).isEmpty();
+				topic.getId())).get().extracting(GraduationSubmission::getStatus)
+				.isEqualTo(GraduationSubmissionStatus.NOT_SUBMITTED);
 	}
 
 	@Test
@@ -156,7 +155,8 @@ class GraduationSubmitterTest {
 		assertThatThrownBy(() -> graduationSubmitter.submit(USER_ID, topic.getId(), request(otherTopicKey)))
 				.isInstanceOf(InvalidGraduationVideoKeyException.class);
 		assertThat(graduationSubmissionRepository.findFirstByUserIdAndTopicIdOrderByIdDesc(USER_ID,
-				topic.getId())).isEmpty();
+				topic.getId())).get().extracting(GraduationSubmission::getStatus)
+				.isEqualTo(GraduationSubmissionStatus.NOT_SUBMITTED);
 	}
 
 	@Test
