@@ -7,14 +7,13 @@ import com.daesabu.meongcoach.training.application.provided.dto.TopicResult;
 import java.util.List;
 
 public record OnboardingMetadataResponse(List<TopicResponse> topics, List<BreedResponse> breeds,
-                                         List<PersonalityResponse> personalities, List<String> mbtis) {
+                                         List<PersonalityResponse> personalities) {
 
 	public static OnboardingMetadataResponse from(OnboardingMetadataResult result) {
 		return new OnboardingMetadataResponse(
 				result.topics().stream().map(TopicResponse::from).toList(),
 				result.breeds().stream().map(BreedResponse::from).toList(),
-				result.personalities().stream().map(PersonalityResponse::from).toList(),
-				result.mbtis());
+				result.personalities().stream().map(PersonalityResponse::from).toList());
 	}
 
 	public record TopicResponse(Long id, String title) {

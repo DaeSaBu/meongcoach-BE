@@ -6,5 +6,5 @@ import com.daesabu.meongcoach.training.application.provided.dto.TopicResult;
 import java.util.List;
 
 public record OnboardingMetadataResult(List<TopicResult> topics, List<RegisteredBreed> breeds,
-                                       List<Personality> personalities, List<String> mbtis) {
+                                       List<Personality> personalities) {
 }

@@ -130,8 +130,7 @@ class OnboardingControllerTest {
 								fieldWithPath("breeds[].label").description("강아지 견종 한글 라벨"),
 								fieldWithPath("breeds[].aliases[]").description("견종 검색에 쓰는 한글·영문 별칭 목록. 라벨은 포함하지 않으며 대소문자·띄어쓰기만 다른 값은 하나만 둔다"),
 								fieldWithPath("personalities[].code").description("강아지 성격 코드"),
-								fieldWithPath("personalities[].label").description("강아지 성격 한글 라벨"),
-								fieldWithPath("mbtis[]").description("선택 가능한 사람 MBTI 코드 목록")
+								fieldWithPath("personalities[].label").description("강아지 성격 한글 라벨")
 						)
 				));
 	}
