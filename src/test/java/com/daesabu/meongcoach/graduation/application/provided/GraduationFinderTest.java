@@ -133,8 +133,35 @@ class GraduationFinderTest {
 	}
 
 	@Test
-	void 제출한_적이_없으면_빈_목록이다() {
+	void 제출과_완료한_학습이_없으면_빈_목록이다() {
 		assertThat(graduationFinder.findGraduations(USER_ID)).isEmpty();
+	}
+
+	@Test
+	void 학습_완료_미제출_토픽도_목록에_포함하고_미완료와_다른_회원의_완료는_제외한다() {
+		Topic completed = topicSeeder.completedTopic(USER_ID, "학습 완료");
+		topicSeeder.incompleteTopic("아직 학습 중");
+		topicSeeder.completedTopic(OTHER_USER_ID, "다른 회원 학습 완료");
+
+		List<GraduationSummaryResult> results = graduationFinder.findGraduations(USER_ID);
+
+		assertThat(results).extracting(result -> result.topic().id()).containsExactly(completed.getId());
+		assertThat(results.getFirst().submission()).isNull();
+		assertThat(jdbcTemplate.queryForObject("select count(*) from graduation_submissions", Integer.class)).isZero();
+	}
+
+	@Test
+	void 제출한_토픽은_중복되지_않고_미제출_완료_토픽은_뒤에_표시한다() {
+		Topic unsubmitted = topicSeeder.completedTopic(USER_ID, "미제출");
+		Topic submitted = topicSeeder.completedTopic(USER_ID, "제출");
+		submit(USER_ID, submitted, "video");
+
+		List<GraduationSummaryResult> results = graduationFinder.findGraduations(USER_ID);
+
+		assertThat(results).extracting(result -> result.topic().id())
+				.containsExactly(submitted.getId(), unsubmitted.getId());
+		assertThat(results.getFirst().submission()).isNotNull();
+		assertThat(results.getLast().submission()).isNull();
 	}
 
 	private void revise(Topic topic) {

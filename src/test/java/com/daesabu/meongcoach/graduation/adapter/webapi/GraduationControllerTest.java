@@ -150,7 +150,8 @@ class GraduationControllerTest {
 				GraduationSubmissionStatus.APPROVED,
 				VIDEO_KEY, SUBMITTED_AT, REVIEWED_AT, "끝까지 함께 시도했어요!");
 		given(graduationFinder.findGraduations(42L)).willReturn(List.of(new GraduationSummaryResult(
-				GraduationSubmissionFixture.submission(graduation, REVIEWED_AT, "끝까지 함께 시도했어요!"), TOPIC)));
+				GraduationSubmissionFixture.submission(graduation, REVIEWED_AT, "끝까지 함께 시도했어요!"), TOPIC),
+				new GraduationSummaryResult(null, new TopicResult(8L, "학습 완료", "미제출"))));
 
 		mockMvc.perform(get("/api/training/graduations")
 						.principal(CURRENT_USER)
@@ -164,15 +165,22 @@ class GraduationControllerTest {
 				.andExpect(jsonPath("$.graduations[0].submittedAt").value("2026-10-14T05:03:00Z"))
 				.andExpect(jsonPath("$.graduations[0].reviewedAt").value("2026-10-15T01:00:00Z"))
 				.andExpect(jsonPath("$.graduations[0].review.note").value("끝까지 함께 시도했어요!"))
+				.andExpect(jsonPath("$.graduations[1].topicId").value(8))
+				.andExpect(jsonPath("$.graduations[1].status").value("NOT_SUBMITTED"))
+				.andExpect(jsonPath("$.graduations[1].submissionId").isEmpty())
+				.andExpect(jsonPath("$.graduations[1].submittedAt").isEmpty())
+				.andExpect(jsonPath("$.graduations[1].reviewedAt").isEmpty())
+				.andExpect(jsonPath("$.graduations[1].review.note").isEmpty())
+				.andExpect(jsonPath("$.graduations[1].review.retakeInstructions").isEmpty())
 				.andDo(document("graduation/list",
 						responseFields(
-								fieldWithPath("graduations[]").description("제출한 적이 있는 토픽의 실습 인증. 가장 최근 제출 순"),
-								fieldWithPath("graduations[].submissionId").description("토픽 수료 ID"),
+								fieldWithPath("graduations[]").description("제출 이력 또는 학습 완료가 있는 토픽. 최신 제출 순이며 미제출 토픽은 뒤에 교육 순서로 표시"),
+								fieldWithPath("graduations[].submissionId").optional().description("최신 제출 ID. 미제출이면 null"),
 								fieldWithPath("graduations[].topicId").description("토픽 ID"),
 								fieldWithPath("graduations[].topicTitle").description("토픽 제목"),
 								fieldWithPath("graduations[].status").description(
-										"수료 상태. SUBMITTED(검수 대기), REVISION_REQUESTED(보완 요청), APPROVED(수료)"),
-								fieldWithPath("graduations[].submittedAt").description("가장 최근 제출 시각(ISO-8601, UTC)"),
+										"상태. NOT_SUBMITTED(학습 완료·미제출), SUBMITTED(검수 대기), REVISION_REQUESTED(보완 요청), APPROVED(수료)"),
+								fieldWithPath("graduations[].submittedAt").optional().description("가장 최근 제출 시각(ISO-8601, UTC). 미제출이면 null"),
 								fieldWithPath("graduations[].reviewedAt").optional()
 										.description("가장 최근 제출의 판정 시각. 판정 전이면 null"),
 								fieldWithPath("graduations[].review.note").optional().description("운영자 메모. 없으면 null"),
