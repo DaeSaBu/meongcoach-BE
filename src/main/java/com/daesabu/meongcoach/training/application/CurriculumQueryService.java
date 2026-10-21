@@ -14,7 +14,6 @@ import com.daesabu.meongcoach.training.domain.Topic;
 import com.daesabu.meongcoach.training.domain.TopicSelection;
 import com.daesabu.meongcoach.training.domain.exception.CurriculumNotFoundException;
 import com.daesabu.meongcoach.training.domain.exception.TopicNotConfiguredException;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,7 +45,7 @@ public class CurriculumQueryService implements CurriculumFinder {
 		Curriculum curriculum = curriculumRepository.findById(curriculumId)
 				.orElseThrow(() -> new CurriculumNotFoundException(curriculumId));
 		curriculum.findRequiredEntitlementType().ifPresent(type -> entitlementChecker.validateEntitlement(userId, type));
-		Map<Long, Integer> completed = lessonProgressFinder.findCompletedCounts(userId, curriculum.getLessonIds());
-		return new CurriculumDetailResult(curriculum, completed);
+		LessonProgresses progresses = lessonProgressFinder.findProgresses(userId, curriculum.getLessonIds());
+		return new CurriculumDetailResult(curriculum, progresses);
 	}
 }

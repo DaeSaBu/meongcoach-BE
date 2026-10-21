@@ -13,7 +13,6 @@ import com.daesabu.meongcoach.training.domain.LessonProgresses;
 import com.daesabu.meongcoach.training.domain.exception.LessonNotFoundException;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -57,9 +56,4 @@ public class LessonQueryService implements LessonFinder, LessonProgressFinder {
 		return LessonProgresses.from(progresses);
 	}
 
-	@Override
-	public Map<Long, Integer> findCompletedCounts(Long userId, Collection<Long> lessonIds) {
-		LessonProgresses progresses = findProgresses(userId, lessonIds);
-		return progresses.completedCounts(lessonIds);
-	}
 }

@@ -1,7 +1,6 @@
 package com.daesabu.meongcoach.training.domain;
 
 import java.util.Collection;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -27,14 +26,7 @@ public class LessonProgresses {
 				.filter(progress -> progress.status() == ProgressStatus.COMPLETED).count();
 	}
 
-	public Map<Long, Integer> completedCounts(Collection<Long> lessonIds) {
-		Map<Long, Integer> counts = new LinkedHashMap<>();
-		lessonIds.stream().distinct()
-				.forEach(lessonId -> counts.put(lessonId, completedCount(lessonId)));
-		return counts;
-	}
-
-	private int completedCount(Long lessonId) {
+	public int completedCount(Long lessonId) {
 		return Optional.ofNullable(progresses.get(lessonId))
 				.map(LessonProgress::getCompletedCount)
 				.orElse(0);
