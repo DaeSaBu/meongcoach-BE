@@ -1,14 +1,18 @@
 package com.daesabu.meongcoach.community.adapter.webapi;
 
+import com.daesabu.meongcoach.community.adapter.webapi.dto.CommentListResponse;
 import com.daesabu.meongcoach.community.adapter.webapi.dto.CommentRegisterResponse;
 import com.daesabu.meongcoach.community.adapter.webapi.dto.PostListResponse;
 import com.daesabu.meongcoach.community.adapter.webapi.dto.PostMediaUploadUrlResponse;
 import com.daesabu.meongcoach.community.adapter.webapi.dto.PostRegisterResponse;
 import com.daesabu.meongcoach.community.adapter.webapi.dto.PostResponse;
+import com.daesabu.meongcoach.community.application.provided.CommentFinder;
 import com.daesabu.meongcoach.community.application.provided.CommentRegister;
 import com.daesabu.meongcoach.community.application.provided.PostFinder;
 import com.daesabu.meongcoach.community.application.provided.PostMediaUploadUrlIssuer;
 import com.daesabu.meongcoach.community.application.provided.PostRegister;
+import com.daesabu.meongcoach.community.application.provided.dto.CommentListRequest;
+import com.daesabu.meongcoach.community.application.provided.dto.CommentListResult;
 import com.daesabu.meongcoach.community.application.provided.dto.CommentRegisterRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.PostListRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.PostListResult;
@@ -39,6 +43,7 @@ public class CommunityController {
 	private final PostFinder postFinder;
 	private final PostRegister postRegister;
 	private final CommentRegister commentRegister;
+	private final CommentFinder commentFinder;
 	private final PostMediaUploadUrlIssuer postMediaUploadUrlIssuer;
 
 	@GetMapping("/posts")
@@ -66,6 +71,13 @@ public class CommunityController {
 	                                                      @Valid @RequestBody PostMediaUploadUrlRequest request) {
 		MediaUploadUrlResult result = postMediaUploadUrlIssuer.issue(userId, request);
 		return PostMediaUploadUrlResponse.from(result);
+	}
+
+	@GetMapping("/posts/{postId}/comments")
+	public CommentListResponse findComments(@PathVariable Long postId,
+	                                        @Valid @ModelAttribute CommentListRequest request) {
+		CommentListResult result = commentFinder.findComments(postId, request);
+		return CommentListResponse.from(result);
 	}
 
 	@PostMapping("/posts/{postId}/comments")
