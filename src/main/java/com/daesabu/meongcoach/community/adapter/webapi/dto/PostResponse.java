@@ -4,12 +4,15 @@ import com.daesabu.meongcoach.community.application.provided.dto.MentionTargetRe
 import com.daesabu.meongcoach.community.application.provided.dto.PostResult;
 import com.daesabu.meongcoach.community.domain.MentionTargetType;
 import com.daesabu.meongcoach.community.domain.Post;
+import com.daesabu.meongcoach.community.domain.PostMedia;
+import com.daesabu.meongcoach.community.domain.PostMediaType;
 import com.daesabu.meongcoach.user.application.provided.UserProfileSummaryResult;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 public record PostResponse(Long postId, String content, AuthorResponse author, MentionResponse mention,
-		LocalDateTime createdAt) {
+		List<MediaResponse> media, LocalDateTime createdAt) {
 
 	public static PostResponse from(PostResult result) {
 		Post post = result.post();
@@ -19,7 +22,11 @@ public record PostResponse(Long postId, String content, AuthorResponse author, M
 		MentionResponse mention = Optional.ofNullable(result.mentionTarget())
 				.map(MentionResponse::from)
 				.orElse(null);
-		return new PostResponse(post.getId(), post.getContent().value(), author, mention, post.getCreatedAt());
+		List<MediaResponse> media = post.getMedia().stream()
+				.map(MediaResponse::from)
+				.toList();
+		return new PostResponse(post.getId(), post.getContent().value(), author, mention, media,
+				post.getCreatedAt());
 	}
 
 	public record AuthorResponse(Long userId, String nickname, String profileImageUrl) {
@@ -33,6 +40,13 @@ public record PostResponse(Long postId, String content, AuthorResponse author, M
 
 		public static MentionResponse from(MentionTargetResult result) {
 			return new MentionResponse(result.targetType(), result.targetId(), result.title());
+		}
+	}
+
+	public record MediaResponse(PostMediaType type, String url) {
+
+		public static MediaResponse from(PostMedia media) {
+			return new MediaResponse(media.getType(), media.getUrl());
 		}
 	}
 }
