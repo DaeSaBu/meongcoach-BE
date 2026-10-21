@@ -402,43 +402,6 @@ class CurriculumFinderTest {
 		assertThat(detail.curriculum().getId()).isEqualTo(sample.getId());
 	}
 
-	private TrainingCategory savePaidCategory(EntitlementType requiredEntitlementType) {
-		return trainingCategoryRepository.save(
-				TrainingCategoryFixture.create("퍼피 교육", 1, null, null, requiredEntitlementType));
-	}
-
-	private Curriculum savePremiumCurriculum(Topic topic, String title, int sortOrder) {
-		return curriculumRepository.save(CurriculumFixture.create(topic, title, sortOrder, null, null, true));
-	}
-
-	private void grant(Long userId, EntitlementType type) {
-		entitlementRepository.save(EntitlementFixture.create(userId, type, null));
-	}
-
-	private TrainingCategory saveCategory(String title, int sortOrder) {
-		return trainingCategoryRepository.save(TrainingCategoryFixture.create(title, sortOrder, null, null));
-	}
-
-	private Topic saveTopic(TrainingCategory category, String title, int sortOrder) {
-		return topicRepository.save(TopicFixture.create(category, title, sortOrder, null, null, null));
-	}
-
-	private Topic saveTopicWithCategory() {
-		return saveTopic(saveCategory("기본 교육", 1), "앉아", 1);
-	}
-
-	private Curriculum saveCurriculum(Topic topic, String title, int sortOrder) {
-		return curriculumRepository.save(CurriculumFixture.create(topic, title, sortOrder, null, null));
-	}
-
-	private Lesson saveLesson(Curriculum curriculum, String title, int sortOrder) {
-		return lessonRepository.save(LessonFixture.create(curriculum, title, sortOrder, 5));
-	}
-
-	private void flushAndClear() {
-		entityManager.flush();
-		entityManager.clear();
-	}
 	@Test
 	void 진행_기록이_없어도_모든_커리큘럼을_시작_전으로_조회한다() {
 		Topic topic = saveTopicWithCategory();
@@ -535,6 +498,44 @@ class CurriculumFinderTest {
 		flushAndClear();
 
 		assertThat(findCompletions(USER_ID, topic.getId())).isEmpty();
+	}
+
+	private TrainingCategory savePaidCategory(EntitlementType requiredEntitlementType) {
+		return trainingCategoryRepository.save(
+				TrainingCategoryFixture.create("퍼피 교육", 1, null, null, requiredEntitlementType));
+	}
+
+	private Curriculum savePremiumCurriculum(Topic topic, String title, int sortOrder) {
+		return curriculumRepository.save(CurriculumFixture.create(topic, title, sortOrder, null, null, true));
+	}
+
+	private void grant(Long userId, EntitlementType type) {
+		entitlementRepository.save(EntitlementFixture.create(userId, type, null));
+	}
+
+	private TrainingCategory saveCategory(String title, int sortOrder) {
+		return trainingCategoryRepository.save(TrainingCategoryFixture.create(title, sortOrder, null, null));
+	}
+
+	private Topic saveTopic(TrainingCategory category, String title, int sortOrder) {
+		return topicRepository.save(TopicFixture.create(category, title, sortOrder, null, null, null));
+	}
+
+	private Topic saveTopicWithCategory() {
+		return saveTopic(saveCategory("기본 교육", 1), "앉아", 1);
+	}
+
+	private Curriculum saveCurriculum(Topic topic, String title, int sortOrder) {
+		return curriculumRepository.save(CurriculumFixture.create(topic, title, sortOrder, null, null));
+	}
+
+	private Lesson saveLesson(Curriculum curriculum, String title, int sortOrder) {
+		return lessonRepository.save(LessonFixture.create(curriculum, title, sortOrder, 5));
+	}
+
+	private void flushAndClear() {
+		entityManager.flush();
+		entityManager.clear();
 	}
 
 	private void complete(Long userId, Lesson lesson, int count) {

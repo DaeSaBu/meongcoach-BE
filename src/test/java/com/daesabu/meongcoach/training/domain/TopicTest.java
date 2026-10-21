@@ -23,8 +23,6 @@ class TopicTest {
 		assertThat(topic.findRequiredEntitlementType()).isEmpty();
 	}
 
-
-
 	@Test
 	void 모든_커리큘럼의_레슨_ID를_모아_반환한다() {
 		Topic topic = topicIn(null);
@@ -37,16 +35,6 @@ class TopicTest {
 		assertThat(topic.getAllLessonIds()).containsExactly(1L, 2L);
 	}
 
-	private void attachLesson(Curriculum curriculum, Long lessonId) {
-		Lesson lesson = LessonFixture.create(curriculum, "레슨", 1, 5);
-		ReflectionTestUtils.setField(lesson, "id", lessonId);
-		ReflectionTestUtils.setField(curriculum, "lessons", List.of(lesson));
-	}
-
-	private Topic topicIn(EntitlementType requiredEntitlementType) {
-		TrainingCategory category = TrainingCategoryFixture.create("퍼피 교육", 1, null, null, requiredEntitlementType);
-		return TopicFixture.create(category, "앉아", 1, null, null, null);
-	}
 	@Test
 	void 전체_콘텐츠의_모든_커리큘럼을_완료해야_토픽이_완료된다() {
 		Topic topic = TopicFixture.create(10L);
@@ -87,6 +75,17 @@ class TopicTest {
 		assertThat(topic.isCompleted(progresses)).isTrue();
 		LessonFixture.create(curriculum, 1002L);
 		assertThat(topic.isCompleted(progresses)).isFalse();
+	}
+
+	private void attachLesson(Curriculum curriculum, Long lessonId) {
+		Lesson lesson = LessonFixture.create(curriculum, "레슨", 1, 5);
+		ReflectionTestUtils.setField(lesson, "id", lessonId);
+		ReflectionTestUtils.setField(curriculum, "lessons", List.of(lesson));
+	}
+
+	private Topic topicIn(EntitlementType requiredEntitlementType) {
+		TrainingCategory category = TrainingCategoryFixture.create("퍼피 교육", 1, null, null, requiredEntitlementType);
+		return TopicFixture.create(category, "앉아", 1, null, null, null);
 	}
 
 	private LessonProgresses progresses(Lesson... lessons) {
