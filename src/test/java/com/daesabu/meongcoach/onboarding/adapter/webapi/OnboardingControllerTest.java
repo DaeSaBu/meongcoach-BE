@@ -128,6 +128,7 @@ class OnboardingControllerTest {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(COMPLETE_REQUEST))
 				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.dogIds.length()").value(1))
 				.andExpect(jsonPath("$.dogIds[0]").value(1))
 				.andDo(document("onboarding/complete",
 						requestFields(
@@ -498,7 +499,7 @@ class OnboardingControllerTest {
 				throw new AlreadyOnboardedException();
 			}
 			lastInfo = info;
-			return List.of(1L, 2L);
+			return List.of(1L);
 		}
 	}
 }
