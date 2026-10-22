@@ -56,8 +56,6 @@ class OnboardingControllerTest {
 	private static final String COMPLETE_REQUEST = """
 			{
 				"nickname": "멍멍이집사",
-				"priorTrainingTopicIds": [1, 2],
-				"trainingGoalTopicIds": [2, 3],
 				"dogs": [
 					{
 						"name": "초코",
@@ -71,11 +69,9 @@ class OnboardingControllerTest {
 			}
 			""";
 
-	private static final String COMPLETE_REQUEST_WITH_NULL_ARRAYS = """
+	private static final String COMPLETE_REQUEST_WITH_REQUIRED_FIELDS = """
 			{
 				"nickname": "멍멍이집사",
-				"priorTrainingTopicIds": null,
-				"trainingGoalTopicIds": [],
 				"dogs": [
 					{
 						"name": "초코",
@@ -171,8 +167,8 @@ class OnboardingControllerTest {
 		assertThat(info.profileImageUrl()).isNull();
 		assertThat(info.dogs().getFirst().profileImageUrl())
 				.isEqualTo("https://images.test.meongcoach.com/images/dog-profile/1/b.jpg");
-		assertThat(info.priorTrainingTopicIds()).containsExactlyInAnyOrder(1L, 2L);
-		assertThat(info.trainingGoalTopicIds()).containsExactlyInAnyOrder(2L, 3L);
+		assertThat(info.priorTrainingTopicIds()).isEmpty();
+		assertThat(info.trainingGoalTopicIds()).isEmpty();
 		assertThat(info.dogs().getFirst().expectation()).isNull();
 	}
 
@@ -191,45 +187,12 @@ class OnboardingControllerTest {
 	}
 
 	@Test
-	void 교육_토픽_배열이_null_또는_빈_배열이면_선택_없음으로_처리한다() throws Exception {
+	void 필수_입력만으로_온보딩을_완료한다() throws Exception {
 		mockMvc.perform(post("/api/onboarding")
 						.principal(() -> "1")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content(COMPLETE_REQUEST_WITH_NULL_ARRAYS))
+						.content(COMPLETE_REQUEST_WITH_REQUIRED_FIELDS))
 				.andExpect(status().isCreated());
-
-		OnboardingCompleteInfo info = onboardingCompleter.lastInfo;
-		assertThat(info.priorTrainingTopicIds()).isEmpty();
-		assertThat(info.trainingGoalTopicIds()).isEmpty();
-		assertThat(info.dogs().getFirst().expectation()).isNull();
-	}
-
-	@Test
-	void 중복된_교육_토픽_ID는_한_번만_전달한다() throws Exception {
-		String request = COMPLETE_REQUEST.replace("\"priorTrainingTopicIds\": [1, 2]",
-				"\"priorTrainingTopicIds\": [1, 1, 2]");
-
-		mockMvc.perform(post("/api/onboarding")
-						.principal(() -> "1")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content(request))
-				.andExpect(status().isCreated());
-
-		assertThat(onboardingCompleter.lastInfo.priorTrainingTopicIds())
-				.containsExactlyInAnyOrder(1L, 2L);
-	}
-
-	@Test
-	void 교육_토픽_ID가_양수가_아니면_검증에_실패한다() throws Exception {
-		String request = COMPLETE_REQUEST.replace("\"priorTrainingTopicIds\": [1, 2]",
-				"\"priorTrainingTopicIds\": [0]");
-
-		mockMvc.perform(post("/api/onboarding")
-						.principal(() -> "1")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content(request))
-				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.errors[0].field").value("priorTrainingTopicIds[0]"));
 	}
 
 	@Test
@@ -242,7 +205,7 @@ class OnboardingControllerTest {
 				    "birthDate": "2024-03-01"
 				}
 				""";
-		String request = COMPLETE_REQUEST_WITH_NULL_ARRAYS.replace(
+		String request = COMPLETE_REQUEST_WITH_REQUIRED_FIELDS.replace(
 				"\"dogs\": [", "\"dogs\": [" + (dog + ", ").repeat(5));
 
 		assertValidationFails(request, "dogs");
@@ -296,22 +259,6 @@ class OnboardingControllerTest {
 		String request = COMPLETE_REQUEST.replace("멍멍이집사", "가".repeat(13));
 
 		assertValidationFails(request, "nickname");
-	}
-
-	@Test
-	void 교육_토픽_ID가_100개를_넘으면_검증에_실패한다() throws Exception {
-		String request = COMPLETE_REQUEST.replace("\"priorTrainingTopicIds\": [1, 2]",
-				"\"priorTrainingTopicIds\": [" + "1, ".repeat(100) + "1]");
-
-		assertValidationFails(request, "priorTrainingTopicIds");
-	}
-
-	@Test
-	void 목표_토픽_ID가_양수가_아니면_검증에_실패한다() throws Exception {
-		String request = COMPLETE_REQUEST.replace("\"trainingGoalTopicIds\": [2, 3]",
-				"\"trainingGoalTopicIds\": [0]");
-
-		assertValidationFails(request, "trainingGoalTopicIds[0]");
 	}
 
 	@Test
