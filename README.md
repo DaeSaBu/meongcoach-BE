@@ -83,7 +83,7 @@ AI 분석은 수십 초가 걸리므로 요청-응답이 아니라 S3 업로드 
 - 실용적인 타협이 두 가지 있습니다.
   - **리포지토리 포트는 Spring Data JPA가 직접 구현합니다.** `required/UserRepository` 같은 인터페이스가 곧 Spring Data 리포지토리이며, 별도 영속성 어댑터 클래스는 두지 않습니다.
   - **다른 모듈의 기능은 그 모듈의 `provided` 인터페이스를 직접 주입받아 씁니다.** 호출하는 모듈 쪽에 `required` 포트와 어댑터를 따로 두지 않습니다. 모듈 간 결합은 `provided` 인터페이스로 좁혀 두고, 분리가 필요해지는 시점에 해당 호출부만 원격 호출 어댑터로 바꾸는 것을 전제로 합니다.
-- 모듈은 필요한 계층만 갖습니다. 다른 모듈의 기능을 조합만 하는 `onboarding`에는 `domain`이 없고, 다른 모듈에서만 호출하는 `progress`·`media`에는 웹 API가 없습니다.
+- 모듈은 필요한 계층만 갖습니다. 다른 모듈의 기능을 조합만 하는 `onboarding`에는 `domain`이 없고, 다른 모듈에서만 호출하는 `media`에는 웹 API가 없습니다.
 
 ### 완화된 계층형 아키텍처
 
@@ -126,17 +126,13 @@ AI 분석은 수십 초가 걸리므로 요청-응답이 아니라 S3 업로드 
 - **역할**: `DogRegister`, `DogProfileFinder`, `DogProfileUpdater`, `DogProfileDeleter`, `BreedFinder`, `PersonalityFinder`. 견종(`Breed`)·성격(`Personality`)은 `domain/shared`로 노출합니다.
 - **협력**: 다른 모듈을 호출하지 않습니다. `onboarding`이 반려견 등록과 견종·성격 목록 조회에 사용합니다.
 
-#### training — 훈련 콘텐츠
+#### training — 훈련 콘텐츠와 사용자별 진행
 
-- **책임**: 카테고리·토픽·커리큘럼·레슨·카드로 구성된 훈련 카탈로그와 사용자의 토픽 선택
-- **역할**: `TrainingCategoryFinder`, `TopicFinder`, `TopicSelector`, `CurriculumFinder`, `LessonFinder`, `LessonCompleter`
-- **협력**: 학습 기록은 직접 갖지 않고 `progress`에 맡깁니다. 커리큘럼을 조회할 때 `progress`에서 완료한 레슨과 마지막 진입 토픽을 받아 함께 내려주고, 레슨을 완료하면 `progress`에 기록합니다. 카테고리는 열람에 필요한 이용권 종류를 `entitlement`의 `EntitlementType`으로 표현합니다.
+- **책임**: 카테고리·토픽·커리큘럼·레슨·카드로 구성된 훈련 카탈로그, 사용자의 토픽 선택과 레슨별 완료 횟수, 이 진행으로 계산하는 커리큘럼·토픽 완료 판단
+- **역할**: `TrainingCategoryFinder`, `TopicFinder`, `TopicSelector`, `CurriculumFinder`, `LessonFinder`, `LessonCompleter`, `TopicCompletionChecker`
+- **협력**: 카테고리는 열람에 필요한 이용권 종류를 `entitlement`의 `EntitlementType`으로 표현하고, 유료 콘텐츠를 조회·완료할 때 `entitlement`의 `EntitlementChecker`로 이용권을 확인합니다. `graduation`이 토픽 완료 판단과 토픽 조회에, `ai`·`onboarding`이 토픽 목록 조회에, `community`가 레슨 멘션 조회에 사용합니다.
 
-#### progress — 학습 진도
-
-- **책임**: 레슨 완료 횟수와 사용자가 마지막으로 진입한 토픽 기록
-- **역할**: `LessonProgressFinder`·`LessonProgressUpdater`, `TopicProgressFinder`·`TopicProgressUpdater`. 시그니처에는 JDK 타입만 씁니다.
-- **협력**: `training`만 사용하며, 웹 API 없이 `provided` 인터페이스로만 동작합니다.
+애그리거트와 완료 조건은 [docs/training.md](docs/training.md)에 있습니다.
 
 #### ai — AI 행동 분석
 
@@ -146,15 +142,15 @@ AI 분석은 수십 초가 걸리므로 요청-응답이 아니라 S3 업로드 
 
 #### media — 파일 저장소
 
-- **책임**: 이미지(R2)·영상(S3) presigned URL 발급, 객체 키 규칙과 소유권, 클라이언트가 보낸 이미지 URL이 우리 저장소 것인지 검증
-- **역할**: `ImageUploadUrlIssuer`, `VideoUploadUrlIssuer`, `VideoDownloadUrlIssuer`, `StoredImageUrlValidator`
-- **협력**: 다른 모듈을 호출하지 않고, `ai`·`onboarding`이 사용합니다. 저장소의 세부 사항을 이 모듈 안에 가둬 다른 모듈은 파일 업로드를 신경 쓰지 않습니다.
+- **책임**: 공개(R2)·비공개(S3) 스토리지의 presigned URL 발급, 객체 키 구조와 소유권, 클라이언트가 보낸 미디어 URL·객체 키가 본인이 올린 것인지 확인
+- **역할**: `MediaUploadUrlIssuer`, `MediaDownloadUrlIssuer`, `StoredMediaVerifier`
+- **협력**: 다른 모듈을 호출하지 않고, `ai`·`graduation`·`community`·`onboarding`·`dog`가 사용합니다. 경로 범위·크기 상한 같은 용도별 규칙은 각 모듈이 `MediaScope`로 정해 넘기고, media는 스토리지 세부 사항만 가둡니다.
 
 #### onboarding — 온보딩 조합
 
 - **책임**: 온보딩 화면에 필요한 데이터를 모으고, 보호자 프로필과 반려견 등록을 하나의 트랜잭션으로 완료
 - **역할**: `OnboardingMetadataFinder`, `OnboardingCompleter`, `OnboardingImageUploadUrlIssuer`
-- **협력**: 자체 도메인 없이 `user`(프로필·MBTI 목록), `dog`(반려견 등록·견종·성격 목록), `training`(토픽 목록), `media`(프로필 이미지 업로드·검증)를 조합합니다. 여러 모듈에 걸친 화면 흐름을 한 곳에 모아, 각 도메인 모듈이 서로를 알지 않아도 되게 합니다.
+- **협력**: 업로드 대상 매핑 외에는 자체 도메인 없이 `user`(프로필·MBTI 목록), `dog`(반려견 등록·견종·성격 목록), `training`(토픽 목록), `media`(프로필 이미지 업로드·검증)를 조합합니다. 여러 모듈에 걸친 화면 흐름을 한 곳에 모아, 각 도메인 모듈이 서로를 알지 않아도 되게 합니다.
 
 #### entitlement — 이용권
 
@@ -196,4 +192,5 @@ AI 분석은 수십 초가 걸리므로 요청-응답이 아니라 S3 업로드 
 | [docs/security.md](docs/security.md) | JWT 토큰 정책과 검증 체인, 필터 체인 |
 | [docs/error-handling.md](docs/error-handling.md) | Problem Details 에러 응답 형식 |
 | [docs/media.md](docs/media.md) | presigned URL 발급과 객체 키 소유권 규칙 |
+| [docs/training.md](docs/training.md) | 훈련 콘텐츠와 사용자 진행 애그리거트, 완료 판단, 레슨 완료 잠금 |
 | [AGENTS.md](AGENTS.md) | 팀 개발 규칙 전체 목록 |

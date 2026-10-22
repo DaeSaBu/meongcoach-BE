@@ -8,29 +8,36 @@ import com.daesabu.meongcoach.entitlement.application.required.EntitlementReposi
 import com.daesabu.meongcoach.entitlement.domain.EntitlementFixture;
 import com.daesabu.meongcoach.entitlement.domain.exception.EntitlementRequiredException;
 import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;
-import com.daesabu.meongcoach.progress.application.provided.LessonProgressUpdater;
-import com.daesabu.meongcoach.progress.application.provided.TopicProgressUpdater;
-import com.daesabu.meongcoach.progress.application.required.TopicProgressRepository;
 import com.daesabu.meongcoach.support.ApplicationTest;
 import com.daesabu.meongcoach.training.application.provided.dto.CurriculumDetailResult;
 import com.daesabu.meongcoach.training.application.provided.dto.CurriculumListResult;
+import com.daesabu.meongcoach.training.application.provided.dto.CurriculumResult;
+import com.daesabu.meongcoach.training.application.provided.dto.TopicSelectionRequest;
 import com.daesabu.meongcoach.training.application.required.CurriculumRepository;
+import com.daesabu.meongcoach.training.application.required.LessonProgressRepository;
 import com.daesabu.meongcoach.training.application.required.LessonRepository;
 import com.daesabu.meongcoach.training.application.required.TopicRepository;
+import com.daesabu.meongcoach.training.application.required.TopicSelectionRepository;
 import com.daesabu.meongcoach.training.application.required.TrainingCategoryRepository;
 import com.daesabu.meongcoach.training.domain.Curriculum;
+import com.daesabu.meongcoach.training.domain.CurriculumCompletion;
 import com.daesabu.meongcoach.training.domain.CurriculumFixture;
 import com.daesabu.meongcoach.training.domain.Expert;
 import com.daesabu.meongcoach.training.domain.ExpertFixture;
 import com.daesabu.meongcoach.training.domain.Lesson;
 import com.daesabu.meongcoach.training.domain.LessonFixture;
+import com.daesabu.meongcoach.training.domain.LessonProgress;
+import com.daesabu.meongcoach.training.domain.ProgressStatus;
 import com.daesabu.meongcoach.training.domain.Topic;
 import com.daesabu.meongcoach.training.domain.TopicFixture;
+import com.daesabu.meongcoach.training.domain.TopicSelection;
 import com.daesabu.meongcoach.training.domain.TrainingCategory;
 import com.daesabu.meongcoach.training.domain.TrainingCategoryFixture;
 import com.daesabu.meongcoach.training.domain.exception.CurriculumNotFoundException;
 import com.daesabu.meongcoach.training.domain.exception.TopicNotConfiguredException;
 import jakarta.persistence.EntityManager;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -42,13 +49,16 @@ class CurriculumFinderTest {
 	private static final Long OTHER_USER_ID = 99L;
 
 	@Autowired
+	private TopicSelector topicSelector;
+
+	@Autowired
+	private LessonProgressRepository lessonProgressRepository;
+
+	@Autowired
 	private CurriculumFinder curriculumFinder;
 
 	@Autowired
-	private TopicProgressUpdater topicProgressUpdater;
-
-	@Autowired
-	private LessonProgressUpdater lessonProgressUpdater;
+	private LessonCompleter lessonCompleter;
 
 	@Autowired
 	private TrainingCategoryRepository trainingCategoryRepository;
@@ -63,7 +73,7 @@ class CurriculumFinderTest {
 	private LessonRepository lessonRepository;
 
 	@Autowired
-	private TopicProgressRepository topicProgressRepository;
+	private TopicSelectionRepository topicSelectionRepository;
 
 	@Autowired
 	private EntitlementRepository entitlementRepository;
@@ -79,13 +89,13 @@ class CurriculumFinderTest {
 		saveCurriculum(first, "앉아 1단계", 1);
 		saveCurriculum(second, "기다려 1단계", 1);
 		flushAndClear();
-		topicProgressUpdater.enterTopic(USER_ID, second.getId());
+		topicSelectionRepository.save(TopicSelection.enter(USER_ID, second.getId()));
 		flushAndClear();
 
 		CurriculumListResult curriculumList = curriculumFinder.findCurriculums(USER_ID);
 
 		assertThat(curriculumList.topic().getId()).isEqualTo(second.getId());
-		assertThat(curriculumList.curriculums()).extracting(Curriculum::getTitle)
+		assertThat(curriculumList.curriculums()).extracting(result -> result.curriculum().getTitle())
 				.containsExactly("기다려 1단계");
 	}
 
@@ -102,7 +112,7 @@ class CurriculumFinderTest {
 		CurriculumListResult curriculumList = curriculumFinder.findCurriculums(USER_ID);
 
 		assertThat(curriculumList.topic().getId()).isEqualTo(basicTopic.getId());
-		assertThat(curriculumList.curriculums()).extracting(Curriculum::getTitle)
+		assertThat(curriculumList.curriculums()).extracting(result -> result.curriculum().getTitle())
 				.containsExactly("앉아 1단계");
 	}
 
@@ -112,7 +122,7 @@ class CurriculumFinderTest {
 		Topic topic = saveTopic(category, "앉아", 1);
 		saveCurriculum(topic, "앉아 1단계", 1);
 		flushAndClear();
-		topicProgressUpdater.enterTopic(USER_ID, 999L);
+		topicSelectionRepository.save(TopicSelection.enter(USER_ID, 999L));
 		flushAndClear();
 
 		CurriculumListResult curriculumList = curriculumFinder.findCurriculums(USER_ID);
@@ -127,6 +137,19 @@ class CurriculumFinderTest {
 	}
 
 	@Test
+	void 다른_사용자의_선택_토픽을_사용하지_않는다() {
+		TrainingCategory category = saveCategory("기본 교육", 1);
+		Topic first = saveTopic(category, "앉아", 1);
+		Topic second = saveTopic(category, "기다려", 2);
+		topicSelectionRepository.save(TopicSelection.enter(OTHER_USER_ID, second.getId()));
+		flushAndClear();
+
+		CurriculumListResult curriculumList = curriculumFinder.findCurriculums(USER_ID);
+
+		assertThat(curriculumList.topic().getId()).isEqualTo(first.getId());
+	}
+
+	@Test
 	void 커리큘럼을_정렬_순서_오름차순으로_반환한다() {
 		Topic topic = saveTopicWithCategory();
 		saveCurriculum(topic, "셋째 커리큘럼", 3);
@@ -136,12 +159,12 @@ class CurriculumFinderTest {
 
 		CurriculumListResult curriculumList = curriculumFinder.findCurriculums(USER_ID);
 
-		assertThat(curriculumList.curriculums()).extracting(Curriculum::getTitle)
+		assertThat(curriculumList.curriculums()).extracting(result -> result.curriculum().getTitle())
 				.containsExactly("첫째 커리큘럼", "둘째 커리큘럼", "셋째 커리큘럼");
 	}
 
 	@Test
-	void 토픽의_레슨_중_사용자가_완료한_레슨_id를_반환한다() {
+	void 커리큘럼별_완료_개수와_진행_상태를_반환한다() {
 		Topic topic = saveTopicWithCategory();
 		Curriculum first = saveCurriculum(topic, "1단계", 1);
 		Curriculum second = saveCurriculum(topic, "2단계", 2);
@@ -149,12 +172,14 @@ class CurriculumFinderTest {
 		saveLesson(first, "간식 없이 앉아", 2);
 		saveLesson(second, "거리 두고 앉아", 1);
 		flushAndClear();
-		lessonProgressUpdater.updateCompletion(USER_ID, completed.getId());
+		lessonCompleter.completeLesson(USER_ID, completed.getId());
 		flushAndClear();
 
 		CurriculumListResult curriculumList = curriculumFinder.findCurriculums(USER_ID);
 
-		assertThat(curriculumList.completedLessonIds()).containsExactly(completed.getId());
+		assertThat(curriculumList.curriculums()).extracting(CurriculumResult::completion)
+				.containsExactly(new CurriculumCompletion(1, ProgressStatus.IN_PROGRESS),
+						new CurriculumCompletion(0, ProgressStatus.NOT_STARTED));
 	}
 
 	@Test
@@ -163,12 +188,13 @@ class CurriculumFinderTest {
 		Curriculum curriculum = saveCurriculum(topic, "1단계", 1);
 		Lesson lesson = saveLesson(curriculum, "손 위의 간식", 1);
 		flushAndClear();
-		lessonProgressUpdater.updateCompletion(OTHER_USER_ID, lesson.getId());
+		lessonCompleter.completeLesson(OTHER_USER_ID, lesson.getId());
 		flushAndClear();
 
 		CurriculumListResult curriculumList = curriculumFinder.findCurriculums(USER_ID);
 
-		assertThat(curriculumList.completedLessonIds()).isEmpty();
+		assertThat(curriculumList.curriculums()).extracting(CurriculumResult::completion)
+				.containsExactly(new CurriculumCompletion(0, ProgressStatus.NOT_STARTED));
 	}
 
 	@Test
@@ -181,9 +207,9 @@ class CurriculumFinderTest {
 
 		CurriculumListResult curriculumList = curriculumFinder.findCurriculums(USER_ID);
 
-		assertThat(curriculumList.curriculums()).extracting(Curriculum::getTitle)
+		assertThat(curriculumList.curriculums()).extracting(result -> result.curriculum().getTitle())
 				.containsExactly("레슨 없는 커리큘럼", "레슨 있는 커리큘럼");
-		assertThat(curriculumList.curriculums().getFirst().getLessons()).isEmpty();
+		assertThat(curriculumList.curriculums().getFirst().curriculum().getLessons()).isEmpty();
 	}
 
 	@Test
@@ -195,7 +221,7 @@ class CurriculumFinderTest {
 		curriculumFinder.findCurriculums(USER_ID);
 		flushAndClear();
 
-		assertThat(topicProgressRepository.count()).isZero();
+		assertThat(topicSelectionRepository.count()).isZero();
 	}
 
 	@Test
@@ -263,15 +289,16 @@ class CurriculumFinderTest {
 		Lesson once = saveLesson(curriculum, "둘째 레슨", 2);
 		Lesson none = saveLesson(curriculum, "셋째 레슨", 3);
 		flushAndClear();
-		lessonProgressUpdater.updateCompletion(USER_ID, twice.getId());
-		lessonProgressUpdater.updateCompletion(USER_ID, twice.getId());
-		lessonProgressUpdater.updateCompletion(USER_ID, once.getId());
+		lessonCompleter.completeLesson(USER_ID, twice.getId());
+		lessonCompleter.completeLesson(USER_ID, twice.getId());
+		lessonCompleter.completeLesson(USER_ID, once.getId());
 		flushAndClear();
 
 		CurriculumDetailResult detail = curriculumFinder.findCurriculum(USER_ID, curriculum.getId());
 
-		assertThat(detail.completedCounts())
-				.containsExactly(entry(twice.getId(), 2), entry(once.getId(), 1), entry(none.getId(), 0));
+		assertThat(detail.progresses().completedCount(twice.getId())).isEqualTo(2);
+		assertThat(detail.progresses().completedCount(once.getId())).isEqualTo(1);
+		assertThat(detail.progresses().completedCount(none.getId())).isZero();
 	}
 
 	@Test
@@ -280,12 +307,12 @@ class CurriculumFinderTest {
 		Curriculum curriculum = saveCurriculum(topic, "1단계", 1);
 		Lesson lesson = saveLesson(curriculum, "손 위의 간식", 1);
 		flushAndClear();
-		lessonProgressUpdater.updateCompletion(OTHER_USER_ID, lesson.getId());
+		lessonCompleter.completeLesson(OTHER_USER_ID, lesson.getId());
 		flushAndClear();
 
 		CurriculumDetailResult detail = curriculumFinder.findCurriculum(USER_ID, curriculum.getId());
 
-		assertThat(detail.completedCounts()).containsExactly(entry(lesson.getId(), 0));
+		assertThat(detail.progresses().completedCount(lesson.getId())).isZero();
 	}
 
 	@Test
@@ -305,22 +332,21 @@ class CurriculumFinderTest {
 		CurriculumDetailResult detail = curriculumFinder.findCurriculum(USER_ID, empty.getId());
 
 		assertThat(detail.curriculum().getLessons()).isEmpty();
-		assertThat(detail.completedCounts()).isEmpty();
 	}
 
 	@Test
-	void 이용권이_필요한_토픽에서_이용권이_없으면_보유하지_않았다고_반환한다() {
+	void 이용권이_없으면_유료_커리큘럼이_잠긴다() {
 		Topic topic = saveTopic(savePaidCategory(EntitlementType.PUPPY), "앉아", 1);
 		savePremiumCurriculum(topic, "앉아 1단계", 1);
 		flushAndClear();
 
 		CurriculumListResult curriculumList = curriculumFinder.findCurriculums(USER_ID);
 
-		assertThat(curriculumList.hasEntitlement()).isFalse();
+		assertThat(curriculumList.curriculums()).extracting(CurriculumResult::locked).containsExactly(true);
 	}
 
 	@Test
-	void 이용권이_필요한_토픽에서_이용권이_있으면_보유했다고_반환한다() {
+	void 이용권이_있으면_유료_커리큘럼이_잠기지_않는다() {
 		Topic topic = saveTopic(savePaidCategory(EntitlementType.PUPPY), "앉아", 1);
 		savePremiumCurriculum(topic, "앉아 1단계", 1);
 		grant(USER_ID, EntitlementType.PUPPY);
@@ -328,18 +354,18 @@ class CurriculumFinderTest {
 
 		CurriculumListResult curriculumList = curriculumFinder.findCurriculums(USER_ID);
 
-		assertThat(curriculumList.hasEntitlement()).isTrue();
+		assertThat(curriculumList.curriculums()).extracting(CurriculumResult::locked).containsExactly(false);
 	}
 
 	@Test
-	void 이용권이_필요_없는_토픽이면_이용권이_없어도_보유했다고_반환한다() {
+	void 무료_토픽은_이용권이_없어도_잠기지_않는다() {
 		Topic topic = saveTopicWithCategory();
 		saveCurriculum(topic, "앉아 1단계", 1);
 		flushAndClear();
 
 		CurriculumListResult curriculumList = curriculumFinder.findCurriculums(USER_ID);
 
-		assertThat(curriculumList.hasEntitlement()).isTrue();
+		assertThat(curriculumList.curriculums()).extracting(CurriculumResult::locked).containsExactly(false);
 	}
 
 	@Test
@@ -374,6 +400,104 @@ class CurriculumFinderTest {
 		CurriculumDetailResult detail = curriculumFinder.findCurriculum(USER_ID, sample.getId());
 
 		assertThat(detail.curriculum().getId()).isEqualTo(sample.getId());
+	}
+
+	@Test
+	void 진행_기록이_없어도_모든_커리큘럼을_시작_전으로_조회한다() {
+		Topic topic = saveTopicWithCategory();
+		Curriculum curriculum = saveCurriculum(topic, "단계", 1);
+		saveLesson(curriculum, "레슨", 1);
+		Curriculum empty = saveCurriculum(topic, "단계", 2);
+		flushAndClear();
+
+		Map<Long, CurriculumCompletion> completions = findCompletions(USER_ID, topic.getId());
+
+		assertThat(completions).containsOnly(
+				entry(curriculum.getId(), new CurriculumCompletion(0, ProgressStatus.NOT_STARTED)),
+				entry(empty.getId(), new CurriculumCompletion(0, ProgressStatus.NOT_STARTED)));
+		assertThat(lessonProgressRepository.count()).isZero();
+	}
+
+	@Test
+	void 선택한_토픽의_커리큘럼별_완료_레슨_수와_상태를_조회한다() {
+		Topic topic = saveTopicWithCategory();
+		Curriculum first = saveCurriculum(topic, "단계", 1);
+		Lesson firstLesson = saveLesson(first, "레슨", 1);
+		saveLesson(first, "레슨", 2);
+		Curriculum second = saveCurriculum(topic, "단계", 2);
+		Lesson secondLesson = saveLesson(second, "레슨", 1);
+		Curriculum third = saveCurriculum(topic, "단계", 3);
+		saveLesson(third, "레슨", 1);
+		complete(USER_ID, firstLesson, 2);
+		complete(USER_ID, secondLesson, 1);
+		flushAndClear();
+
+		Map<Long, CurriculumCompletion> completions = findCompletions(USER_ID, topic.getId());
+
+		assertThat(completions).containsOnly(
+				entry(first.getId(), new CurriculumCompletion(1, ProgressStatus.IN_PROGRESS)),
+				entry(second.getId(), new CurriculumCompletion(1, ProgressStatus.COMPLETED)),
+				entry(third.getId(), new CurriculumCompletion(0, ProgressStatus.NOT_STARTED)));
+	}
+
+	@Test
+	void 다른_사용자와_다른_토픽의_완료_기록은_제외한다() {
+		Topic topic = saveTopicWithCategory();
+		Curriculum curriculum = saveCurriculum(topic, "단계", 1);
+		Lesson lesson = saveLesson(curriculum, "레슨", 1);
+		complete(43L, lesson, 1);
+		Topic otherTopic = saveTopicWithCategory();
+		Curriculum otherCurriculum = saveCurriculum(otherTopic, "단계", 1);
+		Lesson otherLesson = saveLesson(otherCurriculum, "레슨", 1);
+		complete(USER_ID, otherLesson, 1);
+		flushAndClear();
+
+		Map<Long, CurriculumCompletion> completions = findCompletions(USER_ID, topic.getId());
+
+		assertThat(completions).containsOnly(
+				entry(curriculum.getId(), new CurriculumCompletion(0, ProgressStatus.NOT_STARTED)));
+	}
+
+	@Test
+	void 완료한_커리큘럼에_새_레슨이_추가되면_진행_중으로_조회한다() {
+		Topic topic = saveTopicWithCategory();
+		Curriculum curriculum = saveCurriculum(topic, "단계", 1);
+		Lesson lesson = saveLesson(curriculum, "레슨", 1);
+		complete(USER_ID, lesson, 1);
+		flushAndClear();
+		assertThat(findCompletions(USER_ID, topic.getId()))
+				.containsEntry(curriculum.getId(), new CurriculumCompletion(1, ProgressStatus.COMPLETED));
+		saveLesson(curriculum, "레슨", 2);
+		flushAndClear();
+
+		Map<Long, CurriculumCompletion> completions = findCompletions(USER_ID, topic.getId());
+
+		assertThat(completions)
+				.containsEntry(curriculum.getId(), new CurriculumCompletion(1, ProgressStatus.IN_PROGRESS));
+	}
+
+	@Test
+	void 현재_콘텐츠에서_삭제된_레슨의_완료_기록은_세지_않는다() {
+		Topic topic = saveTopicWithCategory();
+		Curriculum curriculum = saveCurriculum(topic, "단계", 1);
+		Lesson removed = saveLesson(curriculum, "레슨", 1);
+		saveLesson(curriculum, "레슨", 2);
+		complete(USER_ID, removed, 1);
+		lessonRepository.delete(removed);
+		flushAndClear();
+
+		Map<Long, CurriculumCompletion> completions = findCompletions(USER_ID, topic.getId());
+
+		assertThat(completions)
+				.containsEntry(curriculum.getId(), new CurriculumCompletion(0, ProgressStatus.NOT_STARTED));
+	}
+
+	@Test
+	void 커리큘럼이_없는_토픽은_빈_완료_정보를_반환한다() {
+		Topic topic = saveTopicWithCategory();
+		flushAndClear();
+
+		assertThat(findCompletions(USER_ID, topic.getId())).isEmpty();
 	}
 
 	private TrainingCategory savePaidCategory(EntitlementType requiredEntitlementType) {
@@ -412,5 +536,20 @@ class CurriculumFinderTest {
 	private void flushAndClear() {
 		entityManager.flush();
 		entityManager.clear();
+	}
+
+	private void complete(Long userId, Lesson lesson, int count) {
+		LessonProgress progress = LessonProgress.start(userId, lesson.getId());
+		for (int i = 0; i < count; i++) {
+			progress.complete();
+		}
+		lessonProgressRepository.save(progress);
+	}
+
+	private Map<Long, CurriculumCompletion> findCompletions(Long userId, Long topicId) {
+		topicSelector.selectTopic(userId, new TopicSelectionRequest(topicId));
+		CurriculumListResult result = curriculumFinder.findCurriculums(userId);
+		return result.curriculums().stream().collect(Collectors.toMap(
+				item -> item.curriculum().getId(), CurriculumResult::completion));
 	}
 }

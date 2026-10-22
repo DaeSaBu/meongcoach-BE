@@ -9,8 +9,7 @@ import com.daesabu.meongcoach.training.application.provided.dto.CurriculumListRe
 public interface CurriculumFinder {
 
 	/**
-	 * 사용자가 마지막으로 진입한 토픽(없으면 첫 토픽)의 커리큘럼과, 그 레슨 중 사용자가 완료한 레슨 id를 조회한다.
-	 * 토픽 카테고리의 이용권을 사용자가 지금 쓸 수 있는지 함께 반환하며, 이용권이 필요 없는 카테고리면 true다.
+	 * 사용자가 마지막으로 진입한 토픽(없으면 첫 토픽)의 커리큘럼과 완료 레슨 수·진행 상태·잠금 여부를 조회한다.
 	 */
 	CurriculumListResult findCurriculums(Long userId);
 

@@ -53,6 +53,14 @@ public class PostQueryService implements PostFinder {
 				.orElseThrow(() -> new PostNotFoundException(postId));
 	}
 
+	@Override
+	public PostResult findPostDetail(Long postId) {
+		Post post = findPost(postId);
+
+		List<PostResult> results = compose(List.of(post));
+		return results.getFirst();
+	}
+
 	private Slice<Post> getSlice(PostListRequest request) {
 		return postQueryRepository.findPosts(request.cursor(), request.lessonId(), request.size());
 	}

@@ -2,14 +2,6 @@ package com.daesabu.meongcoach.ai.application.provided;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.daesabu.meongcoach.ai.application.required.AiReportRepository;
 import com.daesabu.meongcoach.ai.domain.AiReport;
@@ -17,11 +9,8 @@ import com.daesabu.meongcoach.ai.domain.AiReportStatus;
 import com.daesabu.meongcoach.ai.domain.AiReportUploadCommand;
 import com.daesabu.meongcoach.ai.domain.AiTrial;
 import com.daesabu.meongcoach.ai.domain.exception.AiReportTrialExceededException;
-import com.daesabu.meongcoach.media.application.required.VideoStorage;
-import com.daesabu.meongcoach.media.application.required.VideoUploadUrl;
 import com.daesabu.meongcoach.support.ApplicationTest;
 import java.time.LocalDateTime;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -31,9 +20,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 class AiVideoUploadUrlIssuerTest {
 
 	private static final Long USER_ID = 7L;
-	private static final String UPLOAD_URL = "https://storage.test/upload?X-Amz-Signature=abc";
-	private static final String PUBLIC_URL = "https://videos.test/videos/training/7/key.mp4";
-	private static final String OBJECT_KEY = "videos/training/7/key.mp4";
+	private static final String S3_UPLOAD_BASE_URL = "https://test-video-bucket.s3.ap-northeast-2.amazonaws.com/";
+	private static final String S3_PUBLIC_BASE_URL = "https://videos.test.meongcoach.com/";
 	private static final long EXPIRES_IN_SECONDS = 900L;
 
 	@Autowired
@@ -42,15 +30,6 @@ class AiVideoUploadUrlIssuerTest {
 	@Autowired
 	private AiReportRepository aiReportRepository;
 
-	@Autowired
-	private VideoStorage videoStorage;
-
-	@BeforeEach
-	void setUp() {
-		given(videoStorage.issueUploadUrl(any(), anyString(), anyLong()))
-				.willReturn(new VideoUploadUrl(UPLOAD_URL, PUBLIC_URL, OBJECT_KEY, EXPIRES_IN_SECONDS));
-	}
-
 	@ParameterizedTest
 	@ValueSource(ints = {0, 1, 29})
 	void 체험_횟수가_남아_있으면_훈련_영상_대상으로_업로드_URL_발급을_위임한다(int usedCount) {
@@ -58,11 +37,11 @@ class AiVideoUploadUrlIssuerTest {
 
 		AiVideoUploadUrlResult result = service.issue(USER_ID, "video/mp4", 10485760L);
 
-		verify(videoStorage).issueUploadUrl(argThat(key -> key.value().startsWith("videos/training/7/")),
-				eq("video/mp4"), eq(10485760L));
-		assertThat(result.uploadUrl()).isEqualTo(UPLOAD_URL);
-		assertThat(result.publicUrl()).isEqualTo(PUBLIC_URL);
-		assertThat(result.objectKey()).isEqualTo(OBJECT_KEY);
+		assertThat(result.objectKey()).matches("videos/training/7/[0-9a-f-]{36}\\.mp4");
+		assertThat(result.uploadUrl())
+				.startsWith(S3_UPLOAD_BASE_URL + result.objectKey())
+				.contains("X-Amz-SignedHeaders=content-length%3Bcontent-type%3Bhost");
+		assertThat(result.publicUrl()).isEqualTo(S3_PUBLIC_BASE_URL + result.objectKey());
 		assertThat(result.expiresInSeconds()).isEqualTo(EXPIRES_IN_SECONDS);
 	}
 
@@ -72,7 +51,7 @@ class AiVideoUploadUrlIssuerTest {
 
 		AiReport saved = aiReportRepository.findById(result.reportId()).orElseThrow();
 		assertThat(saved.getUserId()).isEqualTo(USER_ID);
-		assertThat(saved.getVideoObjectKey()).isEqualTo(OBJECT_KEY);
+		assertThat(saved.getVideoObjectKey()).isEqualTo(result.objectKey());
 		assertThat(saved.getStatus()).isEqualTo(AiReportStatus.UPLOADING);
 	}
 
@@ -94,8 +73,7 @@ class AiVideoUploadUrlIssuerTest {
 
 		assertThatThrownBy(() -> service.issue(USER_ID, "video/mp4", 10485760L))
 				.isInstanceOf(AiReportTrialExceededException.class);
-		verifyNoInteractions(videoStorage);
-		assertThat(aiReportRepository.findByVideoObjectKey(OBJECT_KEY)).isEmpty();
+		assertThat(aiReportRepository.findAllByUserIdOrderByCreatedAtDescIdDesc(USER_ID)).hasSize(AiTrial.MAX_COUNT);
 	}
 
 	@Test

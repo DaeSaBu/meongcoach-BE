@@ -5,14 +5,14 @@
 ## 전체 흐름
 
 ```
-앱 → POST /api/ai/presigned-urls           (ai — media의 VideoUploadUrlIssuer로 presigned URL 발급)
+앱 → POST /api/ai/presigned-urls           (ai — media의 MediaUploadUrlIssuer로 presigned URL 발급)
   → AiReport UPLOADING 저장                 (발급 즉시. uploadExpiresAt = 발급 시각 + URL 유효 시간. 응답에 reportId 포함)
 앱 → S3에 영상 직접 업로드                   (서버를 거치지 않음)
 S3 → ObjectCreated 이벤트 → SQS 큐          (meongcoach.ai.video-queue)
 VideoUploadSqsConsumer                      (ai/adapter/consumer)
   → AiReportGenerator.generate(objectKey)   (AiReportGenerateService)
      → findByVideoObjectKey                 (발급 row 없으면 warn 후 스킵, UPLOADING이 아니면 중복 전달로 스킵)
-     → VideoDownloadUrlIssuer               (media — presigned 다운로드 URL)
+     → MediaDownloadUrlIssuer               (media — presigned 다운로드 URL)
      → AiReport PENDING 전이 저장             (이후 결말은 이 row의 status로 기록)
      → AiTrialFinder                        (무료 체험 횟수 확인, 초과 시 FAILED_TRIAL_EXCEEDED)
      → VideoAnalyzer → EvoLink 영상 분석     (ai/adapter/integration, 실패 시 FAILED_ANALYSIS)
@@ -22,12 +22,12 @@ VideoUploadSqsConsumer                      (ai/adapter/consumer)
 
 앱은 `GET /api/ai/reports`를 폴링하다가 `UPLOADING`·`PENDING`인 리포트가 없으면 멈춥니다. 사용자 ID만으로 묻는 조회라 앱이 재시작돼 객체 키·리포트 ID를 잃어도 폴링을 이어갈 수 있습니다 — 그래서 row를 업로드 완료가 아니라 **발급 시점**에 만듭니다.
 
-소유자 식별은 객체 키 경로에 인코딩되어 있습니다 — `videos/{대상}/{userId}/{UUID}.{확장자}` 규칙은 `media/domain/VideoObjectKey`가 단일 소유합니다. 리포트의 소유자는 발급 시 row에 기록한 `userId`가 원천입니다.
+소유자 식별은 객체 키 경로에 인코딩되어 있습니다 — `videos/training/{userId}/{UUID}.{확장자}` 구조는 `media/domain/MediaObjectKey`가 단일 소유하고, 경로 범위 `training`은 `ai/domain/AiVideo`가 정합니다. 리포트의 소유자는 발급 시 row에 기록한 `userId`가 원천입니다.
 
 ## 설계 결정과 함정
 
 - **컨슈머는 어떤 예외도 리스너 밖으로 내보내지 않습니다.** SQS는 리스너가 예외를 던지면 메시지를 재전달하는데, MVP라 재시도 로직이 없어 무한 재전달이 됩니다. 재시도가 필요해지면 예외를 삼키는 정책부터 다시 설계해야 합니다. (`VideoUploadSqsConsumer` 주석 참고)
-- **실패는 error 로그와 함께 같은 `AiReport` row의 `status`로 남깁니다.** 실패가 DB에 흔적을 남기지 않으면 앱 폴링에 종료 조건이 없기 때문입니다. 컨슈머는 발급 row를 PENDING으로 전이한 뒤, 체험 초과는 `FAILED_TRIAL_EXCEEDED`, 분석 실패는 `FAILED_ANALYSIS`, 그 뒤의 예상 밖 예외는 `FAILED_UNEXPECTED`로 전이합니다. 실패 기록의 저장이 실패하면 `FAILED_UNEXPECTED`로 한 번 더 시도하고, 그마저 실패하면 예외가 컨슈머로 나가 error 로그 후 버려집니다(row는 PENDING으로 남음). 예외는 객체 키 형식 위반(`InvalidVideoObjectKeyException`) 하나뿐입니다 — PENDING 전이 전에 나므로 row는 UPLOADING으로 남아 만료 뒤 `FAILED_UPLOAD`로 조회됩니다.
+- **실패는 error 로그와 함께 같은 `AiReport` row의 `status`로 남깁니다.** 실패가 DB에 흔적을 남기지 않으면 앱 폴링에 종료 조건이 없기 때문입니다. 컨슈머는 발급 row를 PENDING으로 전이한 뒤, 체험 초과는 `FAILED_TRIAL_EXCEEDED`, 분석 실패는 `FAILED_ANALYSIS`, 그 뒤의 예상 밖 예외는 `FAILED_UNEXPECTED`로 전이합니다. 실패 기록의 저장이 실패하면 `FAILED_UNEXPECTED`로 한 번 더 시도하고, 그마저 실패하면 예외가 컨슈머로 나가 error 로그 후 버려집니다(row는 PENDING으로 남음). 예외는 객체 키 형식 위반(`InvalidMediaObjectKeyException`) 하나뿐입니다 — PENDING 전이 전에 나므로 row는 UPLOADING으로 남아 만료 뒤 `FAILED_UPLOAD`로 조회됩니다.
 - **업로드되지 않은 발급 row는 조회 시점에 `FAILED_UPLOAD`로 파생합니다.** 발급만 받고 업로드하지 않은 row가 UPLOADING으로 영영 남으면 앱 폴링이 끝나지 않습니다. 발급 시 저장한 `uploadExpiresAt`(URL 유효 시간)이 지난 UPLOADING은 `AiReport.statusAt(now)`가 `FAILED_UPLOAD`로 돌려줍니다. DB 상태는 바꾸지 않습니다(스케줄러·쓰기 없음) — 유효 시간을 넘겨 끝난 긴 업로드의 이벤트가 늦게 오면 컨슈머가 그대로 PENDING으로 전이하므로, 그 사이 잠깐 `FAILED_UPLOAD`로 보이는 것이 유일한 부작용입니다. 상태로 SQL 필터링(예: `?status=`)이 필요해지면 파생이 아니라 저장으로 바꿔야 합니다.
 - **발급 기록이 없는 업로드 이벤트는 분석하지 않습니다.** 우리가 발급한 키만 소유자 row가 있습니다. 배포 직전에 발급돼 배포 뒤 업로드된 영상도 row가 없어 스킵되므로(warn 로그), 배포 시 URL 유효 시간만큼의 공백을 감수합니다.
 - **EvoLink 어댑터는 연동 실패를 도메인 예외로 번역해 던지고, 서비스는 그 둘만 잡습니다.** 영상 분석은 `VideoAnalysisFailedException`(→ `FAILED_ANALYSIS`), 제목 생성은 `ReportTitleGenerationFailedException`(→ 제목 없이 `COMPLETED`). 그 외 예외는 버그로 보고 `FAILED_UNEXPECTED`로 남깁니다. 어댑터에서 `catch (Exception)`으로 넓게 잡으면 두 실패 상태의 구분이 무너지므로 유지하지 않습니다.

@@ -16,7 +16,6 @@ import jakarta.persistence.Table;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -64,14 +63,18 @@ public class Curriculum extends BaseEntity {
 				.toList();
 	}
 
-	public int getLessonsSize() {
-		return lessons.size();
+	public CurriculumCompletion completion(LessonProgresses progresses) {
+		int completed = progresses.countCompletedIn(getLessonIds());
+		int total = lessons.size();
+		return CurriculumCompletion.of(total, completed);
 	}
 
-	public CurriculumStatus statusOf(Set<Long> completedLessonIds) {
-		int totalLessons = getLessonsSize();
-		int completedLessons = countCompletedLessons(completedLessonIds);
-		return CurriculumStatus.of(totalLessons, completedLessons);
+	public boolean isCompleted(LessonProgresses progresses) {
+		return completion(progresses).status() == ProgressStatus.COMPLETED;
+	}
+
+	public int getLessonsSize() {
+		return lessons.size();
 	}
 
 	public Optional<Expert> findExpert() {
@@ -89,10 +92,4 @@ public class Curriculum extends BaseEntity {
 		return findRequiredEntitlementType().isPresent() && !hasEntitlement;
 	}
 
-	public int countCompletedLessons(Set<Long> completedLessonIds) {
-		return (int) lessons.stream()
-				.map(Lesson::getId)
-				.filter(completedLessonIds::contains)
-				.count();
-	}
 }

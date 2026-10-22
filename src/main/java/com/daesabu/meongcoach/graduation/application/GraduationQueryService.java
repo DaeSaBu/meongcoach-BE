@@ -5,7 +5,8 @@ import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationDeta
 import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationSummaryResult;
 import com.daesabu.meongcoach.graduation.application.required.GraduationSubmissionRepository;
 import com.daesabu.meongcoach.graduation.domain.GraduationSubmission;
-import com.daesabu.meongcoach.media.application.provided.VideoDownloadUrlIssuer;
+import com.daesabu.meongcoach.graduation.domain.GraduationVideo;
+import com.daesabu.meongcoach.media.application.provided.MediaDownloadUrlIssuer;
 import com.daesabu.meongcoach.training.application.provided.TopicCompletionChecker;
 import com.daesabu.meongcoach.training.application.provided.TopicFinder;
 import com.daesabu.meongcoach.training.application.provided.dto.TopicResult;
@@ -25,7 +26,7 @@ public class GraduationQueryService implements GraduationFinder {
 	private final GraduationSubmissionRepository graduationSubmissionRepository;
 	private final TopicFinder topicFinder;
 	private final TopicCompletionChecker topicCompletionChecker;
-	private final VideoDownloadUrlIssuer videoDownloadUrlIssuer;
+	private final MediaDownloadUrlIssuer mediaDownloadUrlIssuer;
 
 	@Override
 	public GraduationDetailResult findGraduation(Long userId, Long topicId) {
@@ -37,7 +38,7 @@ public class GraduationQueryService implements GraduationFinder {
 			return GraduationDetailResult.notSubmitted(topic, eligible);
 		}
 		GraduationSubmission submission = graduation.get();
-		String videoUrl = videoDownloadUrlIssuer.issue(submission.getVideoObjectKey()).downloadUrl();
+		String videoUrl = mediaDownloadUrlIssuer.issue(GraduationVideo.SCOPE, submission.getVideoObjectKey());
 		return new GraduationDetailResult(topic, eligible, submission, videoUrl);
 	}
 

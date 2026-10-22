@@ -72,7 +72,7 @@ class LessonRepositoryTest {
 		Lesson lesson = persistLesson(persistCurriculum("기본 교육"), "레슨");
 		flushAndClear();
 
-		Lesson found = lessonRepository.findWithCategoryById(lesson.getId()).orElseThrow();
+		Lesson found = lessonRepository.findById(lesson.getId()).orElseThrow();
 
 		assertThat(Hibernate.isInitialized(found.getCurriculum())).isTrue();
 		assertThat(Hibernate.isInitialized(found.getCurriculum().getTopic())).isTrue();
@@ -81,7 +81,7 @@ class LessonRepositoryTest {
 
 	@Test
 	void 없는_레슨을_상위_연관과_함께_조회하면_빈_값을_반환한다() {
-		assertThat(lessonRepository.findWithCategoryById(999L)).isEmpty();
+		assertThat(lessonRepository.findById(999L)).isEmpty();
 	}
 
 	private Curriculum persistCurriculum(String title) {

@@ -13,6 +13,9 @@ import com.daesabu.meongcoach.community.domain.MentionCommand;
 import com.daesabu.meongcoach.community.domain.MentionTargetType;
 import com.daesabu.meongcoach.community.domain.Post;
 import com.daesabu.meongcoach.community.domain.PostContent;
+import com.daesabu.meongcoach.community.domain.PostMedia;
+import com.daesabu.meongcoach.community.domain.PostMediaCommand;
+import com.daesabu.meongcoach.community.domain.PostMediaType;
 import com.daesabu.meongcoach.community.domain.PostRegisterCommand;
 import com.daesabu.meongcoach.community.domain.exception.PostNotFoundException;
 import com.daesabu.meongcoach.support.ApplicationTest;
@@ -46,6 +49,8 @@ class PostFinderTest {
 	private static final Long USER_ID = 42L;
 	private static final Long LESSON_A_ID = 101L;
 	private static final Long LESSON_B_ID = 202L;
+	private static final String IMAGE_URL = "https://media.meongcoach.com/images/community-post/42/photo.jpg";
+	private static final String VIDEO_URL = "https://media.meongcoach.com/videos/community-post/42/clip.mp4";
 
 	@Autowired
 	private PostFinder postFinder;
@@ -242,6 +247,32 @@ class PostFinderTest {
 	}
 
 	@Test
+	void 게시글의_미디어를_등록_순서대로_함께_반환한다() {
+		savePost(USER_ID, "본문", List.of(
+				new PostMediaCommand(PostMediaType.VIDEO, VIDEO_URL),
+				new PostMediaCommand(PostMediaType.IMAGE, IMAGE_URL)));
+		flushAndClear();
+
+		PostListResult result = postFinder.findPosts(new PostListRequest(null, 20, null));
+
+		assertThat(result.posts().getFirst().post().getMedia())
+				.extracting(PostMedia::getType, PostMedia::getUrl)
+				.containsExactly(
+						tuple(PostMediaType.VIDEO, VIDEO_URL),
+						tuple(PostMediaType.IMAGE, IMAGE_URL));
+	}
+
+	@Test
+	void 미디어가_없는_게시글은_빈_미디어를_반환한다() {
+		savePost(USER_ID, "본문");
+		flushAndClear();
+
+		PostListResult result = postFinder.findPosts(new PostListRequest(null, 20, null));
+
+		assertThat(result.posts().getFirst().post().getMedia()).isEmpty();
+	}
+
+	@Test
 	void 게시글이_없으면_빈_목록을_반환한다() {
 		PostListResult result = postFinder.findPosts(new PostListRequest(null, 20, null));
 
@@ -266,6 +297,47 @@ class PostFinderTest {
 				.isInstanceOf(PostNotFoundException.class);
 	}
 
+	@Test
+	void 게시글_하나를_작성자_멘션_미디어와_함께_조회한다() {
+		User author = saveUserWithProfile("멍멍이집사", "https://cdn.example.com/profile.png");
+		Lesson lesson = saveLesson("기본 교육");
+		Post saved = postRepository.save(Post.register(author.getId(), new PostRegisterCommand("본문",
+				new MentionCommand(MentionTargetType.LESSON, lesson.getId()), List.of(
+						new PostMediaCommand(PostMediaType.VIDEO, VIDEO_URL),
+						new PostMediaCommand(PostMediaType.IMAGE, IMAGE_URL)))));
+		flushAndClear();
+
+		PostResult result = postFinder.findPostDetail(saved.getId());
+
+		assertThat(contentOf(result)).isEqualTo("본문");
+		assertThat(result.author()).isEqualTo(
+				new UserProfileSummaryResult(author.getId(), "멍멍이집사", "https://cdn.example.com/profile.png"));
+		assertThat(result.mentionTarget()).isEqualTo(
+				new MentionTargetResult(MentionTargetType.LESSON, lesson.getId(), "기본 교육 레슨"));
+		assertThat(result.post().getMedia())
+				.extracting(PostMedia::getType, PostMedia::getUrl)
+				.containsExactly(
+						tuple(PostMediaType.VIDEO, VIDEO_URL),
+						tuple(PostMediaType.IMAGE, IMAGE_URL));
+	}
+
+	@Test
+	void 단건_조회한_게시글의_작성자_프로필이_없으면_author가_null이다() {
+		Post saved = savePost(USER_ID, "본문");
+		flushAndClear();
+
+		PostResult result = postFinder.findPostDetail(saved.getId());
+
+		assertThat(result.author()).isNull();
+		assertThat(result.mentionTarget()).isNull();
+	}
+
+	@Test
+	void 단건_조회할_게시글이_없으면_예외를_던진다() {
+		assertThatThrownBy(() -> postFinder.findPostDetail(999_999L))
+				.isInstanceOf(PostNotFoundException.class);
+	}
+
 	private String contentOf(PostResult result) {
 		PostContent content = result.post().getContent();
 		return content.value();
@@ -279,6 +351,10 @@ class PostFinderTest {
 
 	private Post savePost(Long userId, String content) {
 		return postRepository.save(Post.register(userId, new PostRegisterCommand(content, null, List.of())));
+	}
+
+	private Post savePost(Long userId, String content, List<PostMediaCommand> media) {
+		return postRepository.save(Post.register(userId, new PostRegisterCommand(content, null, media)));
 	}
 
 	private Post savePost(Long userId, String content, Long lessonId) {

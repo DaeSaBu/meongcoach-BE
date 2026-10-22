@@ -27,29 +27,33 @@ import com.daesabu.meongcoach.training.application.provided.TopicSelector;
 import com.daesabu.meongcoach.training.application.provided.TrainingCategoryFinder;
 import com.daesabu.meongcoach.training.application.provided.dto.CurriculumDetailResult;
 import com.daesabu.meongcoach.training.application.provided.dto.CurriculumListResult;
+import com.daesabu.meongcoach.training.application.provided.dto.CurriculumResult;
 import com.daesabu.meongcoach.training.application.provided.dto.TopicSelectionRequest;
 import com.daesabu.meongcoach.training.domain.Card;
 import com.daesabu.meongcoach.training.domain.CardFixture;
 import com.daesabu.meongcoach.training.domain.CardMedia;
 import com.daesabu.meongcoach.training.domain.CardMediaFixture;
 import com.daesabu.meongcoach.training.domain.Curriculum;
+import com.daesabu.meongcoach.training.domain.CurriculumCompletion;
 import com.daesabu.meongcoach.training.domain.CurriculumFixture;
 import com.daesabu.meongcoach.training.domain.Expert;
 import com.daesabu.meongcoach.training.domain.ExpertFixture;
 import com.daesabu.meongcoach.training.domain.Lesson;
 import com.daesabu.meongcoach.training.domain.LessonFixture;
+import com.daesabu.meongcoach.training.domain.LessonProgress;
+import com.daesabu.meongcoach.training.domain.LessonProgresses;
+import com.daesabu.meongcoach.training.domain.ProgressStatus;
 import com.daesabu.meongcoach.training.domain.Topic;
 import com.daesabu.meongcoach.training.domain.TopicFixture;
 import com.daesabu.meongcoach.training.domain.TrainingCategory;
 import com.daesabu.meongcoach.training.domain.TrainingCategoryFixture;
 import com.daesabu.meongcoach.training.domain.exception.CurriculumNotFoundException;
+import com.daesabu.meongcoach.training.domain.exception.LessonCompletionConflictException;
 import com.daesabu.meongcoach.training.domain.exception.LessonNotFoundException;
 import com.daesabu.meongcoach.training.domain.exception.TopicNotConfiguredException;
 import com.daesabu.meongcoach.training.domain.exception.TopicNotFoundException;
 import java.security.Principal;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
@@ -262,8 +266,9 @@ class TrainingControllerTest {
 		addLesson(inProgress, 111L, "3초 기다려", 2, 5);
 		addLesson(inProgress, 112L, "5초 기다려", 3, 5);
 		addLesson(inProgress, 113L, "10초 기다려", 4, 5);
-		given(curriculumFinder.findCurriculums(42L)).willReturn(new CurriculumListResult(topic,
-				List.of(completed, inProgress), Set.of(100L, 101L, 102L, 110L), true));
+		given(curriculumFinder.findCurriculums(42L)).willReturn(new CurriculumListResult(topic, List.of(
+				new CurriculumResult(completed, new CurriculumCompletion(3, ProgressStatus.COMPLETED), false),
+				new CurriculumResult(inProgress, new CurriculumCompletion(1, ProgressStatus.IN_PROGRESS), false))));
 
 		mockMvc.perform(get("/api/training/topic/selection/curriculums")
 						.principal(CURRENT_USER)
@@ -307,7 +312,9 @@ class TrainingControllerTest {
 		Curriculum premium = CurriculumFixture.create(topic, "앉아 1단계", 2, null, null, true);
 		ReflectionTestUtils.setField(premium, "id", 11L);
 		given(curriculumFinder.findCurriculums(42L))
-				.willReturn(new CurriculumListResult(topic, List.of(sample, premium), Set.of(), false));
+				.willReturn(new CurriculumListResult(topic, List.of(
+						new CurriculumResult(sample, new CurriculumCompletion(0, ProgressStatus.NOT_STARTED), false),
+						new CurriculumResult(premium, new CurriculumCompletion(0, ProgressStatus.NOT_STARTED), true))));
 
 		mockMvc.perform(get("/api/training/topic/selection/curriculums").principal(CURRENT_USER))
 				.andExpect(status().isOk())
@@ -317,7 +324,7 @@ class TrainingControllerTest {
 
 	@Test
 	void 인증_주체에서_읽은_사용자로_커리큘럼_조회를_위임한다() throws Exception {
-		given(curriculumFinder.findCurriculums(42L)).willReturn(new CurriculumListResult(topic(1L, "앉아", null, null, null, 1), List.of(), Set.of(), true));
+		given(curriculumFinder.findCurriculums(42L)).willReturn(new CurriculumListResult(topic(1L, "앉아", null, null, null, 1), List.of()));
 
 		mockMvc.perform(get("/api/training/topic/selection/curriculums").principal(CURRENT_USER))
 				.andExpect(status().isOk());
@@ -327,7 +334,7 @@ class TrainingControllerTest {
 
 	@Test
 	void 커리큘럼이_없는_토픽은_빈_배열과_200을_반환한다() throws Exception {
-		given(curriculumFinder.findCurriculums(42L)).willReturn(new CurriculumListResult(topic(1L, "앉아", null, null, null, 1), List.of(), Set.of(), true));
+		given(curriculumFinder.findCurriculums(42L)).willReturn(new CurriculumListResult(topic(1L, "앉아", null, null, null, 1), List.of()));
 
 		mockMvc.perform(get("/api/training/topic/selection/curriculums").principal(CURRENT_USER))
 				.andExpect(status().isOk())
@@ -374,8 +381,12 @@ class TrainingControllerTest {
 		Curriculum curriculum = curriculum(10L, topic(1L, "앉아", null, null, null, 1), "앉아 1단계", 1, expert);
 		addLesson(curriculum, 100L, "손 위의 간식", 1, 5);
 		addLesson(curriculum, 101L, "간식 없이 앉아", 2, 10);
+		LessonProgress progress = LessonProgress.start(42L, 100L);
+		progress.complete();
+		progress.complete();
+		progress.complete();
 		given(curriculumFinder.findCurriculum(42L, 10L))
-				.willReturn(new CurriculumDetailResult(curriculum, Map.of(100L, 3, 101L, 0)));
+				.willReturn(new CurriculumDetailResult(curriculum, LessonProgresses.from(List.of(progress))));
 
 		mockMvc.perform(get("/api/training/curriculums/{curriculumId}", 10L)
 						.principal(CURRENT_USER)
@@ -424,7 +435,7 @@ class TrainingControllerTest {
 	@Test
 	void 인증_주체에서_읽은_사용자로_커리큘럼_세부_조회를_위임한다() throws Exception {
 		given(curriculumFinder.findCurriculum(42L, 10L))
-				.willReturn(new CurriculumDetailResult(emptyCurriculum(), Map.of()));
+				.willReturn(new CurriculumDetailResult(emptyCurriculum(), LessonProgresses.from(List.of())));
 
 		mockMvc.perform(get("/api/training/curriculums/{curriculumId}", 10L).principal(CURRENT_USER))
 				.andExpect(status().isOk());
@@ -435,7 +446,7 @@ class TrainingControllerTest {
 	@Test
 	void 레슨이_없는_커리큘럼은_빈_배열과_200을_반환한다() throws Exception {
 		given(curriculumFinder.findCurriculum(42L, 10L))
-				.willReturn(new CurriculumDetailResult(emptyCurriculum(), Map.of()));
+				.willReturn(new CurriculumDetailResult(emptyCurriculum(), LessonProgresses.from(List.of())));
 
 		mockMvc.perform(get("/api/training/curriculums/{curriculumId}", 10L).principal(CURRENT_USER))
 				.andExpect(status().isOk())
@@ -447,7 +458,7 @@ class TrainingControllerTest {
 	@Test
 	void 제작_전문가가_없는_커리큘럼은_expert를_null로_반환한다() throws Exception {
 		given(curriculumFinder.findCurriculum(42L, 10L))
-				.willReturn(new CurriculumDetailResult(emptyCurriculum(), Map.of()));
+				.willReturn(new CurriculumDetailResult(emptyCurriculum(), LessonProgresses.from(List.of())));
 
 		mockMvc.perform(get("/api/training/curriculums/{curriculumId}", 10L).principal(CURRENT_USER))
 				.andExpect(status().isOk())
@@ -663,6 +674,16 @@ class TrainingControllerTest {
 	}
 
 	@Test
+	void 같은_레슨의_완료가_동시에_처리되면_409를_반환한다() throws Exception {
+		given(lessonCompleter.completeLesson(42L, 7L))
+				.willThrow(new LessonCompletionConflictException(7L, new RuntimeException()));
+
+		mockMvc.perform(post("/api/training/lessons/{lessonId}/completion", 7L).principal(CURRENT_USER))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code").value("TRAINING_LESSON_COMPLETION_CONFLICT"));
+	}
+
+	@Test
 	void 이용권_없이_유료_레슨을_완료하면_403을_반환한다() throws Exception {
 		given(lessonCompleter.completeLesson(42L, 1L)).willThrow(new EntitlementRequiredException());
 
@@ -687,7 +708,8 @@ class TrainingControllerTest {
 	}
 
 	private Topic topic(Long id, String title, String description, String detail, String iconUrl, int sortOrder) {
-		Topic topic = TopicFixture.create(null, title, sortOrder, description, detail, iconUrl);
+		TrainingCategory category = TrainingCategoryFixture.create("교육", 1, null, null);
+		Topic topic = TopicFixture.create(category, title, sortOrder, description, detail, iconUrl);
 		ReflectionTestUtils.setField(topic, "id", id);
 		return topic;
 	}

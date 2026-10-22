@@ -4,16 +4,20 @@ import com.daesabu.meongcoach.community.domain.MentionTargetType;
 import com.daesabu.meongcoach.community.domain.Post;
 import com.daesabu.meongcoach.community.domain.PostMention;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 public record PostRegisterResponse(Long postId, Long userId, String content, MentionResponse mention,
-		LocalDateTime createdAt) {
+		List<PostMediaResponse> media, LocalDateTime createdAt) {
 
 	public static PostRegisterResponse from(Post post) {
 		MentionResponse mention = Optional.ofNullable(post.getMention())
 				.map(MentionResponse::from)
 				.orElse(null);
-		return new PostRegisterResponse(post.getId(), post.getUserId(), post.getContent().value(), mention,
+		List<PostMediaResponse> media = post.getMedia().stream()
+				.map(PostMediaResponse::from)
+				.toList();
+		return new PostRegisterResponse(post.getId(), post.getUserId(), post.getContent().value(), mention, media,
 				post.getCreatedAt());
 	}
 
