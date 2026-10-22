@@ -1,8 +1,8 @@
-package com.daesabu.meongcoach.progress.application.required;
+package com.daesabu.meongcoach.training.application.required;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.daesabu.meongcoach.progress.domain.LessonProgress;
+import com.daesabu.meongcoach.training.domain.LessonProgress;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -104,6 +104,9 @@ class LessonProgressRepositoryTest {
 	}
 
 	private LessonProgress persistProgress(Long userId, Long lessonId) {
-		return entityManager.persist(LessonProgress.start(userId, lessonId));
+		LessonProgress progress = LessonProgress.start(userId, lessonId);
+		progress.complete();
+		entityManager.persist(progress);
+		return progress;
 	}
 }

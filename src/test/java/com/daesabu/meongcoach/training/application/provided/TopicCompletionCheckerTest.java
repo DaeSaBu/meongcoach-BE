@@ -3,7 +3,6 @@ package com.daesabu.meongcoach.training.application.provided;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.daesabu.meongcoach.progress.application.provided.LessonProgressUpdater;
 import com.daesabu.meongcoach.support.ApplicationTest;
 import com.daesabu.meongcoach.training.application.required.CurriculumRepository;
 import com.daesabu.meongcoach.training.application.required.LessonRepository;
@@ -31,7 +30,7 @@ class TopicCompletionCheckerTest {
 	private TopicCompletionChecker topicCompletionChecker;
 
 	@Autowired
-	private LessonProgressUpdater lessonProgressUpdater;
+	private LessonCompleter lessonCompleter;
 
 	@Autowired
 	private TrainingCategoryRepository trainingCategoryRepository;
@@ -54,8 +53,8 @@ class TopicCompletionCheckerTest {
 		Lesson first = saveLesson(saveCurriculum(topic, 1), "앉아 1");
 		Lesson second = saveLesson(saveCurriculum(topic, 2), "앉아 2");
 		flushAndClear();
-		lessonProgressUpdater.updateCompletion(USER_ID, first.getId());
-		lessonProgressUpdater.updateCompletion(USER_ID, second.getId());
+		lessonCompleter.completeLesson(USER_ID, first.getId());
+		lessonCompleter.completeLesson(USER_ID, second.getId());
 		flushAndClear();
 
 		assertThat(topicCompletionChecker.isCompleted(USER_ID, topic.getId())).isTrue();
@@ -67,7 +66,7 @@ class TopicCompletionCheckerTest {
 		Lesson first = saveLesson(saveCurriculum(topic, 1), "앉아 1");
 		saveLesson(saveCurriculum(topic, 2), "앉아 2");
 		flushAndClear();
-		lessonProgressUpdater.updateCompletion(USER_ID, first.getId());
+		lessonCompleter.completeLesson(USER_ID, first.getId());
 		flushAndClear();
 
 		assertThat(topicCompletionChecker.isCompleted(USER_ID, topic.getId())).isFalse();
@@ -100,9 +99,9 @@ class TopicCompletionCheckerTest {
 		Topic otherUser = saveTopic();
 		Lesson otherLesson = saveLesson(saveCurriculum(otherUser, 1), "다른 회원");
 		flushAndClear();
-		lessonProgressUpdater.updateCompletion(USER_ID, first.getId());
-		lessonProgressUpdater.updateCompletion(USER_ID, partialLesson.getId());
-		lessonProgressUpdater.updateCompletion(43L, otherLesson.getId());
+		lessonCompleter.completeLesson(USER_ID, first.getId());
+		lessonCompleter.completeLesson(USER_ID, partialLesson.getId());
+		lessonCompleter.completeLesson(43L, otherLesson.getId());
 		flushAndClear();
 
 		assertThat(topicCompletionChecker.findCompletedTopics(USER_ID))

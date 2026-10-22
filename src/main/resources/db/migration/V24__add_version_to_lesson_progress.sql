@@ -1,0 +1,1 @@
+ALTER TABLE "lesson_progress" ADD COLUMN "version" BIGINT NOT NULL DEFAULT 0;

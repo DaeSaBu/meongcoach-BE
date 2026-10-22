@@ -7,10 +7,10 @@ import com.daesabu.meongcoach.entitlement.application.required.EntitlementReposi
 import com.daesabu.meongcoach.entitlement.domain.EntitlementFixture;
 import com.daesabu.meongcoach.entitlement.domain.exception.EntitlementRequiredException;
 import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;
-import com.daesabu.meongcoach.progress.application.required.LessonProgressRepository;
-import com.daesabu.meongcoach.progress.domain.LessonProgress;
 import com.daesabu.meongcoach.support.ApplicationTest;
+import com.daesabu.meongcoach.training.application.provided.dto.TopicSelectionRequest;
 import com.daesabu.meongcoach.training.application.required.CurriculumRepository;
+import com.daesabu.meongcoach.training.application.required.LessonProgressRepository;
 import com.daesabu.meongcoach.training.application.required.LessonRepository;
 import com.daesabu.meongcoach.training.application.required.TopicRepository;
 import com.daesabu.meongcoach.training.application.required.TrainingCategoryRepository;
@@ -18,6 +18,7 @@ import com.daesabu.meongcoach.training.domain.Curriculum;
 import com.daesabu.meongcoach.training.domain.CurriculumFixture;
 import com.daesabu.meongcoach.training.domain.Lesson;
 import com.daesabu.meongcoach.training.domain.LessonFixture;
+import com.daesabu.meongcoach.training.domain.LessonProgress;
 import com.daesabu.meongcoach.training.domain.Topic;
 import com.daesabu.meongcoach.training.domain.TopicFixture;
 import com.daesabu.meongcoach.training.domain.TrainingCategory;
@@ -38,6 +39,9 @@ class LessonCompleterTest {
 
 	@Autowired
 	private LessonCompleter lessonCompleter;
+
+	@Autowired
+	private TopicSelector topicSelector;
 
 	@Autowired
 	private TrainingCategoryRepository trainingCategoryRepository;
@@ -153,6 +157,46 @@ class LessonCompleterTest {
 		int completedCount = lessonCompleter.completeLesson(USER_ID, lesson.getId());
 
 		assertThat(completedCount).isOne();
+	}
+
+	@Test
+	void 추가된_레슨과_커리큘럼의_진행을_독립적으로_기록한다() {
+		Lesson first = saveLesson("앉아");
+		Curriculum firstCurriculum = first.getCurriculum();
+		Topic topic = firstCurriculum.getTopic();
+		flushAndClear();
+		lessonCompleter.completeLesson(USER_ID, first.getId());
+		flushAndClear();
+		Lesson second = lessonRepository.save(LessonFixture.create(firstCurriculum, "기다려", 2, 5));
+		Curriculum next = curriculumRepository.save(CurriculumFixture.create(topic, "다음 단계", 2, null, null));
+		Lesson third = lessonRepository.save(LessonFixture.create(next, "멀리서 기다려", 1, 5));
+		flushAndClear();
+
+		lessonCompleter.completeLesson(USER_ID, second.getId());
+		lessonCompleter.completeLesson(USER_ID, third.getId());
+		flushAndClear();
+
+		assertThat(lessonProgressRepository.count()).isEqualTo(3);
+		assertThat(findCompletedCount(USER_ID, first.getId())).isOne();
+		assertThat(findCompletedCount(USER_ID, second.getId())).isOne();
+		assertThat(findCompletedCount(USER_ID, third.getId())).isOne();
+	}
+
+	@Test
+	void 선택_토픽을_바꿔도_토픽별_진행을_유지한다() {
+		Lesson first = saveLesson("앉아");
+		Lesson second = saveLesson("기다려");
+		Long secondTopicId = second.getCurriculum().getTopic().getId();
+		flushAndClear();
+		lessonCompleter.completeLesson(USER_ID, first.getId());
+
+		topicSelector.selectTopic(USER_ID, new TopicSelectionRequest(secondTopicId));
+		lessonCompleter.completeLesson(USER_ID, second.getId());
+		flushAndClear();
+
+		assertThat(lessonProgressRepository.count()).isEqualTo(2);
+		assertThat(findCompletedCount(USER_ID, first.getId())).isOne();
+		assertThat(findCompletedCount(USER_ID, second.getId())).isOne();
 	}
 
 	private Lesson saveLesson(String title) {

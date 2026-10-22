@@ -13,8 +13,7 @@ com.daesabu.meongcoach
 ├── auth         ← 소셜/이메일 로그인·JWT·리프레시 토큰·자격증명(소셜·로컬 계정)
 ├── user         ← 회원 역할·상태·프로필
 ├── dog          ← 반려견 프로필
-├── training     ← 훈련 콘텐츠 카탈로그
-├── progress     ← 학습 진도
+├── training     ← 훈련 콘텐츠와 사용자별 진행
 ├── ai           ← AI 영상 분석 리포트 (SQS 컨슈머, EvoLink 연동)
 ├── media        ← 이미지·영상 업로드 URL 발급 (R2/S3)
 ├── onboarding   ← 온보딩 흐름 조합
@@ -38,7 +37,7 @@ com.daesabu.meongcoach
 └── domain                   // 엔티티, 일급 컬렉션, 값 객체, exception/, 입력 모델(~Command)
 ```
 
-모듈은 필요한 계층만 갖습니다. `progress`는 자체 API 없이 `provided` 인터페이스로만 노출되어 `adapter`가 없고, `onboarding`은 다른 모듈을 조합하므로 `domain`에 업로드 대상(`OnboardingImageTarget`)과 예외만 둡니다. 문서나 코드를 생성할 때 없는 계층을 만들어 채우지 않습니다.
+모듈은 필요한 계층만 갖습니다. `onboarding`은 다른 모듈을 조합하므로 `domain`에 업로드 대상(`OnboardingImageTarget`)과 예외만 둡니다. 문서나 코드를 생성할 때 없는 계층을 만들어 채우지 않습니다.
 
 ## 모듈 규칙
 

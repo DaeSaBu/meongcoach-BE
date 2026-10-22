@@ -286,6 +286,7 @@ link:{swagger-ui}#/Training/training-lesson-complete[▶ Swagger에서 Try it ou
 operation::training/lesson-complete[snippets='http-request,path-parameters,http-response,response-fields']
 
 존재하지 않는 레슨을 요청하면 404(`TRAINING_LESSON_NOT_FOUND`)를 반환하며 진행도는 변경되지 않습니다.
+같은 레슨의 완료가 동시에 들어오면 먼저 처리된 요청만 반영하고 나머지는 409(`TRAINING_LESSON_COMPLETION_CONFLICT`)를 반환합니다.
 
 operation::training/lesson-complete-error[snippets='http-response,response-fields']
 

@@ -29,4 +29,11 @@ public final class CurriculumFixture {
 		ReflectionTestUtils.setField(curriculum, "isPremium", isPremium);
 		return curriculum;
 	}
+
+	public static Curriculum create(Topic topic, Long id) {
+		Curriculum curriculum = create(topic, "커리큘럼", 1, null, null);
+		ReflectionTestUtils.setField(curriculum, "id", id);
+		topic.getCurriculums().add(curriculum);
+		return curriculum;
+	}
 }
