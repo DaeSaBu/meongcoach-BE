@@ -17,7 +17,6 @@ import jakarta.persistence.Table;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -59,17 +58,15 @@ public class Topic extends BaseEntity {
 		return trainingCategory.findRequiredEntitlementType();
 	}
 
+	public boolean isCompleted(LessonProgresses progresses) {
+		return !curriculums.isEmpty()
+				&& curriculums.stream().allMatch(curriculum -> curriculum.isCompleted(progresses));
+	}
+
 	public List<Long> getAllLessonIds() {
 		return curriculums.stream()
 				.flatMap(curriculum -> curriculum.getLessonIds().stream())
 				.toList();
 	}
 
-	public boolean isCompleted(Set<Long> completedLessonIds) {
-		if (curriculums.isEmpty()) {
-			return false;
-		}
-		return curriculums.stream()
-				.allMatch(curriculum -> curriculum.statusOf(completedLessonIds) == CurriculumStatus.COMPLETED);
-	}
 }

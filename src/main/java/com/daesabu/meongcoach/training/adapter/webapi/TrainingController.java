@@ -11,8 +11,13 @@ import com.daesabu.meongcoach.training.application.provided.LessonCompleter;
 import com.daesabu.meongcoach.training.application.provided.LessonFinder;
 import com.daesabu.meongcoach.training.application.provided.TopicSelector;
 import com.daesabu.meongcoach.training.application.provided.TrainingCategoryFinder;
+import com.daesabu.meongcoach.training.application.provided.dto.CurriculumDetailResult;
+import com.daesabu.meongcoach.training.application.provided.dto.CurriculumListResult;
 import com.daesabu.meongcoach.training.application.provided.dto.TopicSelectionRequest;
+import com.daesabu.meongcoach.training.domain.Card;
+import com.daesabu.meongcoach.training.domain.TrainingCategory;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -37,7 +42,8 @@ public class TrainingController {
 
 	@GetMapping("/categories")
 	public TrainingCategoryListResponse findAll() {
-		return TrainingCategoryListResponse.from(trainingCategoryFinder.findAllOrdered());
+		List<TrainingCategory> categories = trainingCategoryFinder.findAllOrdered();
+		return TrainingCategoryListResponse.from(categories);
 	}
 
 	@ResponseStatus(HttpStatus.NO_CONTENT)
@@ -49,22 +55,26 @@ public class TrainingController {
 
 	@GetMapping("/topic/selection/curriculums")
 	public CurriculumListResponse findCurriculums(@CurrentUserId Long userId) {
-		return CurriculumListResponse.from(curriculumFinder.findCurriculums(userId));
+		CurriculumListResult result = curriculumFinder.findCurriculums(userId);
+		return CurriculumListResponse.from(result);
 	}
 
 	@GetMapping("/curriculums/{curriculumId}")
 	public CurriculumDetailResponse findCurriculum(@CurrentUserId Long userId, @PathVariable Long curriculumId) {
-		return CurriculumDetailResponse.from(curriculumFinder.findCurriculum(userId, curriculumId));
+		CurriculumDetailResult result = curriculumFinder.findCurriculum(userId, curriculumId);
+		return CurriculumDetailResponse.from(result);
 	}
 
 	@GetMapping("/lessons/{lessonId}/cards")
 	public CardListResponse findCards(@CurrentUserId Long userId, @PathVariable Long lessonId) {
-		return CardListResponse.from(lessonFinder.findCards(userId, lessonId));
+		List<Card> cards = lessonFinder.findCards(userId, lessonId);
+		return CardListResponse.from(cards);
 	}
 
 	@PostMapping("/lessons/{lessonId}/completion")
 	@ResponseStatus(HttpStatus.CREATED)
 	public LessonCompleteResponse completeLesson(@CurrentUserId Long userId, @PathVariable Long lessonId) {
-		return LessonCompleteResponse.from(lessonId, lessonCompleter.completeLesson(userId, lessonId));
+		int completedCount = lessonCompleter.completeLesson(userId, lessonId);
+		return new LessonCompleteResponse(lessonId, completedCount);
 	}
 }

@@ -1,4 +1,4 @@
-package com.daesabu.meongcoach.progress.domain;
+package com.daesabu.meongcoach.training.domain;
 
 import static java.util.Objects.requireNonNull;
 
@@ -17,11 +17,11 @@ import lombok.NoArgsConstructor;
 @Getter
 @Entity
 @Table(
-		name = "lesson_progress",
-		uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "lesson_id"})
+		name = "topic_selection",
+		uniqueConstraints = @UniqueConstraint(columnNames = "user_id")
 )
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class LessonProgress extends BaseEntity {
+public class TopicSelection extends BaseEntity {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -31,22 +31,18 @@ public class LessonProgress extends BaseEntity {
 	private Long userId;
 
 	@Column(nullable = false)
-	private Long lessonId;
+	private Long topicId;
 
-	@Column(nullable = false)
-	private int completedCount;
+	public static TopicSelection enter(Long userId, Long topicId) {
+		TopicSelection topicSelection = new TopicSelection();
 
-	public static LessonProgress start(Long userId, Long lessonId) {
-		LessonProgress lessonProgress = new LessonProgress();
+		topicSelection.userId = requireNonNull(userId);
+		topicSelection.topicId = requireNonNull(topicId);
 
-		lessonProgress.userId = requireNonNull(userId);
-		lessonProgress.lessonId = requireNonNull(lessonId);
-		lessonProgress.completedCount = 0;
-
-		return lessonProgress;
+		return topicSelection;
 	}
 
-	public void increaseCompletedCount() {
-		this.completedCount++;
+	public void moveTo(Long topicId) {
+		this.topicId = topicId;
 	}
 }

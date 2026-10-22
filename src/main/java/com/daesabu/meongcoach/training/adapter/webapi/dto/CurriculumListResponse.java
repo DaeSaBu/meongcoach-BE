@@ -9,8 +9,7 @@ public record CurriculumListResponse(Long topicId, String topicTitle, List<Curri
 	public static CurriculumListResponse from(CurriculumListResult result) {
 		Topic topic = result.topic();
 		List<CurriculumResponse> curriculums = result.curriculums().stream()
-				.map(curriculum -> CurriculumResponse.of(curriculum, result.completedLessonIds(),
-						result.hasEntitlement()))
+				.map(CurriculumResponse::from)
 				.toList();
 		return new CurriculumListResponse(topic.getId(), topic.getTitle(), curriculums);
 	}

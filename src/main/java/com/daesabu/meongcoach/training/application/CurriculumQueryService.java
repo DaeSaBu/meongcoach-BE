@@ -1,20 +1,21 @@
 package com.daesabu.meongcoach.training.application;
 
 import com.daesabu.meongcoach.entitlement.application.provided.EntitlementChecker;
-import com.daesabu.meongcoach.progress.application.provided.LessonProgressFinder;
-import com.daesabu.meongcoach.progress.application.provided.TopicProgressFinder;
 import com.daesabu.meongcoach.training.application.provided.CurriculumFinder;
 import com.daesabu.meongcoach.training.application.provided.dto.CurriculumDetailResult;
 import com.daesabu.meongcoach.training.application.provided.dto.CurriculumListResult;
 import com.daesabu.meongcoach.training.application.required.CurriculumRepository;
+import com.daesabu.meongcoach.training.application.required.LessonProgressRepository;
 import com.daesabu.meongcoach.training.application.required.TopicRepository;
+import com.daesabu.meongcoach.training.application.required.TopicSelectionRepository;
 import com.daesabu.meongcoach.training.domain.Curriculum;
+import com.daesabu.meongcoach.training.domain.LessonProgress;
+import com.daesabu.meongcoach.training.domain.LessonProgresses;
 import com.daesabu.meongcoach.training.domain.Topic;
+import com.daesabu.meongcoach.training.domain.TopicSelection;
 import com.daesabu.meongcoach.training.domain.exception.CurriculumNotFoundException;
 import com.daesabu.meongcoach.training.domain.exception.TopicNotConfiguredException;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,46 +26,37 @@ import org.springframework.transaction.annotation.Transactional;
 public class CurriculumQueryService implements CurriculumFinder {
 	private final TopicRepository topicRepository;
 	private final CurriculumRepository curriculumRepository;
-	private final TopicProgressFinder topicProgressFinder;
-	private final LessonProgressFinder lessonProgressFinder;
+	private final TopicSelectionRepository topicSelectionRepository;
+	private final LessonProgressRepository lessonProgressRepository;
 	private final EntitlementChecker entitlementChecker;
 
 	@Override
 	public CurriculumListResult findCurriculums(Long userId) {
-		Topic topic = findLatestOrFirstTopic(userId);
-
-		List<Curriculum> curriculums = topic.getCurriculums();
-		Set<Long> completedLessonIds = findCompletedLessonIds(userId, curriculums);
+		Topic topic = findSelectedOrFirstTopic(userId);
+		LessonProgresses progresses = findProgresses(userId, topic.getAllLessonIds());
 		boolean hasEntitlement = hasEntitlement(userId, topic);
-
-		return new CurriculumListResult(topic, curriculums, completedLessonIds, hasEntitlement);
+		return CurriculumListResult.of(topic, progresses, hasEntitlement);
 	}
 
 	@Override
 	public CurriculumDetailResult findCurriculum(Long userId, Long curriculumId) {
-		Curriculum curriculum = findCurriculum(curriculumId);
+		Curriculum curriculum = curriculumRepository.findById(curriculumId)
+				.orElseThrow(() -> new CurriculumNotFoundException(curriculumId));
 		curriculum.findRequiredEntitlementType()
 				.ifPresent(type -> entitlementChecker.validateEntitlement(userId, type));
-
-		List<Long> lessonIds = curriculum.getLessonIds();
-		Map<Long, Integer> completedCounts = lessonProgressFinder.findCompletedCounts(userId, lessonIds);
-
-		return new CurriculumDetailResult(curriculum, completedCounts);
+		LessonProgresses progresses = findProgresses(userId, curriculum.getLessonIds());
+		return new CurriculumDetailResult(curriculum, progresses);
 	}
 
-	private Curriculum findCurriculum(Long curriculumId) {
-		return curriculumRepository.findWithCategoryById(curriculumId)
-				.orElseThrow(() -> new CurriculumNotFoundException(curriculumId));
-	}
-
-	private Topic findLatestOrFirstTopic(Long userId) {
-		return topicProgressFinder.findLatestTopicId(userId)
-				.flatMap(topicRepository::findWithCategoryById)
+	private Topic findSelectedOrFirstTopic(Long userId) {
+		return topicSelectionRepository.findByUserId(userId)
+				.map(TopicSelection::getTopicId)
+				.flatMap(topicRepository::findById)
 				.orElseGet(this::findFirstTopic);
 	}
 
 	private Topic findFirstTopic() {
-		return topicRepository.findFirstTopic()
+		return topicRepository.findFirstBy(TopicRepository.EDUCATION_ORDER)
 				.orElseThrow(TopicNotConfiguredException::new);
 	}
 
@@ -74,10 +66,8 @@ public class CurriculumQueryService implements CurriculumFinder {
 				.orElse(true);
 	}
 
-	private Set<Long> findCompletedLessonIds(Long userId, List<Curriculum> curriculums) {
-		List<Long> lessonIds = curriculums.stream()
-				.flatMap(curriculum -> curriculum.getLessonIds().stream())
-				.toList();
-		return lessonProgressFinder.findCompletedLessonIds(userId, lessonIds);
+	private LessonProgresses findProgresses(Long userId, List<Long> lessonIds) {
+		List<LessonProgress> progresses = lessonProgressRepository.findAllByUserIdAndLessonIdIn(userId, lessonIds);
+		return LessonProgresses.from(progresses);
 	}
 }

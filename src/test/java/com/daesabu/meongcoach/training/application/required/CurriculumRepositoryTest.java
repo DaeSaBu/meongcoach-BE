@@ -74,7 +74,7 @@ class CurriculumRepositoryTest {
 		Curriculum curriculum = persistCurriculum(persistTopic("기본 교육"), "커리큘럼", 1);
 		flushAndClear();
 
-		Curriculum found = curriculumRepository.findWithCategoryById(curriculum.getId()).orElseThrow();
+		Curriculum found = curriculumRepository.findById(curriculum.getId()).orElseThrow();
 
 		assertThat(Hibernate.isInitialized(found.getTopic())).isTrue();
 		assertThat(Hibernate.isInitialized(found.getTopic().getTrainingCategory())).isTrue();
@@ -87,7 +87,7 @@ class CurriculumRepositoryTest {
 				CurriculumFixture.create(persistTopic("기본 교육"), "커리큘럼", 1, null, null, false, expert));
 		flushAndClear();
 
-		Curriculum found = curriculumRepository.findWithCategoryById(curriculum.getId()).orElseThrow();
+		Curriculum found = curriculumRepository.findById(curriculum.getId()).orElseThrow();
 
 		assertThat(Hibernate.isInitialized(found.getExpert())).isTrue();
 		assertThat(found.getExpert().getName()).isEqualTo("정은겸");
@@ -98,7 +98,7 @@ class CurriculumRepositoryTest {
 		Curriculum curriculum = persistCurriculum(persistTopic("기본 교육"), "커리큘럼", 1);
 		flushAndClear();
 
-		Curriculum found = curriculumRepository.findWithCategoryById(curriculum.getId()).orElseThrow();
+		Curriculum found = curriculumRepository.findById(curriculum.getId()).orElseThrow();
 
 		assertThat(found.getExpert()).isNull();
 		assertThat(Hibernate.isInitialized(found.getTopic().getTrainingCategory())).isTrue();
@@ -106,7 +106,7 @@ class CurriculumRepositoryTest {
 
 	@Test
 	void 없는_커리큘럼을_상위_연관과_함께_조회하면_빈_값을_반환한다() {
-		assertThat(curriculumRepository.findWithCategoryById(999L)).isEmpty();
+		assertThat(curriculumRepository.findById(999L)).isEmpty();
 	}
 
 	private Topic persistTopic(String title) {
