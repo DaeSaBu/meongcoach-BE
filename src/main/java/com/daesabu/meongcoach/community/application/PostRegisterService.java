@@ -6,6 +6,7 @@ import com.daesabu.meongcoach.community.application.provided.PostRegister;
 import com.daesabu.meongcoach.community.application.provided.dto.PostRegisterRequest;
 import com.daesabu.meongcoach.community.application.required.PostRepository;
 import com.daesabu.meongcoach.community.domain.Post;
+import com.daesabu.meongcoach.media.application.provided.StoredMediaVerifier;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +20,7 @@ public class PostRegisterService implements PostRegister {
 
 	private final PostRepository postRepository;
 	private final MentionTargetReaders mentionTargetReaders;
+	private final StoredMediaVerifier storedMediaVerifier;
 
 	@Override
 	@Transactional
@@ -26,6 +28,7 @@ public class PostRegisterService implements PostRegister {
 		Post post = Post.register(userId, request.toCommand());
 
 		validateExistingMention(post);
+		validateStoredMedia(userId, post);
 
 		return postRepository.save(post);
 	}
@@ -33,5 +36,10 @@ public class PostRegisterService implements PostRegister {
 	private void validateExistingMention(Post post) {
 		ofNullable(post.getMention())
 				.ifPresent(mentionTargetReaders::validateExists);
+	}
+
+	private void validateStoredMedia(Long userId, Post post) {
+		post.getMedia()
+				.forEach(media -> storedMediaVerifier.validateUrl(media.getType().getMediaScope(), userId, media.getUrl()));
 	}
 }

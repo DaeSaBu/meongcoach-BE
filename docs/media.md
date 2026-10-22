@@ -42,7 +42,7 @@ media는 소비 모듈의 이름이나 용도를 모릅니다. 용도별 규칙�
 |---|---|---|---|---|
 | `user-profile` | 이미지·공개 | — | `user/domain/UserProfileImage` | 사용자 프로필 이미지 발급, 온보딩 완료 검증 |
 | `dog-profile` | 이미지·공개 | — | `dog/domain/DogProfileImage` | 강아지 프로필 이미지 발급, 강아지 등록·수정 검증 |
-| `community-post` | 이미지·영상·공개 | 512MiB | `community/domain/PostMediaType` | 게시글 미디어 발급 |
+| `community-post` | 이미지·영상·공개 | 512MiB | `community/domain/PostMediaType` | 게시글 미디어 발급, 게시글 작성 검증 |
 | `training` | 영상·비공개 | 50MiB | `ai/domain/AiVideo` | AI 분석 영상 발급·다운로드 |
 | `graduation` + 하위 경로 `{topicId}` | 영상·비공개 | 512MiB | `graduation/domain/GraduationVideo` | 실습 인증 발급·제출 검증·다운로드 |
 
