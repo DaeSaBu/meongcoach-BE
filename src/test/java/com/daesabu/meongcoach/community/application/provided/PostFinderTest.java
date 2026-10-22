@@ -297,6 +297,47 @@ class PostFinderTest {
 				.isInstanceOf(PostNotFoundException.class);
 	}
 
+	@Test
+	void 게시글_하나를_작성자_멘션_미디어와_함께_조회한다() {
+		User author = saveUserWithProfile("멍멍이집사", "https://cdn.example.com/profile.png");
+		Lesson lesson = saveLesson("기본 교육");
+		Post saved = postRepository.save(Post.register(author.getId(), new PostRegisterCommand("본문",
+				new MentionCommand(MentionTargetType.LESSON, lesson.getId()), List.of(
+						new PostMediaCommand(PostMediaType.VIDEO, VIDEO_URL),
+						new PostMediaCommand(PostMediaType.IMAGE, IMAGE_URL)))));
+		flushAndClear();
+
+		PostResult result = postFinder.findPostDetail(saved.getId());
+
+		assertThat(contentOf(result)).isEqualTo("본문");
+		assertThat(result.author()).isEqualTo(
+				new UserProfileSummaryResult(author.getId(), "멍멍이집사", "https://cdn.example.com/profile.png"));
+		assertThat(result.mentionTarget()).isEqualTo(
+				new MentionTargetResult(MentionTargetType.LESSON, lesson.getId(), "기본 교육 레슨"));
+		assertThat(result.post().getMedia())
+				.extracting(PostMedia::getType, PostMedia::getUrl)
+				.containsExactly(
+						tuple(PostMediaType.VIDEO, VIDEO_URL),
+						tuple(PostMediaType.IMAGE, IMAGE_URL));
+	}
+
+	@Test
+	void 단건_조회한_게시글의_작성자_프로필이_없으면_author가_null이다() {
+		Post saved = savePost(USER_ID, "본문");
+		flushAndClear();
+
+		PostResult result = postFinder.findPostDetail(saved.getId());
+
+		assertThat(result.author()).isNull();
+		assertThat(result.mentionTarget()).isNull();
+	}
+
+	@Test
+	void 단건_조회할_게시글이_없으면_예외를_던진다() {
+		assertThatThrownBy(() -> postFinder.findPostDetail(999_999L))
+				.isInstanceOf(PostNotFoundException.class);
+	}
+
 	private String contentOf(PostResult result) {
 		PostContent content = result.post().getContent();
 		return content.value();

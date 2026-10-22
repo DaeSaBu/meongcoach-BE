@@ -608,6 +608,22 @@ operation::community/post-list[snippets='http-request,query-parameters,http-resp
 
 operation::community/post-list-error[snippets='http-response,response-fields']
 
+=== 게시글 단건 조회
+
+link:{swagger-ui}#/Community/community-post-detail[▶ Swagger에서 Try it out,window=swagger]
+
+게시글 하나를 조회합니다. 응답 형태는 게시글 목록 조회의 `posts[]` 항목과 같습니다.
+작성자 프로필이 없으면 `author`가, 멘션이 없거나 멘션 대상이 없으면 `mention`이 null이고, 미디어가 없으면 `media`가 빈 배열입니다.
+댓글은 이 응답에 담기지 않습니다.
+
+operation::community/post-detail[snippets='http-request,path-parameters,http-response,response-fields']
+
+==== 실패 응답
+
+게시글이 없으면 404(`COMMUNITY_POST_NOT_FOUND`)가 내려갑니다.
+
+operation::community/post-detail-error[snippets='http-response,response-fields']
+
 === 게시글 미디어 업로드 URL 발급
 
 link:{swagger-ui}#/Community/community-post-media-upload-url[▶ Swagger에서 Try it out,window=swagger]

@@ -4,6 +4,7 @@ import com.daesabu.meongcoach.community.adapter.webapi.dto.CommentRegisterRespon
 import com.daesabu.meongcoach.community.adapter.webapi.dto.PostListResponse;
 import com.daesabu.meongcoach.community.adapter.webapi.dto.PostMediaUploadUrlResponse;
 import com.daesabu.meongcoach.community.adapter.webapi.dto.PostRegisterResponse;
+import com.daesabu.meongcoach.community.adapter.webapi.dto.PostResponse;
 import com.daesabu.meongcoach.community.application.provided.CommentRegister;
 import com.daesabu.meongcoach.community.application.provided.PostFinder;
 import com.daesabu.meongcoach.community.application.provided.PostMediaUploadUrlIssuer;
@@ -13,6 +14,7 @@ import com.daesabu.meongcoach.community.application.provided.dto.PostListRequest
 import com.daesabu.meongcoach.community.application.provided.dto.PostListResult;
 import com.daesabu.meongcoach.community.application.provided.dto.PostMediaUploadUrlRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.PostRegisterRequest;
+import com.daesabu.meongcoach.community.application.provided.dto.PostResult;
 import com.daesabu.meongcoach.community.domain.Comment;
 import com.daesabu.meongcoach.community.domain.Post;
 import com.daesabu.meongcoach.media.application.provided.dto.MediaUploadUrlResult;
@@ -43,6 +45,12 @@ public class CommunityController {
 	public PostListResponse findPosts(@Valid @ModelAttribute PostListRequest request) {
 		PostListResult result = postFinder.findPosts(request);
 		return PostListResponse.from(result);
+	}
+
+	@GetMapping("/posts/{postId}")
+	public PostResponse findPost(@PathVariable Long postId) {
+		PostResult result = postFinder.findPostDetail(postId);
+		return PostResponse.from(result);
 	}
 
 	@PostMapping("/posts")
