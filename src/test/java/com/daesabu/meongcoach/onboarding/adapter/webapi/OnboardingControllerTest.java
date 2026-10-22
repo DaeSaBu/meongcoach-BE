@@ -20,7 +20,6 @@ import com.daesabu.meongcoach.onboarding.application.provided.OnboardingImageUpl
 import com.daesabu.meongcoach.onboarding.application.provided.OnboardingImageUploadUrlResult;
 import com.daesabu.meongcoach.onboarding.application.provided.OnboardingMetadataFinder;
 import com.daesabu.meongcoach.onboarding.application.provided.OnboardingMetadataResult;
-import com.daesabu.meongcoach.training.application.provided.dto.TopicResult;
 import com.daesabu.meongcoach.user.domain.exception.AlreadyOnboardedException;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -115,8 +114,6 @@ class OnboardingControllerTest {
 				.andExpect(jsonPath("$.mbtis").doesNotExist())
 				.andDo(document("onboarding/metadata",
 						responseFields(
-								fieldWithPath("topics[].id").description("토픽 ID"),
-								fieldWithPath("topics[].title").description("토픽 이름"),
 								fieldWithPath("breeds[]").description("등록 견종 목록. 믹스견이 맨 앞이고 나머지는 한글 라벨 가나다순"),
 								fieldWithPath("breeds[].code").description("강아지 견종 코드"),
 								fieldWithPath("breeds[].label").description("강아지 견종 한글 라벨"),
@@ -504,8 +501,6 @@ class OnboardingControllerTest {
 		@Bean
 		OnboardingMetadataFinder onboardingMetadataFinder() {
 			return () -> new OnboardingMetadataResult(
-					List.of(new TopicResult(1L, "배변 훈련", "편안한 배변 습관 만들기"),
-							new TopicResult(2L, "산책 훈련", "즐겁고 안전한 첫 산책")),
 					List.of(RegisteredBreed.POODLE, RegisteredBreed.MALTESE),
 					List.of(Personality.TIMID, Personality.LIVELY));
 		}
