@@ -228,7 +228,7 @@ class DogRegisterTest {
 
 	@Test
 	void 삭제된_강아지는_등록_개수에_포함되지_않는다() {
-		Long deletedDogId = registerDogs(1L, 5).getFirst();
+		Long deletedDogId = registerDogs(1L, 5).getLast();
 		Dogs dogs = new Dogs(dogRepository.findAllByUserIdOrderByIdAsc(1L));
 		dogs.delete(deletedDogId);
 		entityManager.flush();
