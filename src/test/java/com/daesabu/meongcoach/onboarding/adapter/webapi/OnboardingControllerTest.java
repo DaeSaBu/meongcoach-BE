@@ -162,7 +162,6 @@ class OnboardingControllerTest {
 								fieldWithPath("dogs[].sex").description("강아지 성별. `MALE` 또는 `FEMALE`"),
 								fieldWithPath("dogs[].birthDate")
 										.description("강아지 생년월일. 과거 날짜, 필수 입력"),
-								fieldWithPath("dogs[].weightKg").description("0보다 큰 강아지 몸무게(kg)"),
 								fieldWithPath("dogs[].personalities").description("강아지 성격 코드 목록. 선택 입력").optional(),
 								fieldWithPath("dogs[].profileImageUrl").description(
 										"강아지 프로필 이미지 공개 URL. 이미지 업로드 URL 발급 API의 "
