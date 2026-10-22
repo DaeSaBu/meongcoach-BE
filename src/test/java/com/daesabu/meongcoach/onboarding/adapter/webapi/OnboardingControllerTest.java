@@ -13,7 +13,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.daesabu.meongcoach.dog.domain.shared.Personality;
 import com.daesabu.meongcoach.dog.domain.shared.RegisteredBreed;
 import com.daesabu.meongcoach.media.domain.ImageType;
-import com.daesabu.meongcoach.media.domain.ImageUploadTarget;
 import com.daesabu.meongcoach.onboarding.application.provided.OnboardingCompleteInfo;
 import com.daesabu.meongcoach.onboarding.application.provided.OnboardingCompleter;
 import com.daesabu.meongcoach.onboarding.application.provided.OnboardingImageUploadUrlIssuer;
@@ -41,13 +40,12 @@ class OnboardingControllerTest {
 	private static final long ONBOARDED_USER_ID = 99L;
 
 	private static final String UPLOAD_URL =
-			"https://test-account.r2.cloudflarestorage.com/test-bucket/images/user-profile/1/uuid.jpg"
+			"https://test-account.r2.cloudflarestorage.com/test-bucket/images/dog-profile/1/uuid.jpg"
 					+ "?X-Amz-Expires=600&X-Amz-Signature=example";
-	private static final String IMAGE_PUBLIC_URL = "https://images.test.meongcoach.com/images/user-profile/1/uuid.jpg";
+	private static final String IMAGE_PUBLIC_URL = "https://images.test.meongcoach.com/images/dog-profile/1/uuid.jpg";
 
 	private static final String IMAGE_ISSUE_REQUEST = """
 			{
-				"target": "USER_PROFILE",
 				"contentType": "image/jpeg"
 			}
 			""";
@@ -395,7 +393,7 @@ class OnboardingControllerTest {
 	}
 
 	@Test
-	void 프로필_이미지_업로드_URL을_발급한다() throws Exception {
+	void 강아지_프로필_이미지_업로드_URL을_발급한다() throws Exception {
 		mockMvc.perform(post("/api/onboarding/presigned-urls")
 						.principal(() -> "1")
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
@@ -445,27 +443,6 @@ class OnboardingControllerTest {
 	}
 
 	@Test
-	void 지원하지_않는_업로드_대상이면_400을_반환한다() throws Exception {
-		mockMvc.perform(post("/api/onboarding/presigned-urls")
-						.principal(() -> "1")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content(IMAGE_ISSUE_REQUEST.replace("USER_PROFILE", "BANNER")))
-				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.code").value("MEDIA_INVALID_UPLOAD_TARGET"));
-	}
-
-	@Test
-	void 업로드_대상이_비어_있으면_검증에_실패한다() throws Exception {
-		mockMvc.perform(post("/api/onboarding/presigned-urls")
-						.principal(() -> "1")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"target\": \"\", \"contentType\": \"image/jpeg\"}"))
-				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
-				.andExpect(jsonPath("$.errors[0].field").value("target"));
-	}
-
-	@Test
 	void 이미지_contentType이_비어_있으면_검증에_실패한다() throws Exception {
 		mockMvc.perform(post("/api/onboarding/presigned-urls")
 						.principal(() -> "1")
@@ -512,8 +489,7 @@ class OnboardingControllerTest {
 
 		@Bean
 		OnboardingImageUploadUrlIssuer onboardingImageUploadUrlIssuer() {
-			return (userId, target, contentType) -> {
-				ImageUploadTarget.from(target);
+			return (userId, contentType) -> {
 				ImageType.fromContentType(contentType);
 				return new OnboardingImageUploadUrlResult(UPLOAD_URL, IMAGE_PUBLIC_URL, 600L);
 			};
