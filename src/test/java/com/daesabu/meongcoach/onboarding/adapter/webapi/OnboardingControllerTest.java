@@ -106,7 +106,7 @@ class OnboardingControllerTest {
 						.principal(() -> "1")
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.topics[0].title").value("배변 훈련"))
+				.andExpect(jsonPath("$.topics").doesNotExist())
 				.andExpect(jsonPath("$.breeds[0].code").value("POODLE"))
 				.andExpect(jsonPath("$.breeds[0].label").value("푸들"))
 				.andExpect(jsonPath("$.breeds[0].aliases[0]").value("POODLE"))
