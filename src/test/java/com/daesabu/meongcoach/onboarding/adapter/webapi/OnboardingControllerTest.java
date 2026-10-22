@@ -66,8 +66,7 @@ class OnboardingControllerTest {
 						"sex": "MALE",
 						"birthDate": "2024-03-01",
 						"personalities": ["TIMID", "LIVELY"],
-						"profileImageUrl": "https://images.test.meongcoach.com/images/dog-profile/1/b.jpg",
-						"expectation": "산책할 때 보호자에게 집중하면 좋겠어요."
+						"profileImageUrl": "https://images.test.meongcoach.com/images/dog-profile/1/b.jpg"
 					}
 				]
 			}
@@ -177,8 +176,7 @@ class OnboardingControllerTest {
 		OnboardingCompleteInfo info = onboardingCompleter.lastInfo;
 		assertThat(info.priorTrainingTopicIds()).containsExactlyInAnyOrder(1L, 2L);
 		assertThat(info.trainingGoalTopicIds()).containsExactlyInAnyOrder(2L, 3L);
-		assertThat(info.dogs().getFirst().expectation())
-				.isEqualTo("산책할 때 보호자에게 집중하면 좋겠어요.");
+		assertThat(info.dogs().getFirst().expectation()).isNull();
 	}
 
 	@Test
@@ -251,19 +249,6 @@ class OnboardingControllerTest {
 				"\"dogs\": [", "\"dogs\": [" + (dog + ", ").repeat(5));
 
 		assertValidationFails(request, "dogs");
-	}
-
-	@Test
-	void 강아지_기대_사항이_500자를_넘으면_검증에_실패한다() throws Exception {
-		String request = COMPLETE_REQUEST.replace(
-				"산책할 때 보호자에게 집중하면 좋겠어요.", "가".repeat(501));
-
-		mockMvc.perform(post("/api/onboarding")
-						.principal(() -> "1")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content(request))
-				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.errors[0].field").value("dogs[0].expectation"));
 	}
 
 	@Test
