@@ -7,17 +7,13 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Past;
-import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 
 public record OnboardingCompleteRequest(
 		@NotBlank @Size(max = 12) String nickname,
-		@Size(max = 100) List<@NotNull @Positive Long> priorTrainingTopicIds,
-		@Size(max = 100) List<@NotNull @Positive Long> trainingGoalTopicIds,
 		@NotEmpty @Size(max = 1) List<@NotNull @Valid DogRequest> dogs) {
 
 	public OnboardingCompleteInfo toInfo() {
@@ -25,13 +21,9 @@ public record OnboardingCompleteRequest(
 				nickname,
 				null,
 				null,
-				Set.copyOf(emptyIfNull(priorTrainingTopicIds)),
-				Set.copyOf(emptyIfNull(trainingGoalTopicIds)),
+				Set.of(),
+				Set.of(),
 				dogs.stream().map(DogRequest::toInfo).toList());
-	}
-
-	private static <T> List<T> emptyIfNull(List<T> values) {
-		return Objects.requireNonNullElse(values, List.of());
 	}
 
 	public record DogRequest(

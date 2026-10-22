@@ -139,12 +139,6 @@ class OnboardingControllerTest {
 				.andDo(document("onboarding/complete",
 						requestFields(
 								fieldWithPath("nickname").description("사용자 닉네임. 필수 입력, 최대 12자"),
-								fieldWithPath("priorTrainingTopicIds").description(
-										"이전에 교육한 양수 토픽 ID 배열 (최대 100개). "
-												+ "미입력·null·빈 배열은 선택 없음").optional(),
-								fieldWithPath("trainingGoalTopicIds").description(
-										"앞으로 교육할 양수 목표 토픽 ID 배열 (최대 100개). "
-												+ "미입력·null·빈 배열은 선택 없음").optional(),
 								fieldWithPath("dogs[]").description("등록할 강아지 목록. 정확히 1마리"),
 								fieldWithPath("dogs[].name").description("강아지 이름. 필수 입력, 최대 12자"),
 								fieldWithPath("dogs[].breed").description(
