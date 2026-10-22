@@ -21,7 +21,6 @@ import com.daesabu.meongcoach.user.domain.User;
 import com.daesabu.meongcoach.user.domain.UserProfile;
 import com.daesabu.meongcoach.user.domain.UserRole;
 import com.daesabu.meongcoach.user.domain.exception.AlreadyOnboardedException;
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
@@ -71,8 +70,7 @@ class OnboardingCompleteServiceTest {
 				"멍멍이집사",
 				List.of(
 						new DogRegisterInfo("초코", "POODLE", "MALE", LocalDate.of(2024, 3, 1),
-								new BigDecimal("4.50"), Set.of("TIMID"), dogImageUrl,
-								"산책할 때 보호자에게 집중하면 좋겠어요.")));
+								null, Set.of("TIMID"), dogImageUrl, null)));
 	}
 
 	@Test
@@ -110,14 +108,15 @@ class OnboardingCompleteServiceTest {
 	}
 
 	@Test
-	void 등록한_강아지에_기대_사항이_저장된다() {
+	void 온보딩에서_받지_않는_강아지_정보는_비워_저장한다() {
 		List<Long> dogIds = service.complete(userId, completeInfo());
 
 		assertThat(dogRepository.findAllById(dogIds))
-				.filteredOn(dog -> dog.getName().equals("초코"))
 				.singleElement()
-				.satisfies(dog -> assertThat(dog.getExpectation())
-						.isEqualTo("산책할 때 보호자에게 집중하면 좋겠어요."));
+				.satisfies(dog -> {
+					assertThat(dog.getWeightKg()).isNull();
+					assertThat(dog.getExpectation()).isEmpty();
+				});
 	}
 
 	@Test
