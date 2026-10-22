@@ -33,6 +33,13 @@ class VideoObjectKeyTest {
 	}
 
 	@Test
+	void 커뮤니티_게시글_영상의_객체_키는_커뮤니티_경로_구획과_사용자_ID를_담는다() {
+		VideoObjectKey key = VideoObjectKey.createCommunity(7L, VideoType.MOV);
+
+		assertThat(key.value()).matches("videos/community-post/7/[0-9a-f-]{36}\\.mov");
+	}
+
+	@Test
 	void quicktime_영상은_mov_확장자를_쓴다() {
 		VideoObjectKey key = VideoObjectKey.create(VideoUploadTarget.TRAINING_VIDEO, 7L, VideoType.MOV);
 

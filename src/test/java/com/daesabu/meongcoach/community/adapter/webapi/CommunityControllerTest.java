@@ -18,12 +18,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.daesabu.meongcoach.community.application.provided.CommentRegister;
 import com.daesabu.meongcoach.community.application.provided.PostFinder;
+import com.daesabu.meongcoach.community.application.provided.PostMediaUploadUrlIssuer;
 import com.daesabu.meongcoach.community.application.provided.PostRegister;
 import com.daesabu.meongcoach.community.application.provided.dto.CommentRegisterRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.MentionRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.MentionTargetResult;
 import com.daesabu.meongcoach.community.application.provided.dto.PostListRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.PostListResult;
+import com.daesabu.meongcoach.community.application.provided.dto.PostMediaUploadUrlRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.PostRegisterRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.PostResult;
 import com.daesabu.meongcoach.community.domain.CommentFixture;
@@ -33,6 +35,8 @@ import com.daesabu.meongcoach.community.domain.Post;
 import com.daesabu.meongcoach.community.domain.PostFixture;
 import com.daesabu.meongcoach.community.domain.exception.MentionTargetNotFoundException;
 import com.daesabu.meongcoach.community.domain.exception.PostNotFoundException;
+import com.daesabu.meongcoach.media.application.provided.CommunityMediaUploadUrlResult;
+import com.daesabu.meongcoach.media.domain.exception.VideoFileSizeExceededException;
 import com.daesabu.meongcoach.user.application.provided.UserProfileSummaryResult;
 import java.security.Principal;
 import java.time.LocalDateTime;
@@ -63,6 +67,9 @@ class CommunityControllerTest {
 
 	@MockitoBean
 	private CommentRegister commentRegister;
+
+	@MockitoBean
+	private PostMediaUploadUrlIssuer postMediaUploadUrlIssuer;
 
 	@Test
 	void 게시글_목록을_다음_커서와_함께_반환한다() throws Exception {
@@ -385,5 +392,82 @@ class CommunityControllerTest {
 				.andExpect(jsonPath("$.errors[0].field").value("parentId"));
 
 		then(commentRegister).shouldHaveNoInteractions();
+	}
+
+	@Test
+	void 게시글_미디어_업로드_URL을_발급한다() throws Exception {
+		given(postMediaUploadUrlIssuer.issue(42L, new PostMediaUploadUrlRequest("VIDEO", "video/mp4", 10_485_760L)))
+				.willReturn(new CommunityMediaUploadUrlResult(
+						"https://account.r2.cloudflarestorage.com/bucket/videos/community-post/42/key.mp4?X-Amz-Signature=sig",
+						"https://images.meongcoach.com/videos/community-post/42/key.mp4", 600L));
+
+		mockMvc.perform(post("/api/community/presigned-urls")
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{"mediaType": "VIDEO", "contentType": "video/mp4", "fileSizeBytes": 10485760}
+								"""))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.uploadUrl").value(
+						"https://account.r2.cloudflarestorage.com/bucket/videos/community-post/42/key.mp4?X-Amz-Signature=sig"))
+				.andExpect(jsonPath("$.publicUrl").value("https://images.meongcoach.com/videos/community-post/42/key.mp4"))
+				.andExpect(jsonPath("$.expiresInSeconds").value(600))
+				.andDo(document("community/post-media-upload-url",
+						requestFields(
+								fieldWithPath("mediaType").description("미디어 종류. IMAGE(사진) 또는 VIDEO(영상)"),
+								fieldWithPath("contentType")
+										.description("파일 형식. 사진은 image/jpeg·image/png·image/webp, 영상은 video/mp4·video/quicktime"),
+								fieldWithPath("fileSizeBytes")
+										.description("업로드할 파일 크기(바이트, 양의 정수). 영상은 512MiB(536870912) 이하여야 하고 업로드 URL 서명에 포함된다. 사진은 상한이 없다")
+						),
+						responseFields(
+								fieldWithPath("uploadUrl").description(
+										"파일을 PUT할 presigned URL. 요청한 contentType을 Content-Type 헤더로 보내야 하고, 영상은 fileSizeBytes와 같은 크기로 올려야 한다"),
+								fieldWithPath("publicUrl").description("업로드 후 파일이 공개되는 URL. 게시글 작성 요청에 이 값을 담는다"),
+								fieldWithPath("expiresInSeconds").description("uploadUrl의 유효 시간(초)")
+						)
+				));
+	}
+
+	@Test
+	void 영상이_512MiB를_넘으면_400을_반환한다() throws Exception {
+		PostMediaUploadUrlRequest request = new PostMediaUploadUrlRequest("VIDEO", "video/mp4", 536_870_913L);
+		given(postMediaUploadUrlIssuer.issue(42L, request))
+				.willThrow(new VideoFileSizeExceededException(536_870_913L, 536_870_912L));
+
+		mockMvc.perform(post("/api/community/presigned-urls")
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{"mediaType": "VIDEO", "contentType": "video/mp4", "fileSizeBytes": 536870913}
+								"""))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("MEDIA_VIDEO_FILE_SIZE_EXCEEDED"))
+				.andDo(document("community/post-media-upload-url-error",
+						responseFields(
+								fieldWithPath("title").description("HTTP 상태 이름"),
+								fieldWithPath("status").description("HTTP 상태 코드"),
+								fieldWithPath("detail").description("사람이 읽을 수 있는 에러 설명"),
+								fieldWithPath("instance").description("에러가 발생한 요청 경로"),
+								fieldWithPath("code").description("클라이언트 분기용 에러 코드"),
+								fieldWithPath("timestamp").description("에러 발생 시각(UTC)")
+						)
+				));
+	}
+
+	@Test
+	void 파일_크기가_없으면_400을_반환한다() throws Exception {
+		mockMvc.perform(post("/api/community/presigned-urls")
+						.principal(CURRENT_USER)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{"mediaType": "IMAGE", "contentType": "image/jpeg"}
+								"""))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.errors[0].field").value("fileSizeBytes"));
+
+		then(postMediaUploadUrlIssuer).shouldHaveNoInteractions();
 	}
 }
