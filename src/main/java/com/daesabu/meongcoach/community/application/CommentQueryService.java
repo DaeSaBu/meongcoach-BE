@@ -4,9 +4,15 @@ import com.daesabu.meongcoach.community.application.provided.CommentFinder;
 import com.daesabu.meongcoach.community.application.provided.dto.CommentListRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.CommentListResult;
 import com.daesabu.meongcoach.community.application.provided.dto.CommentResult;
+import com.daesabu.meongcoach.community.application.provided.dto.ReplyListResult;
+import com.daesabu.meongcoach.community.application.provided.dto.ReplyResult;
+import com.daesabu.meongcoach.community.application.required.CommentClosureRepository;
 import com.daesabu.meongcoach.community.application.required.CommentQueryRepository;
+import com.daesabu.meongcoach.community.application.required.CommentRepository;
 import com.daesabu.meongcoach.community.application.required.PostRepository;
 import com.daesabu.meongcoach.community.domain.Comment;
+import com.daesabu.meongcoach.community.domain.CommentClosure;
+import com.daesabu.meongcoach.community.domain.exception.CommentNotFoundException;
 import com.daesabu.meongcoach.community.domain.exception.PostNotFoundException;
 import com.daesabu.meongcoach.user.application.provided.UserProfileSummaryResult;
 import java.util.List;
@@ -26,6 +32,8 @@ import org.springframework.validation.annotation.Validated;
 public class CommentQueryService implements CommentFinder {
 
 	private final PostRepository postRepository;
+	private final CommentRepository commentRepository;
+	private final CommentClosureRepository commentClosureRepository;
 	private final CommentQueryRepository commentQueryRepository;
 	private final AuthorProfiles authorProfiles;
 
@@ -39,9 +47,27 @@ public class CommentQueryService implements CommentFinder {
 		return new CommentListResult(comments, nextCursor);
 	}
 
+	@Override
+	public ReplyListResult findReplies(Long commentId, CommentListRequest request) {
+		validateRootComment(commentId);
+		Slice<Comment> slice = commentQueryRepository.findReplies(commentId, request.cursor(), request.size());
+
+		List<ReplyResult> replies = composeReplies(slice.getContent());
+		Long nextCursor = nextCursorOf(slice);
+		return new ReplyListResult(replies, nextCursor);
+	}
+
 	private void validatePostExists(Long postId) {
 		if (!postRepository.existsById(postId)) {
 			throw new PostNotFoundException(postId);
+		}
+	}
+
+	private void validateRootComment(Long commentId) {
+		boolean exists = commentRepository.existsById(commentId);
+		boolean isReply = commentClosureRepository.existsByDescendantIdAndDepth(commentId, CommentClosure.REPLY_DEPTH);
+		if (!exists || isReply) {
+			throw new CommentNotFoundException(commentId);
 		}
 	}
 
@@ -51,6 +77,13 @@ public class CommentQueryService implements CommentFinder {
 		return comments.stream()
 				.map(comment -> new CommentResult(comment, authors.get(comment.getUserId()),
 						replyCounts.getOrDefault(comment.getId(), 0L)))
+				.toList();
+	}
+
+	private List<ReplyResult> composeReplies(List<Comment> replies) {
+		Map<Long, UserProfileSummaryResult> authors = findAuthors(replies);
+		return replies.stream()
+				.map(reply -> new ReplyResult(reply, authors.get(reply.getUserId())))
 				.toList();
 	}
 

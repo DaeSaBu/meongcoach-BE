@@ -6,6 +6,7 @@ import com.daesabu.meongcoach.community.adapter.webapi.dto.PostListResponse;
 import com.daesabu.meongcoach.community.adapter.webapi.dto.PostMediaUploadUrlResponse;
 import com.daesabu.meongcoach.community.adapter.webapi.dto.PostRegisterResponse;
 import com.daesabu.meongcoach.community.adapter.webapi.dto.PostResponse;
+import com.daesabu.meongcoach.community.adapter.webapi.dto.ReplyListResponse;
 import com.daesabu.meongcoach.community.application.provided.CommentFinder;
 import com.daesabu.meongcoach.community.application.provided.CommentRegister;
 import com.daesabu.meongcoach.community.application.provided.PostFinder;
@@ -19,6 +20,7 @@ import com.daesabu.meongcoach.community.application.provided.dto.PostListResult;
 import com.daesabu.meongcoach.community.application.provided.dto.PostMediaUploadUrlRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.PostRegisterRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.PostResult;
+import com.daesabu.meongcoach.community.application.provided.dto.ReplyListResult;
 import com.daesabu.meongcoach.community.domain.Comment;
 import com.daesabu.meongcoach.community.domain.Post;
 import com.daesabu.meongcoach.media.application.provided.dto.MediaUploadUrlResult;
@@ -78,6 +80,13 @@ public class CommunityController {
 	                                        @Valid @ModelAttribute CommentListRequest request) {
 		CommentListResult result = commentFinder.findComments(postId, request);
 		return CommentListResponse.from(result);
+	}
+
+	@GetMapping("/comments/{commentId}/replies")
+	public ReplyListResponse findReplies(@PathVariable Long commentId,
+	                                     @Valid @ModelAttribute CommentListRequest request) {
+		ReplyListResult result = commentFinder.findReplies(commentId, request);
+		return ReplyListResponse.from(result);
 	}
 
 	@PostMapping("/posts/{postId}/comments")
