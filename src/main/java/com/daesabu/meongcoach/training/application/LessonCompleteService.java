@@ -6,7 +6,10 @@ import com.daesabu.meongcoach.training.application.provided.LessonFinder;
 import com.daesabu.meongcoach.training.application.required.LessonProgressRepository;
 import com.daesabu.meongcoach.training.domain.Lesson;
 import com.daesabu.meongcoach.training.domain.LessonProgress;
+import com.daesabu.meongcoach.training.domain.exception.LessonCompletionConflictException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,12 +26,13 @@ public class LessonCompleteService implements LessonCompleter {
 	public int completeLesson(Long userId, Long lessonId) {
 		Lesson lesson = lessonFinder.find(lessonId);
 		lesson.findRequiredEntitlementType().ifPresent(type -> entitlementChecker.validateEntitlement(userId, type));
-		lessonProgressRepository.lockProgress(userId, lessonId);
 		LessonProgress progress = lessonProgressRepository.findByUserIdAndLessonId(userId, lessonId)
 				.orElseGet(() -> LessonProgress.start(userId, lessonId));
 		int completedCount = progress.complete();
-		if (progress.getId() == null) {
-			lessonProgressRepository.save(progress);
+		try {
+			lessonProgressRepository.saveAndFlush(progress);
+		} catch (DataIntegrityViolationException | OptimisticLockingFailureException e) {
+			throw new LessonCompletionConflictException(lessonId, e);
 		}
 		return completedCount;
 	}
