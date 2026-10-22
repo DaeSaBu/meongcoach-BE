@@ -72,34 +72,31 @@ class OnboardingCompleteServiceTest {
 				List.of(
 						new DogRegisterInfo("초코", "POODLE", "MALE", LocalDate.of(2024, 3, 1),
 								new BigDecimal("4.50"), Set.of("TIMID"), dogImageUrl,
-								"산책할 때 보호자에게 집중하면 좋겠어요."),
-						new DogRegisterInfo("보리", "MALTESE", "FEMALE", null,
-								new BigDecimal("3.20"), Set.of(), null, null)));
+								"산책할 때 보호자에게 집중하면 좋겠어요.")));
 	}
 
 	@Test
-	void 온보딩을_완료하면_프로필과_강아지들이_함께_생성된다() {
+	void 온보딩을_완료하면_프로필과_강아지_한_마리가_함께_생성된다() {
 		List<Long> dogIds = service.complete(userId, completeInfo());
 
 		UserProfile profile = userRepository.findById(userId).orElseThrow().getProfile();
 		assertThat(profile.getNickname()).isEqualTo("멍멍이집사");
-		assertThat(dogIds).hasSize(2).doesNotContainNull();
+		assertThat(dogIds).hasSize(1).doesNotContainNull();
+
 		List<Dog> dogs = dogRepository.findAllById(dogIds);
-		assertThat(dogs).extracting(Dog::getUserId).containsOnly(userId);
-		assertThat(dogs).extracting(Dog::getName).containsExactlyInAnyOrder("초코", "보리");
+		assertThat(dogs).extracting(Dog::getUserId).containsExactly(userId);
+		assertThat(dogs).extracting(Dog::getName).containsExactly("초코");
 		assertThat(dogs).extracting(Dog::getBreed)
-				.containsExactlyInAnyOrder(Breed.of(RegisteredBreed.POODLE), Breed.of(RegisteredBreed.MALTESE));
+				.containsExactly(Breed.of(RegisteredBreed.POODLE));
 	}
 
 	@Test
-	void 여러_마리를_등록하면_첫_번째_강아지만_선택_상태가_된다() {
+	void 온보딩에서_등록한_강아지는_선택_상태가_된다() {
 		List<Long> dogIds = service.complete(userId, completeInfo());
 
-		List<Dog> dogs = dogRepository.findAllById(dogIds);
-
-		assertThat(dogs).filteredOn(dog -> dog.getStatus() == DogStatus.SELECTED)
-				.extracting(Dog::getName)
-				.containsExactly("초코");
+		assertThat(dogRepository.findAllById(dogIds))
+				.singleElement()
+				.satisfies(dog -> assertThat(dog.getStatus()).isEqualTo(DogStatus.SELECTED));
 	}
 
 	@Test
