@@ -20,9 +20,11 @@ import com.daesabu.meongcoach.training.domain.Topic;
 import com.daesabu.meongcoach.training.domain.TopicFixture;
 import com.daesabu.meongcoach.training.domain.TrainingCategory;
 import com.daesabu.meongcoach.training.domain.TrainingCategoryFixture;
+import com.daesabu.meongcoach.training.domain.exception.LessonCompletionConflictException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -86,45 +88,63 @@ class LessonCompleterConcurrencyTest {
 	}
 
 	@Test
-	void 동시_최초_완료는_하나의_레슨_진행에_두_번_기록된다() throws Exception {
+	void 동시_최초_완료는_먼저_커밋한_완료만_기록한다() throws Exception {
 		Lesson lesson = saveLesson();
-		CompletableFuture<Void> acquired = new CompletableFuture<>();
-		Future<?> first = executor.submit(() -> transactions.executeWithoutResult(status -> {
-			repository.lockProgress(USER_ID, lesson.getId());
-			acquired.complete(null);
-			release.join();
-			lessonCompleter.completeLesson(USER_ID, lesson.getId());
-		}));
-		acquired.get(5, SECONDS);
+		Future<?> first = completeAndHold(lesson);
 
 		Future<Integer> second = executor.submit(() -> lessonCompleter.completeLesson(USER_ID, lesson.getId()));
 
 		assertThatThrownBy(() -> second.get(500, MILLISECONDS)).isInstanceOf(TimeoutException.class);
 		release.complete(null);
 		first.get(5, SECONDS);
-		assertThat(second.get(5, SECONDS)).isEqualTo(2);
+		assertThatThrownBy(() -> second.get(5, SECONDS))
+				.isInstanceOf(ExecutionException.class)
+				.hasCauseInstanceOf(LessonCompletionConflictException.class);
+		assertThat(repository.findByUserIdAndLessonId(USER_ID, lesson.getId()))
+				.get().extracting(LessonProgress::getCompletedCount).isEqualTo(1);
+	}
+
+	@Test
+	void 동시_반복_완료는_먼저_커밋한_완료만_기록한다() throws Exception {
+		Lesson lesson = saveLesson();
+		lessonCompleter.completeLesson(USER_ID, lesson.getId());
+		Future<?> first = completeAndHold(lesson);
+
+		Future<Integer> second = executor.submit(() -> lessonCompleter.completeLesson(USER_ID, lesson.getId()));
+
+		assertThatThrownBy(() -> second.get(500, MILLISECONDS)).isInstanceOf(TimeoutException.class);
+		release.complete(null);
+		first.get(5, SECONDS);
+		assertThatThrownBy(() -> second.get(5, SECONDS))
+				.isInstanceOf(ExecutionException.class)
+				.hasCauseInstanceOf(LessonCompletionConflictException.class);
 		assertThat(repository.findByUserIdAndLessonId(USER_ID, lesson.getId()))
 				.get().extracting(LessonProgress::getCompletedCount).isEqualTo(2);
 	}
 
 	@Test
-	void 같은_커리큘럼의_다른_레슨은_잠금을_기다리지_않는다() throws Exception {
-		Lesson locked = saveLesson();
+	void 같은_커리큘럼의_다른_레슨_완료와는_충돌하지_않는다() throws Exception {
+		Lesson held = saveLesson();
 		Lesson lesson = transactions.execute(status -> {
-			Lesson other = LessonFixture.create(locked.getCurriculum(), "다른 레슨", 2, 5);
+			Lesson other = LessonFixture.create(held.getCurriculum(), "다른 레슨", 2, 5);
 			return contentRepository.save(other);
 		});
-		CompletableFuture<Void> acquired = new CompletableFuture<>();
-		executor.submit(() -> transactions.executeWithoutResult(status -> {
-			repository.lockProgress(USER_ID, locked.getId());
-			acquired.complete(null);
-			release.join();
-		}));
-		acquired.get(5, SECONDS);
+		completeAndHold(held);
 
 		Future<Integer> completion = executor.submit(() -> lessonCompleter.completeLesson(USER_ID, lesson.getId()));
 
 		assertThat(completion.get(5, SECONDS)).isOne();
+	}
+
+	private Future<?> completeAndHold(Lesson lesson) throws Exception {
+		CompletableFuture<Void> completed = new CompletableFuture<>();
+		Future<?> holder = executor.submit(() -> transactions.executeWithoutResult(status -> {
+			lessonCompleter.completeLesson(USER_ID, lesson.getId());
+			completed.complete(null);
+			release.join();
+		}));
+		completed.get(5, SECONDS);
+		return holder;
 	}
 
 	private Lesson saveLesson() {

@@ -48,6 +48,7 @@ import com.daesabu.meongcoach.training.domain.TopicFixture;
 import com.daesabu.meongcoach.training.domain.TrainingCategory;
 import com.daesabu.meongcoach.training.domain.TrainingCategoryFixture;
 import com.daesabu.meongcoach.training.domain.exception.CurriculumNotFoundException;
+import com.daesabu.meongcoach.training.domain.exception.LessonCompletionConflictException;
 import com.daesabu.meongcoach.training.domain.exception.LessonNotFoundException;
 import com.daesabu.meongcoach.training.domain.exception.TopicNotConfiguredException;
 import com.daesabu.meongcoach.training.domain.exception.TopicNotFoundException;
@@ -670,6 +671,16 @@ class TrainingControllerTest {
 								fieldWithPath("timestamp").description("에러 발생 시각(UTC)")
 						)
 				));
+	}
+
+	@Test
+	void 같은_레슨의_완료가_동시에_처리되면_409를_반환한다() throws Exception {
+		given(lessonCompleter.completeLesson(42L, 7L))
+				.willThrow(new LessonCompletionConflictException(7L, new RuntimeException()));
+
+		mockMvc.perform(post("/api/training/lessons/{lessonId}/completion", 7L).principal(CURRENT_USER))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code").value("TRAINING_LESSON_COMPLETION_CONFLICT"));
 	}
 
 	@Test
