@@ -34,8 +34,6 @@ import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 class OnboardingCompleteServiceTest {
 
 	private static final String STORAGE_BASE_URL = "https://images.test.meongcoach.com/";
-	private static final long PRIOR_TRAINING_TOPIC_ID = 1L;
-	private static final long TRAINING_GOAL_TOPIC_ID = 2L;
 
 	@Autowired
 	private UserRepository userRepository;
@@ -65,16 +63,12 @@ class OnboardingCompleteServiceTest {
 	}
 
 	private OnboardingCompleteInfo completeInfo() {
-		return completeInfo(null, null);
+		return completeInfo(null);
 	}
 
-	private OnboardingCompleteInfo completeInfo(String userImageUrl, String dogImageUrl) {
+	private OnboardingCompleteInfo completeInfo(String dogImageUrl) {
 		return new OnboardingCompleteInfo(
 				"멍멍이집사",
-				"INTJ",
-				userImageUrl,
-				Set.of(PRIOR_TRAINING_TOPIC_ID),
-				Set.of(TRAINING_GOAL_TOPIC_ID),
 				List.of(
 						new DogRegisterInfo("초코", "POODLE", "MALE", LocalDate.of(2024, 3, 1),
 								new BigDecimal("4.50"), Set.of("TIMID"), dogImageUrl,
@@ -130,23 +124,23 @@ class OnboardingCompleteServiceTest {
 	}
 
 	@Test
-	void 교육_이력과_목표가_저장된다() {
+	void 온보딩에서_받지_않는_보호자_정보는_비워_저장한다() {
 		service.complete(userId, completeInfo());
 
 		UserProfile profile = userRepository.findById(userId).orElseThrow().getProfile();
-		assertThat(profile.getPriorTrainingTopicIds()).containsExactly(PRIOR_TRAINING_TOPIC_ID);
-		assertThat(profile.getTrainingGoalTopicIds()).containsExactly(TRAINING_GOAL_TOPIC_ID);
+
+		assertThat(profile.getMbti()).isNull();
+		assertThat(profile.getProfileImageUrl()).isEmpty();
+		assertThat(profile.getPriorTrainingTopicIds()).isEmpty();
+		assertThat(profile.getTrainingGoalTopicIds()).isEmpty();
 	}
 
 	@Test
-	void 사용자와_강아지_프로필_이미지_URL이_함께_저장된다() {
-		String userImageUrl = STORAGE_BASE_URL + "images/user-profile/1/a.jpg";
+	void 강아지_프로필_이미지_URL이_저장된다() {
 		String dogImageUrl = STORAGE_BASE_URL + "images/dog-profile/1/b.jpg";
 
-		List<Long> dogIds = service.complete(userId, completeInfo(userImageUrl, dogImageUrl));
+		List<Long> dogIds = service.complete(userId, completeInfo(dogImageUrl));
 
-		UserProfile profile = userRepository.findById(userId).orElseThrow().getProfile();
-		assertThat(profile.getProfileImageUrl()).isEqualTo(userImageUrl);
 		assertThat(dogRepository.findAllById(dogIds))
 				.filteredOn(dog -> dog.getName().equals("초코"))
 				.singleElement()
@@ -154,16 +148,9 @@ class OnboardingCompleteServiceTest {
 	}
 
 	@Test
-	void 사용자_이미지가_우리_스토리지_URL이_아니면_실패한다() {
-		assertThatThrownBy(() -> service.complete(userId,
-				completeInfo("https://evil.example.com/a.jpg", null)))
-				.isInstanceOf(InvalidImageUrlException.class);
-	}
-
-	@Test
 	void 강아지_이미지가_우리_스토리지_URL이_아니면_실패한다() {
 		assertThatThrownBy(() -> service.complete(userId,
-				completeInfo(null, "https://evil.example.com/b.jpg")))
+				completeInfo("https://evil.example.com/b.jpg")))
 				.isInstanceOf(InvalidImageUrlException.class);
 	}
 

@@ -93,8 +93,6 @@ class OnboardingControllerTest {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(COMPLETE_REQUEST))
 				.andExpect(status().isCreated());
-
-		assertThat(onboardingCompleter.lastInfo.mbti()).isNull();
 	}
 
 	@Test
@@ -153,11 +151,8 @@ class OnboardingControllerTest {
 				));
 
 		OnboardingCompleteInfo info = onboardingCompleter.lastInfo;
-		assertThat(info.profileImageUrl()).isNull();
 		assertThat(info.dogs().getFirst().profileImageUrl())
 				.isEqualTo("https://images.test.meongcoach.com/images/dog-profile/1/b.jpg");
-		assertThat(info.priorTrainingTopicIds()).isEmpty();
-		assertThat(info.trainingGoalTopicIds()).isEmpty();
 		assertThat(info.dogs().getFirst().expectation()).isNull();
 	}
 
