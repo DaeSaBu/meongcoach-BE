@@ -552,9 +552,9 @@ class CommunityControllerTest {
 		Post post = PostFixture.create(30L, 7L, "이 레슨 따라해봤어요", LocalDateTime.of(2026, 10, 19, 10, 30, 0));
 		CommentResult withProfile = new CommentResult(
 				CommentFixture.create(100L, post, 7L, "저희 강아지도 성공했어요!", LocalDateTime.of(2026, 10, 19, 11, 0, 0)),
-				new UserProfileSummaryResult(7L, "멍멍이집사", "https://cdn.example.com/profile.png"));
+				new UserProfileSummaryResult(7L, "멍멍이집사", "https://cdn.example.com/profile.png"), 3L);
 		CommentResult withoutProfile = new CommentResult(
-				CommentFixture.create(101L, post, 8L, "축하해요!", LocalDateTime.of(2026, 10, 19, 12, 0, 0)), null);
+				CommentFixture.create(101L, post, 8L, "축하해요!", LocalDateTime.of(2026, 10, 19, 12, 0, 0)), null, 0L);
 		given(commentFinder.findComments(30L, new CommentListRequest(99L, 2)))
 				.willReturn(new CommentListResult(List.of(withProfile, withoutProfile), 101L));
 
@@ -568,9 +568,11 @@ class CommunityControllerTest {
 				.andExpect(jsonPath("$.comments[0].content").value("저희 강아지도 성공했어요!"))
 				.andExpect(jsonPath("$.comments[0].author.userId").value(7))
 				.andExpect(jsonPath("$.comments[0].author.nickname").value("멍멍이집사"))
+				.andExpect(jsonPath("$.comments[0].replyCount").value(3))
 				.andExpect(jsonPath("$.comments[0].createdAt").value("2026-10-19T11:00:00"))
 				.andExpect(jsonPath("$.comments[1].commentId").value(101))
 				.andExpect(jsonPath("$.comments[1].author").value(nullValue()))
+				.andExpect(jsonPath("$.comments[1].replyCount").value(0))
 				.andExpect(jsonPath("$.nextCursor").value(101))
 				.andDo(document("community/comment-list",
 						pathParameters(parameterWithName("postId").description("댓글을 조회할 게시글 ID")),
@@ -589,6 +591,7 @@ class CommunityControllerTest {
 								fieldWithPath("comments[].author.userId").description("작성자 회원 ID"),
 								fieldWithPath("comments[].author.nickname").description("작성자 닉네임"),
 								fieldWithPath("comments[].author.profileImageUrl").description("작성자 프로필 이미지 URL"),
+								fieldWithPath("comments[].replyCount").description("삭제되지 않은 답글 수. 답글이 없으면 0"),
 								fieldWithPath("comments[].createdAt").description("댓글 작성 시각(ISO-8601, 초 단위)"),
 								fieldWithPath("nextCursor").optional()
 										.description("다음 페이지 요청에 cursor로 보낼 값. 마지막 페이지면 null")

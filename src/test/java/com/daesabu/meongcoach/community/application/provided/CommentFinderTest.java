@@ -123,6 +123,42 @@ class CommentFinderTest {
 	}
 
 	@Test
+	void 루트_댓글마다_답글_수를_함께_반환한다() {
+		Comment first = saveComment(USER_ID, "첫 댓글");
+		saveReply(first, USER_ID, "첫 답글");
+		saveReply(first, USER_ID, "둘째 답글");
+		Comment second = saveComment(USER_ID, "둘째 댓글");
+		saveReply(second, USER_ID, "답글");
+		flushAndClear();
+
+		CommentListResult result = commentFinder.findComments(post.getId(), new CommentListRequest(null, 20));
+
+		assertThat(result.comments()).extracting(CommentResult::replyCount).containsExactly(2L, 1L);
+	}
+
+	@Test
+	void 답글이_없는_루트_댓글의_답글_수는_0이다() {
+		saveComment(USER_ID, "댓글");
+		flushAndClear();
+
+		CommentListResult result = commentFinder.findComments(post.getId(), new CommentListRequest(null, 20));
+
+		assertThat(result.comments().getFirst().replyCount()).isZero();
+	}
+
+	@Test
+	void 삭제된_답글은_답글_수에서_제외한다() {
+		Comment root = saveComment(USER_ID, "댓글");
+		saveReply(root, USER_ID, "삭제된 답글").delete();
+		saveReply(root, USER_ID, "남은 답글");
+		flushAndClear();
+
+		CommentListResult result = commentFinder.findComments(post.getId(), new CommentListRequest(null, 20));
+
+		assertThat(result.comments().getFirst().replyCount()).isEqualTo(1L);
+	}
+
+	@Test
 	void 작성자_프로필_요약을_함께_반환한다() {
 		User author = saveUserWithProfile("멍멍이집사", "https://cdn.example.com/profile.png");
 		saveComment(author.getId(), "댓글");
