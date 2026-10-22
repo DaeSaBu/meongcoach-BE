@@ -17,8 +17,11 @@ public class OnboardingImageUploadUrlService implements OnboardingImageUploadUrl
 	private final ImageUploadUrlIssuer imageUploadUrlIssuer;
 
 	@Override
-	public OnboardingImageUploadUrlResult issue(Long userId, String target, String contentType) {
-		ImageUploadUrlResult result = imageUploadUrlIssuer.issue(userId, target, contentType);
-		return new OnboardingImageUploadUrlResult(result.uploadUrl(), result.publicUrl(), result.expiresInSeconds());
+	public OnboardingImageUploadUrlResult issue(Long userId, String contentType) {
+		ImageUploadUrlResult result =
+				imageUploadUrlIssuer.issue(userId, "DOG_PROFILE", contentType);
+
+		return new OnboardingImageUploadUrlResult(
+				result.uploadUrl(), result.publicUrl(), result.expiresInSeconds());
 	}
 }

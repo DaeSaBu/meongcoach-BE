@@ -405,9 +405,6 @@ class OnboardingControllerTest {
 				.andExpect(jsonPath("$.expiresInSeconds").value(600))
 				.andDo(document("onboarding/image-upload-url",
 						requestFields(
-								fieldWithPath("target").description(
-										"필수 입력. 업로드 대상. `USER_PROFILE`(사용자 프로필) 또는 "
-												+ "`DOG_PROFILE`(강아지 프로필)"),
 								fieldWithPath("contentType").description(
 										"필수 입력. 업로드할 이미지의 Content-Type. `image/jpeg`, `image/png`, `image/webp`만 지원")
 						),

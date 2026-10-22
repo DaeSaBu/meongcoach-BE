@@ -47,7 +47,7 @@ public class OnboardingController {
 	public OnboardingImageUploadUrlResponse issueImageUploadUrl(@CurrentUserId Long userId,
 	                                                            @Valid @RequestBody OnboardingImageUploadUrlRequest request) {
 		OnboardingImageUploadUrlResult result =
-				onboardingImageUploadUrlIssuer.issue(userId, request.target(), request.contentType());
+				onboardingImageUploadUrlIssuer.issue(userId, request.contentType());
 		return OnboardingImageUploadUrlResponse.from(result);
 	}
 }
