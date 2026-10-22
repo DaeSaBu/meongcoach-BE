@@ -19,10 +19,6 @@ public record OnboardingCompleteRequest(
 	public OnboardingCompleteInfo toInfo() {
 		return new OnboardingCompleteInfo(
 				nickname,
-				null,
-				null,
-				Set.of(),
-				Set.of(),
 				dogs.stream().map(DogRequest::toInfo).toList());
 	}
 
