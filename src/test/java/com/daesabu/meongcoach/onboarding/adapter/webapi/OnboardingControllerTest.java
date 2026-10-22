@@ -56,7 +56,6 @@ class OnboardingControllerTest {
 	private static final String COMPLETE_REQUEST = """
 			{
 				"nickname": "멍멍이집사",
-				"profileImageUrl": "https://images.test.meongcoach.com/images/user-profile/1/a.jpg",
 				"priorTrainingTopicIds": [1, 2],
 				"trainingGoalTopicIds": [2, 3],
 				"dogs": [
@@ -172,6 +171,9 @@ class OnboardingControllerTest {
 				));
 
 		OnboardingCompleteInfo info = onboardingCompleter.lastInfo;
+		assertThat(info.profileImageUrl()).isNull();
+		assertThat(info.dogs().getFirst().profileImageUrl())
+				.isEqualTo("https://images.test.meongcoach.com/images/dog-profile/1/b.jpg");
 		assertThat(info.priorTrainingTopicIds()).containsExactlyInAnyOrder(1L, 2L);
 		assertThat(info.trainingGoalTopicIds()).containsExactlyInAnyOrder(2L, 3L);
 		assertThat(info.dogs().getFirst().expectation()).isNull();
@@ -297,15 +299,6 @@ class OnboardingControllerTest {
 		String request = COMPLETE_REQUEST.replace("멍멍이집사", "가".repeat(13));
 
 		assertValidationFails(request, "nickname");
-	}
-
-	@Test
-	void 사용자_프로필_이미지_URL이_512자를_넘으면_검증에_실패한다() throws Exception {
-		String request = COMPLETE_REQUEST.replace(
-				"https://images.test.meongcoach.com/images/user-profile/1/a.jpg",
-				"https://example.com/" + "a".repeat(500));
-
-		assertValidationFails(request, "profileImageUrl");
 	}
 
 	@Test
