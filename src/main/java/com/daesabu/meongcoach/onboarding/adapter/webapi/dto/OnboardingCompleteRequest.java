@@ -41,12 +41,11 @@ public record OnboardingCompleteRequest(
 			@NotBlank String sex,
 			@NotNull @Past LocalDate birthDate,
 			Set<String> personalities,
-			@Size(max = 512) String profileImageUrl,
-			@Size(max = 500) String expectation) {
+			@Size(max = 512) String profileImageUrl) {
 
 		public DogRegisterInfo toInfo() {
 			return new DogRegisterInfo(name, breed, sex, birthDate, null, personalities, profileImageUrl,
-					expectation);
+					null);
 		}
 	}
 }

@@ -164,9 +164,7 @@ class OnboardingControllerTest {
 								fieldWithPath("dogs[].personalities").description("강아지 성격 코드 목록. 선택 입력").optional(),
 								fieldWithPath("dogs[].profileImageUrl").description(
 										"강아지 프로필 이미지 공개 URL. 이미지 업로드 URL 발급 API의 "
-												+ "publicUrl. 최대 512자, 선택 입력").optional(),
-								fieldWithPath("dogs[].expectation").description(
-										"강아지 교육 기대 사항 (최대 500자). 선택 입력").optional()
+												+ "publicUrl. 최대 512자, 선택 입력").optional()
 						),
 						responseFields(
 								fieldWithPath("dogIds").description("생성된 강아지 ID 목록")
