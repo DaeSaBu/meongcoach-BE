@@ -25,7 +25,7 @@ import com.daesabu.meongcoach.graduation.domain.GraduationSubmissionStatus;
 import com.daesabu.meongcoach.graduation.domain.exception.GraduationAlreadyApprovedException;
 import com.daesabu.meongcoach.graduation.domain.exception.GraduationReviewPendingException;
 import com.daesabu.meongcoach.graduation.domain.exception.TopicNotCompletedException;
-import com.daesabu.meongcoach.media.application.provided.VideoUploadUrlResult;
+import com.daesabu.meongcoach.media.application.provided.dto.MediaUploadUrlResult;
 import com.daesabu.meongcoach.media.domain.exception.VideoFileSizeExceededException;
 import com.daesabu.meongcoach.training.application.provided.dto.TopicResult;
 import com.daesabu.meongcoach.training.domain.exception.TopicNotFoundException;
@@ -215,7 +215,7 @@ class GraduationControllerTest {
 	@Test
 	void 실습_영상_업로드_URL을_발급하고_201을_반환한다() throws Exception {
 		given(graduationUploadUrlIssuer.issue(42L, TOPIC_ID, new GraduationUploadUrlRequest("video/mp4", 10485760L)))
-				.willReturn(new VideoUploadUrlResult(VIDEO_URL, "https://videos.test/" + VIDEO_KEY, VIDEO_KEY, 900L));
+				.willReturn(new MediaUploadUrlResult(VIDEO_URL, "https://videos.test/" + VIDEO_KEY, VIDEO_KEY, 900L));
 
 		mockMvc.perform(post("/api/training/topics/{topicId}/graduation/presigned-urls", TOPIC_ID)
 						.principal(CURRENT_USER)

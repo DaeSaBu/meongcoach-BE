@@ -13,13 +13,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.daesabu.meongcoach.dog.domain.shared.Personality;
 import com.daesabu.meongcoach.dog.domain.shared.RegisteredBreed;
 import com.daesabu.meongcoach.media.domain.ImageType;
-import com.daesabu.meongcoach.media.domain.ImageUploadTarget;
 import com.daesabu.meongcoach.onboarding.application.provided.OnboardingCompleteInfo;
 import com.daesabu.meongcoach.onboarding.application.provided.OnboardingCompleter;
 import com.daesabu.meongcoach.onboarding.application.provided.OnboardingImageUploadUrlIssuer;
 import com.daesabu.meongcoach.onboarding.application.provided.OnboardingImageUploadUrlResult;
 import com.daesabu.meongcoach.onboarding.application.provided.OnboardingMetadataFinder;
 import com.daesabu.meongcoach.onboarding.application.provided.OnboardingMetadataResult;
+import com.daesabu.meongcoach.onboarding.domain.OnboardingImageTarget;
 import com.daesabu.meongcoach.training.application.provided.dto.TopicResult;
 import com.daesabu.meongcoach.user.domain.exception.AlreadyOnboardedException;
 import java.util.List;
@@ -499,7 +499,7 @@ class OnboardingControllerTest {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(IMAGE_ISSUE_REQUEST.replace("USER_PROFILE", "BANNER")))
 				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.code").value("MEDIA_INVALID_UPLOAD_TARGET"));
+				.andExpect(jsonPath("$.code").value("ONBOARDING_INVALID_IMAGE_UPLOAD_TARGET"));
 	}
 
 	@Test
@@ -564,7 +564,7 @@ class OnboardingControllerTest {
 		@Bean
 		OnboardingImageUploadUrlIssuer onboardingImageUploadUrlIssuer() {
 			return (userId, target, contentType) -> {
-				ImageUploadTarget.from(target);
+				OnboardingImageTarget.from(target);
 				ImageType.fromContentType(contentType);
 				return new OnboardingImageUploadUrlResult(UPLOAD_URL, IMAGE_PUBLIC_URL, 600L);
 			};

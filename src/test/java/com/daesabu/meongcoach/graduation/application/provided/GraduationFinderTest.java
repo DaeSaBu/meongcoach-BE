@@ -2,15 +2,11 @@ package com.daesabu.meongcoach.graduation.application.provided;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.BDDMockito.given;
 
 import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationDetailResult;
 import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationSubmissionRequest;
 import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationSummaryResult;
 import com.daesabu.meongcoach.graduation.domain.GraduationSubmissionStatus;
-import com.daesabu.meongcoach.media.application.required.VideoDownloadUrl;
-import com.daesabu.meongcoach.media.application.required.VideoStorage;
-import com.daesabu.meongcoach.media.domain.VideoObjectKey;
 import com.daesabu.meongcoach.support.ApplicationTest;
 import com.daesabu.meongcoach.training.domain.Topic;
 import com.daesabu.meongcoach.training.domain.exception.TopicNotFoundException;
@@ -35,9 +31,6 @@ class GraduationFinderTest {
 
 	@Autowired
 	private TopicSeeder topicSeeder;
-
-	@Autowired
-	private VideoStorage videoStorage;
 
 	@Autowired
 	private JdbcTemplate jdbcTemplate;
@@ -67,10 +60,6 @@ class GraduationFinderTest {
 		submit(USER_ID, topic, "first");
 		revise(topic);
 		submit(USER_ID, topic, "second");
-		String objectKey = "videos/graduation/42/" + topic.getId() + "/second.mp4";
-		given(videoStorage.issueDownloadUrl(new VideoObjectKey(objectKey)))
-				.willReturn(new VideoDownloadUrl("https://storage.test/" + objectKey,
-						"https://videos.test/" + objectKey, 900L));
 
 		GraduationDetailResult result = graduationFinder.findGraduation(USER_ID, topic.getId());
 
@@ -86,9 +75,6 @@ class GraduationFinderTest {
 		submit(USER_ID, topic, "second");
 
 		String objectKey = "videos/graduation/42/" + topic.getId() + "/second.mp4";
-		given(videoStorage.issueDownloadUrl(new VideoObjectKey(objectKey)))
-				.willReturn(new VideoDownloadUrl("https://storage.test/" + objectKey,
-						"https://videos.test/" + objectKey, 900L));
 
 		GraduationDetailResult detail = graduationFinder.findGraduation(USER_ID, topic.getId());
 		List<GraduationSummaryResult> summaries = graduationFinder.findGraduations(USER_ID);

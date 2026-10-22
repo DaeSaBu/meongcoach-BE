@@ -38,9 +38,9 @@ Java 소스(`src/main/java`, `src/test/java`)의 주석은 interface에만 두�
 | 역할 | 위치 | 규칙 | 예시 |
 | --- | --- | --- | --- |
 | 모듈 공개 API 인터페이스 | `application/provided` | 능력을 나타내는 이름, `~Service` 접미사 없음 | `DogRegister`, `MbtiFinder` |
-| 애플리케이션 조회 결과 래퍼 | `application/provided` 또는 `application/provided/dto` | `~Result` (record) — 도메인 타입만으로 부족할 때만 | `VideoUploadUrlResult`, `CurriculumDetailResult` |
+| 애플리케이션 조회 결과 래퍼 | `application/provided` 또는 `application/provided/dto` | `~Result` (record) — 도메인 타입만으로 부족할 때만 | `MediaUploadUrlResult`, `CurriculumDetailResult` |
 | 서비스 입력(웹 요청·모듈 경계 공통) | `application/provided/dto` | `~Request` (record). 도메인 입력이 필요하면 `toCommand()`로 변환 | `SocialLoginRequest`, `SocialAccountRegisterRequest` |
-| 필요 자원 인터페이스 | `application/required` | 자원 이름 그대로 | `UserRepository`, `VideoStorage` |
+| 필요 자원 인터페이스 | `application/required` | 자원 이름 그대로 | `UserRepository`, `PrivateObjectStorage` |
 | 애플리케이션 서비스 | `application` | `~Service` | `AuthenticationService`, `CurriculumQueryService` |
 | 컨트롤러 | `adapter/webapi` | `~Controller` | `AuthController` |
 | 외부 API 연동 포트 | `application/required` | 자원 이름 그대로 | `SocialProfileReader` |
@@ -49,7 +49,7 @@ Java 소스(`src/main/java`, `src/test/java`)의 주석은 interface에만 두�
 | 도메인 입력 모델 | `domain` | `~Command` (record) | `DogRegisterCommand` |
 | 일급 컬렉션 | `domain` | 엔티티 이름의 복수형 | `Dogs` |
 | 다른 모듈에 노출하는 도메인 타입 | `domain/shared` | 개념 이름 그대로. `package-info.java`에 `@NamedInterface("shared")` 선언 | `Breed` |
-| 값 객체 | `domain` | 개념 이름 그대로 | `RefreshTokenId`, `VideoObjectKey` |
+| 값 객체 | `domain` | 개념 이름 그대로 | `RefreshTokenId`, `MediaObjectKey` |
 | 도메인 예외·에러코드 | `domain/exception` | `{모듈}ErrorCode`, `~Exception` | `AuthErrorCode`, `InvalidEmailException` |
 
 - `domain` 루트에는 엔티티·enum·일급 컬렉션·값 객체를 두고, 예외·에러코드는 `domain/exception`으로 분리한다. 값 객체용 하위 패키지(`vo`)는 만들지 않으며, 다른 모듈에 노출하는 값 객체만 `domain/shared`에 둔다.

@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.daesabu.meongcoach.community.application.provided.dto.PostMediaUploadUrlRequest;
 import com.daesabu.meongcoach.community.domain.exception.InvalidPostMediaTypeException;
-import com.daesabu.meongcoach.media.application.provided.CommunityMediaUploadUrlResult;
+import com.daesabu.meongcoach.media.application.provided.dto.MediaUploadUrlResult;
 import com.daesabu.meongcoach.media.domain.exception.UnsupportedImageTypeException;
 import com.daesabu.meongcoach.media.domain.exception.VideoFileSizeExceededException;
 import com.daesabu.meongcoach.support.ApplicationTest;
@@ -25,7 +25,7 @@ class PostMediaUploadUrlIssuerTest {
 
 	@Test
 	void 사진이면_커뮤니티_이미지_업로드_URL을_발급한다() {
-		CommunityMediaUploadUrlResult result = postMediaUploadUrlIssuer.issue(USER_ID,
+		MediaUploadUrlResult result = postMediaUploadUrlIssuer.issue(USER_ID,
 				new PostMediaUploadUrlRequest("IMAGE", "image/jpeg", VALID_SIZE));
 
 		assertThat(result.publicUrl())
@@ -35,7 +35,7 @@ class PostMediaUploadUrlIssuerTest {
 
 	@Test
 	void 영상이면_커뮤니티_영상_업로드_URL을_발급한다() {
-		CommunityMediaUploadUrlResult result = postMediaUploadUrlIssuer.issue(USER_ID,
+		MediaUploadUrlResult result = postMediaUploadUrlIssuer.issue(USER_ID,
 				new PostMediaUploadUrlRequest("VIDEO", "video/mp4", VALID_SIZE));
 
 		assertThat(result.publicUrl())
@@ -45,7 +45,7 @@ class PostMediaUploadUrlIssuerTest {
 
 	@Test
 	void 미디어_종류는_대소문자를_구분하지_않는다() {
-		CommunityMediaUploadUrlResult result = postMediaUploadUrlIssuer.issue(USER_ID,
+		MediaUploadUrlResult result = postMediaUploadUrlIssuer.issue(USER_ID,
 				new PostMediaUploadUrlRequest("video", "video/mp4", VALID_SIZE));
 
 		assertThat(result.publicUrl()).contains("videos/community-post/42/");
@@ -53,7 +53,7 @@ class PostMediaUploadUrlIssuerTest {
 
 	@Test
 	void 사진은_크기_상한_없이_발급한다() {
-		CommunityMediaUploadUrlResult result = postMediaUploadUrlIssuer.issue(USER_ID,
+		MediaUploadUrlResult result = postMediaUploadUrlIssuer.issue(USER_ID,
 				new PostMediaUploadUrlRequest("IMAGE", "image/png", 1024L * 1024 * 1024));
 
 		assertThat(result.publicUrl()).endsWith(".png");
