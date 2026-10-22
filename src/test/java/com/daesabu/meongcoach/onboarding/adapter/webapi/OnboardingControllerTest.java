@@ -65,7 +65,6 @@ class OnboardingControllerTest {
 						"breed": "POODLE",
 						"sex": "MALE",
 						"birthDate": "2024-03-01",
-						"weightKg": 4.50,
 						"personalities": ["TIMID", "LIVELY"],
 						"profileImageUrl": "https://images.test.meongcoach.com/images/dog-profile/1/b.jpg",
 						"expectation": "산책할 때 보호자에게 집중하면 좋겠어요."
@@ -84,8 +83,7 @@ class OnboardingControllerTest {
 						"name": "초코",
 						"breed": "POODLE",
 						"sex": "MALE",
-						"birthDate": "2024-03-01",
-						"weightKg": 4.50
+						"birthDate": "2024-03-01"
 					}
 				]
 			}
@@ -247,8 +245,7 @@ class OnboardingControllerTest {
 				    "name": "초코",
 				    "breed": "POODLE",
 				    "sex": "MALE",
-				    "birthDate": "2024-03-01",
-				    "weightKg": 4.50
+				    "birthDate": "2024-03-01"
 				}
 				""";
 		String request = COMPLETE_REQUEST_WITH_NULL_ARRAYS.replace(
@@ -412,17 +409,15 @@ class OnboardingControllerTest {
 	}
 
 	@Test
-	void 강아지_몸무게가_양수가_아니면_검증에_실패한다() throws Exception {
-		String request = COMPLETE_REQUEST.replace("\"weightKg\": 4.50", "\"weightKg\": 0");
+	void 강아지_몸무게_없이_온보딩을_완료한다() throws Exception {
+		mockMvc.perform(post("/api/onboarding")
+						.principal(() -> "1")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(COMPLETE_REQUEST))
+				.andExpect(status().isCreated());
 
-		assertValidationFails(request, "dogs[0].weightKg");
-	}
-
-	@Test
-	void 강아지_몸무게가_없으면_검증에_실패한다() throws Exception {
-		String request = COMPLETE_REQUEST.replace("\"weightKg\": 4.50,", "");
-
-		assertValidationFails(request, "dogs[0].weightKg");
+		assertThat(onboardingCompleter.lastInfo.dogs().getFirst().weightKg())
+				.isNull();
 	}
 
 	@Test
@@ -453,15 +448,13 @@ class OnboardingControllerTest {
 				            "name": "초코",
 				            "breed": "POODLE",
 				            "sex": "MALE",
-				            "birthDate": "2024-03-01",
-				            "weightKg": 3.5
+				            "birthDate": "2024-03-01"
 				        },
 				        {
 				            "name": "보리",
 				            "breed": "POODLE",
 				            "sex": "FEMALE",
-				            "birthDate": "2024-03-01",
-				            "weightKg": 4.0
+				            "birthDate": "2024-03-01"
 				        }
 				    ]
 				}
