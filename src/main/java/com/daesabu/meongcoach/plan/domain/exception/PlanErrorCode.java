@@ -9,6 +9,7 @@ public enum PlanErrorCode implements ErrorCode {
 	PLAN_EMPTY_CURRICULUMS(400, "플랜에는 커리큘럼이 하나 이상 있어야 합니다."),
 	PLAN_DUPLICATE_CURRICULUM(400, "플랜에 같은 커리큘럼을 중복해서 포함할 수 없습니다."),
 	PLAN_INVALID_CURRICULUM(400, "플랜의 커리큘럼 ID는 null일 수 없습니다."),
+	PLAN_CREATION_CONFLICT(409, "플랜이 변경되었습니다. 현재 플랜을 다시 확인해주세요."),
 	;
 
 	private final int status;

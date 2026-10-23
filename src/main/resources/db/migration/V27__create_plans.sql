@@ -18,3 +18,5 @@ CREATE TABLE plan_curriculums (
     CONSTRAINT uk_plan_curriculums_plan_curriculum UNIQUE (plan_id, curriculum_id),
     PRIMARY KEY (plan_id, sort_order)
 );
+
+CREATE UNIQUE INDEX uk_plans_active_user ON plans (user_id) WHERE status = 'ACTIVE';
