@@ -173,6 +173,15 @@ class PostTest {
 				.isInstanceOf(PostMediaCountExceededException.class);
 	}
 
+	@Test
+	void 삭제하면_삭제_시각이_기록된다() {
+		Post post = Post.register(USER_ID, new PostRegisterCommand(CONTENT, null, List.of()));
+
+		post.delete();
+
+		assertThat(post.getDeletedAt()).isNotNull();
+	}
+
 	private List<PostMediaCommand> images(int count) {
 		return Collections.nCopies(count, new PostMediaCommand(PostMediaType.IMAGE, IMAGE_URL));
 	}

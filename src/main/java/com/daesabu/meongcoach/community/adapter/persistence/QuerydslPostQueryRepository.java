@@ -23,7 +23,7 @@ public class QuerydslPostQueryRepository implements PostQueryRepository {
 	@Override
 	public Slice<Post> findPosts(Long cursor, Long lessonId, int size) {
 		List<Post> posts = queryFactory.selectFrom(post)
-				.where(idLessThan(cursor), mentionsLesson(lessonId))
+				.where(post.deletedAt.isNull(), idLessThan(cursor), mentionsLesson(lessonId))
 				.orderBy(post.id.desc())
 				.limit(size + 1)
 				.fetch();

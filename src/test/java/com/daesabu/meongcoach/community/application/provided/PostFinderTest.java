@@ -273,6 +273,18 @@ class PostFinderTest {
 	}
 
 	@Test
+	void 삭제된_게시글은_목록에서_제외한다() {
+		savePost(USER_ID, "첫 번째");
+		savePost(USER_ID, "두 번째").delete();
+		savePost(USER_ID, "세 번째");
+		flushAndClear();
+
+		PostListResult result = postFinder.findPosts(new PostListRequest(null, 20, null));
+
+		assertThat(result.posts()).extracting(this::contentOf).containsExactly("세 번째", "첫 번째");
+	}
+
+	@Test
 	void 게시글이_없으면_빈_목록을_반환한다() {
 		PostListResult result = postFinder.findPosts(new PostListRequest(null, 20, null));
 
@@ -294,6 +306,14 @@ class PostFinderTest {
 	@Test
 	void 조회한_게시글이_없으면_예외를_던진다() {
 		assertThatThrownBy(() -> postFinder.findPost(999_999L))
+				.isInstanceOf(PostNotFoundException.class);
+	}
+
+	@Test
+	void 삭제된_게시글을_조회하면_예외를_던진다() {
+		Post saved = saveDeletedPost(USER_ID);
+
+		assertThatThrownBy(() -> postFinder.findPost(saved.getId()))
 				.isInstanceOf(PostNotFoundException.class);
 	}
 
@@ -320,6 +340,14 @@ class PostFinderTest {
 	@Test
 	void 조회할_내_게시글이_없으면_예외를_던진다() {
 		assertThatThrownBy(() -> postFinder.findPost(USER_ID, 999_999L))
+				.isInstanceOf(PostNotFoundException.class);
+	}
+
+	@Test
+	void 삭제된_내_게시글을_조회하면_예외를_던진다() {
+		Post saved = saveDeletedPost(USER_ID);
+
+		assertThatThrownBy(() -> postFinder.findPost(USER_ID, saved.getId()))
 				.isInstanceOf(PostNotFoundException.class);
 	}
 
@@ -364,6 +392,14 @@ class PostFinderTest {
 				.isInstanceOf(PostNotFoundException.class);
 	}
 
+	@Test
+	void 단건_조회할_게시글이_삭제됐으면_예외를_던진다() {
+		Post saved = saveDeletedPost(USER_ID);
+
+		assertThatThrownBy(() -> postFinder.findPostDetail(saved.getId()))
+				.isInstanceOf(PostNotFoundException.class);
+	}
+
 	private String contentOf(PostResult result) {
 		PostContent content = result.post().getContent();
 		return content.value();
@@ -373,6 +409,13 @@ class PostFinderTest {
 		return IntStream.rangeClosed(1, count)
 				.mapToObj(index -> savePost(USER_ID, "글 " + index))
 				.toList();
+	}
+
+	private Post saveDeletedPost(Long userId) {
+		Post post = savePost(userId, "본문");
+		post.delete();
+		flushAndClear();
+		return post;
 	}
 
 	private Post savePost(Long userId, String content) {

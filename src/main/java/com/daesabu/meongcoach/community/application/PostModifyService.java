@@ -48,6 +48,13 @@ public class PostModifyService implements PostRegister {
 		return post;
 	}
 
+	@Override
+	@Transactional
+	public void delete(Long userId, Long postId) {
+		Post post = postFinder.findPost(userId, postId);
+		post.delete();
+	}
+
 	private void validateExistingMention(Post post) {
 		ofNullable(post.getMention())
 				.ifPresent(mentionTargetReaders::validateExists);

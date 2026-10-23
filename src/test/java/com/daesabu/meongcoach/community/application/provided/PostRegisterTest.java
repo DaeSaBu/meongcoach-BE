@@ -339,6 +339,56 @@ class PostRegisterTest {
 				.isInstanceOf(ConstraintViolationException.class);
 	}
 
+	@Test
+	void 삭제된_게시글을_수정하면_예외를_던진다() {
+		Post post = saveDeletedPost(USER_ID);
+
+		assertThatThrownBy(() -> postRegister.update(USER_ID, post.getId(), new PostUpdateRequest("본문", null, null)))
+				.isInstanceOf(PostNotFoundException.class);
+	}
+
+	@Test
+	void 게시글을_삭제하면_삭제_시각이_기록된다() {
+		Post post = savePost(USER_ID, null, List.of());
+
+		postRegister.delete(USER_ID, post.getId());
+		flushAndClear();
+
+		Post found = postRepository.findById(post.getId()).orElseThrow();
+		assertThat(found.getDeletedAt()).isNotNull();
+	}
+
+	@Test
+	void 다른_사용자의_게시글을_삭제하면_예외를_던지고_삭제하지_않는다() {
+		Post post = savePost(7L, null, List.of());
+
+		assertThatThrownBy(() -> postRegister.delete(USER_ID, post.getId()))
+				.isInstanceOf(PostNotFoundException.class);
+		flushAndClear();
+		assertThat(postRepository.findById(post.getId()).orElseThrow().getDeletedAt()).isNull();
+	}
+
+	@Test
+	void 없는_게시글을_삭제하면_예외를_던진다() {
+		assertThatThrownBy(() -> postRegister.delete(USER_ID, 999_999L))
+				.isInstanceOf(PostNotFoundException.class);
+	}
+
+	@Test
+	void 이미_삭제된_게시글을_삭제하면_예외를_던진다() {
+		Post post = saveDeletedPost(USER_ID);
+
+		assertThatThrownBy(() -> postRegister.delete(USER_ID, post.getId()))
+				.isInstanceOf(PostNotFoundException.class);
+	}
+
+	private Post saveDeletedPost(Long userId) {
+		Post post = savePost(userId, null, List.of());
+		post.delete();
+		flushAndClear();
+		return post;
+	}
+
 	private Post savePost(Long userId, MentionCommand mention, List<PostMediaCommand> media) {
 		return postRepository.save(Post.register(userId, new PostRegisterCommand("원래 본문", mention, media)));
 	}

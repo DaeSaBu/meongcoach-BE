@@ -58,7 +58,7 @@ public class CommentQueryService implements CommentFinder {
 	}
 
 	private void validatePostExists(Long postId) {
-		if (!postRepository.existsById(postId)) {
+		if (!postRepository.existsByIdAndDeletedAtIsNull(postId)) {
 			throw new PostNotFoundException(postId);
 		}
 	}
