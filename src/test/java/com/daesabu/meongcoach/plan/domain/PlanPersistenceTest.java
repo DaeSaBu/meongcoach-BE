@@ -32,6 +32,7 @@ class PlanPersistenceTest {
 		PlanCreateCommand command = new PlanCreateCommand(1L, 2L, "제목", "목표", 10, 3);
 		Plan first = Plan.create(command, List.of(7L, 4L));
 		Plan second = Plan.create(command, List.of(4L, 12L));
+		first.replace();
 		entityManager.persist(first);
 		entityManager.persistAndFlush(second);
 		Long firstId = first.getId();
