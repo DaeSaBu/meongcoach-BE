@@ -2,9 +2,12 @@ package com.daesabu.meongcoach.entitlement.application;
 
 import com.daesabu.meongcoach.entitlement.application.provided.EntitlementChecker;
 import com.daesabu.meongcoach.entitlement.application.required.EntitlementRepository;
+import com.daesabu.meongcoach.entitlement.domain.Entitlement;
 import com.daesabu.meongcoach.entitlement.domain.exception.EntitlementRequiredException;
 import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;
 import java.time.Instant;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,6 +18,15 @@ import org.springframework.transaction.annotation.Transactional;
 public class EntitlementCheckService implements EntitlementChecker {
 
 	private final EntitlementRepository entitlementRepository;
+
+	@Override
+	public Set<EntitlementType> findActiveTypes(Long userId) {
+		Instant now = Instant.now();
+		return entitlementRepository.findAllByUserId(userId).stream()
+				.filter(entitlement -> entitlement.isActive(now))
+				.map(Entitlement::getType)
+				.collect(Collectors.toUnmodifiableSet());
+	}
 
 	@Override
 	public boolean hasEntitlement(Long userId, EntitlementType type) {
