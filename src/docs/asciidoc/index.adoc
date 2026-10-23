@@ -672,6 +672,24 @@ operation::community/post-register[snippets='http-request,request-fields,http-re
 
 operation::community/post-register-error[snippets='http-response,response-fields']
 
+=== 게시글 수정
+
+link:{swagger-ui}#/Community/community-post-update[▶ Swagger에서 Try it out,window=swagger]
+
+로그인한 회원이 작성한 게시글의 본문·멘션·미디어를 요청 본문 값으로 **전체 교체**합니다. 성공하면 200과 함께 수정한 게시글이 내려갑니다.
+수정 화면은 게시글 단건 조회 응답을 초기값으로 받아 남길 값을 모두 다시 보냅니다. `content` 규칙은 게시글 작성과 같습니다.
+`mention` 필드를 생략하면 기존 멘션이 제거되고, `media` 필드를 생략하면 기존 사진·영상이 모두 제거됩니다.
+`media`에는 남길 기존 미디어 URL과 새로 올린 파일의 `publicUrl`을 표시 순서대로 함께 담습니다. 사진 3개·영상 2개 상한은 수정 후 기준입니다.
+
+operation::community/post-update[snippets='http-request,path-parameters,request-fields,http-response,response-fields']
+
+==== 실패 응답
+
+게시글이 없거나 본인이 작성한 게시글이 아니면 404(`COMMUNITY_POST_NOT_FOUND`)가 내려갑니다.
+본문·멘션·미디어 검증 실패는 게시글 작성과 같습니다 — 400(`COMMUNITY_POST_CONTENT_INVALID`, `COMMUNITY_MENTION_TARGET_TYPE_INVALID`, `COMMUNITY_POST_MEDIA_TYPE_INVALID`, `COMMUNITY_POST_MEDIA_COUNT_EXCEEDED`, `MEDIA_INVALID_URL`), 멘션한 레슨이 없으면 404(`COMMUNITY_MENTION_TARGET_NOT_FOUND`)이며, 필수 입력 누락·형식 오류는 400(`BAD_REQUEST`)에 `errors` 필드로 항목별 원인이 내려갑니다.
+
+operation::community/post-update-error[snippets='http-response,response-fields']
+
 === 댓글 작성
 
 link:{swagger-ui}#/Community/community-comment-register[▶ Swagger에서 Try it out,window=swagger]
