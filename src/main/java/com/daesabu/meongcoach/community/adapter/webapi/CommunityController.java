@@ -6,6 +6,7 @@ import com.daesabu.meongcoach.community.adapter.webapi.dto.PostListResponse;
 import com.daesabu.meongcoach.community.adapter.webapi.dto.PostMediaUploadUrlResponse;
 import com.daesabu.meongcoach.community.adapter.webapi.dto.PostRegisterResponse;
 import com.daesabu.meongcoach.community.adapter.webapi.dto.PostResponse;
+import com.daesabu.meongcoach.community.adapter.webapi.dto.PostUpdateResponse;
 import com.daesabu.meongcoach.community.adapter.webapi.dto.ReplyListResponse;
 import com.daesabu.meongcoach.community.application.provided.CommentFinder;
 import com.daesabu.meongcoach.community.application.provided.CommentRegister;
@@ -20,6 +21,7 @@ import com.daesabu.meongcoach.community.application.provided.dto.PostListResult;
 import com.daesabu.meongcoach.community.application.provided.dto.PostMediaUploadUrlRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.PostRegisterRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.PostResult;
+import com.daesabu.meongcoach.community.application.provided.dto.PostUpdateRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.ReplyListResult;
 import com.daesabu.meongcoach.community.domain.Comment;
 import com.daesabu.meongcoach.community.domain.Post;
@@ -32,6 +34,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -66,6 +69,13 @@ public class CommunityController {
 	                                         @Valid @RequestBody PostRegisterRequest request) {
 		Post post = postRegister.register(userId, request);
 		return PostRegisterResponse.from(post);
+	}
+
+	@PutMapping("/posts/{postId}")
+	public PostUpdateResponse updatePost(@CurrentUserId Long userId, @PathVariable Long postId,
+	                                     @Valid @RequestBody PostUpdateRequest request) {
+		Post post = postRegister.update(userId, postId, request);
+		return PostUpdateResponse.from(post);
 	}
 
 	@PostMapping("/presigned-urls")

@@ -8,6 +8,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.get;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.post;
+import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.put;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
@@ -34,6 +35,7 @@ import com.daesabu.meongcoach.community.application.provided.dto.PostMediaReques
 import com.daesabu.meongcoach.community.application.provided.dto.PostMediaUploadUrlRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.PostRegisterRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.PostResult;
+import com.daesabu.meongcoach.community.application.provided.dto.PostUpdateRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.ReplyListResult;
 import com.daesabu.meongcoach.community.application.provided.dto.ReplyResult;
 import com.daesabu.meongcoach.community.domain.CommentFixture;
@@ -453,6 +455,128 @@ class CommunityControllerTest {
 								"""))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.code").value("COMMUNITY_POST_MEDIA_COUNT_EXCEEDED"));
+	}
+
+	@Test
+	void 게시글을_수정하면_200과_수정한_게시글을_반환한다() throws Exception {
+		String imageUrl = "https://media.meongcoach.com/images/community-post/42/photo.jpg";
+		String videoUrl = "https://media.meongcoach.com/videos/community-post/42/clip.mp4";
+		PostUpdateRequest request = new PostUpdateRequest("레슨 다시 따라해봤어요", new MentionRequest("LESSON", 102L),
+				List.of(new PostMediaRequest("VIDEO", videoUrl), new PostMediaRequest("IMAGE", imageUrl)));
+		List<PostMediaCommand> media = List.of(
+				new PostMediaCommand(PostMediaType.VIDEO, videoUrl),
+				new PostMediaCommand(PostMediaType.IMAGE, imageUrl));
+		given(postRegister.update(42L, 30L, request)).willReturn(PostFixture.create(30L, 42L, "레슨 다시 따라해봤어요",
+				new MentionCommand(MentionTargetType.LESSON, 102L), media, LocalDateTime.of(2026, 10, 20, 10, 30, 0)));
+
+		mockMvc.perform(put("/api/community/posts/{postId}", 30L)
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "content": "레슨 다시 따라해봤어요",
+								  "mention": {"targetType": "LESSON", "targetId": 102},
+								  "media": [
+								    {"type": "VIDEO", "url": "https://media.meongcoach.com/videos/community-post/42/clip.mp4"},
+								    {"type": "IMAGE", "url": "https://media.meongcoach.com/images/community-post/42/photo.jpg"}
+								  ]
+								}
+								"""))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.postId").value(30))
+				.andExpect(jsonPath("$.userId").value(42))
+				.andExpect(jsonPath("$.content").value("레슨 다시 따라해봤어요"))
+				.andExpect(jsonPath("$.mention.targetType").value("LESSON"))
+				.andExpect(jsonPath("$.mention.targetId").value(102))
+				.andExpect(jsonPath("$.media[0].type").value("VIDEO"))
+				.andExpect(jsonPath("$.media[0].url").value(videoUrl))
+				.andExpect(jsonPath("$.media[1].type").value("IMAGE"))
+				.andExpect(jsonPath("$.media[1].url").value(imageUrl))
+				.andExpect(jsonPath("$.createdAt").value("2026-10-20T10:30:00"))
+				.andDo(document("community/post-update",
+						pathParameters(parameterWithName("postId").description("수정할 게시글 ID. 본인이 작성한 게시글만 수정할 수 있다")),
+						requestFields(
+								fieldWithPath("content").description("필수 입력. 게시글 본문. 공백만으로 채울 수 없고 500자 이하"),
+								fieldWithPath("mention").optional().description("멘션 대상. 생략하면 기존 멘션을 제거한다"),
+								fieldWithPath("mention.targetType").description("멘션 대상 종류. 현재 LESSON(레슨)만 받는다"),
+								fieldWithPath("mention.targetId").description("멘션 대상 ID(양의 정수)"),
+								fieldWithPath("media").optional()
+										.description("수정 후 남길 사진·영상 전체. 배열 순서가 표시 순서이고, 사진 3개·영상 2개까지. 생략하면 기존 미디어를 모두 제거한다"),
+								fieldWithPath("media[].type").description("미디어 종류. IMAGE(사진), VIDEO(영상)"),
+								fieldWithPath("media[].url")
+										.description("기존 미디어 URL 또는 게시글 미디어 업로드 URL 발급 응답의 공개 URL. 본인이 게시글 용도로 올린 파일만 받는다")
+						),
+						responseFields(
+								fieldWithPath("postId").description("수정한 게시글 ID"),
+								fieldWithPath("userId").description("작성자 회원 ID"),
+								fieldWithPath("content").description("게시글 본문"),
+								fieldWithPath("mention").optional().description("멘션 대상. 멘션 없이 수정했으면 null"),
+								fieldWithPath("mention.targetType").description("멘션 대상 종류"),
+								fieldWithPath("mention.targetId").description("멘션 대상 ID"),
+								fieldWithPath("media[]").description("사진·영상 목록. 요청 순서대로이고, 미디어 없이 수정했으면 빈 배열"),
+								fieldWithPath("media[].type").description("미디어 종류. IMAGE(사진), VIDEO(영상)"),
+								fieldWithPath("media[].url").description("미디어 공개 URL"),
+								fieldWithPath("createdAt").description("게시글 작성 시각(ISO-8601, 초 단위)")
+						)
+				));
+	}
+
+	@Test
+	void 멘션과_미디어_없이_수정하면_mention을_null로_반환한다() throws Exception {
+		given(postRegister.update(42L, 31L, new PostUpdateRequest("오늘 산책 성공!", null, null)))
+				.willReturn(PostFixture.create(31L, 42L, "오늘 산책 성공!", LocalDateTime.of(2026, 10, 20, 11, 0, 0)));
+
+		mockMvc.perform(put("/api/community/posts/{postId}", 31L)
+						.principal(CURRENT_USER)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{"content": "오늘 산책 성공!"}
+								"""))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.postId").value(31))
+				.andExpect(jsonPath("$.mention").value(nullValue()))
+				.andExpect(jsonPath("$.media").isEmpty());
+	}
+
+	@Test
+	void 수정할_게시글이_없거나_본인_게시글이_아니면_404를_반환한다() throws Exception {
+		given(postRegister.update(42L, 999L, new PostUpdateRequest("본문", null, null)))
+				.willThrow(new PostNotFoundException(999L));
+
+		mockMvc.perform(put("/api/community/posts/{postId}", 999L)
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{"content": "본문"}
+								"""))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.code").value("COMMUNITY_POST_NOT_FOUND"))
+				.andDo(document("community/post-update-error",
+						responseFields(
+								fieldWithPath("title").description("HTTP 상태 이름"),
+								fieldWithPath("status").description("HTTP 상태 코드"),
+								fieldWithPath("detail").description("사람이 읽을 수 있는 에러 설명"),
+								fieldWithPath("instance").description("에러가 발생한 요청 경로"),
+								fieldWithPath("code").description("클라이언트 분기용 에러 코드"),
+								fieldWithPath("timestamp").description("에러 발생 시각(UTC)")
+						)
+				));
+	}
+
+	@Test
+	void 수정_요청의_미디어에_url이_비어_있으면_400을_반환한다() throws Exception {
+		mockMvc.perform(put("/api/community/posts/{postId}", 30L)
+						.principal(CURRENT_USER)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{"content": "본문", "media": [{"type": "IMAGE", "url": " "}]}
+								"""))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.errors[0].field").value("media[0].url"));
+
+		then(postRegister).shouldHaveNoInteractions();
 	}
 
 	@Test
