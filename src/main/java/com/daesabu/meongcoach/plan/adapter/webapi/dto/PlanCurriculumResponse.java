@@ -1,0 +1,14 @@
+package com.daesabu.meongcoach.plan.adapter.webapi.dto;
+
+import com.daesabu.meongcoach.training.application.provided.dto.PlanCurriculumResult;
+import java.util.List;
+
+public record PlanCurriculumResponse(Long curriculumId, String title, String description, int totalLessons,
+		int completedLessons, String status, boolean locked, List<PlanLessonResponse> lessons) {
+
+	public static PlanCurriculumResponse from(PlanCurriculumResult result) {
+		List<PlanLessonResponse> lessons = result.lessons().stream().map(PlanLessonResponse::from).toList();
+		return new PlanCurriculumResponse(result.id(), result.title(), result.description(), result.totalLessons(),
+				result.completedLessons(), result.status(), result.locked(), lessons);
+	}
+}
