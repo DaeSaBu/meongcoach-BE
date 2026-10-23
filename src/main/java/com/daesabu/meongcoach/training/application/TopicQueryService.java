@@ -1,10 +1,13 @@
 package com.daesabu.meongcoach.training.application;
 
+import com.daesabu.meongcoach.training.application.provided.CustomPlanPreparationFinder;
 import com.daesabu.meongcoach.training.application.provided.TopicCompletionChecker;
 import com.daesabu.meongcoach.training.application.provided.TopicFinder;
+import com.daesabu.meongcoach.training.application.provided.dto.CustomPlanPreparationResult;
 import com.daesabu.meongcoach.training.application.provided.dto.TopicResult;
 import com.daesabu.meongcoach.training.application.required.LessonProgressRepository;
 import com.daesabu.meongcoach.training.application.required.TopicRepository;
+import com.daesabu.meongcoach.training.domain.Curriculum;
 import com.daesabu.meongcoach.training.domain.LessonProgress;
 import com.daesabu.meongcoach.training.domain.LessonProgresses;
 import com.daesabu.meongcoach.training.domain.Topic;
@@ -20,9 +23,23 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class TopicQueryService implements TopicFinder, TopicCompletionChecker {
+public class TopicQueryService implements TopicFinder, TopicCompletionChecker, CustomPlanPreparationFinder {
 	private final LessonProgressRepository lessonProgressRepository;
 	private final TopicRepository topicRepository;
+
+	@Override
+	public CustomPlanPreparationResult find(Long userId, Collection<Long> topicIds) {
+		List<Topic> topics = topicRepository.findAllByIdIn(topicIds, TopicRepository.EDUCATION_ORDER);
+		validateTopicsExist(topicIds, topics);
+		List<Long> lessonIds = topics.stream().flatMap(topic -> topic.getAllLessonIds().stream()).toList();
+		LessonProgresses progresses = findProgresses(userId, lessonIds);
+		List<Long> curriculumIds = topics.stream()
+				.flatMap(topic -> topic.getCurriculums().stream())
+				.filter(curriculum -> !curriculum.isCompleted(progresses))
+				.map(Curriculum::getId)
+				.toList();
+		return new CustomPlanPreparationResult(curriculumIds);
+	}
 
 	@Override
 	public List<TopicResult> findAllOrdered() {
