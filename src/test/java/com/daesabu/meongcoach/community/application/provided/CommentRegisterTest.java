@@ -108,6 +108,18 @@ class CommentRegisterTest {
 	}
 
 	@Test
+	void 삭제된_게시글에는_댓글을_달_수_없다() {
+		Post post = savePost();
+		post.delete();
+		flushAndClear();
+		CommentRegisterRequest request = new CommentRegisterRequest("축하해요!", null);
+
+		assertThatThrownBy(() -> commentRegister.register(USER_ID, post.getId(), request))
+				.isInstanceOf(PostNotFoundException.class);
+		assertThat(commentRepository.count()).isZero();
+	}
+
+	@Test
 	void 부모_댓글이_없으면_예외를_던지고_저장하지_않는다() {
 		Post post = savePost();
 		CommentRegisterRequest request = new CommentRegisterRequest("감사해요!", 999_999L);

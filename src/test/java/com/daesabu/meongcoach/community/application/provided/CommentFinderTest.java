@@ -209,6 +209,15 @@ class CommentFinderTest {
 	}
 
 	@Test
+	void 삭제된_게시글의_댓글을_조회하면_예외를_던진다() {
+		post.delete();
+		flushAndClear();
+
+		assertThatThrownBy(() -> commentFinder.findComments(post.getId(), new CommentListRequest(null, 20)))
+				.isInstanceOf(PostNotFoundException.class);
+	}
+
+	@Test
 	void size가_허용_범위를_벗어나면_예외를_던진다() {
 		assertThatThrownBy(() -> commentFinder.findComments(post.getId(), new CommentListRequest(null, 51)))
 				.isInstanceOf(ConstraintViolationException.class);
