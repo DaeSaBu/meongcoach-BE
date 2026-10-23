@@ -47,8 +47,10 @@ public class CommentQueryService implements CommentFinder {
 
 	private List<CommentResult> compose(List<Comment> comments) {
 		Map<Long, UserProfileSummaryResult> authors = findAuthors(comments);
+		Map<Long, Long> replyCounts = countReplies(comments);
 		return comments.stream()
-				.map(comment -> new CommentResult(comment, authors.get(comment.getUserId())))
+				.map(comment -> new CommentResult(comment, authors.get(comment.getUserId()),
+						replyCounts.getOrDefault(comment.getId(), 0L)))
 				.toList();
 	}
 
@@ -57,6 +59,13 @@ public class CommentQueryService implements CommentFinder {
 				.map(Comment::getUserId)
 				.collect(Collectors.toSet());
 		return authorProfiles.findByUserIds(userIds);
+	}
+
+	private Map<Long, Long> countReplies(List<Comment> comments) {
+		List<Long> rootIds = comments.stream()
+				.map(Comment::getId)
+				.toList();
+		return commentQueryRepository.countReplies(rootIds);
 	}
 
 	private Long nextCursorOf(Slice<Comment> slice) {
