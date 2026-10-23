@@ -19,4 +19,9 @@ public interface CommentQueryRepository {
 	 * 루트 댓글 ID별 삭제되지 않은 답글 수를 반환한다. 답글이 없는 루트 댓글은 결과에 없다.
 	 */
 	Map<Long, Long> countReplies(Collection<Long> rootIds);
+
+	/**
+	 * 루트 댓글의 삭제되지 않은 답글을 ID 오름차순으로 size개까지 조회한다. cursor가 있으면 그보다 큰 ID의 답글만 조회한다.
+	 */
+	Slice<Comment> findReplies(Long rootId, Long cursor, int size);
 }

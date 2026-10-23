@@ -33,7 +33,7 @@ public class QuerydslCommentQueryRepository implements CommentQueryRepository {
 	@Override
 	public Slice<Comment> findRootComments(Long postId, Long cursor, int size) {
 		List<Comment> comments = queryFactory.selectFrom(comment)
-				.where(comment.post.id.eq(postId), idGreaterThan(cursor), isRoot(), comment.deletedAt.isNull())
+				.where(comment.post.id.eq(postId), idGreaterThan(comment, cursor), isRoot(), comment.deletedAt.isNull())
 				.orderBy(comment.id.asc())
 				.limit(size + 1)
 				.fetch();
@@ -57,11 +57,24 @@ public class QuerydslCommentQueryRepository implements CommentQueryRepository {
 				.collect(toMap(row -> row.get(commentClosure.ancestor.id), row -> row.get(replyCount)));
 	}
 
-	private BooleanExpression idGreaterThan(Long cursor) {
+	@Override
+	public Slice<Comment> findReplies(Long rootId, Long cursor, int size) {
+		List<Comment> replies = queryFactory.select(reply)
+				.from(commentClosure)
+				.join(commentClosure.descendant, reply)
+				.where(commentClosure.ancestor.id.eq(rootId), commentClosure.depth.eq(CommentClosure.REPLY_DEPTH),
+						reply.deletedAt.isNull(), idGreaterThan(reply, cursor))
+				.orderBy(reply.id.asc())
+				.limit(size + 1)
+				.fetch();
+		return toSlice(replies, size);
+	}
+
+	private BooleanExpression idGreaterThan(QComment target, Long cursor) {
 		if (cursor == null) {
 			return null;
 		}
-		return comment.id.gt(cursor);
+		return target.id.gt(cursor);
 	}
 
 	private BooleanExpression isRoot() {

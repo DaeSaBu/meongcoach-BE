@@ -6,6 +6,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.daesabu.meongcoach.community.application.provided.dto.CommentListRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.CommentListResult;
 import com.daesabu.meongcoach.community.application.provided.dto.CommentResult;
+import com.daesabu.meongcoach.community.application.provided.dto.ReplyListResult;
+import com.daesabu.meongcoach.community.application.provided.dto.ReplyResult;
 import com.daesabu.meongcoach.community.application.required.CommentClosureRepository;
 import com.daesabu.meongcoach.community.application.required.CommentRepository;
 import com.daesabu.meongcoach.community.application.required.PostRepository;
@@ -13,6 +15,7 @@ import com.daesabu.meongcoach.community.domain.Comment;
 import com.daesabu.meongcoach.community.domain.CommentClosure;
 import com.daesabu.meongcoach.community.domain.Post;
 import com.daesabu.meongcoach.community.domain.PostRegisterCommand;
+import com.daesabu.meongcoach.community.domain.exception.CommentNotFoundException;
 import com.daesabu.meongcoach.community.domain.exception.PostNotFoundException;
 import com.daesabu.meongcoach.support.ApplicationTest;
 import com.daesabu.meongcoach.user.application.provided.UserProfileSummaryResult;
@@ -215,6 +218,103 @@ class CommentFinderTest {
 	void cursor가_양수가_아니면_예외를_던진다() {
 		assertThatThrownBy(() -> commentFinder.findComments(post.getId(), new CommentListRequest(0L, 20)))
 				.isInstanceOf(ConstraintViolationException.class);
+	}
+
+	@Test
+	void 답글을_오래된_순으로_반환한다() {
+		Comment root = saveComment(USER_ID, "루트 댓글");
+		saveReply(root, USER_ID, "답글 1");
+		saveReply(root, USER_ID, "답글 2");
+		Comment otherRoot = saveComment(USER_ID, "다른 루트 댓글");
+		saveReply(otherRoot, USER_ID, "다른 루트의 답글");
+		flushAndClear();
+
+		ReplyListResult result = commentFinder.findReplies(root.getId(), new CommentListRequest(null, 20));
+
+		assertThat(result.replies()).extracting(this::contentOf).containsExactly("답글 1", "답글 2");
+		assertThat(result.nextCursor()).isNull();
+	}
+
+	@Test
+	void 답글을_다음_커서로_이어서_조회하면_중복이나_누락_없이_전체를_순회한다() {
+		Comment root = saveComment(USER_ID, "루트 댓글");
+		IntStream.rangeClosed(1, 3).forEach(index -> saveReply(root, USER_ID, "답글 " + index));
+		flushAndClear();
+
+		ReplyListResult first = commentFinder.findReplies(root.getId(), new CommentListRequest(null, 2));
+		ReplyListResult second = commentFinder.findReplies(root.getId(), new CommentListRequest(first.nextCursor(), 2));
+
+		assertThat(first.replies()).extracting(this::contentOf).containsExactly("답글 1", "답글 2");
+		assertThat(first.nextCursor()).isNotNull();
+		assertThat(second.replies()).extracting(this::contentOf).containsExactly("답글 3");
+		assertThat(second.nextCursor()).isNull();
+	}
+
+	@Test
+	void 삭제된_답글은_반환하지_않는다() {
+		Comment root = saveComment(USER_ID, "루트 댓글");
+		saveReply(root, USER_ID, "삭제된 답글").delete();
+		saveReply(root, USER_ID, "남은 답글");
+		flushAndClear();
+
+		ReplyListResult result = commentFinder.findReplies(root.getId(), new CommentListRequest(null, 20));
+
+		assertThat(result.replies()).extracting(this::contentOf).containsExactly("남은 답글");
+	}
+
+	@Test
+	void 삭제된_루트_댓글의_답글도_반환한다() {
+		Comment root = saveComment(USER_ID, "삭제된 루트 댓글");
+		saveReply(root, USER_ID, "남은 답글");
+		root.delete();
+		flushAndClear();
+
+		ReplyListResult result = commentFinder.findReplies(root.getId(), new CommentListRequest(null, 20));
+
+		assertThat(result.replies()).extracting(this::contentOf).containsExactly("남은 답글");
+	}
+
+	@Test
+	void 답글의_작성자_프로필_요약을_함께_반환한다() {
+		User author = saveUserWithProfile("멍멍이집사", "https://cdn.example.com/profile.png");
+		Comment root = saveComment(USER_ID, "루트 댓글");
+		saveReply(root, author.getId(), "답글");
+		saveReply(root, USER_ID, "프로필 없는 작성자의 답글");
+		flushAndClear();
+
+		ReplyListResult result = commentFinder.findReplies(root.getId(), new CommentListRequest(null, 20));
+
+		assertThat(result.replies()).extracting(ReplyResult::author).containsExactly(
+				new UserProfileSummaryResult(author.getId(), "멍멍이집사", "https://cdn.example.com/profile.png"),
+				null);
+	}
+
+	@Test
+	void 답글을_조회할_댓글이_없으면_예외를_던진다() {
+		assertThatThrownBy(() -> commentFinder.findReplies(999_999L, new CommentListRequest(null, 20)))
+				.isInstanceOf(CommentNotFoundException.class);
+	}
+
+	@Test
+	void 답글의_답글을_조회하면_예외를_던진다() {
+		Comment root = saveComment(USER_ID, "루트 댓글");
+		Comment reply = saveReply(root, USER_ID, "답글");
+		flushAndClear();
+
+		assertThatThrownBy(() -> commentFinder.findReplies(reply.getId(), new CommentListRequest(null, 20)))
+				.isInstanceOf(CommentNotFoundException.class);
+	}
+
+	@Test
+	void 답글_목록의_size가_허용_범위를_벗어나면_예외를_던진다() {
+		Comment root = saveComment(USER_ID, "루트 댓글");
+
+		assertThatThrownBy(() -> commentFinder.findReplies(root.getId(), new CommentListRequest(null, 0)))
+				.isInstanceOf(ConstraintViolationException.class);
+	}
+
+	private String contentOf(ReplyResult result) {
+		return result.comment().getContent().value();
 	}
 
 	private String contentOf(CommentResult result) {

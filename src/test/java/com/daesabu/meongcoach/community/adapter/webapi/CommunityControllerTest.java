@@ -34,6 +34,8 @@ import com.daesabu.meongcoach.community.application.provided.dto.PostMediaReques
 import com.daesabu.meongcoach.community.application.provided.dto.PostMediaUploadUrlRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.PostRegisterRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.PostResult;
+import com.daesabu.meongcoach.community.application.provided.dto.ReplyListResult;
+import com.daesabu.meongcoach.community.application.provided.dto.ReplyResult;
 import com.daesabu.meongcoach.community.domain.CommentFixture;
 import com.daesabu.meongcoach.community.domain.MentionCommand;
 import com.daesabu.meongcoach.community.domain.MentionTargetType;
@@ -41,6 +43,7 @@ import com.daesabu.meongcoach.community.domain.Post;
 import com.daesabu.meongcoach.community.domain.PostFixture;
 import com.daesabu.meongcoach.community.domain.PostMediaCommand;
 import com.daesabu.meongcoach.community.domain.PostMediaType;
+import com.daesabu.meongcoach.community.domain.exception.CommentNotFoundException;
 import com.daesabu.meongcoach.community.domain.exception.MentionTargetNotFoundException;
 import com.daesabu.meongcoach.community.domain.exception.PostMediaCountExceededException;
 import com.daesabu.meongcoach.community.domain.exception.PostNotFoundException;
@@ -643,6 +646,72 @@ class CommunityControllerTest {
 				.andExpect(jsonPath("$.errors[0].field").value("size"));
 
 		then(commentFinder).shouldHaveNoInteractions();
+	}
+
+	@Test
+	void 답글_목록을_다음_커서와_함께_반환한다() throws Exception {
+		Post post = PostFixture.create(30L, 7L, "이 레슨 따라해봤어요", LocalDateTime.of(2026, 10, 19, 10, 30, 0));
+		ReplyResult reply = new ReplyResult(
+				CommentFixture.create(102L, post, 7L, "감사합니다!", LocalDateTime.of(2026, 10, 19, 13, 0, 0)),
+				new UserProfileSummaryResult(7L, "멍멍이집사", "https://cdn.example.com/profile.png"));
+		given(commentFinder.findReplies(100L, new CommentListRequest(101L, 1)))
+				.willReturn(new ReplyListResult(List.of(reply), 102L));
+
+		mockMvc.perform(get("/api/community/comments/{commentId}/replies", 100L)
+						.param("cursor", "101")
+						.param("size", "1")
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.replies[0].commentId").value(102))
+				.andExpect(jsonPath("$.replies[0].content").value("감사합니다!"))
+				.andExpect(jsonPath("$.replies[0].author.userId").value(7))
+				.andExpect(jsonPath("$.replies[0].author.nickname").value("멍멍이집사"))
+				.andExpect(jsonPath("$.replies[0].createdAt").value("2026-10-19T13:00:00"))
+				.andExpect(jsonPath("$.nextCursor").value(102))
+				.andDo(document("community/reply-list",
+						pathParameters(parameterWithName("commentId").description("답글을 조회할 루트 댓글 ID")),
+						queryParameters(
+								parameterWithName("cursor").optional()
+										.description("이전 응답의 nextCursor. 첫 페이지는 생략하며, 이 ID보다 큰 답글부터 조회한다"),
+								parameterWithName("size").optional().description("한 번에 조회할 답글 수. 1~50, 기본 20")
+						),
+						responseFields(
+								fieldWithPath("replies[]").description("답글 목록. 오래된 순(댓글 ID 오름차순). 삭제된 답글은 담기지 않는다"),
+								fieldWithPath("replies[].commentId").description("답글 ID"),
+								fieldWithPath("replies[].content").description("답글 본문"),
+								fieldWithPath("replies[].author").optional()
+										.description("작성자 프로필 요약. 작성자 프로필이 없으면 null"),
+								fieldWithPath("replies[].author.userId").description("작성자 회원 ID"),
+								fieldWithPath("replies[].author.nickname").description("작성자 닉네임"),
+								fieldWithPath("replies[].author.profileImageUrl").description("작성자 프로필 이미지 URL"),
+								fieldWithPath("replies[].createdAt").description("답글 작성 시각(ISO-8601, 초 단위)"),
+								fieldWithPath("nextCursor").optional()
+										.description("다음 페이지 요청에 cursor로 보낼 값. 마지막 페이지면 null")
+						)
+				));
+	}
+
+	@Test
+	void 답글을_조회할_루트_댓글이_없으면_404를_반환한다() throws Exception {
+		given(commentFinder.findReplies(eq(999L), any(CommentListRequest.class)))
+				.willThrow(new CommentNotFoundException(999L));
+
+		mockMvc.perform(get("/api/community/comments/{commentId}/replies", 999L)
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.code").value("COMMUNITY_COMMENT_NOT_FOUND"))
+				.andDo(document("community/reply-list-error",
+						responseFields(
+								fieldWithPath("title").description("HTTP 상태 이름"),
+								fieldWithPath("status").description("HTTP 상태 코드"),
+								fieldWithPath("detail").description("사람이 읽을 수 있는 에러 설명"),
+								fieldWithPath("instance").description("에러가 발생한 요청 경로"),
+								fieldWithPath("code").description("클라이언트 분기용 에러 코드"),
+								fieldWithPath("timestamp").description("에러 발생 시각(UTC)")
+						)
+				));
 	}
 
 	@Test
