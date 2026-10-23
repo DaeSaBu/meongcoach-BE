@@ -13,7 +13,6 @@ import com.daesabu.meongcoach.training.domain.exception.CurriculumNotFoundExcept
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -33,23 +32,25 @@ public class PlanCurriculumQueryService implements PlanCurriculumFinder {
 		if (curriculumIds.isEmpty()) {
 			return List.of();
 		}
-		Map<Long, Curriculum> byId = curriculumRepository.findAllById(curriculumIds).stream()
-				.collect(Collectors.toMap(Curriculum::getId, Function.identity()));
-		List<Curriculum> curriculums = curriculumIds.stream().map(id -> requireCurriculum(byId, id)).toList();
-		List<Long> lessonIds = curriculums.stream().flatMap(curriculum -> curriculum.getLessonIds().stream()).toList();
+		Map<Long, Curriculum> curriculumMap = curriculumRepository.findAllById(curriculumIds).stream()
+				.collect(Collectors.toMap(Curriculum::getId, curriculum -> curriculum));
+		List<Curriculum> orderedCurriculums = curriculumIds.stream()
+				.map(curriculumId -> findCurriculumOrThrow(curriculumMap, curriculumId))
+				.toList();
+		List<Long> lessonIds = orderedCurriculums.stream().flatMap(curriculum -> curriculum.getLessonIds().stream()).toList();
 		List<LessonProgress> lessonProgresses = lessonProgressRepository.findAllByUserIdAndLessonIdIn(userId, lessonIds);
 		LessonProgresses progresses = LessonProgresses.from(lessonProgresses);
 		Set<EntitlementType> activeTypes = entitlementChecker.findActiveTypes(userId);
-		return curriculums.stream()
+		return orderedCurriculums.stream()
 				.map(curriculum -> PlanCurriculumResult.of(curriculum, progresses,
 						curriculum.findRequiredEntitlementType().map(activeTypes::contains).orElse(true)))
 				.toList();
 	}
 
-	private Curriculum requireCurriculum(Map<Long, Curriculum> byId, Long id) {
-		Curriculum curriculum = byId.get(id);
+	private Curriculum findCurriculumOrThrow(Map<Long, Curriculum> curriculumMap, Long curriculumId) {
+		Curriculum curriculum = curriculumMap.get(curriculumId);
 		if (curriculum == null) {
-			throw new CurriculumNotFoundException(id);
+			throw new CurriculumNotFoundException(curriculumId);
 		}
 		return curriculum;
 	}
