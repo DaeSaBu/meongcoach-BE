@@ -298,6 +298,32 @@ class PostFinderTest {
 	}
 
 	@Test
+	void 사용자가_작성한_게시글_하나를_id로_조회한다() {
+		Post saved = savePost(USER_ID, "본문");
+		flushAndClear();
+
+		Post found = postFinder.findPost(USER_ID, saved.getId());
+
+		assertThat(found.getId()).isEqualTo(saved.getId());
+		assertThat(found.getContent().value()).isEqualTo("본문");
+	}
+
+	@Test
+	void 다른_사용자의_게시글을_조회하면_예외를_던진다() {
+		Post saved = savePost(USER_ID, "본문");
+		flushAndClear();
+
+		assertThatThrownBy(() -> postFinder.findPost(USER_ID + 1, saved.getId()))
+				.isInstanceOf(PostNotFoundException.class);
+	}
+
+	@Test
+	void 조회할_내_게시글이_없으면_예외를_던진다() {
+		assertThatThrownBy(() -> postFinder.findPost(USER_ID, 999_999L))
+				.isInstanceOf(PostNotFoundException.class);
+	}
+
+	@Test
 	void 게시글_하나를_작성자_멘션_미디어와_함께_조회한다() {
 		User author = saveUserWithProfile("멍멍이집사", "https://cdn.example.com/profile.png");
 		Lesson lesson = saveLesson("기본 교육");
