@@ -16,7 +16,7 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class PostRegisterService implements PostRegister {
+public class PostModifyService implements PostRegister {
 
 	private final PostRepository postRepository;
 	private final MentionTargetReaders mentionTargetReaders;
