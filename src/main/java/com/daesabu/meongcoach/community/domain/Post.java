@@ -19,6 +19,7 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -54,6 +55,8 @@ public class Post extends BaseEntity {
 	@OrderBy("sortOrder ASC")
 	private List<PostMedia> media = new ArrayList<>();
 
+	private LocalDateTime deletedAt;
+
 	public static Post register(Long userId, PostRegisterCommand command) {
 		List<PostMediaCommand> media = requireNonNullElse(command.media(), List.of());
 		validateMediaCount(media);
@@ -74,6 +77,10 @@ public class Post extends BaseEntity {
 		this.mention = createMention(command.mention());
 		this.media.clear();
 		this.media.addAll(createMedia(media));
+	}
+
+	public void delete() {
+		this.deletedAt = LocalDateTime.now();
 	}
 
 	public List<PostMedia> getMedia() {

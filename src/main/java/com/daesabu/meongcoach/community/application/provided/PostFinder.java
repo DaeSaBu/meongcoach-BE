@@ -26,7 +26,7 @@ public interface PostFinder {
 	Post findPost(Long postId);
 
 	/**
-	 * 사용자가 작성한 게시글 하나를 id로 조회한다. 없거나 다른 사용자의 게시글이면 PostNotFoundException을 던진다.
+	 * 사용자가 작성한 게시글 하나를 id로 조회한다. 없거나 삭제됐거나 다른 사용자의 게시글이면 PostNotFoundException을 던진다.
 	 */
 	Post findPost(Long userId, Long postId);
 
