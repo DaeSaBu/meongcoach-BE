@@ -55,7 +55,8 @@ public class Post extends BaseEntity {
 	private List<PostMedia> media = new ArrayList<>();
 
 	public static Post register(Long userId, PostRegisterCommand command) {
-		List<PostMediaCommand> media = mediaOf(command.media());
+		List<PostMediaCommand> media = requireNonNullElse(command.media(), List.of());
+		validateMediaCount(media);
 
 		Post post = new Post();
 		post.userId = requireNonNull(userId);
@@ -66,7 +67,8 @@ public class Post extends BaseEntity {
 	}
 
 	public void update(PostUpdateCommand command) {
-		List<PostMediaCommand> media = mediaOf(command.media());
+		List<PostMediaCommand> media = requireNonNullElse(command.media(), List.of());
+		validateMediaCount(media);
 
 		this.content = new PostContent(command.content());
 		this.mention = createMention(command.mention());
@@ -76,12 +78,6 @@ public class Post extends BaseEntity {
 
 	public List<PostMedia> getMedia() {
 		return Collections.unmodifiableList(media);
-	}
-
-	private static List<PostMediaCommand> mediaOf(List<PostMediaCommand> media) {
-		List<PostMediaCommand> commands = requireNonNullElse(media, List.of());
-		validateMediaCount(commands);
-		return commands;
 	}
 
 	private static PostMention createMention(MentionCommand mention) {
