@@ -61,15 +61,29 @@ public class Post extends BaseEntity {
 		Post post = new Post();
 		post.userId = requireNonNull(userId);
 		post.content = new PostContent(command.content());
-		post.mention = ofNullable(command.mention())
-				.map(PostMention::create)
-				.orElse(null);
+		post.mention = createMention(command.mention());
 		post.media = createMedia(media);
 		return post;
 	}
 
+	public void update(PostUpdateCommand command) {
+		List<PostMediaCommand> media = requireNonNullElse(command.media(), List.of());
+		validateMediaCount(media);
+
+		this.content = new PostContent(command.content());
+		this.mention = createMention(command.mention());
+		this.media.clear();
+		this.media.addAll(createMedia(media));
+	}
+
 	public List<PostMedia> getMedia() {
 		return Collections.unmodifiableList(media);
+	}
+
+	private static PostMention createMention(MentionCommand mention) {
+		return ofNullable(mention)
+				.map(PostMention::create)
+				.orElse(null);
 	}
 
 	private static void validateMediaCount(List<PostMediaCommand> media) {

@@ -7,17 +7,22 @@ import static org.assertj.core.api.Assertions.tuple;
 import com.daesabu.meongcoach.community.application.provided.dto.MentionRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.PostMediaRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.PostRegisterRequest;
+import com.daesabu.meongcoach.community.application.provided.dto.PostUpdateRequest;
 import com.daesabu.meongcoach.community.application.required.PostRepository;
+import com.daesabu.meongcoach.community.domain.MentionCommand;
 import com.daesabu.meongcoach.community.domain.MentionTargetType;
 import com.daesabu.meongcoach.community.domain.Post;
 import com.daesabu.meongcoach.community.domain.PostMedia;
+import com.daesabu.meongcoach.community.domain.PostMediaCommand;
 import com.daesabu.meongcoach.community.domain.PostMediaType;
 import com.daesabu.meongcoach.community.domain.PostMention;
+import com.daesabu.meongcoach.community.domain.PostRegisterCommand;
 import com.daesabu.meongcoach.community.domain.exception.InvalidMentionTargetTypeException;
 import com.daesabu.meongcoach.community.domain.exception.InvalidPostContentException;
 import com.daesabu.meongcoach.community.domain.exception.InvalidPostMediaTypeException;
 import com.daesabu.meongcoach.community.domain.exception.MentionTargetNotFoundException;
 import com.daesabu.meongcoach.community.domain.exception.PostMediaCountExceededException;
+import com.daesabu.meongcoach.community.domain.exception.PostNotFoundException;
 import com.daesabu.meongcoach.media.domain.exception.InvalidMediaUrlException;
 import com.daesabu.meongcoach.support.ApplicationTest;
 import com.daesabu.meongcoach.training.application.required.CurriculumRepository;
@@ -229,6 +234,113 @@ class PostRegisterTest {
 
 		assertThatThrownBy(() -> postRegister.register(USER_ID, request))
 				.isInstanceOf(ConstraintViolationException.class);
+	}
+
+	@Test
+	void 게시글을_수정하면_본문과_멘션과_미디어를_전체_교체한다() {
+		Post post = savePost(USER_ID, null, List.of(new PostMediaCommand(PostMediaType.IMAGE, IMAGE_URL)));
+		Lesson lesson = saveLesson("앉아 기초");
+		PostUpdateRequest request = new PostUpdateRequest("수정한 본문", new MentionRequest("LESSON", lesson.getId()),
+				List.of(new PostMediaRequest("VIDEO", VIDEO_URL)));
+
+		postRegister.update(USER_ID, post.getId(), request);
+		flushAndClear();
+
+		Post found = postRepository.findById(post.getId()).orElseThrow();
+		assertThat(found.getContent().value()).isEqualTo("수정한 본문");
+		assertThat(found.getMention().getTargetType()).isEqualTo(MentionTargetType.LESSON);
+		assertThat(found.getMention().getTargetId()).isEqualTo(lesson.getId());
+		assertThat(found.getMedia())
+				.extracting(PostMedia::getType, PostMedia::getUrl, PostMedia::getSortOrder)
+				.containsExactly(tuple(PostMediaType.VIDEO, VIDEO_URL, 0));
+	}
+
+	@Test
+	void 수정할_때_멘션과_미디어를_생략하면_모두_제거한다() {
+		Lesson lesson = saveLesson("앉아 기초");
+		Post post = savePost(USER_ID, new MentionCommand(MentionTargetType.LESSON, lesson.getId()),
+				List.of(new PostMediaCommand(PostMediaType.IMAGE, IMAGE_URL)));
+
+		postRegister.update(USER_ID, post.getId(), new PostUpdateRequest("본문", null, null));
+		flushAndClear();
+
+		Post found = postRepository.findById(post.getId()).orElseThrow();
+		assertThat(found.getMention()).isNull();
+		assertThat(found.getMedia()).isEmpty();
+	}
+
+	@Test
+	void 수정할_때_기존_미디어를_다시_보내면_보낸_순서대로_저장한다() {
+		Post post = savePost(USER_ID, null, List.of(
+				new PostMediaCommand(PostMediaType.IMAGE, IMAGE_URL),
+				new PostMediaCommand(PostMediaType.VIDEO, VIDEO_URL)));
+		List<PostMediaRequest> media = List.of(
+				new PostMediaRequest("VIDEO", VIDEO_URL),
+				new PostMediaRequest("IMAGE", IMAGE_URL));
+
+		postRegister.update(USER_ID, post.getId(), new PostUpdateRequest("본문", null, media));
+		flushAndClear();
+
+		Post found = postRepository.findById(post.getId()).orElseThrow();
+		assertThat(found.getMedia())
+				.extracting(PostMedia::getType, PostMedia::getSortOrder)
+				.containsExactly(
+						tuple(PostMediaType.VIDEO, 0),
+						tuple(PostMediaType.IMAGE, 1));
+	}
+
+	@Test
+	void 다른_사용자의_게시글을_수정하면_예외를_던진다() {
+		Post post = savePost(7L, null, List.of());
+
+		assertThatThrownBy(() -> postRegister.update(USER_ID, post.getId(), new PostUpdateRequest("본문", null, null)))
+				.isInstanceOf(PostNotFoundException.class);
+	}
+
+	@Test
+	void 없는_게시글을_수정하면_예외를_던진다() {
+		assertThatThrownBy(() -> postRegister.update(USER_ID, 999_999L, new PostUpdateRequest("본문", null, null)))
+				.isInstanceOf(PostNotFoundException.class);
+	}
+
+	@Test
+	void 수정할_본문이_비어_있으면_예외를_던진다() {
+		Post post = savePost(USER_ID, null, List.of());
+
+		assertThatThrownBy(() -> postRegister.update(USER_ID, post.getId(), new PostUpdateRequest(" ", null, null)))
+				.isInstanceOf(InvalidPostContentException.class);
+	}
+
+	@Test
+	void 수정할_때_멘션한_레슨이_없으면_예외를_던진다() {
+		Post post = savePost(USER_ID, null, List.of());
+		PostUpdateRequest request = new PostUpdateRequest("본문", new MentionRequest("LESSON", 999_999L), null);
+
+		assertThatThrownBy(() -> postRegister.update(USER_ID, post.getId(), request))
+				.isInstanceOf(MentionTargetNotFoundException.class);
+	}
+
+	@Test
+	void 수정할_때_다른_사용자가_올린_미디어면_예외를_던진다() {
+		Post post = savePost(USER_ID, null, List.of());
+		PostUpdateRequest request = new PostUpdateRequest("본문", null,
+				List.of(new PostMediaRequest("IMAGE", "https://images.test.meongcoach.com/images/community-post/7/a.jpg")));
+
+		assertThatThrownBy(() -> postRegister.update(USER_ID, post.getId(), request))
+				.isInstanceOf(InvalidMediaUrlException.class);
+	}
+
+	@Test
+	void 수정할_미디어에_url이_없으면_예외를_던진다() {
+		Post post = savePost(USER_ID, null, List.of());
+		PostUpdateRequest request = new PostUpdateRequest("본문", null, List.of(new PostMediaRequest("IMAGE", " ")));
+
+		assertThatThrownBy(() -> postRegister.update(USER_ID, post.getId(), request))
+				.isInstanceOf(ConstraintViolationException.class);
+	}
+
+	private Post savePost(Long userId, MentionCommand mention, List<PostMediaCommand> media) {
+		return postRepository.save(Post.register(userId, new PostRegisterCommand("원래 본문", mention, media)));
 	}
 
 	private Lesson saveLesson(String title) {

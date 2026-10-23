@@ -52,6 +52,12 @@ public class PostQueryService implements PostFinder {
 	}
 
 	@Override
+	public Post findPost(Long userId, Long postId) {
+		return postRepository.findByIdAndUserId(postId, userId)
+				.orElseThrow(() -> new PostNotFoundException(postId));
+	}
+
+	@Override
 	public PostResult findPostDetail(Long postId) {
 		Post post = findPost(postId);
 

@@ -1,7 +1,13 @@
 package com.daesabu.meongcoach.community.application.required;
 
 import com.daesabu.meongcoach.community.domain.Post;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface PostRepository extends JpaRepository<Post, Long> {
+
+	/**
+	 * 사용자가 작성한 게시글을 조회한다. 없거나 다른 사용자의 게시글이면 빈 Optional을 반환한다.
+	 */
+	Optional<Post> findByIdAndUserId(Long id, Long userId);
 }
