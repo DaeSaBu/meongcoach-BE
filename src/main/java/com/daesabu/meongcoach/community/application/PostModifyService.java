@@ -2,12 +2,12 @@ package com.daesabu.meongcoach.community.application;
 
 import static java.util.Optional.ofNullable;
 
+import com.daesabu.meongcoach.community.application.provided.PostFinder;
 import com.daesabu.meongcoach.community.application.provided.PostRegister;
 import com.daesabu.meongcoach.community.application.provided.dto.PostRegisterRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.PostUpdateRequest;
 import com.daesabu.meongcoach.community.application.required.PostRepository;
 import com.daesabu.meongcoach.community.domain.Post;
-import com.daesabu.meongcoach.community.domain.exception.PostNotFoundException;
 import com.daesabu.meongcoach.media.application.provided.StoredMediaVerifier;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -21,6 +21,7 @@ import org.springframework.validation.annotation.Validated;
 public class PostModifyService implements PostRegister {
 
 	private final PostRepository postRepository;
+	private final PostFinder postFinder;
 	private final MentionTargetReaders mentionTargetReaders;
 	private final StoredMediaVerifier storedMediaVerifier;
 
@@ -38,8 +39,7 @@ public class PostModifyService implements PostRegister {
 	@Override
 	@Transactional
 	public Post update(Long userId, Long postId, PostUpdateRequest request) {
-		Post post = postRepository.findByIdAndUserId(postId, userId)
-				.orElseThrow(() -> new PostNotFoundException(postId));
+		Post post = postFinder.findPost(userId, postId);
 		post.update(request.toCommand());
 
 		validateExistingMention(post);
