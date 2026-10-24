@@ -55,7 +55,7 @@ public class Dog extends BaseEntity {
 
 	private LocalDate birthDate;
 
-	@Column(nullable = false, precision = 5, scale = 2)
+	@Column(precision = 5, scale = 2)
 	private BigDecimal weightKg;
 
 	@Enumerated(EnumType.STRING)
