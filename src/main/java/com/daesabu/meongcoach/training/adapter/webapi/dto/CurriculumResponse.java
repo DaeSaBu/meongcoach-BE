@@ -3,7 +3,7 @@ package com.daesabu.meongcoach.training.adapter.webapi.dto;
 import com.daesabu.meongcoach.training.application.provided.dto.CurriculumResult;
 import com.daesabu.meongcoach.training.domain.Curriculum;
 import com.daesabu.meongcoach.training.domain.CurriculumCompletion;
-import com.daesabu.meongcoach.training.domain.ProgressStatus;
+import com.daesabu.meongcoach.training.domain.shared.ProgressStatus;
 
 public record CurriculumResponse(Long curriculumId, String curriculumTitle, int totalLessons, int completedLessons,
 		ProgressStatus status, boolean locked) {

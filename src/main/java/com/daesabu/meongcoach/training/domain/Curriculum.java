@@ -2,6 +2,7 @@ package com.daesabu.meongcoach.training.domain;
 
 import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;
 import com.daesabu.meongcoach.shared.domain.BaseEntity;
+import com.daesabu.meongcoach.training.domain.shared.ProgressStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;

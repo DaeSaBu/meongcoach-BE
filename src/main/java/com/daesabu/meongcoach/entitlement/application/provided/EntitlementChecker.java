@@ -1,11 +1,17 @@
 package com.daesabu.meongcoach.entitlement.application.provided;
 
 import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;
+import java.util.Set;
 
 /**
  * 회원의 이용권 보유 확인 공개 API.
  */
 public interface EntitlementChecker {
+
+	/**
+	 * 회원이 지금 사용할 수 있는 이용권 종류를 반환한다.
+	 */
+	Set<EntitlementType> findActiveTypes(Long userId);
 
 	/**
 	 * 회원이 해당 종류의 이용권을 지금 쓸 수 있으면 true를 반환한다.
