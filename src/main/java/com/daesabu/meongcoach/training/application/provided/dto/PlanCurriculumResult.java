@@ -10,12 +10,12 @@ public record PlanCurriculumResult(Long id, String title, String description, in
 
 	public static PlanCurriculumResult of(Curriculum curriculum, LessonProgresses progresses, boolean hasEntitlement) {
 		CurriculumCompletion completion = curriculum.completion(progresses);
-		List<PlanLessonResult> lessons = curriculum.getLessons().stream()
+		List<PlanLessonResult> planLessons = curriculum.getLessons().stream()
 				.map(lesson -> new PlanLessonResult(lesson.getId(), lesson.getTitle(),
 						progresses.completedCount(lesson.getId()) > 0))
 				.toList();
 		return new PlanCurriculumResult(curriculum.getId(), curriculum.getTitle(), curriculum.getDescription(),
 				curriculum.getLessonsSize(), completion.completedLessons(), completion.status().name(),
-				curriculum.isLocked(hasEntitlement), lessons);
+				curriculum.isLocked(hasEntitlement), planLessons);
 	}
 }
