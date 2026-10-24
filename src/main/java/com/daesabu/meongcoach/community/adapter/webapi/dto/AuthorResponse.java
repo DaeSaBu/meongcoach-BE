@@ -1,10 +1,12 @@
 package com.daesabu.meongcoach.community.adapter.webapi.dto;
 
-import com.daesabu.meongcoach.user.application.provided.UserProfileSummaryResult;
+import com.daesabu.meongcoach.community.application.provided.dto.AuthorResult;
 
 public record AuthorResponse(Long userId, String nickname, String profileImageUrl) {
 
-	public static AuthorResponse from(UserProfileSummaryResult result) {
-		return new AuthorResponse(result.userId(), result.nickname(), result.profileImageUrl());
+	private static final String GUARDIAN_SUFFIX = " 보호자";
+
+	public static AuthorResponse from(AuthorResult result) {
+		return new AuthorResponse(result.userId(), result.dogName() + GUARDIAN_SUFFIX, result.profileImageUrl());
 	}
 }
