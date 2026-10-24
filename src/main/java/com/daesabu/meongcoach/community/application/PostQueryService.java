@@ -3,6 +3,7 @@ package com.daesabu.meongcoach.community.application;
 import static java.util.Optional.ofNullable;
 
 import com.daesabu.meongcoach.community.application.provided.PostFinder;
+import com.daesabu.meongcoach.community.application.provided.dto.AuthorResult;
 import com.daesabu.meongcoach.community.application.provided.dto.MentionTargetResult;
 import com.daesabu.meongcoach.community.application.provided.dto.PostListRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.PostListResult;
@@ -13,7 +14,6 @@ import com.daesabu.meongcoach.community.domain.MentionTargetType;
 import com.daesabu.meongcoach.community.domain.Post;
 import com.daesabu.meongcoach.community.domain.PostMention;
 import com.daesabu.meongcoach.community.domain.exception.PostNotFoundException;
-import com.daesabu.meongcoach.user.application.provided.UserProfileSummaryResult;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -78,14 +78,14 @@ public class PostQueryService implements PostFinder {
 	}
 
 	private List<PostResult> compose(List<Post> posts) {
-		Map<Long, UserProfileSummaryResult> authors = findAuthors(posts);
+		Map<Long, AuthorResult> authors = findAuthors(posts);
 		Map<MentionTargetType, Map<Long, MentionTargetResult>> mentionTargets = findMentionTargets(posts);
 		return posts.stream()
 				.map(post -> toResult(post, authors, mentionTargets))
 				.toList();
 	}
 
-	private Map<Long, UserProfileSummaryResult> findAuthors(List<Post> posts) {
+	private Map<Long, AuthorResult> findAuthors(List<Post> posts) {
 		Set<Long> userIds = posts.stream()
 				.map(Post::getUserId)
 				.collect(Collectors.toSet());
@@ -100,9 +100,9 @@ public class PostQueryService implements PostFinder {
 		return mentionTargetReaders.findSummaries(mentions);
 	}
 
-	private PostResult toResult(Post post, Map<Long, UserProfileSummaryResult> authors,
+	private PostResult toResult(Post post, Map<Long, AuthorResult> authors,
 	                            Map<MentionTargetType, Map<Long, MentionTargetResult>> mentionTargets) {
-		UserProfileSummaryResult author = authors.get(post.getUserId());
+		AuthorResult author = authors.get(post.getUserId());
 		MentionTargetResult mentionTarget = ofNullable(post.getMention())
 				.map(mention -> mentionTargets.get(mention.getTargetType()).get(mention.getTargetId()))
 				.orElse(null);

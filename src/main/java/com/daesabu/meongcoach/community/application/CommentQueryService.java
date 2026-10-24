@@ -1,6 +1,7 @@
 package com.daesabu.meongcoach.community.application;
 
 import com.daesabu.meongcoach.community.application.provided.CommentFinder;
+import com.daesabu.meongcoach.community.application.provided.dto.AuthorResult;
 import com.daesabu.meongcoach.community.application.provided.dto.CommentListRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.CommentListResult;
 import com.daesabu.meongcoach.community.application.provided.dto.CommentResult;
@@ -14,7 +15,6 @@ import com.daesabu.meongcoach.community.domain.Comment;
 import com.daesabu.meongcoach.community.domain.CommentClosure;
 import com.daesabu.meongcoach.community.domain.exception.CommentNotFoundException;
 import com.daesabu.meongcoach.community.domain.exception.PostNotFoundException;
-import com.daesabu.meongcoach.user.application.provided.UserProfileSummaryResult;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -78,7 +78,7 @@ public class CommentQueryService implements CommentFinder {
 	}
 
 	private List<CommentResult> compose(List<Comment> comments) {
-		Map<Long, UserProfileSummaryResult> authors = findAuthors(comments);
+		Map<Long, AuthorResult> authors = findAuthors(comments);
 		Map<Long, Long> replyCounts = countReplies(comments);
 		return comments.stream()
 				.map(comment -> new CommentResult(comment, authors.get(comment.getUserId()),
@@ -87,13 +87,13 @@ public class CommentQueryService implements CommentFinder {
 	}
 
 	private List<ReplyResult> composeReplies(List<Comment> replies) {
-		Map<Long, UserProfileSummaryResult> authors = findAuthors(replies);
+		Map<Long, AuthorResult> authors = findAuthors(replies);
 		return replies.stream()
 				.map(reply -> new ReplyResult(reply, authors.get(reply.getUserId())))
 				.toList();
 	}
 
-	private Map<Long, UserProfileSummaryResult> findAuthors(List<Comment> comments) {
+	private Map<Long, AuthorResult> findAuthors(List<Comment> comments) {
 		Set<Long> userIds = comments.stream()
 				.map(Comment::getUserId)
 				.collect(Collectors.toSet());

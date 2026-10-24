@@ -3,6 +3,7 @@ package com.daesabu.meongcoach.community.application.provided;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.daesabu.meongcoach.community.application.provided.dto.AuthorResult;
 import com.daesabu.meongcoach.community.application.provided.dto.CommentListRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.CommentListResult;
 import com.daesabu.meongcoach.community.application.provided.dto.CommentResult;
@@ -17,13 +18,20 @@ import com.daesabu.meongcoach.community.domain.Post;
 import com.daesabu.meongcoach.community.domain.PostRegisterCommand;
 import com.daesabu.meongcoach.community.domain.exception.CommentNotFoundException;
 import com.daesabu.meongcoach.community.domain.exception.PostNotFoundException;
+import com.daesabu.meongcoach.dog.application.required.DogRepository;
+import com.daesabu.meongcoach.dog.domain.Dog;
+import com.daesabu.meongcoach.dog.domain.DogRegisterCommand;
+import com.daesabu.meongcoach.dog.domain.DogSex;
+import com.daesabu.meongcoach.dog.domain.shared.Breed;
+import com.daesabu.meongcoach.dog.domain.shared.RegisteredBreed;
 import com.daesabu.meongcoach.support.ApplicationTest;
-import com.daesabu.meongcoach.user.application.provided.UserProfileSummaryResult;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.User;
 import com.daesabu.meongcoach.user.domain.UserProfileCreateCommand;
 import jakarta.persistence.EntityManager;
 import jakarta.validation.ConstraintViolationException;
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.IntStream;
@@ -35,6 +43,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 class CommentFinderTest {
 
 	private static final Long USER_ID = 42L;
+	private static final String UNSELECTED_DOG_IMAGE_URL = "https://media.meongcoach.com/images/dog-profile/42/choco.jpg";
+	private static final String SELECTED_DOG_IMAGE_URL = "https://media.meongcoach.com/images/dog-profile/42/bori.jpg";
 
 	@Autowired
 	private CommentFinder commentFinder;
@@ -50,6 +60,9 @@ class CommentFinderTest {
 
 	@Autowired
 	private UserRepository userRepository;
+
+	@Autowired
+	private DogRepository dogRepository;
 
 	@Autowired
 	private EntityManager entityManager;
@@ -162,15 +175,27 @@ class CommentFinderTest {
 	}
 
 	@Test
-	void 작성자_프로필_요약을_함께_반환한다() {
-		User author = saveUserWithProfile("멍멍이집사", "https://cdn.example.com/profile.png");
+	void 작성자의_선택된_강아지를_작성자_정보로_함께_반환한다() {
+		User author = saveAuthorWithDogs();
 		saveComment(author.getId(), "댓글");
 		flushAndClear();
 
 		CommentListResult result = commentFinder.findComments(post.getId(), new CommentListRequest(null, 20));
 
 		assertThat(result.comments().getFirst().author()).isEqualTo(
-				new UserProfileSummaryResult(author.getId(), "멍멍이집사", "https://cdn.example.com/profile.png"));
+				new AuthorResult(author.getId(), "보리", SELECTED_DOG_IMAGE_URL));
+	}
+
+	@Test
+	void 선택된_강아지가_없는_작성자의_댓글은_author가_null이다() {
+		User author = saveUserWithProfile("멍멍이집사", "https://cdn.example.com/profile.png");
+		saveDog(author.getId(), "초코", UNSELECTED_DOG_IMAGE_URL);
+		saveComment(author.getId(), "댓글");
+		flushAndClear();
+
+		CommentListResult result = commentFinder.findComments(post.getId(), new CommentListRequest(null, 20));
+
+		assertThat(result.comments().getFirst().author()).isNull();
 	}
 
 	@Test
@@ -284,8 +309,8 @@ class CommentFinderTest {
 	}
 
 	@Test
-	void 답글의_작성자_프로필_요약을_함께_반환한다() {
-		User author = saveUserWithProfile("멍멍이집사", "https://cdn.example.com/profile.png");
+	void 답글_작성자의_선택된_강아지를_작성자_정보로_함께_반환한다() {
+		User author = saveAuthorWithDogs();
 		Comment root = saveComment(USER_ID, "루트 댓글");
 		saveReply(root, author.getId(), "답글");
 		saveReply(root, USER_ID, "프로필 없는 작성자의 답글");
@@ -294,7 +319,7 @@ class CommentFinderTest {
 		ReplyListResult result = commentFinder.findReplies(root.getId(), new CommentListRequest(null, 20));
 
 		assertThat(result.replies()).extracting(ReplyResult::author).containsExactly(
-				new UserProfileSummaryResult(author.getId(), "멍멍이집사", "https://cdn.example.com/profile.png"),
+				new AuthorResult(author.getId(), "보리", SELECTED_DOG_IMAGE_URL),
 				null);
 	}
 
@@ -396,6 +421,24 @@ class CommentFinderTest {
 		Comment reply = saveComment(userId, content);
 		commentClosureRepository.save(CommentClosure.reply(root, reply));
 		return reply;
+	}
+
+	private User saveAuthorWithDogs() {
+		User author = saveUserWithProfile("멍멍이집사", "https://cdn.example.com/profile.png");
+		saveDog(author.getId(), "초코", UNSELECTED_DOG_IMAGE_URL);
+		Dog selected = newDog(author.getId(), "보리", SELECTED_DOG_IMAGE_URL);
+		selected.select();
+		dogRepository.save(selected);
+		return author;
+	}
+
+	private Dog saveDog(Long userId, String name, String profileImageUrl) {
+		return dogRepository.save(newDog(userId, name, profileImageUrl));
+	}
+
+	private Dog newDog(Long userId, String name, String profileImageUrl) {
+		return Dog.register(new DogRegisterCommand(userId, name, Breed.of(RegisteredBreed.POODLE), DogSex.MALE,
+				LocalDate.of(2024, 3, 1), new BigDecimal("4.50"), profileImageUrl, ""));
 	}
 
 	private User saveUserWithProfile(String nickname, String profileImageUrl) {
