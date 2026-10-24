@@ -235,6 +235,76 @@ class CommentRegisterTest {
 				.isInstanceOf(InvalidCommentContentException.class);
 	}
 
+	@Test
+	void 댓글을_삭제하면_삭제_시각이_기록된다() {
+		Comment comment = saveRootComment(savePost(), USER_ID);
+
+		commentRegister.delete(USER_ID, comment.getId());
+		flushAndClear();
+
+		Comment found = commentRepository.findById(comment.getId()).orElseThrow();
+		assertThat(found.getDeletedAt()).isNotNull();
+	}
+
+	@Test
+	void 답글도_삭제할_수_있다() {
+		Comment root = saveRootComment(savePost());
+		Comment reply = saveReply(root, USER_ID);
+
+		commentRegister.delete(USER_ID, reply.getId());
+		flushAndClear();
+
+		Comment found = commentRepository.findById(reply.getId()).orElseThrow();
+		assertThat(found.getDeletedAt()).isNotNull();
+	}
+
+	@Test
+	void 루트_댓글을_삭제해도_답글은_삭제되지_않는다() {
+		Comment root = saveRootComment(savePost(), USER_ID);
+		Comment reply = saveReply(root);
+
+		commentRegister.delete(USER_ID, root.getId());
+		flushAndClear();
+
+		Comment found = commentRepository.findById(reply.getId()).orElseThrow();
+		assertThat(found.getDeletedAt()).isNull();
+	}
+
+	@Test
+	void 다른_사용자의_댓글을_삭제하면_예외를_던진다() {
+		Comment comment = saveRootComment(savePost());
+
+		assertThatThrownBy(() -> commentRegister.delete(USER_ID, comment.getId()))
+				.isInstanceOf(CommentNotFoundException.class);
+	}
+
+	@Test
+	void 없는_댓글을_삭제하면_예외를_던진다() {
+		assertThatThrownBy(() -> commentRegister.delete(USER_ID, 999_999L))
+				.isInstanceOf(CommentNotFoundException.class);
+	}
+
+	@Test
+	void 이미_삭제된_댓글은_삭제할_수_없다() {
+		Comment comment = saveRootComment(savePost(), USER_ID);
+		comment.delete();
+		flushAndClear();
+
+		assertThatThrownBy(() -> commentRegister.delete(USER_ID, comment.getId()))
+				.isInstanceOf(CommentNotFoundException.class);
+	}
+
+	@Test
+	void 삭제된_게시글의_댓글은_삭제할_수_없다() {
+		Post post = savePost();
+		Comment comment = saveRootComment(post, USER_ID);
+		post.delete();
+		flushAndClear();
+
+		assertThatThrownBy(() -> commentRegister.delete(USER_ID, comment.getId()))
+				.isInstanceOf(CommentNotFoundException.class);
+	}
+
 	private Post savePost() {
 		return postRepository.save(Post.register(OTHER_USER_ID, new PostRegisterCommand("오늘 앉아 훈련 성공!", null, List.of())));
 	}

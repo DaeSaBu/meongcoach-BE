@@ -795,6 +795,46 @@ class CommunityControllerTest {
 	}
 
 	@Test
+	void 댓글을_삭제하면_204를_반환한다() throws Exception {
+		mockMvc.perform(delete("/api/community/comments/{commentId}", 101L)
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+				.andExpect(status().isNoContent())
+				.andDo(document("community/comment-delete",
+						pathParameters(parameterWithName("commentId").description("삭제할 댓글 ID. 본인이 작성한 댓글·답글만 삭제할 수 있다"))
+				));
+	}
+
+	@Test
+	void 인증_주체와_경로의_댓글_ID로_삭제를_위임한다() throws Exception {
+		mockMvc.perform(delete("/api/community/comments/{commentId}", 101L).principal(CURRENT_USER))
+				.andExpect(status().isNoContent());
+
+		then(commentRegister).should().delete(42L, 101L);
+	}
+
+	@Test
+	void 삭제할_댓글이_없거나_본인_댓글이_아니면_404를_반환한다() throws Exception {
+		willThrow(new CommentNotFoundException(999L)).given(commentRegister).delete(42L, 999L);
+
+		mockMvc.perform(delete("/api/community/comments/{commentId}", 999L)
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.code").value("COMMUNITY_COMMENT_NOT_FOUND"))
+				.andDo(document("community/comment-delete-error",
+						responseFields(
+								fieldWithPath("title").description("HTTP 상태 이름"),
+								fieldWithPath("status").description("HTTP 상태 코드"),
+								fieldWithPath("detail").description("사람이 읽을 수 있는 에러 설명"),
+								fieldWithPath("instance").description("에러가 발생한 요청 경로"),
+								fieldWithPath("code").description("클라이언트 분기용 에러 코드"),
+								fieldWithPath("timestamp").description("에러 발생 시각(UTC)")
+						)
+				));
+	}
+
+	@Test
 	void 댓글_목록을_다음_커서와_함께_반환한다() throws Exception {
 		Post post = PostFixture.create(30L, 7L, "이 레슨 따라해봤어요", LocalDateTime.of(2026, 10, 19, 10, 30, 0));
 		CommentResult withProfile = new CommentResult(
