@@ -29,7 +29,7 @@ public interface DogRepository extends JpaRepository<Dog, Long> {
 	Optional<Dog> findByIdAndUserId(Long id, Long userId);
 
 	/**
-	 * 여러 사용자의 강아지를 등록 순(id 오름차순)으로 모두 조회한다. 소프트 딜리트된 강아지는 제외한다.
+	 * 여러 사용자의 강아지 중 상태가 일치하는 강아지를 id 오름차순으로 조회한다. 소프트 딜리트된 강아지는 제외한다.
 	 */
-	List<Dog> findAllByUserIdInOrderByIdAsc(Collection<Long> userIds);
+	List<Dog> findAllByUserIdInAndStatusOrderByIdAsc(Collection<Long> userIds, DogStatus status);
 }

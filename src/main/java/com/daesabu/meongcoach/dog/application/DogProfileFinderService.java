@@ -1,7 +1,7 @@
 package com.daesabu.meongcoach.dog.application;
 
 import com.daesabu.meongcoach.dog.application.provided.DogProfileFinder;
-import com.daesabu.meongcoach.dog.application.provided.FirstDogResult;
+import com.daesabu.meongcoach.dog.application.provided.SelectedDogResult;
 import com.daesabu.meongcoach.dog.application.required.DogRepository;
 import com.daesabu.meongcoach.dog.domain.Dog;
 import com.daesabu.meongcoach.dog.domain.DogStatus;
@@ -44,15 +44,16 @@ public class DogProfileFinderService implements DogProfileFinder {
 	}
 
 	@Override
-	public List<FirstDogResult> findFirstDogs(Collection<Long> userIds) {
+	public List<SelectedDogResult> findSelectedDogs(Collection<Long> userIds) {
 		if (userIds.isEmpty()) {
 			return List.of();
 		}
-		Map<Long, Dog> firstDogs = dogRepository.findAllByUserIdInOrderByIdAsc(userIds).stream()
+		List<Dog> dogs = dogRepository.findAllByUserIdInAndStatusOrderByIdAsc(userIds, DogStatus.SELECTED);
+		Map<Long, Dog> selectedDogs = dogs.stream()
 				.collect(Collectors.toMap(Dog::getUserId, Function.identity(), (first, later) -> first,
 						LinkedHashMap::new));
-		return firstDogs.values().stream()
-				.map(FirstDogResult::from)
+		return selectedDogs.values().stream()
+				.map(SelectedDogResult::from)
 				.toList();
 	}
 }

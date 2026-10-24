@@ -26,8 +26,8 @@ public interface DogProfileFinder {
 	Dog findSelectedDog(Long userId);
 
 	/**
-	 * 사용자마다 가장 먼저 등록한 강아지 하나의 이름과 프로필 이미지를 반환한다.
-	 * 삭제된 강아지는 제외하며, 강아지가 없는 사용자는 결과에서 빠진다.
+	 * 사용자마다 선택된 강아지 하나의 이름과 프로필 이미지를 반환한다.
+	 * 삭제된 강아지는 제외하며, 선택된 강아지가 없는 사용자는 결과에서 빠진다.
 	 */
-	List<FirstDogResult> findFirstDogs(Collection<Long> userIds);
+	List<SelectedDogResult> findSelectedDogs(Collection<Long> userIds);
 }

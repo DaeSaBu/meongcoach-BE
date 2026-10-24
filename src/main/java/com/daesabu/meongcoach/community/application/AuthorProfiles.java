@@ -23,7 +23,7 @@ public class AuthorProfiles {
 		Set<Long> profiledUserIds = userFinder.findProfileSummaries(userIds).stream()
 				.map(UserProfileSummaryResult::userId)
 				.collect(Collectors.toSet());
-		return dogProfileFinder.findFirstDogs(profiledUserIds).stream()
+		return dogProfileFinder.findSelectedDogs(profiledUserIds).stream()
 				.map(AuthorResult::from)
 				.collect(Collectors.toMap(AuthorResult::userId, Function.identity()));
 	}
