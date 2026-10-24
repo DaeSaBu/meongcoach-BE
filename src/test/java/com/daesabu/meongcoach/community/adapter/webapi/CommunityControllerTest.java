@@ -29,6 +29,7 @@ import com.daesabu.meongcoach.community.application.provided.dto.CommentListRequ
 import com.daesabu.meongcoach.community.application.provided.dto.CommentListResult;
 import com.daesabu.meongcoach.community.application.provided.dto.CommentRegisterRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.CommentResult;
+import com.daesabu.meongcoach.community.application.provided.dto.CommentUpdateRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.MentionRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.MentionTargetResult;
 import com.daesabu.meongcoach.community.application.provided.dto.PostListRequest;
@@ -48,6 +49,7 @@ import com.daesabu.meongcoach.community.domain.PostFixture;
 import com.daesabu.meongcoach.community.domain.PostMediaCommand;
 import com.daesabu.meongcoach.community.domain.PostMediaType;
 import com.daesabu.meongcoach.community.domain.exception.CommentNotFoundException;
+import com.daesabu.meongcoach.community.domain.exception.InvalidCommentContentException;
 import com.daesabu.meongcoach.community.domain.exception.MentionTargetNotFoundException;
 import com.daesabu.meongcoach.community.domain.exception.PostMediaCountExceededException;
 import com.daesabu.meongcoach.community.domain.exception.PostNotFoundException;
@@ -714,6 +716,82 @@ class CommunityControllerTest {
 				.andExpect(jsonPath("$.errors[0].field").value("parentId"));
 
 		then(commentRegister).shouldHaveNoInteractions();
+	}
+
+	@Test
+	void 댓글을_수정하면_200과_수정한_댓글을_반환한다() throws Exception {
+		Post post = PostFixture.create(30L, 7L, "이 레슨 따라해봤어요", LocalDateTime.of(2026, 10, 20, 10, 30, 0));
+		given(commentRegister.update(42L, 101L, new CommentUpdateRequest("저희 강아지도 두 번째에 성공했어요!")))
+				.willReturn(CommentFixture.create(101L, post, 42L, "저희 강아지도 두 번째에 성공했어요!",
+						LocalDateTime.of(2026, 10, 21, 9, 0, 0)));
+
+		mockMvc.perform(put("/api/community/comments/{commentId}", 101L)
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{"content": "저희 강아지도 두 번째에 성공했어요!"}
+								"""))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.commentId").value(101))
+				.andExpect(jsonPath("$.postId").value(30))
+				.andExpect(jsonPath("$.userId").value(42))
+				.andExpect(jsonPath("$.content").value("저희 강아지도 두 번째에 성공했어요!"))
+				.andExpect(jsonPath("$.createdAt").value("2026-10-21T09:00:00"))
+				.andDo(document("community/comment-update",
+						pathParameters(parameterWithName("commentId").description("수정할 댓글 ID. 본인이 작성한 댓글·답글만 수정할 수 있다")),
+						requestFields(
+								fieldWithPath("content").description("필수 입력. 댓글 본문. 공백만으로 채울 수 없고 500자 이하")
+						),
+						responseFields(
+								fieldWithPath("commentId").description("수정한 댓글 ID"),
+								fieldWithPath("postId").description("게시글 ID"),
+								fieldWithPath("userId").description("작성자 회원 ID"),
+								fieldWithPath("content").description("댓글 본문"),
+								fieldWithPath("createdAt").description("댓글 작성 시각(ISO-8601, 초 단위)")
+						)
+				));
+	}
+
+	@Test
+	void 수정할_댓글이_없거나_본인_댓글이_아니면_404를_반환한다() throws Exception {
+		given(commentRegister.update(42L, 999L, new CommentUpdateRequest("축하해요!")))
+				.willThrow(new CommentNotFoundException(999L));
+
+		mockMvc.perform(put("/api/community/comments/{commentId}", 999L)
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{"content": "축하해요!"}
+								"""))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.code").value("COMMUNITY_COMMENT_NOT_FOUND"))
+				.andDo(document("community/comment-update-error",
+						responseFields(
+								fieldWithPath("title").description("HTTP 상태 이름"),
+								fieldWithPath("status").description("HTTP 상태 코드"),
+								fieldWithPath("detail").description("사람이 읽을 수 있는 에러 설명"),
+								fieldWithPath("instance").description("에러가 발생한 요청 경로"),
+								fieldWithPath("code").description("클라이언트 분기용 에러 코드"),
+								fieldWithPath("timestamp").description("에러 발생 시각(UTC)")
+						)
+				));
+	}
+
+	@Test
+	void 수정할_댓글_본문이_올바르지_않으면_400을_반환한다() throws Exception {
+		given(commentRegister.update(42L, 101L, new CommentUpdateRequest(" ")))
+				.willThrow(new InvalidCommentContentException("본문이 비어 있습니다."));
+
+		mockMvc.perform(put("/api/community/comments/{commentId}", 101L)
+						.principal(CURRENT_USER)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{"content": " "}
+								"""))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("COMMUNITY_COMMENT_CONTENT_INVALID"));
 	}
 
 	@Test
