@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.daesabu.meongcoach.dog.domain.exception.DogLimitExceededException;
 import com.daesabu.meongcoach.dog.domain.exception.DogNotFoundException;
 import com.daesabu.meongcoach.dog.domain.exception.LastDogNotDeletableException;
+import com.daesabu.meongcoach.dog.domain.exception.SelectedDogNotDeletableException;
 import com.daesabu.meongcoach.dog.domain.shared.Breed;
 import com.daesabu.meongcoach.dog.domain.shared.RegisteredBreed;
 import java.math.BigDecimal;
@@ -86,15 +87,27 @@ class DogsTest {
 	}
 
 	@Test
-	void 두_마리_이상이면_삭제하면_삭제_시각이_기록된다() {
-		Dog target = selectedDog(10L);
-		Dog other = unselectedDog(11L);
+	void 미선택_강아지를_삭제하면_삭제_시각이_기록된다() {
+		Dog target = unselectedDog(10L);
+		Dog other = selectedDog(11L);
 		Dogs dogs = new Dogs(List.of(target, other));
 
 		dogs.delete(10L);
 
 		assertThat(target.getDeletedAt()).isNotNull();
 		assertThat(other.getDeletedAt()).isNull();
+	}
+
+	@Test
+	void 두_마리_이상이어도_선택된_강아지는_삭제할_수_없다() {
+		Dog selected = selectedDog(10L);
+		Dogs dogs = new Dogs(List.of(selected, unselectedDog(11L)));
+
+		assertThatThrownBy(() -> dogs.delete(10L))
+				.isInstanceOf(SelectedDogNotDeletableException.class);
+
+		assertThat(selected.getDeletedAt()).isNull();
+		assertThat(selected.isSelected()).isTrue();
 	}
 
 	@Test

@@ -16,12 +16,14 @@ import com.daesabu.meongcoach.dog.domain.shared.Personality;
 import com.daesabu.meongcoach.dog.domain.shared.RegisteredBreed;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @DataJpaTest
 @Import(DogProfileFinderService.class)
@@ -160,8 +162,8 @@ class DogProfileFinderServiceTest {
 
 	@Test
 	void 삭제된_강아지는_단건_조회되지_않는다() {
-		Dog remaining = dogRepository.saveAndFlush(newDog(USER_ID));
-		Dog deleted = persistSelectedDog(USER_ID);
+		Dog remaining = persistSelectedDog(USER_ID);
+		Dog deleted = dogRepository.saveAndFlush(newDog(USER_ID));
 		new Dogs(List.of(remaining, deleted)).delete(deleted.getId());
 		dogRepository.saveAndFlush(deleted);
 
@@ -171,9 +173,9 @@ class DogProfileFinderServiceTest {
 
 	@Test
 	void 삭제된_강아지는_선택_조회에서_제외된다() {
-		Dog remaining = dogRepository.saveAndFlush(newDog(USER_ID));
+		dogRepository.saveAndFlush(newDog(USER_ID));
 		Dog deleted = persistSelectedDog(USER_ID);
-		new Dogs(List.of(remaining, deleted)).delete(deleted.getId());
+		ReflectionTestUtils.setField(deleted, "deletedAt", LocalDateTime.now());
 		dogRepository.saveAndFlush(deleted);
 
 		assertThatThrownBy(() -> dogProfileFinder.findSelectedDog(USER_ID))
