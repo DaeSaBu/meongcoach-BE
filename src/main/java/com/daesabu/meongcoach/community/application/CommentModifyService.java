@@ -52,6 +52,13 @@ public class CommentModifyService implements CommentRegister {
 		return comment;
 	}
 
+	@Override
+	@Transactional
+	public void delete(Long userId, Long commentId) {
+		Comment comment = commentFinder.findComment(userId, commentId);
+		comment.delete();
+	}
+
 	private Optional<Comment> findRoot(Long postId, Long parentId) {
 		return ofNullable(parentId)
 				.map(id -> findParent(postId, id))
