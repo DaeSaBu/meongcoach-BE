@@ -2,13 +2,14 @@ package com.daesabu.meongcoach.plan.adapter.webapi;
 
 import com.daesabu.meongcoach.plan.adapter.webapi.dto.CurrentPlanResponse;
 import com.daesabu.meongcoach.plan.adapter.webapi.dto.PlanCreateResponse;
-import com.daesabu.meongcoach.plan.adapter.webapi.dto.PlanResponse;
 import com.daesabu.meongcoach.plan.application.provided.CurrentPlanFinder;
 import com.daesabu.meongcoach.plan.application.provided.CustomPlanCreator;
+import com.daesabu.meongcoach.plan.application.provided.dto.CurrentPlanResult;
 import com.daesabu.meongcoach.plan.application.provided.dto.CustomPlanCreateRequest;
 import com.daesabu.meongcoach.plan.domain.Plan;
 import com.daesabu.meongcoach.shared.security.CurrentUserId;
 import jakarta.validation.Valid;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -28,9 +29,8 @@ public class PlanController {
 
 	@GetMapping("/current")
 	public CurrentPlanResponse findCurrent(@CurrentUserId Long userId) {
-		PlanResponse plan = currentPlanFinder.find(userId)
-				.map(PlanResponse::from).orElse(null);
-		return new CurrentPlanResponse(plan);
+		Optional<CurrentPlanResult> result = currentPlanFinder.find(userId);
+		return CurrentPlanResponse.from(result);
 	}
 
 	@PostMapping("/custom")
