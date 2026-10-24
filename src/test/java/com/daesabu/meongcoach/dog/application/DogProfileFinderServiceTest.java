@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.daesabu.meongcoach.dog.application.provided.DogProfileFinder;
-import com.daesabu.meongcoach.dog.application.provided.FirstDogResult;
+import com.daesabu.meongcoach.dog.application.provided.SelectedDogResult;
 import com.daesabu.meongcoach.dog.application.required.DogRepository;
 import com.daesabu.meongcoach.dog.domain.Dog;
 import com.daesabu.meongcoach.dog.domain.DogRegisterCommand;
@@ -183,48 +183,51 @@ class DogProfileFinderServiceTest {
 	}
 
 	@Test
-	void 사용자마다_첫_번째로_등록한_강아지를_반환한다() {
+	void 사용자마다_선택된_강아지를_반환한다() {
 		dogRepository.saveAndFlush(newDog(USER_ID, "초코", IMAGE_URL));
-		dogRepository.saveAndFlush(newDog(USER_ID, "보리", OTHER_IMAGE_URL));
-		dogRepository.saveAndFlush(newDog(OTHER_USER_ID, "콩이", OTHER_IMAGE_URL));
+		persistSelectedDog(USER_ID, "보리", OTHER_IMAGE_URL);
+		persistSelectedDog(OTHER_USER_ID, "콩이", OTHER_IMAGE_URL);
 
-		List<FirstDogResult> found = dogProfileFinder.findFirstDogs(Set.of(USER_ID, OTHER_USER_ID));
+		List<SelectedDogResult> found = dogProfileFinder.findSelectedDogs(Set.of(USER_ID, OTHER_USER_ID));
 
 		assertThat(found).containsExactlyInAnyOrder(
-				new FirstDogResult(USER_ID, "초코", IMAGE_URL),
-				new FirstDogResult(OTHER_USER_ID, "콩이", OTHER_IMAGE_URL));
+				new SelectedDogResult(USER_ID, "보리", OTHER_IMAGE_URL),
+				new SelectedDogResult(OTHER_USER_ID, "콩이", OTHER_IMAGE_URL));
 	}
 
 	@Test
-	void 첫_번째_강아지가_삭제됐으면_그다음_등록한_강아지를_반환한다() {
+	void 선택된_강아지가_없는_사용자는_선택된_강아지_결과에서_빠진다() {
+		persistSelectedDog(USER_ID);
+		dogRepository.saveAndFlush(newDog(OTHER_USER_ID));
+
+		List<SelectedDogResult> found = dogProfileFinder.findSelectedDogs(Set.of(USER_ID, OTHER_USER_ID));
+
+		assertThat(found).extracting(SelectedDogResult::userId).containsExactly(USER_ID);
+	}
+
+	@Test
+	void 삭제된_강아지는_선택된_강아지_결과에서_제외된다() {
 		Dog deleted = persistSelectedDog(USER_ID);
-		Dog remaining = dogRepository.saveAndFlush(newDog(USER_ID, "보리", OTHER_IMAGE_URL));
+		Dog remaining = dogRepository.saveAndFlush(newDog(USER_ID));
 		new Dogs(List.of(deleted, remaining)).delete(deleted.getId());
 		dogRepository.saveAndFlush(deleted);
 
-		List<FirstDogResult> found = dogProfileFinder.findFirstDogs(Set.of(USER_ID));
-
-		assertThat(found).containsExactly(new FirstDogResult(USER_ID, "보리", OTHER_IMAGE_URL));
+		assertThat(dogProfileFinder.findSelectedDogs(Set.of(USER_ID))).isEmpty();
 	}
 
 	@Test
-	void 강아지가_없는_사용자는_첫_번째_강아지_결과에서_빠진다() {
+	void 빈_사용자_목록이면_빈_선택된_강아지_목록을_반환한다() {
 		persistSelectedDog(USER_ID);
 
-		List<FirstDogResult> found = dogProfileFinder.findFirstDogs(Set.of(USER_ID, OTHER_USER_ID));
-
-		assertThat(found).extracting(FirstDogResult::userId).containsExactly(USER_ID);
-	}
-
-	@Test
-	void 빈_사용자_목록이면_빈_첫_번째_강아지_목록을_반환한다() {
-		persistSelectedDog(USER_ID);
-
-		assertThat(dogProfileFinder.findFirstDogs(Set.of())).isEmpty();
+		assertThat(dogProfileFinder.findSelectedDogs(Set.of())).isEmpty();
 	}
 
 	private Dog persistSelectedDog(Long userId) {
-		Dog dog = newDog(userId);
+		return persistSelectedDog(userId, "초코", IMAGE_URL);
+	}
+
+	private Dog persistSelectedDog(Long userId, String name, String profileImageUrl) {
+		Dog dog = newDog(userId, name, profileImageUrl);
 		dog.select();
 		return dogRepository.saveAndFlush(dog);
 	}
