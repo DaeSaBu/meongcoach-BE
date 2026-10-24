@@ -122,4 +122,10 @@ public class CommunityController {
 		Comment comment = commentRegister.update(userId, commentId, request);
 		return CommentUpdateResponse.from(comment);
 	}
+
+	@DeleteMapping("/comments/{commentId}")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public void deleteComment(@CurrentUserId Long userId, @PathVariable Long commentId) {
+		commentRegister.delete(userId, commentId);
+	}
 }
