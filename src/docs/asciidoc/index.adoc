@@ -690,6 +690,21 @@ operation::community/post-update[snippets='http-request,path-parameters,request-
 
 operation::community/post-update-error[snippets='http-response,response-fields']
 
+=== 게시글 삭제
+
+link:{swagger-ui}#/Community/community-post-delete[▶ Swagger에서 Try it out,window=swagger]
+
+로그인한 회원이 작성한 게시글을 삭제합니다. 성공하면 204가 내려가고 응답 본문은 없습니다.
+삭제한 게시글은 목록·단건 조회에서 제외되고, 그 게시글에 댓글을 작성하거나 댓글 목록을 조회하면 404가 내려갑니다. 같은 게시글을 다시 삭제해도 404입니다.
+
+operation::community/post-delete[snippets='http-request,path-parameters,http-response']
+
+==== 실패 응답
+
+게시글이 없거나 이미 삭제됐거나 본인이 작성한 게시글이 아니면 404(`COMMUNITY_POST_NOT_FOUND`)가 내려갑니다.
+
+operation::community/post-delete-error[snippets='http-response,response-fields']
+
 === 댓글 작성
 
 link:{swagger-ui}#/Community/community-comment-register[▶ Swagger에서 Try it out,window=swagger]
