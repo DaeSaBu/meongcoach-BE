@@ -1,5 +1,7 @@
 package com.daesabu.meongcoach.training.domain;
 
+import static org.springframework.util.Assert.state;
+
 import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;
 import com.daesabu.meongcoach.shared.domain.BaseEntity;
 import com.daesabu.meongcoach.training.domain.shared.ProgressStatus;
@@ -65,6 +67,8 @@ public class Curriculum extends BaseEntity {
 	}
 
 	public CurriculumCompletion completion(LessonProgresses progresses) {
+		state(!lessons.isEmpty(), "커리큘럼에는 레슨이 하나 이상 있어야 합니다.");
+
 		int completed = progresses.countCompletedIn(getLessonIds());
 		int total = lessons.size();
 		return CurriculumCompletion.of(total, completed);
