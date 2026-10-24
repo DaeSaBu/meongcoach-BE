@@ -8,8 +8,8 @@ public record PlanCurriculumResponse(Long curriculumId, String title, String des
 		int completedLessons, ProgressStatus status, boolean locked, List<PlanLessonResponse> lessons) {
 
 	public static PlanCurriculumResponse from(PlanCurriculumResult result) {
-		List<PlanLessonResponse> lessons = result.lessons().stream().map(PlanLessonResponse::from).toList();
+		List<PlanLessonResponse> planLessons = result.lessons().stream().map(PlanLessonResponse::from).toList();
 		return new PlanCurriculumResponse(result.id(), result.title(), result.description(), result.totalLessons(),
-				result.completedLessons(), result.status(), result.locked(), lessons);
+				result.completedLessons(), result.status(), result.locked(), planLessons);
 	}
 }
