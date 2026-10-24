@@ -147,10 +147,10 @@ class CommunityControllerTest {
 								fieldWithPath("posts[].postId").description("게시글 ID"),
 								fieldWithPath("posts[].content").description("게시글 본문"),
 								fieldWithPath("posts[].author").optional()
-										.description("작성자 요약. 작성자가 탈퇴했거나 등록한 강아지가 없으면 null"),
+										.description("작성자 요약. 작성자가 탈퇴했거나 선택된 강아지가 없으면 null"),
 								fieldWithPath("posts[].author.userId").description("작성자 회원 ID"),
-								fieldWithPath("posts[].author.nickname").description("작성자 표시 이름. 작성자가 첫 번째로 등록한 강아지 이름 뒤에 ' 보호자'를 붙인다"),
-								fieldWithPath("posts[].author.profileImageUrl").description("작성자가 첫 번째로 등록한 강아지의 프로필 이미지 URL. 이미지를 등록하지 않았으면 빈 문자열"),
+								fieldWithPath("posts[].author.nickname").description("작성자 표시 이름. 작성자가 선택한 강아지 이름 뒤에 ' 보호자'를 붙인다"),
+								fieldWithPath("posts[].author.profileImageUrl").description("작성자가 선택한 강아지의 프로필 이미지 URL. 이미지를 등록하지 않았으면 빈 문자열"),
 								fieldWithPath("posts[].mention").optional()
 										.description("멘션 대상 요약. 멘션이 없거나 멘션 대상이 없으면 null"),
 								fieldWithPath("posts[].mention.targetType").description("멘션 대상 종류. 현재 LESSON(레슨)만 있다"),
@@ -268,10 +268,10 @@ class CommunityControllerTest {
 								fieldWithPath("postId").description("게시글 ID"),
 								fieldWithPath("content").description("게시글 본문"),
 								fieldWithPath("author").optional()
-										.description("작성자 요약. 작성자가 탈퇴했거나 등록한 강아지가 없으면 null"),
+										.description("작성자 요약. 작성자가 탈퇴했거나 선택된 강아지가 없으면 null"),
 								fieldWithPath("author.userId").description("작성자 회원 ID"),
-								fieldWithPath("author.nickname").description("작성자 표시 이름. 작성자가 첫 번째로 등록한 강아지 이름 뒤에 ' 보호자'를 붙인다"),
-								fieldWithPath("author.profileImageUrl").description("작성자가 첫 번째로 등록한 강아지의 프로필 이미지 URL. 이미지를 등록하지 않았으면 빈 문자열"),
+								fieldWithPath("author.nickname").description("작성자 표시 이름. 작성자가 선택한 강아지 이름 뒤에 ' 보호자'를 붙인다"),
+								fieldWithPath("author.profileImageUrl").description("작성자가 선택한 강아지의 프로필 이미지 URL. 이미지를 등록하지 않았으면 빈 문자열"),
 								fieldWithPath("mention").optional()
 										.description("멘션 대상 요약. 멘션이 없거나 멘션 대상이 없으면 null"),
 								fieldWithPath("mention.targetType").description("멘션 대상 종류. 현재 LESSON(레슨)만 있다"),
@@ -874,10 +874,10 @@ class CommunityControllerTest {
 								fieldWithPath("comments[].commentId").description("댓글 ID"),
 								fieldWithPath("comments[].content").description("댓글 본문"),
 								fieldWithPath("comments[].author").optional()
-										.description("작성자 요약. 작성자가 탈퇴했거나 등록한 강아지가 없으면 null"),
+										.description("작성자 요약. 작성자가 탈퇴했거나 선택된 강아지가 없으면 null"),
 								fieldWithPath("comments[].author.userId").description("작성자 회원 ID"),
-								fieldWithPath("comments[].author.nickname").description("작성자 표시 이름. 작성자가 첫 번째로 등록한 강아지 이름 뒤에 ' 보호자'를 붙인다"),
-								fieldWithPath("comments[].author.profileImageUrl").description("작성자가 첫 번째로 등록한 강아지의 프로필 이미지 URL. 이미지를 등록하지 않았으면 빈 문자열"),
+								fieldWithPath("comments[].author.nickname").description("작성자 표시 이름. 작성자가 선택한 강아지 이름 뒤에 ' 보호자'를 붙인다"),
+								fieldWithPath("comments[].author.profileImageUrl").description("작성자가 선택한 강아지의 프로필 이미지 URL. 이미지를 등록하지 않았으면 빈 문자열"),
 								fieldWithPath("comments[].replyCount").description("삭제되지 않은 답글 수. 답글이 없으면 0"),
 								fieldWithPath("comments[].createdAt").description("댓글 작성 시각(ISO-8601, 초 단위)"),
 								fieldWithPath("nextCursor").optional()
@@ -965,10 +965,10 @@ class CommunityControllerTest {
 								fieldWithPath("replies[].commentId").description("답글 ID"),
 								fieldWithPath("replies[].content").description("답글 본문"),
 								fieldWithPath("replies[].author").optional()
-										.description("작성자 요약. 작성자가 탈퇴했거나 등록한 강아지가 없으면 null"),
+										.description("작성자 요약. 작성자가 탈퇴했거나 선택된 강아지가 없으면 null"),
 								fieldWithPath("replies[].author.userId").description("작성자 회원 ID"),
-								fieldWithPath("replies[].author.nickname").description("작성자 표시 이름. 작성자가 첫 번째로 등록한 강아지 이름 뒤에 ' 보호자'를 붙인다"),
-								fieldWithPath("replies[].author.profileImageUrl").description("작성자가 첫 번째로 등록한 강아지의 프로필 이미지 URL. 이미지를 등록하지 않았으면 빈 문자열"),
+								fieldWithPath("replies[].author.nickname").description("작성자 표시 이름. 작성자가 선택한 강아지 이름 뒤에 ' 보호자'를 붙인다"),
+								fieldWithPath("replies[].author.profileImageUrl").description("작성자가 선택한 강아지의 프로필 이미지 URL. 이미지를 등록하지 않았으면 빈 문자열"),
 								fieldWithPath("replies[].createdAt").description("답글 작성 시각(ISO-8601, 초 단위)"),
 								fieldWithPath("nextCursor").optional()
 										.description("다음 페이지 요청에 cursor로 보낼 값. 마지막 페이지면 null")

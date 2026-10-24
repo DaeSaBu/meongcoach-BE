@@ -59,8 +59,8 @@ class PostFinderTest {
 	private static final Long LESSON_B_ID = 202L;
 	private static final String IMAGE_URL = "https://media.meongcoach.com/images/community-post/42/photo.jpg";
 	private static final String VIDEO_URL = "https://media.meongcoach.com/videos/community-post/42/clip.mp4";
-	private static final String FIRST_DOG_IMAGE_URL = "https://media.meongcoach.com/images/dog-profile/42/choco.jpg";
-	private static final String SECOND_DOG_IMAGE_URL = "https://media.meongcoach.com/images/dog-profile/42/bori.jpg";
+	private static final String UNSELECTED_DOG_IMAGE_URL = "https://media.meongcoach.com/images/dog-profile/42/choco.jpg";
+	private static final String SELECTED_DOG_IMAGE_URL = "https://media.meongcoach.com/images/dog-profile/42/bori.jpg";
 
 	@Autowired
 	private PostFinder postFinder;
@@ -205,7 +205,7 @@ class PostFinderTest {
 	}
 
 	@Test
-	void 작성자가_첫_번째로_등록한_강아지를_작성자_정보로_함께_반환한다() {
+	void 작성자의_선택된_강아지를_작성자_정보로_함께_반환한다() {
 		User author = saveAuthorWithDogs();
 		savePost(author.getId(), "본문");
 		flushAndClear();
@@ -213,12 +213,13 @@ class PostFinderTest {
 		PostListResult result = postFinder.findPosts(new PostListRequest(null, 20, null));
 
 		assertThat(result.posts().getFirst().author()).isEqualTo(
-				new AuthorResult(author.getId(), "초코", FIRST_DOG_IMAGE_URL));
+				new AuthorResult(author.getId(), "보리", SELECTED_DOG_IMAGE_URL));
 	}
 
 	@Test
-	void 강아지가_없는_작성자의_게시글은_author가_null이다() {
+	void 선택된_강아지가_없는_작성자의_게시글은_author가_null이다() {
 		User author = saveUserWithProfile("멍멍이집사", "https://cdn.example.com/profile.png");
+		saveDog(author.getId(), "초코", UNSELECTED_DOG_IMAGE_URL);
 		savePost(author.getId(), "본문");
 		flushAndClear();
 
@@ -389,7 +390,7 @@ class PostFinderTest {
 
 		assertThat(contentOf(result)).isEqualTo("본문");
 		assertThat(result.author()).isEqualTo(
-				new AuthorResult(author.getId(), "초코", FIRST_DOG_IMAGE_URL));
+				new AuthorResult(author.getId(), "보리", SELECTED_DOG_IMAGE_URL));
 		assertThat(result.mentionTarget()).isEqualTo(
 				new MentionTargetResult(MentionTargetType.LESSON, lesson.getId(), "기본 교육 레슨"));
 		assertThat(result.post().getMedia())
@@ -457,14 +458,20 @@ class PostFinderTest {
 
 	private User saveAuthorWithDogs() {
 		User author = saveUserWithProfile("멍멍이집사", "https://cdn.example.com/profile.png");
-		saveDog(author.getId(), "초코", FIRST_DOG_IMAGE_URL);
-		saveDog(author.getId(), "보리", SECOND_DOG_IMAGE_URL);
+		saveDog(author.getId(), "초코", UNSELECTED_DOG_IMAGE_URL);
+		Dog selected = newDog(author.getId(), "보리", SELECTED_DOG_IMAGE_URL);
+		selected.select();
+		dogRepository.save(selected);
 		return author;
 	}
 
 	private Dog saveDog(Long userId, String name, String profileImageUrl) {
-		return dogRepository.save(Dog.register(new DogRegisterCommand(userId, name, Breed.of(RegisteredBreed.POODLE),
-				DogSex.MALE, LocalDate.of(2024, 3, 1), new BigDecimal("4.50"), profileImageUrl, "")));
+		return dogRepository.save(newDog(userId, name, profileImageUrl));
+	}
+
+	private Dog newDog(Long userId, String name, String profileImageUrl) {
+		return Dog.register(new DogRegisterCommand(userId, name, Breed.of(RegisteredBreed.POODLE), DogSex.MALE,
+				LocalDate.of(2024, 3, 1), new BigDecimal("4.50"), profileImageUrl, ""));
 	}
 
 	private User saveUserWithProfile(String nickname, String profileImageUrl) {
