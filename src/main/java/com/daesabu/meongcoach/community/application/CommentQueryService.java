@@ -59,7 +59,7 @@ public class CommentQueryService implements CommentFinder {
 
 	@Override
 	public Comment findComment(Long userId, Long commentId) {
-		return commentRepository.findByIdAndUserIdAndDeletedAtIsNullAndPostDeletedAtIsNull(commentId, userId)
+		return commentRepository.findActiveByIdAndUserId(commentId, userId)
 				.orElseThrow(() -> new CommentNotFoundException(commentId));
 	}
 
