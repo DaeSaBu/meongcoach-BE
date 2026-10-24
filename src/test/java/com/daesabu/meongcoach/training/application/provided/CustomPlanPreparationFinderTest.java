@@ -57,12 +57,16 @@ class CustomPlanPreparationFinderTest {
 		TrainingCategory laterCategory = saveCategory(2);
 		Topic later = saveTopic(laterCategory, 1);
 		Curriculum last = saveCurriculum(later, 1, false);
+		saveLesson(last);
 		TrainingCategory firstCategory = saveCategory(1);
 		Topic second = saveTopic(firstCategory, 2);
 		Curriculum third = saveCurriculum(second, 1, false);
+		saveLesson(third);
 		Topic first = saveTopic(firstCategory, 1);
 		Curriculum secondCurriculum = saveCurriculum(first, 2, false);
+		saveLesson(secondCurriculum);
 		Curriculum firstCurriculum = saveCurriculum(first, 1, false);
+		saveLesson(firstCurriculum);
 		saveCurriculum(saveTopic(firstCategory, 3), 1, false);
 		flushAndClear();
 

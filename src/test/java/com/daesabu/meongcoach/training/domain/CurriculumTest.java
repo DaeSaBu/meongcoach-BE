@@ -1,6 +1,7 @@
 package com.daesabu.meongcoach.training.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;
 import com.daesabu.meongcoach.training.domain.shared.ProgressStatus;
@@ -39,21 +40,22 @@ class CurriculumTest {
 	}
 
 	@Test
-	void 레슨이_없으면_완료한_레슨은_0개다() {
+	void 레슨이_없으면_진행_상태를_계산할_수_없다() {
 		Curriculum curriculum = curriculumWithLessonIds();
+		LessonProgresses progresses = completedProgresses();
 
-		int completed = curriculum.completion(completedProgresses(1L)).completedLessons();
-
-		assertThat(completed).isZero();
+		assertThatThrownBy(() -> curriculum.completion(progresses))
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessage("커리큘럼에는 레슨이 하나 이상 있어야 합니다.");
 	}
 
 	@Test
-	void 레슨이_없으면_시작_전_상태다() {
+	void 레슨이_없으면_완료_여부를_판단할_수_없다() {
 		Curriculum curriculum = curriculumWithLessonIds();
+		LessonProgresses progresses = completedProgresses();
 
-		ProgressStatus status = curriculum.completion(completedProgresses()).status();
-
-		assertThat(status).isEqualTo(ProgressStatus.NOT_STARTED);
+		assertThatThrownBy(() -> curriculum.isCompleted(progresses))
+				.isInstanceOf(IllegalStateException.class);
 	}
 
 	@Test

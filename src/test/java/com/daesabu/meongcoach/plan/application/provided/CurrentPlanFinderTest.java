@@ -8,6 +8,7 @@ import com.daesabu.meongcoach.plan.domain.PlanCreateCommand;
 import com.daesabu.meongcoach.support.ApplicationTest;
 import com.daesabu.meongcoach.training.domain.Curriculum;
 import com.daesabu.meongcoach.training.domain.CurriculumFixture;
+import com.daesabu.meongcoach.training.domain.LessonFixture;
 import com.daesabu.meongcoach.training.domain.Topic;
 import com.daesabu.meongcoach.training.domain.TopicFixture;
 import com.daesabu.meongcoach.training.domain.TrainingCategory;
@@ -94,6 +95,7 @@ class CurrentPlanFinderTest {
 		entityManager.persist(topic);
 		Curriculum curriculum = CurriculumFixture.create(topic, "훈련", 1, null, "훈련 설명");
 		entityManager.persist(curriculum);
+		entityManager.persist(LessonFixture.create(curriculum, "레슨", 1, 5));
 		return curriculum.getId();
 	}
 
