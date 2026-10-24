@@ -3,6 +3,7 @@ package com.daesabu.meongcoach.community.application.provided;
 import com.daesabu.meongcoach.community.application.provided.dto.CommentListRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.CommentListResult;
 import com.daesabu.meongcoach.community.application.provided.dto.ReplyListResult;
+import com.daesabu.meongcoach.community.domain.Comment;
 import jakarta.validation.Valid;
 
 /**
@@ -26,4 +27,10 @@ public interface CommentFinder {
 	 * 루트 댓글이 삭제됐어도 답글을 반환한다. 댓글이 없거나 루트 댓글이 아니면 CommentNotFoundException을 던진다.
 	 */
 	ReplyListResult findReplies(Long commentId, @Valid CommentListRequest request);
+
+	/**
+	 * 사용자가 작성한 댓글 하나를 id로 조회한다.
+	 * 없거나 삭제됐거나 다른 사용자의 댓글이거나 게시글이 삭제됐으면 CommentNotFoundException을 던진다.
+	 */
+	Comment findComment(Long userId, Long commentId);
 }

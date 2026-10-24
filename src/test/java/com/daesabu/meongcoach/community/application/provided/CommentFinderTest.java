@@ -322,6 +322,52 @@ class CommentFinderTest {
 				.isInstanceOf(ConstraintViolationException.class);
 	}
 
+	@Test
+	void 사용자가_작성한_댓글_하나를_id로_조회한다() {
+		Comment saved = saveComment(USER_ID, "내 댓글");
+		flushAndClear();
+
+		Comment found = commentFinder.findComment(USER_ID, saved.getId());
+
+		assertThat(found.getId()).isEqualTo(saved.getId());
+		assertThat(found.getContent().value()).isEqualTo("내 댓글");
+	}
+
+	@Test
+	void 다른_사용자의_댓글을_조회하면_예외를_던진다() {
+		Comment saved = saveComment(USER_ID, "내 댓글");
+		flushAndClear();
+
+		assertThatThrownBy(() -> commentFinder.findComment(USER_ID + 1, saved.getId()))
+				.isInstanceOf(CommentNotFoundException.class);
+	}
+
+	@Test
+	void 조회할_내_댓글이_없으면_예외를_던진다() {
+		assertThatThrownBy(() -> commentFinder.findComment(USER_ID, 999_999L))
+				.isInstanceOf(CommentNotFoundException.class);
+	}
+
+	@Test
+	void 삭제된_내_댓글을_조회하면_예외를_던진다() {
+		Comment saved = saveComment(USER_ID, "내 댓글");
+		saved.delete();
+		flushAndClear();
+
+		assertThatThrownBy(() -> commentFinder.findComment(USER_ID, saved.getId()))
+				.isInstanceOf(CommentNotFoundException.class);
+	}
+
+	@Test
+	void 삭제된_게시글의_내_댓글을_조회하면_예외를_던진다() {
+		Comment saved = saveComment(USER_ID, "내 댓글");
+		post.delete();
+		flushAndClear();
+
+		assertThatThrownBy(() -> commentFinder.findComment(USER_ID, saved.getId()))
+				.isInstanceOf(CommentNotFoundException.class);
+	}
+
 	private String contentOf(ReplyResult result) {
 		return result.comment().getContent().value();
 	}

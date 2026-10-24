@@ -2,9 +2,11 @@ package com.daesabu.meongcoach.community.application;
 
 import static java.util.Optional.ofNullable;
 
+import com.daesabu.meongcoach.community.application.provided.CommentFinder;
 import com.daesabu.meongcoach.community.application.provided.CommentRegister;
 import com.daesabu.meongcoach.community.application.provided.PostFinder;
 import com.daesabu.meongcoach.community.application.provided.dto.CommentRegisterRequest;
+import com.daesabu.meongcoach.community.application.provided.dto.CommentUpdateRequest;
 import com.daesabu.meongcoach.community.application.required.CommentClosureRepository;
 import com.daesabu.meongcoach.community.application.required.CommentRepository;
 import com.daesabu.meongcoach.community.domain.Comment;
@@ -24,6 +26,7 @@ import org.springframework.validation.annotation.Validated;
 public class CommentModifyService implements CommentRegister {
 
 	private final PostFinder postFinder;
+	private final CommentFinder commentFinder;
 	private final CommentRepository commentRepository;
 	private final CommentClosureRepository commentClosureRepository;
 
@@ -38,6 +41,14 @@ public class CommentModifyService implements CommentRegister {
 		commentClosureRepository.save(CommentClosure.self(comment));
 		root.ifPresent(it -> commentClosureRepository.save(CommentClosure.reply(it, comment)));
 
+		return comment;
+	}
+
+	@Override
+	@Transactional
+	public Comment update(Long userId, Long commentId, CommentUpdateRequest request) {
+		Comment comment = commentFinder.findComment(userId, commentId);
+		comment.update(request.content());
 		return comment;
 	}
 
