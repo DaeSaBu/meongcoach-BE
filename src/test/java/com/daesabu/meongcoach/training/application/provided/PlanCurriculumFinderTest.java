@@ -59,6 +59,7 @@ class PlanCurriculumFinderTest {
 	void 플랜_순서와_레슨_교육_순서를_유지하고_본인의_완료만_반영한다() {
 		Topic topic = saveTopic(saveCategory(1), 1);
 		Curriculum first = saveCurriculum(topic, 1, false);
+		saveLesson(first);
 		Curriculum second = saveCurriculum(topic, 2, false);
 		Lesson later = lessonRepository.save(LessonFixture.create(second, "두 번째", 2, 5));
 		Lesson earlier = lessonRepository.save(LessonFixture.create(second, "첫 번째", 1, 5));
@@ -87,6 +88,7 @@ class PlanCurriculumFinderTest {
 		Topic topic = saveTopic(category, 1);
 		Curriculum premium = saveCurriculum(topic, 1, true);
 		Curriculum free = saveCurriculum(topic, 2, false);
+		saveLesson(free);
 		complete(USER_ID, saveLesson(premium));
 		flushAndClear();
 
