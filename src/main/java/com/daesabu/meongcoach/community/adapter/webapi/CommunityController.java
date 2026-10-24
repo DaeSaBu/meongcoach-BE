@@ -30,6 +30,7 @@ import com.daesabu.meongcoach.shared.security.CurrentUserId;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -76,6 +77,12 @@ public class CommunityController {
 	                                     @Valid @RequestBody PostUpdateRequest request) {
 		Post post = postRegister.update(userId, postId, request);
 		return PostUpdateResponse.from(post);
+	}
+
+	@DeleteMapping("/posts/{postId}")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public void deletePost(@CurrentUserId Long userId, @PathVariable Long postId) {
+		postRegister.delete(userId, postId);
 	}
 
 	@PostMapping("/presigned-urls")

@@ -6,6 +6,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.BDDMockito.willThrow;
+import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.delete;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.get;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.post;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.put;
@@ -577,6 +579,46 @@ class CommunityControllerTest {
 				.andExpect(jsonPath("$.errors[0].field").value("media[0].url"));
 
 		then(postRegister).shouldHaveNoInteractions();
+	}
+
+	@Test
+	void 게시글을_삭제하면_204를_반환한다() throws Exception {
+		mockMvc.perform(delete("/api/community/posts/{postId}", 30L)
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+				.andExpect(status().isNoContent())
+				.andDo(document("community/post-delete",
+						pathParameters(parameterWithName("postId").description("삭제할 게시글 ID. 본인이 작성한 게시글만 삭제할 수 있다"))
+				));
+	}
+
+	@Test
+	void 인증_주체와_경로의_게시글_ID로_삭제를_위임한다() throws Exception {
+		mockMvc.perform(delete("/api/community/posts/{postId}", 30L).principal(CURRENT_USER))
+				.andExpect(status().isNoContent());
+
+		then(postRegister).should().delete(42L, 30L);
+	}
+
+	@Test
+	void 삭제할_게시글이_없거나_본인_게시글이_아니면_404를_반환한다() throws Exception {
+		willThrow(new PostNotFoundException(999L)).given(postRegister).delete(42L, 999L);
+
+		mockMvc.perform(delete("/api/community/posts/{postId}", 999L)
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.code").value("COMMUNITY_POST_NOT_FOUND"))
+				.andDo(document("community/post-delete-error",
+						responseFields(
+								fieldWithPath("title").description("HTTP 상태 이름"),
+								fieldWithPath("status").description("HTTP 상태 코드"),
+								fieldWithPath("detail").description("사람이 읽을 수 있는 에러 설명"),
+								fieldWithPath("instance").description("에러가 발생한 요청 경로"),
+								fieldWithPath("code").description("클라이언트 분기용 에러 코드"),
+								fieldWithPath("timestamp").description("에러 발생 시각(UTC)")
+						)
+				));
 	}
 
 	@Test
