@@ -3,10 +3,11 @@ package com.daesabu.meongcoach.training.application.provided.dto;
 import com.daesabu.meongcoach.training.domain.Curriculum;
 import com.daesabu.meongcoach.training.domain.CurriculumCompletion;
 import com.daesabu.meongcoach.training.domain.LessonProgresses;
+import com.daesabu.meongcoach.training.domain.shared.ProgressStatus;
 import java.util.List;
 
 public record PlanCurriculumResult(Long id, String title, String description, int totalLessons,
-		int completedLessons, String status, boolean locked, List<PlanLessonResult> lessons) {
+		int completedLessons, ProgressStatus status, boolean locked, List<PlanLessonResult> lessons) {
 
 	public static PlanCurriculumResult of(Curriculum curriculum, LessonProgresses progresses, boolean hasEntitlement) {
 		CurriculumCompletion completion = curriculum.completion(progresses);
@@ -15,7 +16,7 @@ public record PlanCurriculumResult(Long id, String title, String description, in
 						progresses.completedCount(lesson.getId()) > 0))
 				.toList();
 		return new PlanCurriculumResult(curriculum.getId(), curriculum.getTitle(), curriculum.getDescription(),
-				curriculum.getLessonsSize(), completion.completedLessons(), completion.status().name(),
+				curriculum.getLessonsSize(), completion.completedLessons(), completion.status(),
 				curriculum.isLocked(hasEntitlement), planLessons);
 	}
 }

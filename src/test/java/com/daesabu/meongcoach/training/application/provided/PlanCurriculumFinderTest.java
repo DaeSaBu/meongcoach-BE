@@ -23,6 +23,7 @@ import com.daesabu.meongcoach.training.domain.TopicFixture;
 import com.daesabu.meongcoach.training.domain.TrainingCategory;
 import com.daesabu.meongcoach.training.domain.TrainingCategoryFixture;
 import com.daesabu.meongcoach.training.domain.exception.CurriculumNotFoundException;
+import com.daesabu.meongcoach.training.domain.shared.ProgressStatus;
 import jakarta.persistence.EntityManager;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -72,11 +73,11 @@ class PlanCurriculumFinderTest {
 		assertThat(result.title()).isEqualTo("훈련 2");
 		assertThat(result.totalLessons()).isEqualTo(2);
 		assertThat(result.completedLessons()).isEqualTo(1);
-		assertThat(result.status()).isEqualTo("IN_PROGRESS");
+		assertThat(result.status()).isEqualTo(ProgressStatus.IN_PROGRESS);
 		assertThat(result.locked()).isFalse();
 		assertThat(result.lessons()).extracting(PlanLessonResult::id).containsExactly(earlier.getId(), later.getId());
 		assertThat(result.lessons()).extracting(PlanLessonResult::completed).containsExactly(true, false);
-		assertThat(results.get(1).status()).isEqualTo("NOT_STARTED");
+		assertThat(results.get(1).status()).isEqualTo(ProgressStatus.NOT_STARTED);
 	}
 
 	@Test
@@ -92,7 +93,7 @@ class PlanCurriculumFinderTest {
 		List<PlanCurriculumResult> results = finder.find(USER_ID, List.of(premium.getId(), free.getId()));
 
 		assertThat(results).extracting(PlanCurriculumResult::locked).containsExactly(true, false);
-		assertThat(results.getFirst().status()).isEqualTo("COMPLETED");
+		assertThat(results.getFirst().status()).isEqualTo(ProgressStatus.COMPLETED);
 		entityManager.persist(EntitlementFixture.create(
 				USER_ID, EntitlementType.PUPPY, null));
 		flushAndClear();

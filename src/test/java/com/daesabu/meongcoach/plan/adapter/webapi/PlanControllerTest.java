@@ -23,6 +23,7 @@ import com.daesabu.meongcoach.plan.domain.exception.EmptyPlanCurriculumsExceptio
 import com.daesabu.meongcoach.plan.domain.exception.PlanCreationConflictException;
 import com.daesabu.meongcoach.training.application.provided.dto.PlanCurriculumResult;
 import com.daesabu.meongcoach.training.application.provided.dto.PlanLessonResult;
+import com.daesabu.meongcoach.training.domain.shared.ProgressStatus;
 import java.security.Principal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -70,7 +71,7 @@ class PlanControllerTest {
 		ReflectionTestUtils.setField(plan, "id", 21L);
 		ReflectionTestUtils.setField(plan, "createdAt", LocalDateTime.of(2026, 10, 23, 12, 0));
 		PlanCurriculumResult curriculum = new PlanCurriculumResult(7L, "현관 매너", "현관에서 차분하게 기다리는 훈련", 2, 1,
-				"IN_PROGRESS", true, List.of(new PlanLessonResult(11L, "앉아서 기다리기", true),
+				ProgressStatus.IN_PROGRESS, true, List.of(new PlanLessonResult(11L, "앉아서 기다리기", true),
 				new PlanLessonResult(12L, "문을 열어도 기다리기", false)));
 		given(currentPlanFinder.find(42L)).willReturn(Optional.of(new CurrentPlanResult(plan, List.of(curriculum))));
 
@@ -80,6 +81,7 @@ class PlanControllerTest {
 				.andExpect(jsonPath("$.plan.planId").value(21))
 				.andExpect(jsonPath("$.plan.completedAt").value(nullValue()))
 				.andExpect(jsonPath("$.plan.curriculums[0].locked").value(true))
+				.andExpect(jsonPath("$.plan.curriculums[0].status").value("IN_PROGRESS"))
 				.andExpect(jsonPath("$.plan.curriculums[0].lessons[0].completed").value(true))
 				.andExpect(jsonPath("$.plan.curriculums[0].lessons[1].lessonId").value(12))
 				.andDo(document("plan/current", responseFields(

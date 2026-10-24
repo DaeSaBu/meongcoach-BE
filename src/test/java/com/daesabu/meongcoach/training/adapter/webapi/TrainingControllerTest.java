@@ -42,7 +42,6 @@ import com.daesabu.meongcoach.training.domain.Lesson;
 import com.daesabu.meongcoach.training.domain.LessonFixture;
 import com.daesabu.meongcoach.training.domain.LessonProgress;
 import com.daesabu.meongcoach.training.domain.LessonProgresses;
-import com.daesabu.meongcoach.training.domain.ProgressStatus;
 import com.daesabu.meongcoach.training.domain.Topic;
 import com.daesabu.meongcoach.training.domain.TopicFixture;
 import com.daesabu.meongcoach.training.domain.TrainingCategory;
@@ -52,6 +51,7 @@ import com.daesabu.meongcoach.training.domain.exception.LessonCompletionConflict
 import com.daesabu.meongcoach.training.domain.exception.LessonNotFoundException;
 import com.daesabu.meongcoach.training.domain.exception.TopicNotConfiguredException;
 import com.daesabu.meongcoach.training.domain.exception.TopicNotFoundException;
+import com.daesabu.meongcoach.training.domain.shared.ProgressStatus;
 import java.security.Principal;
 import java.util.List;
 import org.junit.jupiter.api.Test;
