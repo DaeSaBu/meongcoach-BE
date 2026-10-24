@@ -57,6 +57,12 @@ public class CommentQueryService implements CommentFinder {
 		return new ReplyListResult(replies, nextCursor);
 	}
 
+	@Override
+	public Comment findComment(Long userId, Long commentId) {
+		return commentRepository.findByIdAndUserIdAndDeletedAtIsNullAndPostDeletedAtIsNull(commentId, userId)
+				.orElseThrow(() -> new CommentNotFoundException(commentId));
+	}
+
 	private void validatePostExists(Long postId) {
 		if (!postRepository.existsByIdAndDeletedAtIsNull(postId)) {
 			throw new PostNotFoundException(postId);
