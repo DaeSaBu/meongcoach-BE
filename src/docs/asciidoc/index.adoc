@@ -723,6 +723,22 @@ operation::community/comment-register[snippets='http-request,path-parameters,req
 
 operation::community/comment-register-error[snippets='http-response,response-fields']
 
+=== 댓글 수정
+
+link:{swagger-ui}#/Community/community-comment-update[▶ Swagger에서 Try it out,window=swagger]
+
+로그인한 회원이 작성한 댓글·답글의 본문을 요청 값으로 교체합니다. 성공하면 200과 함께 수정한 댓글이 내려갑니다.
+`content` 규칙은 댓글 작성과 같습니다.
+
+operation::community/comment-update[snippets='http-request,path-parameters,request-fields,http-response,response-fields']
+
+==== 실패 응답
+
+댓글이 없거나 삭제됐거나 본인이 작성한 댓글이 아니거나 게시글이 삭제됐으면 404(`COMMUNITY_COMMENT_NOT_FOUND`)가 내려갑니다.
+`content`가 비어 있거나 500자를 넘으면 400(`COMMUNITY_COMMENT_CONTENT_INVALID`)이 내려갑니다.
+
+operation::community/comment-update-error[snippets='http-response,response-fields']
+
 === 댓글 목록 조회
 
 link:{swagger-ui}#/Community/community-comment-list[▶ Swagger에서 Try it out,window=swagger]
