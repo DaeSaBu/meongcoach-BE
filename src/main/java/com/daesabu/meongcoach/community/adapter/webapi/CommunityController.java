@@ -2,6 +2,7 @@ package com.daesabu.meongcoach.community.adapter.webapi;
 
 import com.daesabu.meongcoach.community.adapter.webapi.dto.CommentListResponse;
 import com.daesabu.meongcoach.community.adapter.webapi.dto.CommentRegisterResponse;
+import com.daesabu.meongcoach.community.adapter.webapi.dto.CommentUpdateResponse;
 import com.daesabu.meongcoach.community.adapter.webapi.dto.PostListResponse;
 import com.daesabu.meongcoach.community.adapter.webapi.dto.PostMediaUploadUrlResponse;
 import com.daesabu.meongcoach.community.adapter.webapi.dto.PostRegisterResponse;
@@ -16,6 +17,7 @@ import com.daesabu.meongcoach.community.application.provided.PostRegister;
 import com.daesabu.meongcoach.community.application.provided.dto.CommentListRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.CommentListResult;
 import com.daesabu.meongcoach.community.application.provided.dto.CommentRegisterRequest;
+import com.daesabu.meongcoach.community.application.provided.dto.CommentUpdateRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.PostListRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.PostListResult;
 import com.daesabu.meongcoach.community.application.provided.dto.PostMediaUploadUrlRequest;
@@ -112,5 +114,12 @@ public class CommunityController {
 	                                               @Valid @RequestBody CommentRegisterRequest request) {
 		Comment comment = commentRegister.register(userId, postId, request);
 		return CommentRegisterResponse.from(comment);
+	}
+
+	@PutMapping("/comments/{commentId}")
+	public CommentUpdateResponse updateComment(@CurrentUserId Long userId, @PathVariable Long commentId,
+	                                           @Valid @RequestBody CommentUpdateRequest request) {
+		Comment comment = commentRegister.update(userId, commentId, request);
+		return CommentUpdateResponse.from(comment);
 	}
 }
