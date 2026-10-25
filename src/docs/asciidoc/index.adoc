@@ -752,3 +752,42 @@ operation::plan/current-empty[snippets='http-response,response-fields']
 ==== 인증 실패
 
 operation::plan/current-error[snippets='http-response,response-fields']
+
+=== 플랜 레슨 완료
+
+플랜에 저장한 커리큘럼 순서와 각 커리큘럼의 현재 교육 순서에서 첫 미완료 레슨을 완료합니다.
+요청 본문은 없으며 성공하면 본문 없는 `204 No Content`를 반환합니다.
+일반 학습 완료 횟수와 플랜 완료 기록을 같은 트랜잭션에서 반영합니다.
+현재 레슨을 모두 완료하면 플랜 상태를 `COMPLETED`로 변경하고 완료 시각을 기록합니다.
+프론트는 성공 후 현재 플랜 조회 API를 호출해 진도와 완료 상태를 갱신합니다.
+
+활성 또는 완료된 플랜에 이미 기록된 레슨을 다시 요청하면 `204`를 반환하며,
+일반 학습 횟수, 플랜 완료 기록, 완료 시각을 변경하지 않습니다.
+교체된 플랜의 요청은 이미 완료한 레슨이어도 거절합니다.
+
+link:{swagger-ui}#/Plan/plan-lesson-complete[▶ Swagger에서 Try it out,window=swagger]
+
+operation::plan/lesson-complete[snippets='http-request,path-parameters,http-response']
+
+==== 실패 응답
+
+인증 정보가 없으면 401(`UNAUTHORIZED`)을 반환합니다.
+
+operation::plan/lesson-complete-unauthorized-error[snippets='http-response,response-fields']
+
+플랜이 없거나 다른 사용자의 플랜이면 404(`PLAN_NOT_FOUND`)를 반환합니다.
+
+operation::plan/lesson-complete-not-found-error[snippets='http-response,response-fields']
+
+교체된 플랜이거나 완료된 플랜의 새 레슨 완료 요청이면 409(`PLAN_NOT_ACTIVE`)를 반환합니다.
+
+operation::plan/lesson-complete-inactive-error[snippets='http-response,response-fields']
+
+현재 진행할 레슨이 아니거나 현재 목록에 없는 레슨이면 409(`PLAN_LESSON_ORDER`)를 반환합니다.
+
+operation::plan/lesson-complete-order-error[snippets='http-response,response-fields']
+
+새로 완료할 레슨에 필요한 이용권이 없으면 403(`ENTITLEMENT_REQUIRED`)을 반환합니다.
+일반 학습 기록 저장이 충돌하면 기존 훈련 기능의 409(`TRAINING_LESSON_COMPLETION_CONFLICT`)를 반환합니다.
+
+operation::plan/lesson-complete-entitlement-error[snippets='http-response,response-fields']
