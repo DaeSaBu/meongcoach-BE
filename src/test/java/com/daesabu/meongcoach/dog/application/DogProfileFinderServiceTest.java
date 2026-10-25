@@ -209,9 +209,9 @@ class DogProfileFinderServiceTest {
 
 	@Test
 	void 삭제된_강아지는_선택된_강아지_결과에서_제외된다() {
+		dogRepository.saveAndFlush(newDog(USER_ID));
 		Dog deleted = persistSelectedDog(USER_ID);
-		Dog remaining = dogRepository.saveAndFlush(newDog(USER_ID));
-		new Dogs(List.of(deleted, remaining)).delete(deleted.getId());
+		ReflectionTestUtils.setField(deleted, "deletedAt", LocalDateTime.now());
 		dogRepository.saveAndFlush(deleted);
 
 		assertThat(dogProfileFinder.findSelectedDogs(Set.of(USER_ID))).isEmpty();
