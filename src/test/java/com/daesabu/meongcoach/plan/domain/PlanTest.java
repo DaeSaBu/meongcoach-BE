@@ -123,6 +123,38 @@ class PlanTest {
 		assertThat(plan.getCompletedLessonIds()).containsExactly(101L);
 	}
 
+	@Test
+	void 현재_레슨을_모두_완료했는지_플랜의_기록으로_판단한다() {
+		Plan plan = createPlan();
+		List<Long> currentLessonIds = List.of(101L, 102L);
+
+		assertThat(plan.hasCompletedAllLessons(currentLessonIds)).isFalse();
+		plan.completeLesson(101L);
+		assertThat(plan.hasCompletedAllLessons(currentLessonIds)).isFalse();
+		plan.completeLesson(102L);
+		assertThat(plan.hasCompletedAllLessons(currentLessonIds)).isTrue();
+		assertThat(plan.getStatus()).isEqualTo(PlanStatus.ACTIVE);
+		assertThat(plan.getCompletedAt()).isNull();
+	}
+
+	@Test
+	void 현재_목록에서_제외된_레슨의_완료_기록은_판단에_영향을_주지_않는다() {
+		Plan plan = createPlan();
+		plan.completeLesson(101L);
+		plan.completeLesson(102L);
+
+		assertThat(plan.hasCompletedAllLessons(List.of(102L))).isTrue();
+		assertThat(plan.hasCompletedAllLessons(List.of(102L, 103L))).isFalse();
+	}
+
+	@Test
+	void 현재_레슨_목록이_비어_있으면_완료_판단을_거절한다() {
+		Plan plan = createPlan();
+
+		assertThatThrownBy(() -> plan.hasCompletedAllLessons(List.of()))
+				.isInstanceOf(IllegalStateException.class);
+	}
+
 	private Plan createPlan() {
 		PlanCreateCommand command = new PlanCreateCommand(1L, 2L, "제목", "목표", 10, 3);
 		return Plan.create(command, List.of(7L, 4L));
