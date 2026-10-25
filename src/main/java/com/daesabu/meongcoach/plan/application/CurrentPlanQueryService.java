@@ -33,6 +33,10 @@ public class CurrentPlanQueryService implements CurrentPlanFinder {
 	}
 
 	private CurrentPlanResult toResult(Long userId, Plan plan) {
+		if (plan.getStatus() == PlanStatus.COMPLETED) {
+			List<PlanCurriculumProgressResult> curriculums = List.of();
+			return new CurrentPlanResult(plan, curriculums);
+		}
 		List<PlanCurriculumResult> curriculums = planCurriculumFinder.find(userId, plan.getCurriculumIds());
 		Set<Long> completedLessonIds = plan.getCompletedLessonIds();
 		List<PlanCurriculumProgressResult> curriculumProgresses = curriculums.stream()

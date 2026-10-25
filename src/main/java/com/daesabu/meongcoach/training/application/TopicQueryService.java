@@ -33,9 +33,12 @@ public class TopicQueryService implements TopicFinder, TopicCompletionChecker, C
 		validateTopicsExist(topicIds, topics);
 		List<Long> lessonIds = topics.stream().flatMap(topic -> topic.getAllLessonIds().stream()).toList();
 		LessonProgresses progresses = findProgresses(userId, lessonIds);
-		List<Long> curriculumIds = topics.stream()
+		List<Curriculum> orderedCurriculums = topics.stream()
 				.flatMap(topic -> topic.getCurriculums().stream())
-				.filter(curriculum -> !curriculum.isCompleted(progresses))
+				.toList();
+		orderedCurriculums.forEach(Curriculum::validateHasLessons);
+		List<Long> curriculumIds = orderedCurriculums.stream()
+				.dropWhile(curriculum -> curriculum.isCompleted(progresses))
 				.map(Curriculum::getId)
 				.toList();
 		return new CustomPlanPreparationResult(curriculumIds);
