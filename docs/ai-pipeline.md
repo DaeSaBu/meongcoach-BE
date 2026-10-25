@@ -38,12 +38,16 @@ VideoUploadSqsConsumer                      (ai/adapter/consumer)
 - **제목 200자 규칙은 `AiReport` 도메인이 단일 소유합니다** (`TITLE_MAX_LENGTH`). 프롬프트나 어댑터에서 길이를 중복 강제하지 않습니다. 제목 생성 실패는 부가 정보 실패라 리포트 저장을 막지 않습니다.
 - **추천 교육은 모델이 `topicId`를 돌려주고 서버가 교육 목록에 있는 id인지 검증합니다.** 교육 이름은 카테고리 간에 중복되므로("앉아"가 101·1101) 이름→id 역매핑이 불가능합니다. 그래서 프롬프트의 교육 목록에 id를 함께 넣고 응답 스키마에 `topicId`를 required로 둡니다. 목록에 없는 id는 `VideoAnalysisFailedException`(→ `FAILED_ANALYSIS`)이고, 도입 전에 저장된 리포트의 `topicId`는 null입니다.
 
-## EvoLink 연동 (ai/adapter/integration)
+## EvoLink 연동
+
+- `shared/integration/evolink`의 `EvoLinkChatClient`가 인증, HTTP 전송, 타임아웃과 공통 응답 검증을 담당합니다. 요청과 응답의 전송 DTO도 같은 패키지 아래에 둡니다.
+- `ai/adapter/integration`의 영상 분석과 제목 생성 어댑터는 프롬프트 구성, 응답 내용 해석, 업무 예외 변환을 담당합니다.
+- 연결 설정인 `baseUrl`, `apiKey`, `responseTimeout`은 공통 `EvoLinkConnectionProperties`가 읽습니다. 모델 설정인 `model`, `maxTokens`, `temperature`, `thinking`, `videoFps`는 기존 `EvoLinkProperties`가 읽습니다. 두 설정 모두 기존 `meongcoach.ai.evolink` 키를 사용합니다.
 
 - OpenAI 호환 chat API를 씁니다.
 - **엔드포인트는 `direct.evolink.ai`입니다.** `api.evolink.ai`는 Cloudflare 뒤에 있어 응답 첫 바이트가 100초를 넘으면 `524`로 끊깁니다. 스트리밍 없이 완성 응답을 기다리는 영상 분석이 여기에 걸려 `FAILED_ANALYSIS`가 됩니다. 문서의 "멀티모달은 api" 안내는 비동기 생성 작업 기준이고, 영상 입력 chat 호출은 direct에서도 동작합니다.
 - **응답은 `json_schema` + `strict`로 강제합니다.** 모델이 스키마를 엄격 준수해야 어댑터의 정제 로직을 줄일 수 있습니다. (`EvoLinkChatRequest.ResponseFormat`)
-- **`responseTimeout`은 전역 HTTP read-timeout(3초)과 별개입니다.** 영상 분석은 수십 초가 걸리므로 전역 값을 줄이거나 이 값을 없애면 분석이 전부 실패합니다. 설정 항목별 의미는 `EvoLinkProperties` javadoc이 원천입니다.
+- **`responseTimeout`은 전역 HTTP read-timeout(3초)과 별개입니다.** 공통 클라이언트의 HTTP 응답 대기 시간이며, 영상 분석처럼 오래 걸리는 요청에 사용합니다. 연결 타임아웃은 기존과 같이 10초입니다.
 - 실제 EvoLink 호출이 필요한 수동 테스트는 로컬 전용입니다. (`EvoLinkVideoAnalyzerManualTest`)
 
 ## 프롬프트 템플릿 (src/main/resources/prompts/)
