@@ -74,6 +74,55 @@ class PlanTest {
 		assertThat(plan.getCompletedAt()).isNull();
 	}
 
+	@Test
+	void 활성_플랜에_완료_레슨을_중복_없이_기록한다() {
+		Plan plan = createPlan();
+
+		plan.completeLesson(101L);
+		plan.completeLesson(102L);
+		plan.completeLesson(101L);
+
+		assertThat(plan.getCompletedLessonIds()).containsExactlyInAnyOrder(101L, 102L);
+		assertThat(plan.getStatus()).isEqualTo(PlanStatus.ACTIVE);
+	}
+
+	@Test
+	void 완료된_플랜에는_완료_레슨을_추가할_수_없다() {
+		Plan plan = createPlan();
+		plan.completeLesson(101L);
+		plan.complete(LocalDateTime.of(2026, 10, 25, 12, 0));
+
+		assertThatThrownBy(() -> plan.completeLesson(102L)).isInstanceOf(IllegalStateException.class);
+		assertThat(plan.getCompletedLessonIds()).containsExactly(101L);
+	}
+
+	@Test
+	void 교체된_플랜에는_완료_레슨을_추가할_수_없다() {
+		Plan plan = createPlan();
+		plan.replace();
+
+		assertThatThrownBy(() -> plan.completeLesson(101L)).isInstanceOf(IllegalStateException.class);
+		assertThat(plan.getCompletedLessonIds()).isEmpty();
+	}
+
+	@Test
+	void 완료_레슨_ID가_null이면_기록하지_않는다() {
+		Plan plan = createPlan();
+
+		assertThatThrownBy(() -> plan.completeLesson(null)).isInstanceOf(NullPointerException.class);
+		assertThat(plan.getCompletedLessonIds()).isEmpty();
+	}
+
+	@Test
+	void 외부에서_완료_레슨_기록을_직접_변경할_수_없다() {
+		Plan plan = createPlan();
+		plan.completeLesson(101L);
+
+		assertThatThrownBy(() -> plan.getCompletedLessonIds().clear())
+				.isInstanceOf(UnsupportedOperationException.class);
+		assertThat(plan.getCompletedLessonIds()).containsExactly(101L);
+	}
+
 	private Plan createPlan() {
 		PlanCreateCommand command = new PlanCreateCommand(1L, 2L, "제목", "목표", 10, 3);
 		return Plan.create(command, List.of(7L, 4L));

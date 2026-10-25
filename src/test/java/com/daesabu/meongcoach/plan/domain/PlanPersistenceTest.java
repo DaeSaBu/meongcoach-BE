@@ -2,14 +2,11 @@ package com.daesabu.meongcoach.plan.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
-import org.springframework.test.util.ReflectionTestUtils;
 
 @DataJpaTest
 class PlanPersistenceTest {
@@ -70,17 +67,16 @@ class PlanPersistenceTest {
 	void 완료_레슨_ID를_배열로_저장하고_Set_변경을_반영한다() {
 		PlanCreateCommand command = new PlanCreateCommand(1L, 2L, "제목", "목표", 10, 3);
 		Plan plan = Plan.create(command, List.of(7L));
-		ReflectionTestUtils.setField(plan, "completedLessonIds", new HashSet<>(Set.of(101L, 102L)));
+		plan.completeLesson(101L);
+		plan.completeLesson(102L);
 		entityManager.persistAndFlush(plan);
 		Long planId = plan.getId();
 		entityManager.clear();
 
 		Plan found = entityManager.find(Plan.class, planId);
 		assertThat(found.getCompletedLessonIds()).containsExactlyInAnyOrder(101L, 102L);
-		@SuppressWarnings("unchecked")
-		Set<Long> completedLessonIds = (Set<Long>) ReflectionTestUtils.getField(found, "completedLessonIds");
-		completedLessonIds.add(103L);
-		completedLessonIds.add(103L);
+		found.completeLesson(103L);
+		found.completeLesson(103L);
 		entityManager.flush();
 		entityManager.clear();
 
