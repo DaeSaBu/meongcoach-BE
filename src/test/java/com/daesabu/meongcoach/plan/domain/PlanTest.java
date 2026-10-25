@@ -8,16 +8,24 @@ import com.daesabu.meongcoach.plan.domain.exception.EmptyPlanCurriculumsExceptio
 import com.daesabu.meongcoach.plan.domain.exception.InvalidDailyMinutesException;
 import com.daesabu.meongcoach.plan.domain.exception.InvalidDaysPerWeekException;
 import com.daesabu.meongcoach.plan.domain.exception.InvalidPlanCurriculumException;
+import com.daesabu.meongcoach.plan.domain.exception.PlanNotCompletedException;
+import com.daesabu.meongcoach.plan.domain.exception.PlanOutcomeAlreadyRecordedException;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.test.util.ReflectionTestUtils;
 
 class PlanTest {
+
+	private static final ZoneId KOREA = ZoneId.of("Asia/Seoul");
 
 	@Test
 	void 활성_플랜을_완료하면_완료_상태와_시각을_저장한다() {
@@ -186,6 +194,86 @@ class PlanTest {
 
 		assertThatThrownBy(() -> plan.findCurrentLessonId(List.of()))
 				.isInstanceOf(IllegalStateException.class);
+	}
+
+	@ParameterizedTest
+	@EnumSource(PlanOutcome.class)
+	void 완료된_플랜에_회고_결과를_기록한다(PlanOutcome outcome) {
+		Plan plan = createPlan();
+		plan.complete(Instant.parse("2026-10-25T12:00:00Z"));
+
+		plan.recordOutcome(outcome);
+
+		assertThat(plan.getOutcome()).isEqualTo(outcome);
+		assertThat(plan.getStatus()).isEqualTo(PlanStatus.COMPLETED);
+	}
+
+	@Test
+	void 활성_플랜에는_회고_결과를_기록할_수_없다() {
+		Plan plan = createPlan();
+
+		assertThatThrownBy(() -> plan.recordOutcome(PlanOutcome.ACHIEVED))
+				.isInstanceOf(PlanNotCompletedException.class);
+		assertThat(plan.getOutcome()).isNull();
+	}
+
+	@Test
+	void 교체된_플랜에는_회고_결과를_기록할_수_없다() {
+		Plan plan = createPlan();
+		plan.replace();
+
+		assertThatThrownBy(() -> plan.recordOutcome(PlanOutcome.ACHIEVED))
+				.isInstanceOf(PlanNotCompletedException.class);
+		assertThat(plan.getOutcome()).isNull();
+	}
+
+	@Test
+	void 이미_회고_결과를_기록한_플랜은_다시_기록할_수_없다() {
+		Plan plan = createPlan();
+		plan.complete(Instant.parse("2026-10-25T12:00:00Z"));
+		plan.recordOutcome(PlanOutcome.PARTIAL);
+
+		assertThatThrownBy(() -> plan.recordOutcome(PlanOutcome.NOT_YET))
+				.isInstanceOf(PlanOutcomeAlreadyRecordedException.class);
+		assertThat(plan.getOutcome()).isEqualTo(PlanOutcome.PARTIAL);
+	}
+
+	@Test
+	void 회고_결과가_null이면_기록하지_않는다() {
+		Plan plan = createPlan();
+		plan.complete(Instant.parse("2026-10-25T12:00:00Z"));
+
+		assertThatThrownBy(() -> plan.recordOutcome(null)).isInstanceOf(NullPointerException.class);
+		assertThat(plan.getOutcome()).isNull();
+	}
+
+	@ParameterizedTest(name = "{0}에 생성해 {1}에 완료하면 {2}일")
+	@CsvSource({
+			"2026-10-23T01:00:00Z, 2026-10-23T05:00:00Z, 1",
+			"2026-10-23T01:00:00Z, 2026-10-23T15:30:00Z, 2",
+			"2026-10-22T16:00:00Z, 2026-11-05T14:59:59Z, 14"
+	})
+	void 한국_날짜_기준으로_생성일부터_완료일까지_걸린_날을_센다(String createdAt, String completedAt, int expected) {
+		Plan plan = createPlan();
+		setCreatedAt(plan, Instant.parse(createdAt));
+		plan.complete(Instant.parse(completedAt));
+
+		int elapsedDays = plan.countElapsedDays(KOREA);
+
+		assertThat(elapsedDays).isEqualTo(expected);
+	}
+
+	@Test
+	void 완료되지_않은_플랜은_걸린_날을_셀_수_없다() {
+		Plan plan = createPlan();
+		setCreatedAt(plan, Instant.parse("2026-10-23T01:00:00Z"));
+
+		assertThatThrownBy(() -> plan.countElapsedDays(KOREA)).isInstanceOf(IllegalStateException.class);
+	}
+
+	private void setCreatedAt(Plan plan, Instant createdAt) {
+		LocalDateTime serverTime = LocalDateTime.ofInstant(createdAt, ZoneId.systemDefault());
+		ReflectionTestUtils.setField(plan, "createdAt", serverTime);
 	}
 
 	private Plan createPlan() {
