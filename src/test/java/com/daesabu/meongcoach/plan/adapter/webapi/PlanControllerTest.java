@@ -20,8 +20,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.daesabu.meongcoach.entitlement.domain.exception.EntitlementRequiredException;
 import com.daesabu.meongcoach.plan.application.provided.CurrentPlanFinder;
-import com.daesabu.meongcoach.plan.application.provided.CustomPlanCreator;
 import com.daesabu.meongcoach.plan.application.provided.PlanLessonCompleter;
+import com.daesabu.meongcoach.plan.application.provided.PlanRegister;
+import com.daesabu.meongcoach.plan.application.provided.dto.AiPlanCreateRequest;
 import com.daesabu.meongcoach.plan.application.provided.dto.CurrentPlanResult;
 import com.daesabu.meongcoach.plan.application.provided.dto.CustomPlanCreateRequest;
 import com.daesabu.meongcoach.plan.application.provided.dto.PlanCurriculumProgressResult;
@@ -29,6 +30,7 @@ import com.daesabu.meongcoach.plan.application.provided.dto.PlanLessonProgressRe
 import com.daesabu.meongcoach.plan.domain.Plan;
 import com.daesabu.meongcoach.plan.domain.PlanCreateCommand;
 import com.daesabu.meongcoach.plan.domain.exception.EmptyPlanCurriculumsException;
+import com.daesabu.meongcoach.plan.domain.exception.InvalidAiPlanResponseException;
 import com.daesabu.meongcoach.plan.domain.exception.PlanCreationConflictException;
 import com.daesabu.meongcoach.plan.domain.exception.PlanLessonOrderException;
 import com.daesabu.meongcoach.plan.domain.exception.PlanNotActiveException;
@@ -39,7 +41,10 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -71,7 +76,7 @@ class PlanControllerTest {
 	@Autowired
 	private MockMvc mockMvc;
 	@MockitoBean
-	private CustomPlanCreator customPlanCreator;
+	private PlanRegister planRegister;
 	@MockitoBean
 	private CurrentPlanFinder currentPlanFinder;
 
@@ -230,7 +235,7 @@ class PlanControllerTest {
 	void 로그인한_사용자의_커스텀_플랜을_생성하고_ID를_반환한다() throws Exception {
 		Plan plan = mock(Plan.class);
 		given(plan.getId()).willReturn(21L);
-		given(customPlanCreator.create(42L, REQUEST)).willReturn(plan);
+		given(planRegister.createCustom(42L, REQUEST)).willReturn(plan);
 
 		mockMvc.perform(post("/api/plans/custom").principal(CURRENT_USER)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
@@ -247,7 +252,7 @@ class PlanControllerTest {
 
 	@Test
 	void 미완료_커리큘럼이_없으면_400을_반환한다() throws Exception {
-		given(customPlanCreator.create(42L, REQUEST)).willThrow(new EmptyPlanCurriculumsException());
+		given(planRegister.createCustom(42L, REQUEST)).willThrow(new EmptyPlanCurriculumsException());
 
 		mockMvc.perform(post("/api/plans/custom").principal(CURRENT_USER)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
@@ -259,7 +264,7 @@ class PlanControllerTest {
 
 	@Test
 	void 저장이_충돌하면_409를_반환한다() throws Exception {
-		given(customPlanCreator.create(42L, REQUEST)).willThrow(
+		given(planRegister.createCustom(42L, REQUEST)).willThrow(
 				new PlanCreationConflictException(new DataIntegrityViolationException("충돌")));
 
 		mockMvc.perform(post("/api/plans/custom").principal(CURRENT_USER)
@@ -276,7 +281,7 @@ class PlanControllerTest {
 						.contentType(MediaType.APPLICATION_JSON).content("{}"))
 				.andExpect(status().isBadRequest());
 
-		verifyNoInteractions(customPlanCreator);
+		verifyNoInteractions(planRegister);
 	}
 
 	@Test
@@ -284,6 +289,66 @@ class PlanControllerTest {
 		mockMvc.perform(post("/api/plans/custom").contentType(MediaType.APPLICATION_JSON).content(JSON))
 				.andExpect(status().isUnauthorized());
 
-		verifyNoInteractions(customPlanCreator);
+		verifyNoInteractions(planRegister);
 	}
+	@Test
+	void AI_플랜을_생성하고_ID를_반환한다() throws Exception {
+		AiPlanCreateRequest request = new AiPlanCreateRequest(10, 3, "차분히 기다렸으면 해요");
+		Plan plan = mock(Plan.class);
+		given(plan.getId()).willReturn(22L);
+		given(planRegister.createAi(42L, request)).willReturn(plan);
+
+		mockMvc.perform(post("/api/plans/ai").principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"dailyMinutes\":10,\"daysPerWeek\":3,\"expectation\":\"차분히 기다렸으면 해요\"}"))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.planId").value(22))
+				.andDo(document("plan/ai-create", requestFields(
+						fieldWithPath("dailyMinutes").description("하루 훈련 시간, 5, 10, 20 중 하나. 20은 20분 이상"),
+						fieldWithPath("daysPerWeek").description("주당 훈련 일수, 3, 5, 7 중 하나"),
+						fieldWithPath("expectation").description("훈련 기대사항, 공백을 제외한 내용 필수, 최대 500자, 입력 그대로 저장")),
+						responseFields(fieldWithPath("planId").description("생성된 플랜 ID"))));
+		verify(planRegister).createAi(42L, request);
+	}
+
+	@Test
+	void 잘못된_AI_결과이면_502를_반환한다() throws Exception {
+		AiPlanCreateRequest request = new AiPlanCreateRequest(10, 3, "기다리기");
+		given(planRegister.createAi(42L, request)).willThrow(new InvalidAiPlanResponseException());
+
+		mockMvc.perform(post("/api/plans/ai").principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"dailyMinutes\":10,\"daysPerWeek\":3,\"expectation\":\"기다리기\"}"))
+				.andExpect(status().isBadGateway())
+				.andExpect(jsonPath("$.code").value("PLAN_AI_INVALID_RESPONSE"))
+				.andDo(document("plan/ai-create-error", responseFields(ERROR_FIELDS)));
+	}
+
+	@ParameterizedTest
+	@MethodSource("invalidAiRequests")
+	void 잘못된_AI_요청이면_서비스를_호출하지_않는다(String json) throws Exception {
+		mockMvc.perform(post("/api/plans/ai").principal(CURRENT_USER)
+						.contentType(MediaType.APPLICATION_JSON).content(json))
+				.andExpect(status().isBadRequest());
+		verifyNoInteractions(planRegister);
+	}
+
+	private static Stream<String> invalidAiRequests() {
+		return Stream.of("{}",
+				"{\"daysPerWeek\":3,\"expectation\":\"기다리기\"}",
+				"{\"dailyMinutes\":10,\"expectation\":\"기다리기\"}",
+				"{\"dailyMinutes\":10,\"daysPerWeek\":3,\"expectation\":\"  \"}",
+				"{\"dailyMinutes\":10,\"daysPerWeek\":3,\"expectation\":\"" + "가".repeat(501) + "\"}");
+	}
+
+	@Test
+	void AI_플랜_생성에_인증이_없으면_401을_반환한다() throws Exception {
+		mockMvc.perform(post("/api/plans/ai").contentType(MediaType.APPLICATION_JSON)
+						.content("{\"dailyMinutes\":10,\"daysPerWeek\":3,\"expectation\":\"기다리기\"}"))
+				.andExpect(status().isUnauthorized());
+		verifyNoInteractions(planRegister);
+	}
+
 }
