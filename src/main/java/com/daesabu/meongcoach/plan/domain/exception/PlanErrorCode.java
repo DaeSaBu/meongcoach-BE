@@ -13,6 +13,7 @@ public enum PlanErrorCode implements ErrorCode {
 	PLAN_DUPLICATE_CURRICULUM(400, "플랜에 같은 커리큘럼을 중복해서 포함할 수 없습니다."),
 	PLAN_INVALID_CURRICULUM(400, "플랜의 커리큘럼 ID는 null일 수 없습니다."),
 	PLAN_CREATION_CONFLICT(409, "플랜이 변경되었습니다. 현재 플랜을 다시 확인해주세요."),
+	PLAN_AI_INVALID_RESPONSE(502, "AI가 유효한 플랜 구성을 생성하지 못했습니다."),
 	;
 
 	private final int status;

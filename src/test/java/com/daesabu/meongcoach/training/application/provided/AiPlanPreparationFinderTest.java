@@ -71,6 +71,8 @@ class AiPlanPreparationFinderTest {
 
 		assertThat(result.curriculums()).extracting(AiPlanCurriculumResult::id)
 				.containsExactly(first.getId(), second.getId(), third.getId(), last.getId());
+		assertThat(result.curriculums()).extracting(AiPlanCurriculumResult::topicId)
+				.containsExactly(firstTopic.getId(), firstTopic.getId(), secondTopic.getId(), later.getId());
 	}
 
 	@Test
@@ -91,9 +93,9 @@ class AiPlanPreparationFinderTest {
 		AiPlanPreparationResult result = finder.find(USER_ID);
 
 		assertThat(result.curriculums()).containsExactly(
-				new AiPlanCurriculumResult(completed.getId(), topic.getTitle(), completed.getTitle(),
+				new AiPlanCurriculumResult(completed.getId(), topic.getId(), topic.getTitle(), completed.getTitle(),
 						completed.getDescription(), 1, 1, 5),
-				new AiPlanCurriculumResult(partial.getId(), topic.getTitle(), partial.getTitle(),
+				new AiPlanCurriculumResult(partial.getId(), topic.getId(), topic.getTitle(), partial.getTitle(),
 						partial.getDescription(), 2, 1, 12));
 	}
 

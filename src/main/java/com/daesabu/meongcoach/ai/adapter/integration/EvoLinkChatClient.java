@@ -10,13 +10,6 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
-/**
- * EvoLink 채팅 API를 호출하는 공용 클라이언트. 영상 분석·제목 생성 어댑터가 같은 엔드포인트를 쓰므로
- * 전송과 응답 검증을 여기로 모은다. 전역 read-timeout(3초)으로는 모델 응답 전에 끊기므로
- * 이 클라이언트만 별도 requestFactory로 응답 타임아웃을 늘린다.
- * HTTP 오류(4xx·5xx)는 RestClient 예외를, 쓸 수 없는 응답은 EvoLinkResponseException을 던진다.
- * 도메인 예외로의 번역은 용도를 아는 각 어댑터(영상 분석·제목 생성)가 한다.
- */
 @Component
 class EvoLinkChatClient {
 
@@ -28,7 +21,6 @@ class EvoLinkChatClient {
 	private final EvoLinkProperties properties;
 	private final RestClient restClient;
 
-	// 생성자가 둘이라 주입 대상을 명시한다
 	@Autowired
 	EvoLinkChatClient(EvoLinkProperties properties, RestClient.Builder restClientBuilder) {
 		this(properties, restClientBuilder
@@ -39,8 +31,6 @@ class EvoLinkChatClient {
 				.build());
 	}
 
-	// MockRestServiceServer로 응답을 가로챌 수 있도록 완성된 RestClient를 직접 받는 통로를 둔다.
-	// baseUrl·인증 헤더를 빌더 기본값이 아니라 요청 코드에서 붙이는 것도 이 경로에서 같이 검증되게 하기 위해서다
 	EvoLinkChatClient(EvoLinkProperties properties, RestClient restClient) {
 		this.properties = properties;
 		this.restClient = restClient;

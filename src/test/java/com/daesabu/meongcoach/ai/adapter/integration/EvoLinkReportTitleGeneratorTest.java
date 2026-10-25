@@ -25,9 +25,6 @@ import org.springframework.test.web.client.ResponseActions;
 import org.springframework.web.client.RestClient;
 import tools.jackson.databind.ObjectMapper;
 
-/**
- * 모델 호출은 MockRestServiceServer로 가로채고, 제목 생성 요청 구성과 {"title": ...} 응답 파싱을 검증한다.
- */
 class EvoLinkReportTitleGeneratorTest {
 
 	private static final String BASE_URL = "https://api.evolink.test";
@@ -43,8 +40,8 @@ class EvoLinkReportTitleGeneratorTest {
 	void setUp() {
 		RestClient.Builder builder = RestClient.builder();
 		server = MockRestServiceServer.bindTo(builder).build();
-		EvoLinkProperties properties = new EvoLinkProperties(BASE_URL, "test-evolink-api-key", MODEL,
-				Duration.ofMinutes(5), 4096, 0.0, "disabled", 1.0);
+		EvoLinkProperties properties = new EvoLinkProperties(
+				BASE_URL, "test-evolink-api-key", Duration.ofMinutes(5), MODEL, 4096, 0.0, "disabled", 1.0);
 		generator = new EvoLinkReportTitleGenerator(new EvoLinkChatClient(properties, builder.build()),
 				properties, new ObjectMapper());
 	}
