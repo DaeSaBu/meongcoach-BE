@@ -13,12 +13,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.daesabu.meongcoach.dog.domain.shared.Personality;
 import com.daesabu.meongcoach.dog.domain.shared.RegisteredBreed;
 import com.daesabu.meongcoach.media.domain.ImageType;
-import com.daesabu.meongcoach.onboarding.application.provided.OnboardingCompleteInfo;
 import com.daesabu.meongcoach.onboarding.application.provided.OnboardingCompleter;
 import com.daesabu.meongcoach.onboarding.application.provided.OnboardingImageUploadUrlIssuer;
 import com.daesabu.meongcoach.onboarding.application.provided.OnboardingImageUploadUrlResult;
 import com.daesabu.meongcoach.onboarding.application.provided.OnboardingMetadataFinder;
 import com.daesabu.meongcoach.onboarding.application.provided.OnboardingMetadataResult;
+import com.daesabu.meongcoach.onboarding.application.provided.dto.OnboardingCompleteRequest;
 import com.daesabu.meongcoach.user.domain.exception.AlreadyOnboardedException;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -52,7 +52,6 @@ class OnboardingControllerTest {
 
 	private static final String COMPLETE_REQUEST = """
 			{
-				"nickname": "멍멍이집사",
 				"dogs": [
 					{
 						"name": "초코",
@@ -68,7 +67,6 @@ class OnboardingControllerTest {
 
 	private static final String COMPLETE_REQUEST_WITH_REQUIRED_FIELDS = """
 			{
-				"nickname": "멍멍이집사",
 				"dogs": [
 					{
 						"name": "초코",
@@ -87,7 +85,7 @@ class OnboardingControllerTest {
 	private RecordingOnboardingCompleter onboardingCompleter;
 
 	@Test
-	void MBTI_없이_온보딩을_완료한다() throws Exception {
+	void 보호자_프로필_없이_온보딩을_완료한다() throws Exception {
 		mockMvc.perform(post("/api/onboarding")
 						.principal(() -> "1")
 						.contentType(MediaType.APPLICATION_JSON)
@@ -132,7 +130,6 @@ class OnboardingControllerTest {
 				.andExpect(jsonPath("$.dogIds[0]").value(1))
 				.andDo(document("onboarding/complete",
 						requestFields(
-								fieldWithPath("nickname").description("사용자 닉네임. 필수 입력, 최대 12자"),
 								fieldWithPath("dogs[]").description("등록할 강아지 목록. 정확히 1마리"),
 								fieldWithPath("dogs[].name").description("강아지 이름. 필수 입력, 최대 12자"),
 								fieldWithPath("dogs[].breed").description(
@@ -151,16 +148,15 @@ class OnboardingControllerTest {
 						)
 				));
 
-		OnboardingCompleteInfo info = onboardingCompleter.lastInfo;
+		OnboardingCompleteRequest info = onboardingCompleter.lastInfo;
 		assertThat(info.dogs().getFirst().profileImageUrl())
 				.isEqualTo("https://images.test.meongcoach.com/images/dog-profile/1/b.jpg");
-		assertThat(info.dogs().getFirst().expectation()).isNull();
 	}
 
 	@Test
-	void 사용자_성별과_생년월일을_보내도_무시하고_온보딩을_완료한다() throws Exception {
-		String request = COMPLETE_REQUEST.replace("\"nickname\": \"멍멍이집사\",",
-				"\"nickname\": \"멍멍이집사\", \"gender\": \"FEMALE\", \"birthDate\": \"1998-01-01\",");
+	void 보호자_프로필을_보내도_무시하고_온보딩을_완료한다() throws Exception {
+		String request = COMPLETE_REQUEST.replace("\"dogs\": [",
+				"\"nickname\": \"멍멍이집사\", \"gender\": \"FEMALE\", \"birthDate\": \"1998-01-01\", \"dogs\": [");
 
 		mockMvc.perform(post("/api/onboarding")
 						.principal(() -> "1")
@@ -168,7 +164,7 @@ class OnboardingControllerTest {
 						.content(request))
 				.andExpect(status().isCreated());
 
-		assertThat(onboardingCompleter.lastInfo.nickname()).isEqualTo("멍멍이집사");
+		assertThat(onboardingCompleter.lastInfo.dogs()).hasSize(1);
 	}
 
 	@Test
@@ -215,35 +211,6 @@ class OnboardingControllerTest {
 								fieldWithPath("timestamp").description("에러 발생 시각(UTC)")
 						)
 				));
-	}
-
-	@Test
-	void 닉네임이_비어_있으면_검증에_실패한다() throws Exception {
-		mockMvc.perform(post("/api/onboarding")
-						.principal(() -> "1")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content(COMPLETE_REQUEST.replace("멍멍이집사", "")))
-				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
-				.andExpect(jsonPath("$.errors[0].field").value("nickname"));
-	}
-
-	@Test
-	void 닉네임이_12자이면_온보딩을_완료할_수_있다() throws Exception {
-		String request = COMPLETE_REQUEST.replace("멍멍이집사", "가".repeat(12));
-
-		mockMvc.perform(post("/api/onboarding")
-						.principal(() -> "1")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content(request))
-				.andExpect(status().isCreated());
-	}
-
-	@Test
-	void 닉네임이_12자를_넘으면_검증에_실패한다() throws Exception {
-		String request = COMPLETE_REQUEST.replace("멍멍이집사", "가".repeat(13));
-
-		assertValidationFails(request, "nickname");
 	}
 
 	@Test
@@ -320,7 +287,7 @@ class OnboardingControllerTest {
 						.content(COMPLETE_REQUEST))
 				.andExpect(status().isCreated());
 
-		assertThat(onboardingCompleter.lastInfo.dogs().getFirst().weightKg())
+		assertThat(onboardingCompleter.lastInfo.dogs().getFirst().toInfo().weightKg())
 				.isNull();
 	}
 
@@ -336,7 +303,7 @@ class OnboardingControllerTest {
 	@Test
 	void 강아지_목록에_null이_있으면_검증에_실패한다() throws Exception {
 		String request = """
-				{"nickname": "멍멍이집사", "dogs": [null]}
+				{"dogs": [null]}
 				""";
 
 		assertValidationFails(request, "dogs[0]");
@@ -346,7 +313,6 @@ class OnboardingControllerTest {
 	void 강아지를_두_마리_등록하면_검증에_실패한다() throws Exception {
 		String request = """
 				{
-				    "nickname": "멍멍이집사",
 				    "dogs": [
 				        {
 				            "name": "초코",
@@ -373,7 +339,7 @@ class OnboardingControllerTest {
 						.principal(() -> "1")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
-								{"nickname": "멍멍이집사", "dogs": []}
+								{"dogs": []}
 								"""))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.errors[0].field").value("dogs"));
@@ -491,10 +457,10 @@ class OnboardingControllerTest {
 
 	static class RecordingOnboardingCompleter implements OnboardingCompleter {
 
-		private OnboardingCompleteInfo lastInfo;
+		private OnboardingCompleteRequest lastInfo;
 
 		@Override
-		public List<Long> complete(Long userId, OnboardingCompleteInfo info) {
+		public List<Long> complete(Long userId, OnboardingCompleteRequest info) {
 			if (userId == ONBOARDED_USER_ID) {
 				throw new AlreadyOnboardedException();
 			}
