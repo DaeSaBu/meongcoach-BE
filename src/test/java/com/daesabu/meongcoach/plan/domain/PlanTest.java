@@ -155,6 +155,39 @@ class PlanTest {
 				.isInstanceOf(IllegalStateException.class);
 	}
 
+	@Test
+	void 전달받은_교육_순서에서_첫_미완료_레슨을_찾는다() {
+		Plan plan = createPlan();
+		List<Long> orderedLessonIds = List.of(103L, 101L, 102L);
+
+		assertThat(plan.findCurrentLessonId(orderedLessonIds)).contains(103L);
+		plan.completeLesson(103L);
+		assertThat(plan.findCurrentLessonId(orderedLessonIds)).contains(101L);
+		plan.completeLesson(101L);
+		assertThat(plan.findCurrentLessonId(orderedLessonIds)).contains(102L);
+		plan.completeLesson(102L);
+		assertThat(plan.findCurrentLessonId(orderedLessonIds)).isEmpty();
+	}
+
+	@Test
+	void 교육_목록_앞에_새_레슨이_추가되면_그_레슨부터_진행한다() {
+		Plan plan = createPlan();
+		plan.completeLesson(101L);
+		plan.completeLesson(102L);
+
+		assertThat(plan.findCurrentLessonId(List.of(104L, 102L, 103L))).contains(104L);
+		plan.completeLesson(104L);
+		assertThat(plan.findCurrentLessonId(List.of(104L, 102L, 103L))).contains(103L);
+	}
+
+	@Test
+	void 레슨_목록이_비어_있으면_현재_레슨_탐색을_거절한다() {
+		Plan plan = createPlan();
+
+		assertThatThrownBy(() -> plan.findCurrentLessonId(List.of()))
+				.isInstanceOf(IllegalStateException.class);
+	}
+
 	private Plan createPlan() {
 		PlanCreateCommand command = new PlanCreateCommand(1L, 2L, "제목", "목표", 10, 3);
 		return Plan.create(command, List.of(7L, 4L));
