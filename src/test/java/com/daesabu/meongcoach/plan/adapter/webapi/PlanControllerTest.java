@@ -175,7 +175,7 @@ class PlanControllerTest {
 						fieldWithPath("plan.status").description("ACTIVE 또는 COMPLETED"),
 						fieldWithPath("plan.createdAt").description("생성 시각"),
 						fieldWithPath("plan.completedAt").type(JsonFieldType.STRING).optional().description("완료 시각(UTC, ISO 8601), 미완료 시 null"),
-						fieldWithPath("plan.curriculums").description("플랜에 저장한 순서의 커리큘럼 목록, 배열 순번이 카드 번호"),
+						fieldWithPath("plan.curriculums").description("플랜에 저장한 순서의 커리큘럼 목록, 배열 순번이 카드 번호. COMPLETED이면 빈 배열"),
 						fieldWithPath("plan.curriculums[].curriculumId").description("커리큘럼 ID"),
 						fieldWithPath("plan.curriculums[].title").description("커리큘럼 제목"),
 						fieldWithPath("plan.curriculums[].description").description("커리큘럼 설명"),
@@ -190,7 +190,7 @@ class PlanControllerTest {
 	}
 
 	@Test
-	void 완료_시각을_UTC_문자열로_반환한다() throws Exception {
+	void 완료된_플랜의_완료_시각과_빈_커리큘럼_목록을_반환한다() throws Exception {
 		PlanCreateCommand command = new PlanCreateCommand(42L, 3L, "제목", "목표", 10, 3);
 		Plan plan = Plan.create(command, List.of(7L));
 		plan.complete(Instant.parse("2026-10-25T12:00:00Z"));
@@ -198,7 +198,10 @@ class PlanControllerTest {
 
 		mockMvc.perform(get("/api/plans/current").principal(CURRENT_USER))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.plan.completedAt").value("2026-10-25T12:00:00Z"));
+				.andExpect(jsonPath("$.plan.completedAt").value("2026-10-25T12:00:00Z"))
+				.andExpect(jsonPath("$.plan.status").value("COMPLETED"))
+				.andExpect(jsonPath("$.plan.curriculums").isArray())
+				.andExpect(jsonPath("$.plan.curriculums").isEmpty());
 	}
 
 	@Test
