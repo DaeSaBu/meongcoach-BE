@@ -30,11 +30,8 @@ class AiPlanGenerationAdapterTest {
 
 	private final ObjectMapper objectMapper = new ObjectMapper();
 	private final AiContentGenerator contentGenerator = mock(AiContentGenerator.class);
-	private final AiPlanPromptBuilder promptBuilder = new AiPlanPromptBuilder(objectMapper, "{{input}}");
-	private final String systemPrompt = "제공된 후보에서 필요한 토픽을 선택한다.";
-	private final String responseSchema = "{\"type\":\"object\"}";
 	private final AiPlanGenerationAdapter adapter = new AiPlanGenerationAdapter(
-			promptBuilder, contentGenerator, systemPrompt, responseSchema, objectMapper);
+			contentGenerator, objectMapper);
 
 	@Test
 	void 프롬프트와_스키마를_AI_모듈에_전달하고_생성된_문자열을_반환한다() {
@@ -47,9 +44,12 @@ class AiPlanGenerationAdapterTest {
 		ArgumentCaptor<AiContentGenerateRequest> captor = ArgumentCaptor.forClass(AiContentGenerateRequest.class);
 		verify(contentGenerator).generate(captor.capture());
 		AiContentGenerateRequest contentRequest = captor.getValue();
-		assertThat(contentRequest.systemPrompt()).isEqualTo(systemPrompt);
-		assertThat(contentRequest.responseSchema()).isEqualTo(responseSchema);
-		JsonNode input = objectMapper.readTree(contentRequest.userPrompt());
+		assertThat(contentRequest.systemPrompt()).contains("50%", "토픽");
+		assertThat(objectMapper.readTree(contentRequest.responseSchema()).path("required"))
+				.isEqualTo(objectMapper.readTree("[\"topicIds\",\"goal\"]"));
+		String userPrompt = contentRequest.userPrompt();
+		String inputJson = userPrompt.substring(userPrompt.indexOf("입력 JSON:") + "입력 JSON:".length());
+		JsonNode input = objectMapper.readTree(inputJson);
 		assertThat(input.at("/dog/breed").asString()).isEqualTo("푸들");
 		assertThat(input.get("expectation").asString()).isEqualTo(request.expectation());
 		assertThat(result.topicIds()).containsExactly(1L);
