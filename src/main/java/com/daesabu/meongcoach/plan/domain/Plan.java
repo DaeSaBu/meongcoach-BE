@@ -112,6 +112,11 @@ public class Plan extends BaseTimeEntity {
 		completedLessonIds.add(requireNonNull(lessonId));
 	}
 
+	public boolean hasCompletedAllLessons(List<Long> currentLessonIds) {
+		state(!currentLessonIds.isEmpty(), "플랜에는 레슨이 하나 이상 있어야 합니다.");
+		return completedLessonIds.containsAll(currentLessonIds);
+	}
+
 	public void complete(LocalDateTime completedAt) {
 		state(status == PlanStatus.ACTIVE, "활성 플랜만 완료할 수 있습니다.");
 		this.completedAt = requireNonNull(completedAt);
