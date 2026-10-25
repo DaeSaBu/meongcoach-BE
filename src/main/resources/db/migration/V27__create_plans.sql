@@ -8,7 +8,7 @@ CREATE TABLE plans (
     days_per_week INTEGER NOT NULL,
     status VARCHAR(20) NOT NULL,
     created_at TIMESTAMP NOT NULL,
-    completed_at TIMESTAMP
+    completed_at TIMESTAMPTZ
 );
 
 CREATE TABLE plan_curriculums (

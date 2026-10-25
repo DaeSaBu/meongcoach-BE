@@ -5,7 +5,7 @@ import com.daesabu.meongcoach.plan.application.required.PlanRepository;
 import com.daesabu.meongcoach.plan.domain.Plan;
 import com.daesabu.meongcoach.plan.domain.PlanStatus;
 import com.daesabu.meongcoach.training.application.provided.CurriculumCompletionChecker;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -37,6 +37,6 @@ public class PlanCompletionService implements PlanCompleter {
 			return;
 		}
 
-		plan.complete(LocalDateTime.now());
+		plan.complete(Instant.now());
 	}
 }

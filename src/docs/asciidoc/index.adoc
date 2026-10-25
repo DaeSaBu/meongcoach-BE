@@ -729,6 +729,7 @@ operation::plan/custom-create-conflict-error[snippets='http-response,response-fi
 
 활성 플랜을 우선 반환하고, 없으면 완료 시각이 가장 최근인 플랜을 반환합니다.
 완료 시각이 같으면 ID가 큰 플랜을 반환하며, 교체된 플랜은 반환하지 않습니다.
+`completedAt`은 UTC 기준 ISO 8601 문자열(`2026-10-25T12:00:00Z`)이며, 미완료 상태에서는 null입니다.
 둘 다 없으면 `200 OK`와 `{"plan": null}`을 반환합니다.
 
 커리큘럼은 플랜에 저장한 순서로, 레슨은 교육 순서로 반환합니다.

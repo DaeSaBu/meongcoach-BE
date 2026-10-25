@@ -22,7 +22,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OrderColumn;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -69,7 +69,7 @@ public class Plan extends BaseTimeEntity {
 	@Column(nullable = false, length = 20)
 	private PlanStatus status;
 
-	private LocalDateTime completedAt;
+	private Instant completedAt;
 
 	@ElementCollection
 	@CollectionTable(name = "plan_curriculums", joinColumns = @JoinColumn(name = "plan_id"),
@@ -117,7 +117,7 @@ public class Plan extends BaseTimeEntity {
 		return completedLessonIds.containsAll(currentLessonIds);
 	}
 
-	public void complete(LocalDateTime completedAt) {
+	public void complete(Instant completedAt) {
 		state(status == PlanStatus.ACTIVE, "활성 플랜만 완료할 수 있습니다.");
 		this.completedAt = requireNonNull(completedAt);
 		status = PlanStatus.COMPLETED;
