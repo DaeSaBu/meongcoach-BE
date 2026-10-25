@@ -60,6 +60,7 @@ import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDoc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.restdocs.payload.JsonFieldType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
@@ -518,6 +519,7 @@ class TrainingControllerTest {
 	@Test
 	void 레슨의_카드와_미디어_목록을_반환한다() throws Exception {
 		Card first = card(10L, "앉아 준비", 1, "간식을 손에 쥐고 앉아를 말하세요");
+		ReflectionTestUtils.setField(first, "instructionAudioUrl", "https://cdn.example.com/tts/1.mp3");
 		addCardMedia(first, 100L, IMAGE, "https://cdn.example.com/1.png", 1);
 		addCardMedia(first, 101L, VIDEO, "https://cdn.example.com/1.mp4", 2);
 		Card second = card(11L, "앉아 보상", 2, "앉으면 바로 간식을 주세요");
@@ -531,6 +533,8 @@ class TrainingControllerTest {
 				.andExpect(jsonPath("$.cards[0].cardId").value(10))
 				.andExpect(jsonPath("$.cards[0].cardTitle").value("앉아 준비"))
 				.andExpect(jsonPath("$.cards[0].instruction").value("간식을 손에 쥐고 앉아를 말하세요"))
+				.andExpect(jsonPath("$.cards[0].instructionAudioUrl").value("https://cdn.example.com/tts/1.mp3"))
+				.andExpect(jsonPath("$.cards[1].instructionAudioUrl").value(nullValue()))
 				.andExpect(jsonPath("$.cards[0].cardMedia[0].cardMediaId").value(100))
 				.andExpect(jsonPath("$.cards[0].cardMedia[0].cardId").value(10))
 				.andExpect(jsonPath("$.cards[0].cardMedia[0].mediaType").value("IMAGE"))
@@ -547,6 +551,8 @@ class TrainingControllerTest {
 								fieldWithPath("cards[].cardId").description("카드 ID"),
 								fieldWithPath("cards[].cardTitle").description("카드 타이틀. 없으면 빈 문자열"),
 								fieldWithPath("cards[].instruction").description("카드 지시문. 없으면 빈 문자열"),
+								fieldWithPath("cards[].instructionAudioUrl").optional().type(JsonFieldType.STRING)
+										.description("지시문을 읽어 주는 음성(mp3) URL. 아직 만들지 않은 카드는 null"),
 								fieldWithPath("cards[].cardMedia[]").description("카드에 속한 미디어 목록. 노출 순서대로 정렬, 없으면 빈 배열"),
 								fieldWithPath("cards[].cardMedia[].cardMediaId").description("카드 미디어 ID"),
 								fieldWithPath("cards[].cardMedia[].cardId").description("미디어가 속한 카드 ID"),

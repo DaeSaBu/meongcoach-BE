@@ -37,6 +37,10 @@ public class Card extends BaseEntity {
 	@Column(nullable = false, columnDefinition = "TEXT")
 	private String instruction;
 
+	// 지시문을 읽어 주는 음성 파일 주소다. 콘텐츠 동기화로 채우며, 아직 만들지 않은 카드는 비어 있다.
+	@Column(length = 512)
+	private String instructionAudioUrl;
+
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "lesson_id", nullable = false)
 	private Lesson lesson;
