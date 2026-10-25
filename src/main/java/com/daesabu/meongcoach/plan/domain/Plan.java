@@ -44,6 +44,10 @@ public class Plan extends BaseTimeEntity {
 
 	private static final Set<Integer> ALLOWED_DAYS_PER_WEEK = Set.of(3, 5, 7);
 
+	private static final String CUSTOM_TITLE_SUFFIX = "의 2주 훈련 플랜";
+
+	private static final String CUSTOM_GOAL = "선택한 훈련을 차근차근 익혀요";
+
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
@@ -98,6 +102,13 @@ public class Plan extends BaseTimeEntity {
 		plan.status = PlanStatus.ACTIVE;
 		plan.curriculumIds = new ArrayList<>(curriculumIds);
 		return plan;
+	}
+
+	public static Plan createCustom(CustomPlanCreateCommand command, List<Long> curriculumIds) {
+		String title = requireNonNull(command.dogName()) + CUSTOM_TITLE_SUFFIX;
+		PlanCreateCommand createCommand = new PlanCreateCommand(command.userId(), command.dogId(), title,
+				CUSTOM_GOAL, command.dailyMinutes(), command.daysPerWeek());
+		return create(createCommand, curriculumIds);
 	}
 
 	public List<Long> getCurriculumIds() {

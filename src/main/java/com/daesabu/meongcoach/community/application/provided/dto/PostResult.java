@@ -1,7 +1,6 @@
 package com.daesabu.meongcoach.community.application.provided.dto;
 
 import com.daesabu.meongcoach.community.domain.Post;
-import com.daesabu.meongcoach.user.application.provided.UserProfileSummaryResult;
 
-public record PostResult(Post post, UserProfileSummaryResult author, MentionTargetResult mentionTarget) {
+public record PostResult(Post post, AuthorResult author, MentionTargetResult mentionTarget) {
 }

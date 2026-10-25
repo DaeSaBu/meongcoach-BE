@@ -52,6 +52,8 @@ Java 소스(`src/main/java`, `src/test/java`)의 주석은 interface에만 두�
 | 값 객체 | `domain` | 개념 이름 그대로 | `RefreshTokenId`, `MediaObjectKey` |
 | 도메인 예외·에러코드 | `domain/exception` | `{모듈}ErrorCode`, `~Exception` | `AuthErrorCode`, `InvalidEmailException` |
 
+- 객체를 바꾸는 provided 인터페이스는 `~Register` 하나로 두고, 그 객체의 생성·수정·삭제를 모두 이 인터페이스의 메서드(`register`·`update`·`delete` 등)로 관리한다. `~Updater`·`~Deleter`·`~Writer`처럼 행위별 인터페이스로 나누지 않는다. (살아있는 예시: `community/application/provided/PostRegister`) 이 규칙 이전에 만든 `DogProfileUpdater`·`DogProfileDeleter`는 일괄 합치지 않고 해당 API를 수정할 때 `DogRegister`로 옮긴다.
+- 조회만 하는 provided 인터페이스는 `~Finder`, 그 구현은 `application`의 `~QueryService`로 둔다. 리포지토리로 조회하고 없으면 도메인 예외를 던지는 로직(`findBy~(...).orElseThrow(...)`)은 `~Finder` 메서드로 정의하고, `~ModifyService` 같은 다른 서비스는 리포지토리를 직접 호출하지 않고 `~Finder`를 주입받아 쓴다. (살아있는 예시: `community/application/provided/PostFinder` ↔ `PostQueryService`, `PostModifyService.update`) 이 규칙 이전에 만든 `~FinderService`(`BreedFinderService`, `DogProfileFinderService` 등)와 서비스 안의 직접 조회(`DogProfileUpdateService`)는 일괄 바꾸지 않고 해당 코드를 수정할 때 옮긴다.
 - `domain` 루트에는 엔티티·enum·일급 컬렉션·값 객체를 두고, 예외·에러코드는 `domain/exception`으로 분리한다. 값 객체용 하위 패키지(`vo`)는 만들지 않으며, 다른 모듈에 노출하는 값 객체만 `domain/shared`에 둔다.
 - 일급 컬렉션은 엔티티 하나로는 판단할 수 없는 규칙(마리 수 상한, 마지막 한 마리 삭제 금지처럼 한 사용자 소유 목록 전체를 봐야 하는 규칙)을 담을 때만 둔다. 영속화 단위가 아니라 application이 리포지토리로 조회한 목록을 생성자로 넘겨 만들며, 리포지토리를 참조하지 않는다. 규칙은 Spring 없는 단위 테스트로 검증한다. (살아있는 예시: `dog/domain/Dogs`)
 	- 목록 전체를 보고 판단한 결과로 새 엔티티가 생기면 그 생성도 일급 컬렉션이 맡는다. 기존 엔티티는 그 자리에서 바꾸고, 새로 만든 엔티티만 돌려주어 호출자가 저장한다. (살아있는 예시: 활성 이용권의 만료 시각을 반영하고 빠진 이용권은 만료시키며 없던 종류만 새로 부여하는 `entitlement/domain/Entitlements.synchronize`)
