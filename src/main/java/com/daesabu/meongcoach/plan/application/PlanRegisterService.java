@@ -21,13 +21,11 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 @Validated
 public class PlanRegisterService implements PlanRegister {
 
@@ -51,7 +49,6 @@ public class PlanRegisterService implements PlanRegister {
 	}
 
 	@Override
-	@Transactional(propagation = Propagation.NOT_SUPPORTED)
 	public Plan createAi(Long userId, AiPlanCreateRequest request) {
 		Plan.validatePracticeSettings(request.dailyMinutes(), request.daysPerWeek());
 		DogProfileResult dog = dogProfileFinder.findSelectedDogProfile(userId);
