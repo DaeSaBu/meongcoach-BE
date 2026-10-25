@@ -6,6 +6,7 @@ import com.daesabu.meongcoach.plan.application.provided.dto.PlanLessonProgressRe
 import com.daesabu.meongcoach.plan.application.required.PlanRepository;
 import com.daesabu.meongcoach.plan.domain.Plan;
 import com.daesabu.meongcoach.plan.domain.PlanCreateCommand;
+import com.daesabu.meongcoach.plan.domain.PlanStatus;
 import com.daesabu.meongcoach.support.ApplicationTest;
 import com.daesabu.meongcoach.training.domain.Curriculum;
 import com.daesabu.meongcoach.training.domain.CurriculumFixture;
@@ -60,6 +61,40 @@ class CurrentPlanFinderTest {
 		flushAndClear();
 
 		assertThat(finder.find(42L).orElseThrow().plan().getId()).isEqualTo(latest.getId());
+	}
+
+	@Test
+	void 완료_후_레슨이_추가되어도_완료_정보만_반환하고_저장된_진도는_유지한다() {
+		Long curriculumId = saveCurriculum();
+		flushAndClear();
+		Curriculum curriculum = entityManager.find(Curriculum.class, curriculumId);
+		Long completedLessonId = curriculum.getLessonIds().getFirst();
+		Plan plan = savePlan(42L, curriculumId);
+		plan.completeLesson(completedLessonId);
+		Instant completedAt = Instant.parse("2026-10-23T12:00:00Z");
+		plan.complete(completedAt);
+		entityManager.persist(LessonFixture.create(curriculum, "추가 레슨", 2, 5));
+		flushAndClear();
+
+		var result = finder.find(42L).orElseThrow();
+
+		assertThat(result.curriculums()).isEmpty();
+		assertThat(result.plan().getStatus()).isEqualTo(PlanStatus.COMPLETED);
+		assertThat(result.plan().getCompletedAt()).isEqualTo(completedAt);
+		assertThat(result.plan().getCurriculumIds()).containsExactly(curriculumId);
+		assertThat(result.plan().getCompletedLessonIds()).containsExactly(completedLessonId);
+	}
+
+	@Test
+	void 완료된_플랜은_기존_커리큘럼이_없어도_조회할_수_있다() {
+		Plan plan = savePlan(42L, Long.MAX_VALUE);
+		plan.complete(Instant.parse("2026-10-23T12:00:00Z"));
+		flushAndClear();
+
+		var result = finder.find(42L).orElseThrow();
+
+		assertThat(result.plan().getId()).isEqualTo(plan.getId());
+		assertThat(result.curriculums()).isEmpty();
 	}
 
 	@Test
