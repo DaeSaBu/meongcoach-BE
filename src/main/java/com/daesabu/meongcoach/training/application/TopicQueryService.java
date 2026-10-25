@@ -1,13 +1,18 @@
 package com.daesabu.meongcoach.training.application;
 
+import com.daesabu.meongcoach.training.application.provided.AiPlanPreparationFinder;
 import com.daesabu.meongcoach.training.application.provided.CustomPlanPreparationFinder;
 import com.daesabu.meongcoach.training.application.provided.TopicCompletionChecker;
 import com.daesabu.meongcoach.training.application.provided.TopicFinder;
+import com.daesabu.meongcoach.training.application.provided.dto.AiPlanCurriculumResult;
+import com.daesabu.meongcoach.training.application.provided.dto.AiPlanPreparationResult;
 import com.daesabu.meongcoach.training.application.provided.dto.CustomPlanPreparationResult;
 import com.daesabu.meongcoach.training.application.provided.dto.TopicResult;
 import com.daesabu.meongcoach.training.application.required.LessonProgressRepository;
 import com.daesabu.meongcoach.training.application.required.TopicRepository;
 import com.daesabu.meongcoach.training.domain.Curriculum;
+import com.daesabu.meongcoach.training.domain.CurriculumCompletion;
+import com.daesabu.meongcoach.training.domain.Lesson;
 import com.daesabu.meongcoach.training.domain.LessonProgress;
 import com.daesabu.meongcoach.training.domain.LessonProgresses;
 import com.daesabu.meongcoach.training.domain.Topic;
@@ -23,9 +28,39 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class TopicQueryService implements TopicFinder, TopicCompletionChecker, CustomPlanPreparationFinder {
+public class TopicQueryService implements TopicFinder, TopicCompletionChecker, CustomPlanPreparationFinder,
+		AiPlanPreparationFinder {
 	private final LessonProgressRepository lessonProgressRepository;
 	private final TopicRepository topicRepository;
+
+	@Override
+	public AiPlanPreparationResult find(Long userId) {
+		List<Topic> topics = topicRepository.findAll(TopicRepository.EDUCATION_ORDER);
+		List<Long> lessonIds = topics.stream()
+				.flatMap(topic -> topic.getAllLessonIds().stream())
+				.toList();
+		LessonProgresses progresses = findProgresses(userId, lessonIds);
+		List<AiPlanCurriculumResult> curriculums = topics.stream()
+				.flatMap(topic -> topic.getCurriculums().stream()
+						.map(curriculum -> toAiPlanCurriculumResult(topic.getTitle(), curriculum, progresses)))
+				.toList();
+		return new AiPlanPreparationResult(curriculums);
+	}
+
+	private AiPlanCurriculumResult toAiPlanCurriculumResult(String topicTitle, Curriculum curriculum,
+			LessonProgresses progresses) {
+		CurriculumCompletion completion = curriculum.completion(progresses);
+		Long id = curriculum.getId();
+		String title = curriculum.getTitle();
+		String description = curriculum.getDescription();
+		int totalLessons = curriculum.getLessonsSize();
+		int completedLessons = completion.completedLessons();
+		int estimatedMinutes = curriculum.getLessons().stream()
+				.mapToInt(Lesson::getEstimatedMinutes)
+				.sum();
+		return new AiPlanCurriculumResult(id, topicTitle, title, description,
+				totalLessons, completedLessons, estimatedMinutes);
+	}
 
 	@Override
 	public CustomPlanPreparationResult find(Long userId, Collection<Long> topicIds) {
