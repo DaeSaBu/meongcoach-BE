@@ -104,4 +104,32 @@ class PlanPersistenceTest {
 		assertThat(arraySize).isEqualTo(3);
 	}
 
+	@Test
+	void AI_플랜의_500자_기대사항을_저장하고_조회한다() {
+		String expectation = "가".repeat(500);
+		AiPlanCreateCommand command = new AiPlanCreateCommand(1L, 2L, "초코", "차분히 기다려요", 10, 3, expectation);
+		Plan plan = Plan.createAi(command, List.of(7L, 4L));
+		entityManager.persistAndFlush(plan);
+		Long planId = plan.getId();
+		entityManager.clear();
+
+		Plan found = entityManager.find(Plan.class, planId);
+
+		assertThat(found.getExpectation()).isEqualTo(expectation);
+		assertThat(found.getGoal()).isEqualTo(command.goal());
+	}
+
+	@Test
+	void 커스텀_플랜은_기대사항_없이_저장하고_조회한다() {
+		CustomPlanCreateCommand command = new CustomPlanCreateCommand(1L, 2L, "초코", 10, 3);
+		Plan plan = Plan.createCustom(command, List.of(7L));
+		entityManager.persistAndFlush(plan);
+		Long planId = plan.getId();
+		entityManager.clear();
+
+		Plan found = entityManager.find(Plan.class, planId);
+
+		assertThat(found.getExpectation()).isNull();
+	}
+
 }
