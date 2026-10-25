@@ -64,6 +64,9 @@ public class Plan extends BaseTimeEntity {
 	@Column(nullable = false, columnDefinition = "TEXT")
 	private String goal;
 
+	@Column(length = 500)
+	private String expectation;
+
 	@Column(nullable = false)
 	private int dailyMinutes;
 
