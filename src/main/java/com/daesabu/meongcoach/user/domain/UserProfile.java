@@ -33,7 +33,7 @@ public class UserProfile extends BaseEntity {
 	private String profileImageUrl;
 
 	@Enumerated(EnumType.STRING)
-	@Column(nullable = false, length = 4)
+	@Column(length = 4)
 	private Mbti mbti;
 
 	@Column(name = "prior_training_topic_ids", nullable = false)
