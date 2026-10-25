@@ -32,7 +32,7 @@ class CommentContentTest {
 	}
 
 	@Test
-	void 본문이_500자를_넘으면_생성에_실패한다() {
+	void 본문이_150자를_넘으면_생성에_실패한다() {
 		String tooLong = "a".repeat(CommentContent.MAX_LENGTH + 1);
 
 		assertThatThrownBy(() -> new CommentContent(tooLong))
@@ -40,7 +40,7 @@ class CommentContentTest {
 	}
 
 	@Test
-	void 본문이_500자면_생성에_성공한다() {
+	void 본문이_150자면_생성에_성공한다() {
 		String maxLength = "a".repeat(CommentContent.MAX_LENGTH);
 
 		CommentContent content = new CommentContent(maxLength);

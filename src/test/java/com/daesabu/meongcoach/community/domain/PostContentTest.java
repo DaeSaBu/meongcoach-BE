@@ -32,7 +32,7 @@ class PostContentTest {
 	}
 
 	@Test
-	void 본문이_500자를_넘으면_생성에_실패한다() {
+	void 본문이_200자를_넘으면_생성에_실패한다() {
 		String tooLong = "a".repeat(PostContent.MAX_LENGTH + 1);
 
 		assertThatThrownBy(() -> new PostContent(tooLong))
@@ -40,7 +40,7 @@ class PostContentTest {
 	}
 
 	@Test
-	void 본문이_500자면_생성에_성공한다() {
+	void 본문이_200자면_생성에_성공한다() {
 		String maxLength = "a".repeat(PostContent.MAX_LENGTH);
 
 		PostContent content = new PostContent(maxLength);

@@ -345,7 +345,7 @@ class CommunityControllerTest {
 				.andExpect(jsonPath("$.createdAt").value("2026-10-20T10:30:00"))
 				.andDo(document("community/post-register",
 						requestFields(
-								fieldWithPath("content").description("필수 입력. 게시글 본문. 공백만으로 채울 수 없고 500자 이하"),
+								fieldWithPath("content").description("필수 입력. 게시글 본문. 공백만으로 채울 수 없고 200자 이하"),
 								fieldWithPath("mention").optional().description("멘션 대상. 멘션 없이 작성하면 생략한다"),
 								fieldWithPath("mention.targetType").description("멘션 대상 종류. 현재 LESSON(레슨)만 받는다"),
 								fieldWithPath("mention.targetId").description("멘션 대상 ID(양의 정수)"),
@@ -501,7 +501,7 @@ class CommunityControllerTest {
 				.andDo(document("community/post-update",
 						pathParameters(parameterWithName("postId").description("수정할 게시글 ID. 본인이 작성한 게시글만 수정할 수 있다")),
 						requestFields(
-								fieldWithPath("content").description("필수 입력. 게시글 본문. 공백만으로 채울 수 없고 500자 이하"),
+								fieldWithPath("content").description("필수 입력. 게시글 본문. 공백만으로 채울 수 없고 200자 이하"),
 								fieldWithPath("mention").optional().description("멘션 대상. 생략하면 기존 멘션을 제거한다"),
 								fieldWithPath("mention.targetType").description("멘션 대상 종류. 현재 LESSON(레슨)만 받는다"),
 								fieldWithPath("mention.targetId").description("멘션 대상 ID(양의 정수)"),
@@ -646,7 +646,7 @@ class CommunityControllerTest {
 				.andDo(document("community/comment-register",
 						pathParameters(parameterWithName("postId").description("댓글을 작성할 게시글 ID")),
 						requestFields(
-								fieldWithPath("content").description("필수 입력. 댓글 본문. 공백만으로 채울 수 없고 500자 이하"),
+								fieldWithPath("content").description("필수 입력. 댓글 본문. 공백만으로 채울 수 없고 150자 이하"),
 								fieldWithPath("parentId").optional()
 										.description("답글을 달 댓글 ID(양의 정수). 답글은 그 댓글의 루트 댓글에 대한 답글로 작성된다. 댓글이면 생략한다")
 						),
@@ -741,7 +741,7 @@ class CommunityControllerTest {
 				.andDo(document("community/comment-update",
 						pathParameters(parameterWithName("commentId").description("수정할 댓글 ID. 본인이 작성한 댓글·답글만 수정할 수 있다")),
 						requestFields(
-								fieldWithPath("content").description("필수 입력. 댓글 본문. 공백만으로 채울 수 없고 500자 이하")
+								fieldWithPath("content").description("필수 입력. 댓글 본문. 공백만으로 채울 수 없고 150자 이하")
 						),
 						responseFields(
 								fieldWithPath("commentId").description("수정한 댓글 ID"),
