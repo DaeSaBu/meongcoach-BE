@@ -805,3 +805,32 @@ operation::community/reply-list[snippets='http-request,path-parameters,query-par
 `size`가 1~50을 벗어나거나 `cursor`가 양의 정수가 아니면 400(`BAD_REQUEST`)에 `errors` 필드로 항목별 원인이 내려갑니다.
 
 operation::community/reply-list-error[snippets='http-response,response-fields']
+
+== Plan API
+
+=== 커스텀 플랜 생성
+
+link:{swagger-ui}#/Plan/plan-custom-create[▶ Swagger에서 Try it out,window=swagger]
+
+로그인한 회원의 선택된 강아지로 커스텀 플랜을 생성합니다. 성공하면 201과 생성된 `planId`를 반환합니다.
+선택한 1~3개 토픽의 미완료 커리큘럼을 교육 순서로 포함합니다. 이미 완료한 커리큘럼은 제외합니다.
+제목은 `{강아지 이름}의 2주 훈련 플랜`, 목표는 `선택한 훈련을 차근차근 익혀요`입니다.
+기존 활성 플랜은 새 플랜 생성에 성공할 때 교체하며, 실패하면 유지됩니다.
+하루 훈련 시간과 주당 훈련 일수는 저장하며, 훈련량 제한이나 자동 만료에 사용하지 않습니다.
+
+operation::plan/custom-create[snippets='http-request,request-fields,http-response,response-fields']
+
+==== 실패 응답
+
+필수 값 누락이나 토픽 개수 범위 위반은 400(`BAD_REQUEST`)을 반환합니다.
+하루 훈련 시간은 5, 10, 20만 허용하며, 그 외 값은 400(`PLAN_INVALID_DAILY_MINUTES`)을 반환합니다. 20은 20분 이상을 뜻합니다.
+주당 훈련 일수는 3, 5, 7만 허용하며, 그 외 값은 400(`PLAN_INVALID_DAYS_PER_WEEK`)을 반환합니다.
+선택된 강아지가 없으면 404(`DOG_NOT_FOUND`), 요청한 토픽이 없으면 404(`TRAINING_TOPIC_NOT_FOUND`)를 반환합니다.
+미완료 커리큘럼이 없으면 400(`PLAN_EMPTY_CURRICULUMS`)을 반환합니다.
+
+operation::plan/custom-create-error[snippets='http-response,response-fields']
+
+저장 중 데이터 무결성 위반은 409(`PLAN_CREATION_CONFLICT`)로 반환합니다. 현재 플랜을 다시 확인해야 합니다.
+인증 정보가 없으면 401(`UNAUTHORIZED`)을 반환합니다.
+
+operation::plan/custom-create-conflict-error[snippets='http-response,response-fields']
