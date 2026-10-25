@@ -26,7 +26,7 @@ import lombok.NoArgsConstructor;
 public class CommentClosure extends BaseTimeEntity {
 
 	private static final int SELF_DEPTH = 0;
-	private static final int REPLY_DEPTH = 1;
+	public static final int REPLY_DEPTH = 1;
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)

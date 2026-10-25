@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 
+import com.daesabu.meongcoach.community.application.provided.dto.AuthorResult;
 import com.daesabu.meongcoach.community.application.provided.dto.MentionTargetResult;
 import com.daesabu.meongcoach.community.application.provided.dto.PostListRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.PostListResult;
@@ -18,6 +19,12 @@ import com.daesabu.meongcoach.community.domain.PostMediaCommand;
 import com.daesabu.meongcoach.community.domain.PostMediaType;
 import com.daesabu.meongcoach.community.domain.PostRegisterCommand;
 import com.daesabu.meongcoach.community.domain.exception.PostNotFoundException;
+import com.daesabu.meongcoach.dog.application.required.DogRepository;
+import com.daesabu.meongcoach.dog.domain.Dog;
+import com.daesabu.meongcoach.dog.domain.DogRegisterCommand;
+import com.daesabu.meongcoach.dog.domain.DogSex;
+import com.daesabu.meongcoach.dog.domain.shared.Breed;
+import com.daesabu.meongcoach.dog.domain.shared.RegisteredBreed;
 import com.daesabu.meongcoach.support.ApplicationTest;
 import com.daesabu.meongcoach.training.application.required.CurriculumRepository;
 import com.daesabu.meongcoach.training.application.required.LessonRepository;
@@ -31,12 +38,13 @@ import com.daesabu.meongcoach.training.domain.Topic;
 import com.daesabu.meongcoach.training.domain.TopicFixture;
 import com.daesabu.meongcoach.training.domain.TrainingCategory;
 import com.daesabu.meongcoach.training.domain.TrainingCategoryFixture;
-import com.daesabu.meongcoach.user.application.provided.UserProfileSummaryResult;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.User;
 import com.daesabu.meongcoach.user.domain.UserProfileCreateCommand;
 import jakarta.persistence.EntityManager;
 import jakarta.validation.ConstraintViolationException;
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.IntStream;
@@ -51,6 +59,8 @@ class PostFinderTest {
 	private static final Long LESSON_B_ID = 202L;
 	private static final String IMAGE_URL = "https://media.meongcoach.com/images/community-post/42/photo.jpg";
 	private static final String VIDEO_URL = "https://media.meongcoach.com/videos/community-post/42/clip.mp4";
+	private static final String UNSELECTED_DOG_IMAGE_URL = "https://media.meongcoach.com/images/dog-profile/42/choco.jpg";
+	private static final String SELECTED_DOG_IMAGE_URL = "https://media.meongcoach.com/images/dog-profile/42/bori.jpg";
 
 	@Autowired
 	private PostFinder postFinder;
@@ -60,6 +70,9 @@ class PostFinderTest {
 
 	@Autowired
 	private UserRepository userRepository;
+
+	@Autowired
+	private DogRepository dogRepository;
 
 	@Autowired
 	private TrainingCategoryRepository trainingCategoryRepository;
@@ -192,15 +205,27 @@ class PostFinderTest {
 	}
 
 	@Test
-	void 작성자_프로필_요약을_함께_반환한다() {
-		User author = saveUserWithProfile("멍멍이집사", "https://cdn.example.com/profile.png");
+	void 작성자의_선택된_강아지를_작성자_정보로_함께_반환한다() {
+		User author = saveAuthorWithDogs();
 		savePost(author.getId(), "본문");
 		flushAndClear();
 
 		PostListResult result = postFinder.findPosts(new PostListRequest(null, 20, null));
 
 		assertThat(result.posts().getFirst().author()).isEqualTo(
-				new UserProfileSummaryResult(author.getId(), "멍멍이집사", "https://cdn.example.com/profile.png"));
+				new AuthorResult(author.getId(), "보리", SELECTED_DOG_IMAGE_URL));
+	}
+
+	@Test
+	void 선택된_강아지가_없는_작성자의_게시글은_author가_null이다() {
+		User author = saveUserWithProfile("멍멍이집사", "https://cdn.example.com/profile.png");
+		saveDog(author.getId(), "초코", UNSELECTED_DOG_IMAGE_URL);
+		savePost(author.getId(), "본문");
+		flushAndClear();
+
+		PostListResult result = postFinder.findPosts(new PostListRequest(null, 20, null));
+
+		assertThat(result.posts().getFirst().author()).isNull();
 	}
 
 	@Test
@@ -273,6 +298,18 @@ class PostFinderTest {
 	}
 
 	@Test
+	void 삭제된_게시글은_목록에서_제외한다() {
+		savePost(USER_ID, "첫 번째");
+		savePost(USER_ID, "두 번째").delete();
+		savePost(USER_ID, "세 번째");
+		flushAndClear();
+
+		PostListResult result = postFinder.findPosts(new PostListRequest(null, 20, null));
+
+		assertThat(result.posts()).extracting(this::contentOf).containsExactly("세 번째", "첫 번째");
+	}
+
+	@Test
 	void 게시글이_없으면_빈_목록을_반환한다() {
 		PostListResult result = postFinder.findPosts(new PostListRequest(null, 20, null));
 
@@ -298,8 +335,50 @@ class PostFinderTest {
 	}
 
 	@Test
+	void 삭제된_게시글을_조회하면_예외를_던진다() {
+		Post saved = saveDeletedPost(USER_ID);
+
+		assertThatThrownBy(() -> postFinder.findPost(saved.getId()))
+				.isInstanceOf(PostNotFoundException.class);
+	}
+
+	@Test
+	void 사용자가_작성한_게시글_하나를_id로_조회한다() {
+		Post saved = savePost(USER_ID, "본문");
+		flushAndClear();
+
+		Post found = postFinder.findPost(USER_ID, saved.getId());
+
+		assertThat(found.getId()).isEqualTo(saved.getId());
+		assertThat(found.getContent().value()).isEqualTo("본문");
+	}
+
+	@Test
+	void 다른_사용자의_게시글을_조회하면_예외를_던진다() {
+		Post saved = savePost(USER_ID, "본문");
+		flushAndClear();
+
+		assertThatThrownBy(() -> postFinder.findPost(USER_ID + 1, saved.getId()))
+				.isInstanceOf(PostNotFoundException.class);
+	}
+
+	@Test
+	void 조회할_내_게시글이_없으면_예외를_던진다() {
+		assertThatThrownBy(() -> postFinder.findPost(USER_ID, 999_999L))
+				.isInstanceOf(PostNotFoundException.class);
+	}
+
+	@Test
+	void 삭제된_내_게시글을_조회하면_예외를_던진다() {
+		Post saved = saveDeletedPost(USER_ID);
+
+		assertThatThrownBy(() -> postFinder.findPost(USER_ID, saved.getId()))
+				.isInstanceOf(PostNotFoundException.class);
+	}
+
+	@Test
 	void 게시글_하나를_작성자_멘션_미디어와_함께_조회한다() {
-		User author = saveUserWithProfile("멍멍이집사", "https://cdn.example.com/profile.png");
+		User author = saveAuthorWithDogs();
 		Lesson lesson = saveLesson("기본 교육");
 		Post saved = postRepository.save(Post.register(author.getId(), new PostRegisterCommand("본문",
 				new MentionCommand(MentionTargetType.LESSON, lesson.getId()), List.of(
@@ -311,7 +390,7 @@ class PostFinderTest {
 
 		assertThat(contentOf(result)).isEqualTo("본문");
 		assertThat(result.author()).isEqualTo(
-				new UserProfileSummaryResult(author.getId(), "멍멍이집사", "https://cdn.example.com/profile.png"));
+				new AuthorResult(author.getId(), "보리", SELECTED_DOG_IMAGE_URL));
 		assertThat(result.mentionTarget()).isEqualTo(
 				new MentionTargetResult(MentionTargetType.LESSON, lesson.getId(), "기본 교육 레슨"));
 		assertThat(result.post().getMedia())
@@ -338,6 +417,14 @@ class PostFinderTest {
 				.isInstanceOf(PostNotFoundException.class);
 	}
 
+	@Test
+	void 단건_조회할_게시글이_삭제됐으면_예외를_던진다() {
+		Post saved = saveDeletedPost(USER_ID);
+
+		assertThatThrownBy(() -> postFinder.findPostDetail(saved.getId()))
+				.isInstanceOf(PostNotFoundException.class);
+	}
+
 	private String contentOf(PostResult result) {
 		PostContent content = result.post().getContent();
 		return content.value();
@@ -347,6 +434,13 @@ class PostFinderTest {
 		return IntStream.rangeClosed(1, count)
 				.mapToObj(index -> savePost(USER_ID, "글 " + index))
 				.toList();
+	}
+
+	private Post saveDeletedPost(Long userId) {
+		Post post = savePost(userId, "본문");
+		post.delete();
+		flushAndClear();
+		return post;
 	}
 
 	private Post savePost(Long userId, String content) {
@@ -360,6 +454,24 @@ class PostFinderTest {
 	private Post savePost(Long userId, String content, Long lessonId) {
 		MentionCommand mention = new MentionCommand(MentionTargetType.LESSON, lessonId);
 		return postRepository.save(Post.register(userId, new PostRegisterCommand(content, mention, List.of())));
+	}
+
+	private User saveAuthorWithDogs() {
+		User author = saveUserWithProfile("멍멍이집사", "https://cdn.example.com/profile.png");
+		saveDog(author.getId(), "초코", UNSELECTED_DOG_IMAGE_URL);
+		Dog selected = newDog(author.getId(), "보리", SELECTED_DOG_IMAGE_URL);
+		selected.select();
+		dogRepository.save(selected);
+		return author;
+	}
+
+	private Dog saveDog(Long userId, String name, String profileImageUrl) {
+		return dogRepository.save(newDog(userId, name, profileImageUrl));
+	}
+
+	private Dog newDog(Long userId, String name, String profileImageUrl) {
+		return Dog.register(new DogRegisterCommand(userId, name, Breed.of(RegisteredBreed.POODLE), DogSex.MALE,
+				LocalDate.of(2024, 3, 1), new BigDecimal("4.50"), profileImageUrl, ""));
 	}
 
 	private User saveUserWithProfile(String nickname, String profileImageUrl) {
