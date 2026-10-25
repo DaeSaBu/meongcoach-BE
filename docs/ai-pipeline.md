@@ -40,9 +40,9 @@ VideoUploadSqsConsumer                      (ai/adapter/consumer)
 
 ## EvoLink 연동
 
-- `shared/integration/evolink`의 `EvoLinkChatClient`가 인증, HTTP 전송, 타임아웃과 공통 응답 검증을 담당합니다. 요청과 응답의 전송 DTO도 같은 패키지 아래에 둡니다.
+- `ai/adapter/integration` 내부의 `EvoLinkChatClient`가 인증, HTTP 전송, 타임아웃과 공통 응답 검증을 담당합니다. 요청과 응답의 전송 DTO도 같은 패키지 아래에 둡니다.
 - `ai/adapter/integration`의 영상 분석과 제목 생성 어댑터는 프롬프트 구성, 응답 내용 해석, 업무 예외 변환을 담당합니다.
-- 연결 설정인 `baseUrl`, `apiKey`, `responseTimeout`은 공통 `EvoLinkConnectionProperties`가 읽습니다. 모델 설정인 `model`, `maxTokens`, `temperature`, `thinking`, `videoFps`는 기존 `EvoLinkProperties`가 읽습니다. 두 설정 모두 기존 `meongcoach.ai.evolink` 키를 사용합니다.
+- 연결 설정인 `baseUrl`, `apiKey`, `responseTimeout`은 AI 모듈 내부의 `EvoLinkConnectionProperties`가 읽습니다. 모델 설정인 `model`, `maxTokens`, `temperature`, `thinking`, `videoFps`는 기존 `EvoLinkProperties`가 읽습니다. 두 설정 모두 기존 `meongcoach.ai.evolink` 키를 사용합니다.
 
 - OpenAI 호환 chat API를 씁니다.
 - **엔드포인트는 `direct.evolink.ai`입니다.** `api.evolink.ai`는 Cloudflare 뒤에 있어 응답 첫 바이트가 100초를 넘으면 `524`로 끊깁니다. 스트리밍 없이 완성 응답을 기다리는 영상 분석이 여기에 걸려 `FAILED_ANALYSIS`가 됩니다. 문서의 "멀티모달은 api" 안내는 비동기 생성 작업 기준이고, 영상 입력 chat 호출은 direct에서도 동작합니다.
