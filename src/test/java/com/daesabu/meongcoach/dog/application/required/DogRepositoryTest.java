@@ -33,6 +33,19 @@ class DogRepositoryTest {
 	private TestEntityManager entityManager;
 
 	@Test
+	void 몸무게가_null이면_미입력_상태로_저장한다() {
+		Dog dog = Dog.register(new DogRegisterCommand(
+				USER_ID, "초코", Breed.of(RegisteredBreed.POODLE), DogSex.MALE,
+				LocalDate.of(2024, 3, 1), null, IMAGE_URL, null));
+
+		Long dogId = dogRepository.saveAndFlush(dog).getId();
+		entityManager.clear();
+
+		Dog savedDog = dogRepository.findById(dogId).orElseThrow();
+		assertThat(savedDog.getWeightKg()).isNull();
+	}
+
+	@Test
 	void 사용자의_선택된_강아지를_조회한다() {
 		persistUnselectedDog(USER_ID);
 		Dog selected = persistSelectedDog(USER_ID);

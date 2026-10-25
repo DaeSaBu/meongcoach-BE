@@ -107,6 +107,81 @@ class PostTest {
 				.isInstanceOf(UnsupportedOperationException.class);
 	}
 
+	@Test
+	void 수정하면_본문과_멘션과_미디어가_교체된다() {
+		Post post = Post.register(USER_ID, new PostRegisterCommand(CONTENT, null, images(2)));
+		MentionCommand mention = new MentionCommand(MentionTargetType.LESSON, 10L);
+
+		post.update(new PostUpdateCommand("수정한 본문", mention, videos(1)));
+
+		assertThat(post.getContent()).isEqualTo(new PostContent("수정한 본문"));
+		assertThat(post.getMention().getTargetType()).isEqualTo(MentionTargetType.LESSON);
+		assertThat(post.getMention().getTargetId()).isEqualTo(10L);
+		assertThat(post.getMedia())
+				.extracting(PostMedia::getType, PostMedia::getUrl, PostMedia::getSortOrder)
+				.containsExactly(tuple(PostMediaType.VIDEO, VIDEO_URL, 0));
+	}
+
+	@Test
+	void 멘션_없이_수정하면_멘션이_제거된다() {
+		MentionCommand mention = new MentionCommand(MentionTargetType.LESSON, 10L);
+		Post post = Post.register(USER_ID, new PostRegisterCommand(CONTENT, mention, List.of()));
+
+		post.update(new PostUpdateCommand(CONTENT, null, List.of()));
+
+		assertThat(post.getMention()).isNull();
+	}
+
+	@Test
+	void 미디어_없이_수정하면_미디어가_비어_있다() {
+		Post post = Post.register(USER_ID, new PostRegisterCommand(CONTENT, null, images(2)));
+
+		post.update(new PostUpdateCommand(CONTENT, null, null));
+
+		assertThat(post.getMedia()).isEmpty();
+	}
+
+	@Test
+	void 수정한_미디어는_보낸_순서대로_순서가_다시_매겨진다() {
+		Post post = Post.register(USER_ID, new PostRegisterCommand(CONTENT, null, images(2)));
+		List<PostMediaCommand> media = List.of(
+				new PostMediaCommand(PostMediaType.VIDEO, VIDEO_URL),
+				new PostMediaCommand(PostMediaType.IMAGE, IMAGE_URL));
+
+		post.update(new PostUpdateCommand(CONTENT, null, media));
+
+		assertThat(post.getMedia())
+				.extracting(PostMedia::getType, PostMedia::getSortOrder)
+				.containsExactly(
+						tuple(PostMediaType.VIDEO, 0),
+						tuple(PostMediaType.IMAGE, 1));
+	}
+
+	@Test
+	void 본문이_비어_있으면_수정할_수_없다() {
+		Post post = Post.register(USER_ID, new PostRegisterCommand(CONTENT, null, List.of()));
+
+		assertThatThrownBy(() -> post.update(new PostUpdateCommand(" ", null, List.of())))
+				.isInstanceOf(InvalidPostContentException.class);
+	}
+
+	@Test
+	void 미디어_개수_상한을_넘으면_수정할_수_없다() {
+		Post post = Post.register(USER_ID, new PostRegisterCommand(CONTENT, null, List.of()));
+
+		assertThatThrownBy(() -> post.update(new PostUpdateCommand(CONTENT, null, images(4))))
+				.isInstanceOf(PostMediaCountExceededException.class);
+	}
+
+	@Test
+	void 삭제하면_삭제_시각이_기록된다() {
+		Post post = Post.register(USER_ID, new PostRegisterCommand(CONTENT, null, List.of()));
+
+		post.delete();
+
+		assertThat(post.getDeletedAt()).isNotNull();
+	}
+
 	private List<PostMediaCommand> images(int count) {
 		return Collections.nCopies(count, new PostMediaCommand(PostMediaType.IMAGE, IMAGE_URL));
 	}

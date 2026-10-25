@@ -17,7 +17,6 @@ import com.daesabu.meongcoach.user.domain.User;
 import com.daesabu.meongcoach.user.domain.UserProfile;
 import com.daesabu.meongcoach.user.domain.UserRole;
 import com.daesabu.meongcoach.user.domain.exception.AlreadyOnboardedException;
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
@@ -29,8 +28,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 class OnboardingCompleterTest {
 
 	private static final String STORAGE_BASE_URL = "https://images.test.meongcoach.com/";
-	private static final long PRIOR_TRAINING_TOPIC_ID = 1L;
-	private static final long TRAINING_GOAL_TOPIC_ID = 2L;
 
 	@Autowired
 	private UserRepository userRepository;
@@ -49,47 +46,39 @@ class OnboardingCompleterTest {
 	}
 
 	private OnboardingCompleteInfo completeInfo() {
-		return completeInfo(null, null);
+		return completeInfo(null);
 	}
 
-	private OnboardingCompleteInfo completeInfo(String userImageUrl, String dogImageUrl) {
+	private OnboardingCompleteInfo completeInfo(String dogImageUrl) {
 		return new OnboardingCompleteInfo(
 				"멍멍이집사",
-				"INTJ",
-				userImageUrl,
-				Set.of(PRIOR_TRAINING_TOPIC_ID),
-				Set.of(TRAINING_GOAL_TOPIC_ID),
 				List.of(
 						new DogRegisterInfo("초코", "POODLE", "MALE", LocalDate.of(2024, 3, 1),
-								new BigDecimal("4.50"), Set.of("TIMID"), dogImageUrl,
-								"산책할 때 보호자에게 집중하면 좋겠어요."),
-						new DogRegisterInfo("보리", "MALTESE", "FEMALE", null,
-								new BigDecimal("3.20"), Set.of(), null, null)));
+								null, Set.of("TIMID"), dogImageUrl, null)));
 	}
 
 	@Test
-	void 온보딩을_완료하면_프로필과_강아지들이_함께_생성된다() {
+	void 온보딩을_완료하면_프로필과_강아지_한_마리가_함께_생성된다() {
 		List<Long> dogIds = onboardingCompleter.complete(userId, completeInfo());
 
 		UserProfile profile = userRepository.findById(userId).orElseThrow().getProfile();
 		assertThat(profile.getNickname()).isEqualTo("멍멍이집사");
-		assertThat(dogIds).hasSize(2).doesNotContainNull();
+		assertThat(dogIds).hasSize(1).doesNotContainNull();
+
 		List<Dog> dogs = dogRepository.findAllById(dogIds);
-		assertThat(dogs).extracting(Dog::getUserId).containsOnly(userId);
-		assertThat(dogs).extracting(Dog::getName).containsExactlyInAnyOrder("초코", "보리");
+		assertThat(dogs).extracting(Dog::getUserId).containsExactly(userId);
+		assertThat(dogs).extracting(Dog::getName).containsExactly("초코");
 		assertThat(dogs).extracting(Dog::getBreed)
-				.containsExactlyInAnyOrder(Breed.of(RegisteredBreed.POODLE), Breed.of(RegisteredBreed.MALTESE));
+				.containsExactly(Breed.of(RegisteredBreed.POODLE));
 	}
 
 	@Test
-	void 여러_마리를_등록하면_첫_번째_강아지만_선택_상태가_된다() {
+	void 온보딩에서_등록한_강아지는_선택_상태가_된다() {
 		List<Long> dogIds = onboardingCompleter.complete(userId, completeInfo());
 
-		List<Dog> dogs = dogRepository.findAllById(dogIds);
-
-		assertThat(dogs).filteredOn(dog -> dog.getStatus() == DogStatus.SELECTED)
-				.extracting(Dog::getName)
-				.containsExactly("초코");
+		assertThat(dogRepository.findAllById(dogIds))
+				.singleElement()
+				.satisfies(dog -> assertThat(dog.getStatus()).isEqualTo(DogStatus.SELECTED));
 	}
 
 	@Test
@@ -103,34 +92,35 @@ class OnboardingCompleterTest {
 	}
 
 	@Test
-	void 등록한_강아지에_기대_사항이_저장된다() {
+	void 온보딩에서_받지_않는_강아지_정보는_비워_저장한다() {
 		List<Long> dogIds = onboardingCompleter.complete(userId, completeInfo());
 
 		assertThat(dogRepository.findAllById(dogIds))
-				.filteredOn(dog -> dog.getName().equals("초코"))
 				.singleElement()
-				.satisfies(dog -> assertThat(dog.getExpectation())
-						.isEqualTo("산책할 때 보호자에게 집중하면 좋겠어요."));
+				.satisfies(dog -> {
+					assertThat(dog.getWeightKg()).isNull();
+					assertThat(dog.getExpectation()).isEmpty();
+				});
 	}
 
 	@Test
-	void 교육_이력과_목표가_저장된다() {
+	void 온보딩에서_받지_않는_보호자_정보는_비워_저장한다() {
 		onboardingCompleter.complete(userId, completeInfo());
 
 		UserProfile profile = userRepository.findById(userId).orElseThrow().getProfile();
-		assertThat(profile.getPriorTrainingTopicIds()).containsExactly(PRIOR_TRAINING_TOPIC_ID);
-		assertThat(profile.getTrainingGoalTopicIds()).containsExactly(TRAINING_GOAL_TOPIC_ID);
+
+		assertThat(profile.getMbti()).isNull();
+		assertThat(profile.getProfileImageUrl()).isEmpty();
+		assertThat(profile.getPriorTrainingTopicIds()).isEmpty();
+		assertThat(profile.getTrainingGoalTopicIds()).isEmpty();
 	}
 
 	@Test
-	void 사용자와_강아지_프로필_이미지_URL이_함께_저장된다() {
-		String userImageUrl = STORAGE_BASE_URL + "images/user-profile/" + userId + "/a.jpg";
+	void 강아지_프로필_이미지_URL이_저장된다() {
 		String dogImageUrl = STORAGE_BASE_URL + "images/dog-profile/" + userId + "/b.jpg";
 
-		List<Long> dogIds = onboardingCompleter.complete(userId, completeInfo(userImageUrl, dogImageUrl));
+		List<Long> dogIds = onboardingCompleter.complete(userId, completeInfo(dogImageUrl));
 
-		UserProfile profile = userRepository.findById(userId).orElseThrow().getProfile();
-		assertThat(profile.getProfileImageUrl()).isEqualTo(userImageUrl);
 		assertThat(dogRepository.findAllById(dogIds))
 				.filteredOn(dog -> dog.getName().equals("초코"))
 				.singleElement()
@@ -138,24 +128,9 @@ class OnboardingCompleterTest {
 	}
 
 	@Test
-	void 사용자_이미지가_우리_스토리지_URL이_아니면_실패한다() {
-		assertThatThrownBy(() -> onboardingCompleter.complete(userId,
-				completeInfo("https://evil.example.com/a.jpg", null)))
-				.isInstanceOf(InvalidMediaUrlException.class);
-	}
-
-	@Test
 	void 강아지_이미지가_우리_스토리지_URL이_아니면_실패한다() {
 		assertThatThrownBy(() -> onboardingCompleter.complete(userId,
-				completeInfo(null, "https://evil.example.com/b.jpg")))
-				.isInstanceOf(InvalidMediaUrlException.class);
-	}
-
-	@Test
-	void 사용자_이미지가_본인이_사용자_프로필_경로에_올린_URL이_아니면_실패한다() {
-		String otherUsersImageUrl = STORAGE_BASE_URL + "images/user-profile/" + (userId + 1) + "/a.jpg";
-
-		assertThatThrownBy(() -> onboardingCompleter.complete(userId, completeInfo(otherUsersImageUrl, null)))
+				completeInfo("https://evil.example.com/b.jpg")))
 				.isInstanceOf(InvalidMediaUrlException.class);
 	}
 
