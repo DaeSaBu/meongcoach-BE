@@ -28,6 +28,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -110,6 +111,13 @@ public class Plan extends BaseTimeEntity {
 	public void completeLesson(Long lessonId) {
 		state(status == PlanStatus.ACTIVE, "활성 플랜만 레슨을 완료할 수 있습니다.");
 		completedLessonIds.add(requireNonNull(lessonId));
+	}
+
+	public Optional<Long> findCurrentLessonId(List<Long> orderedLessonIds) {
+		state(!orderedLessonIds.isEmpty(), "플랜에는 레슨이 하나 이상 있어야 합니다.");
+		return orderedLessonIds.stream()
+				.filter(lessonId -> !completedLessonIds.contains(lessonId))
+				.findFirst();
 	}
 
 	public boolean hasCompletedAllLessons(List<Long> currentLessonIds) {
