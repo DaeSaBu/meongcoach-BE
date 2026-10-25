@@ -1,6 +1,7 @@
 package com.daesabu.meongcoach.dog.application;
 
 import com.daesabu.meongcoach.dog.application.provided.DogProfileFinder;
+import com.daesabu.meongcoach.dog.application.provided.dto.DogProfileResult;
 import com.daesabu.meongcoach.dog.application.provided.dto.DogSummaryResult;
 import com.daesabu.meongcoach.dog.application.required.DogRepository;
 import com.daesabu.meongcoach.dog.domain.Dog;
@@ -39,5 +40,11 @@ public class DogProfileFinderService implements DogProfileFinder {
 	public DogSummaryResult findSelectedDogSummary(Long userId) {
 		Dog dog = findSelectedDog(userId);
 		return DogSummaryResult.from(dog);
+	}
+
+	@Override
+	public DogProfileResult findSelectedDogProfile(Long userId) {
+		Dog dog = findSelectedDog(userId);
+		return DogProfileResult.from(dog);
 	}
 }
