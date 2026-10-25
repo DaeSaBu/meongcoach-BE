@@ -44,6 +44,14 @@ class UserProfileTest {
 	}
 
 	@Test
+	void MBTI가_null이면_미입력_상태로_생성된다() {
+		UserProfile profile = UserProfile.create(
+				new UserProfileCreateCommand("멍멍이집사", null, null, Set.of(), Set.of()));
+
+		assertThat(profile.getMbti()).isNull();
+	}
+
+	@Test
 	void 유효하지_않은_MBTI_문자열로는_생성할_수_없다() {
 		assertThatThrownBy(() -> UserProfile.create(
 				new UserProfileCreateCommand("멍멍이집사", null, "XXXX", Set.of(), Set.of())))

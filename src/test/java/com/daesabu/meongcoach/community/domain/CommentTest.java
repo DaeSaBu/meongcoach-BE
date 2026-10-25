@@ -37,4 +37,21 @@ class CommentTest {
 
 		assertThat(comment.getDeletedAt()).isNotNull();
 	}
+
+	@Test
+	void 수정하면_본문이_교체된다() {
+		Comment comment = Comment.register(post, USER_ID, "저희 강아지도 성공했어요!");
+
+		comment.update("수정한 댓글");
+
+		assertThat(comment.getContent()).isEqualTo(new CommentContent("수정한 댓글"));
+	}
+
+	@Test
+	void 본문이_비어_있으면_수정할_수_없다() {
+		Comment comment = Comment.register(post, USER_ID, "저희 강아지도 성공했어요!");
+
+		assertThatThrownBy(() -> comment.update("   "))
+				.isInstanceOf(InvalidCommentContentException.class);
+	}
 }

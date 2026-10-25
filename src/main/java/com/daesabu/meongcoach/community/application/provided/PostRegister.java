@@ -1,11 +1,12 @@
 package com.daesabu.meongcoach.community.application.provided;
 
 import com.daesabu.meongcoach.community.application.provided.dto.PostRegisterRequest;
+import com.daesabu.meongcoach.community.application.provided.dto.PostUpdateRequest;
 import com.daesabu.meongcoach.community.domain.Post;
 import jakarta.validation.Valid;
 
 /**
- * 게시글 등록 능력.
+ * 게시글 등록·수정·삭제 능력.
  */
 public interface PostRegister {
 
@@ -18,4 +19,16 @@ public interface PostRegister {
 	 * 미디어 URL이 사용자가 게시글 용도로 올린 해당 종류의 파일이 아니면 InvalidMediaUrlException을 던진다.
 	 */
 	Post register(Long userId, @Valid PostRegisterRequest request);
+
+	/**
+	 * 사용자가 작성한 게시글의 본문·멘션·미디어를 요청 값으로 전체 교체하고 수정된 게시글을 반환한다.
+	 * mention이 없으면 멘션을, media가 없으면 미디어를 모두 제거하며, 미디어는 받은 순서대로 저장한다.
+	 * 게시글이 없거나 삭제됐거나 본인이 작성한 게시글이 아니면 PostNotFoundException을 던지고, 그 밖의 예외는 register와 같다.
+	 */
+	Post update(Long userId, Long postId, @Valid PostUpdateRequest request);
+
+	/**
+	 * 사용자가 작성한 게시글을 삭제한다. 게시글이 없거나 이미 삭제됐거나 본인이 작성한 게시글이 아니면 PostNotFoundException을 던진다.
+	 */
+	void delete(Long userId, Long postId);
 }
