@@ -14,6 +14,9 @@ public enum PlanErrorCode implements ErrorCode {
 	PLAN_INVALID_CURRICULUM(400, "플랜의 커리큘럼 ID는 null일 수 없습니다."),
 	PLAN_CREATION_CONFLICT(409, "플랜이 변경되었습니다. 현재 플랜을 다시 확인해주세요."),
 	PLAN_AI_INVALID_RESPONSE(502, "AI가 유효한 플랜 구성을 생성하지 못했습니다."),
+	PLAN_NOT_COMPLETED(409, "완료된 플랜만 회고를 남길 수 있습니다."),
+	PLAN_OUTCOME_ALREADY_RECORDED(409, "이미 회고를 남긴 플랜입니다."),
+	PLAN_INVALID_OUTCOME(400, "회고 결과는 ACHIEVED, PARTIAL, NOT_YET 중 하나여야 합니다."),
 	;
 
 	private final int status;
