@@ -5,6 +5,7 @@ import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;
 import com.daesabu.meongcoach.training.application.provided.PlanCurriculumFinder;
 import com.daesabu.meongcoach.training.application.provided.dto.PlanCurriculumResult;
 import com.daesabu.meongcoach.training.application.provided.dto.PlanLessonResult;
+import com.daesabu.meongcoach.training.application.provided.dto.TopicResult;
 import com.daesabu.meongcoach.training.application.required.CurriculumRepository;
 import com.daesabu.meongcoach.training.domain.Curriculum;
 import com.daesabu.meongcoach.training.domain.exception.CurriculumNotFoundException;
@@ -47,6 +48,19 @@ public class PlanCurriculumQueryService implements PlanCurriculumFinder {
 		}
 		return orderedCurriculums.stream()
 				.flatMap(curriculum -> curriculum.getLessonIds().stream())
+				.toList();
+	}
+
+	@Override
+	public List<TopicResult> findTopics(List<Long> curriculumIds) {
+		if (curriculumIds.isEmpty()) {
+			return List.of();
+		}
+		List<Curriculum> orderedCurriculums = findOrderedCurriculums(curriculumIds);
+		return orderedCurriculums.stream()
+				.map(Curriculum::getTopic)
+				.map(TopicResult::from)
+				.distinct()
 				.toList();
 	}
 
