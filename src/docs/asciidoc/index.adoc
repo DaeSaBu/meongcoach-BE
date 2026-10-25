@@ -834,3 +834,27 @@ operation::plan/custom-create-error[snippets='http-response,response-fields']
 인증 정보가 없으면 401(`UNAUTHORIZED`)을 반환합니다.
 
 operation::plan/custom-create-conflict-error[snippets='http-response,response-fields']
+
+=== 현재 플랜 조회
+
+활성 플랜을 우선 반환하고, 없으면 완료 시각이 가장 최근인 플랜을 반환합니다.
+완료 시각이 같으면 ID가 큰 플랜을 반환하며, 교체된 플랜은 반환하지 않습니다.
+둘 다 없으면 `200 OK`와 `{"plan": null}`을 반환합니다.
+
+커리큘럼은 플랜에 저장한 순서로, 레슨은 교육 순서로 반환합니다.
+카드 하나는 커리큘럼 하나이며, 제목과 설명은 기존 훈련 콘텐츠를 사용합니다.
+진도는 로그인 사용자의 현재 레슨 완료 현황이며, `locked`는 이용권에 따른 표시용입니다.
+잠긴 커리큘럼도 목록에 포함하고 실제 레슨 접근 제한은 기존 API에서 검사합니다.
+이 조회는 플랜 상태를 변경하지 않습니다.
+
+link:{swagger-ui}#/Plan/plan-current[▶ Swagger에서 Try it out,window=swagger]
+
+operation::plan/current[snippets='http-request,http-response,response-fields']
+
+==== 플랜 없음
+
+operation::plan/current-empty[snippets='http-response,response-fields']
+
+==== 인증 실패
+
+operation::plan/current-error[snippets='http-response,response-fields']

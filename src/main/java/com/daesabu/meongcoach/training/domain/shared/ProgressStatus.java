@@ -1,4 +1,4 @@
-package com.daesabu.meongcoach.training.domain;
+package com.daesabu.meongcoach.training.domain.shared;
 
 public enum ProgressStatus {
 	NOT_STARTED,

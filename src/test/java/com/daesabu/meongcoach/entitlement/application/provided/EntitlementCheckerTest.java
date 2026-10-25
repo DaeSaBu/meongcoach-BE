@@ -26,6 +26,16 @@ class EntitlementCheckerTest {
 	@Autowired
 	private EntitlementRepository entitlementRepository;
 
+	@Test
+	void 유효한_본인_이용권_종류만_반환한다() {
+		grant(USER_ID, EntitlementType.PUPPY, null);
+		grant(USER_ID, EntitlementType.JUNIOR, Instant.now().minus(Duration.ofDays(1)));
+		grant(OTHER_USER_ID, EntitlementType.JUNIOR, null);
+
+		assertThat(entitlementChecker.findActiveTypes(USER_ID)).containsExactly(EntitlementType.PUPPY);
+		assertThat(entitlementChecker.findActiveTypes(99L)).isEmpty();
+	}
+
 	private void grant(Long userId, EntitlementType type, Instant expiresAt) {
 		entitlementRepository.save(EntitlementFixture.create(userId, type, expiresAt));
 	}
