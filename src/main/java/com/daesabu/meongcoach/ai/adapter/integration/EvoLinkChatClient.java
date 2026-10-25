@@ -18,11 +18,11 @@ class EvoLinkChatClient {
 	private static final String FINISH_REASON_CONTENT_FILTER = "content_filter";
 	private static final String FINISH_REASON_LENGTH = "length";
 
-	private final EvoLinkConnectionProperties properties;
+	private final EvoLinkProperties properties;
 	private final RestClient restClient;
 
 	@Autowired
-	EvoLinkChatClient(EvoLinkConnectionProperties properties, RestClient.Builder restClientBuilder) {
+	EvoLinkChatClient(EvoLinkProperties properties, RestClient.Builder restClientBuilder) {
 		this(properties, restClientBuilder
 				.requestFactory(ClientHttpRequestFactoryBuilder.detect()
 						.build(HttpClientSettings.defaults()
@@ -31,7 +31,7 @@ class EvoLinkChatClient {
 				.build());
 	}
 
-	EvoLinkChatClient(EvoLinkConnectionProperties properties, RestClient restClient) {
+	EvoLinkChatClient(EvoLinkProperties properties, RestClient restClient) {
 		this.properties = properties;
 		this.restClient = restClient;
 	}

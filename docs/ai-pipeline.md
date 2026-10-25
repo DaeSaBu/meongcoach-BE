@@ -44,7 +44,7 @@ VideoUploadSqsConsumer                      (ai/adapter/consumer)
 - JSON 문법이 잘못되거나 객체가 아닌 스키마는 외부 호출 전에 거절합니다. 통신 오류, 빈 응답, 콘텐츠 차단, 출력 잘림은 원인을 보존한 `AiContentGenerationFailedException`으로 변환하며 오류 코드는 `AI_CONTENT_GENERATION_FAILED`(502)입니다. 로컬 스키마 오류는 내부 오류(500)로 처리합니다.
 - `ai/adapter/integration` 내부의 `EvoLinkChatClient`가 인증, HTTP 전송, 타임아웃과 공통 응답 검증을 담당합니다. 요청과 응답의 전송 DTO도 같은 패키지 아래에 둡니다.
 - `ai/adapter/integration`의 영상 분석과 제목 생성 어댑터는 프롬프트 구성, 응답 내용 해석, 업무 예외 변환을 담당합니다.
-- 연결 설정인 `baseUrl`, `apiKey`, `responseTimeout`은 AI 모듈 내부의 `EvoLinkConnectionProperties`가 읽습니다. 모델 설정인 `model`, `maxTokens`, `temperature`, `thinking`, `videoFps`는 기존 `EvoLinkProperties`가 읽습니다. 두 설정 모두 기존 `meongcoach.ai.evolink` 키를 사용합니다.
+- 연결 설정(`baseUrl`, `apiKey`, `responseTimeout`)과 모델 설정(`model`, `maxTokens`, `temperature`, `thinking`, `videoFps`)은 AI 모듈 내부의 `EvoLinkProperties`가 함께 읽습니다. 기존 `meongcoach.ai.evolink` 설정 키는 유지합니다.
 
 - OpenAI 호환 chat API를 씁니다.
 - **엔드포인트는 `direct.evolink.ai`입니다.** `api.evolink.ai`는 Cloudflare 뒤에 있어 응답 첫 바이트가 100초를 넘으면 `524`로 끊깁니다. 스트리밍 없이 완성 응답을 기다리는 영상 분석이 여기에 걸려 `FAILED_ANALYSIS`가 됩니다. 문서의 "멀티모달은 api" 안내는 비동기 생성 작업 기준이고, 영상 입력 chat 호출은 direct에서도 동작합니다.

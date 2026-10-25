@@ -40,10 +40,9 @@ class EvoLinkReportTitleGeneratorTest {
 	void setUp() {
 		RestClient.Builder builder = RestClient.builder();
 		server = MockRestServiceServer.bindTo(builder).build();
-		EvoLinkConnectionProperties connectionProperties = new EvoLinkConnectionProperties(
-				BASE_URL, "test-evolink-api-key", Duration.ofMinutes(5));
-		EvoLinkProperties properties = new EvoLinkProperties(MODEL, 4096, 0.0, "disabled", 1.0);
-		generator = new EvoLinkReportTitleGenerator(new EvoLinkChatClient(connectionProperties, builder.build()),
+		EvoLinkProperties properties = new EvoLinkProperties(
+				BASE_URL, "test-evolink-api-key", Duration.ofMinutes(5), MODEL, 4096, 0.0, "disabled", 1.0);
+		generator = new EvoLinkReportTitleGenerator(new EvoLinkChatClient(properties, builder.build()),
 				properties, new ObjectMapper());
 	}
 
