@@ -2,12 +2,15 @@ package com.daesabu.meongcoach.plan.adapter.webapi;
 
 import com.daesabu.meongcoach.plan.adapter.webapi.dto.CurrentPlanResponse;
 import com.daesabu.meongcoach.plan.adapter.webapi.dto.PlanCreateResponse;
+import com.daesabu.meongcoach.plan.adapter.webapi.dto.PlanOutcomeResponse;
 import com.daesabu.meongcoach.plan.application.provided.CurrentPlanFinder;
 import com.daesabu.meongcoach.plan.application.provided.PlanLessonCompleter;
 import com.daesabu.meongcoach.plan.application.provided.PlanRegister;
 import com.daesabu.meongcoach.plan.application.provided.dto.AiPlanCreateRequest;
 import com.daesabu.meongcoach.plan.application.provided.dto.CurrentPlanResult;
 import com.daesabu.meongcoach.plan.application.provided.dto.CustomPlanCreateRequest;
+import com.daesabu.meongcoach.plan.application.provided.dto.PlanOutcomeRecordRequest;
+import com.daesabu.meongcoach.plan.application.provided.dto.PlanOutcomeResult;
 import com.daesabu.meongcoach.plan.domain.Plan;
 import com.daesabu.meongcoach.shared.security.CurrentUserId;
 import jakarta.validation.Valid;
@@ -35,6 +38,13 @@ public class PlanController {
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public void completeLesson(@CurrentUserId Long userId, @PathVariable Long planId, @PathVariable Long lessonId) {
 		planLessonCompleter.complete(userId, planId, lessonId);
+	}
+
+	@PostMapping("/{planId}/outcome")
+	public PlanOutcomeResponse recordOutcome(@CurrentUserId Long userId, @PathVariable Long planId,
+			@Valid @RequestBody PlanOutcomeRecordRequest request) {
+		PlanOutcomeResult result = planRegister.recordOutcome(userId, planId, request);
+		return PlanOutcomeResponse.from(result);
 	}
 
 	@GetMapping("/current")
