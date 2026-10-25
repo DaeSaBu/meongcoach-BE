@@ -79,6 +79,9 @@ public class Plan extends BaseTimeEntity {
 	@OrderColumn(name = "sort_order", nullable = false)
 	private List<Long> curriculumIds = new ArrayList<>();
 
+	@Column(name = "completed_lesson_ids", nullable = false, columnDefinition = "bigint[]")
+	private Set<Long> completedLessonIds = new HashSet<>();
+
 	public static Plan create(PlanCreateCommand command, List<Long> curriculumIds) {
 		validateDailyMinutes(command.dailyMinutes());
 		validateDaysPerWeek(command.daysPerWeek());
@@ -98,6 +101,10 @@ public class Plan extends BaseTimeEntity {
 
 	public List<Long> getCurriculumIds() {
 		return Collections.unmodifiableList(curriculumIds);
+	}
+
+	public Set<Long> getCompletedLessonIds() {
+		return Collections.unmodifiableSet(completedLessonIds);
 	}
 
 	public void complete(LocalDateTime completedAt) {
