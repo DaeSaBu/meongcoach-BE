@@ -107,6 +107,11 @@ public class Plan extends BaseTimeEntity {
 		return Collections.unmodifiableSet(completedLessonIds);
 	}
 
+	public void completeLesson(Long lessonId) {
+		state(status == PlanStatus.ACTIVE, "활성 플랜만 레슨을 완료할 수 있습니다.");
+		completedLessonIds.add(requireNonNull(lessonId));
+	}
+
 	public void complete(LocalDateTime completedAt) {
 		state(status == PlanStatus.ACTIVE, "활성 플랜만 완료할 수 있습니다.");
 		this.completedAt = requireNonNull(completedAt);
