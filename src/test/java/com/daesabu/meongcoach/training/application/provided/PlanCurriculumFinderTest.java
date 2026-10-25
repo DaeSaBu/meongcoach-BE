@@ -98,11 +98,14 @@ class PlanCurriculumFinderTest {
 	@Test
 	void 빈_목록이면_빈_결과를_반환한다() {
 		assertThat(finder.find(USER_ID, List.of())).isEmpty();
+		assertThat(finder.findLessonIds(List.of())).isEmpty();
 	}
 
 	@Test
 	void 존재하지_않는_커리큘럼은_거절한다() {
 		assertThatThrownBy(() -> finder.find(USER_ID, List.of(Long.MAX_VALUE)))
+				.isInstanceOf(CurriculumNotFoundException.class);
+		assertThatThrownBy(() -> finder.findLessonIds(List.of(Long.MAX_VALUE)))
 				.isInstanceOf(CurriculumNotFoundException.class);
 	}
 
@@ -113,6 +116,38 @@ class PlanCurriculumFinderTest {
 		flushAndClear();
 
 		assertThatThrownBy(() -> finder.find(USER_ID, List.of(curriculum.getId())))
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessage("커리큘럼에는 레슨이 하나 이상 있어야 합니다.");
+	}
+
+	@Test
+	void 이용권과_학습_기록에_관계없이_커리큘럼과_레슨_순서대로_ID를_반환한다() {
+		TrainingCategory category = categoryRepository.save(
+				TrainingCategoryFixture.create("유료", 1, null, null, EntitlementType.PUPPY));
+		Topic topic = saveTopic(category, 1);
+		Curriculum first = saveCurriculum(topic, 1, true);
+		Lesson firstLesson = saveLesson(first);
+		Curriculum second = saveCurriculum(topic, 2, true);
+		Lesson later = lessonRepository.save(LessonFixture.create(second, "두 번째", 2, 5));
+		Lesson earlier = lessonRepository.save(LessonFixture.create(second, "첫 번째", 1, 5));
+		Lesson sameOrder = lessonRepository.save(LessonFixture.create(second, "같은 순서", 1, 5));
+		complete(USER_ID, earlier);
+		flushAndClear();
+
+		List<Long> lessonIds = finder.findLessonIds(List.of(second.getId(), first.getId()));
+
+		assertThat(lessonIds).containsExactly(earlier.getId(), sameOrder.getId(), later.getId(), firstLesson.getId());
+	}
+
+	@Test
+	void 레슨_ID_조회에서_뒤의_커리큘럼에_레슨이_없어도_거절한다() {
+		Topic topic = saveTopic(saveCategory(1), 1);
+		Curriculum first = saveCurriculum(topic, 1, false);
+		saveLesson(first);
+		Curriculum empty = saveCurriculum(topic, 2, false);
+		flushAndClear();
+
+		assertThatThrownBy(() -> finder.findLessonIds(List.of(first.getId(), empty.getId())))
 				.isInstanceOf(IllegalStateException.class)
 				.hasMessage("커리큘럼에는 레슨이 하나 이상 있어야 합니다.");
 	}
