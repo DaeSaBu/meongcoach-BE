@@ -8,7 +8,7 @@ import com.daesabu.meongcoach.plan.domain.exception.EmptyPlanCurriculumsExceptio
 import com.daesabu.meongcoach.plan.domain.exception.InvalidDailyMinutesException;
 import com.daesabu.meongcoach.plan.domain.exception.InvalidDaysPerWeekException;
 import com.daesabu.meongcoach.plan.domain.exception.InvalidPlanCurriculumException;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -22,7 +22,7 @@ class PlanTest {
 	@Test
 	void 활성_플랜을_완료하면_완료_상태와_시각을_저장한다() {
 		Plan plan = createPlan();
-		LocalDateTime completedAt = LocalDateTime.of(2026, 10, 23, 12, 0);
+		Instant completedAt = Instant.parse("2026-10-23T12:00:00Z");
 
 		plan.complete(completedAt);
 
@@ -43,10 +43,10 @@ class PlanTest {
 	@Test
 	void 완료된_플랜은_다시_완료하거나_교체할_수_없다() {
 		Plan plan = createPlan();
-		LocalDateTime completedAt = LocalDateTime.of(2026, 10, 23, 12, 0);
+		Instant completedAt = Instant.parse("2026-10-23T12:00:00Z");
 		plan.complete(completedAt);
 
-		assertThatThrownBy(() -> plan.complete(completedAt.plusDays(1)))
+		assertThatThrownBy(() -> plan.complete(completedAt.plusSeconds(86400)))
 				.isInstanceOf(IllegalStateException.class);
 		assertThatThrownBy(plan::replace).isInstanceOf(IllegalStateException.class);
 		assertThat(plan.getStatus()).isEqualTo(PlanStatus.COMPLETED);
@@ -57,7 +57,7 @@ class PlanTest {
 	void 교체된_플랜은_완료하거나_다시_교체할_수_없다() {
 		Plan plan = createPlan();
 		plan.replace();
-		LocalDateTime completedAt = LocalDateTime.of(2026, 10, 23, 12, 0);
+		Instant completedAt = Instant.parse("2026-10-23T12:00:00Z");
 
 		assertThatThrownBy(() -> plan.complete(completedAt)).isInstanceOf(IllegalStateException.class);
 		assertThatThrownBy(plan::replace).isInstanceOf(IllegalStateException.class);
@@ -90,7 +90,7 @@ class PlanTest {
 	void 완료된_플랜에는_완료_레슨을_추가할_수_없다() {
 		Plan plan = createPlan();
 		plan.completeLesson(101L);
-		plan.complete(LocalDateTime.of(2026, 10, 25, 12, 0));
+		plan.complete(Instant.parse("2026-10-25T12:00:00Z"));
 
 		assertThatThrownBy(() -> plan.completeLesson(102L)).isInstanceOf(IllegalStateException.class);
 		assertThat(plan.getCompletedLessonIds()).containsExactly(101L);

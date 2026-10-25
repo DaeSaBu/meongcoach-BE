@@ -18,7 +18,7 @@ import com.daesabu.meongcoach.training.domain.TopicFixture;
 import com.daesabu.meongcoach.training.domain.TrainingCategory;
 import com.daesabu.meongcoach.training.domain.TrainingCategoryFixture;
 import jakarta.persistence.EntityManager;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,14 +45,14 @@ class PlanCompleterTest {
 		completeLesson(USER_ID, saveLesson(second));
 		Plan plan = savePlan(USER_ID, first, second);
 		flushAndClear();
-		LocalDateTime before = LocalDateTime.now().minusSeconds(1);
+		Instant before = Instant.now().minusSeconds(1);
 
 		completer.complete(USER_ID);
 		flushAndClear();
 
 		Plan completed = planRepository.findById(plan.getId()).orElseThrow();
 		assertThat(completed.getStatus()).isEqualTo(PlanStatus.COMPLETED);
-		assertThat(completed.getCompletedAt()).isBetween(before, LocalDateTime.now().plusSeconds(1));
+		assertThat(completed.getCompletedAt()).isBetween(before, Instant.now().plusSeconds(1));
 	}
 
 	@Test
@@ -106,7 +106,7 @@ class PlanCompleterTest {
 		flushAndClear();
 		completer.complete(USER_ID);
 		flushAndClear();
-		LocalDateTime completedAt = planRepository.findById(plan.getId()).orElseThrow().getCompletedAt();
+		Instant completedAt = planRepository.findById(plan.getId()).orElseThrow().getCompletedAt();
 
 		completer.complete(USER_ID);
 		flushAndClear();

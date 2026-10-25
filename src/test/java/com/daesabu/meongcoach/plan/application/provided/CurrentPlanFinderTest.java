@@ -18,7 +18,7 @@ import com.daesabu.meongcoach.training.domain.TrainingCategory;
 import com.daesabu.meongcoach.training.domain.TrainingCategoryFixture;
 import com.daesabu.meongcoach.training.domain.shared.ProgressStatus;
 import jakarta.persistence.EntityManager;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,7 +37,7 @@ class CurrentPlanFinderTest {
 	void 완료한_플랜보다_활성_플랜을_우선_반환한다() {
 		Long curriculumId = saveCurriculum();
 		Plan completed = savePlan(42L, curriculumId);
-		completed.complete(LocalDateTime.now());
+		completed.complete(Instant.now());
 		Plan active = savePlan(42L, curriculumId);
 		flushAndClear();
 
@@ -52,9 +52,9 @@ class CurrentPlanFinderTest {
 	void 생성_순서가_아닌_완료_시각이_가장_최근인_플랜을_반환한다() {
 		Long curriculumId = saveCurriculum();
 		Plan latest = savePlan(42L, curriculumId);
-		latest.complete(LocalDateTime.of(2026, 10, 23, 12, 0));
+		latest.complete(Instant.parse("2026-10-23T12:00:00Z"));
 		Plan older = savePlan(42L, curriculumId);
-		older.complete(LocalDateTime.of(2026, 10, 22, 12, 0));
+		older.complete(Instant.parse("2026-10-22T12:00:00Z"));
 		savePlan(42L, curriculumId).replace();
 		savePlan(43L, curriculumId);
 		flushAndClear();
@@ -65,7 +65,7 @@ class CurrentPlanFinderTest {
 	@Test
 	void 완료_시각이_같으면_ID가_큰_플랜을_반환한다() {
 		Long curriculumId = saveCurriculum();
-		LocalDateTime time = LocalDateTime.of(2026, 10, 23, 12, 0);
+		Instant time = Instant.parse("2026-10-23T12:00:00Z");
 		savePlan(42L, curriculumId).complete(time);
 		Plan latest = savePlan(42L, curriculumId);
 		latest.complete(time);

@@ -2,6 +2,7 @@ package com.daesabu.meongcoach.plan.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +14,21 @@ class PlanPersistenceTest {
 
 	@Autowired
 	private TestEntityManager entityManager;
+
+	@Test
+	void 완료_시각을_저장하고_같은_순간으로_조회한다() {
+		PlanCreateCommand command = new PlanCreateCommand(1L, 2L, "제목", "목표", 10, 3);
+		Plan plan = Plan.create(command, List.of(7L));
+		Instant completedAt = Instant.parse("2026-10-25T12:00:00.123456Z");
+		plan.complete(completedAt);
+		entityManager.persistAndFlush(plan);
+		Long planId = plan.getId();
+		entityManager.clear();
+
+		Plan found = entityManager.find(Plan.class, planId);
+
+		assertThat(found.getCompletedAt()).isEqualTo(completedAt);
+	}
 
 	@Test
 	void 플랜만_저장해도_커리큘럼_ID와_순서가_보존된다() {

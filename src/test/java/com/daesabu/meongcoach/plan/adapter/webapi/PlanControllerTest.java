@@ -25,6 +25,7 @@ import com.daesabu.meongcoach.plan.domain.exception.EmptyPlanCurriculumsExceptio
 import com.daesabu.meongcoach.plan.domain.exception.PlanCreationConflictException;
 import com.daesabu.meongcoach.training.domain.shared.ProgressStatus;
 import java.security.Principal;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -94,7 +95,7 @@ class PlanControllerTest {
 						fieldWithPath("plan.daysPerWeek").description("주당 훈련 일수"),
 						fieldWithPath("plan.status").description("ACTIVE 또는 COMPLETED"),
 						fieldWithPath("plan.createdAt").description("생성 시각"),
-						fieldWithPath("plan.completedAt").type(JsonFieldType.STRING).optional().description("완료 시각, 미완료 시 null"),
+						fieldWithPath("plan.completedAt").type(JsonFieldType.STRING).optional().description("완료 시각(UTC, ISO 8601), 미완료 시 null"),
 						fieldWithPath("plan.curriculums").description("플랜에 저장한 순서의 커리큘럼 목록, 배열 순번이 카드 번호"),
 						fieldWithPath("plan.curriculums[].curriculumId").description("커리큘럼 ID"),
 						fieldWithPath("plan.curriculums[].title").description("커리큘럼 제목"),
@@ -107,6 +108,18 @@ class PlanControllerTest {
 						fieldWithPath("plan.curriculums[].lessons[].lessonId").description("기존 레슨 상세 조회에 사용하는 ID"),
 						fieldWithPath("plan.curriculums[].lessons[].title").description("레슨 제목"),
 						fieldWithPath("plan.curriculums[].lessons[].completed").description("이 플랜에서의 레슨 완료 여부"))));
+	}
+
+	@Test
+	void 완료_시각을_UTC_문자열로_반환한다() throws Exception {
+		PlanCreateCommand command = new PlanCreateCommand(42L, 3L, "제목", "목표", 10, 3);
+		Plan plan = Plan.create(command, List.of(7L));
+		plan.complete(Instant.parse("2026-10-25T12:00:00Z"));
+		given(currentPlanFinder.find(42L)).willReturn(Optional.of(new CurrentPlanResult(plan, List.of())));
+
+		mockMvc.perform(get("/api/plans/current").principal(CURRENT_USER))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.plan.completedAt").value("2026-10-25T12:00:00Z"));
 	}
 
 	@Test
