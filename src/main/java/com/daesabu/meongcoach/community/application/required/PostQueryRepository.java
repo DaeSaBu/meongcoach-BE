@@ -9,7 +9,7 @@ import org.springframework.data.domain.Slice;
 public interface PostQueryRepository {
 
 	/**
-	 * 게시글을 ID 내림차순으로 size개까지 조회한다. cursor가 있으면 그보다 작은 ID의 게시글만,
+	 * 삭제되지 않은 게시글을 ID 내림차순으로 size개까지 조회한다. cursor가 있으면 그보다 작은 ID의 게시글만,
 	 * lessonId가 있으면 그 레슨을 멘션한 게시글만 조회한다.
 	 */
 	Slice<Post> findPosts(Long cursor, Long lessonId, int size);
