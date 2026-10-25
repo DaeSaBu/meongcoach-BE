@@ -315,7 +315,7 @@ class PlanTest {
 				"  외출 전에 차분히 기다렸으면 해요  ");
 		CustomPlanCreateCommand customCommand = new CustomPlanCreateCommand(1L, 2L, "초코", 10, 3);
 
-		Plan plan = Plan.createAi(command, List.of(7L, 4L));
+		Plan plan = Plan.createAiPlan(command, List.of(7L, 4L));
 		Plan customPlan = Plan.createCustom(customCommand, List.of(7L, 4L));
 
 		assertThat(plan.getUserId()).isEqualTo(1L);
@@ -337,13 +337,13 @@ class PlanTest {
 		AiPlanCreateCommand invalidDays = new AiPlanCreateCommand(1L, 2L, "초코", "목표", 10, 4, "기대사항");
 		AiPlanCreateCommand valid = new AiPlanCreateCommand(1L, 2L, "초코", "목표", 10, 3, "기대사항");
 
-		assertThatThrownBy(() -> Plan.createAi(invalidMinutes, List.of(7L)))
+		assertThatThrownBy(() -> Plan.createAiPlan(invalidMinutes, List.of(7L)))
 				.isInstanceOf(InvalidDailyMinutesException.class);
-		assertThatThrownBy(() -> Plan.createAi(invalidDays, List.of(7L)))
+		assertThatThrownBy(() -> Plan.createAiPlan(invalidDays, List.of(7L)))
 				.isInstanceOf(InvalidDaysPerWeekException.class);
-		assertThatThrownBy(() -> Plan.createAi(valid, List.of()))
+		assertThatThrownBy(() -> Plan.createAiPlan(valid, List.of()))
 				.isInstanceOf(EmptyPlanCurriculumsException.class);
-		assertThatThrownBy(() -> Plan.createAi(valid, List.of(7L, 7L)))
+		assertThatThrownBy(() -> Plan.createAiPlan(valid, List.of(7L, 7L)))
 				.isInstanceOf(DuplicatePlanCurriculumException.class);
 	}
 
@@ -351,7 +351,7 @@ class PlanTest {
 	void AI_플랜의_기대사항은_null일_수_없다() {
 		AiPlanCreateCommand command = new AiPlanCreateCommand(1L, 2L, "초코", "목표", 10, 3, null);
 
-		assertThatThrownBy(() -> Plan.createAi(command, List.of(7L))).isInstanceOf(NullPointerException.class);
+		assertThatThrownBy(() -> Plan.createAiPlan(command, List.of(7L))).isInstanceOf(NullPointerException.class);
 	}
 
 }

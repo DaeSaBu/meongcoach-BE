@@ -296,7 +296,7 @@ class PlanControllerTest {
 		AiPlanCreateRequest request = new AiPlanCreateRequest(10, 3, "차분히 기다렸으면 해요");
 		Plan plan = mock(Plan.class);
 		given(plan.getId()).willReturn(22L);
-		given(planRegister.createAi(42L, request)).willReturn(plan);
+		given(planRegister.createAiPlan(42L, request)).willReturn(plan);
 
 		mockMvc.perform(post("/api/plans/ai").principal(CURRENT_USER)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
@@ -309,13 +309,13 @@ class PlanControllerTest {
 						fieldWithPath("daysPerWeek").description("주당 훈련 일수, 3, 5, 7 중 하나"),
 						fieldWithPath("expectation").description("훈련 기대사항, 공백을 제외한 내용 필수, 최대 500자, 입력 그대로 저장")),
 						responseFields(fieldWithPath("planId").description("생성된 플랜 ID"))));
-		verify(planRegister).createAi(42L, request);
+		verify(planRegister).createAiPlan(42L, request);
 	}
 
 	@Test
 	void 잘못된_AI_결과이면_502를_반환한다() throws Exception {
 		AiPlanCreateRequest request = new AiPlanCreateRequest(10, 3, "기다리기");
-		given(planRegister.createAi(42L, request)).willThrow(new InvalidAiPlanResponseException());
+		given(planRegister.createAiPlan(42L, request)).willThrow(new InvalidAiPlanResponseException());
 
 		mockMvc.perform(post("/api/plans/ai").principal(CURRENT_USER)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")

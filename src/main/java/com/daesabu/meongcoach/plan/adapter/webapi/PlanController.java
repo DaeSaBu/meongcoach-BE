@@ -53,9 +53,9 @@ public class PlanController {
 
 	@PostMapping("/ai")
 	@ResponseStatus(HttpStatus.CREATED)
-	public PlanCreateResponse createAi(@CurrentUserId Long userId,
+	public PlanCreateResponse createAiPlan(@CurrentUserId Long userId,
 			@Valid @RequestBody AiPlanCreateRequest request) {
-		Plan plan = planRegister.createAi(userId, request);
+		Plan plan = planRegister.createAiPlan(userId, request);
 		return PlanCreateResponse.from(plan);
 	}
 }

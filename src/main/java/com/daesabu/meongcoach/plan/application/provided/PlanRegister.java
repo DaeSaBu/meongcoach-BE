@@ -16,5 +16,5 @@ public interface PlanRegister {
 	 * 선택된 강아지와 사용자 기대사항으로 AI 플랜을 생성하고, 성공하면 기존 활성 플랜을 교체한다.
 	 * 미완료 커리큘럼이 없으면 EmptyPlanCurriculumsException을 던진다.
 	 */
-	Plan createAi(Long userId, @Valid AiPlanCreateRequest request);
+	Plan createAiPlan(Long userId, @Valid AiPlanCreateRequest request);
 }

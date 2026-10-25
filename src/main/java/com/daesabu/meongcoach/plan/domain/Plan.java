@@ -113,7 +113,7 @@ public class Plan extends BaseTimeEntity {
 		return create(createCommand, curriculumIds);
 	}
 
-	public static Plan createAi(AiPlanCreateCommand command, List<Long> curriculumIds) {
+	public static Plan createAiPlan(AiPlanCreateCommand command, List<Long> curriculumIds) {
 		String title = requireNonNull(command.dogName()) + TITLE_SUFFIX;
 		PlanCreateCommand createCommand = new PlanCreateCommand(command.userId(), command.dogId(), title,
 				command.goal(), command.dailyMinutes(), command.daysPerWeek());

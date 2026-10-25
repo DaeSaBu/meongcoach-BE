@@ -133,7 +133,7 @@ class PlanRegisterAiTest {
 			return new AiPlanGenerateResult(List.of(topicId), "차분히 기다리는 습관을 길러요");
 		});
 
-		Plan created = register.createAi(USER_ID, REQUEST);
+		Plan created = register.createAiPlan(USER_ID, REQUEST);
 
 		assertThat(created.getTitle()).isEqualTo("초코의 2주 훈련 플랜");
 		assertThat(created.getCurriculumIds()).containsExactly(curriculumIds.get(1), curriculumIds.get(2));
@@ -150,7 +150,7 @@ class PlanRegisterAiTest {
 		InvalidAiPlanResponseException failure = new InvalidAiPlanResponseException();
 		given(generator.generate(any())).willThrow(failure);
 
-		assertThatThrownBy(() -> register.createAi(USER_ID, REQUEST)).isSameAs(failure);
+		assertThatThrownBy(() -> register.createAiPlan(USER_ID, REQUEST)).isSameAs(failure);
 
 		assertActivePlan(existing.getId());
 		assertThat(planRepository.count()).isEqualTo(1);
@@ -165,7 +165,7 @@ class PlanRegisterAiTest {
 			throw failure;
 		}).when(planRepository).saveAndFlush(any(Plan.class));
 
-		assertThatThrownBy(() -> register.createAi(USER_ID, REQUEST))
+		assertThatThrownBy(() -> register.createAiPlan(USER_ID, REQUEST))
 				.isInstanceOf(PlanCreationConflictException.class).hasCause(failure);
 
 		assertActivePlan(existing.getId());
@@ -176,7 +176,7 @@ class PlanRegisterAiTest {
 		Plan existing = saveExistingPlan();
 		new TransactionTemplate(transactionManager).executeWithoutResult(status -> completeLesson(lessonIds.get(1)));
 
-		assertThatThrownBy(() -> register.createAi(USER_ID, REQUEST)).isInstanceOf(EmptyPlanCurriculumsException.class);
+		assertThatThrownBy(() -> register.createAiPlan(USER_ID, REQUEST)).isInstanceOf(EmptyPlanCurriculumsException.class);
 
 		verifyNoInteractions(generator);
 		assertActivePlan(existing.getId());
@@ -190,20 +190,20 @@ class PlanRegisterAiTest {
 			return new AiPlanGenerateResult(List.of(topicId), "기다리기");
 		});
 
-		assertThatThrownBy(() -> register.createAi(USER_ID, REQUEST)).isInstanceOf(EmptyPlanCurriculumsException.class);
+		assertThatThrownBy(() -> register.createAiPlan(USER_ID, REQUEST)).isInstanceOf(EmptyPlanCurriculumsException.class);
 		assertActivePlan(existing.getId());
 	}
 
 	@Test
 	void 선택된_강아지가_없으면_AI를_호출하지_않는다() {
-		assertThatThrownBy(() -> register.createAi(USER_ID + 1, REQUEST)).isInstanceOf(DogNotFoundException.class);
+		assertThatThrownBy(() -> register.createAiPlan(USER_ID + 1, REQUEST)).isInstanceOf(DogNotFoundException.class);
 		verifyNoInteractions(generator);
 	}
 
 	@ParameterizedTest
 	@MethodSource("invalidRequests")
 	void 잘못된_요청은_AI_호출_전에_거절한다(AiPlanCreateRequest request) {
-		assertThatThrownBy(() -> register.createAi(USER_ID, request)).isInstanceOf(RuntimeException.class);
+		assertThatThrownBy(() -> register.createAiPlan(USER_ID, request)).isInstanceOf(RuntimeException.class);
 		verifyNoInteractions(generator);
 	}
 

@@ -49,7 +49,7 @@ public class PlanRegisterService implements PlanRegister {
 	}
 
 	@Override
-	public Plan createAi(Long userId, AiPlanCreateRequest request) {
+	public Plan createAiPlan(Long userId, AiPlanCreateRequest request) {
 		Plan.validatePracticeSettings(request.dailyMinutes(), request.daysPerWeek());
 		DogProfileResult dog = dogProfileFinder.findSelectedDogProfile(userId);
 		AiPlanPreparationResult candidates = aiPreparationFinder.find(userId);
@@ -66,7 +66,7 @@ public class PlanRegisterService implements PlanRegister {
 		PlanPreparationResult preparation = preparationFinder.find(userId, generated.topicIds());
 		AiPlanCreateCommand command = new AiPlanCreateCommand(userId, dog.id(), dog.name(), generated.goal(),
 				request.dailyMinutes(), request.daysPerWeek(), request.expectation());
-		Plan plan = Plan.createAi(command, preparation.curriculumIds());
+		Plan plan = Plan.createAiPlan(command, preparation.curriculumIds());
 		return planSaveService.save(plan);
 	}
 }

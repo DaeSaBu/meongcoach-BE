@@ -108,7 +108,7 @@ class PlanPersistenceTest {
 	void AI_플랜의_500자_기대사항을_저장하고_조회한다() {
 		String expectation = "가".repeat(500);
 		AiPlanCreateCommand command = new AiPlanCreateCommand(1L, 2L, "초코", "차분히 기다려요", 10, 3, expectation);
-		Plan plan = Plan.createAi(command, List.of(7L, 4L));
+		Plan plan = Plan.createAiPlan(command, List.of(7L, 4L));
 		entityManager.persistAndFlush(plan);
 		Long planId = plan.getId();
 		entityManager.clear();
