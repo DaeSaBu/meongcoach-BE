@@ -77,7 +77,7 @@ class CustomPlanPreparationFinderTest {
 	}
 
 	@Test
-	void 본인이_완료한_커리큘럼만_제외하고_일부_완료와_다른_사용자_완료는_포함한다() {
+	void 앞에서_완료한_커리큘럼은_제외하고_일부_완료와_다른_사용자_완료는_포함한다() {
 		Topic topic = saveTopic(saveCategory(1), 1);
 		Curriculum completed = saveCurriculum(topic, 1, false);
 		complete(USER_ID, saveLesson(completed));
@@ -91,6 +91,38 @@ class CustomPlanPreparationFinderTest {
 		CustomPlanPreparationResult result = finder.find(USER_ID, List.of(topic.getId()));
 
 		assertThat(result.curriculumIds()).containsExactly(partial.getId(), otherUser.getId());
+	}
+
+	@Test
+	void 첫_미완료부터_다음_토픽의_완료된_커리큘럼까지_모두_포함한다() {
+		TrainingCategory category = saveCategory(1);
+		Topic firstTopic = saveTopic(category, 1);
+		Curriculum completedBefore = saveCurriculum(firstTopic, 1, false);
+		complete(USER_ID, saveLesson(completedBefore));
+		Curriculum firstIncomplete = saveCurriculum(firstTopic, 2, false);
+		saveLesson(firstIncomplete);
+		Topic nextTopic = saveTopic(category, 2);
+		Curriculum completedAfter = saveCurriculum(nextTopic, 1, false);
+		complete(USER_ID, saveLesson(completedAfter));
+		Curriculum lastIncomplete = saveCurriculum(nextTopic, 2, false);
+		saveLesson(lastIncomplete);
+		flushAndClear();
+
+		CustomPlanPreparationResult result = finder.find(USER_ID, List.of(nextTopic.getId(), firstTopic.getId()));
+
+		assertThat(result.curriculumIds())
+				.containsExactly(firstIncomplete.getId(), completedAfter.getId(), lastIncomplete.getId());
+	}
+
+	@Test
+	void 첫_미완료_뒤의_커리큘럼에_레슨이_없으면_거절한다() {
+		Topic topic = saveTopic(saveCategory(1), 1);
+		saveLesson(saveCurriculum(topic, 1, false));
+		saveCurriculum(topic, 2, false);
+		flushAndClear();
+
+		assertThatThrownBy(() -> finder.find(USER_ID, List.of(topic.getId())))
+				.isInstanceOf(IllegalStateException.class);
 	}
 
 	@Test
