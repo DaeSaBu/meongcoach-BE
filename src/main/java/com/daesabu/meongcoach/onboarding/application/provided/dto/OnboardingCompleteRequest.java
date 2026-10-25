@@ -1,7 +1,6 @@
-package com.daesabu.meongcoach.onboarding.adapter.webapi.dto;
+package com.daesabu.meongcoach.onboarding.application.provided.dto;
 
 import com.daesabu.meongcoach.dog.application.provided.DogRegisterInfo;
-import com.daesabu.meongcoach.onboarding.application.provided.OnboardingCompleteInfo;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -13,14 +12,7 @@ import java.util.List;
 import java.util.Set;
 
 public record OnboardingCompleteRequest(
-		@NotBlank @Size(max = 12) String nickname,
 		@NotEmpty @Size(max = 1) List<@NotNull @Valid DogRequest> dogs) {
-
-	public OnboardingCompleteInfo toInfo() {
-		return new OnboardingCompleteInfo(
-				nickname,
-				dogs.stream().map(DogRequest::toInfo).toList());
-	}
 
 	public record DogRequest(
 			@NotBlank @Size(max = 12) String name,

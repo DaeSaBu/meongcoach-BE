@@ -42,19 +42,19 @@ class UserRegisterTest {
 	}
 
 	@Test
-	void 온보딩을_완료하면_닉네임으로_프로필을_생성한다() {
+	void 온보딩을_완료하면_빈_닉네임으로_기본_프로필을_생성한다() {
 		Long userId = saveOnboardingUser();
 
-		userRegister.completeOnboarding(userId, request());
+		userRegister.completeOnboarding(userId);
 
-		assertThat(findPersistedProfile(userId).getNickname()).isEqualTo("멍멍이집사");
+		assertThat(findPersistedProfile(userId).getNickname()).isEmpty();
 	}
 
 	@Test
 	void 온보딩을_완료하면_받지_않는_정보는_비워_저장한다() {
 		Long userId = saveOnboardingUser();
 
-		userRegister.completeOnboarding(userId, request());
+		userRegister.completeOnboarding(userId);
 
 		UserProfile profile = findPersistedProfile(userId);
 		assertThat(profile.getProfileImageUrl()).isEmpty();
@@ -67,7 +67,7 @@ class UserRegisterTest {
 	void 온보딩을_완료하면_정회원으로_승격된다() {
 		Long userId = saveOnboardingUser();
 
-		userRegister.completeOnboarding(userId, request());
+		userRegister.completeOnboarding(userId);
 		flushAndClear();
 
 		assertThat(userRepository.findById(userId).orElseThrow().getRole()).isEqualTo(UserRole.USER);
@@ -79,14 +79,13 @@ class UserRegisterTest {
 		promoted.completeOnboarding(new UserProfileCreateCommand("기존회원", null, VALID_MBTI, Set.of(), Set.of()));
 		Long promotedId = userRepository.save(promoted).getId();
 
-		assertThatThrownBy(() -> userRegister.completeOnboarding(promotedId, request()))
+		assertThatThrownBy(() -> userRegister.completeOnboarding(promotedId))
 				.isInstanceOf(AlreadyOnboardedException.class);
 	}
 
 	@Test
 	void 회원이_없으면_온보딩_완료에_실패한다() {
-		assertThatThrownBy(() -> userRegister.completeOnboarding(UNREGISTERED_USER_ID,
-				request()))
+		assertThatThrownBy(() -> userRegister.completeOnboarding(UNREGISTERED_USER_ID))
 				.isInstanceOf(UserNotFoundException.class);
 	}
 
@@ -134,10 +133,6 @@ class UserRegisterTest {
 
 	private Long saveOnboardingUser() {
 		return userRepository.save(User.registerUser()).getId();
-	}
-
-	private static UserProfileRegisterRequest request() {
-		return new UserProfileRegisterRequest("멍멍이집사");
 	}
 
 	private UserProfile findPersistedProfile(Long userId) {
