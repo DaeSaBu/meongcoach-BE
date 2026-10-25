@@ -7,7 +7,7 @@ import jakarta.persistence.Embeddable;
 @Embeddable
 public record PostContent(@Column(name = "content", nullable = false, columnDefinition = "TEXT") String value) {
 
-	public static final int MAX_LENGTH = 500;
+	public static final int MAX_LENGTH = 200;
 
 	public PostContent {
 		if (value == null || value.isBlank()) {
