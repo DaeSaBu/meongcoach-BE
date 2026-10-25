@@ -1,0 +1,12 @@
+{
+  "type": "object",
+  "properties": {
+    "topicIds": {
+      "type": "array",
+      "items": { "type": "integer" }
+    },
+    "goal": { "type": "string" }
+  },
+  "required": ["topicIds", "goal"],
+  "additionalProperties": false
+}
