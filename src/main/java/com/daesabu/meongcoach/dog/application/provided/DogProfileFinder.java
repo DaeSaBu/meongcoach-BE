@@ -1,5 +1,6 @@
 package com.daesabu.meongcoach.dog.application.provided;
 
+import com.daesabu.meongcoach.dog.application.provided.dto.DogProfileResult;
 import com.daesabu.meongcoach.dog.application.provided.dto.DogSummaryResult;
 import com.daesabu.meongcoach.dog.domain.Dog;
 import java.util.Collection;
@@ -31,6 +32,12 @@ public interface DogProfileFinder {
 	 * 선택된 강아지가 없으면 {@code DogNotFoundException}을 던진다.
 	 */
 	DogSummaryResult findSelectedDogSummary(Long userId);
+
+	/**
+	 * 사용자가 선택한 강아지의 ID, 이름, 품종, 생년월일, 몸무게를 조회한다.
+	 * 선택된 강아지가 없으면 {@code DogNotFoundException}을 던진다.
+	 */
+	DogProfileResult findSelectedDogProfile(Long userId);
 
 	/**
 	 * 사용자마다 선택된 강아지 하나의 이름과 프로필 이미지를 반환한다.
