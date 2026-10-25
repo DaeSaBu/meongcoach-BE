@@ -91,8 +91,7 @@ public class Plan extends BaseTimeEntity {
 	private Set<Long> completedLessonIds = new HashSet<>();
 
 	public static Plan create(PlanCreateCommand command, List<Long> curriculumIds) {
-		validateDailyMinutes(command.dailyMinutes());
-		validateDaysPerWeek(command.daysPerWeek());
+		validatePracticeSettings(command.dailyMinutes(), command.daysPerWeek());
 		validateCurriculumIds(curriculumIds);
 
 		Plan plan = new Plan();
@@ -158,6 +157,11 @@ public class Plan extends BaseTimeEntity {
 	public void replace() {
 		state(status == PlanStatus.ACTIVE, "활성 플랜만 교체할 수 있습니다.");
 		status = PlanStatus.REPLACED;
+	}
+
+	public static void validatePracticeSettings(int dailyMinutes, int daysPerWeek) {
+		validateDailyMinutes(dailyMinutes);
+		validateDaysPerWeek(daysPerWeek);
 	}
 
 	private static void validateDailyMinutes(int dailyMinutes) {
