@@ -42,12 +42,12 @@ public class TopicQueryService implements TopicFinder, TopicCompletionChecker, C
 		LessonProgresses progresses = findProgresses(userId, lessonIds);
 		List<AiPlanCurriculumResult> curriculums = topics.stream()
 				.flatMap(topic -> topic.getCurriculums().stream()
-						.map(curriculum -> toAiPlanCurriculumResult(topic.getTitle(), curriculum, progresses)))
+						.map(curriculum -> toAiPlanCurriculumResult(topic.getId(), topic.getTitle(), curriculum, progresses)))
 				.toList();
 		return new AiPlanPreparationResult(curriculums);
 	}
 
-	private AiPlanCurriculumResult toAiPlanCurriculumResult(String topicTitle, Curriculum curriculum,
+	private AiPlanCurriculumResult toAiPlanCurriculumResult(Long topicId, String topicTitle, Curriculum curriculum,
 			LessonProgresses progresses) {
 		CurriculumCompletion completion = curriculum.completion(progresses);
 		Long id = curriculum.getId();
@@ -58,7 +58,7 @@ public class TopicQueryService implements TopicFinder, TopicCompletionChecker, C
 		int estimatedMinutes = curriculum.getLessons().stream()
 				.mapToInt(Lesson::getEstimatedMinutes)
 				.sum();
-		return new AiPlanCurriculumResult(id, topicTitle, title, description,
+		return new AiPlanCurriculumResult(id, topicId, topicTitle, title, description,
 				totalLessons, completedLessons, estimatedMinutes);
 	}
 
