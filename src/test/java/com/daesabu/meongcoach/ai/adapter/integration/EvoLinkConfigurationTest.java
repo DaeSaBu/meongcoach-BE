@@ -2,8 +2,6 @@ package com.daesabu.meongcoach.ai.adapter.integration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.daesabu.meongcoach.shared.integration.evolink.EvoLinkChatClient;
-import com.daesabu.meongcoach.shared.integration.evolink.EvoLinkConnectionProperties;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;

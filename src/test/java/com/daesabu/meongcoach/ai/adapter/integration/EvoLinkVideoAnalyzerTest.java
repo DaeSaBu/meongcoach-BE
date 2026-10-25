@@ -17,8 +17,6 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 import com.daesabu.meongcoach.ai.domain.exception.VideoAnalysisFailedException;
-import com.daesabu.meongcoach.shared.integration.evolink.EvoLinkChatClient;
-import com.daesabu.meongcoach.shared.integration.evolink.EvoLinkConnectionProperties;
 import com.daesabu.meongcoach.training.application.provided.TopicFinder;
 import com.daesabu.meongcoach.training.application.provided.dto.TopicResult;
 import java.time.Duration;

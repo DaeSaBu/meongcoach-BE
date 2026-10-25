@@ -1,16 +1,14 @@
 package com.daesabu.meongcoach.ai.adapter.integration;
 
+import com.daesabu.meongcoach.ai.adapter.integration.dto.EvoLinkChatRequest;
+import com.daesabu.meongcoach.ai.adapter.integration.dto.EvoLinkChatRequest.ChatMessage;
+import com.daesabu.meongcoach.ai.adapter.integration.dto.EvoLinkChatRequest.ContentPart;
+import com.daesabu.meongcoach.ai.adapter.integration.dto.EvoLinkChatRequest.ResponseFormat;
+import com.daesabu.meongcoach.ai.adapter.integration.dto.EvoLinkChatRequest.Thinking;
 import com.daesabu.meongcoach.ai.application.provided.AiReportContent;
 import com.daesabu.meongcoach.ai.application.provided.AiReportContent.Recommend;
 import com.daesabu.meongcoach.ai.application.required.VideoAnalyzer;
 import com.daesabu.meongcoach.ai.domain.exception.VideoAnalysisFailedException;
-import com.daesabu.meongcoach.shared.integration.evolink.EvoLinkChatClient;
-import com.daesabu.meongcoach.shared.integration.evolink.EvoLinkResponseException;
-import com.daesabu.meongcoach.shared.integration.evolink.dto.EvoLinkChatRequest;
-import com.daesabu.meongcoach.shared.integration.evolink.dto.EvoLinkChatRequest.ChatMessage;
-import com.daesabu.meongcoach.shared.integration.evolink.dto.EvoLinkChatRequest.ContentPart;
-import com.daesabu.meongcoach.shared.integration.evolink.dto.EvoLinkChatRequest.ResponseFormat;
-import com.daesabu.meongcoach.shared.integration.evolink.dto.EvoLinkChatRequest.Thinking;
 import com.daesabu.meongcoach.training.application.provided.TopicFinder;
 import com.daesabu.meongcoach.training.application.provided.dto.TopicResult;
 import java.util.HashSet;

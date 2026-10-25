@@ -11,8 +11,6 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 import com.daesabu.meongcoach.ai.domain.exception.ReportTitleGenerationFailedException;
-import com.daesabu.meongcoach.shared.integration.evolink.EvoLinkChatClient;
-import com.daesabu.meongcoach.shared.integration.evolink.EvoLinkConnectionProperties;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;

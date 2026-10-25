@@ -1,13 +1,11 @@
 package com.daesabu.meongcoach.ai.adapter.integration;
 
+import com.daesabu.meongcoach.ai.adapter.integration.dto.EvoLinkChatRequest;
+import com.daesabu.meongcoach.ai.adapter.integration.dto.EvoLinkChatRequest.ChatMessage;
+import com.daesabu.meongcoach.ai.adapter.integration.dto.EvoLinkChatRequest.ResponseFormat;
+import com.daesabu.meongcoach.ai.adapter.integration.dto.EvoLinkChatRequest.Thinking;
 import com.daesabu.meongcoach.ai.application.required.ReportTitleGenerator;
 import com.daesabu.meongcoach.ai.domain.exception.ReportTitleGenerationFailedException;
-import com.daesabu.meongcoach.shared.integration.evolink.EvoLinkChatClient;
-import com.daesabu.meongcoach.shared.integration.evolink.EvoLinkResponseException;
-import com.daesabu.meongcoach.shared.integration.evolink.dto.EvoLinkChatRequest;
-import com.daesabu.meongcoach.shared.integration.evolink.dto.EvoLinkChatRequest.ChatMessage;
-import com.daesabu.meongcoach.shared.integration.evolink.dto.EvoLinkChatRequest.ResponseFormat;
-import com.daesabu.meongcoach.shared.integration.evolink.dto.EvoLinkChatRequest.Thinking;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.List;
 import java.util.Map;

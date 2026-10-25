@@ -1,4 +1,4 @@
-package com.daesabu.meongcoach.shared.integration.evolink;
+package com.daesabu.meongcoach.ai.adapter.integration;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
