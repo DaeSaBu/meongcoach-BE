@@ -7,7 +7,7 @@ import jakarta.validation.Valid;
 public interface CustomPlanCreator {
 
 	/**
-	 * 선택된 강아지와 요청한 토픽의 미완료 커리큘럼으로 플랜을 생성하고 기존 활성 플랜을 교체한다.
+	 * 선택된 강아지와 요청한 토픽의 첫 미완료 커리큘럼부터 이후의 모든 커리큘럼으로 플랜을 생성하고 기존 활성 플랜을 교체한다.
 	 */
 	Plan create(Long userId, @Valid CustomPlanCreateRequest request);
 }
