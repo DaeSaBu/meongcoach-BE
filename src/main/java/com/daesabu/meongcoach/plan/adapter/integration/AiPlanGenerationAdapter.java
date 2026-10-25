@@ -7,16 +7,19 @@ import com.daesabu.meongcoach.plan.application.required.dto.AiPlanGenerateReques
 import com.daesabu.meongcoach.plan.application.required.dto.AiPlanGenerateResult;
 import com.daesabu.meongcoach.plan.domain.exception.InvalidAiPlanResponseException;
 import com.daesabu.meongcoach.training.application.provided.dto.AiPlanCurriculumResult;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.stereotype.Component;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
-@RequiredArgsConstructor
+@Component
 final class AiPlanGenerationAdapter implements AiPlanGenerator {
 
 	private final AiPlanPromptBuilder promptBuilder;
@@ -24,6 +27,27 @@ final class AiPlanGenerationAdapter implements AiPlanGenerator {
 	private final String systemPrompt;
 	private final String responseSchema;
 	private final ObjectMapper objectMapper;
+
+	AiPlanGenerationAdapter(AiContentGenerator contentGenerator, ObjectMapper objectMapper) {
+		this.contentGenerator = contentGenerator;
+		this.objectMapper = objectMapper;
+		this.systemPrompt = loadPrompt("prompts/plan-generation/system.md");
+		this.responseSchema = loadPrompt("prompts/plan-generation/schema.json");
+		String userPromptTemplate = loadPrompt("prompts/plan-generation/user.md");
+		this.promptBuilder = new AiPlanPromptBuilder(objectMapper, userPromptTemplate);
+	}
+
+	private String loadPrompt(String path) {
+		try {
+			String prompt = new ClassPathResource(path).getContentAsString(StandardCharsets.UTF_8);
+			if (prompt.isBlank()) {
+				throw new IllegalStateException("플랜 프롬프트 파일이 비어 있습니다: " + path);
+			}
+			return prompt.strip();
+		} catch (IOException exception) {
+			throw new IllegalStateException("플랜 프롬프트 파일을 읽을 수 없습니다: " + path, exception);
+		}
+	}
 
 	@Override
 	public AiPlanGenerateResult generate(AiPlanGenerateRequest request) {
