@@ -171,6 +171,9 @@ AI 리포트용 영상 업로드 URL 발급은 무료 체험 횟수 검증과 �
 
 link:{swagger-ui}#/Onboarding/onboarding-image-upload-url[▶ Swagger에서 Try it out,window=swagger]
 
+온보딩에서 등록할 강아지의 프로필 이미지 업로드 URL을 발급합니다.
+요청에는 `contentType`만 보내며, 업로드 대상은 강아지 프로필로 고정됩니다.
+
 operation::onboarding/image-upload-url[snippets='http-request,request-fields,http-response,response-fields']
 
 ==== 실패 응답
@@ -180,13 +183,13 @@ operation::onboarding/image-upload-url-error[snippets='http-response,response-fi
 == Onboarding API
 
 로그인 후 온보딩이 필요한 사용자가 프로필과 강아지를 등록하는 API입니다.
-두 엔드포인트 모두 액세스 토큰 인증이 필요합니다.
+모든 온보딩 API는 액세스 토큰 인증이 필요합니다.
 
 === 온보딩 메타데이터 조회
 
 link:{swagger-ui}#/Onboarding/onboarding-metadata[▶ Swagger에서 Try it out,window=swagger]
 
-온보딩 화면에 필요한 토픽·견종·강아지 성격·MBTI 목록을 한 번에 반환합니다.
+온보딩 화면에 필요한 견종, 강아지 성격 목록을 한 번에 반환합니다.
 견종(`breeds`)은 등록 견종 전체이며 믹스견을 맨 앞에 두고 나머지는 한글 라벨 가나다순입니다.
 각 견종의 `aliases`는 한글·영문 별칭 목록이므로, 앱은 이 목록을 받아 기기에서 견종을 검색합니다.
 `aliases`에는 `label`이 들어 있지 않으므로 검색할 때 `label`과 `aliases`를 함께 비교합니다. 대소문자·띄어쓰기만 다른 별칭은 하나만 내려갑니다.
@@ -197,9 +200,12 @@ operation::onboarding/metadata[snippets='http-request,http-response,response-fie
 
 link:{swagger-ui}#/Onboarding/onboarding-complete[▶ Swagger에서 Try it out,window=swagger]
 
-사용자 프로필, 교육 이력·목표와 강아지들을 하나의 트랜잭션으로 생성합니다.
-교육 토픽 ID는 온보딩 메타데이터 조회 응답의 `topics[].id`를 사용합니다.
-강아지는 최대 5마리까지 등록할 수 있으며, 초과하면 400(`BAD_REQUEST`)을 반환합니다.
+보호자 닉네임과 강아지 한 마리를 하나의 트랜잭션으로 등록하고, 회원의 온보딩을 완료합니다.
+닉네임, 강아지 이름은 필수이며 최대 12자입니다. 강아지 견종, 성별, 과거 날짜의 생년월일도 필수입니다.
+강아지 성격과 프로필 이미지 URL은 선택 입력입니다.
+MBTI, 보호자 프로필 이미지, 교육 이력과 목표, 강아지 몸무게와 교육 기대 사항은 요청에 포함하지 않습니다.
+강아지는 정확히 한 마리만 등록할 수 있으며, 다른 수의 강아지를 요청하면 400(`BAD_REQUEST`)을 반환합니다.
+추가 강아지는 온보딩 완료 후 강아지 등록 API로 등록합니다.
 이미 온보딩을 완료한 회원이 다시 호출하면 409를 반환합니다.
 
 operation::onboarding/complete[snippets='http-request,request-fields,http-response,response-fields']
@@ -400,8 +406,9 @@ operation::ai/report-detail-error[snippets='http-response,response-fields']
 
 link:{swagger-ui}#/Dog/dog-register[▶ Swagger에서 Try it out,window=swagger]
 
-온보딩 이후 강아지를 한 마리 추가로 등록합니다. 입력 항목과 검증 규칙은 온보딩 완료 요청의 `dogs[]` 항목과 같으며,
-견종·성격은 온보딩 메타데이터의 `code`로 보냅니다.
+온보딩 이후 강아지를 한 마리 추가로 등록합니다.
+이 API는 몸무게가 필수이며, 생년월일과 교육 기대 사항은 선택 입력입니다.
+견종, 성격은 온보딩 메타데이터의 `code`로 보냅니다.
 목록에 없는 견종은 `breed`에 견종 이름을 그대로 보내면(최대 30자) 직접 입력한 견종으로 저장됩니다.
 등록 견종의 한글 라벨을 그대로 보내면 해당 견종 `code`로 저장됩니다.
 사용자당 강아지는 **최대 5마리**까지 등록할 수 있습니다(삭제된 강아지는 세지 않음).
