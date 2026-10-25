@@ -5,8 +5,8 @@ import com.daesabu.meongcoach.dog.application.provided.dto.DogSummaryResult;
 import com.daesabu.meongcoach.plan.application.provided.CustomPlanCreator;
 import com.daesabu.meongcoach.plan.application.provided.dto.CustomPlanCreateRequest;
 import com.daesabu.meongcoach.plan.application.required.PlanRepository;
+import com.daesabu.meongcoach.plan.domain.CustomPlanCreateCommand;
 import com.daesabu.meongcoach.plan.domain.Plan;
-import com.daesabu.meongcoach.plan.domain.PlanCreateCommand;
 import com.daesabu.meongcoach.plan.domain.PlanStatus;
 import com.daesabu.meongcoach.plan.domain.exception.PlanCreationConflictException;
 import com.daesabu.meongcoach.training.application.provided.CustomPlanPreparationFinder;
@@ -32,11 +32,9 @@ public class CustomPlanCreateService implements CustomPlanCreator {
 	public Plan create(Long userId, CustomPlanCreateRequest request) {
 		DogSummaryResult dog = dogProfileFinder.findSelectedDogSummary(userId);
 		CustomPlanPreparationResult preparation = preparationFinder.find(userId, request.topicIds());
-		String title = dog.name() + "의 2주 훈련 플랜";
-		String goal = "선택한 훈련을 차근차근 익혀요";
-		PlanCreateCommand command = new PlanCreateCommand(userId, dog.id(), title, goal,
+		CustomPlanCreateCommand command = new CustomPlanCreateCommand(userId, dog.id(), dog.name(),
 				request.dailyMinutes(), request.daysPerWeek());
-		Plan plan = Plan.create(command, preparation.curriculumIds());
+		Plan plan = Plan.createCustom(command, preparation.curriculumIds());
 		planRepository.findByUserIdAndStatus(userId, PlanStatus.ACTIVE).ifPresent(Plan::replace);
 		try {
 			planRepository.flush();
