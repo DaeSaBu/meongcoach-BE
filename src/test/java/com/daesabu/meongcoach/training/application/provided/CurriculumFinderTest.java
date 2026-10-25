@@ -86,8 +86,10 @@ class CurriculumFinderTest {
 		TrainingCategory category = saveCategory("기본 교육", 1);
 		Topic first = saveTopic(category, "앉아", 1);
 		Topic second = saveTopic(category, "기다려", 2);
-		saveCurriculum(first, "앉아 1단계", 1);
-		saveCurriculum(second, "기다려 1단계", 1);
+		Curriculum firstCurriculum = saveCurriculum(first, "앉아 1단계", 1);
+		saveLesson(firstCurriculum, "레슨", 1);
+		Curriculum secondCurriculum = saveCurriculum(second, "기다려 1단계", 1);
+		saveLesson(secondCurriculum, "레슨", 1);
 		flushAndClear();
 		topicSelectionRepository.save(TopicSelection.enter(USER_ID, second.getId()));
 		flushAndClear();
@@ -105,8 +107,10 @@ class CurriculumFinderTest {
 		TrainingCategory basic = saveCategory("기본 교육", 1);
 		Topic advancedTopic = saveTopic(advanced, "이리와", 1);
 		Topic basicTopic = saveTopic(basic, "앉아", 1);
-		saveCurriculum(advancedTopic, "이리와 1단계", 1);
-		saveCurriculum(basicTopic, "앉아 1단계", 1);
+		Curriculum advancedCurriculum = saveCurriculum(advancedTopic, "이리와 1단계", 1);
+		saveLesson(advancedCurriculum, "레슨", 1);
+		Curriculum basicCurriculum = saveCurriculum(basicTopic, "앉아 1단계", 1);
+		saveLesson(basicCurriculum, "레슨", 1);
 		flushAndClear();
 
 		CurriculumListResult curriculumList = curriculumFinder.findCurriculums(USER_ID);
@@ -120,7 +124,8 @@ class CurriculumFinderTest {
 	void 진입_기록의_토픽이_더_이상_존재하지_않으면_첫_토픽으로_폴백한다() {
 		TrainingCategory category = saveCategory("기본 교육", 1);
 		Topic topic = saveTopic(category, "앉아", 1);
-		saveCurriculum(topic, "앉아 1단계", 1);
+		Curriculum curriculum = saveCurriculum(topic, "앉아 1단계", 1);
+		saveLesson(curriculum, "레슨", 1);
 		flushAndClear();
 		topicSelectionRepository.save(TopicSelection.enter(USER_ID, 999L));
 		flushAndClear();
@@ -152,9 +157,12 @@ class CurriculumFinderTest {
 	@Test
 	void 커리큘럼을_정렬_순서_오름차순으로_반환한다() {
 		Topic topic = saveTopicWithCategory();
-		saveCurriculum(topic, "셋째 커리큘럼", 3);
-		saveCurriculum(topic, "첫째 커리큘럼", 1);
-		saveCurriculum(topic, "둘째 커리큘럼", 2);
+		Curriculum third = saveCurriculum(topic, "셋째 커리큘럼", 3);
+		saveLesson(third, "레슨", 1);
+		Curriculum first = saveCurriculum(topic, "첫째 커리큘럼", 1);
+		saveLesson(first, "레슨", 1);
+		Curriculum second = saveCurriculum(topic, "둘째 커리큘럼", 2);
+		saveLesson(second, "레슨", 1);
 		flushAndClear();
 
 		CurriculumListResult curriculumList = curriculumFinder.findCurriculums(USER_ID);
@@ -198,24 +206,22 @@ class CurriculumFinderTest {
 	}
 
 	@Test
-	void 레슨이_없는_커리큘럼도_목록에_포함한다() {
+	void 레슨이_없는_커리큘럼의_진행_상태를_조회하면_예외를_던진다() {
 		Topic topic = saveTopicWithCategory();
 		saveCurriculum(topic, "레슨 없는 커리큘럼", 1);
 		Curriculum other = saveCurriculum(topic, "레슨 있는 커리큘럼", 2);
 		saveLesson(other, "손 위의 간식", 1);
 		flushAndClear();
 
-		CurriculumListResult curriculumList = curriculumFinder.findCurriculums(USER_ID);
-
-		assertThat(curriculumList.curriculums()).extracting(result -> result.curriculum().getTitle())
-				.containsExactly("레슨 없는 커리큘럼", "레슨 있는 커리큘럼");
-		assertThat(curriculumList.curriculums().getFirst().curriculum().getLessons()).isEmpty();
+		assertThatThrownBy(() -> curriculumFinder.findCurriculums(USER_ID))
+				.isInstanceOf(IllegalStateException.class);
 	}
 
 	@Test
 	void 조회만_하고_진입_기록을_저장하지_않는다() {
 		Topic topic = saveTopicWithCategory();
-		saveCurriculum(topic, "1단계", 1);
+		Curriculum curriculum = saveCurriculum(topic, "1단계", 1);
+		saveLesson(curriculum, "레슨", 1);
 		flushAndClear();
 
 		curriculumFinder.findCurriculums(USER_ID);
@@ -337,7 +343,8 @@ class CurriculumFinderTest {
 	@Test
 	void 이용권이_없으면_유료_커리큘럼이_잠긴다() {
 		Topic topic = saveTopic(savePaidCategory(EntitlementType.PUPPY), "앉아", 1);
-		savePremiumCurriculum(topic, "앉아 1단계", 1);
+		Curriculum curriculum = savePremiumCurriculum(topic, "앉아 1단계", 1);
+		saveLesson(curriculum, "레슨", 1);
 		flushAndClear();
 
 		CurriculumListResult curriculumList = curriculumFinder.findCurriculums(USER_ID);
@@ -348,7 +355,8 @@ class CurriculumFinderTest {
 	@Test
 	void 이용권이_있으면_유료_커리큘럼이_잠기지_않는다() {
 		Topic topic = saveTopic(savePaidCategory(EntitlementType.PUPPY), "앉아", 1);
-		savePremiumCurriculum(topic, "앉아 1단계", 1);
+		Curriculum curriculum = savePremiumCurriculum(topic, "앉아 1단계", 1);
+		saveLesson(curriculum, "레슨", 1);
 		grant(USER_ID, EntitlementType.PUPPY);
 		flushAndClear();
 
@@ -360,7 +368,8 @@ class CurriculumFinderTest {
 	@Test
 	void 무료_토픽은_이용권이_없어도_잠기지_않는다() {
 		Topic topic = saveTopicWithCategory();
-		saveCurriculum(topic, "앉아 1단계", 1);
+		Curriculum curriculum = saveCurriculum(topic, "앉아 1단계", 1);
+		saveLesson(curriculum, "레슨", 1);
 		flushAndClear();
 
 		CurriculumListResult curriculumList = curriculumFinder.findCurriculums(USER_ID);
@@ -407,14 +416,15 @@ class CurriculumFinderTest {
 		Topic topic = saveTopicWithCategory();
 		Curriculum curriculum = saveCurriculum(topic, "단계", 1);
 		saveLesson(curriculum, "레슨", 1);
-		Curriculum empty = saveCurriculum(topic, "단계", 2);
+		Curriculum second = saveCurriculum(topic, "단계", 2);
+		saveLesson(second, "레슨", 1);
 		flushAndClear();
 
 		Map<Long, CurriculumCompletion> completions = findCompletions(USER_ID, topic.getId());
 
 		assertThat(completions).containsOnly(
 				entry(curriculum.getId(), new CurriculumCompletion(0, ProgressStatus.NOT_STARTED)),
-				entry(empty.getId(), new CurriculumCompletion(0, ProgressStatus.NOT_STARTED)));
+				entry(second.getId(), new CurriculumCompletion(0, ProgressStatus.NOT_STARTED)));
 		assertThat(lessonProgressRepository.count()).isZero();
 	}
 

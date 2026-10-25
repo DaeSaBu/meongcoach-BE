@@ -93,8 +93,7 @@ class TopicCompletionCheckerTest {
 		Topic partial = saveTopic();
 		Lesson partialLesson = saveLesson(saveCurriculum(partial, 1), "일부 완료");
 		saveLesson(saveCurriculum(partial, 2), "미완료");
-		Topic emptyCurriculum = saveTopic();
-		saveCurriculum(emptyCurriculum, 1);
+
 		saveTopic();
 		Topic otherUser = saveTopic();
 		Lesson otherLesson = saveLesson(saveCurriculum(otherUser, 1), "다른 회원");
@@ -107,6 +106,16 @@ class TopicCompletionCheckerTest {
 		assertThat(topicCompletionChecker.findCompletedTopics(USER_ID))
 				.extracting(com.daesabu.meongcoach.training.application.provided.dto.TopicResult::id)
 				.containsExactly(completed.getId());
+	}
+
+	@Test
+	void 레슨이_없는_커리큘럼이_있으면_완료_토픽_조회에서_예외를_던진다() {
+		Topic topic = saveTopic();
+		saveCurriculum(topic, 1);
+		flushAndClear();
+
+		assertThatThrownBy(() -> topicCompletionChecker.findCompletedTopics(USER_ID))
+				.isInstanceOf(IllegalStateException.class);
 	}
 
 	private Topic saveTopic() {

@@ -1,6 +1,7 @@
 package com.daesabu.meongcoach.training.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;
 import java.util.List;
@@ -51,18 +52,21 @@ class TopicTest {
 	}
 
 	@Test
-	void 빈_토픽이나_빈_커리큘럼은_완료가_아니다() {
+	void 빈_토픽은_완료가_아니다() {
 		Topic topic = TopicFixture.create(10L);
 		LessonProgresses progresses = LessonProgresses.from(List.of());
 
 		assertThat(topic.isCompleted(progresses)).isFalse();
-		Curriculum curriculum = CurriculumFixture.create(topic, 100L);
-		Lesson lesson = LessonFixture.create(curriculum, 1001L);
-		progresses = progresses(lesson);
-		curriculum.getLessons().clear();
-		assertThat(topic.isCompleted(progresses)).isFalse();
-		topic.getCurriculums().clear();
-		assertThat(topic.isCompleted(progresses)).isFalse();
+	}
+
+	@Test
+	void 레슨이_없는_커리큘럼은_토픽_완료_판단에서도_예외가_발생한다() {
+		Topic topic = TopicFixture.create(10L);
+		CurriculumFixture.create(topic, 100L);
+		LessonProgresses progresses = LessonProgresses.from(List.of());
+
+		assertThatThrownBy(() -> topic.isCompleted(progresses))
+				.isInstanceOf(IllegalStateException.class);
 	}
 
 	@Test

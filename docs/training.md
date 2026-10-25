@@ -28,9 +28,10 @@ flowchart LR
 - 반복 완료는 완료 횟수만 늘리고 완료 레슨 수는 늘리지 않습니다.
 - 커리큘럼 상태(`ProgressStatus`)는 현재 소속 레슨 수와 그중 완료한 레슨 수로 정합니다.
 
-| 조건 | 상태 |
+| 조건 | 처리 |
 |---|---|
-| 레슨이 없거나 완료한 레슨이 없음 | `NOT_STARTED` |
+| 레슨이 없음 | 데이터 오류로 `IllegalStateException` 발생 |
+| 레슨은 있지만 완료한 레슨이 없음 | `NOT_STARTED` |
 | 일부 레슨만 완료 | `IN_PROGRESS` |
 | 모든 레슨 완료 | `COMPLETED` |
 
