@@ -236,7 +236,7 @@ class PlanControllerTest {
 				.andExpect(jsonPath("$.planId").value(21))
 				.andDo(document("plan/custom-create",
 						requestFields(
-								fieldWithPath("topicIds").description("선택한 토픽 ID 목록, 1~3개. 미완료 커리큘럼은 교육 순서로 포함"),
+								fieldWithPath("topicIds").description("선택한 토픽 ID 목록, 1~3개. 교육 순서의 첫 미완료 커리큘럼부터 이후 전체 포함"),
 								fieldWithPath("dailyMinutes").description("하루 훈련 시간, 5, 10, 20 중 하나. 20은 20분 이상"),
 								fieldWithPath("daysPerWeek").description("주당 훈련 일수, 3, 5, 7 중 하나")),
 						responseFields(fieldWithPath("planId").description("생성된 플랜 ID"))));
