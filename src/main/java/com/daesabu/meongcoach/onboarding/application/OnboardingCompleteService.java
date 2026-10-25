@@ -6,7 +6,6 @@ import com.daesabu.meongcoach.onboarding.application.provided.OnboardingComplete
 import com.daesabu.meongcoach.user.application.provided.UserProfileRegisterRequest;
 import com.daesabu.meongcoach.user.application.provided.UserRegister;
 import java.util.List;
-import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,9 +21,7 @@ public class OnboardingCompleteService implements OnboardingCompleter {
 	@Override
 	@Transactional
 	public List<Long> complete(Long userId, OnboardingCompleteInfo info) {
-		userRegister.completeOnboarding(userId,
-				new UserProfileRegisterRequest(
-						info.nickname(), null, null, Set.of(), Set.of()));
+		userRegister.completeOnboarding(userId, new UserProfileRegisterRequest(info.nickname()));
 		return info.dogs().stream()
 				.map(dog -> dogRegister.register(userId, dog))
 				.toList();
