@@ -266,6 +266,32 @@ class PlanTest {
 	}
 
 	@Test
+	void 커스텀_플랜은_강아지_이름으로_제목을_짓고_고정된_목표를_가진다() {
+		CustomPlanCreateCommand command = new CustomPlanCreateCommand(1L, 2L, "초코", 10, 3);
+
+		Plan plan = Plan.createCustom(command, List.of(7L, 4L));
+
+		assertThat(plan.getUserId()).isEqualTo(1L);
+		assertThat(plan.getDogId()).isEqualTo(2L);
+		assertThat(plan.getTitle()).isEqualTo("초코의 2주 훈련 플랜");
+		assertThat(plan.getGoal()).isEqualTo("선택한 훈련을 차근차근 익혀요");
+		assertThat(plan.getDailyMinutes()).isEqualTo(10);
+		assertThat(plan.getDaysPerWeek()).isEqualTo(3);
+		assertThat(plan.getStatus()).isEqualTo(PlanStatus.ACTIVE);
+		assertThat(plan.getCurriculumIds()).containsExactly(7L, 4L);
+	}
+
+	@Test
+	void 커스텀_플랜도_실천_약속과_커리큘럼_규칙을_검증한다() {
+		CustomPlanCreateCommand command = new CustomPlanCreateCommand(1L, 2L, "초코", 15, 3);
+
+		assertThatThrownBy(() -> Plan.createCustom(command, List.of(7L)))
+				.isInstanceOf(InvalidDailyMinutesException.class);
+		assertThatThrownBy(() -> Plan.createCustom(new CustomPlanCreateCommand(1L, 2L, "초코", 10, 3), List.of()))
+				.isInstanceOf(EmptyPlanCurriculumsException.class);
+	}
+
+	@Test
 	void 전달받은_커리큘럼_순서를_저장하고_입력_목록의_변경에_영향받지_않는다() {
 		PlanCreateCommand command = new PlanCreateCommand(1L, 2L, "제목", "목표", 10, 3);
 		List<Long> curriculumIds = new ArrayList<>(List.of(7L, 4L));
