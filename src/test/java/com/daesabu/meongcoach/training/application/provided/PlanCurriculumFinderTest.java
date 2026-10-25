@@ -23,7 +23,6 @@ import com.daesabu.meongcoach.training.domain.TopicFixture;
 import com.daesabu.meongcoach.training.domain.TrainingCategory;
 import com.daesabu.meongcoach.training.domain.TrainingCategoryFixture;
 import com.daesabu.meongcoach.training.domain.exception.CurriculumNotFoundException;
-import com.daesabu.meongcoach.training.domain.shared.ProgressStatus;
 import jakarta.persistence.EntityManager;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -56,7 +55,7 @@ class PlanCurriculumFinderTest {
 	private EntityManager entityManager;
 
 	@Test
-	void 플랜_순서와_레슨_교육_순서를_유지하고_본인의_완료만_반영한다() {
+	void 일반_학습_기록과_관계없이_플랜_순서와_현재_레슨_순서를_반환한다() {
 		Topic topic = saveTopic(saveCategory(1), 1);
 		Curriculum first = saveCurriculum(topic, 1, false);
 		saveLesson(first);
@@ -72,13 +71,8 @@ class PlanCurriculumFinderTest {
 		assertThat(results).extracting(PlanCurriculumResult::id).containsExactly(second.getId(), first.getId());
 		PlanCurriculumResult result = results.getFirst();
 		assertThat(result.title()).isEqualTo("훈련 2");
-		assertThat(result.totalLessons()).isEqualTo(2);
-		assertThat(result.completedLessons()).isEqualTo(1);
-		assertThat(result.status()).isEqualTo(ProgressStatus.IN_PROGRESS);
 		assertThat(result.locked()).isFalse();
 		assertThat(result.lessons()).extracting(PlanLessonResult::id).containsExactly(earlier.getId(), later.getId());
-		assertThat(result.lessons()).extracting(PlanLessonResult::completed).containsExactly(true, false);
-		assertThat(results.get(1).status()).isEqualTo(ProgressStatus.NOT_STARTED);
 	}
 
 	@Test
@@ -95,7 +89,6 @@ class PlanCurriculumFinderTest {
 		List<PlanCurriculumResult> results = finder.find(USER_ID, List.of(premium.getId(), free.getId()));
 
 		assertThat(results).extracting(PlanCurriculumResult::locked).containsExactly(true, false);
-		assertThat(results.getFirst().status()).isEqualTo(ProgressStatus.COMPLETED);
 		entityManager.persist(EntitlementFixture.create(
 				USER_ID, EntitlementType.PUPPY, null));
 		flushAndClear();
@@ -111,6 +104,17 @@ class PlanCurriculumFinderTest {
 	void 존재하지_않는_커리큘럼은_거절한다() {
 		assertThatThrownBy(() -> finder.find(USER_ID, List.of(Long.MAX_VALUE)))
 				.isInstanceOf(CurriculumNotFoundException.class);
+	}
+
+	@Test
+	void 레슨이_없는_커리큘럼은_거절한다() {
+		Topic topic = saveTopic(saveCategory(1), 1);
+		Curriculum curriculum = saveCurriculum(topic, 1, false);
+		flushAndClear();
+
+		assertThatThrownBy(() -> finder.find(USER_ID, List.of(curriculum.getId())))
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessage("커리큘럼에는 레슨이 하나 이상 있어야 합니다.");
 	}
 
 	private TrainingCategory saveCategory(int order) {

@@ -2,17 +2,21 @@ package com.daesabu.meongcoach.plan.application.provided;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.daesabu.meongcoach.plan.application.provided.dto.PlanLessonProgressResult;
 import com.daesabu.meongcoach.plan.application.required.PlanRepository;
 import com.daesabu.meongcoach.plan.domain.Plan;
 import com.daesabu.meongcoach.plan.domain.PlanCreateCommand;
 import com.daesabu.meongcoach.support.ApplicationTest;
 import com.daesabu.meongcoach.training.domain.Curriculum;
 import com.daesabu.meongcoach.training.domain.CurriculumFixture;
+import com.daesabu.meongcoach.training.domain.Lesson;
 import com.daesabu.meongcoach.training.domain.LessonFixture;
+import com.daesabu.meongcoach.training.domain.LessonProgress;
 import com.daesabu.meongcoach.training.domain.Topic;
 import com.daesabu.meongcoach.training.domain.TopicFixture;
 import com.daesabu.meongcoach.training.domain.TrainingCategory;
 import com.daesabu.meongcoach.training.domain.TrainingCategoryFixture;
+import com.daesabu.meongcoach.training.domain.shared.ProgressStatus;
 import jakarta.persistence.EntityManager;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -79,6 +83,77 @@ class CurrentPlanFinderTest {
 
 		assertThat(finder.find(42L)).isEmpty();
 		assertThat(finder.find(99L)).isEmpty();
+	}
+
+	@Test
+	void 일반_학습과_이전_플랜의_완료는_현재_플랜_진도에_반영하지_않는다() {
+		Long curriculumId = saveCurriculum();
+		flushAndClear();
+		Curriculum curriculum = entityManager.find(Curriculum.class, curriculumId);
+		Long lessonId = curriculum.getLessonIds().getFirst();
+		LessonProgress progress = LessonProgress.start(42L, lessonId);
+		progress.complete();
+		entityManager.persist(progress);
+		Plan previous = savePlan(42L, curriculumId);
+		previous.completeLesson(lessonId);
+		previous.replace();
+		savePlan(42L, curriculumId);
+		flushAndClear();
+
+		var result = finder.find(42L).orElseThrow().curriculums().getFirst();
+
+		assertThat(result.completedLessons()).isZero();
+		assertThat(result.status()).isEqualTo(ProgressStatus.NOT_STARTED);
+		assertThat(result.lessons()).extracting(PlanLessonProgressResult::completed).containsExactly(false);
+	}
+
+	@Test
+	void 현재_플랜의_완료_기록으로_부분_완료와_전체_완료를_계산한다() {
+		Long curriculumId = saveCurriculum();
+		flushAndClear();
+		Curriculum curriculum = entityManager.find(Curriculum.class, curriculumId);
+		Long firstLessonId = curriculum.getLessonIds().getFirst();
+		Lesson second = LessonFixture.create(curriculum, "두 번째", 2, 5);
+		entityManager.persist(second);
+		Plan plan = savePlan(42L, curriculumId);
+		plan.completeLesson(firstLessonId);
+		flushAndClear();
+
+		var partial = finder.find(42L).orElseThrow().curriculums().getFirst();
+
+		assertThat(partial.totalLessons()).isEqualTo(2);
+		assertThat(partial.completedLessons()).isEqualTo(1);
+		assertThat(partial.status()).isEqualTo(ProgressStatus.IN_PROGRESS);
+		assertThat(partial.lessons()).extracting(PlanLessonProgressResult::completed).containsExactly(true, false);
+		entityManager.find(Plan.class, plan.getId()).completeLesson(second.getId());
+		flushAndClear();
+
+		var completed = finder.find(42L).orElseThrow().curriculums().getFirst();
+
+		assertThat(completed.completedLessons()).isEqualTo(2);
+		assertThat(completed.status()).isEqualTo(ProgressStatus.COMPLETED);
+	}
+
+	@Test
+	void 현재_목록에서_빠진_레슨은_완료_수에서_제외하고_추가된_레슨은_미완료로_표시한다() {
+		Long curriculumId = saveCurriculum();
+		flushAndClear();
+		Curriculum curriculum = entityManager.find(Curriculum.class, curriculumId);
+		Long removedLessonId = curriculum.getLessonIds().getFirst();
+		Plan plan = savePlan(42L, curriculumId);
+		plan.completeLesson(removedLessonId);
+		entityManager.remove(entityManager.find(Lesson.class, removedLessonId));
+		Lesson added = LessonFixture.create(curriculum, "새 레슨", 1, 5);
+		entityManager.persist(added);
+		flushAndClear();
+
+		var result = finder.find(42L).orElseThrow().curriculums().getFirst();
+
+		assertThat(result.totalLessons()).isEqualTo(1);
+		assertThat(result.completedLessons()).isZero();
+		assertThat(result.status()).isEqualTo(ProgressStatus.NOT_STARTED);
+		assertThat(result.lessons()).extracting(PlanLessonProgressResult::lessonId).containsExactly(added.getId());
+		assertThat(result.lessons()).extracting(PlanLessonProgressResult::completed).containsExactly(false);
 	}
 
 	private Plan savePlan(Long userId, Long curriculumId) {

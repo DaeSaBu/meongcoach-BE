@@ -17,12 +17,12 @@ import com.daesabu.meongcoach.plan.application.provided.CurrentPlanFinder;
 import com.daesabu.meongcoach.plan.application.provided.CustomPlanCreator;
 import com.daesabu.meongcoach.plan.application.provided.dto.CurrentPlanResult;
 import com.daesabu.meongcoach.plan.application.provided.dto.CustomPlanCreateRequest;
+import com.daesabu.meongcoach.plan.application.provided.dto.PlanCurriculumProgressResult;
+import com.daesabu.meongcoach.plan.application.provided.dto.PlanLessonProgressResult;
 import com.daesabu.meongcoach.plan.domain.Plan;
 import com.daesabu.meongcoach.plan.domain.PlanCreateCommand;
 import com.daesabu.meongcoach.plan.domain.exception.EmptyPlanCurriculumsException;
 import com.daesabu.meongcoach.plan.domain.exception.PlanCreationConflictException;
-import com.daesabu.meongcoach.training.application.provided.dto.PlanCurriculumResult;
-import com.daesabu.meongcoach.training.application.provided.dto.PlanLessonResult;
 import com.daesabu.meongcoach.training.domain.shared.ProgressStatus;
 import java.security.Principal;
 import java.time.LocalDateTime;
@@ -70,9 +70,9 @@ class PlanControllerTest {
 		Plan plan = Plan.create(command, List.of(7L));
 		ReflectionTestUtils.setField(plan, "id", 21L);
 		ReflectionTestUtils.setField(plan, "createdAt", LocalDateTime.of(2026, 10, 23, 12, 0));
-		PlanCurriculumResult curriculum = new PlanCurriculumResult(7L, "현관 매너", "현관에서 차분하게 기다리는 훈련", 2, 1,
-				ProgressStatus.IN_PROGRESS, true, List.of(new PlanLessonResult(11L, "앉아서 기다리기", true),
-				new PlanLessonResult(12L, "문을 열어도 기다리기", false)));
+		PlanCurriculumProgressResult curriculum = new PlanCurriculumProgressResult(7L, "현관 매너", "현관에서 차분하게 기다리는 훈련", 2, 1,
+				ProgressStatus.IN_PROGRESS, true, List.of(new PlanLessonProgressResult(11L, "앉아서 기다리기", true),
+				new PlanLessonProgressResult(12L, "문을 열어도 기다리기", false)));
 		given(currentPlanFinder.find(42L)).willReturn(Optional.of(new CurrentPlanResult(plan, List.of(curriculum))));
 
 		mockMvc.perform(get("/api/plans/current").principal(CURRENT_USER)
@@ -100,13 +100,13 @@ class PlanControllerTest {
 						fieldWithPath("plan.curriculums[].title").description("커리큘럼 제목"),
 						fieldWithPath("plan.curriculums[].description").description("커리큘럼 설명"),
 						fieldWithPath("plan.curriculums[].totalLessons").description("전체 레슨 수"),
-						fieldWithPath("plan.curriculums[].completedLessons").description("사용자가 완료한 레슨 수"),
+						fieldWithPath("plan.curriculums[].completedLessons").description("이 플랜에서 완료한 레슨 수"),
 						fieldWithPath("plan.curriculums[].status").description("NOT_STARTED, IN_PROGRESS, COMPLETED"),
 						fieldWithPath("plan.curriculums[].locked").description("이용권이 없어 잠금 표시가 필요한지 여부, 조회 자체는 허용"),
 						fieldWithPath("plan.curriculums[].lessons").description("교육 순서의 레슨 목록"),
 						fieldWithPath("plan.curriculums[].lessons[].lessonId").description("기존 레슨 상세 조회에 사용하는 ID"),
 						fieldWithPath("plan.curriculums[].lessons[].title").description("레슨 제목"),
-						fieldWithPath("plan.curriculums[].lessons[].completed").description("사용자의 레슨 완료 여부"))));
+						fieldWithPath("plan.curriculums[].lessons[].completed").description("이 플랜에서의 레슨 완료 여부"))));
 	}
 
 	@Test
