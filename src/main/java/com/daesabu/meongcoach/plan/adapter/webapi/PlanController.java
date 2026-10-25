@@ -4,6 +4,7 @@ import com.daesabu.meongcoach.plan.adapter.webapi.dto.CurrentPlanResponse;
 import com.daesabu.meongcoach.plan.adapter.webapi.dto.PlanCreateResponse;
 import com.daesabu.meongcoach.plan.application.provided.CurrentPlanFinder;
 import com.daesabu.meongcoach.plan.application.provided.CustomPlanCreator;
+import com.daesabu.meongcoach.plan.application.provided.PlanLessonCompleter;
 import com.daesabu.meongcoach.plan.application.provided.dto.CurrentPlanResult;
 import com.daesabu.meongcoach.plan.application.provided.dto.CustomPlanCreateRequest;
 import com.daesabu.meongcoach.plan.domain.Plan;
@@ -13,6 +14,7 @@ import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -26,6 +28,13 @@ public class PlanController {
 
 	private final CustomPlanCreator customPlanCreator;
 	private final CurrentPlanFinder currentPlanFinder;
+	private final PlanLessonCompleter planLessonCompleter;
+
+	@PostMapping("/{planId}/lessons/{lessonId}/completion")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public void completeLesson(@CurrentUserId Long userId, @PathVariable Long planId, @PathVariable Long lessonId) {
+		planLessonCompleter.complete(userId, planId, lessonId);
+	}
 
 	@GetMapping("/current")
 	public CurrentPlanResponse findCurrent(@CurrentUserId Long userId) {

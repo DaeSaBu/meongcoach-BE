@@ -3,28 +3,39 @@ package com.daesabu.meongcoach.plan.adapter.webapi;
 import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.document;
 import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.get;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.post;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
+import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
+import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.daesabu.meongcoach.entitlement.domain.exception.EntitlementRequiredException;
 import com.daesabu.meongcoach.plan.application.provided.CurrentPlanFinder;
 import com.daesabu.meongcoach.plan.application.provided.CustomPlanCreator;
+import com.daesabu.meongcoach.plan.application.provided.PlanLessonCompleter;
 import com.daesabu.meongcoach.plan.application.provided.dto.CurrentPlanResult;
 import com.daesabu.meongcoach.plan.application.provided.dto.CustomPlanCreateRequest;
+import com.daesabu.meongcoach.plan.application.provided.dto.PlanCurriculumProgressResult;
+import com.daesabu.meongcoach.plan.application.provided.dto.PlanLessonProgressResult;
 import com.daesabu.meongcoach.plan.domain.Plan;
 import com.daesabu.meongcoach.plan.domain.PlanCreateCommand;
 import com.daesabu.meongcoach.plan.domain.exception.EmptyPlanCurriculumsException;
 import com.daesabu.meongcoach.plan.domain.exception.PlanCreationConflictException;
-import com.daesabu.meongcoach.training.application.provided.dto.PlanCurriculumResult;
-import com.daesabu.meongcoach.training.application.provided.dto.PlanLessonResult;
+import com.daesabu.meongcoach.plan.domain.exception.PlanLessonOrderException;
+import com.daesabu.meongcoach.plan.domain.exception.PlanNotActiveException;
+import com.daesabu.meongcoach.plan.domain.exception.PlanNotFoundException;
 import com.daesabu.meongcoach.training.domain.shared.ProgressStatus;
 import java.security.Principal;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -64,15 +75,84 @@ class PlanControllerTest {
 	@MockitoBean
 	private CurrentPlanFinder currentPlanFinder;
 
+	@MockitoBean
+	private PlanLessonCompleter planLessonCompleter;
+
+	@Test
+	void 로그인한_사용자의_플랜_레슨을_완료하고_본문_없이_204를_반환한다() throws Exception {
+		mockMvc.perform(post("/api/plans/{planId}/lessons/{lessonId}/completion", 21L, 11L)
+						.principal(CURRENT_USER).header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+				.andExpect(status().isNoContent())
+				.andExpect(content().string(""))
+				.andDo(document("plan/lesson-complete", pathParameters(
+						parameterWithName("planId").description("완료 기록을 남길 플랜 ID"),
+						parameterWithName("lessonId").description("완료할 레슨 ID"))));
+
+		verify(planLessonCompleter).complete(42L, 21L, 11L);
+	}
+
+	@Test
+	void 플랜_레슨_완료에_인증이_없으면_401을_반환한다() throws Exception {
+		mockMvc.perform(post("/api/plans/{planId}/lessons/{lessonId}/completion", 21L, 11L))
+				.andExpect(status().isUnauthorized())
+				.andDo(document("plan/lesson-complete-unauthorized-error", responseFields(ERROR_FIELDS)));
+
+		verifyNoInteractions(planLessonCompleter);
+	}
+
+	@Test
+	void 소유한_플랜이_없으면_404를_반환한다() throws Exception {
+		doThrow(new PlanNotFoundException()).when(planLessonCompleter).complete(42L, 21L, 11L);
+
+		mockMvc.perform(post("/api/plans/{planId}/lessons/{lessonId}/completion", 21L, 11L)
+						.principal(CURRENT_USER).header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.code").value("PLAN_NOT_FOUND"))
+				.andDo(document("plan/lesson-complete-not-found-error", responseFields(ERROR_FIELDS)));
+	}
+
+	@Test
+	void 진행할_수_없는_플랜이면_409를_반환한다() throws Exception {
+		doThrow(new PlanNotActiveException()).when(planLessonCompleter).complete(42L, 21L, 11L);
+
+		mockMvc.perform(post("/api/plans/{planId}/lessons/{lessonId}/completion", 21L, 11L)
+						.principal(CURRENT_USER).header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code").value("PLAN_NOT_ACTIVE"))
+				.andDo(document("plan/lesson-complete-inactive-error", responseFields(ERROR_FIELDS)));
+	}
+
+	@Test
+	void 현재_레슨_순서가_아니면_409를_반환한다() throws Exception {
+		doThrow(new PlanLessonOrderException()).when(planLessonCompleter).complete(42L, 21L, 11L);
+
+		mockMvc.perform(post("/api/plans/{planId}/lessons/{lessonId}/completion", 21L, 11L)
+						.principal(CURRENT_USER).header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code").value("PLAN_LESSON_ORDER"))
+				.andDo(document("plan/lesson-complete-order-error", responseFields(ERROR_FIELDS)));
+	}
+
+	@Test
+	void 플랜_레슨의_이용권이_없으면_403을_반환한다() throws Exception {
+		doThrow(new EntitlementRequiredException()).when(planLessonCompleter).complete(42L, 21L, 11L);
+
+		mockMvc.perform(post("/api/plans/{planId}/lessons/{lessonId}/completion", 21L, 11L)
+						.principal(CURRENT_USER).header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.code").value("ENTITLEMENT_REQUIRED"))
+				.andDo(document("plan/lesson-complete-entitlement-error", responseFields(ERROR_FIELDS)));
+	}
+
 	@Test
 	void 현재_플랜과_순서가_있는_커리큘럼_레슨을_반환한다() throws Exception {
 		PlanCreateCommand command = new PlanCreateCommand(42L, 3L, "초코의 2주 훈련 플랜", "선택한 훈련을 차근차근 익혀요", 10, 3);
 		Plan plan = Plan.create(command, List.of(7L));
 		ReflectionTestUtils.setField(plan, "id", 21L);
 		ReflectionTestUtils.setField(plan, "createdAt", LocalDateTime.of(2026, 10, 23, 12, 0));
-		PlanCurriculumResult curriculum = new PlanCurriculumResult(7L, "현관 매너", "현관에서 차분하게 기다리는 훈련", 2, 1,
-				ProgressStatus.IN_PROGRESS, true, List.of(new PlanLessonResult(11L, "앉아서 기다리기", true),
-				new PlanLessonResult(12L, "문을 열어도 기다리기", false)));
+		PlanCurriculumProgressResult curriculum = new PlanCurriculumProgressResult(7L, "현관 매너", "현관에서 차분하게 기다리는 훈련", 2, 1,
+				ProgressStatus.IN_PROGRESS, true, List.of(new PlanLessonProgressResult(11L, "앉아서 기다리기", true),
+				new PlanLessonProgressResult(12L, "문을 열어도 기다리기", false)));
 		given(currentPlanFinder.find(42L)).willReturn(Optional.of(new CurrentPlanResult(plan, List.of(curriculum))));
 
 		mockMvc.perform(get("/api/plans/current").principal(CURRENT_USER)
@@ -94,19 +174,31 @@ class PlanControllerTest {
 						fieldWithPath("plan.daysPerWeek").description("주당 훈련 일수"),
 						fieldWithPath("plan.status").description("ACTIVE 또는 COMPLETED"),
 						fieldWithPath("plan.createdAt").description("생성 시각"),
-						fieldWithPath("plan.completedAt").type(JsonFieldType.STRING).optional().description("완료 시각, 미완료 시 null"),
+						fieldWithPath("plan.completedAt").type(JsonFieldType.STRING).optional().description("완료 시각(UTC, ISO 8601), 미완료 시 null"),
 						fieldWithPath("plan.curriculums").description("플랜에 저장한 순서의 커리큘럼 목록, 배열 순번이 카드 번호"),
 						fieldWithPath("plan.curriculums[].curriculumId").description("커리큘럼 ID"),
 						fieldWithPath("plan.curriculums[].title").description("커리큘럼 제목"),
 						fieldWithPath("plan.curriculums[].description").description("커리큘럼 설명"),
 						fieldWithPath("plan.curriculums[].totalLessons").description("전체 레슨 수"),
-						fieldWithPath("plan.curriculums[].completedLessons").description("사용자가 완료한 레슨 수"),
+						fieldWithPath("plan.curriculums[].completedLessons").description("이 플랜에서 완료한 레슨 수"),
 						fieldWithPath("plan.curriculums[].status").description("NOT_STARTED, IN_PROGRESS, COMPLETED"),
 						fieldWithPath("plan.curriculums[].locked").description("이용권이 없어 잠금 표시가 필요한지 여부, 조회 자체는 허용"),
 						fieldWithPath("plan.curriculums[].lessons").description("교육 순서의 레슨 목록"),
 						fieldWithPath("plan.curriculums[].lessons[].lessonId").description("기존 레슨 상세 조회에 사용하는 ID"),
 						fieldWithPath("plan.curriculums[].lessons[].title").description("레슨 제목"),
-						fieldWithPath("plan.curriculums[].lessons[].completed").description("사용자의 레슨 완료 여부"))));
+						fieldWithPath("plan.curriculums[].lessons[].completed").description("이 플랜에서의 레슨 완료 여부"))));
+	}
+
+	@Test
+	void 완료_시각을_UTC_문자열로_반환한다() throws Exception {
+		PlanCreateCommand command = new PlanCreateCommand(42L, 3L, "제목", "목표", 10, 3);
+		Plan plan = Plan.create(command, List.of(7L));
+		plan.complete(Instant.parse("2026-10-25T12:00:00Z"));
+		given(currentPlanFinder.find(42L)).willReturn(Optional.of(new CurrentPlanResult(plan, List.of())));
+
+		mockMvc.perform(get("/api/plans/current").principal(CURRENT_USER))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.plan.completedAt").value("2026-10-25T12:00:00Z"));
 	}
 
 	@Test

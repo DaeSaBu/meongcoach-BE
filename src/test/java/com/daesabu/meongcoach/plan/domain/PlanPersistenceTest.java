@@ -2,6 +2,7 @@ package com.daesabu.meongcoach.plan.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +14,21 @@ class PlanPersistenceTest {
 
 	@Autowired
 	private TestEntityManager entityManager;
+
+	@Test
+	void 완료_시각을_저장하고_같은_순간으로_조회한다() {
+		PlanCreateCommand command = new PlanCreateCommand(1L, 2L, "제목", "목표", 10, 3);
+		Plan plan = Plan.create(command, List.of(7L));
+		Instant completedAt = Instant.parse("2026-10-25T12:00:00.123456Z");
+		plan.complete(completedAt);
+		entityManager.persistAndFlush(plan);
+		Long planId = plan.getId();
+		entityManager.clear();
+
+		Plan found = entityManager.find(Plan.class, planId);
+
+		assertThat(found.getCompletedAt()).isEqualTo(completedAt);
+	}
 
 	@Test
 	void 플랜만_저장해도_커리큘럼_ID와_순서가_보존된다() {
@@ -45,4 +61,47 @@ class PlanPersistenceTest {
 		assertThat(foundFirst.getCurriculumIds()).containsExactly(7L, 4L);
 		assertThat(foundSecond.getCurriculumIds()).containsExactly(4L, 12L);
 	}
+
+	@Test
+	void 새_플랜의_완료_레슨은_빈_배열로_저장된다() {
+		PlanCreateCommand command = new PlanCreateCommand(1L, 2L, "제목", "목표", 10, 3);
+		Plan plan = Plan.create(command, List.of(7L));
+		entityManager.persistAndFlush(plan);
+		Long planId = plan.getId();
+		entityManager.clear();
+
+		Plan found = entityManager.find(Plan.class, planId);
+
+		assertThat(found.getCompletedLessonIds()).isEmpty();
+		Object arraySize = entityManager.getEntityManager()
+				.createNativeQuery("select cardinality(completed_lesson_ids) from plans where id = :id", Integer.class)
+				.setParameter("id", planId).getSingleResult();
+		assertThat(arraySize).isEqualTo(0);
+	}
+
+	@Test
+	void 완료_레슨_ID를_배열로_저장하고_Set_변경을_반영한다() {
+		PlanCreateCommand command = new PlanCreateCommand(1L, 2L, "제목", "목표", 10, 3);
+		Plan plan = Plan.create(command, List.of(7L));
+		plan.completeLesson(101L);
+		plan.completeLesson(102L);
+		entityManager.persistAndFlush(plan);
+		Long planId = plan.getId();
+		entityManager.clear();
+
+		Plan found = entityManager.find(Plan.class, planId);
+		assertThat(found.getCompletedLessonIds()).containsExactlyInAnyOrder(101L, 102L);
+		found.completeLesson(103L);
+		found.completeLesson(103L);
+		entityManager.flush();
+		entityManager.clear();
+
+		Plan updated = entityManager.find(Plan.class, planId);
+		assertThat(updated.getCompletedLessonIds()).containsExactlyInAnyOrder(101L, 102L, 103L);
+		Object arraySize = entityManager.getEntityManager()
+				.createNativeQuery("select cardinality(completed_lesson_ids) from plans where id = :id", Integer.class)
+				.setParameter("id", planId).getSingleResult();
+		assertThat(arraySize).isEqualTo(3);
+	}
+
 }

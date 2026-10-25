@@ -67,11 +67,15 @@ public class Curriculum extends BaseEntity {
 	}
 
 	public CurriculumCompletion completion(LessonProgresses progresses) {
-		state(!lessons.isEmpty(), "커리큘럼에는 레슨이 하나 이상 있어야 합니다.");
+		validateHasLessons();
 
 		int completed = progresses.countCompletedIn(getLessonIds());
 		int total = lessons.size();
 		return CurriculumCompletion.of(total, completed);
+	}
+
+	public void validateHasLessons() {
+		state(!lessons.isEmpty(), "커리큘럼에는 레슨이 하나 이상 있어야 합니다.");
 	}
 
 	public boolean isCompleted(LessonProgresses progresses) {

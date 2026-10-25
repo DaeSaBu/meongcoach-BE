@@ -8,7 +8,7 @@ import com.daesabu.meongcoach.plan.domain.exception.EmptyPlanCurriculumsExceptio
 import com.daesabu.meongcoach.plan.domain.exception.InvalidDailyMinutesException;
 import com.daesabu.meongcoach.plan.domain.exception.InvalidDaysPerWeekException;
 import com.daesabu.meongcoach.plan.domain.exception.InvalidPlanCurriculumException;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -22,7 +22,7 @@ class PlanTest {
 	@Test
 	void 활성_플랜을_완료하면_완료_상태와_시각을_저장한다() {
 		Plan plan = createPlan();
-		LocalDateTime completedAt = LocalDateTime.of(2026, 10, 23, 12, 0);
+		Instant completedAt = Instant.parse("2026-10-23T12:00:00Z");
 
 		plan.complete(completedAt);
 
@@ -43,10 +43,10 @@ class PlanTest {
 	@Test
 	void 완료된_플랜은_다시_완료하거나_교체할_수_없다() {
 		Plan plan = createPlan();
-		LocalDateTime completedAt = LocalDateTime.of(2026, 10, 23, 12, 0);
+		Instant completedAt = Instant.parse("2026-10-23T12:00:00Z");
 		plan.complete(completedAt);
 
-		assertThatThrownBy(() -> plan.complete(completedAt.plusDays(1)))
+		assertThatThrownBy(() -> plan.complete(completedAt.plusSeconds(86400)))
 				.isInstanceOf(IllegalStateException.class);
 		assertThatThrownBy(plan::replace).isInstanceOf(IllegalStateException.class);
 		assertThat(plan.getStatus()).isEqualTo(PlanStatus.COMPLETED);
@@ -57,7 +57,7 @@ class PlanTest {
 	void 교체된_플랜은_완료하거나_다시_교체할_수_없다() {
 		Plan plan = createPlan();
 		plan.replace();
-		LocalDateTime completedAt = LocalDateTime.of(2026, 10, 23, 12, 0);
+		Instant completedAt = Instant.parse("2026-10-23T12:00:00Z");
 
 		assertThatThrownBy(() -> plan.complete(completedAt)).isInstanceOf(IllegalStateException.class);
 		assertThatThrownBy(plan::replace).isInstanceOf(IllegalStateException.class);
@@ -72,6 +72,120 @@ class PlanTest {
 		assertThatThrownBy(() -> plan.complete(null)).isInstanceOf(NullPointerException.class);
 		assertThat(plan.getStatus()).isEqualTo(PlanStatus.ACTIVE);
 		assertThat(plan.getCompletedAt()).isNull();
+	}
+
+	@Test
+	void 활성_플랜에_완료_레슨을_중복_없이_기록한다() {
+		Plan plan = createPlan();
+
+		plan.completeLesson(101L);
+		plan.completeLesson(102L);
+		plan.completeLesson(101L);
+
+		assertThat(plan.getCompletedLessonIds()).containsExactlyInAnyOrder(101L, 102L);
+		assertThat(plan.getStatus()).isEqualTo(PlanStatus.ACTIVE);
+	}
+
+	@Test
+	void 완료된_플랜에는_완료_레슨을_추가할_수_없다() {
+		Plan plan = createPlan();
+		plan.completeLesson(101L);
+		plan.complete(Instant.parse("2026-10-25T12:00:00Z"));
+
+		assertThatThrownBy(() -> plan.completeLesson(102L)).isInstanceOf(IllegalStateException.class);
+		assertThat(plan.getCompletedLessonIds()).containsExactly(101L);
+	}
+
+	@Test
+	void 교체된_플랜에는_완료_레슨을_추가할_수_없다() {
+		Plan plan = createPlan();
+		plan.replace();
+
+		assertThatThrownBy(() -> plan.completeLesson(101L)).isInstanceOf(IllegalStateException.class);
+		assertThat(plan.getCompletedLessonIds()).isEmpty();
+	}
+
+	@Test
+	void 완료_레슨_ID가_null이면_기록하지_않는다() {
+		Plan plan = createPlan();
+
+		assertThatThrownBy(() -> plan.completeLesson(null)).isInstanceOf(NullPointerException.class);
+		assertThat(plan.getCompletedLessonIds()).isEmpty();
+	}
+
+	@Test
+	void 외부에서_완료_레슨_기록을_직접_변경할_수_없다() {
+		Plan plan = createPlan();
+		plan.completeLesson(101L);
+
+		assertThatThrownBy(() -> plan.getCompletedLessonIds().clear())
+				.isInstanceOf(UnsupportedOperationException.class);
+		assertThat(plan.getCompletedLessonIds()).containsExactly(101L);
+	}
+
+	@Test
+	void 현재_레슨을_모두_완료했는지_플랜의_기록으로_판단한다() {
+		Plan plan = createPlan();
+		List<Long> currentLessonIds = List.of(101L, 102L);
+
+		assertThat(plan.hasCompletedAllLessons(currentLessonIds)).isFalse();
+		plan.completeLesson(101L);
+		assertThat(plan.hasCompletedAllLessons(currentLessonIds)).isFalse();
+		plan.completeLesson(102L);
+		assertThat(plan.hasCompletedAllLessons(currentLessonIds)).isTrue();
+		assertThat(plan.getStatus()).isEqualTo(PlanStatus.ACTIVE);
+		assertThat(plan.getCompletedAt()).isNull();
+	}
+
+	@Test
+	void 현재_목록에서_제외된_레슨의_완료_기록은_판단에_영향을_주지_않는다() {
+		Plan plan = createPlan();
+		plan.completeLesson(101L);
+		plan.completeLesson(102L);
+
+		assertThat(plan.hasCompletedAllLessons(List.of(102L))).isTrue();
+		assertThat(plan.hasCompletedAllLessons(List.of(102L, 103L))).isFalse();
+	}
+
+	@Test
+	void 현재_레슨_목록이_비어_있으면_완료_판단을_거절한다() {
+		Plan plan = createPlan();
+
+		assertThatThrownBy(() -> plan.hasCompletedAllLessons(List.of()))
+				.isInstanceOf(IllegalStateException.class);
+	}
+
+	@Test
+	void 전달받은_교육_순서에서_첫_미완료_레슨을_찾는다() {
+		Plan plan = createPlan();
+		List<Long> orderedLessonIds = List.of(103L, 101L, 102L);
+
+		assertThat(plan.findCurrentLessonId(orderedLessonIds)).contains(103L);
+		plan.completeLesson(103L);
+		assertThat(plan.findCurrentLessonId(orderedLessonIds)).contains(101L);
+		plan.completeLesson(101L);
+		assertThat(plan.findCurrentLessonId(orderedLessonIds)).contains(102L);
+		plan.completeLesson(102L);
+		assertThat(plan.findCurrentLessonId(orderedLessonIds)).isEmpty();
+	}
+
+	@Test
+	void 교육_목록_앞에_새_레슨이_추가되면_그_레슨부터_진행한다() {
+		Plan plan = createPlan();
+		plan.completeLesson(101L);
+		plan.completeLesson(102L);
+
+		assertThat(plan.findCurrentLessonId(List.of(104L, 102L, 103L))).contains(104L);
+		plan.completeLesson(104L);
+		assertThat(plan.findCurrentLessonId(List.of(104L, 102L, 103L))).contains(103L);
+	}
+
+	@Test
+	void 레슨_목록이_비어_있으면_현재_레슨_탐색을_거절한다() {
+		Plan plan = createPlan();
+
+		assertThatThrownBy(() -> plan.findCurrentLessonId(List.of()))
+				.isInstanceOf(IllegalStateException.class);
 	}
 
 	private Plan createPlan() {

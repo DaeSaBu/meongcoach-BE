@@ -22,12 +22,13 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OrderColumn;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -73,7 +74,7 @@ public class Plan extends BaseTimeEntity {
 	@Column(nullable = false, length = 20)
 	private PlanStatus status;
 
-	private LocalDateTime completedAt;
+	private Instant completedAt;
 
 	@ElementCollection
 	@CollectionTable(name = "plan_curriculums", joinColumns = @JoinColumn(name = "plan_id"),
@@ -82,6 +83,9 @@ public class Plan extends BaseTimeEntity {
 	@Column(name = "curriculum_id", nullable = false)
 	@OrderColumn(name = "sort_order", nullable = false)
 	private List<Long> curriculumIds = new ArrayList<>();
+
+	@Column(name = "completed_lesson_ids", nullable = false, columnDefinition = "bigint[]")
+	private Set<Long> completedLessonIds = new HashSet<>();
 
 	public static Plan create(PlanCreateCommand command, List<Long> curriculumIds) {
 		validateDailyMinutes(command.dailyMinutes());
@@ -111,7 +115,28 @@ public class Plan extends BaseTimeEntity {
 		return Collections.unmodifiableList(curriculumIds);
 	}
 
-	public void complete(LocalDateTime completedAt) {
+	public Set<Long> getCompletedLessonIds() {
+		return Collections.unmodifiableSet(completedLessonIds);
+	}
+
+	public void completeLesson(Long lessonId) {
+		state(status == PlanStatus.ACTIVE, "활성 플랜만 레슨을 완료할 수 있습니다.");
+		completedLessonIds.add(requireNonNull(lessonId));
+	}
+
+	public Optional<Long> findCurrentLessonId(List<Long> orderedLessonIds) {
+		state(!orderedLessonIds.isEmpty(), "플랜에는 레슨이 하나 이상 있어야 합니다.");
+		return orderedLessonIds.stream()
+				.filter(lessonId -> !completedLessonIds.contains(lessonId))
+				.findFirst();
+	}
+
+	public boolean hasCompletedAllLessons(List<Long> currentLessonIds) {
+		state(!currentLessonIds.isEmpty(), "플랜에는 레슨이 하나 이상 있어야 합니다.");
+		return completedLessonIds.containsAll(currentLessonIds);
+	}
+
+	public void complete(Instant completedAt) {
 		state(status == PlanStatus.ACTIVE, "활성 플랜만 완료할 수 있습니다.");
 		this.completedAt = requireNonNull(completedAt);
 		status = PlanStatus.COMPLETED;

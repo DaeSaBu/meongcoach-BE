@@ -1,10 +1,10 @@
 package com.daesabu.meongcoach.plan.adapter.webapi.dto;
 
-import com.daesabu.meongcoach.training.application.provided.dto.PlanLessonResult;
+import com.daesabu.meongcoach.plan.application.provided.dto.PlanLessonProgressResult;
 
 public record PlanLessonResponse(Long lessonId, String title, boolean completed) {
 
-	public static PlanLessonResponse from(PlanLessonResult result) {
-		return new PlanLessonResponse(result.id(), result.title(), result.completed());
+	public static PlanLessonResponse from(PlanLessonProgressResult result) {
+		return new PlanLessonResponse(result.lessonId(), result.title(), result.completed());
 	}
 }

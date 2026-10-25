@@ -4,6 +4,9 @@ import com.daesabu.meongcoach.shared.exception.ErrorCode;
 
 public enum PlanErrorCode implements ErrorCode {
 
+	PLAN_NOT_FOUND(404, "플랜을 찾을 수 없습니다."),
+	PLAN_NOT_ACTIVE(409, "진행 중인 플랜이 아닙니다."),
+	PLAN_LESSON_ORDER(409, "현재 진행할 레슨이 아닙니다. 플랜을 다시 확인해주세요."),
 	PLAN_INVALID_DAILY_MINUTES(400, "하루 훈련 시간은 5, 10, 20 중 하나여야 합니다. 20은 20분 이상을 의미합니다."),
 	PLAN_INVALID_DAYS_PER_WEEK(400, "주당 훈련 일수는 3, 5, 7 중 하나여야 합니다."),
 	PLAN_EMPTY_CURRICULUMS(400, "플랜에는 커리큘럼이 하나 이상 있어야 합니다."),
