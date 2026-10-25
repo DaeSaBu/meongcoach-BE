@@ -29,14 +29,32 @@ public class PlanCurriculumQueryService implements PlanCurriculumFinder {
 		if (curriculumIds.isEmpty()) {
 			return List.of();
 		}
-		Map<Long, Curriculum> curriculumMap = curriculumRepository.findAllById(curriculumIds).stream()
-				.collect(Collectors.toMap(Curriculum::getId, curriculum -> curriculum));
-		List<Curriculum> orderedCurriculums = curriculumIds.stream()
-				.map(curriculumId -> findCurriculumOrThrow(curriculumMap, curriculumId))
-				.toList();
+		List<Curriculum> orderedCurriculums = findOrderedCurriculums(curriculumIds);
 		Set<EntitlementType> activeTypes = entitlementChecker.findActiveTypes(userId);
 		return orderedCurriculums.stream()
 				.map(curriculum -> toResult(curriculum, activeTypes))
+				.toList();
+	}
+
+	@Override
+	public List<Long> findLessonIds(List<Long> curriculumIds) {
+		if (curriculumIds.isEmpty()) {
+			return List.of();
+		}
+		List<Curriculum> orderedCurriculums = findOrderedCurriculums(curriculumIds);
+		for (Curriculum curriculum : orderedCurriculums) {
+			curriculum.validateHasLessons();
+		}
+		return orderedCurriculums.stream()
+				.flatMap(curriculum -> curriculum.getLessonIds().stream())
+				.toList();
+	}
+
+	private List<Curriculum> findOrderedCurriculums(List<Long> curriculumIds) {
+		Map<Long, Curriculum> curriculumMap = curriculumRepository.findAllById(curriculumIds).stream()
+				.collect(Collectors.toMap(Curriculum::getId, curriculum -> curriculum));
+		return curriculumIds.stream()
+				.map(curriculumId -> findCurriculumOrThrow(curriculumMap, curriculumId))
 				.toList();
 	}
 
