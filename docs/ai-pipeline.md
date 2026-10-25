@@ -40,6 +40,8 @@ VideoUploadSqsConsumer                      (ai/adapter/consumer)
 
 ## EvoLink 연동
 
+- 다른 모듈은 `ai/application/provided`의 `AiContentGenerator`로 시스템 프롬프트, 사용자 프롬프트, 응답 JSON 스키마를 전달합니다. `EvoLinkContentGenerator`가 스키마를 `JsonNode` 객체로 변환하고 내부 클라이언트를 호출합니다. 생성된 내용은 문자열로 반환하며 업무별 결과 해석과 검증은 호출 모듈이 담당합니다.
+- JSON 문법이 잘못되거나 객체가 아닌 스키마는 외부 호출 전에 거절합니다. 통신 오류, 빈 응답, 콘텐츠 차단, 출력 잘림은 원인을 보존한 `AiContentGenerationFailedException`으로 변환하며 오류 코드는 `AI_CONTENT_GENERATION_FAILED`(502)입니다. 로컬 스키마 오류는 내부 오류(500)로 처리합니다.
 - `ai/adapter/integration` 내부의 `EvoLinkChatClient`가 인증, HTTP 전송, 타임아웃과 공통 응답 검증을 담당합니다. 요청과 응답의 전송 DTO도 같은 패키지 아래에 둡니다.
 - `ai/adapter/integration`의 영상 분석과 제목 생성 어댑터는 프롬프트 구성, 응답 내용 해석, 업무 예외 변환을 담당합니다.
 - 연결 설정인 `baseUrl`, `apiKey`, `responseTimeout`은 AI 모듈 내부의 `EvoLinkConnectionProperties`가 읽습니다. 모델 설정인 `model`, `maxTokens`, `temperature`, `thinking`, `videoFps`는 기존 `EvoLinkProperties`가 읽습니다. 두 설정 모두 기존 `meongcoach.ai.evolink` 키를 사용합니다.
