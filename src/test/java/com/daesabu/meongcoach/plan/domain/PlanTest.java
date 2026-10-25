@@ -309,4 +309,49 @@ class PlanTest {
 
 		assertThatThrownBy(() -> plan.getCurriculumIds().clear()).isInstanceOf(UnsupportedOperationException.class);
 	}
+	@Test
+	void AI_플랜은_공통_제목과_AI_목표와_사용자_기대사항을_가진다() {
+		AiPlanCreateCommand command = new AiPlanCreateCommand(1L, 2L, "초코", "차분히 기다려요", 10, 3,
+				"  외출 전에 차분히 기다렸으면 해요  ");
+		CustomPlanCreateCommand customCommand = new CustomPlanCreateCommand(1L, 2L, "초코", 10, 3);
+
+		Plan plan = Plan.createAiPlan(command, List.of(7L, 4L));
+		Plan customPlan = Plan.createCustom(customCommand, List.of(7L, 4L));
+
+		assertThat(plan.getUserId()).isEqualTo(1L);
+		assertThat(plan.getDogId()).isEqualTo(2L);
+		assertThat(plan.getTitle()).isEqualTo(customPlan.getTitle());
+		assertThat(plan.getGoal()).isEqualTo(command.goal());
+		assertThat(plan.getExpectation()).isEqualTo(command.expectation());
+		assertThat(customPlan.getExpectation()).isNull();
+		assertThat(plan.getDailyMinutes()).isEqualTo(10);
+		assertThat(plan.getDaysPerWeek()).isEqualTo(3);
+		assertThat(plan.getStatus()).isEqualTo(PlanStatus.ACTIVE);
+		assertThat(plan.getCurriculumIds()).containsExactly(7L, 4L);
+		assertThat(plan.getCompletedLessonIds()).isEmpty();
+	}
+
+	@Test
+	void AI_플랜도_실천_약속과_커리큘럼_규칙을_검증한다() {
+		AiPlanCreateCommand invalidMinutes = new AiPlanCreateCommand(1L, 2L, "초코", "목표", 15, 3, "기대사항");
+		AiPlanCreateCommand invalidDays = new AiPlanCreateCommand(1L, 2L, "초코", "목표", 10, 4, "기대사항");
+		AiPlanCreateCommand valid = new AiPlanCreateCommand(1L, 2L, "초코", "목표", 10, 3, "기대사항");
+
+		assertThatThrownBy(() -> Plan.createAiPlan(invalidMinutes, List.of(7L)))
+				.isInstanceOf(InvalidDailyMinutesException.class);
+		assertThatThrownBy(() -> Plan.createAiPlan(invalidDays, List.of(7L)))
+				.isInstanceOf(InvalidDaysPerWeekException.class);
+		assertThatThrownBy(() -> Plan.createAiPlan(valid, List.of()))
+				.isInstanceOf(EmptyPlanCurriculumsException.class);
+		assertThatThrownBy(() -> Plan.createAiPlan(valid, List.of(7L, 7L)))
+				.isInstanceOf(DuplicatePlanCurriculumException.class);
+	}
+
+	@Test
+	void AI_플랜의_기대사항은_null일_수_없다() {
+		AiPlanCreateCommand command = new AiPlanCreateCommand(1L, 2L, "초코", "목표", 10, 3, null);
+
+		assertThatThrownBy(() -> Plan.createAiPlan(command, List.of(7L))).isInstanceOf(NullPointerException.class);
+	}
+
 }

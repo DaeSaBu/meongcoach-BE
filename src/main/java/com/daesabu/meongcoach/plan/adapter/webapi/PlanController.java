@@ -3,8 +3,9 @@ package com.daesabu.meongcoach.plan.adapter.webapi;
 import com.daesabu.meongcoach.plan.adapter.webapi.dto.CurrentPlanResponse;
 import com.daesabu.meongcoach.plan.adapter.webapi.dto.PlanCreateResponse;
 import com.daesabu.meongcoach.plan.application.provided.CurrentPlanFinder;
-import com.daesabu.meongcoach.plan.application.provided.CustomPlanCreator;
 import com.daesabu.meongcoach.plan.application.provided.PlanLessonCompleter;
+import com.daesabu.meongcoach.plan.application.provided.PlanRegister;
+import com.daesabu.meongcoach.plan.application.provided.dto.AiPlanCreateRequest;
 import com.daesabu.meongcoach.plan.application.provided.dto.CurrentPlanResult;
 import com.daesabu.meongcoach.plan.application.provided.dto.CustomPlanCreateRequest;
 import com.daesabu.meongcoach.plan.domain.Plan;
@@ -26,7 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class PlanController {
 
-	private final CustomPlanCreator customPlanCreator;
+	private final PlanRegister planRegister;
 	private final CurrentPlanFinder currentPlanFinder;
 	private final PlanLessonCompleter planLessonCompleter;
 
@@ -46,7 +47,15 @@ public class PlanController {
 	@ResponseStatus(HttpStatus.CREATED)
 	public PlanCreateResponse createCustom(@CurrentUserId Long userId,
 	                                      @Valid @RequestBody CustomPlanCreateRequest request) {
-		Plan plan = customPlanCreator.create(userId, request);
+		Plan plan = planRegister.createCustom(userId, request);
+		return PlanCreateResponse.from(plan);
+	}
+
+	@PostMapping("/ai")
+	@ResponseStatus(HttpStatus.CREATED)
+	public PlanCreateResponse createAiPlan(@CurrentUserId Long userId,
+			@Valid @RequestBody AiPlanCreateRequest request) {
+		Plan plan = planRegister.createAiPlan(userId, request);
 		return PlanCreateResponse.from(plan);
 	}
 }
