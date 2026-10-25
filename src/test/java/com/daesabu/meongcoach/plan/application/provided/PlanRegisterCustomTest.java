@@ -16,10 +16,11 @@ import com.daesabu.meongcoach.plan.domain.PlanStatus;
 import com.daesabu.meongcoach.plan.domain.exception.EmptyPlanCurriculumsException;
 import com.daesabu.meongcoach.plan.domain.exception.PlanCreationConflictException;
 import com.daesabu.meongcoach.support.NonTransactionalApplicationTest;
-import com.daesabu.meongcoach.training.application.provided.CustomPlanPreparationFinder;
+import com.daesabu.meongcoach.training.application.provided.AiPlanPreparationFinder;
+import com.daesabu.meongcoach.training.application.provided.PlanPreparationFinder;
 import com.daesabu.meongcoach.training.application.provided.TopicCompletionChecker;
 import com.daesabu.meongcoach.training.application.provided.TopicFinder;
-import com.daesabu.meongcoach.training.application.provided.dto.CustomPlanPreparationResult;
+import com.daesabu.meongcoach.training.application.provided.dto.PlanPreparationResult;
 import jakarta.persistence.EntityManager;
 import java.util.List;
 import java.util.concurrent.CyclicBarrier;
@@ -35,21 +36,21 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 @NonTransactionalApplicationTest
-class CustomPlanCreatorTest {
+class PlanRegisterCustomTest {
 
 	private static final Long USER_ID = 597001L;
 	private static final CustomPlanCreateRequest REQUEST = new CustomPlanCreateRequest(List.of(11L), 10, 3);
 
 	@Autowired
-	private CustomPlanCreator creator;
+	private PlanRegister creator;
 	@Autowired
 	private JdbcTemplate jdbc;
 	@Autowired
 	private EntityManager entityManager;
 	@MockitoBean
 	private DogProfileFinder dogProfileFinder;
-	@MockitoBean(extraInterfaces = {TopicFinder.class, TopicCompletionChecker.class})
-	private CustomPlanPreparationFinder preparationFinder;
+	@MockitoBean(extraInterfaces = {TopicFinder.class, TopicCompletionChecker.class, AiPlanPreparationFinder.class})
+	private PlanPreparationFinder preparationFinder;
 	@MockitoSpyBean
 	private PlanRepository planRepository;
 
@@ -58,7 +59,7 @@ class CustomPlanCreatorTest {
 		jdbc.execute("CREATE UNIQUE INDEX IF NOT EXISTS uk_plans_active_user ON plans (user_id) WHERE status = 'ACTIVE'");
 		when(dogProfileFinder.findSelectedDogSummary(USER_ID)).thenReturn(new DogSummaryResult(7L, "초코"));
 		when(preparationFinder.find(USER_ID, REQUEST.topicIds())).thenReturn(
-				new CustomPlanPreparationResult(List.of(9L, 4L)));
+				new PlanPreparationResult(List.of(9L, 4L)));
 	}
 
 	@AfterEach
@@ -69,9 +70,9 @@ class CustomPlanCreatorTest {
 
 	@Test
 	void 선택된_강아지와_교육_순서로_플랜을_저장하고_기존_플랜을_교체한다() {
-		Plan first = creator.create(USER_ID, REQUEST);
+		Plan first = creator.createCustom(USER_ID, REQUEST);
 
-		Plan second = creator.create(USER_ID, REQUEST);
+		Plan second = creator.createCustom(USER_ID, REQUEST);
 
 		assertThat(second.getDogId()).isEqualTo(7L);
 		assertThat(second.getTitle()).isEqualTo("초코의 2주 훈련 플랜");
@@ -84,11 +85,11 @@ class CustomPlanCreatorTest {
 
 	@Test
 	void 남은_커리큘럼이_없으면_기존_활성_플랜을_유지한다() {
-		Plan first = creator.create(USER_ID, REQUEST);
+		Plan first = creator.createCustom(USER_ID, REQUEST);
 		when(preparationFinder.find(USER_ID, REQUEST.topicIds())).thenReturn(
-				new CustomPlanPreparationResult(List.of()));
+				new PlanPreparationResult(List.of()));
 
-		assertThatThrownBy(() -> creator.create(USER_ID, REQUEST)).isInstanceOf(EmptyPlanCurriculumsException.class);
+		assertThatThrownBy(() -> creator.createCustom(USER_ID, REQUEST)).isInstanceOf(EmptyPlanCurriculumsException.class);
 
 		assertThat(planRepository.findByUserIdAndStatus(USER_ID, PlanStatus.ACTIVE).orElseThrow().getId())
 				.isEqualTo(first.getId());
@@ -96,11 +97,11 @@ class CustomPlanCreatorTest {
 
 	@Test
 	void 무결성_오류가_발생하면_교체를_롤백하고_원인을_보존한_충돌로_알린다() {
-		Plan first = creator.create(USER_ID, REQUEST);
+		Plan first = creator.createCustom(USER_ID, REQUEST);
 		DataIntegrityViolationException failure = new DataIntegrityViolationException("다른 저장 오류");
 		doThrow(failure).when(planRepository).saveAndFlush(any(Plan.class));
 
-		assertThatThrownBy(() -> creator.create(USER_ID, REQUEST))
+		assertThatThrownBy(() -> creator.createCustom(USER_ID, REQUEST))
 				.isInstanceOf(PlanCreationConflictException.class)
 				.hasCause(failure);
 
@@ -114,7 +115,7 @@ class CustomPlanCreatorTest {
 
 	@Test
 	void 동시에_교체하면_하나만_저장하고_실패한_교체는_롤백한다() throws Exception {
-		Plan first = creator.create(USER_ID, REQUEST);
+		Plan first = creator.createCustom(USER_ID, REQUEST);
 
 		verifyConcurrentCreation();
 
@@ -146,7 +147,7 @@ class CustomPlanCreatorTest {
 
 	private String createOutcome() {
 		try {
-			creator.create(USER_ID, REQUEST);
+			creator.createCustom(USER_ID, REQUEST);
 			return "created";
 		} catch (PlanCreationConflictException exception) {
 			return "conflict";

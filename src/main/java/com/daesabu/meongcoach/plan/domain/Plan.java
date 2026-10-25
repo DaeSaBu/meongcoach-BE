@@ -44,7 +44,7 @@ public class Plan extends BaseTimeEntity {
 
 	private static final Set<Integer> ALLOWED_DAYS_PER_WEEK = Set.of(3, 5, 7);
 
-	private static final String CUSTOM_TITLE_SUFFIX = "의 2주 훈련 플랜";
+	private static final String TITLE_SUFFIX = "의 2주 훈련 플랜";
 
 	private static final String CUSTOM_GOAL = "선택한 훈련을 차근차근 익혀요";
 
@@ -63,6 +63,9 @@ public class Plan extends BaseTimeEntity {
 
 	@Column(nullable = false, columnDefinition = "TEXT")
 	private String goal;
+
+	@Column(length = 500)
+	private String expectation;
 
 	@Column(nullable = false)
 	private int dailyMinutes;
@@ -88,8 +91,7 @@ public class Plan extends BaseTimeEntity {
 	private Set<Long> completedLessonIds = new HashSet<>();
 
 	public static Plan create(PlanCreateCommand command, List<Long> curriculumIds) {
-		validateDailyMinutes(command.dailyMinutes());
-		validateDaysPerWeek(command.daysPerWeek());
+		validatePracticeSettings(command.dailyMinutes(), command.daysPerWeek());
 		validateCurriculumIds(curriculumIds);
 
 		Plan plan = new Plan();
@@ -105,10 +107,20 @@ public class Plan extends BaseTimeEntity {
 	}
 
 	public static Plan createCustom(CustomPlanCreateCommand command, List<Long> curriculumIds) {
-		String title = requireNonNull(command.dogName()) + CUSTOM_TITLE_SUFFIX;
+		String title = requireNonNull(command.dogName()) + TITLE_SUFFIX;
 		PlanCreateCommand createCommand = new PlanCreateCommand(command.userId(), command.dogId(), title,
 				CUSTOM_GOAL, command.dailyMinutes(), command.daysPerWeek());
 		return create(createCommand, curriculumIds);
+	}
+
+	public static Plan createAiPlan(AiPlanCreateCommand command, List<Long> curriculumIds) {
+		String title = requireNonNull(command.dogName()) + TITLE_SUFFIX;
+		PlanCreateCommand createCommand = new PlanCreateCommand(command.userId(), command.dogId(), title,
+				command.goal(), command.dailyMinutes(), command.daysPerWeek());
+
+		Plan plan = create(createCommand, curriculumIds);
+		plan.expectation = requireNonNull(command.expectation());
+		return plan;
 	}
 
 	public List<Long> getCurriculumIds() {
@@ -145,6 +157,11 @@ public class Plan extends BaseTimeEntity {
 	public void replace() {
 		state(status == PlanStatus.ACTIVE, "활성 플랜만 교체할 수 있습니다.");
 		status = PlanStatus.REPLACED;
+	}
+
+	public static void validatePracticeSettings(int dailyMinutes, int daysPerWeek) {
+		validateDailyMinutes(dailyMinutes);
+		validateDaysPerWeek(daysPerWeek);
 	}
 
 	private static void validateDailyMinutes(int dailyMinutes) {
