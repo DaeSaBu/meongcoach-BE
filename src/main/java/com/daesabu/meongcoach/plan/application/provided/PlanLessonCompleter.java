@@ -9,6 +9,7 @@ public interface PlanLessonCompleter {
 	 * 교체된 플랜이면 {@code PlanNotActiveException}을 던진다.
 	 * 활성 또는 완료된 플랜에 이미 기록된 레슨은 일반 학습 횟수와 플랜 기록을 변경하지 않고 반환한다.
 	 * 완료된 플랜에 기록되지 않은 레슨을 요청하면 {@code PlanNotActiveException}을 던진다.
+	 * 새로 완료할 레슨이 현재 교육 순서의 첫 미완료 레슨이 아니면 {@code PlanLessonOrderException}을 던진다.
 	 */
 	void complete(Long userId, Long planId, Long lessonId);
 }
