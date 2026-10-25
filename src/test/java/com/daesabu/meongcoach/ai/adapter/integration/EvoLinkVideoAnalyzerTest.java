@@ -17,6 +17,8 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 import com.daesabu.meongcoach.ai.domain.exception.VideoAnalysisFailedException;
+import com.daesabu.meongcoach.shared.integration.evolink.EvoLinkChatClient;
+import com.daesabu.meongcoach.shared.integration.evolink.EvoLinkConnectionProperties;
 import com.daesabu.meongcoach.training.application.provided.TopicFinder;
 import com.daesabu.meongcoach.training.application.provided.dto.TopicResult;
 import java.time.Duration;
@@ -33,9 +35,6 @@ import org.springframework.test.web.client.ResponseActions;
 import org.springframework.web.client.RestClient;
 import tools.jackson.databind.ObjectMapper;
 
-/**
- * 모델 호출은 MockRestServiceServer로 가로채고, 채팅 요청 구성과 응답 처리를 검증한다.
- */
 class EvoLinkVideoAnalyzerTest {
 
 	private static final String BASE_URL = "https://api.evolink.test";
@@ -43,11 +42,9 @@ class EvoLinkVideoAnalyzerTest {
 	private static final String MODEL = "doubao-seed-2.0-pro";
 	private static final String VIDEO_URL =
 			"https://test-video-bucket.s3.amazonaws.com/videos/training/7/key.mp4?X-Amz-Signature=abc";
-	// 프롬프트에 넣고 응답 topicId를 검증하는 교육 목록. 응답 예시의 topicId(104)가 여기 있어야 검증을 통과한다
 	private static final List<TopicResult> TOPICS = List.of(
 			new TopicResult(104L, "입질", "무는 습관 교정하기"),
 			new TopicResult(106L, "분리불안", "혼자서도 편안하게"));
-	// 정규화 재직렬화 결과와 비교할 수 있도록 record 컴포넌트 순서(recommend, report, solution / topicId, title, description)와 맞춘 JSON
 	private static final String VALID_CONTENT_JSON = "{\"recommend\":[{\"topicId\":104,\"title\":\"입질\","
 			+ "\"description\":\"물건을 무는 습관을 줄이는 교육이라 도움이 돼요.\"}],"
 			+ "\"report\":[{\"subTitle\":\"영상에서 이런 행동이 보여요\",\"description\":\"슬리퍼를 물고 달려요.\"}],"
@@ -63,9 +60,10 @@ class EvoLinkVideoAnalyzerTest {
 		server = MockRestServiceServer.bindTo(builder).build();
 		topicFinder = mock(TopicFinder.class);
 		when(topicFinder.findAllOrdered()).thenReturn(TOPICS);
-		EvoLinkProperties properties = new EvoLinkProperties(BASE_URL, "test-evolink-api-key", MODEL,
-				Duration.ofMinutes(5), 4096, 0.0, "disabled", 1.0);
-		analyzer = new EvoLinkVideoAnalyzer(new EvoLinkChatClient(properties, builder.build()),
+		EvoLinkConnectionProperties connectionProperties = new EvoLinkConnectionProperties(
+				BASE_URL, "test-evolink-api-key", Duration.ofMinutes(5));
+		EvoLinkProperties properties = new EvoLinkProperties(MODEL, 4096, 0.0, "disabled", 1.0);
+		analyzer = new EvoLinkVideoAnalyzer(new EvoLinkChatClient(connectionProperties, builder.build()),
 				properties, topicFinder, new ObjectMapper());
 	}
 
@@ -143,7 +141,6 @@ class EvoLinkVideoAnalyzerTest {
 
 	@Test
 	void 모델_API가_오류를_응답하면_VideoAnalysisFailedException으로_실패한다() {
-		// HTTP 오류는 경계에서 도메인 예외로 번역하고, 삼킬지는 호출부가 정한다
 		expectChatRequest().andRespond(withServerError());
 
 		assertThatThrownBy(() -> analyzer.analyze(VIDEO_URL))
@@ -215,7 +212,6 @@ class EvoLinkVideoAnalyzerTest {
 
 	@Test
 	void 비디오_블록을_텍스트보다_먼저_보낸다() {
-		// 순서가 뒤집히면 모델이 지시를 무시하고 영어 장면 묘사로 빠진다
 		expectChatRequest()
 				.andExpect(jsonPath("$.messages[1].content[0].type").value("video_url"))
 				.andExpect(jsonPath("$.messages[1].content[1].type").value("text"))
@@ -252,7 +248,6 @@ class EvoLinkVideoAnalyzerTest {
 
 	@Test
 	void 사용자_프롬프트에_교육_목록을_topicId와_함께_치환해_보낸다() {
-		// 라벨을 응답 키 이름(topicId)과 맞춰 모델이 값을 그대로 복사하게 한다
 		expectChatRequest()
 				.andExpect(jsonPath("$.messages[1].content[1].text",
 						containsString("- topicId: 104, 교육 이름: 입질, 설명: 무는 습관 교정하기")))
@@ -268,7 +263,6 @@ class EvoLinkVideoAnalyzerTest {
 
 	@Test
 	void 교육_목록을_호출당_한_번만_조회한다() {
-		// 프롬프트와 topicId 검증이 같은 목록을 봐야 하므로 두 번 조회하지 않는다
 		givenModelResponds(VALID_CONTENT_JSON);
 
 		analyzer.analyze(VIDEO_URL);
@@ -278,7 +272,6 @@ class EvoLinkVideoAnalyzerTest {
 
 	@Test
 	void 추천_교육의_topicId가_교육_목록에_없으면_분석에_실패한다() {
-		// 스키마는 정수 타입만 강제하므로 목록에 실재하는 id인지는 어댑터가 검증한다
 		givenModelResponds(VALID_CONTENT_JSON.replace("\"topicId\":104", "\"topicId\":999"));
 
 		assertThatThrownBy(() -> analyzer.analyze(VIDEO_URL))

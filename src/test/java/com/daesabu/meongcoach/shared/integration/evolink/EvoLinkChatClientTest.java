@@ -1,4 +1,4 @@
-package com.daesabu.meongcoach.ai.adapter.integration;
+package com.daesabu.meongcoach.shared.integration.evolink;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -9,8 +9,8 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
-import com.daesabu.meongcoach.ai.adapter.integration.dto.EvoLinkChatRequest;
-import com.daesabu.meongcoach.ai.adapter.integration.dto.EvoLinkChatRequest.ChatMessage;
+import com.daesabu.meongcoach.shared.integration.evolink.dto.EvoLinkChatRequest;
+import com.daesabu.meongcoach.shared.integration.evolink.dto.EvoLinkChatRequest.ChatMessage;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -24,9 +24,6 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 import tools.jackson.databind.ObjectMapper;
 
-/**
- * HTTP 호출은 MockRestServiceServer로 가로채고, 요청 구성(엔드포인트·인증)과 응답 검증 규칙을 확인한다.
- */
 class EvoLinkChatClientTest {
 
 	private static final String BASE_URL = "https://api.evolink.test";
@@ -43,9 +40,8 @@ class EvoLinkChatClientTest {
 		client = new EvoLinkChatClient(properties(), builder.build());
 	}
 
-	private static EvoLinkProperties properties() {
-		return new EvoLinkProperties(BASE_URL, API_KEY, "doubao-seed-2.0-pro", Duration.ofMinutes(5),
-				4096, 0.0, "disabled", 1.0);
+	private static EvoLinkConnectionProperties properties() {
+		return new EvoLinkConnectionProperties(BASE_URL, API_KEY, Duration.ofMinutes(5));
 	}
 
 	private static EvoLinkChatRequest chatRequest() {
@@ -114,7 +110,6 @@ class EvoLinkChatClientTest {
 
 	@Test
 	void 응답이_4xx면_RestClient_예외를_그대로_전파한다() {
-		// 재시도·폴백 없이 전파하고, 삼킬지는 호출부(AiReportGenerateService)가 정한다
 		server.expect(requestTo(CHAT_URL))
 				.andRespond(withStatus(HttpStatus.UNAUTHORIZED));
 

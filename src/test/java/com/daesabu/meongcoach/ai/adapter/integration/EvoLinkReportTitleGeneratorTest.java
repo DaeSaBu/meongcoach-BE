@@ -11,6 +11,8 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 import com.daesabu.meongcoach.ai.domain.exception.ReportTitleGenerationFailedException;
+import com.daesabu.meongcoach.shared.integration.evolink.EvoLinkChatClient;
+import com.daesabu.meongcoach.shared.integration.evolink.EvoLinkConnectionProperties;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -25,9 +27,6 @@ import org.springframework.test.web.client.ResponseActions;
 import org.springframework.web.client.RestClient;
 import tools.jackson.databind.ObjectMapper;
 
-/**
- * 모델 호출은 MockRestServiceServer로 가로채고, 제목 생성 요청 구성과 {"title": ...} 응답 파싱을 검증한다.
- */
 class EvoLinkReportTitleGeneratorTest {
 
 	private static final String BASE_URL = "https://api.evolink.test";
@@ -43,9 +42,10 @@ class EvoLinkReportTitleGeneratorTest {
 	void setUp() {
 		RestClient.Builder builder = RestClient.builder();
 		server = MockRestServiceServer.bindTo(builder).build();
-		EvoLinkProperties properties = new EvoLinkProperties(BASE_URL, "test-evolink-api-key", MODEL,
-				Duration.ofMinutes(5), 4096, 0.0, "disabled", 1.0);
-		generator = new EvoLinkReportTitleGenerator(new EvoLinkChatClient(properties, builder.build()),
+		EvoLinkConnectionProperties connectionProperties = new EvoLinkConnectionProperties(
+				BASE_URL, "test-evolink-api-key", Duration.ofMinutes(5));
+		EvoLinkProperties properties = new EvoLinkProperties(MODEL, 4096, 0.0, "disabled", 1.0);
+		generator = new EvoLinkReportTitleGenerator(new EvoLinkChatClient(connectionProperties, builder.build()),
 				properties, new ObjectMapper());
 	}
 
