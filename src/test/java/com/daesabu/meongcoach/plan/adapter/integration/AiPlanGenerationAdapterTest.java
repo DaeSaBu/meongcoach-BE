@@ -1,7 +1,6 @@
 package com.daesabu.meongcoach.plan.adapter.integration;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -35,7 +34,7 @@ class AiPlanGenerationAdapterTest {
 	private final String systemPrompt = "제공된 후보에서 필요한 토픽을 선택한다.";
 	private final String responseSchema = "{\"type\":\"object\"}";
 	private final AiPlanGenerationAdapter adapter = new AiPlanGenerationAdapter(
-			promptBuilder, contentGenerator, systemPrompt, responseSchema);
+			promptBuilder, contentGenerator, systemPrompt, responseSchema, objectMapper);
 
 	@Test
 	void 프롬프트와_스키마를_AI_모듈에_전달하고_생성된_문자열을_반환한다() {
@@ -43,7 +42,7 @@ class AiPlanGenerationAdapterTest {
 		String generatedContent = "{\"topicIds\":[1],\"goal\":\"차분하게 기다려요\"}";
 		given(contentGenerator.generate(any())).willReturn(generatedContent);
 
-		String result = adapter.generateContent(request);
+		AiPlanGenerateResult result = adapter.generate(request);
 
 		ArgumentCaptor<AiContentGenerateRequest> captor = ArgumentCaptor.forClass(AiContentGenerateRequest.class);
 		verify(contentGenerator).generate(captor.capture());
@@ -53,7 +52,8 @@ class AiPlanGenerationAdapterTest {
 		JsonNode input = objectMapper.readTree(contentRequest.userPrompt());
 		assertThat(input.at("/dog/breed").asString()).isEqualTo("푸들");
 		assertThat(input.get("expectation").asString()).isEqualTo(request.expectation());
-		assertThat(result).isEqualTo(generatedContent);
+		assertThat(result.topicIds()).containsExactly(1L);
+		assertThat(result.goal()).isEqualTo("차분하게 기다려요");
 	}
 
 	@Test
@@ -62,7 +62,7 @@ class AiPlanGenerationAdapterTest {
 		RuntimeException failure = new RuntimeException("AI 호출 실패");
 		given(contentGenerator.generate(any())).willThrow(failure);
 
-		assertThatThrownBy(() -> adapter.generateContent(request)).isSameAs(failure);
+		assertThatThrownBy(() -> adapter.generate(request)).isSameAs(failure);
 		verify(contentGenerator).generate(any());
 	}
 
@@ -71,8 +71,11 @@ class AiPlanGenerationAdapterTest {
 		AiPlanGenerateRequest request = createRequest();
 		AiPlanGenerateResult result = new AiPlanGenerateResult(List.of(2L, 1L), "차분히 기다리고 다가와요");
 
-		assertThatCode(() -> adapter.validateResult(result, request)).doesNotThrowAnyException();
-		assertThat(result.topicIds()).containsExactly(2L, 1L);
+		given(contentGenerator.generate(any())).willReturn(objectMapper.writeValueAsString(result));
+
+		AiPlanGenerateResult actual = adapter.generate(request);
+
+		assertThat(actual).isEqualTo(result);
 	}
 
 	@ParameterizedTest
@@ -80,13 +83,52 @@ class AiPlanGenerationAdapterTest {
 	void 사용할_수_없는_AI_결과를_거절한다(AiPlanGenerateResult result) {
 		AiPlanGenerateRequest request = createRequest();
 
-		assertThatThrownBy(() -> adapter.validateResult(result, request))
+		given(contentGenerator.generate(any())).willReturn(objectMapper.writeValueAsString(result));
+
+		assertThatThrownBy(() -> adapter.generate(request))
 				.isInstanceOf(InvalidAiPlanResponseException.class)
 				.satisfies(exception -> {
 					InvalidAiPlanResponseException failure = (InvalidAiPlanResponseException) exception;
 					assertThat(failure.getErrorCode().code()).isEqualTo("PLAN_AI_INVALID_RESPONSE");
 					assertThat(failure.getErrorCode().status()).isEqualTo(502);
 				});
+	}
+
+	@ParameterizedTest
+	@MethodSource("invalidContents")
+	void JSON_문법과_필드_타입이_잘못된_응답을_거절한다(String content) {
+		AiPlanGenerateRequest request = createRequest();
+		given(contentGenerator.generate(any())).willReturn(content);
+
+		assertThatThrownBy(() -> adapter.generate(request))
+				.isInstanceOf(InvalidAiPlanResponseException.class);
+	}
+
+	@Test
+	void JSON_파싱_실패의_원인을_보존한다() {
+		AiPlanGenerateRequest request = createRequest();
+		given(contentGenerator.generate(any())).willReturn("{");
+
+		assertThatThrownBy(() -> adapter.generate(request))
+				.isInstanceOf(InvalidAiPlanResponseException.class)
+				.hasCauseInstanceOf(tools.jackson.core.JacksonException.class);
+	}
+
+	private static Stream<String> invalidContents() {
+		return Stream.of(
+				null, "", " ", "{", "[]", "123",
+				"{}",
+				"{\"topicIds\":[\"1\"],\"goal\":\"목표\"}",
+				"{\"topicIds\":[1.5],\"goal\":\"목표\"}",
+				"{\"topicIds\":[9223372036854775808],\"goal\":\"목표\"}",
+				"{\"topicIds\":[true],\"goal\":\"목표\"}",
+				"{\"topicIds\":1,\"goal\":\"목표\"}",
+				"{\"topicIds\":[1],\"goal\":123}",
+				"{\"topicIds\":[1],\"goal\":{}}",
+				"{\"topicIds\":[1],\"goal\":\"목표\",\"extra\":true}",
+				"{\"topicIds\":[1],\"goal\":\"목표\"} {}",
+				"{\"topicIds\":[999],\"topicIds\":[1],\"goal\":\"목표\"}"
+		);
 	}
 
 	private static Stream<AiPlanGenerateResult> invalidResults() {
