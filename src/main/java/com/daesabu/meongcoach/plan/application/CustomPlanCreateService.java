@@ -9,8 +9,8 @@ import com.daesabu.meongcoach.plan.domain.CustomPlanCreateCommand;
 import com.daesabu.meongcoach.plan.domain.Plan;
 import com.daesabu.meongcoach.plan.domain.PlanStatus;
 import com.daesabu.meongcoach.plan.domain.exception.PlanCreationConflictException;
-import com.daesabu.meongcoach.training.application.provided.CustomPlanPreparationFinder;
-import com.daesabu.meongcoach.training.application.provided.dto.CustomPlanPreparationResult;
+import com.daesabu.meongcoach.training.application.provided.PlanPreparationFinder;
+import com.daesabu.meongcoach.training.application.provided.dto.PlanPreparationResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -24,14 +24,14 @@ import org.springframework.validation.annotation.Validated;
 public class CustomPlanCreateService implements CustomPlanCreator {
 
 	private final DogProfileFinder dogProfileFinder;
-	private final CustomPlanPreparationFinder preparationFinder;
+	private final PlanPreparationFinder preparationFinder;
 	private final PlanRepository planRepository;
 
 	@Override
 	@Transactional
 	public Plan create(Long userId, CustomPlanCreateRequest request) {
 		DogSummaryResult dog = dogProfileFinder.findSelectedDogSummary(userId);
-		CustomPlanPreparationResult preparation = preparationFinder.find(userId, request.topicIds());
+		PlanPreparationResult preparation = preparationFinder.find(userId, request.topicIds());
 		CustomPlanCreateCommand command = new CustomPlanCreateCommand(userId, dog.id(), dog.name(),
 				request.dailyMinutes(), request.daysPerWeek());
 		Plan plan = Plan.createCustom(command, preparation.curriculumIds());

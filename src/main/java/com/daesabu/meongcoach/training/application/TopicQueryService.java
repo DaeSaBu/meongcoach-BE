@@ -1,12 +1,12 @@
 package com.daesabu.meongcoach.training.application;
 
 import com.daesabu.meongcoach.training.application.provided.AiPlanPreparationFinder;
-import com.daesabu.meongcoach.training.application.provided.CustomPlanPreparationFinder;
+import com.daesabu.meongcoach.training.application.provided.PlanPreparationFinder;
 import com.daesabu.meongcoach.training.application.provided.TopicCompletionChecker;
 import com.daesabu.meongcoach.training.application.provided.TopicFinder;
 import com.daesabu.meongcoach.training.application.provided.dto.AiPlanCurriculumResult;
 import com.daesabu.meongcoach.training.application.provided.dto.AiPlanPreparationResult;
-import com.daesabu.meongcoach.training.application.provided.dto.CustomPlanPreparationResult;
+import com.daesabu.meongcoach.training.application.provided.dto.PlanPreparationResult;
 import com.daesabu.meongcoach.training.application.provided.dto.TopicResult;
 import com.daesabu.meongcoach.training.application.required.LessonProgressRepository;
 import com.daesabu.meongcoach.training.application.required.TopicRepository;
@@ -28,7 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class TopicQueryService implements TopicFinder, TopicCompletionChecker, CustomPlanPreparationFinder,
+public class TopicQueryService implements TopicFinder, TopicCompletionChecker, PlanPreparationFinder,
 		AiPlanPreparationFinder {
 	private final LessonProgressRepository lessonProgressRepository;
 	private final TopicRepository topicRepository;
@@ -63,7 +63,7 @@ public class TopicQueryService implements TopicFinder, TopicCompletionChecker, C
 	}
 
 	@Override
-	public CustomPlanPreparationResult find(Long userId, Collection<Long> topicIds) {
+	public PlanPreparationResult find(Long userId, Collection<Long> topicIds) {
 		List<Topic> topics = topicRepository.findAllByIdIn(topicIds, TopicRepository.EDUCATION_ORDER);
 		validateTopicsExist(topicIds, topics);
 		List<Long> lessonIds = topics.stream().flatMap(topic -> topic.getAllLessonIds().stream()).toList();
@@ -76,7 +76,7 @@ public class TopicQueryService implements TopicFinder, TopicCompletionChecker, C
 				.dropWhile(curriculum -> curriculum.isCompleted(progresses))
 				.map(Curriculum::getId)
 				.toList();
-		return new CustomPlanPreparationResult(curriculumIds);
+		return new PlanPreparationResult(curriculumIds);
 	}
 
 	@Override

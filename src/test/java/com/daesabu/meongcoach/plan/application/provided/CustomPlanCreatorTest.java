@@ -16,10 +16,10 @@ import com.daesabu.meongcoach.plan.domain.PlanStatus;
 import com.daesabu.meongcoach.plan.domain.exception.EmptyPlanCurriculumsException;
 import com.daesabu.meongcoach.plan.domain.exception.PlanCreationConflictException;
 import com.daesabu.meongcoach.support.NonTransactionalApplicationTest;
-import com.daesabu.meongcoach.training.application.provided.CustomPlanPreparationFinder;
+import com.daesabu.meongcoach.training.application.provided.PlanPreparationFinder;
 import com.daesabu.meongcoach.training.application.provided.TopicCompletionChecker;
 import com.daesabu.meongcoach.training.application.provided.TopicFinder;
-import com.daesabu.meongcoach.training.application.provided.dto.CustomPlanPreparationResult;
+import com.daesabu.meongcoach.training.application.provided.dto.PlanPreparationResult;
 import jakarta.persistence.EntityManager;
 import java.util.List;
 import java.util.concurrent.CyclicBarrier;
@@ -49,7 +49,7 @@ class CustomPlanCreatorTest {
 	@MockitoBean
 	private DogProfileFinder dogProfileFinder;
 	@MockitoBean(extraInterfaces = {TopicFinder.class, TopicCompletionChecker.class})
-	private CustomPlanPreparationFinder preparationFinder;
+	private PlanPreparationFinder preparationFinder;
 	@MockitoSpyBean
 	private PlanRepository planRepository;
 
@@ -58,7 +58,7 @@ class CustomPlanCreatorTest {
 		jdbc.execute("CREATE UNIQUE INDEX IF NOT EXISTS uk_plans_active_user ON plans (user_id) WHERE status = 'ACTIVE'");
 		when(dogProfileFinder.findSelectedDogSummary(USER_ID)).thenReturn(new DogSummaryResult(7L, "초코"));
 		when(preparationFinder.find(USER_ID, REQUEST.topicIds())).thenReturn(
-				new CustomPlanPreparationResult(List.of(9L, 4L)));
+				new PlanPreparationResult(List.of(9L, 4L)));
 	}
 
 	@AfterEach
@@ -86,7 +86,7 @@ class CustomPlanCreatorTest {
 	void 남은_커리큘럼이_없으면_기존_활성_플랜을_유지한다() {
 		Plan first = creator.create(USER_ID, REQUEST);
 		when(preparationFinder.find(USER_ID, REQUEST.topicIds())).thenReturn(
-				new CustomPlanPreparationResult(List.of()));
+				new PlanPreparationResult(List.of()));
 
 		assertThatThrownBy(() -> creator.create(USER_ID, REQUEST)).isInstanceOf(EmptyPlanCurriculumsException.class);
 
