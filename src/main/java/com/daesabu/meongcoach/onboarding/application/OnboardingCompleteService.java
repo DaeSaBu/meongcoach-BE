@@ -1,18 +1,19 @@
 package com.daesabu.meongcoach.onboarding.application;
 
 import com.daesabu.meongcoach.dog.application.provided.DogRegister;
-import com.daesabu.meongcoach.onboarding.application.provided.OnboardingCompleteInfo;
 import com.daesabu.meongcoach.onboarding.application.provided.OnboardingCompleter;
-import com.daesabu.meongcoach.user.application.provided.UserProfileRegisterRequest;
+import com.daesabu.meongcoach.onboarding.application.provided.dto.OnboardingCompleteRequest;
 import com.daesabu.meongcoach.user.application.provided.UserRegister;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
+@Validated
 public class OnboardingCompleteService implements OnboardingCompleter {
 
 	private final UserRegister userRegister;
@@ -20,10 +21,10 @@ public class OnboardingCompleteService implements OnboardingCompleter {
 
 	@Override
 	@Transactional
-	public List<Long> complete(Long userId, OnboardingCompleteInfo info) {
-		userRegister.completeOnboarding(userId, new UserProfileRegisterRequest(info.nickname()));
-		return info.dogs().stream()
-				.map(dog -> dogRegister.register(userId, dog))
+	public List<Long> complete(Long userId, OnboardingCompleteRequest request) {
+		userRegister.completeOnboarding(userId);
+		return request.dogs().stream()
+				.map(dog -> dogRegister.register(userId, dog.toInfo()))
 				.toList();
 	}
 }

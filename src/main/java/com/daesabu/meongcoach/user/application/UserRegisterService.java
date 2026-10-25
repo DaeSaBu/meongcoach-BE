@@ -1,10 +1,10 @@
 package com.daesabu.meongcoach.user.application;
 
 import com.daesabu.meongcoach.user.application.provided.UserFinder;
-import com.daesabu.meongcoach.user.application.provided.UserProfileRegisterRequest;
 import com.daesabu.meongcoach.user.application.provided.UserRegister;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.User;
+import com.daesabu.meongcoach.user.domain.UserProfileCreateCommand;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,10 +26,11 @@ public class UserRegisterService implements UserRegister {
 
 	@Override
 	@Transactional
-	public void completeOnboarding(Long userId, UserProfileRegisterRequest request) {
+	public void completeOnboarding(Long userId) {
 		User user = userFinder.findById(userId);
 
-		user.completeOnboarding(request.toCommand());
+		UserProfileCreateCommand command = new UserProfileCreateCommand("", null, null, null, null);
+		user.completeOnboarding(command);
 
 		userRepository.save(user);
 	}
