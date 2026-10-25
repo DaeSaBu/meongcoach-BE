@@ -4,11 +4,9 @@ import com.daesabu.meongcoach.entitlement.application.provided.EntitlementChecke
 import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;
 import com.daesabu.meongcoach.training.application.provided.PlanCurriculumFinder;
 import com.daesabu.meongcoach.training.application.provided.dto.PlanCurriculumResult;
+import com.daesabu.meongcoach.training.application.provided.dto.PlanLessonResult;
 import com.daesabu.meongcoach.training.application.required.CurriculumRepository;
-import com.daesabu.meongcoach.training.application.required.LessonProgressRepository;
 import com.daesabu.meongcoach.training.domain.Curriculum;
-import com.daesabu.meongcoach.training.domain.LessonProgress;
-import com.daesabu.meongcoach.training.domain.LessonProgresses;
 import com.daesabu.meongcoach.training.domain.exception.CurriculumNotFoundException;
 import java.util.List;
 import java.util.Map;
@@ -24,7 +22,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class PlanCurriculumQueryService implements PlanCurriculumFinder {
 
 	private final CurriculumRepository curriculumRepository;
-	private final LessonProgressRepository lessonProgressRepository;
 	private final EntitlementChecker entitlementChecker;
 
 	@Override
@@ -37,14 +34,23 @@ public class PlanCurriculumQueryService implements PlanCurriculumFinder {
 		List<Curriculum> orderedCurriculums = curriculumIds.stream()
 				.map(curriculumId -> findCurriculumOrThrow(curriculumMap, curriculumId))
 				.toList();
-		List<Long> lessonIds = orderedCurriculums.stream().flatMap(curriculum -> curriculum.getLessonIds().stream()).toList();
-		List<LessonProgress> lessonProgresses = lessonProgressRepository.findAllByUserIdAndLessonIdIn(userId, lessonIds);
-		LessonProgresses progresses = LessonProgresses.from(lessonProgresses);
 		Set<EntitlementType> activeTypes = entitlementChecker.findActiveTypes(userId);
 		return orderedCurriculums.stream()
-				.map(curriculum -> PlanCurriculumResult.of(curriculum, progresses,
-						curriculum.findRequiredEntitlementType().map(activeTypes::contains).orElse(true)))
+				.map(curriculum -> toResult(curriculum, activeTypes))
 				.toList();
+	}
+
+	private PlanCurriculumResult toResult(Curriculum curriculum, Set<EntitlementType> activeTypes) {
+		curriculum.validateHasLessons();
+
+		List<PlanLessonResult> planLessons = curriculum.getLessons().stream()
+				.map(lesson -> new PlanLessonResult(lesson.getId(), lesson.getTitle()))
+				.toList();
+		boolean hasEntitlement = curriculum.findRequiredEntitlementType()
+				.map(activeTypes::contains)
+				.orElse(true);
+		return new PlanCurriculumResult(curriculum.getId(), curriculum.getTitle(), curriculum.getDescription(),
+				curriculum.isLocked(hasEntitlement), planLessons);
 	}
 
 	private Curriculum findCurriculumOrThrow(Map<Long, Curriculum> curriculumMap, Long curriculumId) {
