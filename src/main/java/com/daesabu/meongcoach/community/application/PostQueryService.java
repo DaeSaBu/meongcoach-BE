@@ -8,6 +8,7 @@ import com.daesabu.meongcoach.community.application.provided.dto.MentionTargetRe
 import com.daesabu.meongcoach.community.application.provided.dto.PostListRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.PostListResult;
 import com.daesabu.meongcoach.community.application.provided.dto.PostResult;
+import com.daesabu.meongcoach.community.application.required.CommentQueryRepository;
 import com.daesabu.meongcoach.community.application.required.PostQueryRepository;
 import com.daesabu.meongcoach.community.application.required.PostRepository;
 import com.daesabu.meongcoach.community.domain.MentionTargetType;
@@ -33,6 +34,7 @@ public class PostQueryService implements PostFinder {
 
 	private final PostRepository postRepository;
 	private final PostQueryRepository postQueryRepository;
+	private final CommentQueryRepository commentQueryRepository;
 	private final AuthorProfiles authorProfiles;
 	private final MentionTargetReaders mentionTargetReaders;
 
@@ -80,8 +82,9 @@ public class PostQueryService implements PostFinder {
 	private List<PostResult> compose(List<Post> posts) {
 		Map<Long, AuthorResult> authors = findAuthors(posts);
 		Map<MentionTargetType, Map<Long, MentionTargetResult>> mentionTargets = findMentionTargets(posts);
+		Map<Long, Long> commentCounts = countComments(posts);
 		return posts.stream()
-				.map(post -> toResult(post, authors, mentionTargets))
+				.map(post -> toResult(post, authors, mentionTargets, commentCounts))
 				.toList();
 	}
 
@@ -100,12 +103,21 @@ public class PostQueryService implements PostFinder {
 		return mentionTargetReaders.findSummaries(mentions);
 	}
 
+	private Map<Long, Long> countComments(List<Post> posts) {
+		List<Long> postIds = posts.stream()
+				.map(Post::getId)
+				.toList();
+		return commentQueryRepository.countComments(postIds);
+	}
+
 	private PostResult toResult(Post post, Map<Long, AuthorResult> authors,
-	                            Map<MentionTargetType, Map<Long, MentionTargetResult>> mentionTargets) {
+	                            Map<MentionTargetType, Map<Long, MentionTargetResult>> mentionTargets,
+	                            Map<Long, Long> commentCounts) {
 		AuthorResult author = authors.get(post.getUserId());
 		MentionTargetResult mentionTarget = ofNullable(post.getMention())
 				.map(mention -> mentionTargets.get(mention.getTargetType()).get(mention.getTargetId()))
 				.orElse(null);
-		return new PostResult(post, author, mentionTarget);
+		long commentCount = commentCounts.getOrDefault(post.getId(), 0L);
+		return new PostResult(post, author, mentionTarget, commentCount);
 	}
 }

@@ -612,6 +612,7 @@ link:{swagger-ui}#/Community/community-post-list[▶ Swagger에서 Try it out,wi
 작성자가 탈퇴했거나 선택된 강아지가 없으면 `author`가, 멘션이 없거나 멘션 대상이 없으면 `mention`이 null입니다.
 `mention.targetType`은 멘션 대상 종류이며 현재는 레슨(`LESSON`)만 있습니다.
 `media`는 게시글의 사진·영상 목록이며 배열 순서대로 표시합니다. 미디어가 없으면 빈 배열이고, `type`은 사진(`IMAGE`)과 영상(`VIDEO`)입니다.
+`commentCount`는 게시글에 달린 삭제되지 않은 댓글과 답글을 합한 수입니다. 삭제된 댓글 아래의 답글은 세지 않고, 댓글이 없으면 0입니다.
 
 operation::community/post-list[snippets='http-request,query-parameters,http-response,response-fields']
 
@@ -627,7 +628,7 @@ link:{swagger-ui}#/Community/community-post-detail[▶ Swagger에서 Try it out,
 
 게시글 하나를 조회합니다. 응답 형태는 게시글 목록 조회의 `posts[]` 항목과 같습니다.
 작성자가 탈퇴했거나 선택된 강아지가 없으면 `author`가, 멘션이 없거나 멘션 대상이 없으면 `mention`이 null이고, 미디어가 없으면 `media`가 빈 배열입니다.
-댓글은 이 응답에 담기지 않습니다.
+댓글 본문은 이 응답에 담기지 않고 `commentCount`로 개수만 내려갑니다.
 
 operation::community/post-detail[snippets='http-request,path-parameters,http-response,response-fields']
 

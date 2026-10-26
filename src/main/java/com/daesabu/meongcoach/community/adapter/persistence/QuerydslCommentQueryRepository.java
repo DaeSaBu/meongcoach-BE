@@ -27,6 +27,7 @@ import org.springframework.stereotype.Repository;
 public class QuerydslCommentQueryRepository implements CommentQueryRepository {
 
 	private static final QComment reply = new QComment("reply");
+	private static final QComment root = new QComment("root");
 
 	private final JPAQueryFactory queryFactory;
 
@@ -58,6 +59,21 @@ public class QuerydslCommentQueryRepository implements CommentQueryRepository {
 	}
 
 	@Override
+	public Map<Long, Long> countComments(Collection<Long> postIds) {
+		if (postIds.isEmpty()) {
+			return Map.of();
+		}
+		NumberExpression<Long> commentCount = comment.count();
+		List<Tuple> rows = queryFactory.select(comment.post.id, commentCount)
+				.from(comment)
+				.where(comment.post.id.in(postIds), comment.deletedAt.isNull(), hasNoDeletedRoot())
+				.groupBy(comment.post.id)
+				.fetch();
+		return rows.stream()
+				.collect(toMap(row -> row.get(comment.post.id), row -> row.get(commentCount)));
+	}
+
+	@Override
 	public Slice<Comment> findReplies(Long rootId, Long cursor, int size) {
 		List<Comment> replies = queryFactory.select(reply)
 				.from(commentClosure)
@@ -81,6 +97,15 @@ public class QuerydslCommentQueryRepository implements CommentQueryRepository {
 		return JPAExpressions.selectOne()
 				.from(commentClosure)
 				.where(commentClosure.descendant.eq(comment), commentClosure.depth.eq(CommentClosure.REPLY_DEPTH))
+				.notExists();
+	}
+
+	private BooleanExpression hasNoDeletedRoot() {
+		return JPAExpressions.selectOne()
+				.from(commentClosure)
+				.join(commentClosure.ancestor, root)
+				.where(commentClosure.descendant.eq(comment), commentClosure.depth.eq(CommentClosure.REPLY_DEPTH),
+						root.deletedAt.isNotNull())
 				.notExists();
 	}
 
