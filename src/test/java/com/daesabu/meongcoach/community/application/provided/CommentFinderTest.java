@@ -318,6 +318,17 @@ class CommentFinderTest {
 	}
 
 	@Test
+	void 삭제된_루트_댓글의_답글을_조회하면_예외를_던진다() {
+		Comment root = saveComment(USER_ID, "삭제된 루트 댓글");
+		saveReply(root, USER_ID, "답글");
+		root.delete();
+		flushAndClear();
+
+		assertThatThrownBy(() -> commentFinder.findReplies(root.getId(), new CommentListRequest(null, 20)))
+				.isInstanceOf(CommentNotFoundException.class);
+	}
+
+	@Test
 	void 답글의_답글을_조회하면_예외를_던진다() {
 		Comment root = saveComment(USER_ID, "루트 댓글");
 		Comment reply = saveReply(root, USER_ID, "답글");
