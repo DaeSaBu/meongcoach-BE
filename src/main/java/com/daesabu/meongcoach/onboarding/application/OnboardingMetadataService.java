@@ -22,10 +22,10 @@ public class OnboardingMetadataService implements OnboardingMetadataFinder {
 
 	@Override
 	public OnboardingMetadataResult find() {
-		return new OnboardingMetadataResult(
-				topicFinder.findAllOrdered(),
-				breedFinder.findAll(),
-				personalityFinder.findAll(),
-				mbtiFinder.findAllCodes());
+		var topics = topicFinder.findAllOrdered();
+		var breeds = breedFinder.findAll();
+		var personalities = personalityFinder.findAll();
+		var mbtis = mbtiFinder.findAllCodes();
+		return new OnboardingMetadataResult(topics, breeds, personalities, mbtis);
 	}
 }
