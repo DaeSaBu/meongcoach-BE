@@ -803,7 +803,7 @@ operation::community/reply-list[snippets='http-request,path-parameters,query-par
 
 ==== 실패 응답
 
-댓글이 없거나 답글의 ID를 보내면 404(`COMMUNITY_COMMENT_NOT_FOUND`)가 내려갑니다.
+댓글이 없거나 삭제됐거나 답글의 ID를 보내면 404(`COMMUNITY_COMMENT_NOT_FOUND`)가 내려갑니다.
 `size`가 1~50을 벗어나거나 `cursor`가 양의 정수가 아니면 400(`BAD_REQUEST`)에 `errors` 필드로 항목별 원인이 내려갑니다.
 
 operation::community/reply-list-error[snippets='http-response,response-fields']

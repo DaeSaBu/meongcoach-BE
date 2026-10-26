@@ -70,7 +70,7 @@ public class CommentQueryService implements CommentFinder {
 	}
 
 	private void validateRootComment(Long commentId) {
-		boolean exists = commentRepository.existsById(commentId);
+		boolean exists = commentRepository.existsByIdAndDeletedAtIsNull(commentId);
 		boolean isReply = commentClosureRepository.existsByDescendantIdAndDepth(commentId, CommentClosure.REPLY_DEPTH);
 		if (!exists || isReply) {
 			throw new CommentNotFoundException(commentId);
