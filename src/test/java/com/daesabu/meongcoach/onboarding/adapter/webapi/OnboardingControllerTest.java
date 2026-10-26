@@ -19,6 +19,7 @@ import com.daesabu.meongcoach.onboarding.application.provided.OnboardingImageUpl
 import com.daesabu.meongcoach.onboarding.application.provided.OnboardingMetadataFinder;
 import com.daesabu.meongcoach.onboarding.application.provided.OnboardingMetadataResult;
 import com.daesabu.meongcoach.onboarding.application.provided.dto.OnboardingCompleteRequest;
+import com.daesabu.meongcoach.training.application.provided.dto.TopicResult;
 import com.daesabu.meongcoach.user.domain.exception.AlreadyOnboardedException;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -99,15 +100,18 @@ class OnboardingControllerTest {
 						.principal(() -> "1")
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.topics").doesNotExist())
+				.andExpect(jsonPath("$.topics[0].id").value(1))
 				.andExpect(jsonPath("$.breeds[0].code").value("POODLE"))
 				.andExpect(jsonPath("$.breeds[0].label").value("푸들"))
 				.andExpect(jsonPath("$.breeds[0].aliases[0]").value("POODLE"))
 				.andExpect(jsonPath("$.breeds[0].aliases[1]").value("CANICHE"))
 				.andExpect(jsonPath("$.personalities[0].code").value("TIMID"))
-				.andExpect(jsonPath("$.mbtis").doesNotExist())
+				.andExpect(jsonPath("$.mbtis[0]").value("INTJ"))
 				.andDo(document("onboarding/metadata",
 						responseFields(
+								fieldWithPath("topics[].id").description("구버전 앱의 교육 토픽 ID"),
+								fieldWithPath("topics[].title").description("교육 토픽 이름"),
+								fieldWithPath("mbtis[]").description("구버전 앱의 MBTI 선택 목록"),
 								fieldWithPath("breeds[]").description("등록 견종 목록. 믹스견이 맨 앞이고 나머지는 한글 라벨 가나다순"),
 								fieldWithPath("breeds[].code").description("강아지 견종 코드"),
 								fieldWithPath("breeds[].label").description("강아지 견종 한글 라벨"),
@@ -437,8 +441,9 @@ class OnboardingControllerTest {
 		@Bean
 		OnboardingMetadataFinder onboardingMetadataFinder() {
 			return () -> new OnboardingMetadataResult(
+					List.of(new TopicResult(1L, "배변 훈련", null)),
 					List.of(RegisteredBreed.POODLE, RegisteredBreed.MALTESE),
-					List.of(Personality.TIMID, Personality.LIVELY));
+					List.of(Personality.TIMID, Personality.LIVELY), List.of("INTJ", "ENFP"));
 		}
 
 		@Bean
