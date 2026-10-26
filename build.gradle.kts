@@ -119,6 +119,8 @@ tasks.withType<Test> {
 	useJUnitPlatform()
 	// 실제 시크릿 없이도 컨텍스트가 뜨도록 테스트 전용 프로파일을 활성화한다
 	systemProperty("spring.profiles.active", "test")
+	// 캐시된 Spring 컨텍스트가 늘어나 기본 힙(512MB)으로는 OOM이 나므로 여유를 둔다
+	maxHeapSize = "2g"
 }
 
 // 테스트가 끝나면 커버리지 리포트와 RestDocs 문서(build/docs/asciidoc)를 로컬에 생성한다
