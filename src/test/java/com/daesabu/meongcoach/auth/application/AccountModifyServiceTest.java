@@ -1,6 +1,7 @@
 package com.daesabu.meongcoach.auth.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 import com.daesabu.meongcoach.auth.application.provided.dto.SocialAccountRegisterRequest;
 import com.daesabu.meongcoach.auth.application.required.EmailAccountRepository;
@@ -8,6 +9,7 @@ import com.daesabu.meongcoach.auth.application.required.SocialAccountRepository;
 import com.daesabu.meongcoach.auth.domain.Email;
 import com.daesabu.meongcoach.auth.domain.EmailAccountFixture;
 import com.daesabu.meongcoach.auth.domain.SocialProvider;
+import com.daesabu.meongcoach.media.application.provided.StoredMediaVerifier;
 import com.daesabu.meongcoach.user.application.UserQueryService;
 import com.daesabu.meongcoach.user.application.UserRegisterService;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
@@ -43,7 +45,7 @@ class AccountModifyServiceTest {
 	@BeforeEach
 	void setUp() {
 		UserRegisterService userRegister = new UserRegisterService(new UserQueryService(userRepository),
-				userRepository);
+				mock(StoredMediaVerifier.class), userRepository);
 		service = new AccountModifyService(socialAccountRepository, userRegister, emailAccountRepository);
 	}
 
