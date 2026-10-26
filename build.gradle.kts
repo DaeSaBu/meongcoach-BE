@@ -43,6 +43,8 @@ dependencyManagement {
 		mavenBom("org.springframework.modulith:spring-modulith-bom:2.1.0")
 		// Spring Cloud AWS 4.x가 Spring Boot 4.x 지원 라인이다
 		mavenBom("io.awspring.cloud:spring-cloud-aws-dependencies:4.1.0")
+		// Cloud Storage·Pub/Sub 클라이언트와 그 전이 의존성(gRPC·protobuf·auth)의 버전을 함께 맞춘다
+		mavenBom("com.google.cloud:libraries-bom:26.90.0")
 		// starter와 logback 연동의 버전이 어긋나면 런타임에 깨지므로 BOM으로 묶는다
 		mavenBom("io.sentry:sentry-bom:8.54.0")
 	}
@@ -56,10 +58,16 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-security")
 	implementation("org.springframework.boot:spring-boot-starter-security-oauth2-resource-server")
 	implementation("org.springframework.boot:spring-boot-starter-restclient")
-	// R2는 S3 호환 API라 presigned URL 발급에 AWS SDK의 S3Presigner를 그대로 쓴다
+	// R2는 S3 호환 API라 presigned URL 발급에 AWS SDK의 S3Presigner를 그대로 쓴다. 실습 영상 S3 버킷도 같은 presigner를 쓴다
 	implementation("software.amazon.awssdk:s3:2.46.7")
 	// S3 업로드 완료 이벤트를 SQS로 받아 AI 분석을 트리거한다
 	implementation("io.awspring.cloud:spring-cloud-aws-starter-sqs")
+	// AI 분석 영상은 GCS에 두고 V4 서명 URL로 업로드한다
+	implementation("com.google.cloud:google-cloud-storage")
+	// GCS 업로드 완료 알림(OBJECT_FINALIZE)을 Pub/Sub pull 구독으로 받아 AI 분석을 트리거한다
+	implementation("com.google.cloud:google-cloud-pubsub")
+	// Gemini Developer API 클라이언트. libraries-bom에 없어 버전을 직접 고정한다
+	implementation("com.google.genai:google-genai:1.79.0")
 	// 에러 모니터링. starter는 logback 연동을 포함하지 않아 따로 넣는다. error 로그가 Sentry 이벤트가 된다
 	implementation("io.sentry:sentry-spring-boot-4-starter")
 	implementation("io.sentry:sentry-logback")
@@ -82,6 +90,8 @@ dependencies {
 	testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
 	testImplementation("org.springframework.restdocs:spring-restdocs-mockmvc")
 	testImplementation("com.epages:restdocs-api-spec-mockmvc:0.20.1")
+	// Gemini 클라이언트는 OkHttp로 호출해 MockRestServiceServer로 잡을 수 없어 로컬 HTTP 서버로 응답을 스텁한다
+	testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
 	testImplementation("com.tngtech.archunit:archunit-junit5:1.4.2")
 	testImplementation("org.springframework.modulith:spring-modulith-starter-test")
 	testCompileOnly("org.projectlombok:lombok")
