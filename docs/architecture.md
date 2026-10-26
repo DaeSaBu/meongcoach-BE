@@ -14,8 +14,8 @@ com.daesabu.meongcoach
 ├── user         ← 회원 역할·상태·프로필
 ├── dog          ← 반려견 프로필
 ├── training     ← 훈련 콘텐츠와 사용자별 진행
-├── ai           ← AI 영상 분석 리포트 (SQS 컨슈머, EvoLink 연동)
-├── media        ← 이미지·영상 업로드 URL 발급 (R2/S3)
+├── ai           ← AI 영상 분석 리포트 (Pub/Sub 컨슈머, Gemini·EvoLink 연동)
+├── media        ← 이미지·영상 업로드 URL 발급 (R2/S3/GCS)
 ├── onboarding   ← 온보딩 흐름 조합
 ├── entitlement  ← 이용권 동기화. RevenueCat 활성 이용권의 사본을 둠
 ├── community    ← 게시글. 훈련 카드 등 다른 모듈의 대상을 멘션할 수 있음
