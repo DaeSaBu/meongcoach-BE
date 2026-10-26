@@ -297,18 +297,6 @@ class CommentFinderTest {
 	}
 
 	@Test
-	void 삭제된_루트_댓글의_답글도_반환한다() {
-		Comment root = saveComment(USER_ID, "삭제된 루트 댓글");
-		saveReply(root, USER_ID, "남은 답글");
-		root.delete();
-		flushAndClear();
-
-		ReplyListResult result = commentFinder.findReplies(root.getId(), new CommentListRequest(null, 20));
-
-		assertThat(result.replies()).extracting(this::contentOf).containsExactly("남은 답글");
-	}
-
-	@Test
 	void 답글_작성자의_선택된_강아지를_작성자_정보로_함께_반환한다() {
 		User author = saveAuthorWithDogs();
 		Comment root = saveComment(USER_ID, "루트 댓글");

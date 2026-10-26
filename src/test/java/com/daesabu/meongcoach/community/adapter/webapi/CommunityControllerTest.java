@@ -66,6 +66,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(CommunityController.class)
@@ -97,8 +98,11 @@ class CommunityControllerTest {
 		List<PostMediaCommand> media = List.of(
 				new PostMediaCommand(PostMediaType.IMAGE, "https://media.meongcoach.com/images/community-post/7/photo.jpg"),
 				new PostMediaCommand(PostMediaType.VIDEO, "https://media.meongcoach.com/videos/community-post/7/clip.mp4"));
+		Post commented = PostFixture.create(30L, 7L, "이 레슨 따라해봤어요", null, media,
+				LocalDateTime.of(2026, 10, 19, 10, 30, 0));
+		ReflectionTestUtils.setField(commented, "commentCount", 3);
 		PostResult withMention = new PostResult(
-				PostFixture.create(30L, 7L, "이 레슨 따라해봤어요", null, media, LocalDateTime.of(2026, 10, 19, 10, 30, 0)),
+				commented,
 				new AuthorResult(7L, "초코", "https://media.meongcoach.com/images/dog-profile/7/choco.jpg"),
 				new MentionTargetResult(MentionTargetType.LESSON, 101L, "앉아 기초"));
 		PostResult withoutMention = new PostResult(
@@ -129,10 +133,12 @@ class CommunityControllerTest {
 				.andExpect(jsonPath("$.posts[0].media[1].type").value("VIDEO"))
 				.andExpect(jsonPath("$.posts[0].media[1].url")
 						.value("https://media.meongcoach.com/videos/community-post/7/clip.mp4"))
+				.andExpect(jsonPath("$.posts[0].commentCount").value(3))
 				.andExpect(jsonPath("$.posts[0].createdAt").value("2026-10-19T10:30:00"))
 				.andExpect(jsonPath("$.posts[1].postId").value(29))
 				.andExpect(jsonPath("$.posts[1].mention").value(nullValue()))
 				.andExpect(jsonPath("$.posts[1].media").isEmpty())
+				.andExpect(jsonPath("$.posts[1].commentCount").value(0))
 				.andExpect(jsonPath("$.nextCursor").value(29))
 				.andDo(document("community/post-list",
 						queryParameters(
@@ -159,6 +165,7 @@ class CommunityControllerTest {
 								fieldWithPath("posts[].media[]").description("게시글 사진·영상 목록. 배열 순서가 표시 순서이고, 없으면 빈 배열"),
 								fieldWithPath("posts[].media[].type").description("미디어 종류. IMAGE(사진), VIDEO(영상)"),
 								fieldWithPath("posts[].media[].url").description("미디어 공개 URL"),
+								fieldWithPath("posts[].commentCount").description("삭제되지 않은 댓글·답글 수. 댓글이 없으면 0"),
 								fieldWithPath("posts[].createdAt").description("게시글 작성 시각(ISO-8601, 초 단위)"),
 								fieldWithPath("nextCursor").optional()
 										.description("다음 페이지 요청에 cursor로 보낼 값. 마지막 페이지면 null")
@@ -242,8 +249,11 @@ class CommunityControllerTest {
 	void 게시글_하나를_반환한다() throws Exception {
 		List<PostMediaCommand> media = List.of(
 				new PostMediaCommand(PostMediaType.IMAGE, "https://media.meongcoach.com/images/community-post/7/photo.jpg"));
+		Post commented = PostFixture.create(30L, 7L, "이 레슨 따라해봤어요", null, media,
+				LocalDateTime.of(2026, 10, 19, 10, 30, 0));
+		ReflectionTestUtils.setField(commented, "commentCount", 3);
 		PostResult result = new PostResult(
-				PostFixture.create(30L, 7L, "이 레슨 따라해봤어요", null, media, LocalDateTime.of(2026, 10, 19, 10, 30, 0)),
+				commented,
 				new AuthorResult(7L, "초코", "https://media.meongcoach.com/images/dog-profile/7/choco.jpg"),
 				new MentionTargetResult(MentionTargetType.LESSON, 101L, "앉아 기초"));
 		given(postFinder.findPostDetail(30L)).willReturn(result);
@@ -261,6 +271,7 @@ class CommunityControllerTest {
 				.andExpect(jsonPath("$.media[0].type").value("IMAGE"))
 				.andExpect(jsonPath("$.media[0].url")
 						.value("https://media.meongcoach.com/images/community-post/7/photo.jpg"))
+				.andExpect(jsonPath("$.commentCount").value(3))
 				.andExpect(jsonPath("$.createdAt").value("2026-10-19T10:30:00"))
 				.andDo(document("community/post-detail",
 						pathParameters(parameterWithName("postId").description("조회할 게시글 ID")),
@@ -280,6 +291,7 @@ class CommunityControllerTest {
 								fieldWithPath("media[]").description("게시글 사진·영상 목록. 배열 순서가 표시 순서이고, 없으면 빈 배열"),
 								fieldWithPath("media[].type").description("미디어 종류. IMAGE(사진), VIDEO(영상)"),
 								fieldWithPath("media[].url").description("미디어 공개 URL"),
+								fieldWithPath("commentCount").description("삭제되지 않은 댓글·답글 수. 댓글이 없으면 0"),
 								fieldWithPath("createdAt").description("게시글 작성 시각(ISO-8601, 초 단위)")
 						)
 				));
