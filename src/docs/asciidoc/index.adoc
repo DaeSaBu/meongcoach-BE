@@ -171,7 +171,8 @@ AI 리포트용 영상 업로드 URL 발급은 무료 체험 횟수 검증과 �
 
 link:{swagger-ui}#/Onboarding/onboarding-image-upload-url[▶ Swagger에서 Try it out,window=swagger]
 
-온보딩에서 등록할 강아지의 프로필 이미지 업로드 URL을 발급합니다.
+온보딩에서 등록할 보호자 또는 강아지의 프로필 이미지 업로드 URL을 발급합니다.
+`target`은 `USER_PROFILE` 또는 `DOG_PROFILE`이며, 생략하면 `DOG_PROFILE`입니다.
 요청에는 `contentType`만 보내며, 업로드 대상은 강아지 프로필로 고정됩니다.
 
 operation::onboarding/image-upload-url[snippets='http-request,request-fields,http-response,response-fields']
@@ -189,7 +190,8 @@ operation::onboarding/image-upload-url-error[snippets='http-response,response-fi
 
 link:{swagger-ui}#/Onboarding/onboarding-metadata[▶ Swagger에서 Try it out,window=swagger]
 
-온보딩 화면에 필요한 견종, 강아지 성격 목록을 한 번에 반환합니다.
+온보딩 화면에 필요한 견종, 강아지 성격과 구버전 앱의 MBTI·교육 토픽 목록을 한 번에 반환합니다.
+3.2.0 앱이 사용하지 않아도 `mbtis`·`topics` 필드는 구버전 온보딩을 위해 유지합니다.
 견종(`breeds`)은 등록 견종 전체이며 믹스견을 맨 앞에 두고 나머지는 한글 라벨 가나다순입니다.
 각 견종의 `aliases`는 한글·영문 별칭 목록이므로, 앱은 이 목록을 받아 기기에서 견종을 검색합니다.
 `aliases`에는 `label`이 들어 있지 않으므로 검색할 때 `label`과 `aliases`를 함께 비교합니다. 대소문자·띄어쓰기만 다른 별칭은 하나만 내려갑니다.
@@ -200,13 +202,15 @@ operation::onboarding/metadata[snippets='http-request,http-response,response-fie
 
 link:{swagger-ui}#/Onboarding/onboarding-complete[▶ Swagger에서 Try it out,window=swagger]
 
-강아지 한 마리를 등록하고, 회원의 온보딩을 하나의 트랜잭션으로 완료합니다.
-보호자 프로필은 입력받지 않으며, 닉네임과 프로필 이미지 URL은 빈 문자열인 기본 프로필을 생성합니다.
-강아지 이름은 필수이며 최대 12자입니다. 강아지 견종, 성별, 과거 날짜의 생년월일도 필수입니다.
-강아지 성격과 프로필 이미지 URL은 선택 입력입니다.
-MBTI, 보호자 프로필 이미지, 교육 이력과 목표, 강아지 몸무게와 교육 기대 사항은 요청에 포함하지 않습니다.
-강아지는 정확히 한 마리만 등록할 수 있으며, 다른 수의 강아지를 요청하면 400(`BAD_REQUEST`)을 반환합니다.
-추가 강아지는 온보딩 완료 후 강아지 등록 API로 등록합니다.
+강아지 1~5마리와 보호자 프로필을 하나의 트랜잭션으로 등록합니다.
+3.2.0 앱은 강아지 한 마리만 보내며 보호자 정보와 몸무게를 생략합니다. 구버전 요청도 같은 API에서 받습니다.
+강아지 이름은 필수이며 서버는 구버전 호환을 위해 최대 50자까지 허용합니다. 3.2.0 앱의 입력 제한은 12자입니다.
+강아지 견종, 성별, 과거 날짜의 생년월일도 필수입니다. 강아지 성격과 프로필 이미지 URL은 선택 입력입니다.
+구버전의 `nickname`, `mbti`, `profileImageUrl`, `priorTrainingTopicIds`, `trainingGoalTopicIds`,
+강아지의 `weightKg`, `expectation`을 보내면 저장합니다. 몸무게를 보낼 때는 양수여야 합니다.
+생략한 닉네임·사진·기대 사항은 빈 문자열, MBTI·몸무게는 null, 교육 이력·목표는 빈 목록으로 저장합니다.
+보호자 사진은 본인의 `images/user-profile/`, 강아지 사진은 본인의 `images/dog-profile/` 경로만 허용합니다.
+강아지가 없거나 5마리를 넘으면 400(`BAD_REQUEST`)을 반환합니다.
 이미 온보딩을 완료한 회원이 다시 호출하면 409를 반환합니다.
 
 operation::onboarding/complete[snippets='http-request,request-fields,http-response,response-fields']

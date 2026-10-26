@@ -18,6 +18,8 @@ import com.daesabu.meongcoach.user.domain.User;
 import com.daesabu.meongcoach.user.domain.UserProfile;
 import com.daesabu.meongcoach.user.domain.UserRole;
 import com.daesabu.meongcoach.user.domain.exception.AlreadyOnboardedException;
+import jakarta.persistence.EntityManager;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
@@ -39,6 +41,9 @@ class OnboardingCompleterTest {
 	@Autowired
 	private OnboardingCompleter onboardingCompleter;
 
+	@Autowired
+	private EntityManager entityManager;
+
 	private Long userId;
 
 	@BeforeEach
@@ -51,10 +56,10 @@ class OnboardingCompleterTest {
 	}
 
 	private OnboardingCompleteRequest completeInfo(String dogImageUrl) {
-		return new OnboardingCompleteRequest(
+		return new OnboardingCompleteRequest(null, null, null, null, null,
 				List.of(
 						new DogRequest("초코", "POODLE", "MALE", LocalDate.of(2024, 3, 1),
-								Set.of("TIMID"), dogImageUrl)));
+								Set.of("TIMID"), dogImageUrl, null, null)));
 	}
 
 	@Test
@@ -141,6 +146,45 @@ class OnboardingCompleterTest {
 
 		User user = userRepository.findById(userId).orElseThrow();
 		assertThat(user.getRole()).isEqualTo(UserRole.USER);
+	}
+
+	@Test
+	void 구버전_보호자_정보와_강아지_다섯_마리를_새_스키마에_보존한다() {
+		String profileImage = STORAGE_BASE_URL + "images/user-profile/" + userId + "/parent.jpg";
+		DogRequest dog = new DogRequest("가".repeat(50), "POODLE", "MALE", LocalDate.of(2024, 3, 1),
+				Set.of("TIMID"), null, new BigDecimal("4.50"), "즐거운 산책");
+		OnboardingCompleteRequest request = new OnboardingCompleteRequest("나".repeat(50), "INTJ",
+				profileImage, List.of(1L, 2L), List.of(3L), List.of(dog, dog, dog, dog, dog));
+
+		List<Long> dogIds = onboardingCompleter.complete(userId, request);
+		entityManager.flush();
+		entityManager.clear();
+
+		User user = userRepository.findById(userId).orElseThrow();
+		UserProfile profile = user.getProfile();
+		assertThat(user.getRole()).isEqualTo(UserRole.USER);
+		assertThat(profile.getNickname()).isEqualTo("나".repeat(50));
+		assertThat(profile.getMbti().name()).isEqualTo("INTJ");
+		assertThat(profile.getProfileImageUrl()).isEqualTo(profileImage);
+		assertThat(profile.getPriorTrainingTopicIds()).containsExactlyInAnyOrder(1L, 2L);
+		assertThat(profile.getTrainingGoalTopicIds()).containsExactly(3L);
+		List<Dog> dogs = dogRepository.findAllById(dogIds);
+		assertThat(dogs).hasSize(5).allSatisfy(saved -> {
+			assertThat(saved.getName()).isEqualTo("가".repeat(50));
+			assertThat(saved.getWeightKg()).isEqualByComparingTo("4.50");
+			assertThat(saved.getExpectation()).isEqualTo("즐거운 산책");
+		});
+		assertThat(dogs).filteredOn(saved -> saved.getStatus() == DogStatus.SELECTED).hasSize(1);
+	}
+
+	@Test
+	void 구버전이_다른_사용자의_보호자_이미지를_보내면_거절한다() {
+		OnboardingCompleteRequest request = new OnboardingCompleteRequest("보호자", "INTJ",
+				STORAGE_BASE_URL + "images/user-profile/" + (userId + 1) + "/parent.jpg",
+				null, null, completeInfo().dogs());
+
+		assertThatThrownBy(() -> onboardingCompleter.complete(userId, request))
+				.isInstanceOf(InvalidMediaUrlException.class);
 	}
 
 	@Test

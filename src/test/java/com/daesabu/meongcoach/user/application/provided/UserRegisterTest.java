@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.daesabu.meongcoach.support.ApplicationTest;
+import com.daesabu.meongcoach.user.application.provided.dto.UserOnboardingRequest;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.User;
 import com.daesabu.meongcoach.user.domain.UserProfile;
@@ -45,7 +46,7 @@ class UserRegisterTest {
 	void 온보딩을_완료하면_빈_닉네임으로_기본_프로필을_생성한다() {
 		Long userId = saveOnboardingUser();
 
-		userRegister.completeOnboarding(userId);
+		userRegister.completeOnboarding(userId, new UserOnboardingRequest(null, null, null, null, null));
 
 		assertThat(findPersistedProfile(userId).getNickname()).isEmpty();
 	}
@@ -54,7 +55,7 @@ class UserRegisterTest {
 	void 온보딩을_완료하면_받지_않는_정보는_비워_저장한다() {
 		Long userId = saveOnboardingUser();
 
-		userRegister.completeOnboarding(userId);
+		userRegister.completeOnboarding(userId, new UserOnboardingRequest(null, null, null, null, null));
 
 		UserProfile profile = findPersistedProfile(userId);
 		assertThat(profile.getProfileImageUrl()).isEmpty();
@@ -67,7 +68,7 @@ class UserRegisterTest {
 	void 온보딩을_완료하면_정회원으로_승격된다() {
 		Long userId = saveOnboardingUser();
 
-		userRegister.completeOnboarding(userId);
+		userRegister.completeOnboarding(userId, new UserOnboardingRequest(null, null, null, null, null));
 		flushAndClear();
 
 		assertThat(userRepository.findById(userId).orElseThrow().getRole()).isEqualTo(UserRole.USER);
@@ -79,13 +80,13 @@ class UserRegisterTest {
 		promoted.completeOnboarding(new UserProfileCreateCommand("기존회원", null, VALID_MBTI, Set.of(), Set.of()));
 		Long promotedId = userRepository.save(promoted).getId();
 
-		assertThatThrownBy(() -> userRegister.completeOnboarding(promotedId))
+		assertThatThrownBy(() -> userRegister.completeOnboarding(promotedId, new UserOnboardingRequest(null, null, null, null, null)))
 				.isInstanceOf(AlreadyOnboardedException.class);
 	}
 
 	@Test
 	void 회원이_없으면_온보딩_완료에_실패한다() {
-		assertThatThrownBy(() -> userRegister.completeOnboarding(UNREGISTERED_USER_ID))
+		assertThatThrownBy(() -> userRegister.completeOnboarding(UNREGISTERED_USER_ID, new UserOnboardingRequest(null, null, null, null, null)))
 				.isInstanceOf(UserNotFoundException.class);
 	}
 
