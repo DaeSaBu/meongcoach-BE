@@ -41,8 +41,6 @@ val asciidoctorExt: Configuration by configurations.creating
 dependencyManagement {
 	imports {
 		mavenBom("org.springframework.modulith:spring-modulith-bom:2.1.0")
-		// Spring Cloud AWS 4.x가 Spring Boot 4.x 지원 라인이다
-		mavenBom("io.awspring.cloud:spring-cloud-aws-dependencies:4.1.0")
 		// Cloud Storage·Pub/Sub 클라이언트와 그 전이 의존성(gRPC·protobuf·auth)의 버전을 함께 맞춘다
 		mavenBom("com.google.cloud:libraries-bom:26.90.0")
 		// starter와 logback 연동의 버전이 어긋나면 런타임에 깨지므로 BOM으로 묶는다
@@ -60,8 +58,6 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-restclient")
 	// R2는 S3 호환 API라 presigned URL 발급에 AWS SDK의 S3Presigner를 그대로 쓴다. 실습 영상 S3 버킷도 같은 presigner를 쓴다
 	implementation("software.amazon.awssdk:s3:2.46.7")
-	// S3 업로드 완료 이벤트를 SQS로 받아 AI 분석을 트리거한다
-	implementation("io.awspring.cloud:spring-cloud-aws-starter-sqs")
 	// AI 분석 영상은 GCS에 두고 V4 서명 URL로 업로드한다
 	implementation("com.google.cloud:google-cloud-storage")
 	// GCS 업로드 완료 알림(OBJECT_FINALIZE)을 Pub/Sub pull 구독으로 받아 AI 분석을 트리거한다
