@@ -1,6 +1,7 @@
 package com.daesabu.meongcoach.training.application.provided;
 
 import com.daesabu.meongcoach.training.application.provided.dto.PlanCurriculumResult;
+import com.daesabu.meongcoach.training.application.provided.dto.TopicResult;
 import java.util.List;
 
 public interface PlanCurriculumFinder {
@@ -20,4 +21,11 @@ public interface PlanCurriculumFinder {
 	 * 레슨이 없는 커리큘럼은 {@code IllegalStateException}을 던진다.
 	 */
 	List<Long> findLessonIds(List<Long> curriculumIds);
+
+	/**
+	 * 요청한 커리큘럼 순서대로 각 커리큘럼이 속한 토픽을 첫 등장 순서로 중복 없이 반환한다.
+	 * 빈 목록이면 빈 결과를 반환한다.
+	 * 존재하지 않는 커리큘럼은 {@code CurriculumNotFoundException}을 던진다.
+	 */
+	List<TopicResult> findTopics(List<Long> curriculumIds);
 }

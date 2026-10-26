@@ -3,7 +3,6 @@ package com.daesabu.meongcoach.onboarding.application.provided;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.daesabu.meongcoach.dog.application.provided.DogRegisterInfo;
 import com.daesabu.meongcoach.dog.application.required.DogRepository;
 import com.daesabu.meongcoach.dog.domain.Dog;
 import com.daesabu.meongcoach.dog.domain.DogStatus;
@@ -11,6 +10,8 @@ import com.daesabu.meongcoach.dog.domain.shared.Breed;
 import com.daesabu.meongcoach.dog.domain.shared.Personality;
 import com.daesabu.meongcoach.dog.domain.shared.RegisteredBreed;
 import com.daesabu.meongcoach.media.domain.exception.InvalidMediaUrlException;
+import com.daesabu.meongcoach.onboarding.application.provided.dto.OnboardingCompleteRequest;
+import com.daesabu.meongcoach.onboarding.application.provided.dto.OnboardingCompleteRequest.DogRequest;
 import com.daesabu.meongcoach.support.ApplicationTest;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.User;
@@ -45,24 +46,23 @@ class OnboardingCompleterTest {
 		userId = userRepository.save(User.registerUser()).getId();
 	}
 
-	private OnboardingCompleteInfo completeInfo() {
+	private OnboardingCompleteRequest completeInfo() {
 		return completeInfo(null);
 	}
 
-	private OnboardingCompleteInfo completeInfo(String dogImageUrl) {
-		return new OnboardingCompleteInfo(
-				"멍멍이집사",
+	private OnboardingCompleteRequest completeInfo(String dogImageUrl) {
+		return new OnboardingCompleteRequest(
 				List.of(
-						new DogRegisterInfo("초코", "POODLE", "MALE", LocalDate.of(2024, 3, 1),
-								null, Set.of("TIMID"), dogImageUrl, null)));
+						new DogRequest("초코", "POODLE", "MALE", LocalDate.of(2024, 3, 1),
+								Set.of("TIMID"), dogImageUrl)));
 	}
 
 	@Test
-	void 온보딩을_완료하면_프로필과_강아지_한_마리가_함께_생성된다() {
+	void 온보딩을_완료하면_기본_프로필과_강아지_한_마리가_함께_생성된다() {
 		List<Long> dogIds = onboardingCompleter.complete(userId, completeInfo());
 
 		UserProfile profile = userRepository.findById(userId).orElseThrow().getProfile();
-		assertThat(profile.getNickname()).isEqualTo("멍멍이집사");
+		assertThat(profile.getNickname()).isEmpty();
 		assertThat(dogIds).hasSize(1).doesNotContainNull();
 
 		List<Dog> dogs = dogRepository.findAllById(dogIds);
@@ -109,6 +109,7 @@ class OnboardingCompleterTest {
 
 		UserProfile profile = userRepository.findById(userId).orElseThrow().getProfile();
 
+		assertThat(profile.getNickname()).isEmpty();
 		assertThat(profile.getMbti()).isNull();
 		assertThat(profile.getProfileImageUrl()).isEmpty();
 		assertThat(profile.getPriorTrainingTopicIds()).isEmpty();

@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;
 import com.daesabu.meongcoach.support.ApplicationTest;
-import com.daesabu.meongcoach.training.application.provided.dto.CustomPlanPreparationResult;
+import com.daesabu.meongcoach.training.application.provided.dto.PlanPreparationResult;
 import com.daesabu.meongcoach.training.application.required.CurriculumRepository;
 import com.daesabu.meongcoach.training.application.required.LessonProgressRepository;
 import com.daesabu.meongcoach.training.application.required.LessonRepository;
@@ -27,12 +27,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @ApplicationTest
-class CustomPlanPreparationFinderTest {
+class PlanPreparationFinderTest {
 
 	private static final Long USER_ID = 42L;
 
 	@Autowired
-	private CustomPlanPreparationFinder finder;
+	private PlanPreparationFinder finder;
 
 	@Autowired
 	private TrainingCategoryRepository categoryRepository;
@@ -70,7 +70,7 @@ class CustomPlanPreparationFinderTest {
 		saveCurriculum(saveTopic(firstCategory, 3), 1, false);
 		flushAndClear();
 
-		CustomPlanPreparationResult result = finder.find(USER_ID, List.of(later.getId(), second.getId(), first.getId()));
+		PlanPreparationResult result = finder.find(USER_ID, List.of(later.getId(), second.getId(), first.getId()));
 
 		assertThat(result.curriculumIds())
 				.containsExactly(firstCurriculum.getId(), secondCurriculum.getId(), third.getId(), last.getId());
@@ -88,7 +88,7 @@ class CustomPlanPreparationFinderTest {
 		complete(43L, saveLesson(otherUser));
 		flushAndClear();
 
-		CustomPlanPreparationResult result = finder.find(USER_ID, List.of(topic.getId()));
+		PlanPreparationResult result = finder.find(USER_ID, List.of(topic.getId()));
 
 		assertThat(result.curriculumIds()).containsExactly(partial.getId(), otherUser.getId());
 	}
@@ -108,7 +108,7 @@ class CustomPlanPreparationFinderTest {
 		saveLesson(lastIncomplete);
 		flushAndClear();
 
-		CustomPlanPreparationResult result = finder.find(USER_ID, List.of(nextTopic.getId(), firstTopic.getId()));
+		PlanPreparationResult result = finder.find(USER_ID, List.of(nextTopic.getId(), firstTopic.getId()));
 
 		assertThat(result.curriculumIds())
 				.containsExactly(firstIncomplete.getId(), completedAfter.getId(), lastIncomplete.getId());
@@ -131,7 +131,7 @@ class CustomPlanPreparationFinderTest {
 		complete(USER_ID, saveLesson(saveCurriculum(topic, 1, false)));
 		flushAndClear();
 
-		CustomPlanPreparationResult result = finder.find(USER_ID, List.of(topic.getId()));
+		PlanPreparationResult result = finder.find(USER_ID, List.of(topic.getId()));
 
 		assertThat(result.curriculumIds()).isEmpty();
 	}
@@ -145,7 +145,7 @@ class CustomPlanPreparationFinderTest {
 		saveLesson(curriculum);
 		flushAndClear();
 
-		CustomPlanPreparationResult result = finder.find(USER_ID, List.of(topic.getId()));
+		PlanPreparationResult result = finder.find(USER_ID, List.of(topic.getId()));
 
 		assertThat(result.curriculumIds()).containsExactly(curriculum.getId());
 	}
