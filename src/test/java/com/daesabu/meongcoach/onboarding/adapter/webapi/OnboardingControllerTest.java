@@ -20,10 +20,10 @@ import com.daesabu.meongcoach.onboarding.application.provided.OnboardingMetadata
 import com.daesabu.meongcoach.onboarding.application.provided.OnboardingMetadataResult;
 import com.daesabu.meongcoach.onboarding.application.provided.dto.OnboardingCompleteRequest;
 import com.daesabu.meongcoach.onboarding.domain.OnboardingImageTarget;
-import java.util.Objects;
 import com.daesabu.meongcoach.training.application.provided.dto.TopicResult;
 import com.daesabu.meongcoach.user.domain.exception.AlreadyOnboardedException;
 import java.util.List;
+import java.util.Objects;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
@@ -33,6 +33,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.restdocs.payload.JsonFieldType;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(OnboardingController.class)
@@ -136,13 +137,20 @@ class OnboardingControllerTest {
 				.andExpect(jsonPath("$.dogIds[0]").value(1))
 				.andDo(document("onboarding/complete",
 						requestFields(
-								fieldWithPath("nickname").type(org.springframework.restdocs.payload.JsonFieldType.STRING).optional().description("구버전 보호자 닉네임, 최대 50자. 생략하면 빈 문자열"),
-								fieldWithPath("mbti").type(org.springframework.restdocs.payload.JsonFieldType.STRING).optional().description("구버전 MBTI. 생략하면 null"),
-								fieldWithPath("profileImageUrl").type(org.springframework.restdocs.payload.JsonFieldType.STRING).optional().description("구버전 보호자 이미지 URL, 최대 512자"),
-								fieldWithPath("priorTrainingTopicIds").type(org.springframework.restdocs.payload.JsonFieldType.ARRAY).optional().description("구버전 학습 토픽 ID 목록, 최대 100개"),
-								fieldWithPath("trainingGoalTopicIds").type(org.springframework.restdocs.payload.JsonFieldType.ARRAY).optional().description("구버전 교육 목표 토픽 ID 목록, 최대 100개"),
-								fieldWithPath("dogs[].weightKg").type(org.springframework.restdocs.payload.JsonFieldType.NUMBER).optional().description("구버전 몸무게, 양수. 생략하면 null"),
-								fieldWithPath("dogs[].expectation").type(org.springframework.restdocs.payload.JsonFieldType.STRING).optional().description("구버전 교육 기대 사항, 최대 500자"),
+								fieldWithPath("nickname").type(JsonFieldType.STRING).optional()
+										.description("구버전 보호자 닉네임, 최대 50자. 생략하면 빈 문자열"),
+								fieldWithPath("mbti").type(JsonFieldType.STRING).optional()
+										.description("구버전 MBTI. 생략하면 null"),
+								fieldWithPath("profileImageUrl").type(JsonFieldType.STRING).optional()
+										.description("구버전 보호자 이미지 URL, 최대 512자"),
+								fieldWithPath("priorTrainingTopicIds").type(JsonFieldType.ARRAY).optional()
+										.description("구버전 학습 토픽 ID 목록, 최대 100개"),
+								fieldWithPath("trainingGoalTopicIds").type(JsonFieldType.ARRAY).optional()
+										.description("구버전 교육 목표 토픽 ID 목록, 최대 100개"),
+								fieldWithPath("dogs[].weightKg").type(JsonFieldType.NUMBER).optional()
+										.description("구버전 몸무게, 양수. 생략하면 null"),
+								fieldWithPath("dogs[].expectation").type(JsonFieldType.STRING).optional()
+										.description("구버전 교육 기대 사항, 최대 500자"),
 								fieldWithPath("dogs[]").description("등록할 강아지 목록. 1~5마리. 3.2.0 앱은 1마리만 입력"),
 								fieldWithPath("dogs[].name").description("강아지 이름. 필수 입력, 최대 50자"),
 								fieldWithPath("dogs[].breed").description(
@@ -386,7 +394,7 @@ class OnboardingControllerTest {
 				.andExpect(jsonPath("$.expiresInSeconds").value(600))
 				.andDo(document("onboarding/image-upload-url",
 						requestFields(
-								fieldWithPath("target").type(org.springframework.restdocs.payload.JsonFieldType.STRING).optional()
+								fieldWithPath("target").type(JsonFieldType.STRING).optional()
 										.description("USER_PROFILE 또는 DOG_PROFILE. 생략하면 DOG_PROFILE"),
 								fieldWithPath("contentType").description(
 										"필수 입력. 업로드할 이미지의 Content-Type. `image/jpeg`, `image/png`, `image/webp`만 지원")

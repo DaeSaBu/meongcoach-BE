@@ -3,9 +3,9 @@ package com.daesabu.meongcoach.dog.application.provided;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.daesabu.meongcoach.dog.application.provided.dto.DogProfileUpdateRequest;
 import com.daesabu.meongcoach.dog.application.required.DogRepository;
 import com.daesabu.meongcoach.dog.domain.Dog;
-import com.daesabu.meongcoach.dog.application.provided.dto.DogProfileUpdateRequest;
 import com.daesabu.meongcoach.dog.domain.DogRegisterCommand;
 import com.daesabu.meongcoach.dog.domain.DogSex;
 import com.daesabu.meongcoach.dog.domain.DogStatus;
@@ -21,6 +21,7 @@ import java.time.LocalDate;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ApplicationTest
 class DogRegisterProfileUpdateTest {
@@ -154,7 +155,7 @@ class DogRegisterProfileUpdateTest {
 	@Test
 	void 구버전이_저장한_사진_URL을_유지하며_긴_이름을_수정할_수_있다() {
 		Dog saved = persistSelectedDog(USER_ID);
-		org.springframework.test.util.ReflectionTestUtils.setField(saved, "profileImageUrl", "https://legacy.example.com/a.jpg");
+		ReflectionTestUtils.setField(saved, "profileImageUrl", "https://legacy.example.com/a.jpg");
 		entityManager.flush();
 		entityManager.clear();
 		var request = new DogProfileUpdateRequest("가".repeat(50), "POODLE", "MALE", null,

@@ -1,7 +1,7 @@
 package com.daesabu.meongcoach.dog.application.provided;
 
-import com.daesabu.meongcoach.dog.application.provided.dto.DogRegisterRequest;
 import com.daesabu.meongcoach.dog.application.provided.dto.DogProfileUpdateRequest;
+import com.daesabu.meongcoach.dog.application.provided.dto.DogRegisterRequest;
 import com.daesabu.meongcoach.dog.domain.Dog;
 import jakarta.validation.Valid;
 
@@ -27,4 +27,3 @@ public interface DogRegister {
 	 */
 	Dog update(Long userId, Long dogId, @Valid DogProfileUpdateRequest request);
 }
-

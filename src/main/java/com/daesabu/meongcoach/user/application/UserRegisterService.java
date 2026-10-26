@@ -1,17 +1,17 @@
 package com.daesabu.meongcoach.user.application;
 
+import com.daesabu.meongcoach.media.application.provided.StoredMediaVerifier;
 import com.daesabu.meongcoach.user.application.provided.UserFinder;
 import com.daesabu.meongcoach.user.application.provided.UserRegister;
+import com.daesabu.meongcoach.user.application.provided.dto.UserOnboardingRequest;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.User;
 import com.daesabu.meongcoach.user.domain.UserProfileCreateCommand;
-import com.daesabu.meongcoach.user.application.provided.dto.UserOnboardingRequest;
 import com.daesabu.meongcoach.user.domain.UserProfileImage;
-import com.daesabu.meongcoach.media.application.provided.StoredMediaVerifier;
-import org.springframework.validation.annotation.Validated;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 
 @Service
 @RequiredArgsConstructor

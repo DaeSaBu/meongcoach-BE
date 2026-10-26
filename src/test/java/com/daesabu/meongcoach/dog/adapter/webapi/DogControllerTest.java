@@ -23,9 +23,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.daesabu.meongcoach.dog.application.provided.DogProfileDeleter;
 import com.daesabu.meongcoach.dog.application.provided.DogProfileFinder;
 import com.daesabu.meongcoach.dog.application.provided.DogRegister;
+import com.daesabu.meongcoach.dog.application.provided.dto.DogProfileUpdateRequest;
 import com.daesabu.meongcoach.dog.application.provided.dto.DogRegisterRequest;
 import com.daesabu.meongcoach.dog.domain.Dog;
-import com.daesabu.meongcoach.dog.application.provided.dto.DogProfileUpdateRequest;
 import com.daesabu.meongcoach.dog.domain.DogRegisterCommand;
 import com.daesabu.meongcoach.dog.domain.DogSex;
 import com.daesabu.meongcoach.dog.domain.exception.DogLimitExceededException;

@@ -2,12 +2,12 @@ package com.daesabu.meongcoach.dog.adapter.webapi;
 
 import com.daesabu.meongcoach.dog.adapter.webapi.dto.DogListResponse;
 import com.daesabu.meongcoach.dog.adapter.webapi.dto.DogProfileImageResponse;
-import com.daesabu.meongcoach.dog.application.provided.dto.DogProfileUpdateRequest;
-import com.daesabu.meongcoach.dog.application.provided.dto.DogRegisterRequest;
 import com.daesabu.meongcoach.dog.adapter.webapi.dto.DogResponse;
 import com.daesabu.meongcoach.dog.application.provided.DogProfileDeleter;
 import com.daesabu.meongcoach.dog.application.provided.DogProfileFinder;
 import com.daesabu.meongcoach.dog.application.provided.DogRegister;
+import com.daesabu.meongcoach.dog.application.provided.dto.DogProfileUpdateRequest;
+import com.daesabu.meongcoach.dog.application.provided.dto.DogRegisterRequest;
 import com.daesabu.meongcoach.dog.domain.Dog;
 import com.daesabu.meongcoach.shared.security.CurrentUserId;
 import jakarta.validation.Valid;

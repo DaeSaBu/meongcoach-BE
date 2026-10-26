@@ -4,13 +4,13 @@ import com.daesabu.meongcoach.dog.application.provided.DogProfileImageUploadUrlI
 import com.daesabu.meongcoach.media.application.provided.dto.MediaUploadUrlResult;
 import com.daesabu.meongcoach.onboarding.application.provided.OnboardingImageUploadUrlIssuer;
 import com.daesabu.meongcoach.onboarding.application.provided.OnboardingImageUploadUrlResult;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.validation.annotation.Validated;
 import com.daesabu.meongcoach.onboarding.application.provided.dto.OnboardingImageUploadUrlRequest;
 import com.daesabu.meongcoach.onboarding.domain.OnboardingImageTarget;
 import com.daesabu.meongcoach.user.application.provided.UserProfileImageUploadUrlIssuer;
 import java.util.Objects;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.validation.annotation.Validated;
 
 @Service
 @RequiredArgsConstructor
@@ -28,11 +28,11 @@ public class OnboardingImageUploadUrlService implements OnboardingImageUploadUrl
 		return new OnboardingImageUploadUrlResult(
 				result.uploadUrl(), result.publicUrl(), result.expiresInSeconds());
 	}
+
 	private MediaUploadUrlResult issueForTarget(Long userId, String contentType, OnboardingImageTarget target) {
 		if (target == OnboardingImageTarget.USER_PROFILE) {
 			return userProfileImageUploadUrlIssuer.issue(userId, contentType);
 		}
 		return dogProfileImageUploadUrlIssuer.issue(userId, contentType);
 	}
-
 }
