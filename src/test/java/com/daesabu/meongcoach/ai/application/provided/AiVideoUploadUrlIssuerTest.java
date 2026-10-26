@@ -20,8 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 class AiVideoUploadUrlIssuerTest {
 
 	private static final Long USER_ID = 7L;
-	private static final String S3_UPLOAD_BASE_URL = "https://test-video-bucket.s3.ap-northeast-2.amazonaws.com/";
-	private static final String S3_PUBLIC_BASE_URL = "https://videos.test.meongcoach.com/";
+	private static final String GCS_BASE_URL = "https://storage.googleapis.com/test-ai-video-bucket/";
 	private static final long EXPIRES_IN_SECONDS = 900L;
 
 	@Autowired
@@ -32,16 +31,16 @@ class AiVideoUploadUrlIssuerTest {
 
 	@ParameterizedTest
 	@ValueSource(ints = {0, 1, 29})
-	void 체험_횟수가_남아_있으면_훈련_영상_대상으로_업로드_URL_발급을_위임한다(int usedCount) {
+	void 체험_횟수가_남아_있으면_분석_저장소의_훈련_영상_업로드_URL_발급을_위임한다(int usedCount) {
 		persistCompletedReports(usedCount);
 
 		AiVideoUploadUrlResult result = service.issue(USER_ID, "video/mp4", 10485760L);
 
 		assertThat(result.objectKey()).matches("videos/training/7/[0-9a-f-]{36}\\.mp4");
 		assertThat(result.uploadUrl())
-				.startsWith(S3_UPLOAD_BASE_URL + result.objectKey())
-				.contains("X-Amz-SignedHeaders=content-length%3Bcontent-type%3Bhost");
-		assertThat(result.publicUrl()).isEqualTo(S3_PUBLIC_BASE_URL + result.objectKey());
+				.startsWith(GCS_BASE_URL + result.objectKey())
+				.contains("X-Goog-SignedHeaders=content-length%3Bcontent-type%3Bhost");
+		assertThat(result.publicUrl()).isEqualTo(GCS_BASE_URL + result.objectKey());
 		assertThat(result.expiresInSeconds()).isEqualTo(EXPIRES_IN_SECONDS);
 	}
 
