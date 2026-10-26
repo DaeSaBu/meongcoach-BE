@@ -2,16 +2,6 @@
 # 반드시 프로파일 파일(application-{프로파일}.yml)로 두어 위에 얹히게 한다.
 # datasource는 베이스가 아니라 application-local.yml에 있으므로 테스트용 값을 여기서 명시한다.
 spring:
-  cloud:
-    aws:
-      # 테스트에서는 실제 큐 연결 없이 컨텍스트만 떠야 하므로 SQS를 끈다
-      sqs:
-        enabled: false
-      region:
-        static: ap-northeast-2
-      credentials:
-        access-key: test-access-key
-        secret-key: test-secret-key
   datasource:
     # Testcontainers JDBC 드라이버가 배포 환경과 같은 PostgreSQL 18.3 컨테이너를 띄운다 (Docker 필요).
     # 같은 URL을 쓰는 모든 테스트 컨텍스트가 컨테이너 하나를 공유하고, TC_DAEMON은 커넥션이 모두 닫혀도
@@ -35,10 +25,54 @@ spring:
       mode: never
 
 meongcoach:
+  google-cloud:
+    project-id: test-gcp-project
+    # 테스트 전용으로 생성한 RSA 키를 담은 가짜 서비스 계정 JSON(base64). 서명은 로컬 연산이라 Google에 등록된 키가 아니어도 URL이 만들어진다
+    service-account-key: |
+        eyJ0eXBlIjogInNlcnZpY2VfYWNjb3VudCIsICJwcm9qZWN0X2lkIjogInRlc3QtZ2NwLXByb2plY3QiLCAicHJpdmF0ZV9rZXlf
+        aWQiOiAidGVzdC1wcml2YXRlLWtleS1pZCIsICJwcml2YXRlX2tleSI6ICItLS0tLUJFR0lOIFBSSVZBVEUgS0VZLS0tLS1cbk1J
+        SUV2d0lCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktrd2dnU2xBZ0VBQW9JQkFRQyt3NDJJM3M3cFBCWmhcblRWQU9ncEF1R1VQ
+        OWl6NW42a0R5SEl1Um55b25OV2cvQVp3QVFWYTlTSURnUTliQ0RWczVWRXp4ZFhNU1N0eFVcblVaN0p1K3FnVjM2N080Uk15c0Rl
+        d1N4NFVzKy83VUhvSmkrUmhiTHl6dm9BaW5RMUxxS2xmQk5JT3dkNi9ySmdcblg3ZTJwVU1lNW1mSzBLcElPRnhrNEFWQzJ0Uk96
+        cndBM0JhNm5HOGxvczM4aWZ5RUlLZ05vN0lNMnB4YU5Ja0dcbm9BWTJacVcyL044ZDZzMDRUaitzOGVmN3B1cy95VllUVGp6eVlG
+        QzF4bXZQeHMyejA3V0NVRzd0cDUxeXQzcVJcbndhUlBQMDJidDl0SFBVcnpSd3p3MlRhNGRBRmxyZ2xLMzg5dDREcFJETUIxd0NV
+        cVZIdkpzcXp4N25xZFIyNm5cbi9NWDNQdXBCQWdNQkFBRUNnZ0VBSlcrQXpmUlRqSWZES0pNZ2U4aDVmT0p1YWtveUUvaHZpRk83
+        dS9jTk1hYVVcbmI1RGtTVlNKTGhvVldHMVhycnNxUk1UYldLTWcwdDBvQWRBR3BqWWZaQm5uZjl5OUtNaTlNcm1iL1h6YTBpSkFc
+        blJjdUFtRUV4amQ2NlJ2TGt2UzhLc2dqNFM3dHh5MXhDS3hGOW52VXRoOW5WVW9MQ2QrdS9qZmc4Y0JNN2lMOUlcbmVCQU1IUWY5
+        THRxVEV2R2ROOENVcjNoVmF4SHFuWE1qNG9VanZ3b2dlTFZkbzdSNFdzNVU5eVhvMUtBL3BHMTlcbml2a3JRVmk2WHU2K2JTNkFJ
+        US9oY1lpRjdTZGZyNGJGWjhoR1lkT2NMUEpZcVJvZHlOV1pyb3Q3Z1l3dm5XVU5cblVRVzBjVnlKejhPMG5QRUVQaWdBU2w1R3Y1
+        ejkvdHRvSXB3TFZNa0VkUUtCZ1FEaTBrZzA1dGdvZ04xUng2endcbkNFWnk3Qnd0WlQ0S2ZwV3ZvenJyMHpkWElOaVZqY2VyTnpH
+        cGlKdFF2cDZzM1lXOVExK1pZZFkzeDB4ek82V1lcbnpQTUFTNHQvK1RZRENhUDdLR0NkMVBuY0VTSkE4SDZOckN3cjZWMStTT1hN
+        RGY2b0tMUHMvTkpsTDV0dHNUa3JcbmRGVXJMUVI1ajhXQXowQWljd2lqS2ROQXp3S0JnUURYVGRHR1hJMkRQTzVmTEtzei9Qc2tU
+        MlB6TGhCc2gwbU1cbmlwRll6bStyaHVDejFjMlVVR1pyVVFJRHBxck51aW1aOVI3bmdxK1FnaXVZNm4vam8weXovZEpDdmZVWmh0
+        TkRcbjRsNXFHYytsRmFhMWoyWklmc3E3REI0dmFIN01iazNQYUE3VmJCNHc3VmN6UTg3ZWYwWHpCOWFsU0dodzhLZkxcbkFKUmt0
+        alJIN3dLQmdRQ2FxUVhoUkpLWnM1eTFtYkI3RHpseVBUck5YVjViYTRzSGN3YkhMSU5zbnBId0QvZllcbjhFNmxxZWMxdkhTWHJJ
+        ajN6NHZORzJBbE1ua1hqZEZSaWxZYm1tZHBnSFZxeHRVUWVheS9raXc0K1ZuZzY5dHZcbklMb1J5eE1iKy9ydEU1SFQrY1VOMENw
+        cUluY1o2YUR3MTJjSGhLK3JiL1FjNjdSd2lQMlh1L28zRXdLQmdRQ3Fcbld3RnhEYVJPOWhRcUxEN2VhTW9TSmRzUTNCN1VzSXJx
+        YisyblZkZ1g0U1hFUldSZmVPcEErWnpkWks5N0RsVENcblk2ZnJTSVUva3krSjArb1RKTytZN3puQjQybWVwQVpmalNwbFN6ejRB
+        MVNnRGZIQlpNbG1ES1dKbjJYTXZXNUZcbnNMRWovMk00RldOTXhkZFdSMkFDZHU1SVl5MTRSNEtNWms0RURnTDU4d0tCZ1FERHFK
+        blJic0NtYUk5USsyUHdcbkRiSHV2RUZOTi80ZS8zenVxUU9sV3ZYUUhQSEhoRE94ek9UZWc4YTE1eTZNR0dvVUlDZ2VaTGlKZjZp
+        RDQzY21cbklpQ1VpbmN6MllJNzZPVWI1Vzh5aVRvNGxHK0JPeXBUek9YU0diU1pIK2w0S0pCMjZUYS9MTlVxTEl0NXJpRTVcbi9i
+        cUFiRS9qV0Yrby80enh6R25YeS8xVHJBPT1cbi0tLS0tRU5EIFBSSVZBVEUgS0VZLS0tLS1cbiIsICJjbGllbnRfZW1haWwiOiAi
+        dGVzdC1hcGlAdGVzdC1nY3AtcHJvamVjdC5pYW0uZ3NlcnZpY2VhY2NvdW50LmNvbSIsICJjbGllbnRfaWQiOiAiMTAwMDAwMDAw
+        MDAwMDAwMDAwMDAwIiwgImF1dGhfdXJpIjogImh0dHBzOi8vYWNjb3VudHMuZ29vZ2xlLmNvbS9vL29hdXRoMi9hdXRoIiwgInRv
+        a2VuX3VyaSI6ICJodHRwczovL29hdXRoMi5nb29nbGVhcGlzLmNvbS90b2tlbiIsICJ1bml2ZXJzZV9kb21haW4iOiAiZ29vZ2xl
+        YXBpcy5jb20ifQ==
   ai:
-    video-queue: test-video-queue
-    evolink:
+    pubsub:
+      # 테스트에서는 실제 구독 연결 없이 컨텍스트만 떠야 하므로 구독을 끈다
+      enabled: false
+      video-subscription: projects/test-gcp-project/subscriptions/test-video-subscription
+    gemini:
       # 클라이언트 생성에는 네트워크 호출이 없어 더미 값으로도 컨텍스트가 뜬다
+      api-key: test-gemini-api-key
+      model: gemini-test
+      response-timeout: PT5M
+      max-output-tokens: 4096
+      temperature: 0
+      thinking-level: low
+      video-fps: 1
+    evolink:
       base-url: https://api.evolink.test
       api-key: test-evolink-api-key
       model: doubao-seed-2.0-pro
@@ -46,7 +80,6 @@ meongcoach:
       max-tokens: 4096
       temperature: 0
       thinking: disabled
-      video-fps: 1
   jwt:
     secret: meongcoach-test-only-jwt-secret-key-32b
   social:
@@ -81,6 +114,10 @@ meongcoach:
       secret-access-key: test-secret-key
       bucket: test-video-bucket
       public-base-url: https://videos.test.meongcoach.com
+      upload-url-validity: PT15M
+      download-url-validity: PT1H
+    gcs:
+      bucket: test-ai-video-bucket
       upload-url-validity: PT15M
       download-url-validity: PT1H
   revenuecat:

@@ -17,6 +17,9 @@ class MediaDownloadUrlIssuerTest {
 	private static final String S3_BASE_URL = "https://test-video-bucket.s3.ap-northeast-2.amazonaws.com/";
 	private static final MediaScope GRADUATION_VIDEO =
 			MediaScope.of(MediaKind.VIDEO, MediaVisibility.PRIVATE, "graduation");
+	private static final String GCS_BASE_URL = "https://storage.googleapis.com/test-ai-video-bucket/";
+	private static final MediaScope ANALYSIS_VIDEO =
+			MediaScope.of(MediaKind.VIDEO, MediaVisibility.ANALYSIS, "test-analysis");
 
 	@Autowired
 	private MediaDownloadUrlIssuer issuer;
@@ -29,6 +32,16 @@ class MediaDownloadUrlIssuerTest {
 				.startsWith(S3_BASE_URL + "videos/graduation/7/1101/a.mp4")
 				.contains("X-Amz-Signature=")
 				.contains("X-Amz-Expires=3600");
+	}
+
+	@Test
+	void 분석_범위의_객체_키면_분석_스토리지의_다운로드_URL을_발급한다() {
+		String downloadUrl = issuer.issue(ANALYSIS_VIDEO, "videos/test-analysis/7/a.mp4");
+
+		assertThat(downloadUrl)
+				.startsWith(GCS_BASE_URL + "videos/test-analysis/7/a.mp4")
+				.contains("X-Goog-Signature=")
+				.contains("X-Goog-Expires=3600");
 	}
 
 	@Test
