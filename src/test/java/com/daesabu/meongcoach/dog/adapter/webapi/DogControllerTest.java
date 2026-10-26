@@ -22,11 +22,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.daesabu.meongcoach.dog.application.provided.DogProfileDeleter;
 import com.daesabu.meongcoach.dog.application.provided.DogProfileFinder;
-import com.daesabu.meongcoach.dog.application.provided.DogProfileUpdater;
 import com.daesabu.meongcoach.dog.application.provided.DogRegister;
-import com.daesabu.meongcoach.dog.application.provided.DogRegisterInfo;
+import com.daesabu.meongcoach.dog.application.provided.dto.DogRegisterRequest;
 import com.daesabu.meongcoach.dog.domain.Dog;
-import com.daesabu.meongcoach.dog.domain.DogProfileUpdateCommand;
+import com.daesabu.meongcoach.dog.application.provided.dto.DogProfileUpdateRequest;
 import com.daesabu.meongcoach.dog.domain.DogRegisterCommand;
 import com.daesabu.meongcoach.dog.domain.DogSex;
 import com.daesabu.meongcoach.dog.domain.exception.DogLimitExceededException;
@@ -98,14 +97,11 @@ class DogControllerTest {
 	private DogProfileFinder dogProfileFinder;
 
 	@MockitoBean
-	private DogProfileUpdater dogProfileUpdater;
-
-	@MockitoBean
 	private DogProfileDeleter dogProfileDeleter;
 
 	@Test
 	void 강아지를_등록하면_201과_등록된_프로필을_반환한다() throws Exception {
-		given(dogRegister.register(eq(42L), any(DogRegisterInfo.class))).willReturn(10L);
+		given(dogRegister.register(eq(42L), any(DogRegisterRequest.class))).willReturn(10L);
 		given(dogProfileFinder.findDog(42L, 10L)).willReturn(selectedDog(10L));
 
 		mockMvc.perform(post("/api/dogs")
@@ -129,7 +125,7 @@ class DogControllerTest {
 				.andExpect(jsonPath("$.personalities[1].code").value("FRIENDLY"))
 				.andDo(document("dog/register",
 						requestFields(
-								fieldWithPath("name").description("필수 입력. 강아지 이름(최대 12자)"),
+								fieldWithPath("name").description("필수 입력. 강아지 이름(최대 50자)"),
 								fieldWithPath("breed").description(
 										"필수 입력. 견종 코드(온보딩 메타데이터 breeds의 code). 목록에 없는 견종은 견종 이름을 직접 입력(최대 30자)"),
 								fieldWithPath("sex").description("필수 입력. 성별(MALE, FEMALE)"),
@@ -139,7 +135,7 @@ class DogControllerTest {
 								fieldWithPath("personalities").optional()
 										.description("성격 코드 목록(온보딩 메타데이터 personalities의 code). 생략하거나 null이면 빈 목록으로 저장"),
 								fieldWithPath("profileImageUrl").optional()
-										.description("프로필 이미지 공개 URL(최대 512자). 생략하거나 null이면 빈 문자열로 저장"),
+										.description("프로필 이미지 공개 URL(최대 550자). 생략하거나 null이면 빈 문자열로 저장"),
 								fieldWithPath("expectation").optional()
 										.description("교육 기대 사항(최대 500자). 생략하거나 null이면 빈 문자열로 저장")
 						),
@@ -169,7 +165,7 @@ class DogControllerTest {
 
 	@Test
 	void 인증_주체에서_읽은_사용자와_요청_본문으로_등록을_위임하고_등록된_강아지를_재조회한다() throws Exception {
-		given(dogRegister.register(eq(42L), any(DogRegisterInfo.class))).willReturn(10L);
+		given(dogRegister.register(eq(42L), any(DogRegisterRequest.class))).willReturn(10L);
 		given(dogProfileFinder.findDog(42L, 10L)).willReturn(selectedDog(10L));
 
 		mockMvc.perform(post("/api/dogs")
@@ -178,16 +174,16 @@ class DogControllerTest {
 						.content(REGISTER_BODY))
 				.andExpect(status().isCreated());
 
-		ArgumentCaptor<DogRegisterInfo> captor = ArgumentCaptor.forClass(DogRegisterInfo.class);
+		ArgumentCaptor<DogRegisterRequest> captor = ArgumentCaptor.forClass(DogRegisterRequest.class);
 		then(dogRegister).should().register(eq(42L), captor.capture());
-		assertThat(captor.getValue()).isEqualTo(new DogRegisterInfo("초코", "POODLE", "MALE",
+		assertThat(captor.getValue()).isEqualTo(new DogRegisterRequest("초코", "POODLE", "MALE",
 				LocalDate.of(2024, 3, 1), new BigDecimal("4.5"), Set.of("TIMID", "FRIENDLY"), IMAGE_URL, EXPECTATION));
 		then(dogProfileFinder).should().findDog(42L, 10L);
 	}
 
 	@Test
 	void 성격을_생략하면_성격_없이_등록을_위임한다() throws Exception {
-		given(dogRegister.register(eq(42L), any(DogRegisterInfo.class))).willReturn(10L);
+		given(dogRegister.register(eq(42L), any(DogRegisterRequest.class))).willReturn(10L);
 		given(dogProfileFinder.findDog(42L, 10L)).willReturn(selectedDog(10L));
 
 		mockMvc.perform(post("/api/dogs")
@@ -196,17 +192,17 @@ class DogControllerTest {
 						.content(REGISTER_BODY.replace("\"personalities\": [\"TIMID\", \"FRIENDLY\"],", "")))
 				.andExpect(status().isCreated());
 
-		ArgumentCaptor<DogRegisterInfo> captor = ArgumentCaptor.forClass(DogRegisterInfo.class);
+		ArgumentCaptor<DogRegisterRequest> captor = ArgumentCaptor.forClass(DogRegisterRequest.class);
 		then(dogRegister).should().register(eq(42L), captor.capture());
 		assertThat(captor.getValue().personalities()).isNull();
 	}
 
 	@Test
-	void 이름이_12자이면_강아지를_등록할_수_있다() throws Exception {
+	void 이름이_50자이면_강아지를_등록할_수_있다() throws Exception {
 		String request = REGISTER_BODY.replace(
 				"\"name\": \"초코\"",
-				"\"name\": \"" + "가".repeat(12) + "\"");
-		given(dogRegister.register(eq(42L), any(DogRegisterInfo.class)))
+				"\"name\": \"" + "가".repeat(50) + "\"");
+		given(dogRegister.register(eq(42L), any(DogRegisterRequest.class)))
 				.willReturn(10L);
 		given(dogProfileFinder.findDog(42L, 10L))
 				.willReturn(selectedDog(10L));
@@ -219,10 +215,10 @@ class DogControllerTest {
 	}
 
 	@Test
-	void 이름이_12자를_넘으면_등록은_검증에_실패한다() throws Exception {
+	void 이름이_50자를_넘으면_등록은_검증에_실패한다() throws Exception {
 		String request = REGISTER_BODY.replace(
 				"\"name\": \"초코\"",
-				"\"name\": \"" + "가".repeat(13) + "\"");
+				"\"name\": \"" + "가".repeat(51) + "\"");
 
 		mockMvc.perform(post("/api/dogs")
 						.principal(CURRENT_USER)
@@ -250,7 +246,7 @@ class DogControllerTest {
 
 	@Test
 	void 목록에_없는_견종_이름으로_등록하면_입력한_이름을_코드와_표시명으로_반환한다() throws Exception {
-		given(dogRegister.register(eq(42L), any(DogRegisterInfo.class))).willReturn(10L);
+		given(dogRegister.register(eq(42L), any(DogRegisterRequest.class))).willReturn(10L);
 		given(dogProfileFinder.findDog(42L, 10L)).willReturn(customBreedDog(10L));
 
 		mockMvc.perform(post("/api/dogs")
@@ -261,7 +257,7 @@ class DogControllerTest {
 				.andExpect(jsonPath("$.breed.code").value("삽살개"))
 				.andExpect(jsonPath("$.breed.label").value("삽살개"));
 
-		ArgumentCaptor<DogRegisterInfo> captor = ArgumentCaptor.forClass(DogRegisterInfo.class);
+		ArgumentCaptor<DogRegisterRequest> captor = ArgumentCaptor.forClass(DogRegisterRequest.class);
 		then(dogRegister).should().register(eq(42L), captor.capture());
 		assertThat(captor.getValue().breed()).isEqualTo("삽살개");
 	}
@@ -283,7 +279,7 @@ class DogControllerTest {
 
 	@Test
 	void 강아지가_5마리면_등록은_409와_에러_코드를_반환한다() throws Exception {
-		given(dogRegister.register(eq(42L), any(DogRegisterInfo.class))).willThrow(new DogLimitExceededException());
+		given(dogRegister.register(eq(42L), any(DogRegisterRequest.class))).willThrow(new DogLimitExceededException());
 
 		mockMvc.perform(post("/api/dogs")
 						.principal(CURRENT_USER)
@@ -562,7 +558,7 @@ class DogControllerTest {
 
 	@Test
 	void 소유_강아지의_프로필을_전체_교체하고_수정된_프로필을_반환한다() throws Exception {
-		given(dogProfileUpdater.update(eq(42L), eq(10L), any(DogProfileUpdateCommand.class))).willReturn(updatedDog(10L));
+		given(dogRegister.update(eq(42L), eq(10L), any(DogProfileUpdateRequest.class))).willReturn(updatedDog(10L));
 
 		mockMvc.perform(put("/api/dogs/{dogId}", 10L)
 						.principal(CURRENT_USER)
@@ -588,7 +584,7 @@ class DogControllerTest {
 								parameterWithName("dogId").description("수정할 강아지 ID")
 						),
 						requestFields(
-								fieldWithPath("name").description("필수 입력. 강아지 이름(최대 12자)"),
+								fieldWithPath("name").description("필수 입력. 강아지 이름(최대 50자)"),
 								fieldWithPath("breed").description(
 										"필수 입력. 견종 코드(온보딩 메타데이터 breeds의 code). 목록에 없는 견종은 견종 이름을 직접 입력(최대 30자)"),
 								fieldWithPath("sex").description("필수 입력. 성별(MALE, FEMALE)"),
@@ -598,7 +594,7 @@ class DogControllerTest {
 								fieldWithPath("personalities").optional()
 										.description("성격 코드 목록(온보딩 메타데이터 personalities의 code). 생략하거나 null이면 빈 목록으로 저장"),
 								fieldWithPath("profileImageUrl").optional()
-										.description("프로필 이미지 공개 URL(최대 512자). 생략하거나 null이면 빈 문자열로 저장"),
+										.description("프로필 이미지 공개 URL(최대 550자). 생략하거나 null이면 빈 문자열로 저장"),
 								fieldWithPath("expectation").optional()
 										.description("교육 기대 사항(최대 500자). 생략하거나 null이면 빈 문자열로 저장")
 						),
@@ -627,7 +623,7 @@ class DogControllerTest {
 
 	@Test
 	void 인증_주체와_경로의_강아지_ID_요청_본문으로_수정을_위임한다() throws Exception {
-		given(dogProfileUpdater.update(eq(42L), eq(10L), any(DogProfileUpdateCommand.class))).willReturn(updatedDog(10L));
+		given(dogRegister.update(eq(42L), eq(10L), any(DogProfileUpdateRequest.class))).willReturn(updatedDog(10L));
 
 		mockMvc.perform(put("/api/dogs/{dogId}", 10L)
 						.principal(CURRENT_USER)
@@ -635,14 +631,14 @@ class DogControllerTest {
 						.content(UPDATE_BODY))
 				.andExpect(status().isOk());
 
-		then(dogProfileUpdater).should().update(42L, 10L, new DogProfileUpdateCommand("보리",
-				Breed.of(RegisteredBreed.MALTESE), DogSex.FEMALE, LocalDate.of(2023, 1, 15), new BigDecimal("3.2"),
-				Set.of(Personality.TIMID, Personality.LIVELY), NEW_IMAGE_URL, NEW_EXPECTATION));
+		then(dogRegister).should().update(42L, 10L, new DogProfileUpdateRequest("보리",
+				"MALTESE", "FEMALE", LocalDate.of(2023, 1, 15), new BigDecimal("3.2"),
+				Set.of("TIMID", "LIVELY"), NEW_IMAGE_URL, NEW_EXPECTATION));
 	}
 
 	@Test
 	void 성격을_생략하면_빈_성격으로_수정을_위임한다() throws Exception {
-		given(dogProfileUpdater.update(eq(42L), eq(10L), any(DogProfileUpdateCommand.class))).willReturn(updatedDog(10L));
+		given(dogRegister.update(eq(42L), eq(10L), any(DogProfileUpdateRequest.class))).willReturn(updatedDog(10L));
 
 		mockMvc.perform(put("/api/dogs/{dogId}", 10L)
 						.principal(CURRENT_USER)
@@ -650,14 +646,14 @@ class DogControllerTest {
 						.content(UPDATE_BODY.replace("\"personalities\": [\"TIMID\", \"LIVELY\"],", "")))
 				.andExpect(status().isOk());
 
-		then(dogProfileUpdater).should().update(42L, 10L, new DogProfileUpdateCommand("보리",
-				Breed.of(RegisteredBreed.MALTESE), DogSex.FEMALE, LocalDate.of(2023, 1, 15), new BigDecimal("3.2"),
-				Set.of(), NEW_IMAGE_URL, NEW_EXPECTATION));
+		then(dogRegister).should().update(42L, 10L, new DogProfileUpdateRequest("보리",
+				"MALTESE", "FEMALE", LocalDate.of(2023, 1, 15), new BigDecimal("3.2"),
+				null, NEW_IMAGE_URL, NEW_EXPECTATION));
 	}
 
 	@Test
 	void 목록에_없는_견종_이름으로_수정하면_직접_입력한_견종으로_수정을_위임한다() throws Exception {
-		given(dogProfileUpdater.update(eq(42L), eq(10L), any(DogProfileUpdateCommand.class)))
+		given(dogRegister.update(eq(42L), eq(10L), any(DogProfileUpdateRequest.class)))
 				.willReturn(customBreedDog(10L));
 
 		mockMvc.perform(put("/api/dogs/{dogId}", 10L)
@@ -668,9 +664,9 @@ class DogControllerTest {
 				.andExpect(jsonPath("$.breed.code").value("삽살개"))
 				.andExpect(jsonPath("$.breed.label").value("삽살개"));
 
-		ArgumentCaptor<DogProfileUpdateCommand> captor = ArgumentCaptor.forClass(DogProfileUpdateCommand.class);
-		then(dogProfileUpdater).should().update(eq(42L), eq(10L), captor.capture());
-		assertThat(captor.getValue().breed()).isEqualTo(Breed.from("삽살개"));
+		ArgumentCaptor<DogProfileUpdateRequest> captor = ArgumentCaptor.forClass(DogProfileUpdateRequest.class);
+		then(dogRegister).should().update(eq(42L), eq(10L), captor.capture());
+		assertThat(captor.getValue().breed()).isEqualTo("삽살개");
 	}
 
 	@Test
@@ -685,16 +681,16 @@ class DogControllerTest {
 				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
 				.andExpect(jsonPath("$.errors[0].field").value("breed"));
 
-		then(dogProfileUpdater).shouldHaveNoInteractions();
+		then(dogRegister).shouldHaveNoInteractions();
 	}
 
 	@Test
-	void 이름이_12자이면_강아지_프로필을_수정할_수_있다() throws Exception {
+	void 이름이_50자이면_강아지_프로필을_수정할_수_있다() throws Exception {
 		String request = UPDATE_BODY.replace(
 				"\"name\": \"보리\"",
-				"\"name\": \"" + "가".repeat(12) + "\"");
-		given(dogProfileUpdater.update(eq(42L), eq(10L),
-				any(DogProfileUpdateCommand.class)))
+				"\"name\": \"" + "가".repeat(50) + "\"");
+		given(dogRegister.update(eq(42L), eq(10L),
+				any(DogProfileUpdateRequest.class)))
 				.willReturn(updatedDog(10L));
 
 		mockMvc.perform(put("/api/dogs/{dogId}", 10L)
@@ -705,10 +701,10 @@ class DogControllerTest {
 	}
 
 	@Test
-	void 이름이_12자를_넘으면_수정은_검증에_실패한다() throws Exception {
+	void 이름이_50자를_넘으면_수정은_검증에_실패한다() throws Exception {
 		String request = UPDATE_BODY.replace(
 				"\"name\": \"보리\"",
-				"\"name\": \"" + "가".repeat(13) + "\"");
+				"\"name\": \"" + "가".repeat(51) + "\"");
 
 		mockMvc.perform(put("/api/dogs/{dogId}", 10L)
 						.principal(CURRENT_USER)
@@ -718,7 +714,7 @@ class DogControllerTest {
 				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
 				.andExpect(jsonPath("$.errors[0].field").value("name"));
 
-		then(dogProfileUpdater).shouldHaveNoInteractions();
+		then(dogRegister).shouldHaveNoInteractions();
 	}
 
 	@Test
@@ -731,12 +727,12 @@ class DogControllerTest {
 				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
 				.andExpect(jsonPath("$.errors[0].field").value("name"));
 
-		then(dogProfileUpdater).shouldHaveNoInteractions();
+		then(dogRegister).shouldHaveNoInteractions();
 	}
 
 	@Test
 	void 없거나_본인_소유가_아닌_강아지를_수정하면_404와_에러_코드를_반환한다() throws Exception {
-		given(dogProfileUpdater.update(eq(42L), eq(999L), any(DogProfileUpdateCommand.class)))
+		given(dogRegister.update(eq(42L), eq(999L), any(DogProfileUpdateRequest.class)))
 				.willThrow(new DogNotFoundException(999L));
 
 		mockMvc.perform(put("/api/dogs/{dogId}", 999L)
