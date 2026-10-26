@@ -8,11 +8,13 @@ import com.daesabu.meongcoach.community.application.provided.PostFinder;
 import com.daesabu.meongcoach.community.application.provided.dto.CommentRegisterRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.CommentUpdateRequest;
 import com.daesabu.meongcoach.community.application.required.CommentClosureRepository;
+import com.daesabu.meongcoach.community.application.required.CommentQueryRepository;
 import com.daesabu.meongcoach.community.application.required.CommentRepository;
 import com.daesabu.meongcoach.community.domain.Comment;
 import com.daesabu.meongcoach.community.domain.CommentClosure;
 import com.daesabu.meongcoach.community.domain.Post;
 import com.daesabu.meongcoach.community.domain.exception.CommentNotFoundException;
+import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -29,6 +31,7 @@ public class CommentModifyService implements CommentRegister {
 	private final CommentFinder commentFinder;
 	private final CommentRepository commentRepository;
 	private final CommentClosureRepository commentClosureRepository;
+	private final CommentQueryRepository commentQueryRepository;
 
 	@Override
 	@Transactional
@@ -40,6 +43,7 @@ public class CommentModifyService implements CommentRegister {
 		commentRepository.save(comment);
 		commentClosureRepository.save(CommentClosure.self(comment));
 		root.ifPresent(it -> commentClosureRepository.save(CommentClosure.reply(it, comment)));
+		post.increaseCommentCount();
 
 		return comment;
 	}
@@ -56,7 +60,11 @@ public class CommentModifyService implements CommentRegister {
 	@Transactional
 	public void delete(Long userId, Long commentId) {
 		Comment comment = commentFinder.findComment(userId, commentId);
+		List<Comment> replies = commentQueryRepository.findActiveReplies(comment.getId());
+
 		comment.delete();
+		replies.forEach(Comment::delete);
+		comment.getPost().decreaseCommentCount(1 + replies.size());
 	}
 
 	private Optional<Comment> findRoot(Long postId, Long parentId) {
