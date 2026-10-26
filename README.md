@@ -123,7 +123,7 @@ AI 분석은 수십 초가 걸리므로 요청-응답이 아니라 S3 업로드 
 #### dog — 반려견
 
 - **책임**: 반려견 프로필 등록·조회·수정·삭제(소프트 딜리트)와 마리 수 상한(5마리), 마지막 한 마리 삭제 금지 같은 사용자 단위 규칙(일급 컬렉션 `Dogs`)
-- **역할**: `DogRegister`, `DogProfileFinder`, `DogProfileUpdater`, `DogProfileDeleter`, `BreedFinder`, `PersonalityFinder`. 견종(`Breed`)·성격(`Personality`)은 `domain/shared`로 노출합니다.
+- **역할**: `DogRegister`, `DogProfileFinder`, `DogProfileDeleter`, `BreedFinder`, `PersonalityFinder`. 견종(`Breed`)·성격(`Personality`)은 `domain/shared`로 노출합니다.
 - **협력**: 다른 모듈을 호출하지 않습니다. `onboarding`이 반려견 등록과 견종·성격 목록 조회에 사용합니다.
 
 #### training — 훈련 콘텐츠와 사용자별 진행
@@ -189,6 +189,7 @@ AI 분석은 수십 초가 걸리므로 요청-응답이 아니라 S3 업로드 
 |---|---|
 | [docs/architecture.md](docs/architecture.md) | 모듈 규칙, 계층 의존 방향, 모듈 경계 검증 |
 | [docs/ai-pipeline.md](docs/ai-pipeline.md) | 영상 업로드 → SQS → AI 분석 → 리포트 저장 비동기 흐름과 실패 처리 |
+| [docs/release-3.2.0.md](docs/release-3.2.0.md) | 구버전 앱 호환 범위와 DB 점검 전환·복구 절차 |
 | [docs/security.md](docs/security.md) | JWT 토큰 정책과 검증 체인, 필터 체인 |
 | [docs/error-handling.md](docs/error-handling.md) | Problem Details 에러 응답 형식 |
 | [docs/media.md](docs/media.md) | presigned URL 발급과 객체 키 소유권 규칙 |
