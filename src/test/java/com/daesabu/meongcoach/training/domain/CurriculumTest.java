@@ -1,11 +1,12 @@
 package com.daesabu.meongcoach.training.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;
+import com.daesabu.meongcoach.training.domain.shared.ProgressStatus;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -24,54 +25,55 @@ class CurriculumTest {
 	void 완료한_레슨_id에_속한_레슨만_센다() {
 		Curriculum curriculum = curriculumWithLessonIds(1L, 2L, 3L);
 
-		int completedLessons = curriculum.countCompletedLessons(Set.of(1L, 3L));
+		int completed = curriculum.completion(completedProgresses(1L, 3L)).completedLessons();
 
-		assertThat(completedLessons).isEqualTo(2);
+		assertThat(completed).isEqualTo(2);
 	}
 
 	@Test
 	void 다른_커리큘럼의_레슨_id는_세지_않는다() {
 		Curriculum curriculum = curriculumWithLessonIds(1L, 2L);
 
-		int completedLessons = curriculum.countCompletedLessons(Set.of(2L, 99L));
+		int completed = curriculum.completion(completedProgresses(2L, 99L)).completedLessons();
 
-		assertThat(completedLessons).isEqualTo(1);
+		assertThat(completed).isEqualTo(1);
 	}
 
 	@Test
-	void 레슨이_없으면_완료한_레슨은_0개다() {
+	void 레슨이_없으면_진행_상태를_계산할_수_없다() {
 		Curriculum curriculum = curriculumWithLessonIds();
+		LessonProgresses progresses = completedProgresses();
 
-		int completedLessons = curriculum.countCompletedLessons(Set.of(1L));
-
-		assertThat(completedLessons).isZero();
+		assertThatThrownBy(() -> curriculum.completion(progresses))
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessage("커리큘럼에는 레슨이 하나 이상 있어야 합니다.");
 	}
 
 	@Test
-	void 레슨이_없으면_시작_전_상태다() {
+	void 레슨이_없으면_완료_여부를_판단할_수_없다() {
 		Curriculum curriculum = curriculumWithLessonIds();
+		LessonProgresses progresses = completedProgresses();
 
-		CurriculumStatus status = curriculum.statusOf(Set.of());
-
-		assertThat(status).isEqualTo(CurriculumStatus.NOT_STARTED);
+		assertThatThrownBy(() -> curriculum.isCompleted(progresses))
+				.isInstanceOf(IllegalStateException.class);
 	}
 
 	@Test
 	void 일부_레슨만_완료하면_진행_중_상태다() {
 		Curriculum curriculum = curriculumWithLessonIds(1L, 2L);
 
-		CurriculumStatus status = curriculum.statusOf(Set.of(1L));
+		ProgressStatus status = curriculum.completion(completedProgresses(1L)).status();
 
-		assertThat(status).isEqualTo(CurriculumStatus.IN_PROGRESS);
+		assertThat(status).isEqualTo(ProgressStatus.IN_PROGRESS);
 	}
 
 	@Test
 	void 모든_레슨을_완료하면_완료_상태다() {
 		Curriculum curriculum = curriculumWithLessonIds(1L, 2L);
 
-		CurriculumStatus status = curriculum.statusOf(Set.of(1L, 2L));
+		ProgressStatus status = curriculum.completion(completedProgresses(1L, 2L)).status();
 
-		assertThat(status).isEqualTo(CurriculumStatus.COMPLETED);
+		assertThat(status).isEqualTo(ProgressStatus.COMPLETED);
 	}
 
 	@Test
@@ -147,5 +149,15 @@ class CurriculumTest {
 		}
 		ReflectionTestUtils.setField(curriculum, "lessons", lessons);
 		return curriculum;
+	}
+
+	private LessonProgresses completedProgresses(Long... lessonIds) {
+		List<LessonProgress> progresses = new ArrayList<>();
+		for (Long lessonId : lessonIds) {
+			LessonProgress progress = LessonProgress.start(1L, lessonId);
+			progress.complete();
+			progresses.add(progress);
+		}
+		return LessonProgresses.from(progresses);
 	}
 }

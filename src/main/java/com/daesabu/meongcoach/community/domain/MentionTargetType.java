@@ -4,7 +4,7 @@ import com.daesabu.meongcoach.community.domain.exception.InvalidMentionTargetTyp
 import java.util.Arrays;
 
 public enum MentionTargetType {
-	CARD;
+	LESSON;
 
 	public static MentionTargetType from(String code) {
 		return Arrays.stream(values())

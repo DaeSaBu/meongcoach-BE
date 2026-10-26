@@ -1,7 +1,7 @@
 package com.daesabu.meongcoach.training.application.provided.dto;
 
 import com.daesabu.meongcoach.training.domain.Curriculum;
-import java.util.Map;
+import com.daesabu.meongcoach.training.domain.LessonProgresses;
 
-public record CurriculumDetailResult(Curriculum curriculum, Map<Long, Integer> completedCounts) {
+public record CurriculumDetailResult(Curriculum curriculum, LessonProgresses progresses) {
 }

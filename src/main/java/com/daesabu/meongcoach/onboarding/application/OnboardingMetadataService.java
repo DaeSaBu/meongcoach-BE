@@ -10,9 +10,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * 온보딩 화면에 필요한 목록 데이터를 각 모듈에서 모아 반환한다.
- */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -25,10 +22,10 @@ public class OnboardingMetadataService implements OnboardingMetadataFinder {
 
 	@Override
 	public OnboardingMetadataResult find() {
-		return new OnboardingMetadataResult(
-				topicFinder.findAllOrdered(),
-				breedFinder.findAll(),
-				personalityFinder.findAll(),
-				mbtiFinder.findAllCodes());
+		var topics = topicFinder.findAllOrdered();
+		var breeds = breedFinder.findAll();
+		var personalities = personalityFinder.findAll();
+		var mbtis = mbtiFinder.findAllCodes();
+		return new OnboardingMetadataResult(topics, breeds, personalities, mbtis);
 	}
 }

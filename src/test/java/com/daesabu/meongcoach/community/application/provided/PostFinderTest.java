@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 
+import com.daesabu.meongcoach.community.application.provided.dto.AuthorResult;
+import com.daesabu.meongcoach.community.application.provided.dto.MentionTargetResult;
 import com.daesabu.meongcoach.community.application.provided.dto.PostListRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.PostListResult;
 import com.daesabu.meongcoach.community.application.provided.dto.PostResult;
@@ -12,16 +14,22 @@ import com.daesabu.meongcoach.community.domain.MentionCommand;
 import com.daesabu.meongcoach.community.domain.MentionTargetType;
 import com.daesabu.meongcoach.community.domain.Post;
 import com.daesabu.meongcoach.community.domain.PostContent;
-import com.daesabu.meongcoach.community.domain.PostWriteCommand;
+import com.daesabu.meongcoach.community.domain.PostMedia;
+import com.daesabu.meongcoach.community.domain.PostMediaCommand;
+import com.daesabu.meongcoach.community.domain.PostMediaType;
+import com.daesabu.meongcoach.community.domain.PostRegisterCommand;
+import com.daesabu.meongcoach.community.domain.exception.PostNotFoundException;
+import com.daesabu.meongcoach.dog.application.required.DogRepository;
+import com.daesabu.meongcoach.dog.domain.Dog;
+import com.daesabu.meongcoach.dog.domain.DogRegisterCommand;
+import com.daesabu.meongcoach.dog.domain.DogSex;
+import com.daesabu.meongcoach.dog.domain.shared.Breed;
+import com.daesabu.meongcoach.dog.domain.shared.RegisteredBreed;
 import com.daesabu.meongcoach.support.ApplicationTest;
-import com.daesabu.meongcoach.training.application.provided.dto.CardSummaryResult;
-import com.daesabu.meongcoach.training.application.required.CardRepository;
 import com.daesabu.meongcoach.training.application.required.CurriculumRepository;
 import com.daesabu.meongcoach.training.application.required.LessonRepository;
 import com.daesabu.meongcoach.training.application.required.TopicRepository;
 import com.daesabu.meongcoach.training.application.required.TrainingCategoryRepository;
-import com.daesabu.meongcoach.training.domain.Card;
-import com.daesabu.meongcoach.training.domain.CardFixture;
 import com.daesabu.meongcoach.training.domain.Curriculum;
 import com.daesabu.meongcoach.training.domain.CurriculumFixture;
 import com.daesabu.meongcoach.training.domain.Lesson;
@@ -30,14 +38,13 @@ import com.daesabu.meongcoach.training.domain.Topic;
 import com.daesabu.meongcoach.training.domain.TopicFixture;
 import com.daesabu.meongcoach.training.domain.TrainingCategory;
 import com.daesabu.meongcoach.training.domain.TrainingCategoryFixture;
-import com.daesabu.meongcoach.user.application.provided.UserProfileSummaryResult;
-import com.daesabu.meongcoach.user.application.required.UserProfileRepository;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.User;
-import com.daesabu.meongcoach.user.domain.UserProfile;
 import com.daesabu.meongcoach.user.domain.UserProfileCreateCommand;
 import jakarta.persistence.EntityManager;
 import jakarta.validation.ConstraintViolationException;
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.IntStream;
@@ -48,6 +55,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 class PostFinderTest {
 
 	private static final Long USER_ID = 42L;
+	private static final Long LESSON_A_ID = 101L;
+	private static final Long LESSON_B_ID = 202L;
+	private static final String IMAGE_URL = "https://media.meongcoach.com/images/community-post/42/photo.jpg";
+	private static final String VIDEO_URL = "https://media.meongcoach.com/videos/community-post/42/clip.mp4";
+	private static final String UNSELECTED_DOG_IMAGE_URL = "https://media.meongcoach.com/images/dog-profile/42/choco.jpg";
+	private static final String SELECTED_DOG_IMAGE_URL = "https://media.meongcoach.com/images/dog-profile/42/bori.jpg";
 
 	@Autowired
 	private PostFinder postFinder;
@@ -59,7 +72,7 @@ class PostFinderTest {
 	private UserRepository userRepository;
 
 	@Autowired
-	private UserProfileRepository userProfileRepository;
+	private DogRepository dogRepository;
 
 	@Autowired
 	private TrainingCategoryRepository trainingCategoryRepository;
@@ -74,9 +87,6 @@ class PostFinderTest {
 	private LessonRepository lessonRepository;
 
 	@Autowired
-	private CardRepository cardRepository;
-
-	@Autowired
 	private EntityManager entityManager;
 
 	@Test
@@ -86,7 +96,7 @@ class PostFinderTest {
 		savePost(USER_ID, "세 번째");
 		flushAndClear();
 
-		PostListResult result = postFinder.findPosts(new PostListRequest(null, 20));
+		PostListResult result = postFinder.findPosts(new PostListRequest(null, 20, null));
 
 		assertThat(result.posts()).extracting(this::contentOf).containsExactly("세 번째", "두 번째", "첫 번째");
 		assertThat(result.nextCursor()).isNull();
@@ -97,7 +107,7 @@ class PostFinderTest {
 		List<Post> posts = savePosts(3);
 		flushAndClear();
 
-		PostListResult result = postFinder.findPosts(new PostListRequest(null, 2));
+		PostListResult result = postFinder.findPosts(new PostListRequest(null, 2, null));
 
 		assertThat(result.posts()).extracting(this::contentOf).containsExactly("글 3", "글 2");
 		assertThat(result.nextCursor()).isEqualTo(posts.get(1).getId());
@@ -108,7 +118,7 @@ class PostFinderTest {
 		List<Post> posts = savePosts(3);
 		flushAndClear();
 
-		PostListResult result = postFinder.findPosts(new PostListRequest(posts.get(1).getId(), 2));
+		PostListResult result = postFinder.findPosts(new PostListRequest(posts.get(1).getId(), 2, null));
 
 		assertThat(result.posts()).extracting(this::contentOf).containsExactly("글 1");
 		assertThat(result.nextCursor()).isNull();
@@ -119,9 +129,9 @@ class PostFinderTest {
 		savePosts(5);
 		flushAndClear();
 
-		PostListResult first = postFinder.findPosts(new PostListRequest(null, 2));
-		PostListResult second = postFinder.findPosts(new PostListRequest(first.nextCursor(), 2));
-		PostListResult third = postFinder.findPosts(new PostListRequest(second.nextCursor(), 2));
+		PostListResult first = postFinder.findPosts(new PostListRequest(null, 2, null));
+		PostListResult second = postFinder.findPosts(new PostListRequest(first.nextCursor(), 2, null));
+		PostListResult third = postFinder.findPosts(new PostListRequest(second.nextCursor(), 2, null));
 
 		assertThat(first.posts()).extracting(this::contentOf).containsExactly("글 5", "글 4");
 		assertThat(second.posts()).extracting(this::contentOf).containsExactly("글 3", "글 2");
@@ -134,7 +144,7 @@ class PostFinderTest {
 		savePosts(21);
 		flushAndClear();
 
-		PostListResult result = postFinder.findPosts(new PostListRequest(null, null));
+		PostListResult result = postFinder.findPosts(new PostListRequest(null, null, null));
 
 		assertThat(result.posts()).hasSize(20);
 		assertThat(result.nextCursor()).isNotNull();
@@ -142,32 +152,80 @@ class PostFinderTest {
 
 	@Test
 	void size가_1_미만이면_예외를_던진다() {
-		assertThatThrownBy(() -> postFinder.findPosts(new PostListRequest(null, 0)))
+		assertThatThrownBy(() -> postFinder.findPosts(new PostListRequest(null, 0, null)))
 				.isInstanceOf(ConstraintViolationException.class);
 	}
 
 	@Test
 	void size가_50을_넘으면_예외를_던진다() {
-		assertThatThrownBy(() -> postFinder.findPosts(new PostListRequest(null, 51)))
+		assertThatThrownBy(() -> postFinder.findPosts(new PostListRequest(null, 51, null)))
 				.isInstanceOf(ConstraintViolationException.class);
 	}
 
 	@Test
 	void cursor가_양수가_아니면_예외를_던진다() {
-		assertThatThrownBy(() -> postFinder.findPosts(new PostListRequest(0L, 20)))
+		assertThatThrownBy(() -> postFinder.findPosts(new PostListRequest(0L, 20, null)))
 				.isInstanceOf(ConstraintViolationException.class);
 	}
 
 	@Test
-	void 작성자_프로필_요약을_함께_반환한다() {
-		User author = saveUserWithProfile("멍멍이집사", "https://cdn.example.com/profile.png");
+	void lessonId가_양수가_아니면_예외를_던진다() {
+		assertThatThrownBy(() -> postFinder.findPosts(new PostListRequest(null, 20, 0L)))
+				.isInstanceOf(ConstraintViolationException.class);
+	}
+
+	@Test
+	void 레슨을_넘기면_그_레슨을_멘션한_게시글만_최신순으로_반환한다() {
+		savePost(USER_ID, "레슨 A 첫 글", LESSON_A_ID);
+		savePost(USER_ID, "레슨 B 글", LESSON_B_ID);
+		savePost(USER_ID, "멘션 없는 글");
+		savePost(USER_ID, "레슨 A 둘째 글", LESSON_A_ID);
+		flushAndClear();
+
+		PostListResult result = postFinder.findPosts(new PostListRequest(null, 20, LESSON_A_ID));
+
+		assertThat(result.posts()).extracting(this::contentOf).containsExactly("레슨 A 둘째 글", "레슨 A 첫 글");
+		assertThat(result.nextCursor()).isNull();
+	}
+
+	@Test
+	void 레슨과_커서로_이어서_조회하면_중복이나_누락_없이_해당_레슨_게시글을_순회한다() {
+		IntStream.rangeClosed(1, 3).forEach(index -> {
+			savePost(USER_ID, "레슨 A 글 " + index, LESSON_A_ID);
+			savePost(USER_ID, "레슨 B 글 " + index, LESSON_B_ID);
+		});
+		flushAndClear();
+
+		PostListResult first = postFinder.findPosts(new PostListRequest(null, 2, LESSON_A_ID));
+		PostListResult second = postFinder.findPosts(new PostListRequest(first.nextCursor(), 2, LESSON_A_ID));
+
+		assertThat(first.posts()).extracting(this::contentOf).containsExactly("레슨 A 글 3", "레슨 A 글 2");
+		assertThat(second.posts()).extracting(this::contentOf).containsExactly("레슨 A 글 1");
+		assertThat(second.nextCursor()).isNull();
+	}
+
+	@Test
+	void 작성자의_선택된_강아지를_작성자_정보로_함께_반환한다() {
+		User author = saveAuthorWithDogs();
 		savePost(author.getId(), "본문");
 		flushAndClear();
 
-		PostListResult result = postFinder.findPosts(new PostListRequest(null, 20));
+		PostListResult result = postFinder.findPosts(new PostListRequest(null, 20, null));
 
 		assertThat(result.posts().getFirst().author()).isEqualTo(
-				new UserProfileSummaryResult(author.getId(), "멍멍이집사", "https://cdn.example.com/profile.png"));
+				new AuthorResult(author.getId(), "보리", SELECTED_DOG_IMAGE_URL));
+	}
+
+	@Test
+	void 선택된_강아지가_없는_작성자의_게시글은_author가_null이다() {
+		User author = saveUserWithProfile("멍멍이집사", "https://cdn.example.com/profile.png");
+		saveDog(author.getId(), "초코", UNSELECTED_DOG_IMAGE_URL);
+		savePost(author.getId(), "본문");
+		flushAndClear();
+
+		PostListResult result = postFinder.findPosts(new PostListRequest(null, 20, null));
+
+		assertThat(result.posts().getFirst().author()).isNull();
 	}
 
 	@Test
@@ -175,51 +233,196 @@ class PostFinderTest {
 		savePost(USER_ID, "본문");
 		flushAndClear();
 
-		PostListResult result = postFinder.findPosts(new PostListRequest(null, 20));
+		PostListResult result = postFinder.findPosts(new PostListRequest(null, 20, null));
 
 		assertThat(result.posts().getFirst().author()).isNull();
 	}
 
 	@Test
-	void 멘션한_카드_요약을_함께_반환한다() {
+	void 멘션_대상_요약을_함께_반환한다() {
 		Lesson lesson = saveLesson("기본 교육");
-		Card card = saveCard(lesson, "앉아 준비");
-		savePost(USER_ID, "본문", card.getId());
+		savePost(USER_ID, "본문", lesson.getId());
 		flushAndClear();
 
-		PostListResult result = postFinder.findPosts(new PostListRequest(null, 20));
+		PostListResult result = postFinder.findPosts(new PostListRequest(null, 20, null));
 
-		assertThat(result.posts()).extracting(PostResult::mentionedCard)
-				.extracting(CardSummaryResult::id, CardSummaryResult::title)
-				.containsExactly(tuple(card.getId(), "앉아 준비"));
+		assertThat(result.posts()).extracting(PostResult::mentionTarget)
+				.extracting(MentionTargetResult::targetType, MentionTargetResult::targetId, MentionTargetResult::title)
+				.containsExactly(tuple(MentionTargetType.LESSON, lesson.getId(), "기본 교육 레슨"));
 	}
 
 	@Test
-	void 멘션이_없는_게시글은_mentionedCard가_null이다() {
+	void 멘션이_없는_게시글은_mentionTarget이_null이다() {
 		savePost(USER_ID, "본문");
 		flushAndClear();
 
-		PostListResult result = postFinder.findPosts(new PostListRequest(null, 20));
+		PostListResult result = postFinder.findPosts(new PostListRequest(null, 20, null));
 
-		assertThat(result.posts().getFirst().mentionedCard()).isNull();
+		assertThat(result.posts().getFirst().mentionTarget()).isNull();
 	}
 
 	@Test
-	void 멘션한_카드가_없으면_mentionedCard가_null이다() {
+	void 멘션_대상이_없으면_mentionTarget이_null이다() {
 		savePost(USER_ID, "본문", -1L);
 		flushAndClear();
 
-		PostListResult result = postFinder.findPosts(new PostListRequest(null, 20));
+		PostListResult result = postFinder.findPosts(new PostListRequest(null, 20, null));
 
-		assertThat(result.posts().getFirst().mentionedCard()).isNull();
+		assertThat(result.posts().getFirst().mentionTarget()).isNull();
+	}
+
+	@Test
+	void 게시글의_미디어를_등록_순서대로_함께_반환한다() {
+		savePost(USER_ID, "본문", List.of(
+				new PostMediaCommand(PostMediaType.VIDEO, VIDEO_URL),
+				new PostMediaCommand(PostMediaType.IMAGE, IMAGE_URL)));
+		flushAndClear();
+
+		PostListResult result = postFinder.findPosts(new PostListRequest(null, 20, null));
+
+		assertThat(result.posts().getFirst().post().getMedia())
+				.extracting(PostMedia::getType, PostMedia::getUrl)
+				.containsExactly(
+						tuple(PostMediaType.VIDEO, VIDEO_URL),
+						tuple(PostMediaType.IMAGE, IMAGE_URL));
+	}
+
+	@Test
+	void 미디어가_없는_게시글은_빈_미디어를_반환한다() {
+		savePost(USER_ID, "본문");
+		flushAndClear();
+
+		PostListResult result = postFinder.findPosts(new PostListRequest(null, 20, null));
+
+		assertThat(result.posts().getFirst().post().getMedia()).isEmpty();
+	}
+
+	@Test
+	void 삭제된_게시글은_목록에서_제외한다() {
+		savePost(USER_ID, "첫 번째");
+		savePost(USER_ID, "두 번째").delete();
+		savePost(USER_ID, "세 번째");
+		flushAndClear();
+
+		PostListResult result = postFinder.findPosts(new PostListRequest(null, 20, null));
+
+		assertThat(result.posts()).extracting(this::contentOf).containsExactly("세 번째", "첫 번째");
 	}
 
 	@Test
 	void 게시글이_없으면_빈_목록을_반환한다() {
-		PostListResult result = postFinder.findPosts(new PostListRequest(null, 20));
+		PostListResult result = postFinder.findPosts(new PostListRequest(null, 20, null));
 
 		assertThat(result.posts()).isEmpty();
 		assertThat(result.nextCursor()).isNull();
+	}
+
+	@Test
+	void 게시글_하나를_id로_조회한다() {
+		Post saved = savePost(USER_ID, "본문");
+		flushAndClear();
+
+		Post found = postFinder.findPost(saved.getId());
+
+		assertThat(found.getId()).isEqualTo(saved.getId());
+		assertThat(found.getContent().value()).isEqualTo("본문");
+	}
+
+	@Test
+	void 조회한_게시글이_없으면_예외를_던진다() {
+		assertThatThrownBy(() -> postFinder.findPost(999_999L))
+				.isInstanceOf(PostNotFoundException.class);
+	}
+
+	@Test
+	void 삭제된_게시글을_조회하면_예외를_던진다() {
+		Post saved = saveDeletedPost(USER_ID);
+
+		assertThatThrownBy(() -> postFinder.findPost(saved.getId()))
+				.isInstanceOf(PostNotFoundException.class);
+	}
+
+	@Test
+	void 사용자가_작성한_게시글_하나를_id로_조회한다() {
+		Post saved = savePost(USER_ID, "본문");
+		flushAndClear();
+
+		Post found = postFinder.findPost(USER_ID, saved.getId());
+
+		assertThat(found.getId()).isEqualTo(saved.getId());
+		assertThat(found.getContent().value()).isEqualTo("본문");
+	}
+
+	@Test
+	void 다른_사용자의_게시글을_조회하면_예외를_던진다() {
+		Post saved = savePost(USER_ID, "본문");
+		flushAndClear();
+
+		assertThatThrownBy(() -> postFinder.findPost(USER_ID + 1, saved.getId()))
+				.isInstanceOf(PostNotFoundException.class);
+	}
+
+	@Test
+	void 조회할_내_게시글이_없으면_예외를_던진다() {
+		assertThatThrownBy(() -> postFinder.findPost(USER_ID, 999_999L))
+				.isInstanceOf(PostNotFoundException.class);
+	}
+
+	@Test
+	void 삭제된_내_게시글을_조회하면_예외를_던진다() {
+		Post saved = saveDeletedPost(USER_ID);
+
+		assertThatThrownBy(() -> postFinder.findPost(USER_ID, saved.getId()))
+				.isInstanceOf(PostNotFoundException.class);
+	}
+
+	@Test
+	void 게시글_하나를_작성자_멘션_미디어와_함께_조회한다() {
+		User author = saveAuthorWithDogs();
+		Lesson lesson = saveLesson("기본 교육");
+		Post saved = postRepository.save(Post.register(author.getId(), new PostRegisterCommand("본문",
+				new MentionCommand(MentionTargetType.LESSON, lesson.getId()), List.of(
+						new PostMediaCommand(PostMediaType.VIDEO, VIDEO_URL),
+						new PostMediaCommand(PostMediaType.IMAGE, IMAGE_URL)))));
+		flushAndClear();
+
+		PostResult result = postFinder.findPostDetail(saved.getId());
+
+		assertThat(contentOf(result)).isEqualTo("본문");
+		assertThat(result.author()).isEqualTo(
+				new AuthorResult(author.getId(), "보리", SELECTED_DOG_IMAGE_URL));
+		assertThat(result.mentionTarget()).isEqualTo(
+				new MentionTargetResult(MentionTargetType.LESSON, lesson.getId(), "기본 교육 레슨"));
+		assertThat(result.post().getMedia())
+				.extracting(PostMedia::getType, PostMedia::getUrl)
+				.containsExactly(
+						tuple(PostMediaType.VIDEO, VIDEO_URL),
+						tuple(PostMediaType.IMAGE, IMAGE_URL));
+	}
+
+	@Test
+	void 단건_조회한_게시글의_작성자_프로필이_없으면_author가_null이다() {
+		Post saved = savePost(USER_ID, "본문");
+		flushAndClear();
+
+		PostResult result = postFinder.findPostDetail(saved.getId());
+
+		assertThat(result.author()).isNull();
+		assertThat(result.mentionTarget()).isNull();
+	}
+
+	@Test
+	void 단건_조회할_게시글이_없으면_예외를_던진다() {
+		assertThatThrownBy(() -> postFinder.findPostDetail(999_999L))
+				.isInstanceOf(PostNotFoundException.class);
+	}
+
+	@Test
+	void 단건_조회할_게시글이_삭제됐으면_예외를_던진다() {
+		Post saved = saveDeletedPost(USER_ID);
+
+		assertThatThrownBy(() -> postFinder.findPostDetail(saved.getId()))
+				.isInstanceOf(PostNotFoundException.class);
 	}
 
 	private String contentOf(PostResult result) {
@@ -233,20 +436,48 @@ class PostFinderTest {
 				.toList();
 	}
 
-	private Post savePost(Long userId, String content) {
-		return postRepository.save(Post.write(userId, new PostWriteCommand(content, null)));
+	private Post saveDeletedPost(Long userId) {
+		Post post = savePost(userId, "본문");
+		post.delete();
+		flushAndClear();
+		return post;
 	}
 
-	private Post savePost(Long userId, String content, Long cardId) {
-		MentionCommand mention = new MentionCommand(MentionTargetType.CARD, cardId);
-		return postRepository.save(Post.write(userId, new PostWriteCommand(content, mention)));
+	private Post savePost(Long userId, String content) {
+		return postRepository.save(Post.register(userId, new PostRegisterCommand(content, null, List.of())));
+	}
+
+	private Post savePost(Long userId, String content, List<PostMediaCommand> media) {
+		return postRepository.save(Post.register(userId, new PostRegisterCommand(content, null, media)));
+	}
+
+	private Post savePost(Long userId, String content, Long lessonId) {
+		MentionCommand mention = new MentionCommand(MentionTargetType.LESSON, lessonId);
+		return postRepository.save(Post.register(userId, new PostRegisterCommand(content, mention, List.of())));
+	}
+
+	private User saveAuthorWithDogs() {
+		User author = saveUserWithProfile("멍멍이집사", "https://cdn.example.com/profile.png");
+		saveDog(author.getId(), "초코", UNSELECTED_DOG_IMAGE_URL);
+		Dog selected = newDog(author.getId(), "보리", SELECTED_DOG_IMAGE_URL);
+		selected.select();
+		dogRepository.save(selected);
+		return author;
+	}
+
+	private Dog saveDog(Long userId, String name, String profileImageUrl) {
+		return dogRepository.save(newDog(userId, name, profileImageUrl));
+	}
+
+	private Dog newDog(Long userId, String name, String profileImageUrl) {
+		return Dog.register(new DogRegisterCommand(userId, name, Breed.of(RegisteredBreed.POODLE), DogSex.MALE,
+				LocalDate.of(2024, 3, 1), new BigDecimal("4.50"), profileImageUrl, ""));
 	}
 
 	private User saveUserWithProfile(String nickname, String profileImageUrl) {
-		User user = userRepository.save(User.registerUser());
-		userProfileRepository.save(UserProfile.create(user,
-				new UserProfileCreateCommand(nickname, profileImageUrl, "INFP", Set.of(), Set.of())));
-		return user;
+		User user = User.registerUser();
+		user.completeOnboarding(new UserProfileCreateCommand(nickname, profileImageUrl, "INFP", Set.of(), Set.of()));
+		return userRepository.save(user);
 	}
 
 	private Lesson saveLesson(String title) {
@@ -256,10 +487,6 @@ class PostFinderTest {
 		Curriculum curriculum = curriculumRepository.save(
 				CurriculumFixture.create(topic, title + " 커리큘럼", 1, null, null));
 		return lessonRepository.save(LessonFixture.create(curriculum, title + " 레슨", 1, 5));
-	}
-
-	private Card saveCard(Lesson lesson, String title) {
-		return cardRepository.save(CardFixture.create(lesson, title, 1, "지시문"));
 	}
 
 	private void flushAndClear() {

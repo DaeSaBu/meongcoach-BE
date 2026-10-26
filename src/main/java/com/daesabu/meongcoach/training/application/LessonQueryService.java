@@ -2,10 +2,12 @@ package com.daesabu.meongcoach.training.application;
 
 import com.daesabu.meongcoach.entitlement.application.provided.EntitlementChecker;
 import com.daesabu.meongcoach.training.application.provided.LessonFinder;
+import com.daesabu.meongcoach.training.application.provided.dto.LessonSummaryResult;
 import com.daesabu.meongcoach.training.application.required.LessonRepository;
 import com.daesabu.meongcoach.training.domain.Card;
 import com.daesabu.meongcoach.training.domain.Lesson;
 import com.daesabu.meongcoach.training.domain.exception.LessonNotFoundException;
+import java.util.Collection;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -30,7 +32,17 @@ public class LessonQueryService implements LessonFinder {
 
 	@Override
 	public Lesson find(Long lessonId) {
-		return lessonRepository.findWithCategoryById(lessonId)
+		return lessonRepository.findById(lessonId)
 				.orElseThrow(() -> new LessonNotFoundException(lessonId));
+	}
+
+	@Override
+	public List<LessonSummaryResult> findSummaries(Collection<Long> lessonIds) {
+		if (lessonIds.isEmpty()) {
+			return List.of();
+		}
+		return lessonRepository.findAllById(lessonIds).stream()
+				.map(LessonSummaryResult::from)
+				.toList();
 	}
 }

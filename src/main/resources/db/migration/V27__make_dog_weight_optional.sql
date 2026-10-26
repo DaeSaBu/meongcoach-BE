@@ -1,0 +1,2 @@
+ALTER TABLE dogs
+    ALTER COLUMN weight_kg DROP NOT NULL;

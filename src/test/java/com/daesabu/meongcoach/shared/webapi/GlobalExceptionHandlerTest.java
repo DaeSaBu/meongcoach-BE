@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.daesabu.meongcoach.media.domain.exception.VideoFileSizeExceededException;
 import com.daesabu.meongcoach.shared.exception.DomainException;
 import com.daesabu.meongcoach.shared.exception.ErrorCode;
 import jakarta.validation.Valid;
@@ -20,6 +21,7 @@ import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDoc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.TestingAuthenticationToken;
@@ -57,6 +59,15 @@ class GlobalExceptionHandlerTest {
 								fieldWithPath("timestamp").description("에러 발생 시각(UTC)")
 						)
 				));
+	}
+
+	@Test
+	void 영상_용량_초과_응답은_공통_에러_형식만_반환한다() throws Exception {
+		mockMvc.perform(get("/test/video-size-error"))
+				.andExpect(status().isBadRequest())
+				.andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+				.andExpect(jsonPath("$.code").value("MEDIA_VIDEO_FILE_SIZE_EXCEEDED"))
+				.andExpect(jsonPath("$.maxFileSizeBytes").doesNotExist());
 	}
 
 	@Test
@@ -148,6 +159,17 @@ class GlobalExceptionHandlerTest {
 	}
 
 	@Test
+	void 낙관적_락_충돌은_내부_정보_없이_409를_반환한다() throws Exception {
+		mockMvc.perform(get("/test/optimistic-lock"))
+				.andExpect(status().isConflict())
+				.andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+				.andExpect(jsonPath("$.status").value(409))
+				.andExpect(jsonPath("$.code").value("CONFLICT"))
+				.andExpect(jsonPath("$.detail").value("다른 요청이 데이터를 변경했습니다. 최신 상태를 확인한 뒤 다시 시도해 주세요."))
+				.andExpect(jsonPath("$.timestamp").exists());
+	}
+
+	@Test
 	void 권한_부족은_FORBIDDEN을_반환한다() throws Exception {
 		mockMvc.perform(get("/test/access-denied"))
 				.andExpect(status().isForbidden())
@@ -155,9 +177,6 @@ class GlobalExceptionHandlerTest {
 				.andExpect(jsonPath("$.code").value("FORBIDDEN"))
 				.andExpect(jsonPath("$.detail").value("접근 권한이 없습니다."));
 	}
-
-	// 필터 체인 전용 에러라 컨트롤러 슬라이스에서 재현할 수 없어, 실제 흐름과 같은
-	// SecurityContext 권한을 테스트 스레드에 심어 재현한다 (MockMvc는 동일 스레드에서 실행된다)
 	@Test
 	void 온보딩_미완료_회원의_권한_부족은_ONBOARDING_NOT_COMPLETED를_반환한다() throws Exception {
 		SecurityContextHolder.getContext().setAuthentication(
@@ -233,6 +252,12 @@ class GlobalExceptionHandlerTest {
 	@RestController
 	static class ExceptionTriggerController {
 
+		@GetMapping("/test/video-size-error")
+		void videoSizeError() {
+			throw new VideoFileSizeExceededException(209715201L, 209715200L);
+		}
+
+
 		@GetMapping("/test/domain-error")
 		void domainError() {
 			throw new TestNotFoundException();
@@ -251,11 +276,14 @@ class GlobalExceptionHandlerTest {
 		void unexpected() {
 			throw new IllegalStateException("내부 구현 정보가 담긴 메시지");
 		}
-
-		// 실제로는 시큐리티 필터 체인이 던지고 SecurityExceptionTranslator가 여기로 되돌린다
 		@GetMapping("/test/authentication-error")
 		void authenticationError() {
 			throw new BadCredentialsException("자격증명이 올바르지 않습니다");
+		}
+
+		@GetMapping("/test/optimistic-lock")
+		void optimisticLock() {
+			throw new ObjectOptimisticLockingFailureException("내부 엔티티 이름", 42L);
 		}
 
 		@GetMapping("/test/access-denied")

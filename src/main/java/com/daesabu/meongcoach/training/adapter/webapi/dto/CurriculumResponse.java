@@ -1,18 +1,17 @@
 package com.daesabu.meongcoach.training.adapter.webapi.dto;
 
+import com.daesabu.meongcoach.training.application.provided.dto.CurriculumResult;
 import com.daesabu.meongcoach.training.domain.Curriculum;
-import com.daesabu.meongcoach.training.domain.CurriculumStatus;
-import java.util.Set;
+import com.daesabu.meongcoach.training.domain.CurriculumCompletion;
+import com.daesabu.meongcoach.training.domain.shared.ProgressStatus;
 
 public record CurriculumResponse(Long curriculumId, String curriculumTitle, int totalLessons, int completedLessons,
-		CurriculumStatus status, boolean locked) {
+		ProgressStatus status, boolean locked) {
 
-	public static CurriculumResponse of(Curriculum curriculum, Set<Long> completedLessonIds, boolean hasEntitlement) {
-		int totalLessons = curriculum.getLessonsSize();
-		int completedLessons = curriculum.countCompletedLessons(completedLessonIds);
-		CurriculumStatus status = curriculum.statusOf(completedLessonIds);
-		boolean locked = curriculum.isLocked(hasEntitlement);
-		return new CurriculumResponse(curriculum.getId(), curriculum.getTitle(), totalLessons, completedLessons,
-				status, locked);
+	public static CurriculumResponse from(CurriculumResult result) {
+		Curriculum curriculum = result.curriculum();
+		CurriculumCompletion completion = result.completion();
+		return new CurriculumResponse(curriculum.getId(), curriculum.getTitle(), curriculum.getLessonsSize(),
+				completion.completedLessons(), completion.status(), result.locked());
 	}
 }

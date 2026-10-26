@@ -1,0 +1,104 @@
+package com.daesabu.meongcoach.ai.application.provided;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import com.daesabu.meongcoach.ai.application.required.AiReportRepository;
+import com.daesabu.meongcoach.ai.domain.AiReport;
+import com.daesabu.meongcoach.ai.domain.AiReportStatus;
+import com.daesabu.meongcoach.ai.domain.AiReportUploadCommand;
+import com.daesabu.meongcoach.ai.domain.AiTrial;
+import com.daesabu.meongcoach.ai.domain.exception.AiReportTrialExceededException;
+import com.daesabu.meongcoach.support.ApplicationTest;
+import java.time.LocalDateTime;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.beans.factory.annotation.Autowired;
+
+@ApplicationTest
+class AiVideoUploadUrlIssuerTest {
+
+	private static final Long USER_ID = 7L;
+	private static final String S3_UPLOAD_BASE_URL = "https://test-video-bucket.s3.ap-northeast-2.amazonaws.com/";
+	private static final String S3_PUBLIC_BASE_URL = "https://videos.test.meongcoach.com/";
+	private static final long EXPIRES_IN_SECONDS = 900L;
+
+	@Autowired
+	private AiVideoUploadUrlIssuer service;
+
+	@Autowired
+	private AiReportRepository aiReportRepository;
+
+	@ParameterizedTest
+	@ValueSource(ints = {0, 1, 29})
+	void 체험_횟수가_남아_있으면_훈련_영상_대상으로_업로드_URL_발급을_위임한다(int usedCount) {
+		persistCompletedReports(usedCount);
+
+		AiVideoUploadUrlResult result = service.issue(USER_ID, "video/mp4", 10485760L);
+
+		assertThat(result.objectKey()).matches("videos/training/7/[0-9a-f-]{36}\\.mp4");
+		assertThat(result.uploadUrl())
+				.startsWith(S3_UPLOAD_BASE_URL + result.objectKey())
+				.contains("X-Amz-SignedHeaders=content-length%3Bcontent-type%3Bhost");
+		assertThat(result.publicUrl()).isEqualTo(S3_PUBLIC_BASE_URL + result.objectKey());
+		assertThat(result.expiresInSeconds()).isEqualTo(EXPIRES_IN_SECONDS);
+	}
+
+	@Test
+	void 발급과_함께_UPLOADING_리포트를_저장하고_그_ID를_돌려준다() {
+		AiVideoUploadUrlResult result = service.issue(USER_ID, "video/mp4", 10485760L);
+
+		AiReport saved = aiReportRepository.findById(result.reportId()).orElseThrow();
+		assertThat(saved.getUserId()).isEqualTo(USER_ID);
+		assertThat(saved.getVideoObjectKey()).isEqualTo(result.objectKey());
+		assertThat(saved.getStatus()).isEqualTo(AiReportStatus.UPLOADING);
+	}
+
+	@Test
+	void 업로드_만료_시각은_발급_시각에_URL_유효_시간을_더한_값이다() {
+		LocalDateTime before = LocalDateTime.now();
+
+		AiVideoUploadUrlResult result = service.issue(USER_ID, "video/mp4", 10485760L);
+
+		LocalDateTime after = LocalDateTime.now();
+		AiReport saved = aiReportRepository.findById(result.reportId()).orElseThrow();
+		assertThat(saved.getUploadExpiresAt())
+				.isBetween(before.plusSeconds(EXPIRES_IN_SECONDS), after.plusSeconds(EXPIRES_IN_SECONDS));
+	}
+
+	@Test
+	void 체험_횟수를_소진했으면_URL_발급과_리포트_저장_없이_예외를_던진다() {
+		persistCompletedReports(AiTrial.MAX_COUNT);
+
+		assertThatThrownBy(() -> service.issue(USER_ID, "video/mp4", 10485760L))
+				.isInstanceOf(AiReportTrialExceededException.class);
+		assertThat(aiReportRepository.findAllByUserIdOrderByCreatedAtDescIdDesc(USER_ID)).hasSize(AiTrial.MAX_COUNT);
+	}
+
+	@Test
+	void 체험_현황은_요청한_사용자_기준으로_조회하므로_다른_사용자의_완료_리포트는_세지_않는다() {
+		for (int i = 0; i < AiTrial.MAX_COUNT; i++) {
+			persistCompletedReport(99L, "videos/training/99/" + i + ".mp4");
+		}
+
+		AiVideoUploadUrlResult result = service.issue(USER_ID, "video/mp4", 10485760L);
+
+		assertThat(result.reportId()).isNotNull();
+	}
+
+	private void persistCompletedReports(int count) {
+		for (int i = 0; i < count; i++) {
+			persistCompletedReport(USER_ID, "videos/training/7/" + i + ".mp4");
+		}
+	}
+
+	private void persistCompletedReport(Long userId, String videoObjectKey) {
+		AiReport report = AiReport.uploading(
+				new AiReportUploadCommand(userId, videoObjectKey, LocalDateTime.now().plusMinutes(15)));
+		report.startAnalysis();
+		report.complete("제목", "본문");
+		aiReportRepository.saveAndFlush(report);
+	}
+
+}

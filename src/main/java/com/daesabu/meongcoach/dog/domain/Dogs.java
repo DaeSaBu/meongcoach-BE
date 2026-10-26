@@ -3,6 +3,7 @@ package com.daesabu.meongcoach.dog.domain;
 import com.daesabu.meongcoach.dog.domain.exception.DogLimitExceededException;
 import com.daesabu.meongcoach.dog.domain.exception.DogNotFoundException;
 import com.daesabu.meongcoach.dog.domain.exception.LastDogNotDeletableException;
+import com.daesabu.meongcoach.dog.domain.exception.SelectedDogNotDeletableException;
 import java.util.List;
 
 /**
@@ -47,6 +48,9 @@ public class Dogs {
 		// 강아지가 한 마리도 없는 상태를 막는다
 		if (dogs.size() <= 1) {
 			throw new LastDogNotDeletableException();
+		}
+		if (dog.isSelected()) {
+			throw new SelectedDogNotDeletableException();
 		}
 		dog.delete();
 	}

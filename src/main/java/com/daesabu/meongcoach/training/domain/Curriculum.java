@@ -1,7 +1,10 @@
 package com.daesabu.meongcoach.training.domain;
 
+import static org.springframework.util.Assert.state;
+
 import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;
 import com.daesabu.meongcoach.shared.domain.BaseEntity;
+import com.daesabu.meongcoach.training.domain.shared.ProgressStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -16,7 +19,6 @@ import jakarta.persistence.Table;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -64,14 +66,24 @@ public class Curriculum extends BaseEntity {
 				.toList();
 	}
 
-	public int getLessonsSize() {
-		return lessons.size();
+	public CurriculumCompletion completion(LessonProgresses progresses) {
+		validateHasLessons();
+
+		int completed = progresses.countCompletedIn(getLessonIds());
+		int total = lessons.size();
+		return CurriculumCompletion.of(total, completed);
 	}
 
-	public CurriculumStatus statusOf(Set<Long> completedLessonIds) {
-		int totalLessons = getLessonsSize();
-		int completedLessons = countCompletedLessons(completedLessonIds);
-		return CurriculumStatus.of(totalLessons, completedLessons);
+	public void validateHasLessons() {
+		state(!lessons.isEmpty(), "커리큘럼에는 레슨이 하나 이상 있어야 합니다.");
+	}
+
+	public boolean isCompleted(LessonProgresses progresses) {
+		return completion(progresses).status() == ProgressStatus.COMPLETED;
+	}
+
+	public int getLessonsSize() {
+		return lessons.size();
 	}
 
 	public Optional<Expert> findExpert() {
@@ -89,10 +101,4 @@ public class Curriculum extends BaseEntity {
 		return findRequiredEntitlementType().isPresent() && !hasEntitlement;
 	}
 
-	public int countCompletedLessons(Set<Long> completedLessonIds) {
-		return (int) lessons.stream()
-				.map(Lesson::getId)
-				.filter(completedLessonIds::contains)
-				.count();
-	}
 }

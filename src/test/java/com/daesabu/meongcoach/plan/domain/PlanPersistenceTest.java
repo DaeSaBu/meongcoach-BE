@@ -1,0 +1,135 @@
+package com.daesabu.meongcoach.plan.domain;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.time.Instant;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
+
+@DataJpaTest
+class PlanPersistenceTest {
+
+	@Autowired
+	private TestEntityManager entityManager;
+
+	@Test
+	void 완료_시각을_저장하고_같은_순간으로_조회한다() {
+		PlanCreateCommand command = new PlanCreateCommand(1L, 2L, "제목", "목표", 10, 3);
+		Plan plan = Plan.create(command, List.of(7L));
+		Instant completedAt = Instant.parse("2026-10-25T12:00:00.123456Z");
+		plan.complete(completedAt);
+		entityManager.persistAndFlush(plan);
+		Long planId = plan.getId();
+		entityManager.clear();
+
+		Plan found = entityManager.find(Plan.class, planId);
+
+		assertThat(found.getCompletedAt()).isEqualTo(completedAt);
+	}
+
+	@Test
+	void 플랜만_저장해도_커리큘럼_ID와_순서가_보존된다() {
+		PlanCreateCommand command = new PlanCreateCommand(1L, 2L, "제목", "목표", 10, 3);
+		Plan plan = Plan.create(command, List.of(7L, 4L, 12L));
+		entityManager.persistAndFlush(plan);
+		Long planId = plan.getId();
+		entityManager.clear();
+
+		Plan found = entityManager.find(Plan.class, planId);
+
+		assertThat(found.getCurriculumIds()).containsExactly(7L, 4L, 12L);
+	}
+
+	@Test
+	void 같은_커리큘럼을_포함한_플랜들의_목록은_서로_섞이지_않는다() {
+		PlanCreateCommand command = new PlanCreateCommand(1L, 2L, "제목", "목표", 10, 3);
+		Plan first = Plan.create(command, List.of(7L, 4L));
+		Plan second = Plan.create(command, List.of(4L, 12L));
+		first.replace();
+		entityManager.persist(first);
+		entityManager.persistAndFlush(second);
+		Long firstId = first.getId();
+		Long secondId = second.getId();
+		entityManager.clear();
+
+		Plan foundFirst = entityManager.find(Plan.class, firstId);
+		Plan foundSecond = entityManager.find(Plan.class, secondId);
+
+		assertThat(foundFirst.getCurriculumIds()).containsExactly(7L, 4L);
+		assertThat(foundSecond.getCurriculumIds()).containsExactly(4L, 12L);
+	}
+
+	@Test
+	void 새_플랜의_완료_레슨은_빈_배열로_저장된다() {
+		PlanCreateCommand command = new PlanCreateCommand(1L, 2L, "제목", "목표", 10, 3);
+		Plan plan = Plan.create(command, List.of(7L));
+		entityManager.persistAndFlush(plan);
+		Long planId = plan.getId();
+		entityManager.clear();
+
+		Plan found = entityManager.find(Plan.class, planId);
+
+		assertThat(found.getCompletedLessonIds()).isEmpty();
+		Object arraySize = entityManager.getEntityManager()
+				.createNativeQuery("select cardinality(completed_lesson_ids) from plans where id = :id", Integer.class)
+				.setParameter("id", planId).getSingleResult();
+		assertThat(arraySize).isEqualTo(0);
+	}
+
+	@Test
+	void 완료_레슨_ID를_배열로_저장하고_Set_변경을_반영한다() {
+		PlanCreateCommand command = new PlanCreateCommand(1L, 2L, "제목", "목표", 10, 3);
+		Plan plan = Plan.create(command, List.of(7L));
+		plan.completeLesson(101L);
+		plan.completeLesson(102L);
+		entityManager.persistAndFlush(plan);
+		Long planId = plan.getId();
+		entityManager.clear();
+
+		Plan found = entityManager.find(Plan.class, planId);
+		assertThat(found.getCompletedLessonIds()).containsExactlyInAnyOrder(101L, 102L);
+		found.completeLesson(103L);
+		found.completeLesson(103L);
+		entityManager.flush();
+		entityManager.clear();
+
+		Plan updated = entityManager.find(Plan.class, planId);
+		assertThat(updated.getCompletedLessonIds()).containsExactlyInAnyOrder(101L, 102L, 103L);
+		Object arraySize = entityManager.getEntityManager()
+				.createNativeQuery("select cardinality(completed_lesson_ids) from plans where id = :id", Integer.class)
+				.setParameter("id", planId).getSingleResult();
+		assertThat(arraySize).isEqualTo(3);
+	}
+
+	@Test
+	void AI_플랜의_500자_기대사항을_저장하고_조회한다() {
+		String expectation = "가".repeat(500);
+		AiPlanCreateCommand command = new AiPlanCreateCommand(1L, 2L, "초코", "차분히 기다려요", 10, 3, expectation);
+		Plan plan = Plan.createAiPlan(command, List.of(7L, 4L));
+		entityManager.persistAndFlush(plan);
+		Long planId = plan.getId();
+		entityManager.clear();
+
+		Plan found = entityManager.find(Plan.class, planId);
+
+		assertThat(found.getExpectation()).isEqualTo(expectation);
+		assertThat(found.getGoal()).isEqualTo(command.goal());
+	}
+
+	@Test
+	void 커스텀_플랜은_기대사항_없이_저장하고_조회한다() {
+		CustomPlanCreateCommand command = new CustomPlanCreateCommand(1L, 2L, "초코", 10, 3);
+		Plan plan = Plan.createCustom(command, List.of(7L));
+		entityManager.persistAndFlush(plan);
+		Long planId = plan.getId();
+		entityManager.clear();
+
+		Plan found = entityManager.find(Plan.class, planId);
+
+		assertThat(found.getExpectation()).isNull();
+	}
+
+}

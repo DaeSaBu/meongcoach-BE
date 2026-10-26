@@ -12,6 +12,7 @@ import com.daesabu.meongcoach.dog.domain.DogStatus;
 import com.daesabu.meongcoach.dog.domain.Dogs;
 import com.daesabu.meongcoach.dog.domain.exception.DogNotFoundException;
 import com.daesabu.meongcoach.dog.domain.exception.LastDogNotDeletableException;
+import com.daesabu.meongcoach.dog.domain.exception.SelectedDogNotDeletableException;
 import com.daesabu.meongcoach.dog.domain.shared.Breed;
 import com.daesabu.meongcoach.dog.domain.shared.Personality;
 import com.daesabu.meongcoach.dog.domain.shared.RegisteredBreed;
@@ -45,8 +46,8 @@ class DogProfileDeleteServiceTest {
 
 	@Test
 	void 소유_강아지를_삭제하면_조회에서_제외된다() {
-		Dog saved = persistSelectedDog(USER_ID);
-		dogRepository.saveAndFlush(newDog(USER_ID));
+		persistSelectedDog(USER_ID);
+		Dog saved = dogRepository.saveAndFlush(newDog(USER_ID));
 		entityManager.clear();
 
 		dogProfileDeleter.delete(USER_ID, saved.getId());
@@ -59,8 +60,8 @@ class DogProfileDeleteServiceTest {
 
 	@Test
 	void 삭제해도_행은_남고_삭제_시각이_기록된다() {
-		Dog saved = persistSelectedDog(USER_ID);
-		dogRepository.saveAndFlush(newDog(USER_ID));
+		persistSelectedDog(USER_ID);
+		Dog saved = dogRepository.saveAndFlush(newDog(USER_ID));
 		entityManager.clear();
 
 		dogProfileDeleter.delete(USER_ID, saved.getId());
@@ -75,18 +76,19 @@ class DogProfileDeleteServiceTest {
 	}
 
 	@Test
-	void 선택된_강아지를_삭제해도_남은_강아지는_선택되지_않는다() {
+	void 선택된_강아지는_삭제되지_않고_선택_상태를_유지한다() {
 		Dog selected = persistSelectedDog(USER_ID);
 		Dog unselected = dogRepository.saveAndFlush(newDog(USER_ID));
 		entityManager.clear();
 
-		dogProfileDeleter.delete(USER_ID, selected.getId());
-		entityManager.flush();
+		assertThatThrownBy(() -> dogProfileDeleter.delete(USER_ID, selected.getId()))
+				.isInstanceOf(SelectedDogNotDeletableException.class);
 		entityManager.clear();
 
-		assertThat(dogRepository.findAllByUserIdOrderByIdAsc(USER_ID)).noneMatch(Dog::isSelected);
-		Dog remaining = dogRepository.findById(unselected.getId()).orElseThrow();
-		assertThat(remaining.getStatus()).isEqualTo(DogStatus.UNSELECTED);
+		Dog found = dogRepository.findById(selected.getId()).orElseThrow();
+		assertThat(found.getDeletedAt()).isNull();
+		assertThat(found.getStatus()).isEqualTo(DogStatus.SELECTED);
+		assertThat(dogRepository.findById(unselected.getId())).isPresent();
 	}
 
 	@Test
@@ -108,8 +110,8 @@ class DogProfileDeleteServiceTest {
 
 	@Test
 	void 이미_삭제된_강아지를_다시_삭제하면_예외를_던진다() {
-		Dog saved = persistSelectedDog(USER_ID);
-		dogRepository.saveAndFlush(newDog(USER_ID));
+		persistSelectedDog(USER_ID);
+		Dog saved = dogRepository.saveAndFlush(newDog(USER_ID));
 		dogProfileDeleter.delete(USER_ID, saved.getId());
 		entityManager.flush();
 		entityManager.clear();

@@ -13,13 +13,13 @@ com.daesabu.meongcoach
 ├── auth         ← 소셜/이메일 로그인·JWT·리프레시 토큰·자격증명(소셜·로컬 계정)
 ├── user         ← 회원 역할·상태·프로필
 ├── dog          ← 반려견 프로필
-├── training     ← 훈련 콘텐츠 카탈로그
-├── progress     ← 학습 진도
+├── training     ← 훈련 콘텐츠와 사용자별 진행
 ├── ai           ← AI 영상 분석 리포트 (SQS 컨슈머, EvoLink 연동)
 ├── media        ← 이미지·영상 업로드 URL 발급 (R2/S3)
 ├── onboarding   ← 온보딩 흐름 조합
 ├── entitlement  ← 이용권 동기화. RevenueCat 활성 이용권의 사본을 둠
 ├── community    ← 게시글. 훈련 카드 등 다른 모듈의 대상을 멘션할 수 있음
+├── graduation   ← 토픽 수료(실습 인증) 제출·조회. 수료 사실의 유일한 출처
 ├── health       ← 서비스 상태 확인
 └── shared       ← 횡단 관심사 (config / security / webapi / exception / domain)
 ```
@@ -37,7 +37,7 @@ com.daesabu.meongcoach
 └── domain                   // 엔티티, 일급 컬렉션, 값 객체, exception/, 입력 모델(~Command)
 ```
 
-모듈은 필요한 계층만 갖습니다. `progress`는 자체 API 없이 `provided` 인터페이스로만 노출되어 `adapter`가 없고, `onboarding`은 다른 모듈을 조합만 하므로 `domain`이 없습니다. 문서나 코드를 생성할 때 없는 계층을 만들어 채우지 않습니다.
+모듈은 필요한 계층만 갖습니다. `onboarding`은 다른 모듈을 조합하므로 `domain`에 업로드 대상(`OnboardingImageTarget`)과 예외만 둡니다. 문서나 코드를 생성할 때 없는 계층을 만들어 채우지 않습니다.
 
 ## 모듈 규칙
 
@@ -46,7 +46,7 @@ com.daesabu.meongcoach
 - **모듈 간 호출은 `application/provided`의 인터페이스로만 합니다.** 다른 모듈의 서비스 구현체, `required` 인터페이스, 도메인 내부에 직접 접근하지 않습니다. `verify()`는 `@NamedInterface` 패키지에 **물리적으로 존재하는 타입만** 노출로 인정하며, 인터페이스 시그니처에 등장하는 타입은 전파되지 않습니다. named interface는 모듈당 여러 개 둘 수 있습니다.
 - **모듈 경계를 넘는 값은 두 가지로만 둡니다.** 도메인 타입을 1:1로 옮겨 담는 record는 만들지 않습니다.
   - enum·값 객체 같은 **도메인 타입은 `domain/shared`에 두고 `package-info.java`에 `@NamedInterface("shared")`를 선언해 그대로 노출**합니다. (선례: `dog/domain/shared`의 `Breed`·`RegisteredBreed`) 여러 모듈이 함께 해석하는 어휘도 모듈마다 복제하지 않고, 그 개념을 부여·관리하는 모듈 한 곳에 정의해 노출합니다. (선례: 이용권 종류 `entitlement/domain/shared`의 `EntitlementType` — entitlement가 부여·확인하고, 권한 확인이 붙으면 training도 같은 타입으로 콘텐츠와 이용권을 연결) `AnnotationPatternTest`가 `domain`의 스프링 의존을 막으므로 타입에 직접 `@NamedInterface`를 붙일 수 없고 package-info로만 선언합니다. 엔티티·일급 컬렉션은 영속 상태에 묶이므로 노출하지 않습니다.
-  - projection·집계·여러 애그리거트 조합처럼 **도메인 타입 하나로 표현할 수 없는 값만 provided 패키지의 `~Result` record**로 둡니다. `provided/dto`에 두어도 됩니다. (선례: `TopicResult`, `VideoUploadUrlResult`, `training/application/provided/dto`의 `CurriculumDetailResult`)
+  - projection·집계·여러 애그리거트 조합처럼 **도메인 타입 하나로 표현할 수 없는 값만 provided 패키지의 `~Result` record**로 둡니다. `provided/dto`에 두어도 됩니다. (선례: `TopicResult`, `MediaUploadUrlResult`, `training/application/provided/dto`의 `CurriculumDetailResult`)
 - **서비스 입력은 provided 패키지의 `~Request` record로 받습니다.** 컨트롤러와 다른 모듈이 같은 record를 넘기며, `domain`의 `~Command`는 노출하지 않고 provided record가 `toCommand()`로 변환합니다. (선례: `auth/application/provided/dto`, `UserProfileRegisterRequest`)
 - **모듈 간 의존은 단방향입니다.** `auth → user`처럼 한쪽만 참조하고, 다른 모듈의 엔티티는 연관 대신 ID로 참조합니다. (선례: `RefreshToken.userId`) 양쪽에 걸친 흐름은 참조하는 쪽이 조율합니다 — 탈퇴는 `auth`의 `AuthenticationService`가 자격증명·토큰을 정리한 뒤 `user`의 `UserRegister.withdraw`를 호출합니다.
 - **`application/provided`에는 `package-info.java`로 `@NamedInterface("provided")`를 선언합니다.** 선언하지 않으면 Modulith가 이 패키지를 모듈 내부로 취급해 다른 모듈에서의 호출이 `verify()`에서 실패합니다.
@@ -119,3 +119,9 @@ cp build/spring-modulith-docs/components.svg docs/images/module-dependencies.svg
 ```
 
 클래스 네이밍 규칙은 [code-convention 스킬](../.claude/skills/code-convention/SKILL.md)을 따릅니다.
+
+## 실습 인증 동시 수정
+
+`GraduationSubmission` 하나가 회원·토픽과 판정 상태를 보관하며, 회원·토픽별 최대 제출 ID가 현재 상태입니다. 검수 대기 중에는 URL 발급과 제출을 거절합니다. 보완 요청 뒤에는 이전 제출을 보존하고 새 제출을 생성합니다.
+
+`SUBMITTED` 또는 `APPROVED` 제출만 대상으로 하는 회원·토픽 부분 유니크 인덱스가 동시 제출을 막습니다. 저장 충돌은 `GRADUATION_SUBMISSION_CONFLICT`로 응답합니다. 판정끼리의 충돌은 제출의 `@Version`으로 감지합니다. 관리자 SQL도 읽은 버전을 WHERE 조건에 넣고 버전을 증가시켜야 합니다.

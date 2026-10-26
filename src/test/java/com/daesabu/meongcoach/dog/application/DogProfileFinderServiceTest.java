@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.daesabu.meongcoach.dog.application.provided.DogProfileFinder;
+import com.daesabu.meongcoach.dog.application.provided.SelectedDogResult;
 import com.daesabu.meongcoach.dog.application.required.DogRepository;
 import com.daesabu.meongcoach.dog.domain.Dog;
 import com.daesabu.meongcoach.dog.domain.DogRegisterCommand;
@@ -16,12 +17,14 @@ import com.daesabu.meongcoach.dog.domain.shared.Personality;
 import com.daesabu.meongcoach.dog.domain.shared.RegisteredBreed;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @DataJpaTest
 @Import(DogProfileFinderService.class)
@@ -30,6 +33,7 @@ class DogProfileFinderServiceTest {
 	private static final Long USER_ID = 42L;
 	private static final Long OTHER_USER_ID = 99L;
 	private static final String IMAGE_URL = "https://images.test.meongcoach.com/images/dog-profile/42/a.jpg";
+	private static final String OTHER_IMAGE_URL = "https://images.test.meongcoach.com/images/dog-profile/42/b.jpg";
 	private static final String EXPECTATION = "보호자와 즐겁게 교육받고 싶어요.";
 
 	@Autowired
@@ -160,8 +164,8 @@ class DogProfileFinderServiceTest {
 
 	@Test
 	void 삭제된_강아지는_단건_조회되지_않는다() {
-		Dog remaining = dogRepository.saveAndFlush(newDog(USER_ID));
-		Dog deleted = persistSelectedDog(USER_ID);
+		Dog remaining = persistSelectedDog(USER_ID);
+		Dog deleted = dogRepository.saveAndFlush(newDog(USER_ID));
 		new Dogs(List.of(remaining, deleted)).delete(deleted.getId());
 		dogRepository.saveAndFlush(deleted);
 
@@ -171,24 +175,72 @@ class DogProfileFinderServiceTest {
 
 	@Test
 	void 삭제된_강아지는_선택_조회에서_제외된다() {
-		Dog remaining = dogRepository.saveAndFlush(newDog(USER_ID));
+		dogRepository.saveAndFlush(newDog(USER_ID));
 		Dog deleted = persistSelectedDog(USER_ID);
-		new Dogs(List.of(remaining, deleted)).delete(deleted.getId());
+		ReflectionTestUtils.setField(deleted, "deletedAt", LocalDateTime.now());
 		dogRepository.saveAndFlush(deleted);
 
 		assertThatThrownBy(() -> dogProfileFinder.findSelectedDog(USER_ID))
 				.isInstanceOf(DogNotFoundException.class);
 	}
 
+	@Test
+	void 사용자마다_선택된_강아지를_반환한다() {
+		dogRepository.saveAndFlush(newDog(USER_ID, "초코", IMAGE_URL));
+		persistSelectedDog(USER_ID, "보리", OTHER_IMAGE_URL);
+		persistSelectedDog(OTHER_USER_ID, "콩이", OTHER_IMAGE_URL);
+
+		List<SelectedDogResult> found = dogProfileFinder.findSelectedDogs(Set.of(USER_ID, OTHER_USER_ID));
+
+		assertThat(found).containsExactlyInAnyOrder(
+				new SelectedDogResult(USER_ID, "보리", OTHER_IMAGE_URL),
+				new SelectedDogResult(OTHER_USER_ID, "콩이", OTHER_IMAGE_URL));
+	}
+
+	@Test
+	void 선택된_강아지가_없는_사용자는_선택된_강아지_결과에서_빠진다() {
+		persistSelectedDog(USER_ID);
+		dogRepository.saveAndFlush(newDog(OTHER_USER_ID));
+
+		List<SelectedDogResult> found = dogProfileFinder.findSelectedDogs(Set.of(USER_ID, OTHER_USER_ID));
+
+		assertThat(found).extracting(SelectedDogResult::userId).containsExactly(USER_ID);
+	}
+
+	@Test
+	void 삭제된_강아지는_선택된_강아지_결과에서_제외된다() {
+		dogRepository.saveAndFlush(newDog(USER_ID));
+		Dog deleted = persistSelectedDog(USER_ID);
+		ReflectionTestUtils.setField(deleted, "deletedAt", LocalDateTime.now());
+		dogRepository.saveAndFlush(deleted);
+
+		assertThat(dogProfileFinder.findSelectedDogs(Set.of(USER_ID))).isEmpty();
+	}
+
+	@Test
+	void 빈_사용자_목록이면_빈_선택된_강아지_목록을_반환한다() {
+		persistSelectedDog(USER_ID);
+
+		assertThat(dogProfileFinder.findSelectedDogs(Set.of())).isEmpty();
+	}
+
 	private Dog persistSelectedDog(Long userId) {
-		Dog dog = newDog(userId);
+		return persistSelectedDog(userId, "초코", IMAGE_URL);
+	}
+
+	private Dog persistSelectedDog(Long userId, String name, String profileImageUrl) {
+		Dog dog = newDog(userId, name, profileImageUrl);
 		dog.select();
 		return dogRepository.saveAndFlush(dog);
 	}
 
 	private Dog newDog(Long userId) {
-		Dog dog = Dog.register(new DogRegisterCommand(userId, "초코", Breed.of(RegisteredBreed.POODLE), DogSex.MALE,
-				LocalDate.of(2024, 3, 1), new BigDecimal("4.50"), IMAGE_URL, EXPECTATION));
+		return newDog(userId, "초코", IMAGE_URL);
+	}
+
+	private Dog newDog(Long userId, String name, String profileImageUrl) {
+		Dog dog = Dog.register(new DogRegisterCommand(userId, name, Breed.of(RegisteredBreed.POODLE), DogSex.MALE,
+				LocalDate.of(2024, 3, 1), new BigDecimal("4.50"), profileImageUrl, EXPECTATION));
 		dog.changePersonalities(Set.of(Personality.FRIENDLY));
 		return dog;
 	}

@@ -2,6 +2,7 @@ package com.daesabu.meongcoach.auth.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
 
 import com.daesabu.meongcoach.auth.application.provided.dto.EmailLoginRequest;
 import com.daesabu.meongcoach.auth.application.provided.dto.LogoutRequest;
@@ -30,9 +31,9 @@ import com.daesabu.meongcoach.auth.domain.exception.InvalidEmailException;
 import com.daesabu.meongcoach.auth.domain.exception.InvalidRefreshTokenException;
 import com.daesabu.meongcoach.auth.domain.exception.UnsupportedSocialProviderException;
 import com.daesabu.meongcoach.auth.domain.exception.WithdrawnUserException;
+import com.daesabu.meongcoach.media.application.provided.StoredMediaVerifier;
 import com.daesabu.meongcoach.user.application.UserQueryService;
 import com.daesabu.meongcoach.user.application.UserRegisterService;
-import com.daesabu.meongcoach.user.application.required.UserProfileRepository;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.User;
 import com.daesabu.meongcoach.user.domain.UserStatus;
@@ -78,9 +79,6 @@ class AuthenticationServiceTest {
 	private UserRepository userRepository;
 
 	@Autowired
-	private UserProfileRepository userProfileRepository;
-
-	@Autowired
 	private SocialAccountRepository socialAccountRepository;
 
 	@Autowired
@@ -100,7 +98,7 @@ class AuthenticationServiceTest {
 	void setUp() {
 		StubTokenProvider tokenProvider = new StubTokenProvider();
 		UserQueryService userFinder = new UserQueryService(userRepository);
-		UserRegisterService userRegister = new UserRegisterService(userFinder, userRepository, userProfileRepository);
+		UserRegisterService userRegister = new UserRegisterService(userFinder, mock(StoredMediaVerifier.class), userRepository);
 		AccountQueryService accountFinder = new AccountQueryService(emailAccountRepository, socialAccountRepository);
 		AccountModifyService accountRegister = new AccountModifyService(socialAccountRepository, userRegister,
 				emailAccountRepository);

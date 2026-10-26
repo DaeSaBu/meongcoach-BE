@@ -13,6 +13,8 @@ import com.daesabu.meongcoach.auth.application.required.TokenProvider;
 import com.daesabu.meongcoach.auth.domain.AuthToken;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.User;
+import com.daesabu.meongcoach.user.domain.UserProfileCreateCommand;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,7 +57,7 @@ class SecurityFilterChainTest {
 
 	private User promotedUser() {
 		User user = User.registerUser();
-		user.promoteToUser();
+		user.completeOnboarding(new UserProfileCreateCommand("멍멍이집사", null, "INFP", Set.of(), Set.of()));
 		return user;
 	}
 

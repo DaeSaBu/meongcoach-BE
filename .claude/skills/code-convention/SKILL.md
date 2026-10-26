@@ -38,9 +38,9 @@ Java 소스(`src/main/java`, `src/test/java`)의 주석은 interface에만 두�
 | 역할 | 위치 | 규칙 | 예시 |
 | --- | --- | --- | --- |
 | 모듈 공개 API 인터페이스 | `application/provided` | 능력을 나타내는 이름, `~Service` 접미사 없음 | `DogRegister`, `MbtiFinder` |
-| 애플리케이션 조회 결과 래퍼 | `application/provided` 또는 `application/provided/dto` | `~Result` (record) — 도메인 타입만으로 부족할 때만 | `VideoUploadUrlResult`, `CurriculumDetailResult` |
+| 애플리케이션 조회 결과 래퍼 | `application/provided` 또는 `application/provided/dto` | `~Result` (record) — 도메인 타입만으로 부족할 때만 | `MediaUploadUrlResult`, `CurriculumDetailResult` |
 | 서비스 입력(웹 요청·모듈 경계 공통) | `application/provided/dto` | `~Request` (record). 도메인 입력이 필요하면 `toCommand()`로 변환 | `SocialLoginRequest`, `SocialAccountRegisterRequest` |
-| 필요 자원 인터페이스 | `application/required` | 자원 이름 그대로 | `UserRepository`, `VideoStorage` |
+| 필요 자원 인터페이스 | `application/required` | 자원 이름 그대로 | `UserRepository`, `PrivateObjectStorage` |
 | 애플리케이션 서비스 | `application` | `~Service` | `AuthenticationService`, `CurriculumQueryService` |
 | 컨트롤러 | `adapter/webapi` | `~Controller` | `AuthController` |
 | 외부 API 연동 포트 | `application/required` | 자원 이름 그대로 | `SocialProfileReader` |
@@ -49,9 +49,11 @@ Java 소스(`src/main/java`, `src/test/java`)의 주석은 interface에만 두�
 | 도메인 입력 모델 | `domain` | `~Command` (record) | `DogRegisterCommand` |
 | 일급 컬렉션 | `domain` | 엔티티 이름의 복수형 | `Dogs` |
 | 다른 모듈에 노출하는 도메인 타입 | `domain/shared` | 개념 이름 그대로. `package-info.java`에 `@NamedInterface("shared")` 선언 | `Breed` |
-| 값 객체 | `domain` | 개념 이름 그대로 | `RefreshTokenId`, `VideoObjectKey` |
+| 값 객체 | `domain` | 개념 이름 그대로 | `RefreshTokenId`, `MediaObjectKey` |
 | 도메인 예외·에러코드 | `domain/exception` | `{모듈}ErrorCode`, `~Exception` | `AuthErrorCode`, `InvalidEmailException` |
 
+- 객체를 바꾸는 provided 인터페이스는 `~Register` 하나로 두고, 그 객체의 생성·수정·삭제를 모두 이 인터페이스의 메서드(`register`·`update`·`delete` 등)로 관리한다. `~Updater`·`~Deleter`·`~Writer`처럼 행위별 인터페이스로 나누지 않는다. (살아있는 예시: `community/application/provided/PostRegister`) 이 규칙 이전에 만든 `DogProfileUpdater`·`DogProfileDeleter`는 일괄 합치지 않고 해당 API를 수정할 때 `DogRegister`로 옮긴다.
+- 조회만 하는 provided 인터페이스는 `~Finder`, 그 구현은 `application`의 `~QueryService`로 둔다. 리포지토리로 조회하고 없으면 도메인 예외를 던지는 로직(`findBy~(...).orElseThrow(...)`)은 `~Finder` 메서드로 정의하고, `~ModifyService` 같은 다른 서비스는 리포지토리를 직접 호출하지 않고 `~Finder`를 주입받아 쓴다. (살아있는 예시: `community/application/provided/PostFinder` ↔ `PostQueryService`, `PostModifyService.update`) 이 규칙 이전에 만든 `~FinderService`(`BreedFinderService`, `DogProfileFinderService` 등)와 서비스 안의 직접 조회(`DogProfileUpdateService`)는 일괄 바꾸지 않고 해당 코드를 수정할 때 옮긴다.
 - `domain` 루트에는 엔티티·enum·일급 컬렉션·값 객체를 두고, 예외·에러코드는 `domain/exception`으로 분리한다. 값 객체용 하위 패키지(`vo`)는 만들지 않으며, 다른 모듈에 노출하는 값 객체만 `domain/shared`에 둔다.
 - 일급 컬렉션은 엔티티 하나로는 판단할 수 없는 규칙(마리 수 상한, 마지막 한 마리 삭제 금지처럼 한 사용자 소유 목록 전체를 봐야 하는 규칙)을 담을 때만 둔다. 영속화 단위가 아니라 application이 리포지토리로 조회한 목록을 생성자로 넘겨 만들며, 리포지토리를 참조하지 않는다. 규칙은 Spring 없는 단위 테스트로 검증한다. (살아있는 예시: `dog/domain/Dogs`)
 	- 목록 전체를 보고 판단한 결과로 새 엔티티가 생기면 그 생성도 일급 컬렉션이 맡는다. 기존 엔티티는 그 자리에서 바꾸고, 새로 만든 엔티티만 돌려주어 호출자가 저장한다. (살아있는 예시: 활성 이용권의 만료 시각을 반영하고 빠진 이용권은 만료시키며 없던 종류만 새로 부여하는 `entitlement/domain/Entitlements.synchronize`)
@@ -91,11 +93,11 @@ Java 소스(`src/main/java`, `src/test/java`)의 주석은 interface에만 두�
 - 외부 API 응답 DTO는 `adapter/integration/dto`에 `~Response` record로 두고, 필드 매핑은 `@JsonProperty`로 지정한다. 전역 네이밍 전략(`spring.jackson.property-naming-strategy`)을 바꾸면 우리 API 응답까지 영향을 받으므로 쓰지 않는다.
 - 도메인 입력 모델은 `~Command` 접미사의 record로 `domain`에 두며, 웹 DTO와 별개로 유지한다. (예: `DogRegisterCommand`)
 	- 엔티티 정적 팩토리의 순수 값 파라미터가 3개 이상이면 Command로 묶고, 팩토리는 Command를 받아 생성자에 전달한다.
-	- 연관 엔티티는 Command에 담지 않고 별도 인자로 전달한다. (예: `UserProfile.create(User user, UserProfileCreateCommand command)`)
+	- 연관 엔티티는 Command에 담지 않고 별도 인자로 전달한다.
 - 애플리케이션 조회 결과는 **도메인 타입(엔티티·값 객체)을 그대로 반환하는 것이 기본**이다. 값을 그대로 옮겨 담기만 하는 `~Result`는 만들지 않는다.
 	- **도메인 타입 하나로 표현할 수 없을 때만** — 여러 애그리거트 조합, 일부 필드만 내리는 projection, 집계값 — `application/provided` 또는 `application/provided/dto`에 `~Result` record를 두고 감싼다. (살아있는 예시: `training/application/provided/dto`)
 	- 모듈 경계를 넘는다는 이유만으로 `~Result`를 만들지 않는다. 다른 모듈이 필요한 enum·값 객체는 `domain/shared`로 노출해 그대로 주고받는다. 노출되지 않은 도메인 타입을 provided 인터페이스 시그니처에 쓰면 호출하는 모듈이 `ApplicationModules.verify()`에서 실패한다 — 그때 해법은 record 복사본이 아니라 노출이다. 엔티티는 노출하지 않으므로 엔티티를 경계 밖으로 내려야 하면 `~Result`로 projection한다. 노출 규칙의 원천은 [docs/architecture.md](../../../docs/architecture.md)의 모듈 규칙.
-	- `open-in-view: true`(`application.yml`)라 `adapter`에서 엔티티의 지연 로딩 연관을 읽어도 `LazyInitializationException`이 나지 않는다. 지연 로딩 연관은 `hibernate.default_batch_fetch_size`(`application.yml`)에 따라 `IN` 쿼리로 묶여 초기화되므로, 컬렉션을 내리는 조회에 `@EntityGraph`/fetch join을 붙이지 않는다. 단건 조회에서 `@ManyToOne` 연관을 여러 단계 따라 올라가야 하면 batch로 묶이지 않으므로 fetch join으로 함께 가져온다. (살아있는 예시: `LessonRepository.findWithCategoryById`) 이 설정은 지연 로딩만 묶으므로, 반복문 안에서 리포지토리나 다른 모듈의 provided API를 호출하지 않고 ID 목록을 받는 조회를 쓴다.
+	- `open-in-view: true`(`application.yml`)라 `adapter`에서 엔티티의 지연 로딩 연관을 읽어도 `LazyInitializationException`이 나지 않는다. 지연 로딩 연관은 `hibernate.default_batch_fetch_size`(`application.yml`)에 따라 `IN` 쿼리로 묶여 초기화되므로, 컬렉션을 내리는 조회에 `@EntityGraph`/fetch join을 붙이지 않는다. 단건 조회에서 `@ManyToOne` 연관을 여러 단계 따라 올라가야 하면 batch로 묶이지 않으므로 fetch join으로 함께 가져온다. (살아있는 예시: `@EntityGraph`를 붙인 `LessonRepository.findById`) 이 설정은 지연 로딩만 묶으므로, 반복문 안에서 리포지토리나 다른 모듈의 provided API를 호출하지 않고 ID 목록을 받는 조회를 쓴다.
 	- `~Result`를 둘 때 필드명은 도메인 기준(`id`, `title`, `sortOrder`)으로 두고, 웹 노출 이름(`topicId`, `topicTitle`)으로 바꾸는 일은 `~Response.from(...)` 정적 팩토리에서만 한다. `~Result`에 웹 네이밍을 쓰면 `application`이 `adapter`의 관심사를 떠안게 된다.
 - DTO ↔ 도메인 변환은 DTO의 정적 팩토리 메서드(`from`, `of`) 또는 `toXxx` 메서드로 처리한다.
 - 엔티티를 컨트롤러 **응답 본문**으로 직접 노출하지 않는다. `application`이 엔티티를 반환하더라도 컨트롤러는 `~Response.from(엔티티)`로 감싸 내려보낸다.

@@ -1,9 +1,10 @@
 package com.daesabu.meongcoach.training.application;
 
-import com.daesabu.meongcoach.progress.application.provided.TopicProgressUpdater;
 import com.daesabu.meongcoach.training.application.provided.TopicSelector;
 import com.daesabu.meongcoach.training.application.provided.dto.TopicSelectionRequest;
 import com.daesabu.meongcoach.training.application.required.TopicRepository;
+import com.daesabu.meongcoach.training.application.required.TopicSelectionRepository;
+import com.daesabu.meongcoach.training.domain.TopicSelection;
 import com.daesabu.meongcoach.training.domain.exception.TopicNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -17,19 +18,17 @@ import org.springframework.validation.annotation.Validated;
 public class TopicSelectService implements TopicSelector {
 
 	private final TopicRepository topicRepository;
-	private final TopicProgressUpdater topicProgressUpdater;
+	private final TopicSelectionRepository topicSelectionRepository;
 
 	@Override
 	@Transactional
 	public void selectTopic(Long userId, TopicSelectionRequest topicSelectionRequest) {
-		validateExistingTopic(topicSelectionRequest);
-
-		topicProgressUpdater.enterTopic(userId, topicSelectionRequest.topicId());
-	}
-
-	private void validateExistingTopic(TopicSelectionRequest topicSelectionRequest) {
-		if (!topicRepository.existsById(topicSelectionRequest.topicId())) {
-			throw new TopicNotFoundException(topicSelectionRequest.topicId());
+		Long topicId = topicSelectionRequest.topicId();
+		if (!topicRepository.existsById(topicId)) {
+			throw new TopicNotFoundException(topicId);
 		}
+		topicSelectionRepository.findByUserId(userId)
+				.ifPresentOrElse(selection -> selection.moveTo(topicId),
+						() -> topicSelectionRepository.save(TopicSelection.enter(userId, topicId)));
 	}
 }

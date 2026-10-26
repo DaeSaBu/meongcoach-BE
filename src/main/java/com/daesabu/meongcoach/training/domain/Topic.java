@@ -57,4 +57,16 @@ public class Topic extends BaseEntity {
 	public Optional<EntitlementType> findRequiredEntitlementType() {
 		return trainingCategory.findRequiredEntitlementType();
 	}
+
+	public boolean isCompleted(LessonProgresses progresses) {
+		return !curriculums.isEmpty()
+				&& curriculums.stream().allMatch(curriculum -> curriculum.isCompleted(progresses));
+	}
+
+	public List<Long> getAllLessonIds() {
+		return curriculums.stream()
+				.flatMap(curriculum -> curriculum.getLessonIds().stream())
+				.toList();
+	}
+
 }

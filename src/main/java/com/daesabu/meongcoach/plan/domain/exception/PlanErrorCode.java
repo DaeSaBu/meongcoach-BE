@@ -1,0 +1,44 @@
+package com.daesabu.meongcoach.plan.domain.exception;
+
+import com.daesabu.meongcoach.shared.exception.ErrorCode;
+
+public enum PlanErrorCode implements ErrorCode {
+
+	PLAN_NOT_FOUND(404, "플랜을 찾을 수 없습니다."),
+	PLAN_NOT_ACTIVE(409, "진행 중인 플랜이 아닙니다."),
+	PLAN_LESSON_ORDER(409, "현재 진행할 레슨이 아닙니다. 플랜을 다시 확인해주세요."),
+	PLAN_INVALID_DAILY_MINUTES(400, "하루 훈련 시간은 5, 10, 20 중 하나여야 합니다. 20은 20분 이상을 의미합니다."),
+	PLAN_INVALID_DAYS_PER_WEEK(400, "주당 훈련 일수는 3, 5, 7 중 하나여야 합니다."),
+	PLAN_EMPTY_CURRICULUMS(400, "플랜에는 커리큘럼이 하나 이상 있어야 합니다."),
+	PLAN_DUPLICATE_CURRICULUM(400, "플랜에 같은 커리큘럼을 중복해서 포함할 수 없습니다."),
+	PLAN_INVALID_CURRICULUM(400, "플랜의 커리큘럼 ID는 null일 수 없습니다."),
+	PLAN_CREATION_CONFLICT(409, "플랜이 변경되었습니다. 현재 플랜을 다시 확인해주세요."),
+	PLAN_AI_INVALID_RESPONSE(502, "AI가 유효한 플랜 구성을 생성하지 못했습니다."),
+	PLAN_NOT_COMPLETED(409, "완료된 플랜만 회고를 남길 수 있습니다."),
+	PLAN_OUTCOME_ALREADY_RECORDED(409, "이미 회고를 남긴 플랜입니다."),
+	PLAN_INVALID_OUTCOME(400, "회고 결과는 ACHIEVED, PARTIAL, NOT_YET 중 하나여야 합니다."),
+	;
+
+	private final int status;
+	private final String message;
+
+	PlanErrorCode(int status, String message) {
+		this.status = status;
+		this.message = message;
+	}
+
+	@Override
+	public String code() {
+		return name();
+	}
+
+	@Override
+	public String message() {
+		return message;
+	}
+
+	@Override
+	public int status() {
+		return status;
+	}
+}
