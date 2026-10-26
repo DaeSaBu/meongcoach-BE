@@ -9,7 +9,11 @@ import com.daesabu.meongcoach.community.application.provided.dto.MentionTargetRe
 import com.daesabu.meongcoach.community.application.provided.dto.PostListRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.PostListResult;
 import com.daesabu.meongcoach.community.application.provided.dto.PostResult;
+import com.daesabu.meongcoach.community.application.required.CommentClosureRepository;
+import com.daesabu.meongcoach.community.application.required.CommentRepository;
 import com.daesabu.meongcoach.community.application.required.PostRepository;
+import com.daesabu.meongcoach.community.domain.Comment;
+import com.daesabu.meongcoach.community.domain.CommentClosure;
 import com.daesabu.meongcoach.community.domain.MentionCommand;
 import com.daesabu.meongcoach.community.domain.MentionTargetType;
 import com.daesabu.meongcoach.community.domain.Post;
@@ -67,6 +71,12 @@ class PostFinderTest {
 
 	@Autowired
 	private PostRepository postRepository;
+
+	@Autowired
+	private CommentRepository commentRepository;
+
+	@Autowired
+	private CommentClosureRepository commentClosureRepository;
 
 	@Autowired
 	private UserRepository userRepository;
@@ -298,6 +308,36 @@ class PostFinderTest {
 	}
 
 	@Test
+	void 게시글별로_삭제되지_않은_댓글과_답글_수를_함께_반환한다() {
+		Post withComments = savePost(USER_ID, "댓글 있는 글");
+		Post withoutComments = savePost(USER_ID, "댓글 없는 글");
+		Comment root = saveComment(withComments, "댓글");
+		saveReply(withComments, root, "답글");
+		saveReply(withComments, root, "지운 답글").delete();
+		saveComment(withComments, "지운 댓글").delete();
+		flushAndClear();
+
+		PostListResult result = postFinder.findPosts(new PostListRequest(null, 20, null));
+
+		assertThat(result.posts()).extracting(this::contentOf, PostResult::commentCount)
+				.containsExactly(tuple("댓글 없는 글", 0L), tuple("댓글 있는 글", 2L));
+	}
+
+	@Test
+	void 삭제된_댓글의_답글은_댓글_수에서_제외한다() {
+		Post post = savePost(USER_ID, "본문");
+		Comment deleted = saveComment(post, "지운 댓글");
+		saveReply(post, deleted, "지운 댓글의 답글");
+		deleted.delete();
+		saveComment(post, "남은 댓글");
+		flushAndClear();
+
+		PostListResult result = postFinder.findPosts(new PostListRequest(null, 20, null));
+
+		assertThat(result.posts().getFirst().commentCount()).isEqualTo(1L);
+	}
+
+	@Test
 	void 삭제된_게시글은_목록에서_제외한다() {
 		savePost(USER_ID, "첫 번째");
 		savePost(USER_ID, "두 번째").delete();
@@ -401,6 +441,18 @@ class PostFinderTest {
 	}
 
 	@Test
+	void 단건_조회한_게시글의_댓글과_답글_수를_함께_반환한다() {
+		Post saved = savePost(USER_ID, "본문");
+		Comment root = saveComment(saved, "댓글");
+		saveReply(saved, root, "답글");
+		flushAndClear();
+
+		PostResult result = postFinder.findPostDetail(saved.getId());
+
+		assertThat(result.commentCount()).isEqualTo(2L);
+	}
+
+	@Test
 	void 단건_조회한_게시글의_작성자_프로필이_없으면_author가_null이다() {
 		Post saved = savePost(USER_ID, "본문");
 		flushAndClear();
@@ -454,6 +506,18 @@ class PostFinderTest {
 	private Post savePost(Long userId, String content, Long lessonId) {
 		MentionCommand mention = new MentionCommand(MentionTargetType.LESSON, lessonId);
 		return postRepository.save(Post.register(userId, new PostRegisterCommand(content, mention, List.of())));
+	}
+
+	private Comment saveComment(Post post, String content) {
+		Comment comment = commentRepository.save(Comment.register(post, USER_ID, content));
+		commentClosureRepository.save(CommentClosure.self(comment));
+		return comment;
+	}
+
+	private Comment saveReply(Post post, Comment root, String content) {
+		Comment reply = saveComment(post, content);
+		commentClosureRepository.save(CommentClosure.reply(root, reply));
+		return reply;
 	}
 
 	private User saveAuthorWithDogs() {

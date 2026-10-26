@@ -100,11 +100,13 @@ class CommunityControllerTest {
 		PostResult withMention = new PostResult(
 				PostFixture.create(30L, 7L, "이 레슨 따라해봤어요", null, media, LocalDateTime.of(2026, 10, 19, 10, 30, 0)),
 				new AuthorResult(7L, "초코", "https://media.meongcoach.com/images/dog-profile/7/choco.jpg"),
-				new MentionTargetResult(MentionTargetType.LESSON, 101L, "앉아 기초"));
+				new MentionTargetResult(MentionTargetType.LESSON, 101L, "앉아 기초"),
+				4L);
 		PostResult withoutMention = new PostResult(
 				PostFixture.create(29L, 8L, "오늘 산책 성공!", LocalDateTime.of(2026, 10, 19, 9, 0, 0)),
 				new AuthorResult(8L, "콩이", "https://media.meongcoach.com/images/dog-profile/8/kong.jpg"),
-				null);
+				null,
+				0L);
 		given(postFinder.findPosts(new PostListRequest(31L, 2, 12L)))
 				.willReturn(new PostListResult(List.of(withMention, withoutMention), 29L));
 
@@ -129,8 +131,10 @@ class CommunityControllerTest {
 				.andExpect(jsonPath("$.posts[0].media[1].type").value("VIDEO"))
 				.andExpect(jsonPath("$.posts[0].media[1].url")
 						.value("https://media.meongcoach.com/videos/community-post/7/clip.mp4"))
+				.andExpect(jsonPath("$.posts[0].commentCount").value(4))
 				.andExpect(jsonPath("$.posts[0].createdAt").value("2026-10-19T10:30:00"))
 				.andExpect(jsonPath("$.posts[1].postId").value(29))
+				.andExpect(jsonPath("$.posts[1].commentCount").value(0))
 				.andExpect(jsonPath("$.posts[1].mention").value(nullValue()))
 				.andExpect(jsonPath("$.posts[1].media").isEmpty())
 				.andExpect(jsonPath("$.nextCursor").value(29))
@@ -159,6 +163,7 @@ class CommunityControllerTest {
 								fieldWithPath("posts[].media[]").description("게시글 사진·영상 목록. 배열 순서가 표시 순서이고, 없으면 빈 배열"),
 								fieldWithPath("posts[].media[].type").description("미디어 종류. IMAGE(사진), VIDEO(영상)"),
 								fieldWithPath("posts[].media[].url").description("미디어 공개 URL"),
+								fieldWithPath("posts[].commentCount").description("삭제되지 않은 댓글과 답글 수. 삭제된 댓글의 답글은 세지 않고, 없으면 0"),
 								fieldWithPath("posts[].createdAt").description("게시글 작성 시각(ISO-8601, 초 단위)"),
 								fieldWithPath("nextCursor").optional()
 										.description("다음 페이지 요청에 cursor로 보낼 값. 마지막 페이지면 null")
@@ -181,7 +186,7 @@ class CommunityControllerTest {
 	@Test
 	void 작성자_프로필이나_멘션_대상이_없으면_null로_반환한다() throws Exception {
 		PostResult orphan = new PostResult(
-				PostFixture.create(1L, 7L, "본문", LocalDateTime.of(2026, 10, 19, 9, 0, 0)), null, null);
+				PostFixture.create(1L, 7L, "본문", LocalDateTime.of(2026, 10, 19, 9, 0, 0)), null, null, 0L);
 		given(postFinder.findPosts(any(PostListRequest.class))).willReturn(new PostListResult(List.of(orphan), null));
 
 		mockMvc.perform(get("/api/community/posts").principal(CURRENT_USER))
@@ -245,7 +250,8 @@ class CommunityControllerTest {
 		PostResult result = new PostResult(
 				PostFixture.create(30L, 7L, "이 레슨 따라해봤어요", null, media, LocalDateTime.of(2026, 10, 19, 10, 30, 0)),
 				new AuthorResult(7L, "초코", "https://media.meongcoach.com/images/dog-profile/7/choco.jpg"),
-				new MentionTargetResult(MentionTargetType.LESSON, 101L, "앉아 기초"));
+				new MentionTargetResult(MentionTargetType.LESSON, 101L, "앉아 기초"),
+				2L);
 		given(postFinder.findPostDetail(30L)).willReturn(result);
 
 		mockMvc.perform(get("/api/community/posts/{postId}", 30L)
@@ -261,6 +267,7 @@ class CommunityControllerTest {
 				.andExpect(jsonPath("$.media[0].type").value("IMAGE"))
 				.andExpect(jsonPath("$.media[0].url")
 						.value("https://media.meongcoach.com/images/community-post/7/photo.jpg"))
+				.andExpect(jsonPath("$.commentCount").value(2))
 				.andExpect(jsonPath("$.createdAt").value("2026-10-19T10:30:00"))
 				.andDo(document("community/post-detail",
 						pathParameters(parameterWithName("postId").description("조회할 게시글 ID")),
@@ -280,6 +287,7 @@ class CommunityControllerTest {
 								fieldWithPath("media[]").description("게시글 사진·영상 목록. 배열 순서가 표시 순서이고, 없으면 빈 배열"),
 								fieldWithPath("media[].type").description("미디어 종류. IMAGE(사진), VIDEO(영상)"),
 								fieldWithPath("media[].url").description("미디어 공개 URL"),
+								fieldWithPath("commentCount").description("삭제되지 않은 댓글과 답글 수. 삭제된 댓글의 답글은 세지 않고, 없으면 0"),
 								fieldWithPath("createdAt").description("게시글 작성 시각(ISO-8601, 초 단위)")
 						)
 				));
