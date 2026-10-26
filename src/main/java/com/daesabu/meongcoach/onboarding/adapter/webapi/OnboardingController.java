@@ -1,7 +1,7 @@
 package com.daesabu.meongcoach.onboarding.adapter.webapi;
 
 import com.daesabu.meongcoach.onboarding.adapter.webapi.dto.OnboardingCompleteResponse;
-import com.daesabu.meongcoach.onboarding.adapter.webapi.dto.OnboardingImageUploadUrlRequest;
+import com.daesabu.meongcoach.onboarding.application.provided.dto.OnboardingImageUploadUrlRequest;
 import com.daesabu.meongcoach.onboarding.adapter.webapi.dto.OnboardingImageUploadUrlResponse;
 import com.daesabu.meongcoach.onboarding.adapter.webapi.dto.OnboardingMetadataResponse;
 import com.daesabu.meongcoach.onboarding.application.provided.OnboardingCompleter;
@@ -47,7 +47,7 @@ public class OnboardingController {
 	public OnboardingImageUploadUrlResponse issueImageUploadUrl(@CurrentUserId Long userId,
 	                                                            @Valid @RequestBody OnboardingImageUploadUrlRequest request) {
 		OnboardingImageUploadUrlResult result =
-				onboardingImageUploadUrlIssuer.issue(userId, request.contentType());
+				onboardingImageUploadUrlIssuer.issue(userId, request);
 		return OnboardingImageUploadUrlResponse.from(result);
 	}
 }
