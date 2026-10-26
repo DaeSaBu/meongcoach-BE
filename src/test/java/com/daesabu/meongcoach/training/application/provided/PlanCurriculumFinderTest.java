@@ -8,6 +8,7 @@ import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;
 import com.daesabu.meongcoach.support.ApplicationTest;
 import com.daesabu.meongcoach.training.application.provided.dto.PlanCurriculumResult;
 import com.daesabu.meongcoach.training.application.provided.dto.PlanLessonResult;
+import com.daesabu.meongcoach.training.application.provided.dto.TopicResult;
 import com.daesabu.meongcoach.training.application.required.CurriculumRepository;
 import com.daesabu.meongcoach.training.application.required.LessonProgressRepository;
 import com.daesabu.meongcoach.training.application.required.LessonRepository;
@@ -99,6 +100,7 @@ class PlanCurriculumFinderTest {
 	void 빈_목록이면_빈_결과를_반환한다() {
 		assertThat(finder.find(USER_ID, List.of())).isEmpty();
 		assertThat(finder.findLessonIds(List.of())).isEmpty();
+		assertThat(finder.findTopics(List.of())).isEmpty();
 	}
 
 	@Test
@@ -107,6 +109,24 @@ class PlanCurriculumFinderTest {
 				.isInstanceOf(CurriculumNotFoundException.class);
 		assertThatThrownBy(() -> finder.findLessonIds(List.of(Long.MAX_VALUE)))
 				.isInstanceOf(CurriculumNotFoundException.class);
+		assertThatThrownBy(() -> finder.findTopics(List.of(Long.MAX_VALUE)))
+				.isInstanceOf(CurriculumNotFoundException.class);
+	}
+
+	@Test
+	void 커리큘럼이_속한_토픽을_요청_순서의_첫_등장_순서로_중복_없이_반환한다() {
+		TrainingCategory category = saveCategory(1);
+		Topic walk = saveTopic(category, 1);
+		Topic calm = saveTopic(category, 2);
+		Curriculum walkFirst = saveCurriculum(walk, 1, false);
+		Curriculum walkSecond = saveCurriculum(walk, 2, false);
+		Curriculum calmFirst = saveCurriculum(calm, 1, false);
+		flushAndClear();
+
+		List<TopicResult> topics = finder.findTopics(List.of(calmFirst.getId(), walkFirst.getId(), walkSecond.getId()));
+
+		assertThat(topics).extracting(TopicResult::id).containsExactly(calm.getId(), walk.getId());
+		assertThat(topics).extracting(TopicResult::title).containsExactly("토픽 2", "토픽 1");
 	}
 
 	@Test

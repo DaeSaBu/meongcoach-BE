@@ -8,6 +8,8 @@ import com.daesabu.meongcoach.plan.domain.exception.EmptyPlanCurriculumsExceptio
 import com.daesabu.meongcoach.plan.domain.exception.InvalidDailyMinutesException;
 import com.daesabu.meongcoach.plan.domain.exception.InvalidDaysPerWeekException;
 import com.daesabu.meongcoach.plan.domain.exception.InvalidPlanCurriculumException;
+import com.daesabu.meongcoach.plan.domain.exception.PlanNotCompletedException;
+import com.daesabu.meongcoach.plan.domain.exception.PlanOutcomeAlreadyRecordedException;
 import com.daesabu.meongcoach.shared.domain.BaseTimeEntity;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
@@ -23,6 +25,9 @@ import jakarta.persistence.OrderColumn;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -78,6 +83,10 @@ public class Plan extends BaseTimeEntity {
 	private PlanStatus status;
 
 	private Instant completedAt;
+
+	@Enumerated(EnumType.STRING)
+	@Column(length = 20)
+	private PlanOutcome outcome;
 
 	@ElementCollection
 	@CollectionTable(name = "plan_curriculums", joinColumns = @JoinColumn(name = "plan_id"),
@@ -157,6 +166,26 @@ public class Plan extends BaseTimeEntity {
 	public void replace() {
 		state(status == PlanStatus.ACTIVE, "활성 플랜만 교체할 수 있습니다.");
 		status = PlanStatus.REPLACED;
+	}
+
+	public void recordOutcome(PlanOutcome outcome) {
+		requireNonNull(outcome);
+		if (status != PlanStatus.COMPLETED) {
+			throw new PlanNotCompletedException();
+		}
+		if (this.outcome != null) {
+			throw new PlanOutcomeAlreadyRecordedException();
+		}
+		this.outcome = outcome;
+	}
+
+	public int countElapsedDays(ZoneId zone) {
+		state(status == PlanStatus.COMPLETED, "완료된 플랜만 걸린 날을 셀 수 있습니다.");
+		LocalDate startDate = getCreatedAt().atZone(ZoneId.systemDefault())
+				.withZoneSameInstant(zone)
+				.toLocalDate();
+		LocalDate endDate = LocalDate.ofInstant(completedAt, zone);
+		return (int) ChronoUnit.DAYS.between(startDate, endDate) + 1;
 	}
 
 	public static void validatePracticeSettings(int dailyMinutes, int daysPerWeek) {
