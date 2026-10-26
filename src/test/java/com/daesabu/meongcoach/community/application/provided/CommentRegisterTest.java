@@ -259,7 +259,7 @@ class CommentRegisterTest {
 	}
 
 	@Test
-	void 루트_댓글을_삭제해도_답글은_삭제되지_않는다() {
+	void 루트_댓글을_삭제하면_답글도_함께_삭제된다() {
 		Comment root = saveRootComment(savePost(), USER_ID);
 		Comment reply = saveReply(root);
 
@@ -267,7 +267,70 @@ class CommentRegisterTest {
 		flushAndClear();
 
 		Comment found = commentRepository.findById(reply.getId()).orElseThrow();
-		assertThat(found.getDeletedAt()).isNull();
+		assertThat(found.getDeletedAt()).isNotNull();
+	}
+
+	@Test
+	void 댓글을_등록하면_게시글_댓글_수가_1_늘어난다() {
+		Post post = savePost();
+
+		commentRegister.register(USER_ID, post.getId(), new CommentRegisterRequest("축하해요!", null));
+		flushAndClear();
+
+		Post found = postRepository.findById(post.getId()).orElseThrow();
+		assertThat(found.getCommentCount()).isEqualTo(1);
+	}
+
+	@Test
+	void 답글을_등록해도_게시글_댓글_수가_1_늘어난다() {
+		Post post = savePost();
+		Comment root = saveRootComment(post);
+
+		commentRegister.register(USER_ID, post.getId(), new CommentRegisterRequest("감사해요!", root.getId()));
+		flushAndClear();
+
+		Post found = postRepository.findById(post.getId()).orElseThrow();
+		assertThat(found.getCommentCount()).isEqualTo(1);
+	}
+
+	@Test
+	void 댓글을_삭제하면_게시글_댓글_수가_1_줄어든다() {
+		Post post = savePostWithCommentCount(2);
+		Comment comment = saveRootComment(post, USER_ID);
+
+		commentRegister.delete(USER_ID, comment.getId());
+		flushAndClear();
+
+		Post found = postRepository.findById(post.getId()).orElseThrow();
+		assertThat(found.getCommentCount()).isEqualTo(1);
+	}
+
+	@Test
+	void 답글이_달린_루트_댓글을_삭제하면_답글_수만큼_게시글_댓글_수가_함께_줄어든다() {
+		Post post = savePostWithCommentCount(5);
+		Comment root = saveRootComment(post, USER_ID);
+		saveReply(root);
+		saveReply(root);
+
+		commentRegister.delete(USER_ID, root.getId());
+		flushAndClear();
+
+		Post found = postRepository.findById(post.getId()).orElseThrow();
+		assertThat(found.getCommentCount()).isEqualTo(2);
+	}
+
+	@Test
+	void 이미_삭제된_답글은_루트_삭제_시_다시_세지_않는다() {
+		Post post = savePostWithCommentCount(5);
+		Comment root = saveRootComment(post, USER_ID);
+		saveReply(root).delete();
+		saveReply(root);
+
+		commentRegister.delete(USER_ID, root.getId());
+		flushAndClear();
+
+		Post found = postRepository.findById(post.getId()).orElseThrow();
+		assertThat(found.getCommentCount()).isEqualTo(3);
 	}
 
 	@Test
@@ -307,6 +370,14 @@ class CommentRegisterTest {
 
 	private Post savePost() {
 		return postRepository.save(Post.register(OTHER_USER_ID, new PostRegisterCommand("오늘 앉아 훈련 성공!", null, List.of())));
+	}
+
+	private Post savePostWithCommentCount(int commentCount) {
+		Post post = savePost();
+		for (int i = 0; i < commentCount; i++) {
+			post.increaseCommentCount();
+		}
+		return post;
 	}
 
 	private Comment saveRootComment(Post post) {

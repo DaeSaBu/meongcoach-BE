@@ -70,6 +70,16 @@ public class QuerydslCommentQueryRepository implements CommentQueryRepository {
 		return toSlice(replies, size);
 	}
 
+	@Override
+	public List<Comment> findActiveReplies(Long rootId) {
+		return queryFactory.select(reply)
+				.from(commentClosure)
+				.join(commentClosure.descendant, reply)
+				.where(commentClosure.ancestor.id.eq(rootId), commentClosure.depth.eq(CommentClosure.REPLY_DEPTH),
+						reply.deletedAt.isNull())
+				.fetch();
+	}
+
 	private BooleanExpression idGreaterThan(QComment target, Long cursor) {
 		if (cursor == null) {
 			return null;

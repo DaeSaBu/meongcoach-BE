@@ -182,6 +182,45 @@ class PostTest {
 		assertThat(post.getDeletedAt()).isNotNull();
 	}
 
+	@Test
+	void 작성_직후_댓글_수는_0이다() {
+		Post post = Post.register(USER_ID, new PostRegisterCommand(CONTENT, null, List.of()));
+
+		assertThat(post.getCommentCount()).isZero();
+	}
+
+	@Test
+	void 댓글_수를_늘리면_1씩_증가한다() {
+		Post post = Post.register(USER_ID, new PostRegisterCommand(CONTENT, null, List.of()));
+
+		post.increaseCommentCount();
+		post.increaseCommentCount();
+
+		assertThat(post.getCommentCount()).isEqualTo(2);
+	}
+
+	@Test
+	void 댓글_수를_줄이면_지정한_수만큼_감소한다() {
+		Post post = Post.register(USER_ID, new PostRegisterCommand(CONTENT, null, List.of()));
+		post.increaseCommentCount();
+		post.increaseCommentCount();
+		post.increaseCommentCount();
+
+		post.decreaseCommentCount(2);
+
+		assertThat(post.getCommentCount()).isEqualTo(1);
+	}
+
+	@Test
+	void 댓글_수는_0_아래로_내려가지_않는다() {
+		Post post = Post.register(USER_ID, new PostRegisterCommand(CONTENT, null, List.of()));
+		post.increaseCommentCount();
+
+		post.decreaseCommentCount(3);
+
+		assertThat(post.getCommentCount()).isZero();
+	}
+
 	private List<PostMediaCommand> images(int count) {
 		return Collections.nCopies(count, new PostMediaCommand(PostMediaType.IMAGE, IMAGE_URL));
 	}
