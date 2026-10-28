@@ -54,6 +54,26 @@ class UserFinderTest {
 		assertThat(summaries).isEmpty();
 	}
 
+	@Test
+	void 회원_ID_목록에서_활성_회원의_ID만_반환한다() {
+		User active = userRepository.save(User.registerUser());
+		User withdrawn = userRepository.save(User.registerUser());
+		withdrawn.withdraw();
+		flushAndClear();
+
+		Set<Long> activeIds = userFinder.findActiveUserIds(
+				List.of(active.getId(), withdrawn.getId(), withdrawn.getId() + 1_000_000L));
+
+		assertThat(activeIds).containsExactly(active.getId());
+	}
+
+	@Test
+	void 빈_ID_목록이면_빈_활성_회원_ID_집합을_반환한다() {
+		Set<Long> activeIds = userFinder.findActiveUserIds(List.of());
+
+		assertThat(activeIds).isEmpty();
+	}
+
 	private User saveUserWithProfile(String nickname, String profileImageUrl) {
 		User user = User.registerUser();
 		user.completeOnboarding(new UserProfileCreateCommand(nickname, profileImageUrl, "INFP", Set.of(), Set.of()));
