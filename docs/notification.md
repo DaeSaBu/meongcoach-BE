@@ -23,7 +23,7 @@ flowchart LR
 - 시각의 0~23 범위는 DB `CHECK` 제약과 도메인(`NotificationHour.validate`)이 함께 지킵니다.
 - 지금 앱이 쓰는 시각은 8·11·17시이고 기본값은 8·11시 끔, 17시 켬입니다. 허용 시각과 기본값은 `domain/NotificationHour` 상수 한 곳에만 두고 DB 제약으로 묶지 않습니다. 임의 시각을 허용하게 되면 상수만 풉니다.
 - 회원에게 설정 행이 없으면 조회는 빈 목록(`{hours: []}`)으로 응답하고 행을 만들지 않습니다. 기본 세 행은 토큰을 처음 등록할 때 만듭니다.
-- 설정 변경은 허용 시각 세 개가 각각 한 번씩 있어야 합니다(`NotificationPreferenceUpdateCommand`). 시각마다 행이 있으면 값만 바꾸고 없으면 새로 만듭니다. 목록 전체를 보고 판단하는 규칙이 없어 일급 컬렉션은 두지 않고 `NotificationPreference` 엔티티와 `NotificationHour` 상수만 둡니다.
+- 설정 변경은 시각 하나씩 합니다. 허용 시각(`NotificationHour.validateAllowed`)이 아니면 400이고, 회원·시각 행이 있으면 값만 바꾸고 없으면 새로 만듭니다. 목록 전체를 보고 판단하는 규칙이 없어 일급 컬렉션은 두지 않고 `NotificationPreference` 엔티티와 `NotificationHour` 상수만 둡니다.
 
 ## 앱 API (JWT 인증)
 
@@ -32,7 +32,7 @@ flowchart LR
 | `PUT /api/notifications/tokens` | 토큰 upsert. 회원에게 설정 행이 없으면 기본 세 행 생성. 204 |
 | `DELETE /api/notifications/tokens/{token}` | 로그아웃 때 본인 토큰 삭제. 없는 토큰이어도 204 |
 | `GET /api/notifications/preferences` | `{hours: [{hour, enabled}]}`. 시각 오름차순. 설정 행이 없으면 `{hours: []}` |
-| `PUT /api/notifications/preferences` | `{hours: [{hour, enabled}]}` 통째로 저장. 시각이 빠지거나 중복되거나 허용 시각이 아니면 400 |
+| `PUT /api/notifications/preferences/{hour}` | `{enabled}`로 한 시각의 수신 여부 저장(upsert). 204. 허용 시각(8·11·17)이 아니면 400 |
 
 ## 내부 API (발송기 전용)
 

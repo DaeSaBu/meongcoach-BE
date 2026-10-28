@@ -986,17 +986,17 @@ operation::notification/preferences[snippets='http-request,http-response,respons
 
 === 알림 설정 변경
 
-link:{swagger-ui}#/Notification/notification-preferences-update[▶ Swagger에서 Try it out,window=swagger]
+link:{swagger-ui}#/Notification/notification-preference-update[▶ Swagger에서 Try it out,window=swagger]
 
-8·11·17시의 수신 여부를 통째로 저장합니다. 세 시각을 각각 한 번씩 보내야 합니다. 응답 본문은 없습니다.
+경로의 시각 하나의 수신 여부를 저장합니다. 회원·시각 행이 있으면 값을 바꾸고 없으면 만듭니다. 응답 본문은 없습니다.
 
-operation::notification/preferences-update[snippets='http-request,request-fields,http-response']
+operation::notification/preference-update[snippets='http-request,path-parameters,request-fields,http-response']
 
 ==== 실패 응답
 
-시각이 0~23 밖이면 400(`NOTIFICATION_HOUR_INVALID`), 8·11·17시가 아닌 시각이 섞이거나 빠지거나 중복되면 400(`NOTIFICATION_HOURS_INVALID`)을 반환합니다.
+시각이 8·11·17이 아니면 400(`NOTIFICATION_HOUR_NOT_ALLOWED`)을 반환합니다.
 
-operation::notification/preferences-update-error[snippets='http-response,response-fields']
+operation::notification/preference-update-error[snippets='http-response,response-fields']
 
 === 내부 API — 발송기 전용
 
