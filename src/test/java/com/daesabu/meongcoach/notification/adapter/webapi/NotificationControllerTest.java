@@ -18,8 +18,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.daesabu.meongcoach.notification.application.provided.NotificationPreferenceFinder;
 import com.daesabu.meongcoach.notification.application.provided.NotificationRegister;
 import com.daesabu.meongcoach.notification.application.provided.dto.DeviceTokenRegisterRequest;
-import com.daesabu.meongcoach.notification.application.provided.dto.NotificationPreferenceUpdateRequest;
 import com.daesabu.meongcoach.notification.application.provided.dto.HourPreferenceRequest;
+import com.daesabu.meongcoach.notification.application.provided.dto.NotificationPreferenceUpdateRequest;
 import com.daesabu.meongcoach.notification.domain.HourPreference;
 import com.daesabu.meongcoach.notification.domain.exception.InvalidDevicePlatformException;
 import com.daesabu.meongcoach.notification.domain.exception.InvalidNotificationHoursException;

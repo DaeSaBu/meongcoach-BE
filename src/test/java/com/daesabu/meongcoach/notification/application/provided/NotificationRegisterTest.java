@@ -7,8 +7,8 @@ import static org.assertj.core.api.Assertions.tuple;
 
 import com.daesabu.meongcoach.notification.application.provided.dto.DeviceTokenDeleteRequest;
 import com.daesabu.meongcoach.notification.application.provided.dto.DeviceTokenRegisterRequest;
-import com.daesabu.meongcoach.notification.application.provided.dto.NotificationPreferenceUpdateRequest;
 import com.daesabu.meongcoach.notification.application.provided.dto.HourPreferenceRequest;
+import com.daesabu.meongcoach.notification.application.provided.dto.NotificationPreferenceUpdateRequest;
 import com.daesabu.meongcoach.notification.application.required.DeviceTokenRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationPreferenceRepository;
 import com.daesabu.meongcoach.notification.domain.DevicePlatform;

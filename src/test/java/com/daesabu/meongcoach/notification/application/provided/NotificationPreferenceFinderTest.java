@@ -3,8 +3,8 @@ package com.daesabu.meongcoach.notification.application.provided;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.daesabu.meongcoach.notification.application.required.NotificationPreferenceRepository;
-import com.daesabu.meongcoach.notification.domain.NotificationPreferenceFixture;
 import com.daesabu.meongcoach.notification.domain.HourPreference;
+import com.daesabu.meongcoach.notification.domain.NotificationPreferenceFixture;
 import com.daesabu.meongcoach.support.ApplicationTest;
 import java.util.List;
 import org.junit.jupiter.api.Test;
