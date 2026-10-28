@@ -951,7 +951,7 @@ operation::plan/lesson-complete-entitlement-error[snippets='http-response,respon
 == Notification API
 
 푸시 알림에 쓰는 기기 토큰과 시각별 수신 설정을 보관합니다. 서버는 FCM을 직접 호출하지 않고, 별도 발송기가 내부 API로 발송 대상을 받아 보냅니다.
-알림 시각은 Asia/Seoul 기준 시(0~23)이며 지금 앱이 쓰는 시각은 8·11·17시입니다. 설정 행이 없는 회원의 기본값은 8시·11시 끔, 17시 켬입니다.
+알림 시각은 Asia/Seoul 기준 시(0~23)이며 지금 앱이 쓰는 시각은 8·11·17시입니다. 토큰을 처음 등록할 때 만드는 기본 설정은 8시·11시 끔, 17시 켬입니다.
 
 === 기기 토큰 등록
 
@@ -980,7 +980,7 @@ operation::notification/token-delete[snippets='http-request,path-parameters,http
 
 link:{swagger-ui}#/Notification/notification-preferences[▶ Swagger에서 Try it out,window=swagger]
 
-시각별 수신 여부를 8·11·17시 순서로 반환합니다. 설정 행이 없으면 기본값으로 응답하고 행을 만들지 않습니다.
+시각별 수신 여부를 시각 오름차순으로 반환합니다. 설정 행이 없으면 `hours`가 빈 배열이고 행을 만들지 않습니다.
 
 operation::notification/preferences[snippets='http-request,http-response,response-fields']
 
