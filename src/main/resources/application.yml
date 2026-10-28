@@ -97,7 +97,7 @@ meongcoach:
       thinking-level: ${GEMINI_THINKING_LEVEL:low}
       # 영상 프레임 추출 빈도(0.2~5). 높일수록 화면 변화에 민감하지만 토큰 소비가 늘어난다
       video-fps: 1
-    # 리포트 제목·플랜 생성에 쓰는 EvoLink 채팅 API(OpenAI 호환) 연동 설정
+    # 플랜 생성에 쓰는 EvoLink 채팅 API(OpenAI 호환) 연동 설정
     evolink:
       # Cloudflare를 거치지 않는 엔드포인트. api.evolink.ai는 응답 첫 바이트가 100초를 넘으면 Cloudflare가 524로 끊는다
       base-url: https://direct.evolink.ai
@@ -108,7 +108,7 @@ meongcoach:
       response-timeout: PT5M
       # 상한에 닿으면 응답이 문장 중간에서 잘린다. 여유를 둔다
       max-tokens: 4096
-      # 제목·플랜 생성은 창의성보다 일관성이 중요해 0으로 고정한다
+      # 플랜 생성은 창의성보다 일관성이 중요해 0으로 고정한다
       temperature: 0
       # 심층 사고 모드(enabled·disabled·auto). 비용·지연 예측을 위해 끈다
       thinking: ${EVOLINK_THINKING:disabled}
