@@ -1,0 +1,79 @@
+package com.daesabu.meongcoach.partner.domain;
+
+import com.daesabu.meongcoach.shared.domain.BaseEntity;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import java.time.LocalDate;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+@Getter
+@Entity
+@Table(name = "partner_banners")
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class PartnerBanner extends BaseEntity {
+
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
+
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false, length = 20)
+	private PartnerBannerKind kind;
+
+	@Column(nullable = false, length = 50)
+	private String partnerName;
+
+	@Column(length = 30)
+	private String partnerKind;
+
+	@Column(nullable = false, length = 100)
+	private String title;
+
+	@Column(nullable = false, length = 512)
+	private String imageUrl;
+
+	@Column(nullable = false, length = 9)
+	private String imageBackground;
+
+	@Column(nullable = false, length = 1024)
+	private String linkUrl;
+
+	@Column(length = 30)
+	private String linkLabel;
+
+	@Column(length = 500)
+	private String description;
+
+	@Column(length = 100)
+	private String benefit;
+
+	@Column(length = 100)
+	private String place;
+
+	@Column(length = 50)
+	private String validityLabel;
+
+	@Column(length = 50)
+	private String sharedCode;
+
+	@Column(nullable = false)
+	private boolean disclosure;
+
+	private LocalDate startsOn;
+
+	private LocalDate endsOn;
+
+	@Column(nullable = false)
+	private int sortOrder;
+
+	@Column(nullable = false)
+	private boolean active;
+}

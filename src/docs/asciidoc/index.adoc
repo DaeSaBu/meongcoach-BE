@@ -812,6 +812,19 @@ operation::community/reply-list[snippets='http-request,path-parameters,query-par
 
 operation::community/reply-list-error[snippets='http-response,response-fields']
 
+== Partner API
+
+커뮤니티 탭의 제휴 혜택 배너입니다. 등록·수정 API는 없고, 운영자가 로컬 관리 페이지(admin-local)나 SQL로 `partner_banners`에 직접 넣습니다.
+
+=== 제휴 배너 목록
+
+link:{swagger-ui}#/Partner/partner-banner-list[▶ Swagger에서 Try it out,window=swagger]
+
+오늘(한국 날짜) 노출할 배너를 정렬 순서대로 조회합니다. 숨긴 배너(`active = false`)와 노출 기간 밖의 배너는 빠지고, 기간이 비어 있는 배너는 상시 노출합니다.
+`kind`가 `BENEFIT`이면 `benefit`·`place`·`validityLabel`·`startsOn`·`endsOn`이 있고, `INTRODUCTION`이면 `description`·`linkLabel`이 있습니다.
+
+operation::partner/banner-list[snippets='http-request,http-response,response-fields']
+
 == Plan API
 
 === 커스텀 플랜 생성
