@@ -30,7 +30,7 @@ flowchart LR
 | 메서드·경로 | 동작 |
 |---|---|
 | `PUT /api/notifications/tokens` | 토큰 upsert. 회원에게 설정 행이 없으면 기본 세 행 생성. 204 |
-| `DELETE /api/notifications/tokens/{token}` | 로그아웃 때 본인 토큰 삭제. 없는 토큰이어도 204 |
+| `DELETE /api/notifications/tokens` | 로그아웃 때 본인 토큰 삭제. 본문 `{token}`. 토큰을 URL에 두면 접근 로그에 남으므로 본문으로 받는다. 없는 토큰이어도 204 |
 | `GET /api/notifications/preferences` | `{hours: [{hour, enabled}]}`. 시각 오름차순. 설정 행이 없으면 `{hours: []}` |
 | `PUT /api/notifications/preferences/{hour}` | `{enabled}`로 한 시각의 수신 여부 저장(upsert). 204. 허용 시각(8·11·17)이 아니면 400 |
 
