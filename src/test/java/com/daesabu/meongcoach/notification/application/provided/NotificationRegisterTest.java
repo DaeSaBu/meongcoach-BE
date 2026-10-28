@@ -7,7 +7,6 @@ import static org.assertj.core.api.Assertions.tuple;
 
 import com.daesabu.meongcoach.notification.application.provided.dto.DeviceTokenDeleteRequest;
 import com.daesabu.meongcoach.notification.application.provided.dto.DeviceTokenRegisterRequest;
-import com.daesabu.meongcoach.notification.application.provided.dto.HourPreferenceRequest;
 import com.daesabu.meongcoach.notification.application.provided.dto.NotificationPreferenceUpdateRequest;
 import com.daesabu.meongcoach.notification.application.required.DeviceTokenRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationPreferenceRepository;
@@ -17,12 +16,13 @@ import com.daesabu.meongcoach.notification.domain.DeviceTokenRegisterCommand;
 import com.daesabu.meongcoach.notification.domain.NotificationPreference;
 import com.daesabu.meongcoach.notification.domain.NotificationPreferenceFixture;
 import com.daesabu.meongcoach.notification.domain.exception.InvalidDevicePlatformException;
-import com.daesabu.meongcoach.notification.domain.exception.InvalidNotificationHourException;
-import com.daesabu.meongcoach.notification.domain.exception.InvalidNotificationHoursException;
+import com.daesabu.meongcoach.notification.domain.exception.NotAllowedNotificationHourException;
 import com.daesabu.meongcoach.support.ApplicationTest;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @ApplicationTest
@@ -45,13 +45,8 @@ class NotificationRegisterTest {
 	@Autowired
 	private NotificationPreferenceRepository notificationPreferenceRepository;
 
-	private static NotificationPreferenceUpdateRequest hours(boolean at8, boolean at11, boolean at17) {
-		return new NotificationPreferenceUpdateRequest(List.of(
-				new HourPreferenceRequest(8, at8),
-				new HourPreferenceRequest(11, at11),
-				new HourPreferenceRequest(17, at17)
-		));
-	}
+	private static final NotificationPreferenceUpdateRequest ON = new NotificationPreferenceUpdateRequest(true);
+	private static final NotificationPreferenceUpdateRequest OFF = new NotificationPreferenceUpdateRequest(false);
 
 	private DeviceToken saveToken(Long userId, String token) {
 		return deviceTokenRepository.save(
@@ -173,91 +168,48 @@ class NotificationRegisterTest {
 	}
 
 	@Test
-	void 알림_설정을_바꾸면_행이_없던_회원은_세_행이_새로_생긴다() {
-		notificationRegister.updatePreferences(USER_ID, hours(true, false, false));
+	void 행이_없는_시각을_켜면_행을_새로_만든다() {
+		notificationRegister.updatePreference(USER_ID, 8, ON);
 
 		assertThat(notificationPreferenceRepository.findAllByUserId(USER_ID))
 				.extracting(NotificationPreference::getHour, NotificationPreference::isEnabled)
-				.containsExactlyInAnyOrder(
-						tuple(8, true),
-						tuple(11, false),
-						tuple(17, false)
-				);
+				.containsExactly(tuple(8, true));
 	}
 
 	@Test
-	void 알림_설정을_바꾸면_있던_행은_값만_바뀐다() {
-		notificationRegister.updatePreferences(USER_ID, hours(false, false, true));
-		List<Long> ids = notificationPreferenceRepository.findAllByUserId(USER_ID).stream()
-				.map(NotificationPreference::getId)
-				.toList();
-
-		notificationRegister.updatePreferences(USER_ID, hours(true, true, false));
-
-		assertThat(notificationPreferenceRepository.findAllByUserId(USER_ID))
-				.extracting(NotificationPreference::getId)
-				.containsExactlyInAnyOrderElementsOf(ids);
-		assertThat(notificationPreferenceRepository.findAllByUserId(USER_ID))
-				.extracting(NotificationPreference::getHour, NotificationPreference::isEnabled)
-				.containsExactlyInAnyOrder(
-						tuple(8, true),
-						tuple(11, true),
-						tuple(17, false)
-				);
-	}
-
-	@Test
-	void 알림_설정을_바꾸면_일부_시각_행만_있어도_없는_행은_만들고_있는_행은_바꾼다() {
+	void 행이_있는_시각을_끄면_행을_새로_만들지_않고_값만_바꾼다() {
 		savePreference(USER_ID, 17, true);
-		Long eveningId = notificationPreferenceRepository.findAllByUserId(USER_ID).getFirst().getId();
+		Long id = notificationPreferenceRepository.findAllByUserId(USER_ID).getFirst().getId();
 
-		notificationRegister.updatePreferences(USER_ID, hours(true, false, false));
+		notificationRegister.updatePreference(USER_ID, 17, OFF);
+
+		assertThat(notificationPreferenceRepository.findAllByUserId(USER_ID))
+				.extracting(NotificationPreference::getId, NotificationPreference::getHour,
+						NotificationPreference::isEnabled)
+				.containsExactly(tuple(id, 17, false));
+	}
+
+	@Test
+	void 다른_시각과_다른_회원의_행은_바꾸지_않는다() {
+		savePreference(USER_ID, 8, false);
+		savePreference(OTHER_USER_ID, 11, false);
+
+		notificationRegister.updatePreference(USER_ID, 11, ON);
 
 		assertThat(notificationPreferenceRepository.findAllByUserId(USER_ID))
 				.extracting(NotificationPreference::getHour, NotificationPreference::isEnabled)
-				.containsExactlyInAnyOrder(
-						tuple(8, true),
-						tuple(11, false),
-						tuple(17, false)
-				);
-		assertThat(notificationPreferenceRepository.findById(eveningId)).get()
-				.extracting(NotificationPreference::isEnabled)
-				.isEqualTo(false);
+				.containsExactlyInAnyOrder(tuple(8, false), tuple(11, true));
+		assertThat(notificationPreferenceRepository.findAllByUserId(OTHER_USER_ID))
+				.extracting(NotificationPreference::getHour, NotificationPreference::isEnabled)
+				.containsExactly(tuple(11, false));
 	}
 
-	@Test
-	void 허용_시각이_빠지면_InvalidNotificationHoursException을_던진다() {
-		NotificationPreferenceUpdateRequest request = new NotificationPreferenceUpdateRequest(List.of(
-				new HourPreferenceRequest(8, true),
-				new HourPreferenceRequest(11, true)
-		));
-
-		assertThatThrownBy(() -> notificationRegister.updatePreferences(USER_ID, request))
-				.isInstanceOf(InvalidNotificationHoursException.class);
-	}
-
-	@Test
-	void 허용_시각이_중복되면_InvalidNotificationHoursException을_던진다() {
-		NotificationPreferenceUpdateRequest request = new NotificationPreferenceUpdateRequest(List.of(
-				new HourPreferenceRequest(8, true),
-				new HourPreferenceRequest(8, false),
-				new HourPreferenceRequest(17, true)
-		));
-
-		assertThatThrownBy(() -> notificationRegister.updatePreferences(USER_ID, request))
-				.isInstanceOf(InvalidNotificationHoursException.class);
-	}
-
-	@Test
-	void 시각이_0에서_23_밖이면_InvalidNotificationHourException을_던진다() {
-		NotificationPreferenceUpdateRequest request = new NotificationPreferenceUpdateRequest(List.of(
-				new HourPreferenceRequest(8, true),
-				new HourPreferenceRequest(11, true),
-				new HourPreferenceRequest(24, true)
-		));
-
-		assertThatThrownBy(() -> notificationRegister.updatePreferences(USER_ID, request))
-				.isInstanceOf(InvalidNotificationHourException.class);
+	@ParameterizedTest
+	@ValueSource(ints = {-1, 9, 24})
+	void 허용_시각이_아니면_NotAllowedNotificationHourException을_던진다(int hour) {
+		assertThatThrownBy(() -> notificationRegister.updatePreference(USER_ID, hour, ON))
+				.isInstanceOf(NotAllowedNotificationHourException.class);
+		assertThat(notificationPreferenceRepository.findAllByUserId(USER_ID)).isEmpty();
 	}
 
 	@Test

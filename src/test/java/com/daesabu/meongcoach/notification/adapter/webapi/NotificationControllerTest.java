@@ -19,10 +19,9 @@ import com.daesabu.meongcoach.notification.application.provided.NotificationPref
 import com.daesabu.meongcoach.notification.application.provided.NotificationPreferenceResult;
 import com.daesabu.meongcoach.notification.application.provided.NotificationRegister;
 import com.daesabu.meongcoach.notification.application.provided.dto.DeviceTokenRegisterRequest;
-import com.daesabu.meongcoach.notification.application.provided.dto.HourPreferenceRequest;
 import com.daesabu.meongcoach.notification.application.provided.dto.NotificationPreferenceUpdateRequest;
 import com.daesabu.meongcoach.notification.domain.exception.InvalidDevicePlatformException;
-import com.daesabu.meongcoach.notification.domain.exception.InvalidNotificationHoursException;
+import com.daesabu.meongcoach.notification.domain.exception.NotAllowedNotificationHourException;
 import java.security.Principal;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -48,12 +47,8 @@ class NotificationControllerTest {
 			{"token": "fcm-registration-token", "platform": "IOS"}
 			""";
 
-	private static final String PREFERENCES_UPDATE_BODY = """
-			{"hours": [
-			  {"hour": 8, "enabled": true},
-			  {"hour": 11, "enabled": false},
-			  {"hour": 17, "enabled": true}
-			]}
+	private static final String PREFERENCE_UPDATE_BODY = """
+			{"enabled": true}
 			""";
 
 	private static final FieldDescriptor[] ERROR_FIELDS = {
@@ -161,56 +156,45 @@ class NotificationControllerTest {
 	}
 
 	@Test
-	void 알림_설정을_바꾸면_204를_반환한다() throws Exception {
-		mockMvc.perform(put(PREFERENCES_PATH)
+	void 시각별_알림_설정을_바꾸면_204를_반환한다() throws Exception {
+		mockMvc.perform(put(PREFERENCES_PATH + "/{hour}", 17)
 						.principal(CURRENT_USER)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content(PREFERENCES_UPDATE_BODY))
+						.content(PREFERENCE_UPDATE_BODY))
 				.andExpect(status().isNoContent())
-				.andDo(document("notification/preferences-update",
-						requestFields(
-								fieldWithPath("hours").description("시각별 알림 설정. 8·11·17시를 각각 한 번씩 보낸다"),
-								fieldWithPath("hours[].hour").description("알림 시각(Asia/Seoul 기준 0~23)"),
-								fieldWithPath("hours[].enabled").description("해당 시각 알림 수신 여부")
-						)
+				.andDo(document("notification/preference-update",
+						pathParameters(parameterWithName("hour").description("알림 시각(Asia/Seoul 기준). 8·11·17만 허용")),
+						requestFields(fieldWithPath("enabled").description("해당 시각 알림 수신 여부"))
 				));
 
-		then(notificationRegister).should().updatePreferences(42L, new NotificationPreferenceUpdateRequest(List.of(
-				new HourPreferenceRequest(8, true),
-				new HourPreferenceRequest(11, false),
-				new HourPreferenceRequest(17, true)
-		)));
+		then(notificationRegister).should().updatePreference(42L, 17, new NotificationPreferenceUpdateRequest(true));
 	}
 
 	@Test
-	void 허용_시각이_빠지거나_중복되면_400과_에러_코드를_반환한다() throws Exception {
-		NotificationPreferenceUpdateRequest request = new NotificationPreferenceUpdateRequest(List.of(
-				new HourPreferenceRequest(8, true),
-				new HourPreferenceRequest(8, false),
-				new HourPreferenceRequest(17, true)
-		));
-		willThrow(new InvalidNotificationHoursException()).given(notificationRegister).updatePreferences(42L, request);
+	void 허용하지_않는_시각이면_400과_에러_코드를_반환한다() throws Exception {
+		willThrow(new NotAllowedNotificationHourException(9)).given(notificationRegister)
+				.updatePreference(42L, 9, new NotificationPreferenceUpdateRequest(true));
 
-		mockMvc.perform(put(PREFERENCES_PATH)
+		mockMvc.perform(put(PREFERENCES_PATH + "/{hour}", 9)
 						.principal(CURRENT_USER)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content(PREFERENCES_UPDATE_BODY.replace("\"hour\": 11", "\"hour\": 8")))
+						.content(PREFERENCE_UPDATE_BODY))
 				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.code").value("NOTIFICATION_HOURS_INVALID"))
-				.andDo(document("notification/preferences-update-error", responseFields(ERROR_FIELDS)));
+				.andExpect(jsonPath("$.code").value("NOTIFICATION_HOUR_NOT_ALLOWED"))
+				.andDo(document("notification/preference-update-error", responseFields(ERROR_FIELDS)));
 	}
 
 	@Test
-	void 시각_설정에_enabled가_없으면_검증에_실패한다() throws Exception {
-		mockMvc.perform(put(PREFERENCES_PATH)
+	void enabled가_없으면_검증에_실패한다() throws Exception {
+		mockMvc.perform(put(PREFERENCES_PATH + "/{hour}", 17)
 						.principal(CURRENT_USER)
 						.contentType(MediaType.APPLICATION_JSON)
-						.content(PREFERENCES_UPDATE_BODY.replace("\"enabled\": false", "\"enabled\": null")))
+						.content("{}"))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
-				.andExpect(jsonPath("$.errors[0].field").value("hours[1].enabled"));
+				.andExpect(jsonPath("$.errors[0].field").value("enabled"));
 
 		then(notificationRegister).shouldHaveNoInteractions();
 	}
