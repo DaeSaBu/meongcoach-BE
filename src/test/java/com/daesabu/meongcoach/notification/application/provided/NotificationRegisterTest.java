@@ -7,6 +7,7 @@ import static org.assertj.core.api.Assertions.tuple;
 
 import com.daesabu.meongcoach.notification.application.provided.dto.DeviceTokenDeleteRequest;
 import com.daesabu.meongcoach.notification.application.provided.dto.DeviceTokenRegisterRequest;
+import com.daesabu.meongcoach.notification.application.provided.dto.DeviceTokenUnregisterRequest;
 import com.daesabu.meongcoach.notification.application.provided.dto.NotificationPreferenceUpdateRequest;
 import com.daesabu.meongcoach.notification.application.required.DeviceTokenRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationPreferenceRepository;
@@ -133,7 +134,7 @@ class NotificationRegisterTest {
 		saveToken(USER_ID, TOKEN);
 		saveToken(USER_ID, OTHER_TOKEN);
 
-		notificationRegister.deleteDeviceToken(USER_ID, TOKEN);
+		notificationRegister.deleteDeviceToken(USER_ID, new DeviceTokenUnregisterRequest(TOKEN));
 
 		assertThat(deviceTokenRepository.findAll())
 				.extracting(DeviceToken::getToken)
@@ -144,14 +145,14 @@ class NotificationRegisterTest {
 	void 다른_회원의_토큰은_지우지_않는다() {
 		saveToken(OTHER_USER_ID, TOKEN);
 
-		notificationRegister.deleteDeviceToken(USER_ID, TOKEN);
+		notificationRegister.deleteDeviceToken(USER_ID, new DeviceTokenUnregisterRequest(TOKEN));
 
 		assertThat(deviceTokenRepository.findByToken(TOKEN)).isPresent();
 	}
 
 	@Test
 	void 없는_토큰을_지워도_예외가_없다() {
-		assertThatCode(() -> notificationRegister.deleteDeviceToken(USER_ID, TOKEN))
+		assertThatCode(() -> notificationRegister.deleteDeviceToken(USER_ID, new DeviceTokenUnregisterRequest(TOKEN)))
 				.doesNotThrowAnyException();
 	}
 

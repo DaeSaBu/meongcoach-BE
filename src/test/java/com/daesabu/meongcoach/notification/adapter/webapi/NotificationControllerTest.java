@@ -19,6 +19,7 @@ import com.daesabu.meongcoach.notification.application.provided.NotificationPref
 import com.daesabu.meongcoach.notification.application.provided.NotificationPreferenceResult;
 import com.daesabu.meongcoach.notification.application.provided.NotificationRegister;
 import com.daesabu.meongcoach.notification.application.provided.dto.DeviceTokenRegisterRequest;
+import com.daesabu.meongcoach.notification.application.provided.dto.DeviceTokenUnregisterRequest;
 import com.daesabu.meongcoach.notification.application.provided.dto.NotificationPreferenceUpdateRequest;
 import com.daesabu.meongcoach.notification.domain.exception.InvalidDevicePlatformException;
 import com.daesabu.meongcoach.notification.domain.exception.NotAllowedNotificationHourException;
@@ -118,15 +119,17 @@ class NotificationControllerTest {
 
 	@Test
 	void 기기_토큰을_지우면_204를_반환한다() throws Exception {
-		mockMvc.perform(delete(TOKENS_PATH + "/{token}", "fcm-registration-token")
+		mockMvc.perform(delete(TOKENS_PATH)
 						.principal(CURRENT_USER)
-						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"token\": \"fcm-registration-token\"}"))
 				.andExpect(status().isNoContent())
 				.andDo(document("notification/token-delete",
-						pathParameters(parameterWithName("token").description("지울 FCM 등록 토큰"))
+						requestFields(fieldWithPath("token").description("지울 FCM 등록 토큰. URL이 아니라 본문으로 보내 접근 로그에 남지 않게 한다"))
 				));
 
-		then(notificationRegister).should().deleteDeviceToken(42L, "fcm-registration-token");
+		then(notificationRegister).should().deleteDeviceToken(42L, new DeviceTokenUnregisterRequest("fcm-registration-token"));
 	}
 
 	@Test
