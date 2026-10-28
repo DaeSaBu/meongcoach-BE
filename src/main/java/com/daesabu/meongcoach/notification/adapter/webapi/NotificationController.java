@@ -2,10 +2,10 @@ package com.daesabu.meongcoach.notification.adapter.webapi;
 
 import com.daesabu.meongcoach.notification.adapter.webapi.dto.NotificationPreferencesResponse;
 import com.daesabu.meongcoach.notification.application.provided.NotificationPreferenceFinder;
+import com.daesabu.meongcoach.notification.application.provided.NotificationPreferenceResult;
 import com.daesabu.meongcoach.notification.application.provided.NotificationRegister;
 import com.daesabu.meongcoach.notification.application.provided.dto.DeviceTokenRegisterRequest;
 import com.daesabu.meongcoach.notification.application.provided.dto.NotificationPreferenceUpdateRequest;
-import com.daesabu.meongcoach.notification.domain.HourPreference;
 import com.daesabu.meongcoach.shared.security.CurrentUserId;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -42,8 +42,8 @@ public class NotificationController {
 
 	@GetMapping("/preferences")
 	public NotificationPreferencesResponse findPreferences(@CurrentUserId Long userId) {
-		List<HourPreference> hours = notificationPreferenceFinder.findHourPreferences(userId);
-		return NotificationPreferencesResponse.from(hours);
+		List<NotificationPreferenceResult> preferences = notificationPreferenceFinder.findPreferences(userId);
+		return NotificationPreferencesResponse.from(preferences);
 	}
 
 	@PutMapping("/preferences")

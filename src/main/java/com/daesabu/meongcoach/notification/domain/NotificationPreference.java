@@ -11,6 +11,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -42,7 +43,7 @@ public class NotificationPreference extends BaseEntity {
 	@Column(nullable = false)
 	private boolean enabled;
 
-	static NotificationPreference create(Long userId, int hour, boolean enabled) {
+	public static NotificationPreference create(Long userId, int hour, boolean enabled) {
 		NotificationHour.validate(hour);
 		NotificationPreference preference = new NotificationPreference();
 
@@ -53,11 +54,13 @@ public class NotificationPreference extends BaseEntity {
 		return preference;
 	}
 
-	void change(boolean enabled) {
-		this.enabled = enabled;
+	public static List<NotificationPreference> createDefaults(Long userId) {
+		return NotificationHour.ALLOWED_HOURS.stream()
+				.map(hour -> create(userId, hour, NotificationHour.isDefaultEnabled(hour)))
+				.toList();
 	}
 
-	HourPreference toHourPreference() {
-		return new HourPreference(hour, enabled);
+	public void change(boolean enabled) {
+		this.enabled = enabled;
 	}
 }
