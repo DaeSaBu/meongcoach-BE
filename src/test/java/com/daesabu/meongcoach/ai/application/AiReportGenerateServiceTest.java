@@ -13,14 +13,13 @@ import static org.mockito.Mockito.when;
 
 import com.daesabu.meongcoach.ai.application.provided.AiTrialFinder;
 import com.daesabu.meongcoach.ai.application.required.AiReportRepository;
-import com.daesabu.meongcoach.ai.application.required.ReportTitleGenerator;
 import com.daesabu.meongcoach.ai.application.required.VideoAnalyzer;
+import com.daesabu.meongcoach.ai.application.required.dto.VideoAnalysisResult;
 import com.daesabu.meongcoach.ai.domain.AiReport;
 import com.daesabu.meongcoach.ai.domain.AiReportStatus;
 import com.daesabu.meongcoach.ai.domain.AiReportUploadCommand;
 import com.daesabu.meongcoach.ai.domain.AiTrial;
 import com.daesabu.meongcoach.ai.domain.AiVideo;
-import com.daesabu.meongcoach.ai.domain.exception.ReportTitleGenerationFailedException;
 import com.daesabu.meongcoach.ai.domain.exception.VideoAnalysisFailedException;
 import com.daesabu.meongcoach.media.application.provided.MediaStorageUriResolver;
 import com.daesabu.meongcoach.media.domain.exception.InvalidMediaObjectKeyException;
@@ -48,7 +47,6 @@ class AiReportGenerateServiceTest {
 
 	private MediaStorageUriResolver storageUriResolver;
 	private VideoAnalyzer videoAnalyzer;
-	private ReportTitleGenerator reportTitleGenerator;
 	private AiReportRepository aiReportRepository;
 	private AiTrialFinder aiTrialFinder;
 	private AiReportGenerateService service;
@@ -70,11 +68,9 @@ class AiReportGenerateServiceTest {
 	void setUp() {
 		storageUriResolver = mock(MediaStorageUriResolver.class);
 		videoAnalyzer = mock(VideoAnalyzer.class);
-		reportTitleGenerator = mock(ReportTitleGenerator.class);
 		aiReportRepository = mock(AiReportRepository.class);
 		aiTrialFinder = mock(AiTrialFinder.class);
-		service = new AiReportGenerateService(storageUriResolver, videoAnalyzer, reportTitleGenerator,
-				aiReportRepository, aiTrialFinder);
+		service = new AiReportGenerateService(storageUriResolver, videoAnalyzer, aiReportRepository, aiTrialFinder);
 
 		// 기본은 성공 경로. 각 테스트는 깨뜨릴 협력자 하나만 덮어쓴다
 		issuedReport = AiReport.uploading(
@@ -82,8 +78,7 @@ class AiReportGenerateServiceTest {
 		when(aiReportRepository.findByVideoObjectKey(OBJECT_KEY)).thenReturn(Optional.of(issuedReport));
 		when(storageUriResolver.resolve(AiVideo.SCOPE, OBJECT_KEY)).thenReturn(VIDEO_URI);
 		when(aiTrialFinder.findTrial(USER_ID)).thenReturn(new AiTrial(0));
-		when(videoAnalyzer.analyze(VIDEO_URI)).thenReturn(ANALYZED_CONTENT);
-		when(reportTitleGenerator.generateTitle(ANALYZED_CONTENT)).thenReturn(GENERATED_TITLE);
+		when(videoAnalyzer.analyze(VIDEO_URI)).thenReturn(new VideoAnalysisResult(GENERATED_TITLE, ANALYZED_CONTENT));
 		doAnswer(recordSave).when(aiReportRepository).save(any());
 	}
 
@@ -106,13 +101,6 @@ class AiReportGenerateServiceTest {
 		service.generate(OBJECT_KEY);
 
 		assertThat(savedStatuses).containsExactly(AiReportStatus.PENDING, AiReportStatus.COMPLETED);
-	}
-
-	@Test
-	void 제목_생성기에_분석_결과_JSON을_그대로_넘긴다() {
-		service.generate(OBJECT_KEY);
-
-		verify(reportTitleGenerator).generateTitle(ANALYZED_CONTENT);
 	}
 
 	@Test
@@ -168,18 +156,8 @@ class AiReportGenerateServiceTest {
 	}
 
 	@Test
-	void 분석이_실패하면_제목_생성을_시도하지_않는다() {
-		when(videoAnalyzer.analyze(VIDEO_URI)).thenThrow(new VideoAnalysisFailedException("분석 실패"));
-
-		service.generate(OBJECT_KEY);
-
-		verify(reportTitleGenerator, never()).generateTitle(any());
-	}
-
-	@Test
-	void 제목_생성이_실패하면_제목_없이_COMPLETED로_저장한다() {
-		when(reportTitleGenerator.generateTitle(ANALYZED_CONTENT))
-				.thenThrow(new ReportTitleGenerationFailedException("제목 생성 실패"));
+	void 분석_결과에_제목이_없으면_제목_없이_COMPLETED로_저장한다() {
+		when(videoAnalyzer.analyze(VIDEO_URI)).thenReturn(new VideoAnalysisResult(null, ANALYZED_CONTENT));
 
 		assertThatCode(() -> service.generate(OBJECT_KEY)).doesNotThrowAnyException();
 
@@ -191,15 +169,6 @@ class AiReportGenerateServiceTest {
 	@Test
 	void 분석기가_선언되지_않은_예외를_던지면_FAILED_ANALYSIS가_아니라_FAILED_UNEXPECTED로_기록한다() {
 		when(videoAnalyzer.analyze(VIDEO_URI)).thenThrow(new IllegalStateException("어댑터 버그"));
-
-		assertThatCode(() -> service.generate(OBJECT_KEY)).doesNotThrowAnyException();
-
-		assertThat(savedStatuses).containsExactly(AiReportStatus.PENDING, AiReportStatus.FAILED_UNEXPECTED);
-	}
-
-	@Test
-	void 제목_생성기가_선언되지_않은_예외를_던지면_제목_없이_완료하지_않고_FAILED_UNEXPECTED로_기록한다() {
-		when(reportTitleGenerator.generateTitle(ANALYZED_CONTENT)).thenThrow(new IllegalStateException("어댑터 버그"));
 
 		assertThatCode(() -> service.generate(OBJECT_KEY)).doesNotThrowAnyException();
 
