@@ -4,14 +4,10 @@ import com.daesabu.meongcoach.notification.application.provided.NotificationTarg
 import com.daesabu.meongcoach.notification.application.provided.NotificationTargetResult;
 import com.daesabu.meongcoach.notification.application.required.DeviceTokenRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationPreferenceRepository;
-import com.daesabu.meongcoach.notification.domain.DeviceToken;
 import com.daesabu.meongcoach.notification.domain.NotificationHour;
 import com.daesabu.meongcoach.user.application.provided.UserFinder;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,10 +29,8 @@ public class NotificationTargetQueryService implements NotificationTargetFinder 
 		if (activeUserIds.isEmpty()) {
 			return List.of();
 		}
-		Map<Long, List<DeviceToken>> tokensByUserId = deviceTokenRepository.findAllByUserIdIn(activeUserIds).stream()
-				.collect(Collectors.groupingBy(DeviceToken::getUserId, LinkedHashMap::new, Collectors.toList()));
-		return tokensByUserId.entrySet().stream()
-				.map(entry -> NotificationTargetResult.of(entry.getKey(), entry.getValue()))
+		return deviceTokenRepository.findAllByUserIdInOrderByUserIdAscIdAsc(activeUserIds).stream()
+				.map(NotificationTargetResult::from)
 				.toList();
 	}
 }

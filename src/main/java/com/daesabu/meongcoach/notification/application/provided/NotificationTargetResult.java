@@ -1,14 +1,11 @@
 package com.daesabu.meongcoach.notification.application.provided;
 
+import com.daesabu.meongcoach.notification.domain.DevicePlatform;
 import com.daesabu.meongcoach.notification.domain.DeviceToken;
-import java.util.List;
 
-public record NotificationTargetResult(Long userId, List<DeviceTokenResult> tokens) {
+public record NotificationTargetResult(Long userId, String token, DevicePlatform platform) {
 
-	public static NotificationTargetResult of(Long userId, List<DeviceToken> deviceTokens) {
-		List<DeviceTokenResult> tokens = deviceTokens.stream()
-				.map(DeviceTokenResult::from)
-				.toList();
-		return new NotificationTargetResult(userId, tokens);
+	public static NotificationTargetResult from(DeviceToken deviceToken) {
+		return new NotificationTargetResult(deviceToken.getUserId(), deviceToken.getToken(), deviceToken.getPlatform());
 	}
 }

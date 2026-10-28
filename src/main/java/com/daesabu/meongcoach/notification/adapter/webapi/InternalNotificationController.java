@@ -1,9 +1,8 @@
 package com.daesabu.meongcoach.notification.adapter.webapi;
 
-import com.daesabu.meongcoach.notification.adapter.webapi.dto.NotificationTargetsResponse;
+import com.daesabu.meongcoach.notification.adapter.webapi.dto.NotificationTargetResponse;
 import com.daesabu.meongcoach.notification.application.provided.NotificationRegister;
 import com.daesabu.meongcoach.notification.application.provided.NotificationTargetFinder;
-import com.daesabu.meongcoach.notification.application.provided.NotificationTargetResult;
 import com.daesabu.meongcoach.notification.application.provided.dto.DeviceTokenDeleteRequest;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -26,9 +25,10 @@ public class InternalNotificationController {
 	private final NotificationRegister notificationRegister;
 
 	@GetMapping("/targets")
-	public NotificationTargetsResponse findTargets(@RequestParam int hour) {
-		List<NotificationTargetResult> targets = notificationTargetFinder.findTargets(hour);
-		return NotificationTargetsResponse.of(hour, targets);
+	public List<NotificationTargetResponse> findTargets(@RequestParam int hour) {
+		return notificationTargetFinder.findTargets(hour).stream()
+				.map(NotificationTargetResponse::from)
+				.toList();
 	}
 
 	@DeleteMapping("/tokens")
