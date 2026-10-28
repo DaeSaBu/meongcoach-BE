@@ -63,8 +63,7 @@ class InternalSecurityFilterChainTest {
 						.queryParam("hour", "17")
 						.header(INTERNAL_SECRET_HEADER, INTERNAL_SECRET))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.hour").value(17))
-				.andExpect(jsonPath("$.targets").isArray());
+				.andExpect(jsonPath("$").isArray());
 	}
 
 	@Test

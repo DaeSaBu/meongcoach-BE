@@ -55,7 +55,7 @@ class NotificationTargetFinderTest {
 	}
 
 	@Test
-	void 시각을_켠_활성_회원의_토큰을_회원별로_묶어_반환한다() {
+	void 시각을_켠_활성_회원의_토큰을_한_행씩_반환한다() {
 		Long userId = saveUser();
 		savePreference(userId, 17, true);
 		saveToken(userId, "token-ios", DevicePlatform.IOS);
@@ -63,15 +63,34 @@ class NotificationTargetFinderTest {
 
 		List<NotificationTargetResult> targets = notificationTargetFinder.findTargets(17);
 
-		assertThat(targets).singleElement().satisfies(target -> {
-			assertThat(target.userId()).isEqualTo(userId);
-			assertThat(target.tokens())
-					.extracting(DeviceTokenResult::token, DeviceTokenResult::platform)
-					.containsExactlyInAnyOrder(
-							tuple("token-ios", DevicePlatform.IOS),
-							tuple("token-android", DevicePlatform.ANDROID)
-					);
-		});
+		assertThat(targets)
+				.extracting(NotificationTargetResult::userId, NotificationTargetResult::token,
+						NotificationTargetResult::platform)
+				.containsExactly(
+						tuple(userId, "token-ios", DevicePlatform.IOS),
+						tuple(userId, "token-android", DevicePlatform.ANDROID)
+				);
+	}
+
+	@Test
+	void 회원_ID_오름차순_같은_회원_안에서는_토큰_등록_순으로_정렬한다() {
+		Long firstUserId = saveUser();
+		Long secondUserId = saveUser();
+		savePreference(firstUserId, 17, true);
+		savePreference(secondUserId, 17, true);
+		saveToken(secondUserId, "second-ios", DevicePlatform.IOS);
+		saveToken(firstUserId, "first-android", DevicePlatform.ANDROID);
+		saveToken(firstUserId, "first-ios", DevicePlatform.IOS);
+
+		List<NotificationTargetResult> targets = notificationTargetFinder.findTargets(17);
+
+		assertThat(targets)
+				.extracting(NotificationTargetResult::userId, NotificationTargetResult::token)
+				.containsExactly(
+						tuple(firstUserId, "first-android"),
+						tuple(firstUserId, "first-ios"),
+						tuple(secondUserId, "second-ios")
+				);
 	}
 
 	@Test

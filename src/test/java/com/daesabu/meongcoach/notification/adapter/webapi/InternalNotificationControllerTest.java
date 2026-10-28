@@ -11,10 +11,10 @@ import static org.springframework.restdocs.payload.PayloadDocumentation.requestF
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
 import static org.springframework.restdocs.request.RequestDocumentation.queryParameters;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.daesabu.meongcoach.notification.application.provided.DeviceTokenResult;
 import com.daesabu.meongcoach.notification.application.provided.NotificationRegister;
 import com.daesabu.meongcoach.notification.application.provided.NotificationTargetFinder;
 import com.daesabu.meongcoach.notification.application.provided.NotificationTargetResult;
@@ -52,34 +52,43 @@ class InternalNotificationControllerTest {
 	private NotificationRegister notificationRegister;
 
 	@Test
-	void 시각의_발송_대상을_회원별_토큰_목록으로_응답한다() throws Exception {
+	void 시각의_발송_대상을_토큰_한_행씩_배열로_응답한다() throws Exception {
 		given(notificationTargetFinder.findTargets(17)).willReturn(List.of(
-				new NotificationTargetResult(42L, List.of(
-						new DeviceTokenResult("token-ios", DevicePlatform.IOS),
-						new DeviceTokenResult("token-android", DevicePlatform.ANDROID)
-				))
+				new NotificationTargetResult(42L, "token-ios", DevicePlatform.IOS),
+				new NotificationTargetResult(42L, "token-android", DevicePlatform.ANDROID),
+				new NotificationTargetResult(43L, "token-43", DevicePlatform.IOS)
 		));
 
 		mockMvc.perform(get(TARGETS_PATH)
 						.queryParam("hour", "17")
 						.header(INTERNAL_SECRET_HEADER, "internal-secret"))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.hour").value(17))
-				.andExpect(jsonPath("$.targets[0].userId").value(42))
-				.andExpect(jsonPath("$.targets[0].tokens.length()").value(2))
-				.andExpect(jsonPath("$.targets[0].tokens[0].token").value("token-ios"))
-				.andExpect(jsonPath("$.targets[0].tokens[0].platform").value("IOS"))
+				.andExpect(jsonPath("$.length()").value(3))
+				.andExpect(jsonPath("$[0].userId").value(42))
+				.andExpect(jsonPath("$[0].token").value("token-ios"))
+				.andExpect(jsonPath("$[0].platform").value("IOS"))
+				.andExpect(jsonPath("$[1].userId").value(42))
+				.andExpect(jsonPath("$[1].platform").value("ANDROID"))
+				.andExpect(jsonPath("$[2].userId").value(43))
 				.andDo(document("notification/internal-targets",
 						queryParameters(parameterWithName("hour").description("알림 시각(Asia/Seoul 기준 0~23)")),
 						responseFields(
-								fieldWithPath("hour").description("요청한 알림 시각"),
-								fieldWithPath("targets").description("발송 대상 회원 목록. 토큰이 없는 회원은 빠진다"),
-								fieldWithPath("targets[].userId").description("회원 ID"),
-								fieldWithPath("targets[].tokens").description("회원의 기기 토큰 목록"),
-								fieldWithPath("targets[].tokens[].token").description("FCM 등록 토큰"),
-								fieldWithPath("targets[].tokens[].platform").description("기기 플랫폼(IOS·ANDROID)")
+								fieldWithPath("[].userId").description("회원 ID. 회원 ID 오름차순, 같은 회원 안에서는 토큰 등록 순"),
+								fieldWithPath("[].token").description("FCM 등록 토큰"),
+								fieldWithPath("[].platform").description("기기 플랫폼(IOS·ANDROID)")
 						)
 				));
+	}
+
+	@Test
+	void 발송_대상이_없으면_빈_배열을_응답한다() throws Exception {
+		given(notificationTargetFinder.findTargets(3)).willReturn(List.of());
+
+		mockMvc.perform(get(TARGETS_PATH)
+						.queryParam("hour", "3")
+						.header(INTERNAL_SECRET_HEADER, "internal-secret"))
+				.andExpect(status().isOk())
+				.andExpect(content().json("[]"));
 	}
 
 	@Test
