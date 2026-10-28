@@ -120,6 +120,8 @@ meongcoach:
       bucket: test-ai-video-bucket
       upload-url-validity: PT15M
       download-url-validity: PT1H
+  notification:
+    internal-secret: test-internal-secret
   revenuecat:
     base-url: https://api.revenuecat.test/v2
     api-key: test-revenuecat-api-key
