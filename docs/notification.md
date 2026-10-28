@@ -38,7 +38,7 @@ flowchart LR
 
 | 메서드·경로 | 동작 |
 |---|---|
-| `GET /internal/notifications/targets?hour=17` | `{hour, targets: [{userId, tokens: [{token, platform}]}]}`. 시각이 0~23 밖이면 400 |
+| `GET /internal/notifications/targets?hour=17` | `[{userId, token, platform}]`. 토큰당 한 행, 회원 ID 오름차순·같은 회원 안에서는 토큰 등록 순. 대상이 없으면 `[]`. 시각이 0~23 밖이면 400 |
 | `DELETE /internal/notifications/tokens` | `{tokens: [...]}`의 토큰을 회원과 무관하게 삭제. 없는 토큰이 섞여도 204 |
 
 ### 인증
@@ -51,7 +51,7 @@ flowchart LR
 
 1. `notification_preferences`에서 `hour = ? AND enabled = true`인 행의 회원 ID를 모읍니다.
 2. `user`의 `UserFinder.findActiveUserIds`로 상태가 `ACTIVE`인 회원만 남깁니다. 탈퇴 회원은 빠집니다.
-3. 남은 회원의 `device_tokens`를 한 번에 조회해 회원별로 묶습니다. 토큰이 없는 회원은 응답에서 빠집니다.
+3. 남은 회원의 `device_tokens`를 한 번에 조회해 토큰당 한 행으로 반환합니다. 회원 ID 오름차순, 같은 회원 안에서는 토큰 등록 순(`id` 오름차순)입니다. 토큰이 없는 회원은 응답에서 빠집니다.
 
 설정 행이 없는 회원은 기본값이 켜져 있어도 대상이 아닙니다. 토큰 등록이 기본 행을 만들므로 토큰이 있는 회원에게는 행이 있습니다.
 

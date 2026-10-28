@@ -1005,7 +1005,7 @@ operation::notification/preferences-update-error[snippets='http-response,respons
 
 ==== 발송 대상 조회
 
-해당 시각 알림을 켠 설정 행이 있는 회원 중 상태가 활성인 회원의 기기 토큰을 회원별로 묶어 반환합니다. 토큰이 없는 회원은 빠집니다.
+해당 시각 알림을 켠 설정 행이 있는 회원 중 상태가 활성인 회원의 기기 토큰을 토큰당 한 행씩 배열로 반환합니다. 회원 ID 오름차순, 같은 회원 안에서는 토큰 등록 순입니다. 토큰이 없는 회원은 빠지고, 대상이 없으면 `[]`입니다.
 
 operation::notification/internal-targets[snippets='http-request,query-parameters,http-response,response-fields']
 
