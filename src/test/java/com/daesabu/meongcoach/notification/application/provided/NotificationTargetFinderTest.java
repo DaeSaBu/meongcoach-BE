@@ -1,6 +1,7 @@
 package com.daesabu.meongcoach.notification.application.provided;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 
 import com.daesabu.meongcoach.notification.application.required.DeviceTokenRepository;
@@ -9,7 +10,7 @@ import com.daesabu.meongcoach.notification.domain.DevicePlatform;
 import com.daesabu.meongcoach.notification.domain.DeviceToken;
 import com.daesabu.meongcoach.notification.domain.DeviceTokenRegisterCommand;
 import com.daesabu.meongcoach.notification.domain.NotificationPreferenceFixture;
-import com.daesabu.meongcoach.notification.domain.shared.NotificationSlot;
+import com.daesabu.meongcoach.notification.domain.exception.InvalidNotificationHourException;
 import com.daesabu.meongcoach.support.ApplicationTest;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.User;
@@ -49,18 +50,18 @@ class NotificationTargetFinderTest {
 		deviceTokenRepository.save(DeviceToken.register(userId, new DeviceTokenRegisterCommand(token, platform), NOW));
 	}
 
-	private void savePreference(Long userId, NotificationSlot slot, boolean enabled) {
-		notificationPreferenceRepository.save(NotificationPreferenceFixture.create(userId, slot, enabled));
+	private void savePreference(Long userId, int hour, boolean enabled) {
+		notificationPreferenceRepository.save(NotificationPreferenceFixture.create(userId, hour, enabled));
 	}
 
 	@Test
-	void 시간대를_켠_활성_회원의_토큰을_회원별로_묶어_반환한다() {
+	void 시각을_켠_활성_회원의_토큰을_회원별로_묶어_반환한다() {
 		Long userId = saveUser();
-		savePreference(userId, NotificationSlot.EVENING, true);
+		savePreference(userId, 17, true);
 		saveToken(userId, "token-ios", DevicePlatform.IOS);
 		saveToken(userId, "token-android", DevicePlatform.ANDROID);
 
-		List<NotificationTargetResult> targets = notificationTargetFinder.findTargets(NotificationSlot.EVENING);
+		List<NotificationTargetResult> targets = notificationTargetFinder.findTargets(17);
 
 		assertThat(targets).singleElement().satisfies(target -> {
 			assertThat(target.userId()).isEqualTo(userId);
@@ -74,21 +75,21 @@ class NotificationTargetFinderTest {
 	}
 
 	@Test
-	void 시간대를_끈_회원은_빠진다() {
+	void 시각을_끈_회원은_빠진다() {
 		Long userId = saveUser();
-		savePreference(userId, NotificationSlot.EVENING, false);
+		savePreference(userId, 17, false);
 		saveToken(userId, "token", DevicePlatform.IOS);
 
-		assertThat(notificationTargetFinder.findTargets(NotificationSlot.EVENING)).isEmpty();
+		assertThat(notificationTargetFinder.findTargets(17)).isEmpty();
 	}
 
 	@Test
-	void 다른_시간대만_켠_회원은_빠진다() {
+	void 다른_시각만_켠_회원은_빠진다() {
 		Long userId = saveUser();
-		savePreference(userId, NotificationSlot.MORNING, true);
+		savePreference(userId, 8, true);
 		saveToken(userId, "token", DevicePlatform.IOS);
 
-		assertThat(notificationTargetFinder.findTargets(NotificationSlot.EVENING)).isEmpty();
+		assertThat(notificationTargetFinder.findTargets(17)).isEmpty();
 	}
 
 	@Test
@@ -96,23 +97,29 @@ class NotificationTargetFinderTest {
 		Long userId = saveUser();
 		saveToken(userId, "token", DevicePlatform.IOS);
 
-		assertThat(notificationTargetFinder.findTargets(NotificationSlot.EVENING)).isEmpty();
+		assertThat(notificationTargetFinder.findTargets(17)).isEmpty();
 	}
 
 	@Test
 	void 탈퇴한_회원은_빠진다() {
 		Long userId = saveWithdrawnUser();
-		savePreference(userId, NotificationSlot.EVENING, true);
+		savePreference(userId, 17, true);
 		saveToken(userId, "token", DevicePlatform.IOS);
 
-		assertThat(notificationTargetFinder.findTargets(NotificationSlot.EVENING)).isEmpty();
+		assertThat(notificationTargetFinder.findTargets(17)).isEmpty();
 	}
 
 	@Test
 	void 토큰이_없는_회원은_빠진다() {
 		Long userId = saveUser();
-		savePreference(userId, NotificationSlot.EVENING, true);
+		savePreference(userId, 17, true);
 
-		assertThat(notificationTargetFinder.findTargets(NotificationSlot.EVENING)).isEmpty();
+		assertThat(notificationTargetFinder.findTargets(17)).isEmpty();
+	}
+
+	@Test
+	void 시각이_0에서_23_밖이면_InvalidNotificationHourException을_던진다() {
+		assertThatThrownBy(() -> notificationTargetFinder.findTargets(24))
+				.isInstanceOf(InvalidNotificationHourException.class);
 	}
 }

@@ -42,7 +42,7 @@ class InternalSecurityFilterChainTest {
 
 	@Test
 	void 비밀_헤더가_없으면_Problem_Details로_401을_반환한다() throws Exception {
-		mockMvc.perform(get(TARGETS_PATH).queryParam("slot", "EVENING"))
+		mockMvc.perform(get(TARGETS_PATH).queryParam("hour", "17"))
 				.andExpect(status().isUnauthorized())
 				.andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
 				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
@@ -51,7 +51,7 @@ class InternalSecurityFilterChainTest {
 	@Test
 	void 비밀_헤더_값이_다르면_401을_반환한다() throws Exception {
 		mockMvc.perform(get(TARGETS_PATH)
-						.queryParam("slot", "EVENING")
+						.queryParam("hour", "17")
 						.header(INTERNAL_SECRET_HEADER, "wrong-secret"))
 				.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
@@ -60,10 +60,10 @@ class InternalSecurityFilterChainTest {
 	@Test
 	void 비밀_헤더가_맞으면_앱_헤더와_토큰_없이_발송_대상을_조회한다() throws Exception {
 		mockMvc.perform(get(TARGETS_PATH)
-						.queryParam("slot", "EVENING")
+						.queryParam("hour", "17")
 						.header(INTERNAL_SECRET_HEADER, INTERNAL_SECRET))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.slot").value("EVENING"))
+				.andExpect(jsonPath("$.hour").value(17))
 				.andExpect(jsonPath("$.targets").isArray());
 	}
 
@@ -81,7 +81,7 @@ class InternalSecurityFilterChainTest {
 		AuthToken token = tokenProvider.issue(saveUser().getId());
 
 		mockMvc.perform(get(TARGETS_PATH)
-						.queryParam("slot", "EVENING")
+						.queryParam("hour", "17")
 						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))
 				.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
@@ -101,7 +101,7 @@ class InternalSecurityFilterChainTest {
 		mockMvc.perform(appGet(APP_PREFERENCES_PATH)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.slots.length()").value(3));
+				.andExpect(jsonPath("$.hours.length()").value(3));
 	}
 
 	private User saveUser() {

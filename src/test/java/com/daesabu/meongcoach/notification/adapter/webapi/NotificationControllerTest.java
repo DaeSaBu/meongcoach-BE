@@ -19,11 +19,10 @@ import com.daesabu.meongcoach.notification.application.provided.NotificationPref
 import com.daesabu.meongcoach.notification.application.provided.NotificationRegister;
 import com.daesabu.meongcoach.notification.application.provided.dto.DeviceTokenRegisterRequest;
 import com.daesabu.meongcoach.notification.application.provided.dto.NotificationPreferenceUpdateRequest;
-import com.daesabu.meongcoach.notification.application.provided.dto.SlotPreferenceRequest;
-import com.daesabu.meongcoach.notification.domain.SlotPreference;
+import com.daesabu.meongcoach.notification.application.provided.dto.HourPreferenceRequest;
+import com.daesabu.meongcoach.notification.domain.HourPreference;
 import com.daesabu.meongcoach.notification.domain.exception.InvalidDevicePlatformException;
-import com.daesabu.meongcoach.notification.domain.exception.InvalidNotificationSlotsException;
-import com.daesabu.meongcoach.notification.domain.shared.NotificationSlot;
+import com.daesabu.meongcoach.notification.domain.exception.InvalidNotificationHoursException;
 import java.security.Principal;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -50,10 +49,10 @@ class NotificationControllerTest {
 			""";
 
 	private static final String PREFERENCES_UPDATE_BODY = """
-			{"slots": [
-			  {"slot": "MORNING", "enabled": true},
-			  {"slot": "NOON", "enabled": false},
-			  {"slot": "EVENING", "enabled": true}
+			{"hours": [
+			  {"hour": 8, "enabled": true},
+			  {"hour": 11, "enabled": false},
+			  {"hour": 17, "enabled": true}
 			]}
 			""";
 
@@ -136,27 +135,27 @@ class NotificationControllerTest {
 	}
 
 	@Test
-	void 알림_설정을_시간대별로_응답한다() throws Exception {
-		given(notificationPreferenceFinder.findSlotPreferences(42L)).willReturn(List.of(
-				new SlotPreference(NotificationSlot.MORNING, false),
-				new SlotPreference(NotificationSlot.NOON, false),
-				new SlotPreference(NotificationSlot.EVENING, true)
+	void 알림_설정을_시각별로_응답한다() throws Exception {
+		given(notificationPreferenceFinder.findHourPreferences(42L)).willReturn(List.of(
+				new HourPreference(8, false),
+				new HourPreference(11, false),
+				new HourPreference(17, true)
 		));
 
 		mockMvc.perform(get(PREFERENCES_PATH)
 						.principal(CURRENT_USER)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.slots.length()").value(3))
-				.andExpect(jsonPath("$.slots[0].slot").value("MORNING"))
-				.andExpect(jsonPath("$.slots[0].enabled").value(false))
-				.andExpect(jsonPath("$.slots[2].slot").value("EVENING"))
-				.andExpect(jsonPath("$.slots[2].enabled").value(true))
+				.andExpect(jsonPath("$.hours.length()").value(3))
+				.andExpect(jsonPath("$.hours[0].hour").value(8))
+				.andExpect(jsonPath("$.hours[0].enabled").value(false))
+				.andExpect(jsonPath("$.hours[2].hour").value(17))
+				.andExpect(jsonPath("$.hours[2].enabled").value(true))
 				.andDo(document("notification/preferences",
 						responseFields(
-								fieldWithPath("slots").description("시간대별 알림 설정. MORNING·NOON·EVENING 순서"),
-								fieldWithPath("slots[].slot").description("알림 시간대(MORNING·NOON·EVENING)"),
-								fieldWithPath("slots[].enabled").description("해당 시간대 알림 수신 여부")
+								fieldWithPath("hours").description("시각별 알림 설정. 8·11·17시 순서"),
+								fieldWithPath("hours[].hour").description("알림 시각(Asia/Seoul 기준 0~23)"),
+								fieldWithPath("hours[].enabled").description("해당 시각 알림 수신 여부")
 						)
 				));
 	}
@@ -171,47 +170,47 @@ class NotificationControllerTest {
 				.andExpect(status().isNoContent())
 				.andDo(document("notification/preferences-update",
 						requestFields(
-								fieldWithPath("slots").description("시간대별 알림 설정. 세 시간대를 각각 한 번씩 보낸다"),
-								fieldWithPath("slots[].slot").description("알림 시간대(MORNING·NOON·EVENING)"),
-								fieldWithPath("slots[].enabled").description("해당 시간대 알림 수신 여부")
+								fieldWithPath("hours").description("시각별 알림 설정. 8·11·17시를 각각 한 번씩 보낸다"),
+								fieldWithPath("hours[].hour").description("알림 시각(Asia/Seoul 기준 0~23)"),
+								fieldWithPath("hours[].enabled").description("해당 시각 알림 수신 여부")
 						)
 				));
 
 		then(notificationRegister).should().updatePreferences(42L, new NotificationPreferenceUpdateRequest(List.of(
-				new SlotPreferenceRequest("MORNING", true),
-				new SlotPreferenceRequest("NOON", false),
-				new SlotPreferenceRequest("EVENING", true)
+				new HourPreferenceRequest(8, true),
+				new HourPreferenceRequest(11, false),
+				new HourPreferenceRequest(17, true)
 		)));
 	}
 
 	@Test
-	void 시간대가_빠지거나_중복되면_400과_에러_코드를_반환한다() throws Exception {
+	void 허용_시각이_빠지거나_중복되면_400과_에러_코드를_반환한다() throws Exception {
 		NotificationPreferenceUpdateRequest request = new NotificationPreferenceUpdateRequest(List.of(
-				new SlotPreferenceRequest("MORNING", true),
-				new SlotPreferenceRequest("MORNING", false),
-				new SlotPreferenceRequest("EVENING", true)
+				new HourPreferenceRequest(8, true),
+				new HourPreferenceRequest(8, false),
+				new HourPreferenceRequest(17, true)
 		));
-		willThrow(new InvalidNotificationSlotsException()).given(notificationRegister).updatePreferences(42L, request);
+		willThrow(new InvalidNotificationHoursException()).given(notificationRegister).updatePreferences(42L, request);
 
 		mockMvc.perform(put(PREFERENCES_PATH)
 						.principal(CURRENT_USER)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content(PREFERENCES_UPDATE_BODY.replace("\"NOON\"", "\"MORNING\"")))
+						.content(PREFERENCES_UPDATE_BODY.replace("\"hour\": 11", "\"hour\": 8")))
 				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.code").value("NOTIFICATION_SLOTS_INVALID"))
+				.andExpect(jsonPath("$.code").value("NOTIFICATION_HOURS_INVALID"))
 				.andDo(document("notification/preferences-update-error", responseFields(ERROR_FIELDS)));
 	}
 
 	@Test
-	void 시간대_설정에_enabled가_없으면_검증에_실패한다() throws Exception {
+	void 시각_설정에_enabled가_없으면_검증에_실패한다() throws Exception {
 		mockMvc.perform(put(PREFERENCES_PATH)
 						.principal(CURRENT_USER)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(PREFERENCES_UPDATE_BODY.replace("\"enabled\": false", "\"enabled\": null")))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
-				.andExpect(jsonPath("$.errors[0].field").value("slots[1].enabled"));
+				.andExpect(jsonPath("$.errors[0].field").value("hours[1].enabled"));
 
 		then(notificationRegister).shouldHaveNoInteractions();
 	}

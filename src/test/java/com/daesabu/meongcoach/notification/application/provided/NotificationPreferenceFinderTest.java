@@ -4,8 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.daesabu.meongcoach.notification.application.required.NotificationPreferenceRepository;
 import com.daesabu.meongcoach.notification.domain.NotificationPreferenceFixture;
-import com.daesabu.meongcoach.notification.domain.SlotPreference;
-import com.daesabu.meongcoach.notification.domain.shared.NotificationSlot;
+import com.daesabu.meongcoach.notification.domain.HourPreference;
 import com.daesabu.meongcoach.support.ApplicationTest;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -24,28 +23,28 @@ class NotificationPreferenceFinderTest {
 
 	@Test
 	void 설정_행이_없으면_기본값을_반환하고_행을_만들지_않는다() {
-		List<SlotPreference> slots = notificationPreferenceFinder.findSlotPreferences(USER_ID);
+		List<HourPreference> hours = notificationPreferenceFinder.findHourPreferences(USER_ID);
 
-		assertThat(slots).containsExactly(
-				new SlotPreference(NotificationSlot.MORNING, false),
-				new SlotPreference(NotificationSlot.NOON, false),
-				new SlotPreference(NotificationSlot.EVENING, true)
+		assertThat(hours).containsExactly(
+				new HourPreference(8, false),
+				new HourPreference(11, false),
+				new HourPreference(17, true)
 		);
 		assertThat(notificationPreferenceRepository.findAllByUserId(USER_ID)).isEmpty();
 	}
 
 	@Test
-	void 저장된_설정을_시간대_순서로_반환한다() {
-		notificationPreferenceRepository.save(NotificationPreferenceFixture.create(USER_ID, NotificationSlot.EVENING, false));
-		notificationPreferenceRepository.save(NotificationPreferenceFixture.create(USER_ID, NotificationSlot.MORNING, true));
-		notificationPreferenceRepository.save(NotificationPreferenceFixture.create(USER_ID, NotificationSlot.NOON, false));
+	void 저장된_설정을_시각_순서로_반환한다() {
+		notificationPreferenceRepository.save(NotificationPreferenceFixture.create(USER_ID, 17, false));
+		notificationPreferenceRepository.save(NotificationPreferenceFixture.create(USER_ID, 8, true));
+		notificationPreferenceRepository.save(NotificationPreferenceFixture.create(USER_ID, 11, false));
 
-		List<SlotPreference> slots = notificationPreferenceFinder.findSlotPreferences(USER_ID);
+		List<HourPreference> hours = notificationPreferenceFinder.findHourPreferences(USER_ID);
 
-		assertThat(slots).containsExactly(
-				new SlotPreference(NotificationSlot.MORNING, true),
-				new SlotPreference(NotificationSlot.NOON, false),
-				new SlotPreference(NotificationSlot.EVENING, false)
+		assertThat(hours).containsExactly(
+				new HourPreference(8, true),
+				new HourPreference(11, false),
+				new HourPreference(17, false)
 		);
 	}
 }
