@@ -2,9 +2,7 @@ package com.daesabu.meongcoach.notification.domain;
 
 import static org.springframework.util.Assert.state;
 
-import com.daesabu.meongcoach.notification.domain.shared.NotificationSlot;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,40 +23,40 @@ public class NotificationPreferences {
 	public List<NotificationPreference> createDefaults() {
 		state(isEmpty(), "이미 알림 설정이 있습니다");
 
-		return Arrays.stream(NotificationSlot.values())
-				.map(slot -> NotificationPreference.create(userId, slot, slot.isDefaultEnabled()))
+		return NotificationHour.ALLOWED_HOURS.stream()
+				.map(hour -> NotificationPreference.create(userId, hour, NotificationHour.isDefaultEnabled(hour)))
 				.toList();
 	}
 
 	public List<NotificationPreference> apply(NotificationPreferenceUpdateCommand command) {
 		List<NotificationPreference> created = new ArrayList<>();
-		for (NotificationSlot slot : NotificationSlot.values()) {
-			boolean enabled = command.isEnabled(slot);
-			Optional<NotificationPreference> existing = find(slot);
+		for (HourPreference hourPreference : command.hours()) {
+			int hour = hourPreference.hour();
+			Optional<NotificationPreference> existing = find(hour);
 			if (existing.isPresent()) {
-				existing.get().change(enabled);
+				existing.get().change(hourPreference.enabled());
 				continue;
 			}
-			created.add(NotificationPreference.create(userId, slot, enabled));
+			created.add(NotificationPreference.create(userId, hour, hourPreference.enabled()));
 		}
 		return created;
 	}
 
-	public List<SlotPreference> slotPreferences() {
-		return Arrays.stream(NotificationSlot.values())
-				.map(this::slotPreference)
+	public List<HourPreference> hourPreferences() {
+		return NotificationHour.ALLOWED_HOURS.stream()
+				.map(this::hourPreference)
 				.toList();
 	}
 
-	private SlotPreference slotPreference(NotificationSlot slot) {
-		return find(slot)
-				.map(NotificationPreference::toSlotPreference)
-				.orElseGet(() -> SlotPreference.defaultOf(slot));
+	private HourPreference hourPreference(int hour) {
+		return find(hour)
+				.map(NotificationPreference::toHourPreference)
+				.orElseGet(() -> HourPreference.defaultOf(hour));
 	}
 
-	private Optional<NotificationPreference> find(NotificationSlot slot) {
+	private Optional<NotificationPreference> find(int hour) {
 		return preferences.stream()
-				.filter(preference -> preference.getSlot() == slot)
+				.filter(preference -> preference.getHour() == hour)
 				.findFirst();
 	}
 }

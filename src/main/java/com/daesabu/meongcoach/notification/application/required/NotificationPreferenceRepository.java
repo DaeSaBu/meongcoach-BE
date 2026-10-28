@@ -1,7 +1,6 @@
 package com.daesabu.meongcoach.notification.application.required;
 
 import com.daesabu.meongcoach.notification.domain.NotificationPreference;
-import com.daesabu.meongcoach.notification.domain.shared.NotificationSlot;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -11,8 +10,8 @@ public interface NotificationPreferenceRepository extends JpaRepository<Notifica
 
 	List<NotificationPreference> findAllByUserId(Long userId);
 
-	@Query("select p.userId from NotificationPreference p where p.slot = :slot and p.enabled = true")
-	List<Long> findUserIdsBySlotEnabled(@Param("slot") NotificationSlot slot);
+	@Query("select p.userId from NotificationPreference p where p.hour = :hour and p.enabled = true")
+	List<Long> findUserIdsByHourEnabled(@Param("hour") int hour);
 
 	void deleteAllByUserId(Long userId);
 }

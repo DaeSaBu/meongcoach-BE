@@ -1,31 +1,32 @@
 package com.daesabu.meongcoach.notification.domain;
 
-import com.daesabu.meongcoach.notification.domain.exception.InvalidNotificationSlotsException;
-import com.daesabu.meongcoach.notification.domain.shared.NotificationSlot;
-import java.util.EnumMap;
+import com.daesabu.meongcoach.notification.domain.exception.InvalidNotificationHoursException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
-public record NotificationPreferenceUpdateCommand(List<SlotPreference> slots) {
+public record NotificationPreferenceUpdateCommand(List<HourPreference> hours) {
 
 	public NotificationPreferenceUpdateCommand {
-		slots = List.copyOf(slots);
-		if (slots.size() != NotificationSlot.values().length) {
-			throw new InvalidNotificationSlotsException();
+		hours = List.copyOf(hours);
+		if (hours.size() != NotificationHour.ALLOWED_HOURS.size()) {
+			throw new InvalidNotificationHoursException();
 		}
-		long distinctSlots = slots.stream().map(SlotPreference::slot).distinct().count();
-		if (distinctSlots != NotificationSlot.values().length) {
-			throw new InvalidNotificationSlotsException();
+		Set<Integer> distinctHours = hours.stream().map(HourPreference::hour).collect(Collectors.toSet());
+		if (!distinctHours.equals(Set.copyOf(NotificationHour.ALLOWED_HOURS))) {
+			throw new InvalidNotificationHoursException();
 		}
 	}
 
-	public boolean isEnabled(NotificationSlot slot) {
-		return enabledBySlot().get(slot);
+	public boolean isEnabled(int hour) {
+		return enabledByHour().get(hour);
 	}
 
-	private Map<NotificationSlot, Boolean> enabledBySlot() {
-		Map<NotificationSlot, Boolean> enabledBySlot = new EnumMap<>(NotificationSlot.class);
-		slots.forEach(preference -> enabledBySlot.put(preference.slot(), preference.enabled()));
-		return enabledBySlot;
+	private Map<Integer, Boolean> enabledByHour() {
+		Map<Integer, Boolean> enabledByHour = new HashMap<>();
+		hours.forEach(preference -> enabledByHour.put(preference.hour(), preference.enabled()));
+		return enabledByHour;
 	}
 }

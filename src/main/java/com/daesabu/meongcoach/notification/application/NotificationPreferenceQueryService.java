@@ -2,9 +2,9 @@ package com.daesabu.meongcoach.notification.application;
 
 import com.daesabu.meongcoach.notification.application.provided.NotificationPreferenceFinder;
 import com.daesabu.meongcoach.notification.application.required.NotificationPreferenceRepository;
+import com.daesabu.meongcoach.notification.domain.HourPreference;
 import com.daesabu.meongcoach.notification.domain.NotificationPreference;
 import com.daesabu.meongcoach.notification.domain.NotificationPreferences;
-import com.daesabu.meongcoach.notification.domain.SlotPreference;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -18,9 +18,9 @@ public class NotificationPreferenceQueryService implements NotificationPreferenc
 	private final NotificationPreferenceRepository notificationPreferenceRepository;
 
 	@Override
-	public List<SlotPreference> findSlotPreferences(Long userId) {
+	public List<HourPreference> findHourPreferences(Long userId) {
 		List<NotificationPreference> preferences = notificationPreferenceRepository.findAllByUserId(userId);
 		NotificationPreferences notificationPreferences = new NotificationPreferences(userId, preferences);
-		return notificationPreferences.slotPreferences();
+		return notificationPreferences.hourPreferences();
 	}
 }

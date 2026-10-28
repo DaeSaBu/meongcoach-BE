@@ -12,7 +12,7 @@ public interface NotificationRegister {
 
 	/**
 	 * 회원의 기기 토큰을 저장한다. 같은 토큰이 이미 있으면 그 행의 회원과 마지막 확인 시각을 요청 회원과 현재 시각으로 바꾼다.
-	 * 회원에게 알림 설정 행이 없으면 시간대별 기본값으로 세 행을 만든다.
+	 * 회원에게 알림 설정 행이 없으면 8·11·17시의 기본값으로 세 행을 만든다.
 	 * 플랫폼이 IOS·ANDROID가 아니면 {@code InvalidDevicePlatformException}을 던진다.
 	 */
 	void registerDeviceToken(Long userId, @Valid DeviceTokenRegisterRequest request);
@@ -28,9 +28,9 @@ public interface NotificationRegister {
 	void deleteDeviceTokens(@Valid DeviceTokenDeleteRequest request);
 
 	/**
-	 * 회원의 시간대별 알림 설정을 요청 값으로 통째로 바꾼다. 행이 없던 시간대는 새로 만든다.
-	 * 시간대 이름이 MORNING·NOON·EVENING이 아니면 {@code InvalidNotificationSlotException}을,
-	 * 세 시간대가 각각 한 번씩 있지 않으면 {@code InvalidNotificationSlotsException}을 던진다.
+	 * 회원의 시각별 알림 설정을 요청 값으로 통째로 바꾼다. 행이 없던 시각은 새로 만든다.
+	 * 시각이 0~23 밖이면 {@code InvalidNotificationHourException}을,
+	 * 허용 시각(8·11·17시)이 각각 한 번씩 있지 않으면 {@code InvalidNotificationHoursException}을 던진다.
 	 */
 	void updatePreferences(Long userId, @Valid NotificationPreferenceUpdateRequest request);
 

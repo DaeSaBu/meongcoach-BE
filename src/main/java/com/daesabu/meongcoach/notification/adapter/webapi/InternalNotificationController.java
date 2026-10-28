@@ -5,7 +5,6 @@ import com.daesabu.meongcoach.notification.application.provided.NotificationRegi
 import com.daesabu.meongcoach.notification.application.provided.NotificationTargetFinder;
 import com.daesabu.meongcoach.notification.application.provided.NotificationTargetResult;
 import com.daesabu.meongcoach.notification.application.provided.dto.DeviceTokenDeleteRequest;
-import com.daesabu.meongcoach.notification.domain.shared.NotificationSlot;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -27,10 +26,9 @@ public class InternalNotificationController {
 	private final NotificationRegister notificationRegister;
 
 	@GetMapping("/targets")
-	public NotificationTargetsResponse findTargets(@RequestParam("slot") String slotName) {
-		NotificationSlot slot = NotificationSlot.from(slotName);
-		List<NotificationTargetResult> targets = notificationTargetFinder.findTargets(slot);
-		return NotificationTargetsResponse.of(slot, targets);
+	public NotificationTargetsResponse findTargets(@RequestParam int hour) {
+		List<NotificationTargetResult> targets = notificationTargetFinder.findTargets(hour);
+		return NotificationTargetsResponse.of(hour, targets);
 	}
 
 	@DeleteMapping("/tokens")

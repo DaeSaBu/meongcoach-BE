@@ -5,7 +5,7 @@ import com.daesabu.meongcoach.notification.application.provided.NotificationPref
 import com.daesabu.meongcoach.notification.application.provided.NotificationRegister;
 import com.daesabu.meongcoach.notification.application.provided.dto.DeviceTokenRegisterRequest;
 import com.daesabu.meongcoach.notification.application.provided.dto.NotificationPreferenceUpdateRequest;
-import com.daesabu.meongcoach.notification.domain.SlotPreference;
+import com.daesabu.meongcoach.notification.domain.HourPreference;
 import com.daesabu.meongcoach.shared.security.CurrentUserId;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -42,8 +42,8 @@ public class NotificationController {
 
 	@GetMapping("/preferences")
 	public NotificationPreferencesResponse findPreferences(@CurrentUserId Long userId) {
-		List<SlotPreference> slots = notificationPreferenceFinder.findSlotPreferences(userId);
-		return NotificationPreferencesResponse.from(slots);
+		List<HourPreference> hours = notificationPreferenceFinder.findHourPreferences(userId);
+		return NotificationPreferencesResponse.from(hours);
 	}
 
 	@PutMapping("/preferences")

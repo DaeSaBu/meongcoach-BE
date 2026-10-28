@@ -5,7 +5,7 @@ import com.daesabu.meongcoach.notification.application.provided.NotificationTarg
 import com.daesabu.meongcoach.notification.application.required.DeviceTokenRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationPreferenceRepository;
 import com.daesabu.meongcoach.notification.domain.DeviceToken;
-import com.daesabu.meongcoach.notification.domain.shared.NotificationSlot;
+import com.daesabu.meongcoach.notification.domain.NotificationHour;
 import com.daesabu.meongcoach.user.application.provided.UserFinder;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -26,8 +26,9 @@ public class NotificationTargetQueryService implements NotificationTargetFinder 
 	private final UserFinder userFinder;
 
 	@Override
-	public List<NotificationTargetResult> findTargets(NotificationSlot slot) {
-		List<Long> enabledUserIds = notificationPreferenceRepository.findUserIdsBySlotEnabled(slot);
+	public List<NotificationTargetResult> findTargets(int hour) {
+		NotificationHour.validate(hour);
+		List<Long> enabledUserIds = notificationPreferenceRepository.findUserIdsByHourEnabled(hour);
 		Set<Long> activeUserIds = userFinder.findActiveUserIds(enabledUserIds);
 		if (activeUserIds.isEmpty()) {
 			return List.of();
