@@ -16,7 +16,6 @@ public class VideoUploadSubscriber implements SmartLifecycle {
 	private static final int PARALLEL_PULL_COUNT = 1;
 
 	private final Subscriber subscriber;
-	private volatile boolean running;
 
 	public VideoUploadSubscriber(PubSubProperties properties, GoogleCredentials credentials,
 			VideoUploadPubSubConsumer consumer) {
@@ -32,17 +31,15 @@ public class VideoUploadSubscriber implements SmartLifecycle {
 	@Override
 	public void start() {
 		subscriber.startAsync().awaitRunning();
-		running = true;
 	}
 
 	@Override
 	public void stop() {
 		subscriber.stopAsync().awaitTerminated();
-		running = false;
 	}
 
 	@Override
 	public boolean isRunning() {
-		return running;
+		return subscriber.isRunning();
 	}
 }
