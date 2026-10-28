@@ -3,12 +3,11 @@ package com.daesabu.meongcoach.ai.application;
 import com.daesabu.meongcoach.ai.application.provided.AiReportGenerator;
 import com.daesabu.meongcoach.ai.application.provided.AiTrialFinder;
 import com.daesabu.meongcoach.ai.application.required.AiReportRepository;
-import com.daesabu.meongcoach.ai.application.required.ReportTitleGenerator;
 import com.daesabu.meongcoach.ai.application.required.VideoAnalyzer;
+import com.daesabu.meongcoach.ai.application.required.dto.VideoAnalysisResult;
 import com.daesabu.meongcoach.ai.domain.AiReport;
 import com.daesabu.meongcoach.ai.domain.AiTrial;
 import com.daesabu.meongcoach.ai.domain.AiVideo;
-import com.daesabu.meongcoach.ai.domain.exception.ReportTitleGenerationFailedException;
 import com.daesabu.meongcoach.ai.domain.exception.VideoAnalysisFailedException;
 import com.daesabu.meongcoach.media.application.provided.MediaStorageUriResolver;
 import java.util.function.Consumer;
@@ -23,7 +22,6 @@ public class AiReportGenerateService implements AiReportGenerator {
 
 	private final MediaStorageUriResolver mediaStorageUriResolver;
 	private final VideoAnalyzer videoAnalyzer;
-	private final ReportTitleGenerator reportTitleGenerator;
 	private final AiReportRepository aiReportRepository;
 	private final AiTrialFinder aiTrialFinder;
 
@@ -58,9 +56,9 @@ public class AiReportGenerateService implements AiReportGenerator {
 			return;
 		}
 
-		String content;
+		VideoAnalysisResult analysis;
 		try {
-			content = videoAnalyzer.analyze(videoUri);
+			analysis = videoAnalyzer.analyze(videoUri);
 		}
 		catch (VideoAnalysisFailedException e) {
 			log.error("영상 분석에 실패해 리포트 생성을 건너뛴다: {}", report.getVideoObjectKey(), e);
@@ -68,7 +66,7 @@ public class AiReportGenerateService implements AiReportGenerator {
 			return;
 		}
 
-		recordCompletion(report, content);
+		recordCompletion(report, analysis);
 	}
 
 	private boolean isTrialExhausted(Long userId) {
@@ -76,20 +74,9 @@ public class AiReportGenerateService implements AiReportGenerator {
 		return !trial.isAvailable();
 	}
 
-	private void recordCompletion(AiReport report, String content) {
-		String title = generateTitleOrNull(report.getVideoObjectKey(), content);
-		report.complete(title, content);
+	private void recordCompletion(AiReport report, VideoAnalysisResult analysis) {
+		report.complete(analysis.title(), analysis.content());
 		aiReportRepository.save(report);
-	}
-
-	private String generateTitleOrNull(String objectKey, String content) {
-		try {
-			return reportTitleGenerator.generateTitle(content);
-		}
-		catch (ReportTitleGenerationFailedException e) {
-			log.warn("리포트 제목 생성에 실패해 제목 없이 저장한다: {}", objectKey, e);
-			return null;
-		}
 	}
 
 	private void recordFailure(AiReport report, Consumer<AiReport> transition) {

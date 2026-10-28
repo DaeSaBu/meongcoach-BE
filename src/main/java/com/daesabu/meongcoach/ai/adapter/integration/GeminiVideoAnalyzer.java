@@ -2,10 +2,14 @@ package com.daesabu.meongcoach.ai.adapter.integration;
 
 import com.daesabu.meongcoach.ai.application.provided.AiReportContent;
 import com.daesabu.meongcoach.ai.application.provided.AiReportContent.Recommend;
+import com.daesabu.meongcoach.ai.application.provided.AiReportContent.ReportSection;
+import com.daesabu.meongcoach.ai.application.provided.AiReportContent.Solution;
 import com.daesabu.meongcoach.ai.application.required.VideoAnalyzer;
+import com.daesabu.meongcoach.ai.application.required.dto.VideoAnalysisResult;
 import com.daesabu.meongcoach.ai.domain.exception.VideoAnalysisFailedException;
 import com.daesabu.meongcoach.training.application.provided.TopicFinder;
 import com.daesabu.meongcoach.training.application.provided.dto.TopicResult;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.genai.Client;
 import com.google.genai.errors.ApiException;
@@ -90,13 +94,15 @@ public class GeminiVideoAnalyzer implements VideoAnalyzer {
 	}
 
 	@Override
-	public String analyze(String videoUri) {
+	public VideoAnalysisResult analyze(String videoUri) {
 		List<TopicResult> topics = topicFinder.findAllOrdered();
 		File video = registerOrThrow(videoUri);
 		String content = generateOrThrow(video, topics, videoUri);
 
-		AiReportContent reportContent = parseContent(content, topics, videoUri);
-		return objectMapper.writeValueAsString(reportContent);
+		GeneratedReport generated = parseGenerated(content, videoUri);
+		AiReportContent reportContent = validateContent(generated.toContent(), topics, videoUri);
+		String reportJson = objectMapper.writeValueAsString(reportContent);
+		return new VideoAnalysisResult(generated.title(), reportJson);
 	}
 
 	private File registerOrThrow(String videoUri) {
@@ -156,15 +162,23 @@ public class GeminiVideoAnalyzer implements VideoAnalyzer {
 		return text;
 	}
 
-	private AiReportContent parseContent(String rawText, List<TopicResult> topics, String videoUri) {
-		AiReportContent content;
+	private GeneratedReport parseGenerated(String rawText, String videoUri) {
+		GeneratedReport generated;
 		try {
-			content = objectMapper.readValue(rawText, AiReportContent.class);
+			generated = objectMapper.readValue(rawText, GeneratedReport.class);
 		}
 		catch (JacksonException e) {
 			throw new VideoAnalysisFailedException("영상 분석 응답이 JSON 형식이 아닙니다: " + videoUri, e);
 		}
-		if (content == null || content.report().isEmpty()) {
+		if (generated == null) {
+			throw new VideoAnalysisFailedException("영상 분석 응답에 report 항목이 없습니다: " + videoUri);
+		}
+		return generated;
+	}
+
+	private static AiReportContent validateContent(AiReportContent content, List<TopicResult> topics,
+			String videoUri) {
+		if (content.report().isEmpty()) {
 			throw new VideoAnalysisFailedException("영상 분석 응답에 report 항목이 없습니다: " + videoUri);
 		}
 		requireKnownTopicIds(content, topics, videoUri);
@@ -195,5 +209,17 @@ public class GeminiVideoAnalyzer implements VideoAnalyzer {
 
 	private static String renderTopicLine(TopicResult topic) {
 		return "- topicId: " + topic.id() + ", 교육 이름: " + topic.title() + ", 설명: " + topic.description();
+	}
+
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	private record GeneratedReport(
+			String title,
+			List<Recommend> recommend,
+			List<ReportSection> report,
+			List<Solution> solution) {
+
+		AiReportContent toContent() {
+			return new AiReportContent(recommend, report, solution);
+		}
 	}
 }

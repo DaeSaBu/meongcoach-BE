@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.daesabu.meongcoach.ai.application.required.dto.VideoAnalysisResult;
 import com.daesabu.meongcoach.ai.domain.exception.VideoAnalysisFailedException;
 import com.daesabu.meongcoach.training.application.provided.TopicFinder;
 import com.daesabu.meongcoach.training.application.provided.dto.TopicResult;
@@ -43,6 +44,9 @@ class GeminiVideoAnalyzerTest {
 			+ "\"description\":\"물건을 무는 습관을 줄이는 교육이라 도움이 돼요.\"}],"
 			+ "\"report\":[{\"subTitle\":\"영상에서 이런 행동이 보여요\",\"description\":\"슬리퍼를 물고 달려요.\"}],"
 			+ "\"solution\":[{\"order\":1,\"title\":\"교환 놀이 연습하기\",\"description\":\"간식과 바꿔 주세요.\"}]}";
+	private static final String REPORT_TITLE = "슬리퍼를 물고 달리는 행동 분석";
+	private static final String VALID_RESPONSE_JSON = VALID_CONTENT_JSON.substring(0, VALID_CONTENT_JSON.length() - 1)
+			+ ",\"title\":\"" + REPORT_TITLE + "\"}";
 
 	private final ObjectMapper objectMapper = new ObjectMapper();
 	private final List<RecordedRequest> requests = new ArrayList<>();
@@ -116,17 +120,39 @@ class GeminiVideoAnalyzerTest {
 	}
 
 	@Test
-	void 모델이_반환한_JSON을_정규화해_반환한다() {
+	void 모델이_반환한_JSON에서_제목을_분리하고_본문을_정규화해_반환한다() {
+		givenModelResponds(VALID_RESPONSE_JSON);
+
+		VideoAnalysisResult result = analyzer.analyze(VIDEO_URI);
+
+		assertThat(result.title()).isEqualTo(REPORT_TITLE);
+		assertThat(result.content()).isEqualTo(VALID_CONTENT_JSON);
+	}
+
+	@Test
+	void 응답에_제목이_없어도_분석에_성공하고_제목은_null이다() {
 		givenModelResponds(VALID_CONTENT_JSON);
 
-		String content = analyzer.analyze(VIDEO_URI);
+		VideoAnalysisResult result = analyzer.analyze(VIDEO_URI);
 
-		assertThat(content).isEqualTo(VALID_CONTENT_JSON);
+		assertThat(result.title()).isNull();
+		assertThat(result.content()).isEqualTo(VALID_CONTENT_JSON);
+	}
+
+	@Test
+	void 응답_스키마의_마지막_필수_키로_제목을_요청한다() {
+		givenModelResponds(VALID_RESPONSE_JSON);
+
+		analyzer.analyze(VIDEO_URI);
+
+		String body = requestTo(GENERATE_PATH).getBody().readUtf8();
+		assertThat(objectMapper.readTree(body).at("/generationConfig/responseJsonSchema/required").toString())
+				.isEqualTo("[\"recommend\",\"report\",\"solution\",\"title\"]");
 	}
 
 	@Test
 	void 영상을_먼저_등록하고_등록된_파일_URI와_프레임_빈도로_분석을_요청한다() {
-		givenModelResponds(VALID_CONTENT_JSON);
+		givenModelResponds(VALID_RESPONSE_JSON);
 
 		analyzer.analyze(VIDEO_URI);
 
@@ -151,7 +177,7 @@ class GeminiVideoAnalyzerTest {
 
 	@Test
 	void 사용자_프롬프트에_교육_목록을_topicId와_함께_넣는다() {
-		givenModelResponds(VALID_CONTENT_JSON);
+		givenModelResponds(VALID_RESPONSE_JSON);
 
 		analyzer.analyze(VIDEO_URI);
 
@@ -166,7 +192,7 @@ class GeminiVideoAnalyzerTest {
 	void recommend와_solution이_없으면_빈_배열로_정규화한다() {
 		givenModelResponds("{\"report\":[{\"subTitle\":\"영상에서 이런 행동이 보여요\",\"description\":\"산책 중이에요.\"}]}");
 
-		String content = analyzer.analyze(VIDEO_URI);
+		String content = analyzer.analyze(VIDEO_URI).content();
 
 		assertThat(content)
 				.contains("\"recommend\":[]")
@@ -251,7 +277,7 @@ class GeminiVideoAnalyzerTest {
 	void 영상_등록_API가_오류를_응답하면_분석_호출_없이_실패한다() {
 		registerResponse = new MockResponse().setResponseCode(403)
 				.setBody("{\"error\":{\"code\":403,\"message\":\"forbidden\",\"status\":\"PERMISSION_DENIED\"}}");
-		givenModelResponds(VALID_CONTENT_JSON);
+		givenModelResponds(VALID_RESPONSE_JSON);
 
 		assertThatThrownBy(() -> analyzer.analyze(VIDEO_URI))
 				.isInstanceOf(VideoAnalysisFailedException.class)
@@ -262,7 +288,7 @@ class GeminiVideoAnalyzerTest {
 	@Test
 	void 영상_등록_응답에_파일이_없으면_분석에_실패한다() {
 		registerResponse = json("{\"files\":[]}");
-		givenModelResponds(VALID_CONTENT_JSON);
+		givenModelResponds(VALID_RESPONSE_JSON);
 
 		assertThatThrownBy(() -> analyzer.analyze(VIDEO_URI))
 				.isInstanceOf(VideoAnalysisFailedException.class)
