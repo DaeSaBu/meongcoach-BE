@@ -5,6 +5,7 @@ import com.daesabu.meongcoach.notification.application.provided.NotificationPref
 import com.daesabu.meongcoach.notification.application.provided.NotificationPreferenceResult;
 import com.daesabu.meongcoach.notification.application.provided.NotificationRegister;
 import com.daesabu.meongcoach.notification.application.provided.dto.DeviceTokenRegisterRequest;
+import com.daesabu.meongcoach.notification.application.provided.dto.DeviceTokenUnregisterRequest;
 import com.daesabu.meongcoach.notification.application.provided.dto.NotificationPreferenceUpdateRequest;
 import com.daesabu.meongcoach.shared.security.CurrentUserId;
 import jakarta.validation.Valid;
@@ -34,10 +35,10 @@ public class NotificationController {
 		notificationRegister.registerDeviceToken(userId, request);
 	}
 
-	@DeleteMapping("/tokens/{token}")
+	@DeleteMapping("/tokens")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	public void deleteDeviceToken(@CurrentUserId Long userId, @PathVariable String token) {
-		notificationRegister.deleteDeviceToken(userId, token);
+	public void deleteDeviceToken(@CurrentUserId Long userId, @Valid @RequestBody DeviceTokenUnregisterRequest request) {
+		notificationRegister.deleteDeviceToken(userId, request);
 	}
 
 	@GetMapping("/preferences")

@@ -2,6 +2,7 @@ package com.daesabu.meongcoach.notification.application.provided;
 
 import com.daesabu.meongcoach.notification.application.provided.dto.DeviceTokenDeleteRequest;
 import com.daesabu.meongcoach.notification.application.provided.dto.DeviceTokenRegisterRequest;
+import com.daesabu.meongcoach.notification.application.provided.dto.DeviceTokenUnregisterRequest;
 import com.daesabu.meongcoach.notification.application.provided.dto.NotificationPreferenceUpdateRequest;
 import jakarta.validation.Valid;
 
@@ -20,7 +21,7 @@ public interface NotificationRegister {
 	/**
 	 * 회원 본인의 기기 토큰을 지운다. 토큰이 없거나 다른 회원의 토큰이면 아무것도 하지 않는다.
 	 */
-	void deleteDeviceToken(Long userId, String token);
+	void deleteDeviceToken(Long userId, @Valid DeviceTokenUnregisterRequest request);
 
 	/**
 	 * 목록의 기기 토큰을 회원과 무관하게 모두 지운다. 없는 토큰은 무시한다.

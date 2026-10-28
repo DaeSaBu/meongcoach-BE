@@ -4,6 +4,7 @@ package com.daesabu.meongcoach.notification.application;
 import com.daesabu.meongcoach.notification.application.provided.NotificationRegister;
 import com.daesabu.meongcoach.notification.application.provided.dto.DeviceTokenDeleteRequest;
 import com.daesabu.meongcoach.notification.application.provided.dto.DeviceTokenRegisterRequest;
+import com.daesabu.meongcoach.notification.application.provided.dto.DeviceTokenUnregisterRequest;
 import com.daesabu.meongcoach.notification.application.provided.dto.NotificationPreferenceUpdateRequest;
 import com.daesabu.meongcoach.notification.application.required.DeviceTokenRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationPreferenceRepository;
@@ -37,6 +38,8 @@ public class NotificationModifyService implements NotificationRegister {
 		createDefaultPreferencesIfAbsent(userId);
 	}
 
+	// 같은 토큰이 두 요청으로 동시에 처음 들어오면 한쪽이 유니크 위반으로 실패한다. 같은 기기의 중복 요청이라 드물고,
+	// 앱이 실행마다 다시 등록하므로 다음 요청에서 해소된다. 기본 설정 행 생성과 같은 이유로 잡지 않는다.
 	private void upsertDeviceToken(Long userId, DeviceTokenRegisterCommand command, Instant now) {
 		Optional<DeviceToken> existing = deviceTokenRepository.findByToken(command.token());
 		if (existing.isPresent()) {
@@ -57,8 +60,8 @@ public class NotificationModifyService implements NotificationRegister {
 
 	@Override
 	@Transactional
-	public void deleteDeviceToken(Long userId, String token) {
-		deviceTokenRepository.deleteByUserIdAndToken(userId, token);
+	public void deleteDeviceToken(Long userId, DeviceTokenUnregisterRequest request) {
+		deviceTokenRepository.deleteByUserIdAndToken(userId, request.token());
 	}
 
 	@Override
