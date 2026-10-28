@@ -2,6 +2,7 @@ package com.daesabu.meongcoach.community.application.required;
 
 import com.daesabu.meongcoach.community.domain.Comment;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import org.springframework.data.domain.Slice;
 
@@ -24,4 +25,9 @@ public interface CommentQueryRepository {
 	 * 루트 댓글의 삭제되지 않은 답글을 ID 오름차순으로 size개까지 조회한다. cursor가 있으면 그보다 큰 ID의 답글만 조회한다.
 	 */
 	Slice<Comment> findReplies(Long rootId, Long cursor, int size);
+
+	/**
+	 * 루트 댓글의 삭제되지 않은 답글을 모두 조회한다. 답글이 없거나 루트 댓글이 아니면 빈 목록을 반환한다.
+	 */
+	List<Comment> findActiveReplies(Long rootId);
 }

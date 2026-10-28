@@ -22,7 +22,7 @@ public class OnboardingCompleteService implements OnboardingCompleter {
 	@Override
 	@Transactional
 	public List<Long> complete(Long userId, OnboardingCompleteRequest request) {
-		userRegister.completeOnboarding(userId);
+		userRegister.completeOnboarding(userId, request.toUserRequest());
 		return request.dogs().stream()
 				.map(dog -> dogRegister.register(userId, dog.toInfo()))
 				.toList();

@@ -55,6 +55,9 @@ public class Post extends BaseEntity {
 	@OrderBy("sortOrder ASC")
 	private List<PostMedia> media = new ArrayList<>();
 
+	@Column(nullable = false)
+	private int commentCount;
+
 	private LocalDateTime deletedAt;
 
 	public static Post register(Long userId, PostRegisterCommand command) {
@@ -81,6 +84,14 @@ public class Post extends BaseEntity {
 
 	public void delete() {
 		this.deletedAt = LocalDateTime.now();
+	}
+
+	public void increaseCommentCount() {
+		this.commentCount++;
+	}
+
+	public void decreaseCommentCount(int count) {
+		this.commentCount = Math.max(0, this.commentCount - count);
 	}
 
 	public List<PostMedia> getMedia() {

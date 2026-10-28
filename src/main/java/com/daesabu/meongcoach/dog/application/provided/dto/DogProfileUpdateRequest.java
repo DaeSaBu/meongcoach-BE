@@ -1,4 +1,4 @@
-package com.daesabu.meongcoach.dog.adapter.webapi.dto;
+package com.daesabu.meongcoach.dog.application.provided.dto;
 
 import com.daesabu.meongcoach.dog.domain.DogProfileUpdateCommand;
 import com.daesabu.meongcoach.dog.domain.DogSex;
@@ -14,7 +14,7 @@ import java.time.LocalDate;
 import java.util.Set;
 
 public record DogProfileUpdateRequest(
-		@NotBlank @Size(max = 12) String name,
+		@NotBlank @Size(max = 50) String name,
 		@NotBlank @Size(max = 30) String breed,
 		@NotBlank String sex,
 		@Past LocalDate birthDate,

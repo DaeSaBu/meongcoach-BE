@@ -19,8 +19,11 @@ import com.daesabu.meongcoach.onboarding.application.provided.OnboardingImageUpl
 import com.daesabu.meongcoach.onboarding.application.provided.OnboardingMetadataFinder;
 import com.daesabu.meongcoach.onboarding.application.provided.OnboardingMetadataResult;
 import com.daesabu.meongcoach.onboarding.application.provided.dto.OnboardingCompleteRequest;
+import com.daesabu.meongcoach.onboarding.domain.OnboardingImageTarget;
+import com.daesabu.meongcoach.training.application.provided.dto.TopicResult;
 import com.daesabu.meongcoach.user.domain.exception.AlreadyOnboardedException;
 import java.util.List;
+import java.util.Objects;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
@@ -30,6 +33,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.restdocs.payload.JsonFieldType;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(OnboardingController.class)
@@ -99,15 +103,18 @@ class OnboardingControllerTest {
 						.principal(() -> "1")
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.topics").doesNotExist())
+				.andExpect(jsonPath("$.topics[0].id").value(1))
 				.andExpect(jsonPath("$.breeds[0].code").value("POODLE"))
 				.andExpect(jsonPath("$.breeds[0].label").value("푸들"))
 				.andExpect(jsonPath("$.breeds[0].aliases[0]").value("POODLE"))
 				.andExpect(jsonPath("$.breeds[0].aliases[1]").value("CANICHE"))
 				.andExpect(jsonPath("$.personalities[0].code").value("TIMID"))
-				.andExpect(jsonPath("$.mbtis").doesNotExist())
+				.andExpect(jsonPath("$.mbtis[0]").value("INTJ"))
 				.andDo(document("onboarding/metadata",
 						responseFields(
+								fieldWithPath("topics[].id").description("구버전 앱의 교육 토픽 ID"),
+								fieldWithPath("topics[].title").description("교육 토픽 이름"),
+								fieldWithPath("mbtis[]").description("구버전 앱의 MBTI 선택 목록"),
 								fieldWithPath("breeds[]").description("등록 견종 목록. 믹스견이 맨 앞이고 나머지는 한글 라벨 가나다순"),
 								fieldWithPath("breeds[].code").description("강아지 견종 코드"),
 								fieldWithPath("breeds[].label").description("강아지 견종 한글 라벨"),
@@ -130,8 +137,22 @@ class OnboardingControllerTest {
 				.andExpect(jsonPath("$.dogIds[0]").value(1))
 				.andDo(document("onboarding/complete",
 						requestFields(
-								fieldWithPath("dogs[]").description("등록할 강아지 목록. 정확히 1마리"),
-								fieldWithPath("dogs[].name").description("강아지 이름. 필수 입력, 최대 12자"),
+								fieldWithPath("nickname").type(JsonFieldType.STRING).optional()
+										.description("구버전 보호자 닉네임, 최대 50자. 생략하면 빈 문자열"),
+								fieldWithPath("mbti").type(JsonFieldType.STRING).optional()
+										.description("구버전 MBTI. 생략하면 null"),
+								fieldWithPath("profileImageUrl").type(JsonFieldType.STRING).optional()
+										.description("구버전 보호자 이미지 URL, 최대 512자"),
+								fieldWithPath("priorTrainingTopicIds").type(JsonFieldType.ARRAY).optional()
+										.description("구버전 학습 토픽 ID 목록, 최대 100개"),
+								fieldWithPath("trainingGoalTopicIds").type(JsonFieldType.ARRAY).optional()
+										.description("구버전 교육 목표 토픽 ID 목록, 최대 100개"),
+								fieldWithPath("dogs[].weightKg").type(JsonFieldType.NUMBER).optional()
+										.description("구버전 몸무게, 양수. 생략하면 null"),
+								fieldWithPath("dogs[].expectation").type(JsonFieldType.STRING).optional()
+										.description("구버전 교육 기대 사항, 최대 500자"),
+								fieldWithPath("dogs[]").description("등록할 강아지 목록. 1~5마리. 3.2.0 앱은 1마리만 입력"),
+								fieldWithPath("dogs[].name").description("강아지 이름. 필수 입력, 최대 50자"),
 								fieldWithPath("dogs[].breed").description(
 										"메타데이터 조회 응답에서 선택한 강아지 견종 코드. "
 												+ "목록에 없는 견종은 견종 이름을 직접 입력. 최대 30자"),
@@ -141,7 +162,7 @@ class OnboardingControllerTest {
 								fieldWithPath("dogs[].personalities").description("강아지 성격 코드 목록. 선택 입력").optional(),
 								fieldWithPath("dogs[].profileImageUrl").description(
 										"강아지 프로필 이미지 공개 URL. 이미지 업로드 URL 발급 API의 "
-												+ "publicUrl. 최대 512자, 선택 입력").optional()
+												+ "publicUrl. 최대 550자, 선택 입력").optional()
 						),
 						responseFields(
 								fieldWithPath("dogIds").description("생성된 강아지 ID 목록")
@@ -154,7 +175,7 @@ class OnboardingControllerTest {
 	}
 
 	@Test
-	void 보호자_프로필을_보내도_무시하고_온보딩을_완료한다() throws Exception {
+	void 구버전_보호자_프로필을_받고_성별과_보호자_생일은_무시한다() throws Exception {
 		String request = COMPLETE_REQUEST.replace("\"dogs\": [",
 				"\"nickname\": \"멍멍이집사\", \"gender\": \"FEMALE\", \"birthDate\": \"1998-01-01\", \"dogs\": [");
 
@@ -165,6 +186,7 @@ class OnboardingControllerTest {
 				.andExpect(status().isCreated());
 
 		assertThat(onboardingCompleter.lastInfo.dogs()).hasSize(1);
+		assertThat(onboardingCompleter.lastInfo.nickname()).isEqualTo("멍멍이집사");
 	}
 
 	@Test
@@ -214,10 +236,10 @@ class OnboardingControllerTest {
 	}
 
 	@Test
-	void 강아지_이름이_12자이면_온보딩을_완료할_수_있다() throws Exception {
+	void 강아지_이름이_50자이면_온보딩을_완료할_수_있다() throws Exception {
 		String request = COMPLETE_REQUEST.replace(
 				"\"name\": \"초코\"",
-				"\"name\": \"" + "가".repeat(12) + "\"");
+				"\"name\": \"" + "가".repeat(50) + "\"");
 
 		mockMvc.perform(post("/api/onboarding")
 						.principal(() -> "1")
@@ -227,10 +249,10 @@ class OnboardingControllerTest {
 	}
 
 	@Test
-	void 강아지_이름이_12자를_넘으면_검증에_실패한다() throws Exception {
+	void 강아지_이름이_50자를_넘으면_검증에_실패한다() throws Exception {
 		String request = COMPLETE_REQUEST.replace(
 				"\"name\": \"초코\"",
-				"\"name\": \"" + "가".repeat(13) + "\"");
+				"\"name\": \"" + "가".repeat(51) + "\"");
 
 		assertValidationFails(request, "dogs[0].name");
 	}
@@ -292,7 +314,7 @@ class OnboardingControllerTest {
 	}
 
 	@Test
-	void 강아지_프로필_이미지_URL이_512자를_넘으면_검증에_실패한다() throws Exception {
+	void 강아지_프로필_이미지_URL이_550자를_넘으면_검증에_실패한다() throws Exception {
 		String request = COMPLETE_REQUEST.replace(
 				"https://images.test.meongcoach.com/images/dog-profile/1/b.jpg",
 				"https://example.com/" + "a".repeat(500));
@@ -310,7 +332,7 @@ class OnboardingControllerTest {
 	}
 
 	@Test
-	void 강아지를_두_마리_등록하면_검증에_실패한다() throws Exception {
+	void 구버전처럼_강아지를_두_마리_등록한다() throws Exception {
 		String request = """
 				{
 				    "dogs": [
@@ -330,7 +352,12 @@ class OnboardingControllerTest {
 				}
 				""";
 
-		assertValidationFails(request, "dogs");
+		mockMvc.perform(post("/api/onboarding")
+				.principal(() -> "1")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(request))
+				.andExpect(status().isCreated());
+		assertThat(onboardingCompleter.lastInfo.dogs()).hasSize(2);
 	}
 
 	@Test
@@ -367,6 +394,8 @@ class OnboardingControllerTest {
 				.andExpect(jsonPath("$.expiresInSeconds").value(600))
 				.andDo(document("onboarding/image-upload-url",
 						requestFields(
+								fieldWithPath("target").type(JsonFieldType.STRING).optional()
+										.description("USER_PROFILE 또는 DOG_PROFILE. 생략하면 DOG_PROFILE"),
 								fieldWithPath("contentType").description(
 										"필수 입력. 업로드할 이미지의 Content-Type. `image/jpeg`, `image/png`, `image/webp`만 지원")
 						),
@@ -421,6 +450,49 @@ class OnboardingControllerTest {
 				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
 	}
 
+	@Test
+	void 구버전_입력값을_온보딩_서비스에_전달한다() throws Exception {
+		String request = COMPLETE_REQUEST.replace("\"dogs\": [",
+				"\"nickname\": \"보호자\", \"mbti\": \"INTJ\", \"priorTrainingTopicIds\": [1], "
+						+ "\"trainingGoalTopicIds\": [2], \"dogs\": [")
+				.replace("\"name\": \"초코\"", "\"name\": \"초코\", \"weightKg\": 4.5, \"expectation\": \"산책\"");
+
+		mockMvc.perform(post("/api/onboarding").principal(() -> "1")
+				.contentType(MediaType.APPLICATION_JSON).content(request))
+				.andExpect(status().isCreated());
+
+		OnboardingCompleteRequest saved = onboardingCompleter.lastInfo;
+		assertThat(saved.mbti()).isEqualTo("INTJ");
+		assertThat(saved.priorTrainingTopicIds()).containsExactly(1L);
+		assertThat(saved.trainingGoalTopicIds()).containsExactly(2L);
+		assertThat(saved.dogs().getFirst().weightKg()).isEqualByComparingTo("4.5");
+		assertThat(saved.dogs().getFirst().expectation()).isEqualTo("산책");
+	}
+
+	@Test
+	void 구버전_몸무게가_양수가_아니면_거절한다() throws Exception {
+		String request = COMPLETE_REQUEST.replace("\"name\": \"초코\"", "\"name\": \"초코\", \"weightKg\": 0");
+		assertValidationFails(request, "dogs[0].weightKg");
+	}
+
+	@Test
+	void 구버전_보호자_사진_업로드_대상을_전달한다() throws Exception {
+		mockMvc.perform(post("/api/onboarding/presigned-urls").principal(() -> "1")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"target\":\"USER_PROFILE\",\"contentType\":\"image/jpeg\"}"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.publicUrl").value(IMAGE_PUBLIC_URL.replace("dog-profile", "user-profile")));
+	}
+
+	@Test
+	void 잘못된_업로드_대상은_400으로_거절한다() throws Exception {
+		mockMvc.perform(post("/api/onboarding/presigned-urls").principal(() -> "1")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"target\":\"INVALID\",\"contentType\":\"image/jpeg\"}"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("ONBOARDING_INVALID_IMAGE_UPLOAD_TARGET"));
+	}
+
 	private void assertValidationFails(String request, String field) throws Exception {
 		mockMvc.perform(post("/api/onboarding")
 						.principal(() -> "1")
@@ -437,8 +509,9 @@ class OnboardingControllerTest {
 		@Bean
 		OnboardingMetadataFinder onboardingMetadataFinder() {
 			return () -> new OnboardingMetadataResult(
+					List.of(new TopicResult(1L, "배변 훈련", null)),
 					List.of(RegisteredBreed.POODLE, RegisteredBreed.MALTESE),
-					List.of(Personality.TIMID, Personality.LIVELY));
+					List.of(Personality.TIMID, Personality.LIVELY), List.of("INTJ", "ENFP"));
 		}
 
 		@Bean
@@ -448,8 +521,14 @@ class OnboardingControllerTest {
 
 		@Bean
 		OnboardingImageUploadUrlIssuer onboardingImageUploadUrlIssuer() {
-			return (userId, contentType) -> {
-				ImageType.fromContentType(contentType);
+			return (userId, request) -> {
+				ImageType.fromContentType(request.contentType());
+				OnboardingImageTarget target = OnboardingImageTarget.from(
+						Objects.requireNonNullElse(request.target(), "DOG_PROFILE"));
+				if (target == OnboardingImageTarget.USER_PROFILE) {
+					return new OnboardingImageUploadUrlResult(UPLOAD_URL.replace("dog-profile", "user-profile"),
+							IMAGE_PUBLIC_URL.replace("dog-profile", "user-profile"), 600L);
+				}
 				return new OnboardingImageUploadUrlResult(UPLOAD_URL, IMAGE_PUBLIC_URL, 600L);
 			};
 		}
