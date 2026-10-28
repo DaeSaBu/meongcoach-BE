@@ -27,6 +27,9 @@ class MediaUploadUrlIssuerTest {
 	private static final MediaScope PUBLIC_VIDEO = MediaScope.of(MediaKind.VIDEO, MediaVisibility.PUBLIC, "test-video");
 	private static final MediaScope PRIVATE_VIDEO =
 			MediaScope.of(MediaKind.VIDEO, MediaVisibility.PRIVATE, "test-video");
+	private static final String GCS_BASE_URL = "https://storage.googleapis.com/test-ai-video-bucket/";
+	private static final MediaScope ANALYSIS_VIDEO =
+			MediaScope.of(MediaKind.VIDEO, MediaVisibility.ANALYSIS, "test-video");
 	private static final long MAX_BYTES = 1_024L;
 
 	@Autowired
@@ -71,6 +74,19 @@ class MediaUploadUrlIssuerTest {
 				.startsWith(S3_UPLOAD_BASE_URL + result.objectKey())
 				.contains("X-Amz-SignedHeaders=content-length%3Bcontent-type%3Bhost");
 		assertThat(result.publicUrl()).isEqualTo(S3_PUBLIC_BASE_URL + result.objectKey());
+		assertThat(result.expiresInSeconds()).isEqualTo(900L);
+	}
+
+	@Test
+	void 분석_범위_영상은_파일_크기를_서명한_GCS_업로드_URL과_버킷_표준_URL을_발급한다() {
+		MediaUploadUrlResult result =
+				issuer.issue(MediaUploadRequest.video(ANALYSIS_VIDEO, 7L, "video/mp4", MAX_BYTES, MAX_BYTES));
+
+		assertThat(result.objectKey()).matches("videos/test-video/7/[0-9a-f-]{36}\\.mp4");
+		assertThat(result.uploadUrl())
+				.startsWith(GCS_BASE_URL + result.objectKey())
+				.contains("X-Goog-SignedHeaders=content-length%3Bcontent-type%3Bhost");
+		assertThat(result.publicUrl()).isEqualTo(GCS_BASE_URL + result.objectKey());
 		assertThat(result.expiresInSeconds()).isEqualTo(900L);
 	}
 

@@ -24,14 +24,13 @@ class EvoLinkConfigurationTest {
 						"meongcoach.ai.evolink.model=test-model",
 						"meongcoach.ai.evolink.max-tokens=4096",
 						"meongcoach.ai.evolink.temperature=0.0",
-						"meongcoach.ai.evolink.thinking=disabled",
-						"meongcoach.ai.evolink.video-fps=1.0")
+						"meongcoach.ai.evolink.thinking=disabled")
 				.run(context -> {
 					assertThat(context).hasNotFailed().hasSingleBean(EvoLinkChatClient.class);
 					EvoLinkProperties properties = context.getBean(EvoLinkProperties.class);
 					assertThat(properties).isEqualTo(new EvoLinkProperties(
 							"https://api.evolink.test", "test-key", Duration.ofMinutes(5),
-							"test-model", 4096, 0.0, "disabled", 1.0));
+							"test-model", 4096, 0.0, "disabled"));
 				});
 	}
 

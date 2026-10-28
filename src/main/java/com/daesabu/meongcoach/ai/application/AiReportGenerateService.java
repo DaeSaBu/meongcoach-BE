@@ -10,7 +10,7 @@ import com.daesabu.meongcoach.ai.domain.AiTrial;
 import com.daesabu.meongcoach.ai.domain.AiVideo;
 import com.daesabu.meongcoach.ai.domain.exception.ReportTitleGenerationFailedException;
 import com.daesabu.meongcoach.ai.domain.exception.VideoAnalysisFailedException;
-import com.daesabu.meongcoach.media.application.provided.MediaDownloadUrlIssuer;
+import com.daesabu.meongcoach.media.application.provided.MediaStorageUriResolver;
 import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,7 +21,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class AiReportGenerateService implements AiReportGenerator {
 
-	private final MediaDownloadUrlIssuer mediaDownloadUrlIssuer;
+	private final MediaStorageUriResolver mediaStorageUriResolver;
 	private final VideoAnalyzer videoAnalyzer;
 	private final ReportTitleGenerator reportTitleGenerator;
 	private final AiReportRepository aiReportRepository;
@@ -38,13 +38,13 @@ public class AiReportGenerateService implements AiReportGenerator {
 			return;
 		}
 
-		String downloadUrl = mediaDownloadUrlIssuer.issue(AiVideo.SCOPE, objectKey);
+		String videoUri = mediaStorageUriResolver.resolve(AiVideo.SCOPE, objectKey);
 
 		report.startAnalysis();
 		aiReportRepository.save(report);
 
 		try {
-			recordOutcome(report, downloadUrl);
+			recordOutcome(report, videoUri);
 		}
 		catch (Exception e) {
 			log.error("예상하지 못한 오류로 리포트 생성에 실패했다: {}", objectKey, e);
@@ -52,7 +52,7 @@ public class AiReportGenerateService implements AiReportGenerator {
 		}
 	}
 
-	private void recordOutcome(AiReport report, String downloadUrl) {
+	private void recordOutcome(AiReport report, String videoUri) {
 		if (isTrialExhausted(report.getUserId())) {
 			recordFailure(report, AiReport::failByTrialExceeded);
 			return;
@@ -60,7 +60,7 @@ public class AiReportGenerateService implements AiReportGenerator {
 
 		String content;
 		try {
-			content = videoAnalyzer.analyze(downloadUrl);
+			content = videoAnalyzer.analyze(videoUri);
 		}
 		catch (VideoAnalysisFailedException e) {
 			log.error("영상 분석에 실패해 리포트 생성을 건너뛴다: {}", report.getVideoObjectKey(), e);

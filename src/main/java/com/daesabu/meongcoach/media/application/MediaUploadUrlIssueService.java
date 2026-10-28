@@ -3,6 +3,7 @@ package com.daesabu.meongcoach.media.application;
 import com.daesabu.meongcoach.media.application.provided.MediaUploadUrlIssuer;
 import com.daesabu.meongcoach.media.application.provided.dto.MediaUploadRequest;
 import com.daesabu.meongcoach.media.application.provided.dto.MediaUploadUrlResult;
+import com.daesabu.meongcoach.media.application.required.AnalysisObjectStorage;
 import com.daesabu.meongcoach.media.application.required.PrivateObjectStorage;
 import com.daesabu.meongcoach.media.application.required.PublicObjectStorage;
 import com.daesabu.meongcoach.media.application.required.StorageUploadUrl;
@@ -19,6 +20,7 @@ public class MediaUploadUrlIssueService implements MediaUploadUrlIssuer {
 
 	private final PublicObjectStorage publicObjectStorage;
 	private final PrivateObjectStorage privateObjectStorage;
+	private final AnalysisObjectStorage analysisObjectStorage;
 
 	@Override
 	public MediaUploadUrlResult issue(MediaUploadRequest request) {
@@ -43,6 +45,9 @@ public class MediaUploadUrlIssueService implements MediaUploadUrlIssuer {
 			Long contentLength) {
 		if (visibility == MediaVisibility.PRIVATE) {
 			return privateObjectStorage.issueUploadUrl(key, contentType, contentLength);
+		}
+		if (visibility == MediaVisibility.ANALYSIS) {
+			return analysisObjectStorage.issueUploadUrl(key, contentType, contentLength);
 		}
 		return publicObjectStorage.issueUploadUrl(key, contentType, contentLength);
 	}

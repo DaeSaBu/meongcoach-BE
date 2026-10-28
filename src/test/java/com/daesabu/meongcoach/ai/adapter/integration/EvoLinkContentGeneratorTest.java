@@ -45,7 +45,7 @@ class EvoLinkContentGeneratorTest {
 		RestClient.Builder builder = RestClient.builder();
 		server = MockRestServiceServer.bindTo(builder).build();
 		EvoLinkProperties properties = new EvoLinkProperties(
-				BASE_URL, "test-key", Duration.ofMinutes(5), "test-model", 4096, 0.0, "disabled", 1.0);
+				BASE_URL, "test-key", Duration.ofMinutes(5), "test-model", 4096, 0.0, "disabled");
 		EvoLinkChatClient client = new EvoLinkChatClient(properties, builder.build());
 		generator = new EvoLinkContentGenerator(client, properties, new ObjectMapper());
 	}
