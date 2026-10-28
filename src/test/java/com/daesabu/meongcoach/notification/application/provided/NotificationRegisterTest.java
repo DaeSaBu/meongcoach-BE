@@ -207,10 +207,41 @@ class NotificationRegisterTest {
 	}
 
 	@Test
+	void 알림_설정을_바꾸면_일부_시각_행만_있어도_없는_행은_만들고_있는_행은_바꾼다() {
+		savePreference(USER_ID, 17, true);
+		Long eveningId = notificationPreferenceRepository.findAllByUserId(USER_ID).getFirst().getId();
+
+		notificationRegister.updatePreferences(USER_ID, hours(true, false, false));
+
+		assertThat(notificationPreferenceRepository.findAllByUserId(USER_ID))
+				.extracting(NotificationPreference::getHour, NotificationPreference::isEnabled)
+				.containsExactlyInAnyOrder(
+						tuple(8, true),
+						tuple(11, false),
+						tuple(17, false)
+				);
+		assertThat(notificationPreferenceRepository.findById(eveningId)).get()
+				.extracting(NotificationPreference::isEnabled)
+				.isEqualTo(false);
+	}
+
+	@Test
 	void 허용_시각이_빠지면_InvalidNotificationHoursException을_던진다() {
 		NotificationPreferenceUpdateRequest request = new NotificationPreferenceUpdateRequest(List.of(
 				new HourPreferenceRequest(8, true),
 				new HourPreferenceRequest(11, true)
+		));
+
+		assertThatThrownBy(() -> notificationRegister.updatePreferences(USER_ID, request))
+				.isInstanceOf(InvalidNotificationHoursException.class);
+	}
+
+	@Test
+	void 허용_시각이_중복되면_InvalidNotificationHoursException을_던진다() {
+		NotificationPreferenceUpdateRequest request = new NotificationPreferenceUpdateRequest(List.of(
+				new HourPreferenceRequest(8, true),
+				new HourPreferenceRequest(8, false),
+				new HourPreferenceRequest(17, true)
 		));
 
 		assertThatThrownBy(() -> notificationRegister.updatePreferences(USER_ID, request))

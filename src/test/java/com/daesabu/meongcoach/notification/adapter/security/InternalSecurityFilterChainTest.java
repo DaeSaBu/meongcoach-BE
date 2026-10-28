@@ -100,7 +100,7 @@ class InternalSecurityFilterChainTest {
 		mockMvc.perform(appGet(APP_PREFERENCES_PATH)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.hours.length()").value(3));
+				.andExpect(jsonPath("$.hours.length()").value(0));
 	}
 
 	private User saveUser() {

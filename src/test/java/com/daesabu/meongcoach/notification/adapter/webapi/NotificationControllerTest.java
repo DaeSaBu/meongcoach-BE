@@ -16,11 +16,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.daesabu.meongcoach.notification.application.provided.NotificationPreferenceFinder;
+import com.daesabu.meongcoach.notification.application.provided.NotificationPreferenceResult;
 import com.daesabu.meongcoach.notification.application.provided.NotificationRegister;
 import com.daesabu.meongcoach.notification.application.provided.dto.DeviceTokenRegisterRequest;
 import com.daesabu.meongcoach.notification.application.provided.dto.HourPreferenceRequest;
 import com.daesabu.meongcoach.notification.application.provided.dto.NotificationPreferenceUpdateRequest;
-import com.daesabu.meongcoach.notification.domain.HourPreference;
 import com.daesabu.meongcoach.notification.domain.exception.InvalidDevicePlatformException;
 import com.daesabu.meongcoach.notification.domain.exception.InvalidNotificationHoursException;
 import java.security.Principal;
@@ -136,10 +136,10 @@ class NotificationControllerTest {
 
 	@Test
 	void 알림_설정을_시각별로_응답한다() throws Exception {
-		given(notificationPreferenceFinder.findHourPreferences(42L)).willReturn(List.of(
-				new HourPreference(8, false),
-				new HourPreference(11, false),
-				new HourPreference(17, true)
+		given(notificationPreferenceFinder.findPreferences(42L)).willReturn(List.of(
+				new NotificationPreferenceResult(8, false),
+				new NotificationPreferenceResult(11, false),
+				new NotificationPreferenceResult(17, true)
 		));
 
 		mockMvc.perform(get(PREFERENCES_PATH)
