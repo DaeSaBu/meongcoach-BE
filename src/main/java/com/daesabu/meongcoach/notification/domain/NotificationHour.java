@@ -1,6 +1,7 @@
 package com.daesabu.meongcoach.notification.domain;
 
 import com.daesabu.meongcoach.notification.domain.exception.InvalidNotificationHourException;
+import com.daesabu.meongcoach.notification.domain.exception.NotAllowedNotificationHourException;
 import java.util.List;
 import java.util.Map;
 
@@ -19,6 +20,12 @@ public final class NotificationHour {
 	public static void validate(int hour) {
 		if (hour < MIN || hour > MAX) {
 			throw new InvalidNotificationHourException(hour);
+		}
+	}
+
+	public static void validateAllowed(int hour) {
+		if (!ALLOWED_HOURS.contains(hour)) {
+			throw new NotAllowedNotificationHourException(hour);
 		}
 	}
 

@@ -28,11 +28,10 @@ public interface NotificationRegister {
 	void deleteDeviceTokens(@Valid DeviceTokenDeleteRequest request);
 
 	/**
-	 * 회원의 시각별 알림 설정을 요청 값으로 통째로 바꾼다. 행이 있는 시각은 값만 바꾸고, 행이 없는 시각은 새로 만든다.
-	 * 시각이 0~23 밖이면 {@code InvalidNotificationHourException}을,
-	 * 허용 시각(8·11·17시)이 각각 한 번씩 있지 않으면 {@code InvalidNotificationHoursException}을 던진다.
+	 * 회원의 한 시각 알림 수신 여부를 요청 값으로 바꾼다. 회원·시각 행이 있으면 값만 바꾸고, 없으면 새로 만든다.
+	 * 시각이 허용 시각(8·11·17시)이 아니면 {@code NotAllowedNotificationHourException}을 던진다.
 	 */
-	void updatePreferences(Long userId, @Valid NotificationPreferenceUpdateRequest request);
+	void updatePreference(Long userId, int hour, @Valid NotificationPreferenceUpdateRequest request);
 
 	/**
 	 * 회원의 기기 토큰과 알림 설정을 모두 지운다.

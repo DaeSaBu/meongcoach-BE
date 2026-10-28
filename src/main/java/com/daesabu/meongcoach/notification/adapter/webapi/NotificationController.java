@@ -46,10 +46,10 @@ public class NotificationController {
 		return NotificationPreferencesResponse.from(preferences);
 	}
 
-	@PutMapping("/preferences")
+	@PutMapping("/preferences/{hour}")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	public void updatePreferences(@CurrentUserId Long userId,
-	                              @Valid @RequestBody NotificationPreferenceUpdateRequest request) {
-		notificationRegister.updatePreferences(userId, request);
+	public void updatePreference(@CurrentUserId Long userId, @PathVariable int hour,
+	                             @Valid @RequestBody NotificationPreferenceUpdateRequest request) {
+		notificationRegister.updatePreference(userId, hour, request);
 	}
 }
