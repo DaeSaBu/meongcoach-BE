@@ -12,16 +12,12 @@ import com.daesabu.meongcoach.notification.domain.DeviceTokenRegisterCommand;
 import com.daesabu.meongcoach.notification.domain.NotificationHour;
 import com.daesabu.meongcoach.notification.domain.NotificationPreference;
 import java.time.Instant;
-import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -54,12 +50,9 @@ public class NotificationModifyService implements NotificationRegister {
 		if (!notificationPreferenceRepository.findAllByUserId(userId).isEmpty()) {
 			return;
 		}
-		List<NotificationPreference> defaults = NotificationPreference.createDefaults(userId);
-		try {
-			notificationPreferenceRepository.saveAll(defaults);
-		} catch (DataIntegrityViolationException e) {
-			log.info("기본 알림 설정이 이미 만들어져 있어 건너뜁니다. userId={}", userId);
-		}
+		// 같은 회원이 두 기기에서 동시에 처음 등록하면 한쪽이 유니크 위반으로 실패한다.
+		// 같은 트랜잭션 안에서 잡아도 커밋이 실패하므로 그대로 올리고, 앱이 실행마다 다시 등록하므로 다음 요청에서 해소된다.
+		notificationPreferenceRepository.saveAll(NotificationPreference.createDefaults(userId));
 	}
 
 	@Override
