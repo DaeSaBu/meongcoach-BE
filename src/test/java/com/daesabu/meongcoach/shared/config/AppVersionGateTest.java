@@ -62,7 +62,7 @@ class AppVersionGateTest {
 	@Test
 	void 지원하지_않는_플랫폼이면_400을_반환한다() throws Exception {
 		mockMvc.perform(get(PROTECTED_PATH)
-						.header(APP_PLATFORM_HEADER, "web")
+						.header(APP_PLATFORM_HEADER, "windows")
 						.header(APP_VERSION_HEADER, "2.0.0"))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.code").value("APP_VERSION_INVALID"));
@@ -71,6 +71,15 @@ class AppVersionGateTest {
 	@Test
 	void 지원하는_버전이면_게이트를_통과해_인증_단계로_넘어간다() throws Exception {
 		mockMvc.perform(appGet(PROTECTED_PATH))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+	}
+
+	@Test
+	void 웹_플랫폼도_지원하는_버전이면_게이트를_통과해_인증_단계로_넘어간다() throws Exception {
+		mockMvc.perform(get(PROTECTED_PATH)
+						.header(APP_PLATFORM_HEADER, "web")
+						.header(APP_VERSION_HEADER, "1.0.0"))
 				.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
 	}

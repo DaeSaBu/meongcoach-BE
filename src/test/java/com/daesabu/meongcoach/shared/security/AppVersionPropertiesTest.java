@@ -22,7 +22,8 @@ class AppVersionPropertiesTest {
 
 	private static final AppVersionProperties PROPERTIES = new AppVersionProperties(Map.of(
 			AppPlatform.IOS, AppVersion.from("2.1.0"),
-			AppPlatform.ANDROID, AppVersion.from("2.0.0")
+			AppPlatform.ANDROID, AppVersion.from("2.0.0"),
+			AppPlatform.WEB, AppVersion.from("1.0.0")
 	));
 
 	private static ValidatorFactory validatorFactory;
@@ -72,6 +73,13 @@ class AppVersionPropertiesTest {
 	}
 
 	@Test
+	void 웹_플랫폼도_자기_최소_버전으로_판단한다() {
+		assertThatCode(() -> PROPERTIES.verify("web", "1.0.0")).doesNotThrowAnyException();
+		assertThatThrownBy(() -> PROPERTIES.verify("web", "0.9.9"))
+				.isInstanceOf(AppUpdateRequiredException.class);
+	}
+
+	@Test
 	void 최소_버전보다_낮으면_업데이트가_필요하다() {
 		assertThatThrownBy(() -> PROPERTIES.verify("ios", "2.0.9"))
 				.isInstanceOf(AppUpdateRequiredException.class);
@@ -101,7 +109,7 @@ class AppVersionPropertiesTest {
 	}
 
 	@ParameterizedTest
-	@ValueSource(strings = {"web", "IOS", "windows"})
+	@ValueSource(strings = {"WEB", "IOS", "windows"})
 	void 지원하지_않는_플랫폼이면_형식_오류다(String platform) {
 		assertThatThrownBy(() -> PROPERTIES.verify(platform, "2.1.0"))
 				.isInstanceOf(InvalidAppVersionException.class);
