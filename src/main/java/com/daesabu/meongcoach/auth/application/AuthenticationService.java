@@ -28,6 +28,7 @@ import com.daesabu.meongcoach.auth.domain.SocialProvider;
 import com.daesabu.meongcoach.auth.domain.exception.InvalidCredentialsException;
 import com.daesabu.meongcoach.auth.domain.exception.InvalidRefreshTokenException;
 import com.daesabu.meongcoach.auth.domain.exception.WithdrawnUserException;
+import com.daesabu.meongcoach.notification.application.provided.NotificationRegister;
 import com.daesabu.meongcoach.user.application.provided.UserFinder;
 import com.daesabu.meongcoach.user.application.provided.UserRegister;
 import java.time.LocalDateTime;
@@ -54,6 +55,7 @@ public class AuthenticationService implements Authenticator {
 	private final RefreshTokenFinder refreshTokenFinder;
 	private final UserFinder userFinder;
 	private final UserRegister userRegister;
+	private final NotificationRegister notificationRegister;
 
 	// 제공자 호출은 롤백할 것이 없고 그동안 커넥션을 잡을 이유도 없으므로 클래스 기본 트랜잭션을 끈다.
 	// 계정 등록(AccountRegister)과 토큰 발급·저장(AuthTokenProvider)은 각자 트랜잭션을 연다
@@ -117,6 +119,7 @@ public class AuthenticationService implements Authenticator {
 		accountRegister.deleteAllSocialAccounts(userId);
 		accountRegister.deleteAllEmailAccounts(userId);
 		refreshTokenRegister.revokeAllByUserId(userId);
+		notificationRegister.deleteAllByUserId(userId);
 		userRegister.withdraw(userId);
 	}
 

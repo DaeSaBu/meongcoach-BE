@@ -186,6 +186,7 @@ val postProcessOpenApiSpec = tasks.register("postProcessOpenApiSpec") {
 		"graduation" to "Graduation",
 		"plan" to "Plan",
 		"community" to "Community",
+		"notification" to "Notification",
 	)
 	doLast {
 		val file = specFile.get().asFile
