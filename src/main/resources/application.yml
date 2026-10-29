@@ -38,6 +38,7 @@ meongcoach:
     minimum:
       ios: ${APP_MINIMUM_VERSION_IOS:2.0.0}
       android: ${APP_MINIMUM_VERSION_ANDROID:2.0.0}
+      web: ${APP_MINIMUM_VERSION_WEB:1.0.0}
   jwt:
     issuer: meongcoach
     # 기본값을 두지 않아 미주입 시 기동에 실패한다 — 커밋된 키가 배포로 흘러가는 것을 막는다
