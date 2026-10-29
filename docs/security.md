@@ -142,6 +142,25 @@ JWT 대신 `X-Internal-Secret` 헤더를 검사하며, 앱 버전 게이트도 `
 
 영속화 이전에 발급된 리프레시 토큰은 저장 이력이 없어 재발급이 401로 끝나므로 클라이언트는 재로그인해야 합니다.
 
+### 웹 대시보드의 리프레시 토큰 쿠키
+
+앱은 토큰을 OS 보안 저장소(Keychain·Keystore)에 두지만, 웹은 JS가 읽을 수 있는 저장소에 둘 수밖에 없어
+XSS 한 번으로 리프레시 토큰이 새어 나갑니다. 그래서 `X-App-Platform: web` 요청만 리프레시 토큰을 본문 대신 쿠키로 주고받습니다.
+경로는 앱과 같고, `AuthController`가 `headers = "X-App-Platform=web"` 조건의 별도 핸들러로 나눕니다. 쿠키 발급·만료는 `RefreshTokenCookies`가 맡습니다.
+
+| 엔드포인트 | 웹 동작 |
+|---|---|
+| `POST /api/auth/login/email`, `/login/social` | `Set-Cookie: refresh_token=…`, 본문은 `{ accessToken }`만 |
+| `POST /api/auth/token/refresh` | 본문 없이 쿠키로 재발급, 회전된 토큰을 다시 쿠키로. 쿠키가 없으면 401 `AUTH_INVALID_REFRESH_TOKEN` |
+| `POST /api/auth/logout` | 쿠키의 토큰을 폐기하고 `Max-Age=0` 쿠키로 지움. 쿠키가 없으면 401 |
+
+- 쿠키 속성: `HttpOnly; Secure; SameSite=Strict; Path=/api/auth; Max-Age=<refresh-token-validity>`, Domain 미지정(API 호스트 전용)
+- **대시보드는 API와 같은 사이트(같은 등록 도메인)에 배포해야 합니다.** SameSite=Strict라 다른 사이트(예: `*.vercel.app`)에서는 쿠키가 전송되지 않습니다.
+  local의 `localhost:3000` ↔ `localhost:8080`은 같은 사이트이고, 브라우저가 localhost를 secure context로 취급해 Secure 쿠키가 동작합니다.
+- CSRF 토큰은 쓰지 않습니다. SameSite=Strict, `/api/auth` 한정 Path, CORS 허용 오리진만 응답을 읽을 수 있다는 점,
+  JSON·커스텀 헤더 요청이 preflight를 강제한다는 점으로 막습니다. 이 때문에 CORS는 `allowCredentials(true)`이고, 프론트는 인증 요청을 `credentials: 'include'`로 보냅니다.
+- 액세스 토큰은 본문으로 내리고 프론트는 메모리에만 둡니다. 새로고침하면 재발급을 먼저 호출해 복구합니다.
+
 ### 탈퇴 시 Sign in with Apple 토큰 revoke
 
 애플 심사 지침 5.1.1(v)은 Sign in with Apple 앱이 계정을 삭제할 때 Apple의 [토큰 revoke API](https://developer.apple.com/documentation/signinwithapplerestapi/revoke_tokens)를
@@ -183,7 +202,7 @@ JWT 대신 `X-Internal-Secret` 헤더를 검사하며, 앱 버전 게이트도 `
   회원 존재 확인·권한 부여도 커스텀 필터가 아니라 디코더 뒤의 컨버터에 얹습니다 (위 "액세스 토큰 검증 순서" 참고)
 - `cors` — 허용 오리진은 프로파일 yml의 `meongcoach.cors.allowed-origin-patterns`(`shared/security/CorsProperties`)이고, 키가 없으면 교차 출처를 모두 거부합니다.
   local은 `http://localhost:*`·`http://127.0.0.1:*`이고, dev·prod는 대시보드 도메인이 정해지면 추가합니다.
-  허용 헤더는 `Authorization`·`Content-Type`·`X-App-Platform`·`X-App-Version`이며, 토큰을 쿠키가 아닌 헤더·본문으로 주고받으므로 credentials는 허용하지 않습니다.
+  허용 헤더는 `Authorization`·`Content-Type`·`X-App-Platform`·`X-App-Version`이며, 웹 리프레시 토큰 쿠키 때문에 credentials를 허용합니다(위 "웹 대시보드의 리프레시 토큰 쿠키").
   CORS는 이 체인 안에서 동작하므로 체인을 추가하면 그 체인에도 `.cors(...)`를 설정해야 합니다(`/internal/**` 체인은 비활성).
 - 헤더는 기본값 유지 — `X-Frame-Options: DENY`
 
