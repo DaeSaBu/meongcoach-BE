@@ -1,6 +1,6 @@
 package com.daesabu.meongcoach.banner.domain;
 
-import java.time.LocalDate;
+import java.time.Instant;
 import org.springframework.test.util.ReflectionTestUtils;
 
 public final class BannerFixture {
@@ -8,16 +8,14 @@ public final class BannerFixture {
 	private BannerFixture() {
 	}
 
-	public static Banner benefit(String title, LocalDate startsOn, LocalDate endsOn, int sortOrder) {
+	public static Banner benefit(String title, Instant startsAt, Instant expiresAt, int sortOrder) {
 		Banner banner = base(BannerType.BENEFIT, "OO펫", title, sortOrder);
 		ReflectionTestUtils.setField(banner, "brandCategory", "반려용품");
 		ReflectionTestUtils.setField(banner, "benefit", "전 상품 10% 할인");
 		ReflectionTestUtils.setField(banner, "place", "OO펫 온라인 스토어");
-		ReflectionTestUtils.setField(banner, "validityLabel", "12월 31일까지");
 		ReflectionTestUtils.setField(banner, "sharedCode", "MEONG10");
-		ReflectionTestUtils.setField(banner, "disclosure", true);
-		ReflectionTestUtils.setField(banner, "startsOn", startsOn);
-		ReflectionTestUtils.setField(banner, "endsOn", endsOn);
+		ReflectionTestUtils.setField(banner, "startsAt", startsAt);
+		ReflectionTestUtils.setField(banner, "expiresAt", expiresAt);
 		return banner;
 	}
 
@@ -25,7 +23,6 @@ public final class BannerFixture {
 		Banner banner = base(BannerType.INTRODUCTION, "멍프탑", title, sortOrder);
 		ReflectionTestUtils.setField(banner, "description", "멍프탑의 위치와 운영 시간은 네이버 플레이스에서 확인해 주세요.");
 		ReflectionTestUtils.setField(banner, "linkLabel", "네이버 플레이스");
-		ReflectionTestUtils.setField(banner, "disclosure", true);
 		return banner;
 	}
 
@@ -45,7 +42,6 @@ public final class BannerFixture {
 		ReflectionTestUtils.setField(banner, "brandName", brandName);
 		ReflectionTestUtils.setField(banner, "title", title);
 		ReflectionTestUtils.setField(banner, "imageUrl", "https://images.meongcoach.com/images/partner-banners/banner.jpg");
-		ReflectionTestUtils.setField(banner, "imageBackground", "#ffffff");
 		ReflectionTestUtils.setField(banner, "linkUrl", "https://example.com");
 		ReflectionTestUtils.setField(banner, "sortOrder", sortOrder);
 		ReflectionTestUtils.setField(banner, "active", true);

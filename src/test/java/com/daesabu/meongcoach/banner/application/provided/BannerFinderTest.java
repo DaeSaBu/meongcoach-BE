@@ -6,15 +6,15 @@ import com.daesabu.meongcoach.banner.application.required.BannerRepository;
 import com.daesabu.meongcoach.banner.domain.Banner;
 import com.daesabu.meongcoach.banner.domain.BannerFixture;
 import com.daesabu.meongcoach.support.ApplicationTest;
-import java.time.LocalDate;
-import java.time.ZoneId;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @ApplicationTest
 class BannerFinderTest {
 
-	private static final LocalDate TODAY = LocalDate.now(ZoneId.of("Asia/Seoul"));
+	private static final Instant NOW = Instant.now();
 
 	@Autowired
 	private BannerFinder bannerFinder;
@@ -23,9 +23,9 @@ class BannerFinderTest {
 	private BannerRepository bannerRepository;
 
 	@Test
-	void 노출_기간의_양_끝_날짜에도_배너를_보여_준다() {
-		bannerRepository.save(BannerFixture.benefit("오늘 시작", TODAY, TODAY.plusDays(10), 1));
-		bannerRepository.save(BannerFixture.benefit("오늘 끝", TODAY.minusDays(10), TODAY, 2));
+	void 시작된_배너와_아직_만료되지_않은_배너를_보여_준다() {
+		bannerRepository.save(BannerFixture.benefit("오늘 시작", NOW, NOW.plus(10, ChronoUnit.DAYS), 1));
+		bannerRepository.save(BannerFixture.benefit("오늘 끝", NOW.minus(10, ChronoUnit.DAYS), NOW.plus(1, ChronoUnit.DAYS), 2));
 
 		assertThat(bannerFinder.findVisibleBanners())
 				.extracting(Banner::getTitle)
@@ -34,8 +34,8 @@ class BannerFinderTest {
 
 	@Test
 	void 기간이_시작되기_전이거나_끝난_배너는_보여_주지_않는다() {
-		bannerRepository.save(BannerFixture.benefit("예약", TODAY.plusDays(1), TODAY.plusDays(10), 1));
-		bannerRepository.save(BannerFixture.benefit("종료", TODAY.minusDays(10), TODAY.minusDays(1), 2));
+		bannerRepository.save(BannerFixture.benefit("예약", NOW.plus(1, ChronoUnit.DAYS), NOW.plus(10, ChronoUnit.DAYS), 1));
+		bannerRepository.save(BannerFixture.benefit("종료", NOW.minus(10, ChronoUnit.DAYS), NOW.minus(1, ChronoUnit.DAYS), 2));
 
 		assertThat(bannerFinder.findVisibleBanners()).isEmpty();
 	}
@@ -66,4 +66,15 @@ class BannerFinderTest {
 				.extracting(Banner::getTitle)
 				.containsExactly("첫째 먼저", "첫째 나중", "둘째");
 	}
+	@Test
+	void 시작_시각은_포함하고_만료_시각은_제외한다() {
+		Instant boundary = Instant.parse("2026-12-31T15:00:00Z");
+		bannerRepository.save(BannerFixture.benefit("시작", boundary, boundary.plusSeconds(60), 1));
+		bannerRepository.save(BannerFixture.benefit("만료", boundary.minusSeconds(60), boundary, 2));
+
+		assertThat(bannerRepository.findVisibleAt(boundary))
+				.extracting(Banner::getTitle)
+				.containsExactly("시작");
+	}
+
 }
