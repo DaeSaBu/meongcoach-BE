@@ -31,7 +31,7 @@ public final class BannerFixture {
 		return banner;
 	}
 
-	public static Banner hidden(Banner banner) {
+	public static Banner inactive(Banner banner) {
 		ReflectionTestUtils.setField(banner, "active", false);
 		return banner;
 	}

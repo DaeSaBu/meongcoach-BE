@@ -35,7 +35,7 @@ class BannerControllerTest {
 
 	@Test
 	void 노출_중인_제휴_배너를_순서대로_반환한다() throws Exception {
-		given(bannerFinder.findVisibleBanners()).willReturn(List.of(
+		given(bannerFinder.findActiveBanners()).willReturn(List.of(
 				BannerFixture.withId(BannerFixture.benefit("멍코치 회원 전 상품 10% 할인",
 						Instant.parse("2026-10-31T15:00:00Z"), Instant.parse("2026-12-31T15:00:00Z"), 1), 3L),
 				BannerFixture.withId(BannerFixture.introduction("멍프탑을 만나보세요", 2), 5L)));
@@ -70,7 +70,7 @@ class BannerControllerTest {
 								fieldWithPath("banners[].brandDescription").optional().description("소개 배너의 설명. 혜택 배너는 null일 수 있다"),
 								fieldWithPath("banners[].benefitDescription").optional().description("혜택 내용. 소개 배너는 null"),
 								fieldWithPath("banners[].usageLocation").optional().description("혜택 사용처. 소개 배너는 null"),
-								fieldWithPath("banners[].promotionCode").optional().description("모든 회원이 같이 쓰는 할인 코드. 없으면 null"),
+								fieldWithPath("banners[].promotionCode").optional().description("모든 회원이 같이 쓰는 프로모션 코드. 없으면 null"),
 								fieldWithPath("banners[].startsAt").optional().description("노출 시작 시각(UTC, 포함). 없으면 null"),
 								fieldWithPath("banners[].expiresAt").optional().description("만료 시각(UTC, 미포함). 없으면 종료 제한 없음")
 						)

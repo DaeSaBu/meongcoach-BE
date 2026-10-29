@@ -8,6 +8,9 @@ import org.springframework.data.jpa.repository.Query;
 
 public interface BannerRepository extends JpaRepository<Banner, Long> {
 
+	/**
+	 * 주어진 시각이 시작 이상·만료 미만인 활성 배너를 정렬 순서와 ID 오름차순으로 조회한다. 시작·만료 시각이 없으면 해당 제한을 적용하지 않는다.
+	 */
 	@Query("""
 			select b
 			from Banner b
@@ -16,5 +19,5 @@ public interface BannerRepository extends JpaRepository<Banner, Long> {
 			  and (b.expiresAt is null or b.expiresAt > :now)
 			order by b.sortOrder asc, b.id asc
 			""")
-	List<Banner> findVisibleAt(Instant now);
+	List<Banner> findActiveBannersAt(Instant now);
 }

@@ -27,7 +27,7 @@ class BannerFinderTest {
 		bannerRepository.save(BannerFixture.benefit("오늘 시작", NOW, NOW.plus(10, ChronoUnit.DAYS), 1));
 		bannerRepository.save(BannerFixture.benefit("오늘 끝", NOW.minus(10, ChronoUnit.DAYS), NOW.plus(1, ChronoUnit.DAYS), 2));
 
-		assertThat(bannerFinder.findVisibleBanners())
+		assertThat(bannerFinder.findActiveBanners())
 				.extracting(Banner::getTitle)
 				.containsExactly("오늘 시작", "오늘 끝");
 	}
@@ -37,23 +37,23 @@ class BannerFinderTest {
 		bannerRepository.save(BannerFixture.benefit("예약", NOW.plus(1, ChronoUnit.DAYS), NOW.plus(10, ChronoUnit.DAYS), 1));
 		bannerRepository.save(BannerFixture.benefit("종료", NOW.minus(10, ChronoUnit.DAYS), NOW.minus(1, ChronoUnit.DAYS), 2));
 
-		assertThat(bannerFinder.findVisibleBanners()).isEmpty();
+		assertThat(bannerFinder.findActiveBanners()).isEmpty();
 	}
 
 	@Test
 	void 기간이_없는_배너는_상시_보여_준다() {
 		bannerRepository.save(BannerFixture.introduction("상시 소개", 1));
 
-		assertThat(bannerFinder.findVisibleBanners())
+		assertThat(bannerFinder.findActiveBanners())
 				.extracting(Banner::getTitle)
 				.containsExactly("상시 소개");
 	}
 
 	@Test
 	void 숨긴_배너는_기간_안이어도_보여_주지_않는다() {
-		bannerRepository.save(BannerFixture.hidden(BannerFixture.introduction("숨김", 1)));
+		bannerRepository.save(BannerFixture.inactive(BannerFixture.introduction("숨김", 1)));
 
-		assertThat(bannerFinder.findVisibleBanners()).isEmpty();
+		assertThat(bannerFinder.findActiveBanners()).isEmpty();
 	}
 
 	@Test
@@ -62,7 +62,7 @@ class BannerFinderTest {
 		bannerRepository.save(BannerFixture.introduction("첫째 먼저", 1));
 		bannerRepository.save(BannerFixture.introduction("첫째 나중", 1));
 
-		assertThat(bannerFinder.findVisibleBanners())
+		assertThat(bannerFinder.findActiveBanners())
 				.extracting(Banner::getTitle)
 				.containsExactly("첫째 먼저", "첫째 나중", "둘째");
 	}
@@ -72,7 +72,7 @@ class BannerFinderTest {
 		bannerRepository.save(BannerFixture.benefit("시작", boundary, boundary.plusSeconds(60), 1));
 		bannerRepository.save(BannerFixture.benefit("만료", boundary.minusSeconds(60), boundary, 2));
 
-		assertThat(bannerRepository.findVisibleAt(boundary))
+		assertThat(bannerRepository.findActiveBannersAt(boundary))
 				.extracting(Banner::getTitle)
 				.containsExactly("시작");
 	}

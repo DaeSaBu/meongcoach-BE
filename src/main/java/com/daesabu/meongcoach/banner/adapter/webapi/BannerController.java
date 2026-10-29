@@ -16,6 +16,6 @@ public class BannerController {
 
 	@GetMapping
 	public BannerListResponse findBanners() {
-		return BannerListResponse.from(bannerFinder.findVisibleBanners());
+		return BannerListResponse.from(bannerFinder.findActiveBanners());
 	}
 }

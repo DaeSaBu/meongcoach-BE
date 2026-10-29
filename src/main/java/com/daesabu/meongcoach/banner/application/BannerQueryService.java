@@ -17,8 +17,8 @@ public class BannerQueryService implements BannerFinder {
 	private final BannerRepository bannerRepository;
 
 	@Override
-	public List<Banner> findVisibleBanners() {
+	public List<Banner> findActiveBanners() {
 		Instant now = Instant.now();
-		return bannerRepository.findVisibleAt(now);
+		return bannerRepository.findActiveBannersAt(now);
 	}
 }
