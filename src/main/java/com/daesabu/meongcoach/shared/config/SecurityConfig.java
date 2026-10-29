@@ -65,6 +65,8 @@ public class SecurityConfig {
 
 	private static final String MY_INFO_PATH = "/api/users/me";
 
+	private static final String DASHBOARD_PATH = "/api/dashboard/**";
+
 	private static final String[] API_DOCS_PATHS = {"/swagger-ui/**"};
 
 	private static final List<String> CORS_ALLOWED_METHODS = List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS");
@@ -100,6 +102,8 @@ public class SecurityConfig {
 							.hasAnyRole(AuthorityRole.USER.name(), AuthorityRole.ONBOARDING_USER.name());
 					auth.requestMatchers(HttpMethod.GET, MY_INFO_PATH)
 							.hasAnyRole(AuthorityRole.USER.name(), AuthorityRole.ONBOARDING_USER.name());
+					auth.requestMatchers(DASHBOARD_PATH)
+							.hasAnyRole(AuthorityRole.ADMIN.name(), AuthorityRole.EXPERT.name());
 					auth.anyRequest().hasRole(AuthorityRole.USER.name());
 				})
 				.oauth2ResourceServer(oauth2 -> oauth2
