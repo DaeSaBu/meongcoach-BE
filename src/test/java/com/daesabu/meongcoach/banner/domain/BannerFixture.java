@@ -11,9 +11,9 @@ public final class BannerFixture {
 	public static Banner benefit(String title, Instant startsAt, Instant expiresAt, int sortOrder) {
 		Banner banner = base(BannerType.BENEFIT, "OO펫", title, sortOrder);
 		ReflectionTestUtils.setField(banner, "brandCategory", "반려용품");
-		ReflectionTestUtils.setField(banner, "benefit", "전 상품 10% 할인");
-		ReflectionTestUtils.setField(banner, "place", "OO펫 온라인 스토어");
-		ReflectionTestUtils.setField(banner, "sharedCode", "MEONG10");
+		ReflectionTestUtils.setField(banner, "benefitDescription", "전 상품 10% 할인");
+		ReflectionTestUtils.setField(banner, "usageLocation", "OO펫 온라인 스토어");
+		ReflectionTestUtils.setField(banner, "promotionCode", "MEONG10");
 		ReflectionTestUtils.setField(banner, "startsAt", startsAt);
 		ReflectionTestUtils.setField(banner, "expiresAt", expiresAt);
 		return banner;
@@ -21,7 +21,7 @@ public final class BannerFixture {
 
 	public static Banner introduction(String title, int sortOrder) {
 		Banner banner = base(BannerType.INTRODUCTION, "멍프탑", title, sortOrder);
-		ReflectionTestUtils.setField(banner, "description", "멍프탑의 위치와 운영 시간은 네이버 플레이스에서 확인해 주세요.");
+		ReflectionTestUtils.setField(banner, "brandDescription", "멍프탑의 위치와 운영 시간은 네이버 플레이스에서 확인해 주세요.");
 		ReflectionTestUtils.setField(banner, "linkLabel", "네이버 플레이스");
 		return banner;
 	}

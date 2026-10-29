@@ -49,7 +49,7 @@ class BannerControllerTest {
 				.andExpect(jsonPath("$.banners[0].imageBackground").doesNotExist())
 				.andExpect(jsonPath("$.banners[0].id").value(3))
 				.andExpect(jsonPath("$.banners[0].type").value("BENEFIT"))
-				.andExpect(jsonPath("$.banners[0].sharedCode").value("MEONG10"))
+				.andExpect(jsonPath("$.banners[0].promotionCode").value("MEONG10"))
 				.andExpect(jsonPath("$.banners[0].startsAt").value("2026-10-31T15:00:00Z"))
 				.andExpect(jsonPath("$.banners[0].expiresAt").value("2026-12-31T15:00:00Z"))
 				.andExpect(jsonPath("$.banners[1].id").value(5))
@@ -67,10 +67,10 @@ class BannerControllerTest {
 								fieldWithPath("banners[].imageUrl").description("배너 이미지 공개 URL"),
 								fieldWithPath("banners[].linkUrl").description("업체 페이지 URL. 앱이 utm 파라미터를 붙여 연다"),
 								fieldWithPath("banners[].linkLabel").optional().description("소개 배너의 이동 버튼 이름. 혜택 배너는 null일 수 있다"),
-								fieldWithPath("banners[].description").optional().description("소개 배너의 설명. 혜택 배너는 null일 수 있다"),
-								fieldWithPath("banners[].benefit").optional().description("혜택 내용. 소개 배너는 null"),
-								fieldWithPath("banners[].place").optional().description("혜택 사용처. 소개 배너는 null"),
-								fieldWithPath("banners[].sharedCode").optional().description("모든 회원이 같이 쓰는 할인 코드. 없으면 null"),
+								fieldWithPath("banners[].brandDescription").optional().description("소개 배너의 설명. 혜택 배너는 null일 수 있다"),
+								fieldWithPath("banners[].benefitDescription").optional().description("혜택 내용. 소개 배너는 null"),
+								fieldWithPath("banners[].usageLocation").optional().description("혜택 사용처. 소개 배너는 null"),
+								fieldWithPath("banners[].promotionCode").optional().description("모든 회원이 같이 쓰는 할인 코드. 없으면 null"),
 								fieldWithPath("banners[].startsAt").optional().description("노출 시작 시각(UTC, 포함). 없으면 null"),
 								fieldWithPath("banners[].expiresAt").optional().description("만료 시각(UTC, 미포함). 없으면 종료 제한 없음")
 						)
