@@ -48,16 +48,16 @@ public class Banner extends BaseEntity {
 	private String linkLabel;
 
 	@Column(length = 500)
-	private String description;
+	private String brandDescription;
 
 	@Column(length = 100)
-	private String benefit;
+	private String benefitDescription;
 
 	@Column(length = 100)
-	private String place;
+	private String usageLocation;
 
 	@Column(length = 50)
-	private String sharedCode;
+	private String promotionCode;
 
 	private Instant startsAt;
 

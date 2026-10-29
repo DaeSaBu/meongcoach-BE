@@ -821,7 +821,7 @@ operation::community/reply-list-error[snippets='http-response,response-fields']
 link:{swagger-ui}#/Banner/banner-list[▶ Swagger에서 Try it out,window=swagger]
 
 현재 시각에 노출할 배너를 정렬 순서대로 조회합니다. 숨긴 배너(`active = false`)와 노출 기간 밖의 배너는 빠집니다. `startsAt`은 포함하고 `expiresAt`은 포함하지 않으며, 값이 없으면 해당 시작·종료 제한이 없습니다.
-`type`이 `BENEFIT`이면 `benefit`·`place`·`startsAt`·`expiresAt`이 있고, `INTRODUCTION`이면 `description`·`linkLabel`이 있습니다.
+`type`이 `BENEFIT`이면 `benefitDescription`·`usageLocation`·`startsAt`·`expiresAt`이 있고, `INTRODUCTION`이면 `brandDescription`·`linkLabel`이 있습니다.
 시각은 ISO 8601 UTC로 반환합니다. 앱은 `expiresAt`을 한국 시각으로 바꿔 사용 기한을 표시하며, 한국 자정 만료는 전날까지로 표시합니다.
 배너별 제휴 표시·이미지 배경색·사용 기한 문구 필드는 없습니다. 이미지 영역은 앱에서 흰색으로 표시합니다.
 
