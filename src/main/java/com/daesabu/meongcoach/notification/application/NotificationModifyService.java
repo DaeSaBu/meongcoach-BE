@@ -13,6 +13,7 @@ import com.daesabu.meongcoach.notification.domain.DeviceTokenRegisterCommand;
 import com.daesabu.meongcoach.notification.domain.NotificationHour;
 import com.daesabu.meongcoach.notification.domain.NotificationPreference;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -38,8 +39,6 @@ public class NotificationModifyService implements NotificationRegister {
 		createDefaultPreferencesIfAbsent(userId);
 	}
 
-	// 같은 토큰이 두 요청으로 동시에 처음 들어오면 한쪽이 유니크 위반으로 실패한다. 같은 기기의 중복 요청이라 드물고,
-	// 앱이 실행마다 다시 등록하므로 다음 요청에서 해소된다. 기본 설정 행 생성과 같은 이유로 잡지 않는다.
 	private void upsertDeviceToken(Long userId, DeviceTokenRegisterCommand command, Instant now) {
 		Optional<DeviceToken> existing = deviceTokenRepository.findByToken(command.token());
 		if (existing.isPresent()) {
@@ -50,12 +49,13 @@ public class NotificationModifyService implements NotificationRegister {
 	}
 
 	private void createDefaultPreferencesIfAbsent(Long userId) {
-		if (!notificationPreferenceRepository.findAllByUserId(userId).isEmpty()) {
-			return;
-		}
-		// 같은 회원이 두 기기에서 동시에 처음 등록하면 한쪽이 유니크 위반으로 실패한다.
-		// 같은 트랜잭션 안에서 잡아도 커밋이 실패하므로 그대로 올리고, 앱이 실행마다 다시 등록하므로 다음 요청에서 해소된다.
-		notificationPreferenceRepository.saveAll(NotificationPreference.createDefaults(userId));
+		List<Integer> existingHours = notificationPreferenceRepository.findAllByUserId(userId).stream()
+				.map(NotificationPreference::getHour)
+				.toList();
+		List<NotificationPreference> missingPreferences = NotificationPreference.createDefaults(userId).stream()
+				.filter(preference -> !existingHours.contains(preference.getHour()))
+				.toList();
+		notificationPreferenceRepository.saveAll(missingPreferences);
 	}
 
 	@Override

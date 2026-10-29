@@ -13,7 +13,7 @@ public interface NotificationRegister {
 
 	/**
 	 * 회원의 기기 토큰을 저장한다. 같은 토큰이 이미 있으면 그 행의 회원과 마지막 확인 시각을 요청 회원과 현재 시각으로 바꾼다.
-	 * 회원에게 알림 설정 행이 없으면 8·11·17시의 기본값으로 세 행을 만든다.
+	 * 회원의 8·11·17시 알림 설정 중 없는 시각만 기본값으로 만들고 기존 설정은 유지한다.
 	 * 플랫폼이 IOS·ANDROID가 아니면 {@code InvalidDevicePlatformException}을 던진다.
 	 */
 	void registerDeviceToken(Long userId, @Valid DeviceTokenRegisterRequest request);
