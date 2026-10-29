@@ -94,6 +94,9 @@ SHA-1 검증용이라 id_token의 `aud`가 되지 않습니다), 애플은 **iOS
 | 4 | `DELETE /api/auth/me`, `GET /api/users/me` | `USER`, `ONBOARDING_USER` |
 | 5 | 그 외 전부 | `USER` |
 
+`/internal/**`는 이 체인이 아니라 notification 모듈이 정의한 별도 체인(`@Order(0)`, `securityMatcher("/internal/**")`)이 먼저 잡습니다.
+JWT 대신 `X-Internal-Secret` 헤더를 검사하며, 앱 버전 게이트도 `/api/` 경로만 보므로 걸리지 않습니다. ([notification.md](notification.md) "인증")
+
 3번은 온보딩 화면에 필요한 경로입니다 — 온보딩 완료 요청에 프로필 이미지 URL이 들어가므로
 기본 프로필 이미지 조회는 온보딩 중에도 열려 있어야 합니다. 이미지 업로드 presigned URL 발급은
 `POST /api/onboarding/presigned-urls`라 `/api/onboarding/**`에 이미 포함됩니다.
