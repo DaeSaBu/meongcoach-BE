@@ -3,6 +3,7 @@ package com.daesabu.meongcoach.shared.config;
 import com.daesabu.meongcoach.shared.security.AppVersionFilter;
 import com.daesabu.meongcoach.shared.security.AppVersionProperties;
 import com.daesabu.meongcoach.shared.security.AuthorityRole;
+import com.daesabu.meongcoach.shared.security.CorsProperties;
 import com.daesabu.meongcoach.shared.security.JwtProperties;
 import com.daesabu.meongcoach.shared.security.TokenType;
 import com.daesabu.meongcoach.shared.security.TokenTypeValidator;
@@ -14,6 +15,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.convert.converter.Converter;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -36,7 +38,10 @@ import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
-import org.springframework.security.web.session.DisableEncodeUrlFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.filter.CorsFilter;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 
 @Configuration
@@ -62,17 +67,23 @@ public class SecurityConfig {
 
 	private static final String[] API_DOCS_PATHS = {"/swagger-ui/**"};
 
+	private static final List<String> CORS_ALLOWED_METHODS = List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS");
+
+	private static final List<String> CORS_ALLOWED_HEADERS = List.of(HttpHeaders.AUTHORIZATION,
+			HttpHeaders.CONTENT_TYPE, AppVersionFilter.APP_PLATFORM_HEADER, AppVersionFilter.APP_VERSION_HEADER);
+
 	@Bean
 	SecurityFilterChain securityFilterChain(HttpSecurity http, JwtDecoder accessTokenDecoder,
 	                                        Converter<Jwt, AbstractAuthenticationToken> userRoleAuthenticationConverter,
 	                                        AuthenticationEntryPoint authenticationEntryPoint,
 	                                        AccessDeniedHandler accessDeniedHandler,
 	                                        AppVersionProperties appVersionProperties,
+	                                        CorsConfigurationSource corsConfigurationSource,
 	                                        @Qualifier("handlerExceptionResolver") HandlerExceptionResolver resolver,
 	                                        @Value("${meongcoach.api-docs.enabled:false}") boolean apiDocsEnabled) {
 		return http
-				.addFilterBefore(new AppVersionFilter(appVersionProperties, resolver), DisableEncodeUrlFilter.class)
-				.cors(AbstractHttpConfigurer::disable)
+				.addFilterAfter(new AppVersionFilter(appVersionProperties, resolver), CorsFilter.class)
+				.cors(cors -> cors.configurationSource(corsConfigurationSource))
 				.csrf(AbstractHttpConfigurer::disable)
 				.formLogin(AbstractHttpConfigurer::disable)
 				.httpBasic(AbstractHttpConfigurer::disable)
@@ -109,6 +120,18 @@ public class SecurityConfig {
 			return;
 		}
 		auth.requestMatchers(API_DOCS_PATHS).denyAll();
+	}
+
+	@Bean
+	CorsConfigurationSource corsConfigurationSource(CorsProperties properties) {
+		CorsConfiguration configuration = new CorsConfiguration();
+		configuration.setAllowedOriginPatterns(properties.allowedOriginPatterns());
+		configuration.setAllowedMethods(CORS_ALLOWED_METHODS);
+		configuration.setAllowedHeaders(CORS_ALLOWED_HEADERS);
+
+		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+		source.registerCorsConfiguration("/**", configuration);
+		return source;
 	}
 
 	@Bean
