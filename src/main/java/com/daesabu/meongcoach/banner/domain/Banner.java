@@ -9,7 +9,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import java.time.LocalDate;
+import java.time.Instant;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -41,9 +41,6 @@ public class Banner extends BaseEntity {
 	@Column(nullable = false, length = 512)
 	private String imageUrl;
 
-	@Column(nullable = false, length = 9)
-	private String imageBackground;
-
 	@Column(nullable = false, length = 1024)
 	private String linkUrl;
 
@@ -60,17 +57,11 @@ public class Banner extends BaseEntity {
 	private String place;
 
 	@Column(length = 50)
-	private String validityLabel;
-
-	@Column(length = 50)
 	private String sharedCode;
 
-	@Column(nullable = false)
-	private boolean disclosure;
+	private Instant startsAt;
 
-	private LocalDate startsOn;
-
-	private LocalDate endsOn;
+	private Instant expiresAt;
 
 	@Column(nullable = false)
 	private int sortOrder;
