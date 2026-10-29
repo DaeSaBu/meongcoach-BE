@@ -17,6 +17,8 @@
 - `APP_MINIMUM_VERSION_IOS`·`APP_MINIMUM_VERSION_ANDROID`는 플랫폼별 최소 지원 앱 버전이며, 없으면 `application.yml`의 기본값을 씁니다 ([security.md](security.md) "필터 체인 구성").
   배포 값은 다른 애플리케이션 설정과 같이 GitHub Secrets(`DEV_APP_MINIMUM_VERSION_IOS`·`DEV_APP_MINIMUM_VERSION_ANDROID`, `PROD_`도 같은 이름)에 둡니다.
   CD가 배포할 때 값을 주입하며, Secret이 없으면 주입을 생략해 기본값이 적용됩니다. task definition에 직접 넣은 값은 다음 배포에서 지워집니다.
+  웹 대시보드용 `APP_MINIMUM_VERSION_WEB`은 기본값만 쓰고 CD로 주입하지 않습니다.
+- CORS 허용 오리진(`meongcoach.cors.allowed-origin-patterns`)은 환경 변수 대신 프로파일 yml에 둡니다. 현재 `local`에만 있습니다 ([security.md](security.md) "필터 체인 구성").
 
 ## 활성화 방법
 
