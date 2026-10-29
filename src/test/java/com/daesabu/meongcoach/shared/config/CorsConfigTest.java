@@ -35,6 +35,7 @@ class CorsConfigTest {
 								"authorization,content-type,x-app-platform,x-app-version"))
 				.andExpect(status().isOk())
 				.andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, ALLOWED_ORIGIN))
+				.andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS, "true"))
 				.andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS,
 						"GET,POST,PUT,PATCH,DELETE,OPTIONS"))
 				.andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS,
