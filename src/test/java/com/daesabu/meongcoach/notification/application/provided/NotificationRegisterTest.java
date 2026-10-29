@@ -92,7 +92,19 @@ class NotificationRegisterTest {
 
 		assertThat(notificationPreferenceRepository.findAllByUserId(USER_ID))
 				.extracting(NotificationPreference::getHour, NotificationPreference::isEnabled)
-				.containsExactly(tuple(17, false));
+				.containsExactlyInAnyOrder(tuple(8, false), tuple(11, false), tuple(17, false));
+	}
+
+	@Test
+	void 알림_설정을_먼저_변경해도_토큰_등록_시_누락된_시각의_기본값을_만든다() {
+		notificationRegister.updatePreference(USER_ID, 8, ON);
+
+		notificationRegister.registerDeviceToken(USER_ID, IOS_TOKEN);
+		notificationRegister.registerDeviceToken(USER_ID, IOS_TOKEN);
+
+		assertThat(notificationPreferenceRepository.findAllByUserId(USER_ID))
+				.extracting(NotificationPreference::getHour, NotificationPreference::isEnabled)
+				.containsExactlyInAnyOrder(tuple(8, true), tuple(11, false), tuple(17, true));
 	}
 
 	@Test
