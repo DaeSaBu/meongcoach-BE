@@ -1,15 +1,15 @@
-package com.daesabu.meongcoach.partner.domain;
+package com.daesabu.meongcoach.promotion.domain;
 
 import java.time.LocalDate;
 import org.springframework.test.util.ReflectionTestUtils;
 
-public final class PartnerBannerFixture {
+public final class PromotionBannerFixture {
 
-	private PartnerBannerFixture() {
+	private PromotionBannerFixture() {
 	}
 
-	public static PartnerBanner benefit(String title, LocalDate startsOn, LocalDate endsOn, int sortOrder) {
-		PartnerBanner banner = base(PartnerBannerKind.BENEFIT, "OO펫", title, sortOrder);
+	public static PromotionBanner benefit(String title, LocalDate startsOn, LocalDate endsOn, int sortOrder) {
+		PromotionBanner banner = base(PromotionBannerKind.BENEFIT, "OO펫", title, sortOrder);
 		ReflectionTestUtils.setField(banner, "partnerKind", "반려용품");
 		ReflectionTestUtils.setField(banner, "benefit", "전 상품 10% 할인");
 		ReflectionTestUtils.setField(banner, "place", "OO펫 온라인 스토어");
@@ -21,26 +21,26 @@ public final class PartnerBannerFixture {
 		return banner;
 	}
 
-	public static PartnerBanner introduction(String title, int sortOrder) {
-		PartnerBanner banner = base(PartnerBannerKind.INTRODUCTION, "멍프탑", title, sortOrder);
+	public static PromotionBanner introduction(String title, int sortOrder) {
+		PromotionBanner banner = base(PromotionBannerKind.INTRODUCTION, "멍프탑", title, sortOrder);
 		ReflectionTestUtils.setField(banner, "description", "멍프탑의 위치와 운영 시간은 네이버 플레이스에서 확인해 주세요.");
 		ReflectionTestUtils.setField(banner, "linkLabel", "네이버 플레이스");
 		ReflectionTestUtils.setField(banner, "disclosure", true);
 		return banner;
 	}
 
-	public static PartnerBanner withId(PartnerBanner banner, Long id) {
+	public static PromotionBanner withId(PromotionBanner banner, Long id) {
 		ReflectionTestUtils.setField(banner, "id", id);
 		return banner;
 	}
 
-	public static PartnerBanner hidden(PartnerBanner banner) {
+	public static PromotionBanner hidden(PromotionBanner banner) {
 		ReflectionTestUtils.setField(banner, "active", false);
 		return banner;
 	}
 
-	private static PartnerBanner base(PartnerBannerKind kind, String partnerName, String title, int sortOrder) {
-		PartnerBanner banner = new PartnerBanner();
+	private static PromotionBanner base(PromotionBannerKind kind, String partnerName, String title, int sortOrder) {
+		PromotionBanner banner = new PromotionBanner();
 		ReflectionTestUtils.setField(banner, "kind", kind);
 		ReflectionTestUtils.setField(banner, "partnerName", partnerName);
 		ReflectionTestUtils.setField(banner, "title", title);

@@ -1,4 +1,4 @@
-package com.daesabu.meongcoach.partner.domain;
+package com.daesabu.meongcoach.promotion.domain;
 
 import com.daesabu.meongcoach.shared.domain.BaseEntity;
 import jakarta.persistence.Column;
@@ -18,7 +18,7 @@ import lombok.NoArgsConstructor;
 @Entity
 @Table(name = "partner_banners")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class PartnerBanner extends BaseEntity {
+public class PromotionBanner extends BaseEntity {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -26,7 +26,7 @@ public class PartnerBanner extends BaseEntity {
 
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, length = 20)
-	private PartnerBannerKind kind;
+	private PromotionBannerKind kind;
 
 	@Column(nullable = false, length = 50)
 	private String partnerName;

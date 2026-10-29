@@ -1,4 +1,4 @@
-package com.daesabu.meongcoach.partner.adapter.webapi;
+package com.daesabu.meongcoach.promotion.adapter.webapi;
 
 import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.document;
 import static org.mockito.BDDMockito.given;
@@ -8,8 +8,8 @@ import static org.springframework.restdocs.payload.PayloadDocumentation.response
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.daesabu.meongcoach.partner.application.provided.PartnerBannerFinder;
-import com.daesabu.meongcoach.partner.domain.PartnerBannerFixture;
+import com.daesabu.meongcoach.promotion.application.provided.PromotionBannerFinder;
+import com.daesabu.meongcoach.promotion.domain.PromotionBannerFixture;
 import java.security.Principal;
 import java.time.LocalDate;
 import java.util.List;
@@ -21,9 +21,9 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-@WebMvcTest(PartnerBannerController.class)
+@WebMvcTest(PromotionBannerController.class)
 @AutoConfigureRestDocs
-class PartnerBannerControllerTest {
+class PromotionBannerControllerTest {
 
 	private static final Principal CURRENT_USER = () -> "42";
 
@@ -31,14 +31,14 @@ class PartnerBannerControllerTest {
 	private MockMvc mockMvc;
 
 	@MockitoBean
-	private PartnerBannerFinder partnerBannerFinder;
+	private PromotionBannerFinder promotionBannerFinder;
 
 	@Test
 	void 노출_중인_제휴_배너를_순서대로_반환한다() throws Exception {
-		given(partnerBannerFinder.findVisibleBanners()).willReturn(List.of(
-				PartnerBannerFixture.withId(PartnerBannerFixture.benefit("멍코치 회원 전 상품 10% 할인",
+		given(promotionBannerFinder.findVisibleBanners()).willReturn(List.of(
+				PromotionBannerFixture.withId(PromotionBannerFixture.benefit("멍코치 회원 전 상품 10% 할인",
 						LocalDate.of(2026, 11, 1), LocalDate.of(2026, 12, 31), 1), 3L),
-				PartnerBannerFixture.withId(PartnerBannerFixture.introduction("멍프탑을 만나보세요", 2), 5L)));
+				PromotionBannerFixture.withId(PromotionBannerFixture.introduction("멍프탑을 만나보세요", 2), 5L)));
 
 		mockMvc.perform(get("/api/partners/banners")
 						.principal(CURRENT_USER)
@@ -53,7 +53,7 @@ class PartnerBannerControllerTest {
 				.andExpect(jsonPath("$.banners[1].kind").value("INTRODUCTION"))
 				.andExpect(jsonPath("$.banners[1].linkLabel").value("네이버 플레이스"))
 				.andExpect(jsonPath("$.banners[1].endsOn").isEmpty())
-				.andDo(document("partner/banner-list",
+				.andDo(document("promotion/banner-list",
 						responseFields(
 								fieldWithPath("banners").description("오늘(한국 날짜) 노출할 배너. 정렬 순서대로이고 없으면 빈 배열"),
 								fieldWithPath("banners[].id").description("배너 ID. 분석 이벤트와 utm_campaign에 쓴다"),
