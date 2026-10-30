@@ -2,30 +2,39 @@ package com.daesabu.meongcoach.notification.application.provided;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.Assertions.tuple;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.BDDMockito.given;
 
+import com.daesabu.meongcoach.notification.application.provided.dto.NotificationDispatchRequest;
 import com.daesabu.meongcoach.notification.application.required.DeviceInstallationRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationPreferenceRepository;
+import com.daesabu.meongcoach.notification.application.required.NotificationSender;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallation;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallationRegisterCommand;
 import com.daesabu.meongcoach.notification.domain.DevicePlatform;
+import com.daesabu.meongcoach.notification.domain.NotificationMessage;
 import com.daesabu.meongcoach.notification.domain.NotificationPreferenceFixture;
 import com.daesabu.meongcoach.notification.domain.exception.InvalidNotificationHourException;
 import com.daesabu.meongcoach.support.ApplicationTest;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.User;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @ApplicationTest
-class NotificationTargetFinderTest {
+class NotificationDispatchTargetTest {
 
 	private static final Instant NOW = Instant.parse("2026-10-28T08:00:00Z");
 
 	@Autowired
-	private NotificationTargetFinder notificationTargetFinder;
+	private NotificationDispatcher dispatcher;
+
+	@Autowired
+	private NotificationSender sender;
 
 	@Autowired
 	private DeviceInstallationRepository deviceInstallationRepository;
@@ -61,15 +70,9 @@ class NotificationTargetFinderTest {
 		saveInstallation(userId, "fid-ios", DevicePlatform.IOS);
 		saveInstallation(userId, "fid-android", DevicePlatform.ANDROID);
 
-		List<NotificationTargetResult> targets = notificationTargetFinder.findTargets(17);
+		List<String> targets = dispatchTargets(17);
 
-		assertThat(targets)
-				.extracting(NotificationTargetResult::userId, NotificationTargetResult::fid,
-						NotificationTargetResult::platform)
-				.containsExactly(
-						tuple(userId, "fid-ios", DevicePlatform.IOS),
-						tuple(userId, "fid-android", DevicePlatform.ANDROID)
-				);
+		assertThat(targets).containsExactly("fid-ios", "fid-android");
 	}
 
 	@Test
@@ -82,15 +85,9 @@ class NotificationTargetFinderTest {
 		saveInstallation(firstUserId, "first-android", DevicePlatform.ANDROID);
 		saveInstallation(firstUserId, "first-ios", DevicePlatform.IOS);
 
-		List<NotificationTargetResult> targets = notificationTargetFinder.findTargets(17);
+		List<String> targets = dispatchTargets(17);
 
-		assertThat(targets)
-				.extracting(NotificationTargetResult::userId, NotificationTargetResult::fid)
-				.containsExactly(
-						tuple(firstUserId, "first-android"),
-						tuple(firstUserId, "first-ios"),
-						tuple(secondUserId, "second-ios")
-				);
+		assertThat(targets).containsExactly("first-android", "first-ios", "second-ios");
 	}
 
 	@Test
@@ -99,7 +96,7 @@ class NotificationTargetFinderTest {
 		savePreference(userId, 17, false);
 		saveInstallation(userId, "fid", DevicePlatform.IOS);
 
-		assertThat(notificationTargetFinder.findTargets(17)).isEmpty();
+		assertThat(dispatchTargets(17)).isEmpty();
 	}
 
 	@Test
@@ -108,7 +105,7 @@ class NotificationTargetFinderTest {
 		savePreference(userId, 8, true);
 		saveInstallation(userId, "fid", DevicePlatform.IOS);
 
-		assertThat(notificationTargetFinder.findTargets(17)).isEmpty();
+		assertThat(dispatchTargets(17)).isEmpty();
 	}
 
 	@Test
@@ -116,7 +113,7 @@ class NotificationTargetFinderTest {
 		Long userId = saveUser();
 		saveInstallation(userId, "fid", DevicePlatform.IOS);
 
-		assertThat(notificationTargetFinder.findTargets(17)).isEmpty();
+		assertThat(dispatchTargets(17)).isEmpty();
 	}
 
 	@Test
@@ -125,7 +122,7 @@ class NotificationTargetFinderTest {
 		savePreference(userId, 17, true);
 		saveInstallation(userId, "fid", DevicePlatform.IOS);
 
-		assertThat(notificationTargetFinder.findTargets(17)).isEmpty();
+		assertThat(dispatchTargets(17)).isEmpty();
 	}
 
 	@Test
@@ -133,12 +130,23 @@ class NotificationTargetFinderTest {
 		Long userId = saveUser();
 		savePreference(userId, 17, true);
 
-		assertThat(notificationTargetFinder.findTargets(17)).isEmpty();
+		assertThat(dispatchTargets(17)).isEmpty();
 	}
 
 	@Test
 	void 시각이_0에서_23_밖이면_InvalidNotificationHourException을_던진다() {
-		assertThatThrownBy(() -> notificationTargetFinder.findTargets(24))
+		assertThatThrownBy(() -> dispatchTargets(24))
 				.isInstanceOf(InvalidNotificationHourException.class);
 	}
+	private List<String> dispatchTargets(int hour) {
+		List<String> fids = new ArrayList<>();
+		given(sender.send(anyMap())).willAnswer(invocation -> {
+			Map<String, NotificationMessage> messages = invocation.getArgument(0);
+			fids.addAll(messages.keySet());
+			return List.of();
+		});
+		dispatcher.dispatch(new NotificationDispatchRequest(NOW, hour));
+		return fids;
+	}
+
 }

@@ -1,7 +1,6 @@
 package com.daesabu.meongcoach.notification.adapter.integration;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -22,17 +21,14 @@ class FirebaseNotificationBatchResultTest {
 				List.of("success", "invalid"), List.of(success, unregistered));
 
 		assertThat(results.invalidFids()).containsExactly("invalid");
-		assertThatCode(results::throwIfFailed).doesNotThrowAnyException();
 	}
 
 	@Test
 	void 실패가_여러_개면_첫_원인을_전파한다() {
 		SendResponse first = failure(MessagingErrorCode.UNAVAILABLE);
 		SendResponse later = failure(MessagingErrorCode.INVALID_ARGUMENT);
-		var results = FirebaseNotificationBatchResult.success(
-				List.of("first", "later"), List.of(first, later));
-
-		assertThatThrownBy(results::throwIfFailed).hasCause(first.getException());
+		assertThatThrownBy(() -> FirebaseNotificationBatchResult.success(
+				List.of("first", "later"), List.of(first, later))).hasCause(first.getException());
 	}
 
 	@Test
@@ -40,7 +36,6 @@ class FirebaseNotificationBatchResultTest {
 		var results = FirebaseNotificationBatchResult.success(List.of(), List.of());
 
 		assertThat(results.invalidFids()).isEmpty();
-		assertThatCode(results::throwIfFailed).doesNotThrowAnyException();
 	}
 
 	private SendResponse failure(MessagingErrorCode code) {

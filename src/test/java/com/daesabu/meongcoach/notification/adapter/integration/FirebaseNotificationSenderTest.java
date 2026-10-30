@@ -14,6 +14,7 @@ import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.MessagingErrorCode;
 import com.google.firebase.messaging.SendResponse;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -27,31 +28,39 @@ class FirebaseNotificationSenderTest {
 		FirebaseMessaging messaging = mock(FirebaseMessaging.class);
 		BatchResponse batch = mock(BatchResponse.class);
 		SendResponse expired = failure(MessagingErrorCode.UNREGISTERED);
-		SendResponse badRequest = failure(MessagingErrorCode.INVALID_ARGUMENT);
-		given(batch.getResponses()).willReturn(List.of(expired, badRequest));
+		SendResponse success = mock(SendResponse.class);
+		given(batch.getResponses()).willReturn(List.of(expired, success));
 		given(messaging.sendEach(anyList())).willReturn(batch);
 
-		var result = sender(messaging).send(List.of("expired", "keep"), message()).getFirst();
+		var result = sender(messaging).send(messages(List.of("expired", "keep"))).getFirst();
 
 		assertThat(result.invalidFids()).containsExactly("expired");
-		assertThatThrownBy(result::throwIfFailed).hasCause(badRequest.getException());
 	}
 
 	@Test
-	void 배치_실패를_개별_결과로_변환하고_다음_배치도_호출한다() throws Exception {
+	void 배치_호출이_실패하면_즉시_중단한다() throws Exception {
 		FirebaseMessaging messaging = mock(FirebaseMessaging.class);
 		FirebaseMessagingException failure = mock(FirebaseMessagingException.class);
+		given(messaging.sendEach(anyList())).willThrow(failure);
+		List<String> fids = java.util.stream.IntStream.range(0, 501).mapToObj(index -> "fid-" + index).toList();
+
+		assertThatThrownBy(() -> sender(messaging).send(messages(fids))).hasCause(failure);
+
+		verify(messaging, times(1)).sendEach(anyList());
+	}
+
+	@Test
+	void 개별_발송이_실패해도_다음_배치는_보내지_않는다() throws Exception {
+		FirebaseMessaging messaging = mock(FirebaseMessaging.class);
 		BatchResponse batch = mock(BatchResponse.class);
-		SendResponse unregistered = failure(MessagingErrorCode.UNREGISTERED);
-		given(batch.getResponses()).willReturn(List.of(unregistered));
-		given(messaging.sendEach(anyList())).willThrow(failure).willReturn(batch);
+		SendResponse failed = failure(MessagingErrorCode.UNAVAILABLE);
+		given(batch.getResponses()).willReturn(List.of(failed));
+		given(messaging.sendEach(anyList())).willReturn(batch);
+		List<String> fids = java.util.stream.IntStream.range(0, 501).mapToObj(index -> "fid-" + index).toList();
 
-		var result = sender(messaging).send(java.util.stream.IntStream.range(0, 501).mapToObj(index -> "fid-" + index).toList(), message());
+		assertThatThrownBy(() -> sender(messaging).send(messages(fids))).hasCause(failed.getException());
 
-		assertThat(result).hasSize(2);
-		assertThat(result.getLast().invalidFids()).containsExactly("fid-500");
-		assertThatThrownBy(result.getFirst()::throwIfFailed).hasCause(failure);
-		verify(messaging, times(2)).sendEach(anyList());
+		verify(messaging, times(1)).sendEach(anyList());
 	}
 
 	@Test
@@ -60,7 +69,7 @@ class FirebaseNotificationSenderTest {
 		BatchResponse batch = mock(BatchResponse.class);
 		given(batch.getResponses()).willReturn(List.of());
 		given(messaging.sendEach(anyList())).willReturn(batch);
-		sender(messaging).send(List.of("fid"), message());
+		sender(messaging).send(messages(List.of("fid")));
 
 		ArgumentCaptor<List<com.google.firebase.messaging.Message>> captor = ArgumentCaptor.captor();
 		verify(messaging).sendEach(captor.capture());
@@ -88,13 +97,20 @@ class FirebaseNotificationSenderTest {
 		});
 		List<String> fids = java.util.stream.IntStream.range(0, 1001).mapToObj(index -> "fid-" + index).toList();
 
-		var results = sender(messaging).send(fids, message());
+		var results = sender(messaging).send(messages(fids));
 
 		ArgumentCaptor<List<com.google.firebase.messaging.Message>> batches = ArgumentCaptor.captor();
 		verify(messaging, times(3)).sendEach(batches.capture());
 		assertThat(batches.getAllValues()).extracting(List::size).containsExactly(500, 500, 1);
 		assertThat(results).hasSize(3);
 		assertThat(results.stream().flatMap(result -> result.invalidFids().stream()).toList()).containsExactlyElementsOf(fids);
+	}
+
+	private Map<String, NotificationMessage> messages(List<String> fids) {
+		Map<String, NotificationMessage> messages = new LinkedHashMap<>();
+		NotificationMessage message = message();
+		fids.forEach(fid -> messages.put(fid, message));
+		return messages;
 	}
 
 	private NotificationMessage message() {
