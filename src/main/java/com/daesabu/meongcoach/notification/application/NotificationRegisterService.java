@@ -23,7 +23,7 @@ import org.springframework.validation.annotation.Validated;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 @Validated
-public class NotificationModifyService implements NotificationRegister {
+public class NotificationRegisterService implements NotificationRegister {
 
 	private final DeviceInstallationRepository deviceInstallationRepository;
 	private final NotificationPreferenceRepository notificationPreferenceRepository;
