@@ -43,7 +43,8 @@ public class NotificationDispatchService implements NotificationDispatcher {
 	@Transactional
 	public NotificationDispatchResult dispatch(NotificationDispatchRequest request) {
 		NotificationHour.validate(request.hour());
-		if (!dispatches.tryLock(request.key()) || dispatches.existsByDispatchKey(request.key())) {
+		dispatches.lock(request.key());
+		if (dispatches.existsByDispatchKey(request.key())) {
 			return new NotificationDispatchResult(0, true);
 		}
 		List<String> fids = findTargets(request.hour());

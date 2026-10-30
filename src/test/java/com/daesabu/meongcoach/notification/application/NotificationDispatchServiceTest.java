@@ -70,7 +70,6 @@ class NotificationDispatchServiceTest {
 	}
 
 	private void prepareTargets(int count) {
-		given(dispatches.tryLock(request.key())).willReturn(true);
 		given(preferences.findUserIdsByHourEnabled(17)).willReturn(List.of(1L));
 		given(users.findActiveUserIds(List.of(1L))).willReturn(Set.of(1L));
 		List<DeviceInstallation> results = IntStream.range(0, count)

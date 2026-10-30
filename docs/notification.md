@@ -39,7 +39,7 @@ flowchart LR
 
 | 메서드·경로 | 동작 |
 |---|---|
-| `POST /internal/notifications/dispatch` | `{scheduledTime, hour}`로 발송. `{fids, duplicate}` 응답. 같은 예약 시각·hour의 재호출은 발송 없이 duplicate=true |
+| `POST /internal/notifications/dispatch` | `{scheduledTime, hour}`로 발송. `{fids, duplicate}` 응답. 같은 예약 시각·hour가 진행 중이면 끝날 때까지 기다리고, 완료됐으면 발송 없이 duplicate=true |
 
 ### 인증
 
@@ -76,7 +76,7 @@ Sender는 배치별 결과를 `List<NotificationSender.NotificationBatchResult>`
 `BaseEntity`가 생성·수정 시각을 기록합니다.
 `dispatch_key`에는 유니크 제약을 둡니다.
 예약 키로 PostgreSQL 트랜잭션 advisory lock을 잡고 완료 이력을 확인합니다.
-진행 중인 예약의 잠금을 얻지 못하거나 완료 이력이 있으면 `duplicate=true`로 응답합니다.
+진행 중인 예약이 있으면 잠금이 풀릴 때까지 기다린 뒤 완료 이력을 확인합니다. 완료 이력이 있으면 `duplicate=true`로 응답하고, 앞 요청이 실패해 롤백됐으면 이어서 발송합니다.
 FCM 호출과 무효 FID 정리 뒤 완료 이력을 저장하고 커밋합니다.
 발송 중에는 DB 트랜잭션과 연결을 유지합니다.
 

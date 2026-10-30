@@ -11,8 +11,8 @@ public interface NotificationDispatchRepository extends JpaRepository<Notificati
 	Optional<NotificationDispatch> findByDispatchKey(String dispatchKey);
 
 	/**
-	 * 예약 키의 트랜잭션 잠금을 얻으면 true를 반환한다. 잠금은 커밋·롤백 시 해제된다.
+	 * 예약 키의 트랜잭션 잠금을 얻을 때까지 기다린다. 잠금은 커밋·롤백 시 해제된다.
 	 */
-	@Query(value = "SELECT pg_try_advisory_xact_lock(hashtextextended('notification-dispatch:' || :key, 0))", nativeQuery = true)
-	boolean tryLock(String key);
+	@Query(value = "SELECT 1 FROM pg_advisory_xact_lock(hashtextextended('notification-dispatch:' || :key, 0))", nativeQuery = true)
+	int lock(String key);
 }
