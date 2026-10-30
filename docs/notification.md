@@ -66,7 +66,8 @@ flowchart LR
 기준 코드는 `NotificationDispatchService`와 `FirebaseNotificationSender`입니다.
 `scheduledTime`은 ISO 8601 UTC 시각이고 `hour`는 서울 기준 0~23입니다. Scheduler가 원래 예약 시각을 넘기므로 기동 지연이나 재호출에도 같은 키를 씁니다.
 
-`notification_dispatches`는 발송을 완료한 예약의 키와 완료 시각만 저장합니다.
+`notification_dispatches`는 자동 생성하는 내부 `id`와 발송을 완료한 예약 식별자 `dispatch_key`, 완료 시각을 저장합니다.
+`dispatch_key`에는 유니크 제약을 둡니다.
 예약 키로 PostgreSQL 트랜잭션 advisory lock을 잡고 완료 이력을 확인합니다.
 진행 중인 예약의 잠금을 얻지 못하거나 완료 이력이 있으면 `duplicate=true`로 응답합니다.
 FCM 호출과 무효 FID 정리 뒤 완료 이력을 저장하고 커밋합니다.
