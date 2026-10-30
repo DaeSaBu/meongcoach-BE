@@ -15,7 +15,6 @@ import com.google.firebase.messaging.Notification;
 import com.google.firebase.messaging.SendResponse;
 import java.time.Instant;
 import java.util.List;
-import java.util.stream.Gatherers;
 import java.util.stream.IntStream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.ObjectProvider;
@@ -31,12 +30,15 @@ public class FirebaseNotificationSender implements NotificationSender {
 	public List<NotificationDeliveryResult> send(List<String> fids, NotificationMessage message) {
 		FirebaseMessaging client = messaging.getObject();
 		Message.Builder template = message(message);
-		return fids.stream().gather(Gatherers.windowFixed(BATCH_SIZE))
-				.flatMap(batch -> sendBatch(client, batch, template).stream()).toList();
+		List<Message> messages = fids.stream().map(fid -> template.setFid(fid).build()).toList();
+		return IntStream.iterate(0, start -> start < messages.size(), start -> start + BATCH_SIZE)
+				.mapToObj(start -> {
+					int end = Math.min(start + BATCH_SIZE, messages.size());
+					return sendBatch(client, fids.subList(start, end), messages.subList(start, end));
+				}).flatMap(List::stream).toList();
 	}
 
-	private List<NotificationDeliveryResult> sendBatch(FirebaseMessaging client, List<String> fids, Message.Builder template) {
-		List<Message> messages = fids.stream().map(fid -> template.setFid(fid).build()).toList();
+	private List<NotificationDeliveryResult> sendBatch(FirebaseMessaging client, List<String> fids, List<Message> messages) {
 		try {
 			List<SendResponse> responses = client.sendEach(messages).getResponses();
 			return IntStream.range(0, responses.size())
