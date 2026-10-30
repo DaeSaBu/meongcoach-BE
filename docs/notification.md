@@ -68,7 +68,7 @@ Service에서 FID별 `Map<String, NotificationMessage>`를 만들어 Sender에 �
 `FirebaseNotificationSender`는 `NotificationMessage`를 Firebase 요청으로 변환하고 500건씩 나누어 호출합니다.
 `FirebaseNotificationBatchResult`가 SDK의 원본 응답을 직접 받아 FID 연결과 무효 등록 판별을 담당합니다.
 Sender는 배치별 결과를 `List<NotificationSender.NotificationBatchResult>`로 순서대로 반환합니다.
-무효 FID 외 오류가 발생하면 발송 단계에서 원인을 보존한 예외를 즉시 던지고 후속 배치를 중단합니다.
+개별 메시지 오류는 건너뜁니다. 배치 호출 자체가 실패하면 원인을 보존한 예외를 즉시 던지고 후속 배치를 중단합니다.
 발송이 끝나면 Service가 모든 배치의 무효 FID를 모아 삭제하고 완료 이력을 저장합니다.
 `scheduledTime`은 ISO 8601 UTC 시각이고 `hour`는 서울 기준 0~23입니다. Scheduler가 원래 예약 시각을 넘기므로 기동 지연이나 재호출에도 같은 키를 씁니다.
 
@@ -84,8 +84,8 @@ FCM 호출과 무효 FID 정리 뒤 완료 이력을 저장하고 커밋합니�
 프로세스 중단 시 잠금은 DB 연결 종료와 함께 해제됩니다.
 일부 FID에 전송된 뒤 실패하거나 완료 이력 커밋 전에 중단되면 재실행 시 중복 전달될 수 있습니다.
 
-FID를 중복 제거하고 500개씩 발송합니다. `UNREGISTERED`만 FID 삭제 대상으로 삼습니다. `INVALID_ARGUMENT`는 메시지 오류일 수도 있으므로 삭제하지 않고 실패로 처리합니다.
-무효 FID 외 실패가 있으면 FID 정리 전에 첫 FCM 원인을 보존한 도메인 예외를 전파해 502를 반환합니다. 인증 실패는 401, 잘못된 hour는 400입니다.
+FID를 중복 제거하고 500개씩 발송합니다. `UNREGISTERED`와 `SENDER_ID_MISMATCH`를 FID 삭제 대상으로 삼습니다. `INVALID_ARGUMENT`는 메시지 오류일 수도 있으므로 삭제하지 않습니다.
+그 밖의 개별 오류는 삭제하지 않고 건너뛰므로 FID 하나가 예약 전체를 실패시키지 않습니다. 배치 호출이 실패하면 FID 정리 전에 FCM 원인을 보존한 도메인 예외를 전파해 502를 반환합니다. 인증 실패는 401, 잘못된 hour는 400입니다.
 
 메시지에는 시각별 훈련 안내, `data.hour`, `data.deepLink=meongcoach://training-curriculum`을 넣습니다.
 Android는 HIGH 우선순위와 TTL 1시간을 사용합니다. APNs는 우선순위 10과 만료 1시간을 사용합니다.
