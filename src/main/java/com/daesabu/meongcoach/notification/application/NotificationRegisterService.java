@@ -2,7 +2,6 @@ package com.daesabu.meongcoach.notification.application;
 
 
 import com.daesabu.meongcoach.notification.application.provided.NotificationRegister;
-import com.daesabu.meongcoach.notification.application.provided.dto.DeviceInstallationDeleteRequest;
 import com.daesabu.meongcoach.notification.application.provided.dto.DeviceInstallationRegisterRequest;
 import com.daesabu.meongcoach.notification.application.provided.dto.DeviceInstallationUnregisterRequest;
 import com.daesabu.meongcoach.notification.application.provided.dto.NotificationPreferenceUpdateRequest;
@@ -24,7 +23,7 @@ import org.springframework.validation.annotation.Validated;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 @Validated
-public class NotificationModifyService implements NotificationRegister {
+public class NotificationRegisterService implements NotificationRegister {
 
 	private final DeviceInstallationRepository deviceInstallationRepository;
 	private final NotificationPreferenceRepository notificationPreferenceRepository;
@@ -62,15 +61,6 @@ public class NotificationModifyService implements NotificationRegister {
 	@Transactional
 	public void deleteDeviceInstallation(Long userId, DeviceInstallationUnregisterRequest request) {
 		deviceInstallationRepository.deleteByUserIdAndFid(userId, request.fid());
-	}
-
-	@Override
-	@Transactional
-	public void deleteDeviceInstallations(DeviceInstallationDeleteRequest request) {
-		if (request.fids().isEmpty()) {
-			return;
-		}
-		deviceInstallationRepository.deleteAllByFidIn(request.fids());
 	}
 
 	@Override

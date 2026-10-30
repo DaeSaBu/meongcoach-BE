@@ -1,8 +1,7 @@
 package com.daesabu.meongcoach.notification.adapter.security;
 
 import static com.daesabu.meongcoach.support.AppClientRequests.appGet;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -25,8 +24,8 @@ import org.springframework.test.web.servlet.MockMvc;
 @AutoConfigureMockMvc
 class InternalSecurityFilterChainTest {
 
-	private static final String TARGETS_PATH = "/internal/notifications/targets";
-	private static final String TOKENS_PATH = "/internal/notifications/installations";
+	private static final String DISPATCH_PATH = "/internal/notifications/dispatch";
+	private static final String DISPATCH_BODY = "{\"scheduledTime\":\"2026-10-31T08:00:00Z\",\"hour\":24}";
 	private static final String APP_PREFERENCES_PATH = "/api/notifications/preferences";
 	private static final String INTERNAL_SECRET_HEADER = "X-Internal-Secret";
 	private static final String INTERNAL_SECRET = "test-internal-secret";
@@ -42,7 +41,7 @@ class InternalSecurityFilterChainTest {
 
 	@Test
 	void 비밀_헤더가_없으면_Problem_Details로_401을_반환한다() throws Exception {
-		mockMvc.perform(get(TARGETS_PATH).queryParam("hour", "17"))
+		mockMvc.perform(post(DISPATCH_PATH).contentType(MediaType.APPLICATION_JSON).content(DISPATCH_BODY))
 				.andExpect(status().isUnauthorized())
 				.andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
 				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
@@ -50,37 +49,28 @@ class InternalSecurityFilterChainTest {
 
 	@Test
 	void 비밀_헤더_값이_다르면_401을_반환한다() throws Exception {
-		mockMvc.perform(get(TARGETS_PATH)
-						.queryParam("hour", "17")
+		mockMvc.perform(post(DISPATCH_PATH)
+						.contentType(MediaType.APPLICATION_JSON).content(DISPATCH_BODY)
 						.header(INTERNAL_SECRET_HEADER, "wrong-secret"))
 				.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
 	}
 
 	@Test
-	void 비밀_헤더가_맞으면_앱_헤더와_토큰_없이_발송_대상을_조회한다() throws Exception {
-		mockMvc.perform(get(TARGETS_PATH)
-						.queryParam("hour", "17")
+	void 비밀_헤더가_맞으면_앱_헤더와_토큰_없이_발송_요청을_검증한다() throws Exception {
+		mockMvc.perform(post(DISPATCH_PATH)
+						.contentType(MediaType.APPLICATION_JSON).content(DISPATCH_BODY)
 						.header(INTERNAL_SECRET_HEADER, INTERNAL_SECRET))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$").isArray());
-	}
-
-	@Test
-	void 비밀_헤더가_맞으면_무효_토큰을_지운다() throws Exception {
-		mockMvc.perform(delete(TOKENS_PATH)
-						.header(INTERNAL_SECRET_HEADER, INTERNAL_SECRET)
-						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"fids\": [\"unknown-token\"]}"))
-				.andExpect(status().isNoContent());
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("NOTIFICATION_HOUR_INVALID"));
 	}
 
 	@Test
 	void 유효한_액세스_토큰으로는_내부_API를_호출할_수_없다() throws Exception {
 		AuthToken token = tokenProvider.issue(saveUser().getId());
 
-		mockMvc.perform(get(TARGETS_PATH)
-						.queryParam("hour", "17")
+		mockMvc.perform(post(DISPATCH_PATH)
+						.contentType(MediaType.APPLICATION_JSON).content(DISPATCH_BODY)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))
 				.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
@@ -108,4 +98,5 @@ class InternalSecurityFilterChainTest {
 		user.completeOnboarding(new UserProfileCreateCommand("멍멍이집사", null, "INFP", Set.of(), Set.of()));
 		return userRepository.save(user);
 	}
+
 }

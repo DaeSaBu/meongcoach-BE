@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 
-import com.daesabu.meongcoach.notification.application.provided.dto.DeviceInstallationDeleteRequest;
 import com.daesabu.meongcoach.notification.application.provided.dto.DeviceInstallationRegisterRequest;
 import com.daesabu.meongcoach.notification.application.provided.dto.DeviceInstallationUnregisterRequest;
 import com.daesabu.meongcoach.notification.application.provided.dto.NotificationPreferenceUpdateRequest;
@@ -20,7 +19,6 @@ import com.daesabu.meongcoach.notification.domain.exception.InvalidDevicePlatfor
 import com.daesabu.meongcoach.notification.domain.exception.NotAllowedNotificationHourException;
 import com.daesabu.meongcoach.support.ApplicationTest;
 import java.time.Instant;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -166,18 +164,6 @@ class NotificationRegisterTest {
 	void 없는_FID을_지워도_예외가_없다() {
 		assertThatCode(() -> notificationRegister.deleteDeviceInstallation(USER_ID, new DeviceInstallationUnregisterRequest(TOKEN)))
 				.doesNotThrowAnyException();
-	}
-
-	@Test
-	void 무효_FID_목록을_지우면_있는_FID만_지우고_없는_FID은_무시한다() {
-		saveInstallation(USER_ID, TOKEN);
-		saveInstallation(OTHER_USER_ID, OTHER_TOKEN);
-
-		notificationRegister.deleteDeviceInstallations(new DeviceInstallationDeleteRequest(List.of(TOKEN, "unknown-fid")));
-
-		assertThat(deviceInstallationRepository.findAll())
-				.extracting(DeviceInstallation::getFid)
-				.containsExactly(OTHER_TOKEN);
 	}
 
 	@Test

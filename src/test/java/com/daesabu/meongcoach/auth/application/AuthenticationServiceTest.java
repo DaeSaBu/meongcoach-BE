@@ -32,7 +32,7 @@ import com.daesabu.meongcoach.auth.domain.exception.InvalidRefreshTokenException
 import com.daesabu.meongcoach.auth.domain.exception.UnsupportedSocialProviderException;
 import com.daesabu.meongcoach.auth.domain.exception.WithdrawnUserException;
 import com.daesabu.meongcoach.media.application.provided.StoredMediaVerifier;
-import com.daesabu.meongcoach.notification.application.NotificationModifyService;
+import com.daesabu.meongcoach.notification.application.NotificationRegisterService;
 import com.daesabu.meongcoach.notification.application.required.DeviceInstallationRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationPreferenceRepository;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallation;
@@ -120,7 +120,7 @@ class AuthenticationServiceTest {
 		RefreshTokenModifyService refreshTokenRegister = new RefreshTokenModifyService(refreshTokenRepository,
 				tokenProvider, refreshTokenFinder);
 		AuthTokenProvideService authTokenProvider = new AuthTokenProvideService(tokenProvider, refreshTokenRegister);
-		NotificationModifyService notificationRegister = new NotificationModifyService(deviceInstallationRepository,
+		NotificationRegisterService notificationRegister = new NotificationRegisterService(deviceInstallationRepository,
 				notificationPreferenceRepository);
 
 		service = new AuthenticationService(accountFinder, accountRegister, PASSWORD_ENCODER::matches,

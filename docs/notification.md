@@ -1,14 +1,15 @@
 # 푸시 알림 FID와 수신 설정 (notification 모듈)
 
 notification 모듈은 푸시 알림에 쓰는 회원의 기기 FID(Firebase Installation ID(FID))과 시각별 수신 설정을 소유합니다.
-백엔드는 FCM을 호출하지 않습니다. 발송 시각 판단과 FCM 호출은 별도 발송기 서비스가 맡고, 백엔드는 내부 API로 발송 대상을 내주고 무효 FID를 지웁니다.
+백엔드는 발송 대상 조회, FCM 발송과 무효 FID 삭제를 맡습니다. 외부 스케줄러가 띄운 notifier는 발송 API를 한 번 호출합니다.
 
 ```mermaid
 flowchart LR
-    App -- "PUT /api/notifications/installations" --> BE[(device_installations / notification_preferences)]
-    Sender[발송기] -- "GET /internal/notifications/targets?hour=17" --> BE
-    Sender -- FCM --> App
-    Sender -- "DELETE /internal/notifications/installations" --> BE
+    App -- "FID·수신 설정" --> BE[백엔드]
+    Scheduler --> Notifier
+    Notifier -- "POST /internal/notifications/dispatch" --> BE
+    BE --> DB[(PostgreSQL)]
+    BE --> FCM --> App
 ```
 
 ## 애그리거트
@@ -38,20 +39,21 @@ flowchart LR
 
 | 메서드·경로 | 동작 |
 |---|---|
-| `GET /internal/notifications/targets?hour=17` | `[{userId, fid, platform}]`. FID당 한 행, 회원 ID 오름차순·같은 회원 안에서는 FID 등록 순. 대상이 없으면 `[]`. 시각이 0~23 밖이면 400 |
-| `DELETE /internal/notifications/installations` | `{fids: [...]}`의 FID를 회원과 무관하게 삭제. 없는 FID가 섞여도 204 |
+| `POST /internal/notifications/dispatch` | `{scheduledTime, hour}`로 발송. `{fids, duplicate}` 응답. 같은 예약 시각·hour가 진행 중이면 끝날 때까지 기다리고, 완료됐으면 발송 없이 duplicate=true |
 
 ### 인증
 
 - `/internal/**`는 `notification/adapter/security/InternalSecurityConfig`가 정의한 별도 시큐리티 필터 체인(`@Order(0)`, `securityMatcher("/internal/**")`)이 처리합니다. JWT 디코더와 앱 버전 게이트를 타지 않습니다.
 - `InternalSecretAuthenticationFilter`가 요청 헤더 `X-Internal-Secret`을 설정값 `meongcoach.notification.internal-secret`(환경 변수 `NOTIFICATION_INTERNAL_SECRET`)과 `MessageDigest.isEqual`로 비교해 같을 때만 인증 주체를 세웁니다. 헤더가 없거나 값이 다르면 401 Problem Details(`UNAUTHORIZED`)입니다.
-- 설정값에 기본값이 없어 미주입 시 기동에 실패합니다. 액세스 FID으로는 내부 API를, 비밀 헤더로는 앱 API를 호출할 수 없습니다.
+- 설정값에 기본값이 없어 미주입 시 기동에 실패합니다. 액세스 토큰으로는 내부 API를, 비밀 헤더로는 앱 API를 호출할 수 없습니다.
 
 ## 발송 대상 규칙
 
+`NotificationDispatchService` 내부에서 발송 대상을 조회합니다.
+
 1. `notification_preferences`에서 `hour = ? AND enabled = true`인 행의 회원 ID를 모읍니다.
 2. `user`의 `UserFinder.findActiveUserIds`로 상태가 `ACTIVE`인 회원만 남깁니다. 탈퇴 회원은 빠집니다.
-3. 남은 회원의 `device_installations`를 한 번에 조회해 FID당 한 행으로 반환합니다. 회원 ID 오름차순, 같은 회원 안에서는 FID 등록 순(`id` 오름차순)입니다. FID가 없는 회원은 응답에서 빠집니다.
+3. 남은 회원의 `device_installations`를 한 번에 조회합니다. 회원 ID 오름차순, 같은 회원 안에서는 FID 등록 순(`id` 오름차순)입니다. FID가 없는 회원은 발송 대상에서 빠집니다.
 
 설정 행이 없는 회원은 기본값이 켜져 있어도 대상이 아닙니다. FID 등록이 기본 행을 만들므로 FID가 있는 회원에게는 행이 있습니다.
 
@@ -59,11 +61,44 @@ flowchart LR
 
 `auth`의 `AuthenticationService.withdraw`가 `userRegister.withdraw` 전에 `NotificationRegister.deleteAllByUserId`를 호출해 회원의 FID와 설정을 모두 지웁니다. 의존 방향은 `auth → notification` 한쪽뿐입니다.
 
+## 발송 처리
+
+`NotificationDispatchService`는 대상 조회, 시각별 문구·딥링크 구성, 중복 실행 제어와 저장을 조율합니다.
+Service에서 FID별 `Map<String, NotificationMessage>`를 만들어 Sender에 전달합니다.
+`FirebaseNotificationSender`는 `NotificationMessage`를 Firebase 요청으로 변환하고 500건씩 나누어 호출합니다.
+`FirebaseNotificationBatchResult`가 SDK의 원본 응답을 직접 받아 FID 연결과 무효 등록 판별을 담당합니다.
+Sender는 배치별 결과를 `List<NotificationSender.NotificationBatchResult>`로 순서대로 반환합니다.
+개별 메시지 오류는 건너뜁니다. 배치 호출 자체가 실패하면 원인을 보존한 예외를 즉시 던지고 후속 배치를 중단합니다.
+발송이 끝나면 Service가 모든 배치의 무효 FID를 모아 삭제하고 완료 이력을 저장합니다.
+`scheduledTime`은 ISO 8601 UTC 시각이고 `hour`는 서울 기준 0~23입니다. Scheduler가 원래 예약 시각을 넘기므로 기동 지연이나 재호출에도 같은 키를 씁니다.
+
+`notification_dispatches`는 자동 생성하는 내부 `id`와 발송을 완료한 예약 식별자 `dispatch_key`를 저장합니다.
+`BaseEntity`가 생성·수정 시각을 기록합니다.
+`dispatch_key`에는 유니크 제약을 둡니다.
+예약 키로 PostgreSQL 트랜잭션 advisory lock을 잡고 완료 이력을 확인합니다.
+진행 중인 예약이 있으면 잠금이 풀릴 때까지 기다린 뒤 완료 이력을 확인합니다. 완료 이력이 있으면 `duplicate=true`로 응답하고, 앞 요청이 실패해 롤백됐으면 이어서 발송합니다.
+FCM 호출과 무효 FID 정리 뒤 완료 이력을 저장하고 커밋합니다.
+발송 중에는 DB 트랜잭션과 연결을 유지합니다.
+
+실패하면 등록 정리와 완료 이력을 롤백하며 같은 키로 다시 실행할 수 있습니다.
+프로세스 중단 시 잠금은 DB 연결 종료와 함께 해제됩니다.
+일부 FID에 전송된 뒤 실패하거나 완료 이력 커밋 전에 중단되면 재실행 시 중복 전달될 수 있습니다.
+
+FID를 중복 제거하고 500개씩 발송합니다. `UNREGISTERED`와 `SENDER_ID_MISMATCH`를 FID 삭제 대상으로 삼습니다. `INVALID_ARGUMENT`는 메시지 오류일 수도 있으므로 삭제하지 않습니다.
+그 밖의 개별 오류는 삭제하지 않고 건너뛰므로 FID 하나가 예약 전체를 실패시키지 않습니다. 배치 호출이 실패하면 FID 정리 전에 FCM 원인을 보존한 도메인 예외를 전파해 502를 반환합니다. 인증 실패는 401, 잘못된 hour는 400입니다.
+
+메시지에는 시각별 훈련 안내, `data.hour`, `data.deepLink=meongcoach://training-curriculum`을 넣습니다.
+Android는 HIGH 우선순위와 TTL 1시간을 사용합니다. APNs는 우선순위 10과 만료 1시간을 사용합니다.
+재실행으로 같은 예약이 중복 전달돼도 기기 알림이 하나만 남도록 예약 키를 Android 알림 `tag`와 APNs `apns-collapse-id`로 보냅니다. 소리·진동은 다시 울릴 수 있습니다.
+
+`FIREBASE_SERVICE_ACCOUNT_JSON`으로 Firebase를 인증합니다. 값이 없으면 ADC를 사용하며 첫 발송 때 초기화합니다.
+개발·운영 백엔드는 각 환경의 Firebase 프로젝트 키를 사용합니다. 키는 Terraform이 API 태스크 환경 변수에 주입합니다.
+
 ## FID 등록
 
-앱은 Android·iOS의 Firebase Messaging FID 모드를 활성화합니다.
-알림 권한과 iOS APNs 등록을 확인한 뒤 `register()`를 완료하고 FID를 서버에 동기화합니다.
-등록 콜백에서도 현재 FID를 동기화합니다. 로그아웃·권한 해제 때 서버 등록을 삭제합니다.
+앱은 FID 모드를 활성화한 Firebase Messaging에서 `register()`를 완료한 뒤 FID를 서버에 전송합니다.
+등록·갱신 콜백에서도 현재 FID를 다시 동기화합니다. iOS는 APNs 등록과 알림 권한 확인을 먼저 완료합니다.
+`PUT /api/notifications/installations`는 `{fid, platform}`, `DELETE /api/notifications/installations`는 `{fid}`를 받습니다.
 
-`V37`은 기존 `device_tokens` 테이블과 등록 토큰을 삭제하고 FID 전용 `device_installations` 테이블을 만듭니다.
-수신 설정은 유지합니다. 앱은 `/api/notifications/installations`에 `{fid, platform}`으로 등록하고 `{fid}`로 삭제합니다.
+`V37`은 기존 `device_tokens` 테이블과 등록 토큰을 삭제하고 FID 전용 `device_installations` 테이블을 만듭니다. 수신 설정은 유지합니다.
+기존 앱은 FID 지원 앱으로 업데이트해야 새 발송 대상에 포함됩니다. 백엔드의 새 API와 마이그레이션을 먼저 배포하고 앱을 배포합니다.
