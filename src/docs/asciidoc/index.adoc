@@ -1018,22 +1018,6 @@ operation::notification/preference-update-error[snippets='http-response,response
 `/internal/notifications/**`는 앱이 아니라 별도 발송기가 호출합니다. JWT와 앱 헤더 대신 `X-Internal-Secret` 헤더가 서버 설정값(`NOTIFICATION_INTERNAL_SECRET`)과 같아야 하며,
 헤더가 없거나 값이 다르면 401(`UNAUTHORIZED`)을 반환합니다. Swagger UI에는 올리지 않습니다.
 
-==== 발송 대상 조회
-
-해당 시각 알림을 켠 설정 행이 있는 회원 중 상태가 활성인 회원의 기기 FID를 FID당 한 행씩 배열로 반환합니다. 회원 ID 오름차순, 같은 회원 안에서는 FID 등록 순입니다. FID가 없는 회원은 빠지고, 대상이 없으면 `[]`입니다.
-
-operation::notification/internal-targets[snippets='http-request,query-parameters,http-response,response-fields']
-
-시각이 0~23 밖이면 400(`NOTIFICATION_HOUR_INVALID`)을 반환합니다.
-
-operation::notification/internal-targets-error[snippets='http-response,response-fields']
-
-==== 무효 FID 삭제
-
-FCM이 등록 해제됐다고 답한 FID를 회원과 무관하게 지웁니다. 없는 FID가 섞여도 204입니다. 응답 본문은 없습니다.
-
-operation::notification/internal-fid-delete[snippets='http-request,request-fields,http-response']
-
 === 내부 알림 발송
 
 `POST /internal/notifications/dispatch`는 예약 시각·발송 시각으로 알림을 발송합니다.

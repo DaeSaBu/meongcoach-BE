@@ -40,8 +40,6 @@ flowchart LR
 | 메서드·경로 | 동작 |
 |---|---|
 | `POST /internal/notifications/dispatch` | `{scheduledTime, hour}`로 발송. `{fids, duplicate}` 응답. 같은 예약 시각·hour의 재호출은 발송 없이 duplicate=true |
-| `GET /internal/notifications/targets?hour=17` | `[{userId, fid, platform}]`. FID당 한 행, 회원 ID 오름차순·같은 회원 안에서는 FID 등록 순. 대상이 없으면 `[]`. 시각이 0~23 밖이면 400 |
-| `DELETE /internal/notifications/installations` | `{fids: [...]}`의 FID를 회원과 무관하게 삭제. 없는 FID가 섞여도 204 |
 
 ### 인증
 
