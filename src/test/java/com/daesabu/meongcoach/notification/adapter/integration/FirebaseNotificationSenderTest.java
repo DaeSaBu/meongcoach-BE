@@ -1,6 +1,7 @@
 package com.daesabu.meongcoach.notification.adapter.integration;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -30,14 +31,10 @@ class FirebaseNotificationSenderTest {
 		given(batch.getResponses()).willReturn(List.of(expired, badRequest));
 		given(messaging.sendEach(anyList())).willReturn(batch);
 
-		var result = sender(messaging).send(List.of("expired", "keep"), message());
+		var result = sender(messaging).send(List.of("expired", "keep"), message()).getFirst();
 
-		assertThat(result).extracting(com.daesabu.meongcoach.notification.domain.NotificationDeliveryResult::fid)
-				.containsExactly("expired", "keep");
-		assertThat(result.getFirst().invalid()).isTrue();
-		assertThat(result.getFirst().failure()).isNull();
-		assertThat(result.getLast().invalid()).isFalse();
-		assertThat(result.getLast().failure()).hasCause(badRequest.getException());
+		assertThat(result.invalidFids()).containsExactly("expired");
+		assertThatThrownBy(result::throwIfFailed).hasCause(badRequest.getException());
 	}
 
 	@Test
@@ -45,18 +42,15 @@ class FirebaseNotificationSenderTest {
 		FirebaseMessaging messaging = mock(FirebaseMessaging.class);
 		FirebaseMessagingException failure = mock(FirebaseMessagingException.class);
 		BatchResponse batch = mock(BatchResponse.class);
-		SendResponse success = mock(SendResponse.class);
-		given(success.isSuccessful()).willReturn(true);
-		given(batch.getResponses()).willReturn(List.of(success));
+		SendResponse unregistered = failure(MessagingErrorCode.UNREGISTERED);
+		given(batch.getResponses()).willReturn(List.of(unregistered));
 		given(messaging.sendEach(anyList())).willThrow(failure).willReturn(batch);
 
 		var result = sender(messaging).send(java.util.stream.IntStream.range(0, 501).mapToObj(index -> "fid-" + index).toList(), message());
 
-		assertThat(result).hasSize(501);
-		assertThat(result.getFirst().failure()).hasCause(failure);
-		assertThat(result.get(499).failure()).hasCause(failure);
-		assertThat(result.getLast().fid()).isEqualTo("fid-500");
-		assertThat(result.getLast().failure()).isNull();
+		assertThat(result).hasSize(2);
+		assertThat(result.getLast().invalidFids()).containsExactly("fid-500");
+		assertThatThrownBy(result.getFirst()::throwIfFailed).hasCause(failure);
 		verify(messaging, times(2)).sendEach(anyList());
 	}
 
@@ -85,12 +79,11 @@ class FirebaseNotificationSenderTest {
 	@Test
 	void FID을_500개씩_분할하고_응답_순서를_유지한다() throws Exception {
 		FirebaseMessaging messaging = mock(FirebaseMessaging.class);
-		SendResponse success = mock(SendResponse.class);
-		given(success.isSuccessful()).willReturn(true);
+		SendResponse unregistered = failure(MessagingErrorCode.UNREGISTERED);
 		given(messaging.sendEach(anyList())).willAnswer(invocation -> {
 			List<?> messages = invocation.getArgument(0);
 			BatchResponse batch = mock(BatchResponse.class);
-			given(batch.getResponses()).willReturn(java.util.Collections.nCopies(messages.size(), success));
+			given(batch.getResponses()).willReturn(java.util.Collections.nCopies(messages.size(), unregistered));
 			return batch;
 		});
 		List<String> fids = java.util.stream.IntStream.range(0, 1001).mapToObj(index -> "fid-" + index).toList();
@@ -100,8 +93,8 @@ class FirebaseNotificationSenderTest {
 		ArgumentCaptor<List<com.google.firebase.messaging.Message>> batches = ArgumentCaptor.captor();
 		verify(messaging, times(3)).sendEach(batches.capture());
 		assertThat(batches.getAllValues()).extracting(List::size).containsExactly(500, 500, 1);
-		assertThat(results).extracting(com.daesabu.meongcoach.notification.domain.NotificationDeliveryResult::fid)
-				.containsExactlyElementsOf(fids);
+		assertThat(results).hasSize(3);
+		assertThat(results.stream().flatMap(result -> result.invalidFids().stream()).toList()).containsExactlyElementsOf(fids);
 	}
 
 	private NotificationMessage message() {

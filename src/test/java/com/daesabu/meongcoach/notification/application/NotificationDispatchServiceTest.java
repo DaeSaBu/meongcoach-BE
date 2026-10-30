@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -14,10 +15,10 @@ import com.daesabu.meongcoach.notification.application.provided.NotificationTarg
 import com.daesabu.meongcoach.notification.application.provided.NotificationTargetResult;
 import com.daesabu.meongcoach.notification.application.provided.dto.NotificationDispatchRequest;
 import com.daesabu.meongcoach.notification.application.required.DeviceInstallationRepository;
+import com.daesabu.meongcoach.notification.application.required.NotificationBatchResult;
 import com.daesabu.meongcoach.notification.application.required.NotificationDispatchRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationSender;
 import com.daesabu.meongcoach.notification.domain.DevicePlatform;
-import com.daesabu.meongcoach.notification.domain.NotificationDeliveryResult;
 import com.daesabu.meongcoach.notification.domain.NotificationDispatch;
 import com.daesabu.meongcoach.notification.domain.NotificationMessage;
 import com.daesabu.meongcoach.notification.domain.exception.NotificationDeliveryException;
@@ -39,7 +40,8 @@ class NotificationDispatchServiceTest {
 	@Test
 	void 시각별_메시지를_구성하고_전체_대상을_Sender에_전달한다() {
 		prepareTargets(501);
-		given(sender.send(anyList(), any())).willReturn(List.of());
+		NotificationBatchResult deliveryResults = results(List.of(), null);
+		given(sender.send(anyList(), any())).willReturn(List.of(deliveryResults));
 
 		assertThat(service.dispatch(request).fids()).isEqualTo(501);
 
@@ -57,12 +59,9 @@ class NotificationDispatchServiceTest {
 	void 전체_응답에서_무효_FID을_삭제하고_첫_실패를_전파한다() {
 		prepareTargets(1001);
 		var first = new NotificationDeliveryException(new IllegalStateException("first"));
-		var later = new NotificationDeliveryException(new IllegalStateException("later"));
-		given(sender.send(anyList(), any())).willReturn(List.of(
-				new NotificationDeliveryResult("fid-1", true, null),
-				new NotificationDeliveryResult("fid-2", false, first),
-				new NotificationDeliveryResult("fid-500", true, null),
-				new NotificationDeliveryResult("fid-1000", false, later)));
+		NotificationBatchResult firstBatch = results(List.of("fid-1"), first);
+		NotificationBatchResult secondBatch = results(List.of("fid-500"), null);
+		given(sender.send(anyList(), any())).willReturn(List.of(firstBatch, secondBatch));
 
 		assertThatThrownBy(() -> service.dispatch(request)).isSameAs(first);
 
@@ -77,4 +76,13 @@ class NotificationDispatchServiceTest {
 				.mapToObj(index -> new NotificationTargetResult(1L, "fid-" + index, DevicePlatform.IOS)).toList();
 		given(targets.findTargets(17)).willReturn(results);
 	}
+	private NotificationBatchResult results(List<String> invalidFids, NotificationDeliveryException failure) {
+		NotificationBatchResult results = mock(NotificationBatchResult.class);
+		given(results.invalidFids()).willReturn(invalidFids);
+		if (failure != null) {
+			willThrow(failure).given(results).throwIfFailed();
+		}
+		return results;
+	}
+
 }
