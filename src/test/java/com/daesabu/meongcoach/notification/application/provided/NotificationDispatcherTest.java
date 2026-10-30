@@ -60,7 +60,7 @@ class NotificationDispatcherTest {
 		fids.deleteAll(fids.findAllByUserIdInOrderByUserIdAscIdAsc(List.of(userId)));
 		preferences.deleteAll(preferences.findAllByUserId(userId));
 		users.deleteById(userId);
-		dispatches.deleteById(request.key());
+		dispatches.findByDispatchKey(request.key()).ifPresent(dispatches::delete);
 	}
 
 	@Test
@@ -71,6 +71,9 @@ class NotificationDispatcherTest {
 
 		assertThat(result.fids()).isEqualTo(1);
 		assertThat(result.duplicate()).isFalse();
+		var history = dispatches.findByDispatchKey(request.key()).orElseThrow();
+		assertThat(history.getId()).isPositive();
+		assertThat(history.getDispatchKey()).isEqualTo(request.key());
 		assertThat(fids.findByFid(fid)).isEmpty();
 	}
 
@@ -92,9 +95,9 @@ class NotificationDispatcherTest {
 				.willReturn(new NotificationSendResult(List.of(), null));
 
 		assertThatThrownBy(() -> dispatcher.dispatch(request)).isSameAs(failure);
-		assertThat(dispatches.existsById(request.key())).isFalse();
+		assertThat(dispatches.existsByDispatchKey(request.key())).isFalse();
 		assertThat(dispatcher.dispatch(request).duplicate()).isFalse();
-		assertThat(dispatches.existsById(request.key())).isTrue();
+		assertThat(dispatches.existsByDispatchKey(request.key())).isTrue();
 		assertThat(dispatcher.dispatch(request).duplicate()).isTrue();
 		verify(sender, times(2)).send(anyList(), eq(17));
 	}
@@ -107,7 +110,7 @@ class NotificationDispatcherTest {
 
 		assertThatThrownBy(() -> dispatcher.dispatch(request)).isSameAs(failure).hasCause(cause);
 		assertThat(fids.findByFid(fid)).isPresent();
-		assertThat(dispatches.existsById(request.key())).isFalse();
+		assertThat(dispatches.existsByDispatchKey(request.key())).isFalse();
 	}
 
 	@Test
@@ -124,7 +127,7 @@ class NotificationDispatcherTest {
 		request = new NotificationDispatchRequest(request.scheduledTime(), 24);
 
 		assertThatThrownBy(() -> dispatcher.dispatch(request)).isInstanceOf(InvalidNotificationHourException.class);
-		assertThat(dispatches.existsById(request.key())).isFalse();
+		assertThat(dispatches.existsByDispatchKey(request.key())).isFalse();
 		verifyNoInteractions(sender);
 	}
 
