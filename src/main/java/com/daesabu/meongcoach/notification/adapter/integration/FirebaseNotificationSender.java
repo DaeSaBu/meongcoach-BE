@@ -11,10 +11,13 @@ import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.Message;
 import com.google.firebase.messaging.MessagingErrorCode;
 import com.google.firebase.messaging.Notification;
+import com.google.firebase.messaging.SendResponse;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Gatherers;
+import java.util.stream.IntStream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
@@ -32,36 +35,48 @@ public class FirebaseNotificationSender implements NotificationSender {
 
 	@Override
 	public NotificationSendResult send(List<String> fids, int hour) {
-		List<String> invalidFids = new ArrayList<>();
-		int failed = 0;
-		NotificationDeliveryException failure = null;
 		FirebaseMessaging client = messaging.getObject();
-		for (int offset = 0; offset < fids.size(); offset += BATCH_SIZE) {
-			List<String> batch = fids.subList(offset, Math.min(offset + BATCH_SIZE, fids.size()));
-			List<Message> messages = batch.stream().map(fid -> message(fid, hour)).toList();
-			try {
-				var responses = client.sendEach(messages).getResponses();
-				for (int i = 0; i < responses.size(); i++) {
-					var response = responses.get(i);
-					if (response.isSuccessful()) {
-						continue;
-					}
-					if (response.getException().getMessagingErrorCode() == MessagingErrorCode.UNREGISTERED) {
-						invalidFids.add(batch.get(i));
-						continue;
-					}
-					if (failure == null) {
-						failure = new NotificationDeliveryException(response.getException());
-					}
-					failed++;
-				}
-			} catch (FirebaseMessagingException e) {
-				if (failure == null) {
-					failure = new NotificationDeliveryException(e);
-				}
-				failed += batch.size();
-			}
+		List<NotificationSendResult> results = fids.stream()
+				.gather(Gatherers.windowFixed(BATCH_SIZE))
+				.map(batch -> sendBatch(client, batch, hour))
+				.toList();
+		return summarize(results);
+	}
+
+	private NotificationSendResult sendBatch(FirebaseMessaging client, List<String> batch, int hour) {
+		List<Message> messages = batch.stream().map(fid -> message(fid, hour)).toList();
+		try {
+			List<SendResponse> responses = client.sendEach(messages).getResponses();
+			List<String> invalidFids = IntStream.range(0, responses.size())
+					.filter(index -> isUnregistered(responses.get(index)))
+					.mapToObj(batch::get)
+					.toList();
+			List<FirebaseMessagingException> errors = responses.stream()
+					.filter(response -> !response.isSuccessful() && !isUnregistered(response))
+					.map(SendResponse::getException)
+					.toList();
+			int failed = errors.size();
+			NotificationDeliveryException failure = errors.stream().findFirst()
+					.map(NotificationDeliveryException::new).orElse(null);
+			return new NotificationSendResult(invalidFids, failed, failure);
+		} catch (FirebaseMessagingException exception) {
+			List<String> invalidFids = List.of();
+			int failed = batch.size();
+			var failure = new NotificationDeliveryException(exception);
+			return new NotificationSendResult(invalidFids, failed, failure);
 		}
+	}
+
+	private boolean isUnregistered(SendResponse response) {
+		return !response.isSuccessful()
+				&& response.getException().getMessagingErrorCode() == MessagingErrorCode.UNREGISTERED;
+	}
+
+	private NotificationSendResult summarize(List<NotificationSendResult> results) {
+		List<String> invalidFids = results.stream().flatMap(result -> result.invalidFids().stream()).toList();
+		int failed = results.stream().mapToInt(NotificationSendResult::failed).sum();
+		NotificationDeliveryException failure = results.stream().map(NotificationSendResult::failure)
+				.filter(Objects::nonNull).findFirst().orElse(null);
 		return new NotificationSendResult(invalidFids, failed, failure);
 	}
 
