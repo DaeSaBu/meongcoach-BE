@@ -65,19 +65,18 @@ class NotificationDispatcherTest {
 
 	@Test
 	void 발송_후_무효_FID을_삭제한다() {
-		given(sender.send(anyList(), eq(17))).willReturn(new NotificationSendResult(List.of(fid), 0, null));
+		given(sender.send(anyList(), eq(17))).willReturn(new NotificationSendResult(List.of(fid), null));
 
 		NotificationDispatchResult result = dispatcher.dispatch(request);
 
 		assertThat(result.fids()).isEqualTo(1);
-		assertThat(result.invalidated()).isEqualTo(1);
 		assertThat(result.duplicate()).isFalse();
 		assertThat(fids.findByFid(fid)).isEmpty();
 	}
 
 	@Test
 	void 같은_예약_시각의_호출은_한_번만_발송한다() {
-		given(sender.send(anyList(), eq(17))).willReturn(new NotificationSendResult(List.of(), 0, null));
+		given(sender.send(anyList(), eq(17))).willReturn(new NotificationSendResult(List.of(), null));
 
 		dispatcher.dispatch(request);
 		NotificationDispatchResult repeated = dispatcher.dispatch(request);
@@ -90,7 +89,7 @@ class NotificationDispatcherTest {
 	void 실패한_예약은_다시_발송하고_완료한_예약은_재발송하지_않는다() {
 		var failure = new NotificationDeliveryException(new IllegalStateException("FCM unavailable"));
 		given(sender.send(anyList(), eq(17))).willThrow(failure)
-				.willReturn(new NotificationSendResult(List.of(), 0, null));
+				.willReturn(new NotificationSendResult(List.of(), null));
 
 		assertThatThrownBy(() -> dispatcher.dispatch(request)).isSameAs(failure);
 		assertThat(dispatches.existsById(request.key())).isFalse();
@@ -104,7 +103,7 @@ class NotificationDispatcherTest {
 	void 발송이_실패하면_등록_정리와_완료_이력을_롤백한다() {
 		var cause = new IllegalStateException("FCM unavailable");
 		var failure = new NotificationDeliveryException(cause);
-		given(sender.send(anyList(), eq(17))).willReturn(new NotificationSendResult(List.of(fid), 1, failure));
+		given(sender.send(anyList(), eq(17))).willReturn(new NotificationSendResult(List.of(fid), failure));
 
 		assertThatThrownBy(() -> dispatcher.dispatch(request)).isSameAs(failure).hasCause(cause);
 		assertThat(fids.findByFid(fid)).isPresent();
@@ -136,7 +135,7 @@ class NotificationDispatcherTest {
 		given(sender.send(anyList(), eq(17))).willAnswer(invocation -> {
 			started.countDown();
 			assertThat(release.await(10, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
-			return new NotificationSendResult(List.of(), 0, null);
+			return new NotificationSendResult(List.of(), null);
 		});
 		try (var executor = java.util.concurrent.Executors.newSingleThreadExecutor()) {
 			var first = executor.submit(() -> dispatcher.dispatch(request));

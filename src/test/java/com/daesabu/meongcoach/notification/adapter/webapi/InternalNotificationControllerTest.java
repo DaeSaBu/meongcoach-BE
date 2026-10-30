@@ -163,7 +163,7 @@ class InternalNotificationControllerTest {
 	@Test
 	void 예약_시각과_hour로_발송하고_결과를_응답한다() throws Exception {
 		var request = new NotificationDispatchRequest(Instant.parse("2026-10-31T08:00:00Z"), 17);
-		given(dispatcher.dispatch(request)).willReturn(new NotificationDispatchResult(2, 0, 0, false));
+		given(dispatcher.dispatch(request)).willReturn(new NotificationDispatchResult(2, false));
 
 		mockMvc.perform(post("/internal/notifications/dispatch")
 						.header(INTERNAL_SECRET_HEADER, "internal-secret")
@@ -171,13 +171,13 @@ class InternalNotificationControllerTest {
 						.content("{\"scheduledTime\":\"2026-10-31T08:00:00Z\",\"hour\":17}"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.fids").value(2))
+				.andExpect(jsonPath("$.invalidated").doesNotExist())
+				.andExpect(jsonPath("$.failed").doesNotExist())
 				.andExpect(jsonPath("$.duplicate").value(false))
 				.andDo(document("notification/internal-dispatch",
 						requestFields(fieldWithPath("scheduledTime").description("원래 예약 시각(ISO 8601 UTC)"),
 								fieldWithPath("hour").description("서울 기준 발송 시각(0~23)")),
 						responseFields(fieldWithPath("fids").description("발송 대상 FID 수"),
-								fieldWithPath("invalidated").description("무효 FID 수"),
-								fieldWithPath("failed").description("실패 수"),
 								fieldWithPath("duplicate").description("진행 중이거나 완료된 예약 시각 여부"))));
 	}
 

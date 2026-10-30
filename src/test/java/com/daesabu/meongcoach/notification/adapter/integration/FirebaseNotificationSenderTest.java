@@ -34,7 +34,6 @@ class FirebaseNotificationSenderTest {
 		var result = sender(messaging).send(List.of("expired", "keep"), 17);
 
 		assertThat(result.invalidFids()).containsExactly("expired");
-		assertThat(result.failed()).isEqualTo(1);
 		assertThat(result.failure()).hasCause(badRequest.getException());
 	}
 
@@ -65,7 +64,6 @@ class FirebaseNotificationSenderTest {
 
 		var result = sender(messaging).send(Collections.nCopies(501, "fid"), 17);
 
-		assertThat(result.failed()).isEqualTo(500);
 		assertThat(result.failure()).hasCause(failure);
 		verify(messaging, times(2)).sendEach(anyList());
 	}
@@ -117,7 +115,6 @@ class FirebaseNotificationSenderTest {
 		var result = sender(messaging).send(fids, 17);
 
 		assertThat(result.invalidFids()).containsExactly("fid-499", "fid-998");
-		assertThat(result.failed()).isEqualTo(2);
 		assertThat(result.failure()).hasCause(firstFailure.getException());
 		verify(messaging, times(3)).sendEach(anyList());
 	}
