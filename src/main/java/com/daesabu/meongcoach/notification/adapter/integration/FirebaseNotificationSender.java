@@ -26,25 +26,28 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class FirebaseNotificationSender implements NotificationSender {
 	private static final int BATCH_SIZE = 500;
-	private static final Map<Integer, List<String>> TEXTS = Map.of(
-			8, List.of("아침 훈련 시간이에요", "오늘의 훈련을 시작해 볼까요?"),
-			11, List.of("점심 훈련 시간이에요", "잠깐 짬을 내서 한 가지만 연습해 볼까요?"),
-			17, List.of("저녁 훈련 시간이에요", "오늘의 훈련을 마무리해 볼까요?")
+	private static final Map<Integer, Notification> NOTIFICATIONS = Map.of(
+			8, Notification.builder().setTitle("아침 훈련 시간이에요").setBody("오늘의 훈련을 시작해 볼까요?").build(),
+			11, Notification.builder().setTitle("점심 훈련 시간이에요").setBody("잠깐 짬을 내서 한 가지만 연습해 볼까요?").build(),
+			17, Notification.builder().setTitle("저녁 훈련 시간이에요").setBody("오늘의 훈련을 마무리해 볼까요?").build()
 	);
+	private static final Notification DEFAULT_NOTIFICATION = Notification.builder()
+			.setTitle("훈련 시간이에요").setBody("오늘의 훈련을 시작해 볼까요?").build();
 	private final ObjectProvider<FirebaseMessaging> messaging;
 
 	@Override
 	public NotificationSendResult send(List<String> fids, int hour) {
 		FirebaseMessaging client = messaging.getObject();
+		Message.Builder template = message(hour);
 		List<NotificationSendResult> results = fids.stream()
 				.gather(Gatherers.windowFixed(BATCH_SIZE))
-				.map(batch -> sendBatch(client, batch, hour))
+				.map(batch -> sendBatch(client, batch, template))
 				.toList();
 		return summarize(results);
 	}
 
-	private NotificationSendResult sendBatch(FirebaseMessaging client, List<String> batch, int hour) {
-		List<Message> messages = batch.stream().map(fid -> message(fid, hour)).toList();
+	private NotificationSendResult sendBatch(FirebaseMessaging client, List<String> batch, Message.Builder template) {
+		List<Message> messages = batch.stream().map(fid -> template.setFid(fid).build()).toList();
 		try {
 			List<SendResponse> responses = client.sendEach(messages).getResponses();
 			List<String> invalidFids = IntStream.range(0, responses.size())
@@ -76,17 +79,15 @@ public class FirebaseNotificationSender implements NotificationSender {
 		return new NotificationSendResult(invalidFids, failure);
 	}
 
-	private Message message(String fid, int hour) {
-		List<String> text = TEXTS.getOrDefault(hour, List.of("훈련 시간이에요", "오늘의 훈련을 시작해 볼까요?"));
+	private Message.Builder message(int hour) {
+		Notification notification = NOTIFICATIONS.getOrDefault(hour, DEFAULT_NOTIFICATION);
 		return Message.builder()
-				.setFid(fid)
-				.setNotification(Notification.builder().setTitle(text.getFirst()).setBody(text.getLast()).build())
+				.setNotification(notification)
 				.putData("hour", String.valueOf(hour))
 				.putData("deepLink", "meongcoach://training-curriculum")
 				.setAndroidConfig(AndroidConfig.builder().setTtl(3_600_000).setPriority(AndroidConfig.Priority.HIGH).build())
 				.setApnsConfig(ApnsConfig.builder().setAps(Aps.builder().build())
 						.putHeader("apns-priority", "10")
-						.putHeader("apns-expiration", String.valueOf(Instant.now().getEpochSecond() + 3600)).build())
-				.build();
+						.putHeader("apns-expiration", String.valueOf(Instant.now().getEpochSecond() + 3600)).build());
 	}
 }
