@@ -67,7 +67,7 @@ flowchart LR
 Service에서 FID별 `Map<String, NotificationMessage>`를 만들어 Sender에 전달합니다.
 `FirebaseNotificationSender`는 `NotificationMessage`를 Firebase 요청으로 변환하고 500건씩 나누어 호출합니다.
 `FirebaseNotificationBatchResult`가 SDK의 원본 응답을 직접 받아 FID 연결과 무효 등록 판별을 담당합니다.
-Sender는 배치별 결과를 `List<NotificationSender.BatchResult>`로 순서대로 반환합니다.
+Sender는 배치별 결과를 `List<NotificationSender.NotificationBatchResult>`로 순서대로 반환합니다.
 무효 FID 외 오류가 발생하면 발송 단계에서 원인을 보존한 예외를 즉시 던지고 후속 배치를 중단합니다.
 발송이 끝나면 Service가 모든 배치의 무효 FID를 모아 삭제하고 완료 이력을 저장합니다.
 `scheduledTime`은 ISO 8601 UTC 시각이고 `hour`는 서울 기준 0~23입니다. Scheduler가 원래 예약 시각을 넘기므로 기동 지연이나 재호출에도 같은 키를 씁니다.
