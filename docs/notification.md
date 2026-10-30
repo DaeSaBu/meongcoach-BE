@@ -66,8 +66,16 @@ flowchart LR
 기준 코드는 `NotificationDispatchService`와 `FirebaseNotificationSender`입니다.
 `scheduledTime`은 ISO 8601 UTC 시각이고 `hour`는 서울 기준 0~23입니다. Scheduler가 원래 예약 시각을 넘기므로 기동 지연이나 재호출에도 같은 키를 씁니다.
 
-`notification_dispatches.id`에 예약 시각과 hour를 조합한 키를 먼저 커밋해 동시 호출을 막습니다. FCM 호출 동안 DB 트랜잭션을 열어 두지 않습니다.
-발송을 시작한 요청은 실패해도 같은 키로 다시 보내지 않습니다. 프로세스 종료나 부분 실패 시 누락될 수 있으며, 재발송은 별도의 예약 시각으로 요청합니다.
+`notification_dispatches`는 예약 시각과 hour를 조합한 키와 `RUNNING`·`COMPLETED`·`FAILED` 상태를 저장합니다.
+최초 생성의 경합은 기본 키 유니크 제약으로, 실패한 예약의 재시도 경합은 `@Version`으로 제어합니다.
+상태 변경만 짧게 커밋하며 FCM 호출 동안 DB 트랜잭션을 열어 두지 않습니다.
+
+진행 중이거나 완료된 예약의 재호출은 `duplicate=true`로 응답합니다.
+발송과 무효 FID 정리가 끝나면 `COMPLETED`, 처리 중 예외가 발생하면 `FAILED`로 기록합니다.
+실패한 예약은 같은 키로 다시 실행할 수 있습니다.
+
+프로세스 중단으로 남은 `RUNNING` 기록은 자동으로 해제하지 않습니다.
+일부 FID에 전송된 뒤 실패한 예약을 재시도하면 이미 수신한 기기에 중복 전달될 수 있습니다.
 
 FID를 중복 제거하고 500개씩 발송합니다. `UNREGISTERED`만 FID 삭제 대상으로 삼습니다. `INVALID_ARGUMENT`는 메시지 오류일 수도 있으므로 삭제하지 않고 실패로 처리합니다.
 무효 FID 외 실패가 있으면 FID 정리 뒤 첫 FCM 원인을 보존한 도메인 예외를 전파해 502를 반환합니다. 인증 실패는 401, 잘못된 hour는 400입니다.
