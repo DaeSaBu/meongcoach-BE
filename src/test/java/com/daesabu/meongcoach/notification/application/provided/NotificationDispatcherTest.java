@@ -18,6 +18,7 @@ import com.daesabu.meongcoach.notification.application.required.NotificationSend
 import com.daesabu.meongcoach.notification.domain.DeviceInstallation;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallationRegisterCommand;
 import com.daesabu.meongcoach.notification.domain.DevicePlatform;
+import com.daesabu.meongcoach.notification.domain.NotificationDispatchStatus;
 import com.daesabu.meongcoach.notification.domain.NotificationPreferenceFixture;
 import com.daesabu.meongcoach.notification.domain.exception.InvalidNotificationHourException;
 import com.daesabu.meongcoach.notification.domain.exception.NotificationDeliveryException;
@@ -87,12 +88,17 @@ class NotificationDispatcherTest {
 	}
 
 	@Test
-	void 발송_실패_후에도_같은_키로_재발송하지_않는다() {
-		given(sender.send(anyList(), eq(17))).willThrow(new NotificationDeliveryException(new IllegalStateException("FCM unavailable")));
+	void 실패한_예약은_다시_발송하고_완료한_예약은_재발송하지_않는다() {
+		var failure = new NotificationDeliveryException(new IllegalStateException("FCM unavailable"));
+		given(sender.send(anyList(), eq(17))).willThrow(failure)
+				.willReturn(new NotificationSendResult(List.of(), 0, null));
 
-		assertThatThrownBy(() -> dispatcher.dispatch(request)).isInstanceOf(NotificationDeliveryException.class);
+		assertThatThrownBy(() -> dispatcher.dispatch(request)).isSameAs(failure);
+		assertThat(dispatches.findById(request.key()).orElseThrow().getStatus()).isEqualTo(NotificationDispatchStatus.FAILED);
+		assertThat(dispatcher.dispatch(request).duplicate()).isFalse();
+		assertThat(dispatches.findById(request.key()).orElseThrow().getStatus()).isEqualTo(NotificationDispatchStatus.COMPLETED);
 		assertThat(dispatcher.dispatch(request).duplicate()).isTrue();
-		verify(sender, times(1)).send(anyList(), eq(17));
+		verify(sender, times(2)).send(anyList(), eq(17));
 	}
 
 	@Test
@@ -103,6 +109,19 @@ class NotificationDispatcherTest {
 
 		assertThatThrownBy(() -> dispatcher.dispatch(request)).isSameAs(failure).hasCause(cause);
 		assertThat(fids.findByFid(fid)).isEmpty();
+		assertThat(dispatches.findById(request.key()).orElseThrow().getStatus()).isEqualTo(NotificationDispatchStatus.FAILED);
+	}
+
+	@Test
+	void 실패_이력을_갱신하지_못해도_발송의_원인_예외를_유지한다() {
+		var failure = new NotificationDeliveryException(new IllegalStateException("FCM unavailable"));
+		given(sender.send(anyList(), eq(17))).willAnswer(invocation -> {
+			dispatches.deleteById(request.key());
+			throw failure;
+		});
+
+		assertThatThrownBy(() -> dispatcher.dispatch(request)).isSameAs(failure);
+		assertThat(failure.getSuppressed()).hasSize(1);
 	}
 
 	@Test
@@ -110,6 +129,7 @@ class NotificationDispatcherTest {
 		fids.deleteAll(fids.findAllByUserIdInOrderByUserIdAscIdAsc(List.of(userId)));
 
 		assertThat(dispatcher.dispatch(request).fids()).isZero();
+		assertThat(dispatcher.dispatch(request).duplicate()).isTrue();
 		verifyNoInteractions(sender);
 	}
 

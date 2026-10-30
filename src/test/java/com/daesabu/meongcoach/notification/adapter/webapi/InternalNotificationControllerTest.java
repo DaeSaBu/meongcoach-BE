@@ -178,7 +178,7 @@ class InternalNotificationControllerTest {
 						responseFields(fieldWithPath("fids").description("발송 대상 FID 수"),
 								fieldWithPath("invalidated").description("무효 FID 수"),
 								fieldWithPath("failed").description("실패 수"),
-								fieldWithPath("duplicate").description("이미 처리한 예약 시각 여부"))));
+								fieldWithPath("duplicate").description("진행 중이거나 완료된 예약 시각 여부"))));
 	}
 
 	@Test
