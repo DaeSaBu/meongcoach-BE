@@ -12,6 +12,7 @@ import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.MessagingErrorCode;
 import com.google.firebase.messaging.SendResponse;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.IntStream;
@@ -89,6 +90,36 @@ class FirebaseNotificationSenderTest {
 		assertThat(message.getAsJsonObject("android").get("ttl").getAsString()).isEqualTo("3600s");
 		assertThat(message.getAsJsonObject("android").get("priority").getAsString()).isEqualTo("high");
 		assertThat(message.getAsJsonObject("apns").getAsJsonObject("headers").get("apns-priority").getAsString()).isEqualTo("10");
+	}
+
+	@Test
+	void 여러_배치의_무효_FID과_실패_수를_합치고_첫_원인을_유지한다() throws Exception {
+		FirebaseMessaging messaging = mock(FirebaseMessaging.class);
+		SendResponse success = mock(SendResponse.class);
+		given(success.isSuccessful()).willReturn(true);
+		SendResponse expired = failure(MessagingErrorCode.UNREGISTERED);
+		SendResponse firstFailure = failure(MessagingErrorCode.INVALID_ARGUMENT);
+		SendResponse laterFailure = failure(MessagingErrorCode.UNAVAILABLE);
+		List<SendResponse> firstResponses = new ArrayList<>(Collections.nCopies(499, success));
+		firstResponses.add(expired);
+		List<SendResponse> secondResponses = new ArrayList<>(Collections.nCopies(498, success));
+		secondResponses.add(expired);
+		secondResponses.add(firstFailure);
+		BatchResponse first = mock(BatchResponse.class);
+		BatchResponse second = mock(BatchResponse.class);
+		BatchResponse third = mock(BatchResponse.class);
+		given(first.getResponses()).willReturn(firstResponses);
+		given(second.getResponses()).willReturn(secondResponses);
+		given(third.getResponses()).willReturn(List.of(laterFailure));
+		given(messaging.sendEach(anyList())).willReturn(first, second, third);
+		List<String> fids = IntStream.range(0, 1001).mapToObj(index -> "fid-" + index).toList();
+
+		var result = sender(messaging).send(fids, 17);
+
+		assertThat(result.invalidFids()).containsExactly("fid-499", "fid-998");
+		assertThat(result.failed()).isEqualTo(2);
+		assertThat(result.failure()).hasCause(firstFailure.getException());
+		verify(messaging, times(3)).sendEach(anyList());
 	}
 
 	private SendResponse failure(MessagingErrorCode code) {
