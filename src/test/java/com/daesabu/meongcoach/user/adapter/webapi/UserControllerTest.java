@@ -46,7 +46,6 @@ class UserControllerTest {
 		mockMvc.perform(get("/api/users/me").principal(CURRENT_USER))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.userId").value(42))
-				.andExpect(jsonPath("$.role").value("ONBOARDING_USER"))
 				.andExpect(jsonPath("$.needsOnboarding").value(true))
 				.andExpect(jsonPath("$.profile").value(nullValue()));
 	}
@@ -64,14 +63,12 @@ class UserControllerTest {
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.userId").value(42))
-				.andExpect(jsonPath("$.role").value("USER"))
 				.andExpect(jsonPath("$.needsOnboarding").value(false))
 				.andExpect(jsonPath("$.profile.nickname").value("멍멍이집사"))
 				.andExpect(jsonPath("$.profile.profileImageUrl").value("https://cdn.example.com/profile.png"))
 				.andDo(document("user/me",
 						responseFields(
 								fieldWithPath("userId").description("회원 ID"),
-								fieldWithPath("role").description("회원 역할. USER, ONBOARDING_USER, ADMIN, EXPERT 중 하나"),
 								fieldWithPath("needsOnboarding").description("온보딩 화면으로 보내야 하는지 여부"),
 								fieldWithPath("profile").optional().description("회원 프로필. 온보딩 전이면 null"),
 								fieldWithPath("profile.nickname").description("닉네임"),
