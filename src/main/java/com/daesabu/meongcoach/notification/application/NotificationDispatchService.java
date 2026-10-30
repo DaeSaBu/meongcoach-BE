@@ -6,10 +6,9 @@ import com.daesabu.meongcoach.notification.application.provided.NotificationTarg
 import com.daesabu.meongcoach.notification.application.provided.NotificationTargetResult;
 import com.daesabu.meongcoach.notification.application.provided.dto.NotificationDispatchRequest;
 import com.daesabu.meongcoach.notification.application.required.DeviceInstallationRepository;
+import com.daesabu.meongcoach.notification.application.required.NotificationBatchResult;
 import com.daesabu.meongcoach.notification.application.required.NotificationDispatchRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationSender;
-import com.daesabu.meongcoach.notification.domain.NotificationDeliveryResult;
-import com.daesabu.meongcoach.notification.domain.NotificationDeliveryResults;
 import com.daesabu.meongcoach.notification.domain.NotificationDispatch;
 import com.daesabu.meongcoach.notification.domain.NotificationHour;
 import com.daesabu.meongcoach.notification.domain.NotificationMessage;
@@ -45,19 +44,18 @@ public class NotificationDispatchService implements NotificationDispatcher {
 		}
 		List<String> fids = targets.findTargets(request.hour()).stream()
 				.map(NotificationTargetResult::fid).distinct().toList();
-		List<NotificationDeliveryResult> responses = send(fids, request.hour());
-		NotificationDeliveryResults results = new NotificationDeliveryResults(responses);
-		deleteInvalidInstallations(results.invalidFids());
-		results.throwIfFailed();
+		if (!fids.isEmpty()) {
+			List<NotificationBatchResult> results = send(fids, request.hour());
+			List<String> invalidFids = results.stream().flatMap(result -> result.invalidFids().stream()).toList();
+			deleteInvalidInstallations(invalidFids);
+			results.forEach(NotificationBatchResult::throwIfFailed);
+		}
 		NotificationDispatch dispatch = NotificationDispatch.complete(request.key());
 		dispatches.save(dispatch);
 		return new NotificationDispatchResult(fids.size(), false);
 	}
 
-	private List<NotificationDeliveryResult> send(List<String> fids, int hour) {
-		if (fids.isEmpty()) {
-			return List.of();
-		}
+	private List<NotificationBatchResult> send(List<String> fids, int hour) {
 		NotificationMessage message = MESSAGES.getOrDefault(hour, message(hour, "훈련 시간이에요", "오늘의 훈련을 시작해 볼까요?"));
 		return sender.send(fids, message);
 	}
