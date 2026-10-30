@@ -74,6 +74,8 @@ class NotificationDispatcherTest {
 		var history = dispatches.findByDispatchKey(request.key()).orElseThrow();
 		assertThat(history.getId()).isPositive();
 		assertThat(history.getDispatchKey()).isEqualTo(request.key());
+		assertThat(history.getCreatedAt()).isNotNull();
+		assertThat(history.getUpdatedAt()).isNotNull();
 		assertThat(fids.findByFid(fid)).isEmpty();
 	}
 
