@@ -33,7 +33,7 @@ public class NotificationDispatchService implements NotificationDispatcher {
 	@Transactional
 	public NotificationDispatchResult dispatch(NotificationDispatchRequest request) {
 		NotificationHour.validate(request.hour());
-		if (!dispatches.tryLock(request.key()) || dispatches.existsById(request.key())) {
+		if (!dispatches.tryLock(request.key()) || dispatches.existsByDispatchKey(request.key())) {
 			return new NotificationDispatchResult(0, true);
 		}
 		NotificationDispatchResult result = send(request.hour());
