@@ -137,7 +137,7 @@ class NotificationDispatcherTest {
 	}
 
 	@Test
-	void 첫_요청이_FCM을_기다리는_동안에도_중복_요청은_발송하지_않는다() throws Exception {
+	void 첫_요청이_완료되면_기다리던_중복_요청은_발송하지_않는다() throws Exception {
 		var started = new java.util.concurrent.CountDownLatch(1);
 		var release = new java.util.concurrent.CountDownLatch(1);
 		given(sender.send(anyMap())).willAnswer(invocation -> {
@@ -146,18 +146,46 @@ class NotificationDispatcherTest {
 			NotificationBatchResult batchResult = results(List.of());
 			return List.of(batchResult);
 		});
-		try (var executor = java.util.concurrent.Executors.newSingleThreadExecutor()) {
+		try (var executor = java.util.concurrent.Executors.newFixedThreadPool(2)) {
 			var first = executor.submit(() -> dispatcher.dispatch(request));
-			try {
-				assertThat(started.await(10, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
-				assertThat(dispatcher.dispatch(request).duplicate()).isTrue();
-			} finally {
-				release.countDown();
-			}
+			assertThat(started.await(10, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
+			var second = executor.submit(() -> dispatcher.dispatch(request));
+			assertThatThrownBy(() -> second.get(500, java.util.concurrent.TimeUnit.MILLISECONDS))
+					.isInstanceOf(java.util.concurrent.TimeoutException.class);
+			release.countDown();
+
 			assertThat(first.get(10, java.util.concurrent.TimeUnit.SECONDS).duplicate()).isFalse();
+			assertThat(second.get(10, java.util.concurrent.TimeUnit.SECONDS).duplicate()).isTrue();
 		}
 		verify(sender, times(1)).send(anyMap());
 	}
+
+	@Test
+	void 첫_요청이_실패하면_기다리던_중복_요청이_발송한다() throws Exception {
+		var started = new java.util.concurrent.CountDownLatch(1);
+		var release = new java.util.concurrent.CountDownLatch(1);
+		var failure = new NotificationDeliveryException(new IllegalStateException("FCM unavailable"));
+		NotificationBatchResult batchResult = results(List.of());
+		given(sender.send(anyMap())).willAnswer(invocation -> {
+			started.countDown();
+			assertThat(release.await(10, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
+			throw failure;
+		}).willReturn(List.of(batchResult));
+		try (var executor = java.util.concurrent.Executors.newFixedThreadPool(2)) {
+			var first = executor.submit(() -> dispatcher.dispatch(request));
+			assertThat(started.await(10, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
+			var second = executor.submit(() -> dispatcher.dispatch(request));
+			assertThatThrownBy(() -> second.get(500, java.util.concurrent.TimeUnit.MILLISECONDS))
+					.isInstanceOf(java.util.concurrent.TimeoutException.class);
+			release.countDown();
+
+			assertThatThrownBy(() -> first.get(10, java.util.concurrent.TimeUnit.SECONDS)).hasCause(failure);
+			assertThat(second.get(10, java.util.concurrent.TimeUnit.SECONDS).duplicate()).isFalse();
+		}
+		assertThat(dispatches.existsByDispatchKey(request.key())).isTrue();
+		verify(sender, times(2)).send(anyMap());
+	}
+
 	private NotificationBatchResult results(List<String> invalidFids) {
 		NotificationBatchResult results = mock(NotificationBatchResult.class);
 		given(results.invalidFids()).willReturn(invalidFids);
