@@ -13,11 +13,11 @@ import com.daesabu.meongcoach.notification.application.provided.dto.Notification
 import com.daesabu.meongcoach.notification.application.required.DeviceInstallationRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationDispatchRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationPreferenceRepository;
-import com.daesabu.meongcoach.notification.application.required.NotificationSendResult;
 import com.daesabu.meongcoach.notification.application.required.NotificationSender;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallation;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallationRegisterCommand;
 import com.daesabu.meongcoach.notification.domain.DevicePlatform;
+import com.daesabu.meongcoach.notification.domain.NotificationDeliveryResult;
 import com.daesabu.meongcoach.notification.domain.NotificationMessage;
 import com.daesabu.meongcoach.notification.domain.NotificationPreferenceFixture;
 import com.daesabu.meongcoach.notification.domain.exception.InvalidNotificationHourException;
@@ -66,7 +66,7 @@ class NotificationDispatcherTest {
 
 	@Test
 	void 발송_후_무효_FID을_삭제한다() {
-		given(sender.send(anyList(), any(NotificationMessage.class))).willReturn(new NotificationSendResult(List.of(fid), null));
+		given(sender.send(anyList(), any(NotificationMessage.class))).willReturn(List.of(new NotificationDeliveryResult(fid, true, null)));
 
 		NotificationDispatchResult result = dispatcher.dispatch(request);
 
@@ -82,7 +82,7 @@ class NotificationDispatcherTest {
 
 	@Test
 	void 같은_예약_시각의_호출은_한_번만_발송한다() {
-		given(sender.send(anyList(), any(NotificationMessage.class))).willReturn(new NotificationSendResult(List.of(), null));
+		given(sender.send(anyList(), any(NotificationMessage.class))).willReturn(List.of());
 
 		dispatcher.dispatch(request);
 		NotificationDispatchResult repeated = dispatcher.dispatch(request);
@@ -95,7 +95,7 @@ class NotificationDispatcherTest {
 	void 실패한_예약은_다시_발송하고_완료한_예약은_재발송하지_않는다() {
 		var failure = new NotificationDeliveryException(new IllegalStateException("FCM unavailable"));
 		given(sender.send(anyList(), any(NotificationMessage.class))).willThrow(failure)
-				.willReturn(new NotificationSendResult(List.of(), null));
+				.willReturn(List.of());
 
 		assertThatThrownBy(() -> dispatcher.dispatch(request)).isSameAs(failure);
 		assertThat(dispatches.existsByDispatchKey(request.key())).isFalse();
@@ -109,7 +109,7 @@ class NotificationDispatcherTest {
 	void 발송이_실패하면_등록_정리와_완료_이력을_롤백한다() {
 		var cause = new IllegalStateException("FCM unavailable");
 		var failure = new NotificationDeliveryException(cause);
-		given(sender.send(anyList(), any(NotificationMessage.class))).willReturn(new NotificationSendResult(List.of(fid), failure));
+		given(sender.send(anyList(), any(NotificationMessage.class))).willReturn(List.of(new NotificationDeliveryResult(fid, true, null), new NotificationDeliveryResult("failed-fid", false, failure)));
 
 		assertThatThrownBy(() -> dispatcher.dispatch(request)).isSameAs(failure).hasCause(cause);
 		assertThat(fids.findByFid(fid)).isPresent();
@@ -141,7 +141,7 @@ class NotificationDispatcherTest {
 		given(sender.send(anyList(), any(NotificationMessage.class))).willAnswer(invocation -> {
 			started.countDown();
 			assertThat(release.await(10, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
-			return new NotificationSendResult(List.of(), null);
+			return List.of();
 		});
 		try (var executor = java.util.concurrent.Executors.newSingleThreadExecutor()) {
 			var first = executor.submit(() -> dispatcher.dispatch(request));

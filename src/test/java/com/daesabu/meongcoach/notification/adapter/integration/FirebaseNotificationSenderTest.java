@@ -32,12 +32,16 @@ class FirebaseNotificationSenderTest {
 
 		var result = sender(messaging).send(List.of("expired", "keep"), message());
 
-		assertThat(result.invalidFids()).containsExactly("expired");
-		assertThat(result.failure()).hasCause(badRequest.getException());
+		assertThat(result).extracting(com.daesabu.meongcoach.notification.domain.NotificationDeliveryResult::fid)
+				.containsExactly("expired", "keep");
+		assertThat(result.getFirst().invalid()).isTrue();
+		assertThat(result.getFirst().failure()).isNull();
+		assertThat(result.getLast().invalid()).isFalse();
+		assertThat(result.getLast().failure()).hasCause(badRequest.getException());
 	}
 
 	@Test
-	void Firebase_호출_실패를_원인과_함께_반환한다() throws Exception {
+	void 배치_실패를_개별_결과로_변환하고_다음_배치도_호출한다() throws Exception {
 		FirebaseMessaging messaging = mock(FirebaseMessaging.class);
 		FirebaseMessagingException failure = mock(FirebaseMessagingException.class);
 		BatchResponse batch = mock(BatchResponse.class);
@@ -46,10 +50,14 @@ class FirebaseNotificationSenderTest {
 		given(batch.getResponses()).willReturn(List.of(success));
 		given(messaging.sendEach(anyList())).willThrow(failure).willReturn(batch);
 
-		var result = sender(messaging).send(List.of("fid"), message());
+		var result = sender(messaging).send(java.util.stream.IntStream.range(0, 501).mapToObj(index -> "fid-" + index).toList(), message());
 
-		assertThat(result.failure()).hasCause(failure);
-		verify(messaging, times(1)).sendEach(anyList());
+		assertThat(result).hasSize(501);
+		assertThat(result.getFirst().failure()).hasCause(failure);
+		assertThat(result.get(499).failure()).hasCause(failure);
+		assertThat(result.getLast().fid()).isEqualTo("fid-500");
+		assertThat(result.getLast().failure()).isNull();
+		verify(messaging, times(2)).sendEach(anyList());
 	}
 
 	@Test
@@ -72,6 +80,28 @@ class FirebaseNotificationSenderTest {
 		assertThat(message.getAsJsonObject("android").get("ttl").getAsString()).isEqualTo("3600s");
 		assertThat(message.getAsJsonObject("android").get("priority").getAsString()).isEqualTo("high");
 		assertThat(message.getAsJsonObject("apns").getAsJsonObject("headers").get("apns-priority").getAsString()).isEqualTo("10");
+	}
+
+	@Test
+	void FID을_500개씩_분할하고_응답_순서를_유지한다() throws Exception {
+		FirebaseMessaging messaging = mock(FirebaseMessaging.class);
+		SendResponse success = mock(SendResponse.class);
+		given(success.isSuccessful()).willReturn(true);
+		given(messaging.sendEach(anyList())).willAnswer(invocation -> {
+			List<?> messages = invocation.getArgument(0);
+			BatchResponse batch = mock(BatchResponse.class);
+			given(batch.getResponses()).willReturn(java.util.Collections.nCopies(messages.size(), success));
+			return batch;
+		});
+		List<String> fids = java.util.stream.IntStream.range(0, 1001).mapToObj(index -> "fid-" + index).toList();
+
+		var results = sender(messaging).send(fids, message());
+
+		ArgumentCaptor<List<com.google.firebase.messaging.Message>> batches = ArgumentCaptor.captor();
+		verify(messaging, times(3)).sendEach(batches.capture());
+		assertThat(batches.getAllValues()).extracting(List::size).containsExactly(500, 500, 1);
+		assertThat(results).extracting(com.daesabu.meongcoach.notification.domain.NotificationDeliveryResult::fid)
+				.containsExactlyElementsOf(fids);
 	}
 
 	private NotificationMessage message() {

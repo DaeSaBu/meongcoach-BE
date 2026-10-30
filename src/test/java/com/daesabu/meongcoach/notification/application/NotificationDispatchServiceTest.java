@@ -15,9 +15,9 @@ import com.daesabu.meongcoach.notification.application.provided.NotificationTarg
 import com.daesabu.meongcoach.notification.application.provided.dto.NotificationDispatchRequest;
 import com.daesabu.meongcoach.notification.application.required.DeviceInstallationRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationDispatchRepository;
-import com.daesabu.meongcoach.notification.application.required.NotificationSendResult;
 import com.daesabu.meongcoach.notification.application.required.NotificationSender;
 import com.daesabu.meongcoach.notification.domain.DevicePlatform;
+import com.daesabu.meongcoach.notification.domain.NotificationDeliveryResult;
 import com.daesabu.meongcoach.notification.domain.NotificationDispatch;
 import com.daesabu.meongcoach.notification.domain.NotificationMessage;
 import com.daesabu.meongcoach.notification.domain.exception.NotificationDeliveryException;
@@ -37,16 +37,16 @@ class NotificationDispatchServiceTest {
 	private final NotificationDispatchRequest request = new NotificationDispatchRequest(Instant.parse("2026-10-31T08:00:00Z"), 17);
 
 	@Test
-	void 시각별_메시지를_구성하고_500개씩_발송한다() {
+	void 시각별_메시지를_구성하고_전체_대상을_Sender에_전달한다() {
 		prepareTargets(501);
-		given(sender.send(anyList(), any())).willReturn(new NotificationSendResult(List.of(), null));
+		given(sender.send(anyList(), any())).willReturn(List.of());
 
 		assertThat(service.dispatch(request).fids()).isEqualTo(501);
 
 		ArgumentCaptor<List<String>> batches = ArgumentCaptor.captor();
 		ArgumentCaptor<NotificationMessage> messages = ArgumentCaptor.forClass(NotificationMessage.class);
-		verify(sender, times(2)).send(batches.capture(), messages.capture());
-		assertThat(batches.getAllValues()).extracting(List::size).containsExactly(500, 1);
+		verify(sender, times(1)).send(batches.capture(), messages.capture());
+		assertThat(batches.getAllValues()).extracting(List::size).containsExactly(501);
 		assertThat(messages.getValue().title()).isEqualTo("저녁 훈련 시간이에요");
 		assertThat(messages.getValue().body()).isEqualTo("오늘의 훈련을 마무리해 볼까요?");
 		assertThat(messages.getValue().data()).isEqualTo(Map.of("hour", "17", "deepLink", "meongcoach://training-curriculum"));
@@ -54,18 +54,19 @@ class NotificationDispatchServiceTest {
 	}
 
 	@Test
-	void 뒤의_배치도_발송하고_무효_FID을_합치며_첫_실패를_유지한다() {
+	void 전체_응답에서_무효_FID을_삭제하고_첫_실패를_전파한다() {
 		prepareTargets(1001);
 		var first = new NotificationDeliveryException(new IllegalStateException("first"));
 		var later = new NotificationDeliveryException(new IllegalStateException("later"));
-		given(sender.send(anyList(), any())).willReturn(
-				new NotificationSendResult(List.of("fid-1"), first),
-				new NotificationSendResult(List.of("fid-500"), null),
-				new NotificationSendResult(List.of(), later));
+		given(sender.send(anyList(), any())).willReturn(List.of(
+				new NotificationDeliveryResult("fid-1", true, null),
+				new NotificationDeliveryResult("fid-2", false, first),
+				new NotificationDeliveryResult("fid-500", true, null),
+				new NotificationDeliveryResult("fid-1000", false, later)));
 
 		assertThatThrownBy(() -> service.dispatch(request)).isSameAs(first);
 
-		verify(sender, times(3)).send(anyList(), any());
+		verify(sender, times(1)).send(anyList(), any());
 		verify(installations).deleteAllByFidIn(List.of("fid-1", "fid-500"));
 		verify(dispatches, never()).save(any());
 	}
