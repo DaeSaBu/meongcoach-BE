@@ -2,11 +2,10 @@ package com.daesabu.meongcoach.notification.application;
 
 import com.daesabu.meongcoach.notification.application.provided.NotificationDispatchResult;
 import com.daesabu.meongcoach.notification.application.provided.NotificationDispatcher;
-import com.daesabu.meongcoach.notification.application.provided.NotificationRegister;
 import com.daesabu.meongcoach.notification.application.provided.NotificationTargetFinder;
 import com.daesabu.meongcoach.notification.application.provided.NotificationTargetResult;
-import com.daesabu.meongcoach.notification.application.provided.dto.DeviceInstallationDeleteRequest;
 import com.daesabu.meongcoach.notification.application.provided.dto.NotificationDispatchRequest;
+import com.daesabu.meongcoach.notification.application.required.DeviceInstallationRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationDispatchRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationSendResult;
 import com.daesabu.meongcoach.notification.application.required.NotificationSender;
@@ -26,7 +25,7 @@ import org.springframework.validation.annotation.Validated;
 public class NotificationDispatchService implements NotificationDispatcher {
 	private final NotificationDispatchRepository dispatches;
 	private final NotificationTargetFinder targets;
-	private final NotificationRegister register;
+	private final DeviceInstallationRepository installations;
 	private final NotificationSender sender;
 
 	@Override
@@ -50,7 +49,7 @@ public class NotificationDispatchService implements NotificationDispatcher {
 		}
 		NotificationSendResult result = sender.send(fids, hour);
 		if (!result.invalidFids().isEmpty()) {
-			register.deleteDeviceInstallations(new DeviceInstallationDeleteRequest(result.invalidFids()));
+			installations.deleteAllByFidIn(result.invalidFids());
 		}
 		if (result.failure() != null) {
 			throw result.failure();
