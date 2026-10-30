@@ -2,8 +2,8 @@ package com.daesabu.meongcoach.notification.application.provided;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -18,6 +18,7 @@ import com.daesabu.meongcoach.notification.application.required.NotificationSend
 import com.daesabu.meongcoach.notification.domain.DeviceInstallation;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallationRegisterCommand;
 import com.daesabu.meongcoach.notification.domain.DevicePlatform;
+import com.daesabu.meongcoach.notification.domain.NotificationMessage;
 import com.daesabu.meongcoach.notification.domain.NotificationPreferenceFixture;
 import com.daesabu.meongcoach.notification.domain.exception.InvalidNotificationHourException;
 import com.daesabu.meongcoach.notification.domain.exception.NotificationDeliveryException;
@@ -65,7 +66,7 @@ class NotificationDispatcherTest {
 
 	@Test
 	void 발송_후_무효_FID을_삭제한다() {
-		given(sender.send(anyList(), eq(17))).willReturn(new NotificationSendResult(List.of(fid), null));
+		given(sender.send(anyList(), any(NotificationMessage.class))).willReturn(new NotificationSendResult(List.of(fid), null));
 
 		NotificationDispatchResult result = dispatcher.dispatch(request);
 
@@ -81,19 +82,19 @@ class NotificationDispatcherTest {
 
 	@Test
 	void 같은_예약_시각의_호출은_한_번만_발송한다() {
-		given(sender.send(anyList(), eq(17))).willReturn(new NotificationSendResult(List.of(), null));
+		given(sender.send(anyList(), any(NotificationMessage.class))).willReturn(new NotificationSendResult(List.of(), null));
 
 		dispatcher.dispatch(request);
 		NotificationDispatchResult repeated = dispatcher.dispatch(request);
 
 		assertThat(repeated.duplicate()).isTrue();
-		verify(sender, times(1)).send(anyList(), eq(17));
+		verify(sender, times(1)).send(anyList(), any(NotificationMessage.class));
 	}
 
 	@Test
 	void 실패한_예약은_다시_발송하고_완료한_예약은_재발송하지_않는다() {
 		var failure = new NotificationDeliveryException(new IllegalStateException("FCM unavailable"));
-		given(sender.send(anyList(), eq(17))).willThrow(failure)
+		given(sender.send(anyList(), any(NotificationMessage.class))).willThrow(failure)
 				.willReturn(new NotificationSendResult(List.of(), null));
 
 		assertThatThrownBy(() -> dispatcher.dispatch(request)).isSameAs(failure);
@@ -101,14 +102,14 @@ class NotificationDispatcherTest {
 		assertThat(dispatcher.dispatch(request).duplicate()).isFalse();
 		assertThat(dispatches.existsByDispatchKey(request.key())).isTrue();
 		assertThat(dispatcher.dispatch(request).duplicate()).isTrue();
-		verify(sender, times(2)).send(anyList(), eq(17));
+		verify(sender, times(2)).send(anyList(), any(NotificationMessage.class));
 	}
 
 	@Test
 	void 발송이_실패하면_등록_정리와_완료_이력을_롤백한다() {
 		var cause = new IllegalStateException("FCM unavailable");
 		var failure = new NotificationDeliveryException(cause);
-		given(sender.send(anyList(), eq(17))).willReturn(new NotificationSendResult(List.of(fid), failure));
+		given(sender.send(anyList(), any(NotificationMessage.class))).willReturn(new NotificationSendResult(List.of(fid), failure));
 
 		assertThatThrownBy(() -> dispatcher.dispatch(request)).isSameAs(failure).hasCause(cause);
 		assertThat(fids.findByFid(fid)).isPresent();
@@ -137,7 +138,7 @@ class NotificationDispatcherTest {
 	void 첫_요청이_FCM을_기다리는_동안에도_중복_요청은_발송하지_않는다() throws Exception {
 		var started = new java.util.concurrent.CountDownLatch(1);
 		var release = new java.util.concurrent.CountDownLatch(1);
-		given(sender.send(anyList(), eq(17))).willAnswer(invocation -> {
+		given(sender.send(anyList(), any(NotificationMessage.class))).willAnswer(invocation -> {
 			started.countDown();
 			assertThat(release.await(10, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
 			return new NotificationSendResult(List.of(), null);
@@ -152,6 +153,6 @@ class NotificationDispatcherTest {
 			}
 			assertThat(first.get(10, java.util.concurrent.TimeUnit.SECONDS).duplicate()).isFalse();
 		}
-		verify(sender, times(1)).send(anyList(), eq(17));
+		verify(sender, times(1)).send(anyList(), any(NotificationMessage.class));
 	}
 }

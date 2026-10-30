@@ -7,15 +7,14 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import com.daesabu.meongcoach.notification.domain.NotificationMessage;
 import com.google.firebase.messaging.BatchResponse;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.MessagingErrorCode;
 import com.google.firebase.messaging.SendResponse;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.stream.IntStream;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.ObjectProvider;
@@ -31,29 +30,14 @@ class FirebaseNotificationSenderTest {
 		given(batch.getResponses()).willReturn(List.of(expired, badRequest));
 		given(messaging.sendEach(anyList())).willReturn(batch);
 
-		var result = sender(messaging).send(List.of("expired", "keep"), 17);
+		var result = sender(messaging).send(List.of("expired", "keep"), message());
 
 		assertThat(result.invalidFids()).containsExactly("expired");
 		assertThat(result.failure()).hasCause(badRequest.getException());
 	}
 
 	@Test
-	void FID을_500개씩_나누어_전송한다() throws Exception {
-		FirebaseMessaging messaging = mock(FirebaseMessaging.class);
-		BatchResponse batch = mock(BatchResponse.class);
-		given(batch.getResponses()).willReturn(List.of());
-		given(messaging.sendEach(anyList())).willReturn(batch);
-		List<String> fids = IntStream.range(0, 501).mapToObj(i -> "fid-" + i).toList();
-
-		sender(messaging).send(fids, 17);
-
-		ArgumentCaptor<List<com.google.firebase.messaging.Message>> captor = ArgumentCaptor.captor();
-		verify(messaging, times(2)).sendEach(captor.capture());
-		assertThat(captor.getAllValues()).extracting(List::size).containsExactly(500, 1);
-	}
-
-	@Test
-	void 배치_요청_실패를_보존하고_뒤의_배치도_시도한다() throws Exception {
+	void Firebase_호출_실패를_원인과_함께_반환한다() throws Exception {
 		FirebaseMessaging messaging = mock(FirebaseMessaging.class);
 		FirebaseMessagingException failure = mock(FirebaseMessagingException.class);
 		BatchResponse batch = mock(BatchResponse.class);
@@ -62,10 +46,10 @@ class FirebaseNotificationSenderTest {
 		given(batch.getResponses()).willReturn(List.of(success));
 		given(messaging.sendEach(anyList())).willThrow(failure).willReturn(batch);
 
-		var result = sender(messaging).send(Collections.nCopies(501, "fid"), 17);
+		var result = sender(messaging).send(List.of("fid"), message());
 
 		assertThat(result.failure()).hasCause(failure);
-		verify(messaging, times(2)).sendEach(anyList());
+		verify(messaging, times(1)).sendEach(anyList());
 	}
 
 	@Test
@@ -74,7 +58,7 @@ class FirebaseNotificationSenderTest {
 		BatchResponse batch = mock(BatchResponse.class);
 		given(batch.getResponses()).willReturn(List.of());
 		given(messaging.sendEach(anyList())).willReturn(batch);
-		sender(messaging).send(List.of("fid"), 17);
+		sender(messaging).send(List.of("fid"), message());
 
 		ArgumentCaptor<List<com.google.firebase.messaging.Message>> captor = ArgumentCaptor.captor();
 		verify(messaging).sendEach(captor.capture());
@@ -90,33 +74,9 @@ class FirebaseNotificationSenderTest {
 		assertThat(message.getAsJsonObject("apns").getAsJsonObject("headers").get("apns-priority").getAsString()).isEqualTo("10");
 	}
 
-	@Test
-	void 여러_배치의_무효_FID을_합치고_첫_원인을_유지한다() throws Exception {
-		FirebaseMessaging messaging = mock(FirebaseMessaging.class);
-		SendResponse success = mock(SendResponse.class);
-		given(success.isSuccessful()).willReturn(true);
-		SendResponse expired = failure(MessagingErrorCode.UNREGISTERED);
-		SendResponse firstFailure = failure(MessagingErrorCode.INVALID_ARGUMENT);
-		SendResponse laterFailure = failure(MessagingErrorCode.UNAVAILABLE);
-		List<SendResponse> firstResponses = new ArrayList<>(Collections.nCopies(499, success));
-		firstResponses.add(expired);
-		List<SendResponse> secondResponses = new ArrayList<>(Collections.nCopies(498, success));
-		secondResponses.add(expired);
-		secondResponses.add(firstFailure);
-		BatchResponse first = mock(BatchResponse.class);
-		BatchResponse second = mock(BatchResponse.class);
-		BatchResponse third = mock(BatchResponse.class);
-		given(first.getResponses()).willReturn(firstResponses);
-		given(second.getResponses()).willReturn(secondResponses);
-		given(third.getResponses()).willReturn(List.of(laterFailure));
-		given(messaging.sendEach(anyList())).willReturn(first, second, third);
-		List<String> fids = IntStream.range(0, 1001).mapToObj(index -> "fid-" + index).toList();
-
-		var result = sender(messaging).send(fids, 17);
-
-		assertThat(result.invalidFids()).containsExactly("fid-499", "fid-998");
-		assertThat(result.failure()).hasCause(firstFailure.getException());
-		verify(messaging, times(3)).sendEach(anyList());
+	private NotificationMessage message() {
+		Map<String, String> data = Map.of("hour", "17", "deepLink", "meongcoach://training-curriculum");
+		return new NotificationMessage("저녁 훈련 시간이에요", "오늘의 훈련을 마무리해 볼까요?", data);
 	}
 
 	private SendResponse failure(MessagingErrorCode code) {
