@@ -61,7 +61,9 @@ flowchart LR
 
 ## 발송 처리
 
-기준 코드는 `NotificationDispatchService`와 `FirebaseNotificationSender`입니다.
+`NotificationDispatchService`는 시각별 문구·딥링크 구성, 500건 배치 조율과 결과 집계를 담당합니다.
+`FirebaseNotificationSender`는 `NotificationMessage`를 Firebase 요청으로 변환하고 단일 배치를 호출합니다.
+Firebase 응답의 무효 FID 판별과 SDK 예외 변환은 Sender가 담당합니다.
 `scheduledTime`은 ISO 8601 UTC 시각이고 `hour`는 서울 기준 0~23입니다. Scheduler가 원래 예약 시각을 넘기므로 기동 지연이나 재호출에도 같은 키를 씁니다.
 
 `notification_dispatches`는 자동 생성하는 내부 `id`와 발송을 완료한 예약 식별자 `dispatch_key`를 저장합니다.
