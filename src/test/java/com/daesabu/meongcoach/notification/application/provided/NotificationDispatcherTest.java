@@ -13,12 +13,12 @@ import com.daesabu.meongcoach.notification.application.provided.dto.Notification
 import com.daesabu.meongcoach.notification.application.required.DeviceInstallationRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationDispatchRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationPreferenceRepository;
+import com.daesabu.meongcoach.notification.application.required.NotificationSendResult;
 import com.daesabu.meongcoach.notification.application.required.NotificationSender;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallation;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallationRegisterCommand;
 import com.daesabu.meongcoach.notification.domain.DevicePlatform;
 import com.daesabu.meongcoach.notification.domain.NotificationPreferenceFixture;
-import com.daesabu.meongcoach.notification.domain.NotificationSendResult;
 import com.daesabu.meongcoach.notification.domain.exception.InvalidNotificationHourException;
 import com.daesabu.meongcoach.notification.domain.exception.NotificationDeliveryException;
 import com.daesabu.meongcoach.support.NonTransactionalApplicationTest;

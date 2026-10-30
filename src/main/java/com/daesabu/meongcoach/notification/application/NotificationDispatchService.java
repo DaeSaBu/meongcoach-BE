@@ -8,9 +8,9 @@ import com.daesabu.meongcoach.notification.application.provided.NotificationTarg
 import com.daesabu.meongcoach.notification.application.provided.dto.DeviceInstallationDeleteRequest;
 import com.daesabu.meongcoach.notification.application.provided.dto.NotificationDispatchRequest;
 import com.daesabu.meongcoach.notification.application.required.NotificationDispatchRepository;
+import com.daesabu.meongcoach.notification.application.required.NotificationSendResult;
 import com.daesabu.meongcoach.notification.application.required.NotificationSender;
 import com.daesabu.meongcoach.notification.domain.NotificationHour;
-import com.daesabu.meongcoach.notification.domain.NotificationSendResult;
 import java.time.Instant;
 import java.util.List;
 import lombok.RequiredArgsConstructor;

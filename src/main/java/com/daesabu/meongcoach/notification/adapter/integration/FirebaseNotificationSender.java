@@ -1,7 +1,7 @@
 package com.daesabu.meongcoach.notification.adapter.integration;
 
+import com.daesabu.meongcoach.notification.application.required.NotificationSendResult;
 import com.daesabu.meongcoach.notification.application.required.NotificationSender;
-import com.daesabu.meongcoach.notification.domain.NotificationSendResult;
 import com.daesabu.meongcoach.notification.domain.exception.NotificationDeliveryException;
 import com.google.firebase.messaging.AndroidConfig;
 import com.google.firebase.messaging.ApnsConfig;

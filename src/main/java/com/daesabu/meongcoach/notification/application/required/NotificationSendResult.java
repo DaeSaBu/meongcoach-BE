@@ -1,4 +1,4 @@
-package com.daesabu.meongcoach.notification.domain;
+package com.daesabu.meongcoach.notification.application.required;
 
 import com.daesabu.meongcoach.notification.domain.exception.NotificationDeliveryException;
 import java.util.List;
