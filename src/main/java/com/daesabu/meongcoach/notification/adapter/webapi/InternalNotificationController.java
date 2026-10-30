@@ -3,7 +3,7 @@ package com.daesabu.meongcoach.notification.adapter.webapi;
 import com.daesabu.meongcoach.notification.adapter.webapi.dto.NotificationTargetResponse;
 import com.daesabu.meongcoach.notification.application.provided.NotificationRegister;
 import com.daesabu.meongcoach.notification.application.provided.NotificationTargetFinder;
-import com.daesabu.meongcoach.notification.application.provided.dto.DeviceTokenDeleteRequest;
+import com.daesabu.meongcoach.notification.application.provided.dto.DeviceInstallationDeleteRequest;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +24,7 @@ public class InternalNotificationController {
 	private final NotificationTargetFinder notificationTargetFinder;
 	private final NotificationRegister notificationRegister;
 
+
 	@GetMapping("/targets")
 	public List<NotificationTargetResponse> findTargets(@RequestParam int hour) {
 		return notificationTargetFinder.findTargets(hour).stream()
@@ -31,9 +32,9 @@ public class InternalNotificationController {
 				.toList();
 	}
 
-	@DeleteMapping("/tokens")
+	@DeleteMapping("/installations")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	public void deleteDeviceTokens(@Valid @RequestBody DeviceTokenDeleteRequest request) {
-		notificationRegister.deleteDeviceTokens(request);
+	public void deleteDeviceInstallations(@Valid @RequestBody DeviceInstallationDeleteRequest request) {
+		notificationRegister.deleteDeviceInstallations(request);
 	}
 }

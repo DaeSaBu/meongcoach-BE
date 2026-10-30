@@ -5,6 +5,6 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.util.List;
 
-public record DeviceTokenDeleteRequest(
-		@NotNull @Size(max = 1000) List<@NotBlank @Size(max = 512) String> tokens) {
+public record DeviceInstallationDeleteRequest(
+		@NotNull @Size(max = 1000) List<@NotBlank @Size(max = 512) String> fids) {
 }

@@ -21,12 +21,12 @@ import lombok.NoArgsConstructor;
 @Getter
 @Entity
 @Table(
-		name = "device_tokens",
-		uniqueConstraints = @UniqueConstraint(name = "uk_device_tokens_token", columnNames = "token"),
-		indexes = @Index(name = "idx_device_tokens_user_id", columnList = "user_id")
+		name = "device_installations",
+		uniqueConstraints = @UniqueConstraint(name = "uk_device_installations_fid", columnNames = "fid"),
+		indexes = @Index(name = "idx_device_installations_user_id", columnList = "user_id")
 )
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class DeviceToken extends BaseTimeEntity {
+public class DeviceInstallation extends BaseTimeEntity {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -36,7 +36,7 @@ public class DeviceToken extends BaseTimeEntity {
 	private Long userId;
 
 	@Column(nullable = false, length = 512)
-	private String token;
+	private String fid;
 
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, length = 10)
@@ -45,15 +45,15 @@ public class DeviceToken extends BaseTimeEntity {
 	@Column(nullable = false)
 	private Instant lastSeenAt;
 
-	public static DeviceToken register(Long userId, DeviceTokenRegisterCommand command, Instant lastSeenAt) {
-		DeviceToken deviceToken = new DeviceToken();
+	public static DeviceInstallation register(Long userId, DeviceInstallationRegisterCommand command, Instant lastSeenAt) {
+		DeviceInstallation deviceInstallation = new DeviceInstallation();
 
-		deviceToken.userId = requireNonNull(userId);
-		deviceToken.token = requireNonNull(command.token());
-		deviceToken.platform = requireNonNull(command.platform());
-		deviceToken.lastSeenAt = requireNonNull(lastSeenAt);
+		deviceInstallation.userId = requireNonNull(userId);
+		deviceInstallation.fid = requireNonNull(command.fid());
+		deviceInstallation.platform = requireNonNull(command.platform());
+		deviceInstallation.lastSeenAt = requireNonNull(lastSeenAt);
 
-		return deviceToken;
+		return deviceInstallation;
 	}
 
 	public void renew(Long userId, Instant lastSeenAt) {

@@ -4,8 +4,8 @@ import com.daesabu.meongcoach.notification.adapter.webapi.dto.NotificationPrefer
 import com.daesabu.meongcoach.notification.application.provided.NotificationPreferenceFinder;
 import com.daesabu.meongcoach.notification.application.provided.NotificationPreferenceResult;
 import com.daesabu.meongcoach.notification.application.provided.NotificationRegister;
-import com.daesabu.meongcoach.notification.application.provided.dto.DeviceTokenRegisterRequest;
-import com.daesabu.meongcoach.notification.application.provided.dto.DeviceTokenUnregisterRequest;
+import com.daesabu.meongcoach.notification.application.provided.dto.DeviceInstallationRegisterRequest;
+import com.daesabu.meongcoach.notification.application.provided.dto.DeviceInstallationUnregisterRequest;
 import com.daesabu.meongcoach.notification.application.provided.dto.NotificationPreferenceUpdateRequest;
 import com.daesabu.meongcoach.shared.security.CurrentUserId;
 import jakarta.validation.Valid;
@@ -29,16 +29,16 @@ public class NotificationController {
 	private final NotificationRegister notificationRegister;
 	private final NotificationPreferenceFinder notificationPreferenceFinder;
 
-	@PutMapping("/tokens")
+	@PutMapping("/installations")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	public void registerDeviceToken(@CurrentUserId Long userId, @Valid @RequestBody DeviceTokenRegisterRequest request) {
-		notificationRegister.registerDeviceToken(userId, request);
+	public void registerDeviceInstallation(@CurrentUserId Long userId, @Valid @RequestBody DeviceInstallationRegisterRequest request) {
+		notificationRegister.registerDeviceInstallation(userId, request);
 	}
 
-	@DeleteMapping("/tokens")
+	@DeleteMapping("/installations")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	public void deleteDeviceToken(@CurrentUserId Long userId, @Valid @RequestBody DeviceTokenUnregisterRequest request) {
-		notificationRegister.deleteDeviceToken(userId, request);
+	public void deleteDeviceInstallation(@CurrentUserId Long userId, @Valid @RequestBody DeviceInstallationUnregisterRequest request) {
+		notificationRegister.deleteDeviceInstallation(userId, request);
 	}
 
 	@GetMapping("/preferences")
