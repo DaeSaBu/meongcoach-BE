@@ -10,10 +10,14 @@ import com.daesabu.meongcoach.notification.application.provided.dto.Notification
 import com.daesabu.meongcoach.notification.application.required.NotificationDispatchRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationSendResult;
 import com.daesabu.meongcoach.notification.application.required.NotificationSender;
+import com.daesabu.meongcoach.notification.domain.NotificationDispatch;
 import com.daesabu.meongcoach.notification.domain.NotificationHour;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,16 +39,48 @@ public class NotificationDispatchService implements NotificationDispatcher {
 	@Transactional(propagation = Propagation.NOT_SUPPORTED)
 	public NotificationDispatchResult dispatch(NotificationDispatchRequest request) {
 		NotificationHour.validate(request.hour());
-		Boolean claimed = transactions.execute(status -> dispatches.claim(request.key(), Instant.now()) == 1);
-		if (!Boolean.TRUE.equals(claimed)) {
+		if (!start(request.key())) {
 			return new NotificationDispatchResult(0, 0, 0, true);
 		}
-		List<String> fids = targets.findTargets(request.hour()).stream()
+		NotificationDispatchResult result;
+		try {
+			result = send(request.hour());
+		} catch (RuntimeException failure) {
+			try {
+				transactions.executeWithoutResult(status -> dispatches.getReferenceById(request.key()).fail());
+			} catch (RuntimeException stateFailure) {
+				failure.addSuppressed(stateFailure);
+			}
+			throw failure;
+		}
+		transactions.executeWithoutResult(status -> dispatches.getReferenceById(request.key()).complete());
+		return result;
+	}
+
+	private boolean start(String key) {
+		try {
+			Boolean started = transactions.execute(status -> {
+				Optional<NotificationDispatch> existing = dispatches.findById(key);
+				if (existing.isPresent()) {
+					return existing.get().retry();
+				}
+				NotificationDispatch dispatch = NotificationDispatch.start(key, Instant.now());
+				dispatches.saveAndFlush(dispatch);
+				return true;
+			});
+			return Boolean.TRUE.equals(started);
+		} catch (DataIntegrityViolationException | OptimisticLockingFailureException conflict) {
+			return false;
+		}
+	}
+
+	private NotificationDispatchResult send(int hour) {
+		List<String> fids = targets.findTargets(hour).stream()
 				.map(NotificationTargetResult::fid).distinct().toList();
 		if (fids.isEmpty()) {
 			return new NotificationDispatchResult(0, 0, 0, false);
 		}
-		NotificationSendResult result = sender.send(fids, request.hour());
+		NotificationSendResult result = sender.send(fids, hour);
 		if (!result.invalidFids().isEmpty()) {
 			register.deleteDeviceInstallations(new DeviceInstallationDeleteRequest(result.invalidFids()));
 		}

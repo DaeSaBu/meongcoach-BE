@@ -1037,8 +1037,8 @@ operation::notification/internal-fid-delete[snippets='http-request,request-field
 === 내부 알림 발송
 
 `POST /internal/notifications/dispatch`는 예약 시각·발송 시각으로 알림을 발송합니다.
-같은 예약 시각·hour는 한 번만 처리하며 `duplicate=true`로 응답합니다.
-발송을 시작한 요청은 실패해도 같은 키로 다시 보내지 않습니다.
+같은 예약 시각·hour가 진행 중이거나 완료됐으면 `duplicate=true`로 응답합니다.
+실패한 예약은 같은 키로 다시 실행할 수 있습니다.
 
 operation::notification/internal-dispatch[snippets='http-request,request-fields,http-response,response-fields']
 
