@@ -35,25 +35,30 @@ public class NotificationDispatchService implements NotificationDispatcher {
 		if (!dispatches.tryLock(request.key()) || dispatches.existsByDispatchKey(request.key())) {
 			return new NotificationDispatchResult(0, true);
 		}
-		NotificationDispatchResult result = send(request.hour());
-		NotificationDispatch dispatch = NotificationDispatch.complete(request.key(), Instant.now());
-		dispatches.save(dispatch);
-		return result;
-	}
-
-	private NotificationDispatchResult send(int hour) {
-		List<String> fids = targets.findTargets(hour).stream()
+		List<String> fids = targets.findTargets(request.hour()).stream()
 				.map(NotificationTargetResult::fid).distinct().toList();
-		if (fids.isEmpty()) {
-			return new NotificationDispatchResult(0, false);
-		}
-		NotificationSendResult result = sender.send(fids, hour);
-		if (!result.invalidFids().isEmpty()) {
-			installations.deleteAllByFidIn(result.invalidFids());
-		}
+		NotificationSendResult result = send(fids, request.hour());
+		deleteInvalidInstallations(result.invalidFids());
 		if (result.failure() != null) {
 			throw result.failure();
 		}
+		NotificationDispatch dispatch = NotificationDispatch.complete(request.key(), Instant.now());
+		dispatches.save(dispatch);
 		return new NotificationDispatchResult(fids.size(), false);
+	}
+
+	private NotificationSendResult send(List<String> fids, int hour) {
+		if (fids.isEmpty()) {
+			List<String> invalidFids = List.of();
+			return new NotificationSendResult(invalidFids, null);
+		}
+		return sender.send(fids, hour);
+	}
+
+	private void deleteInvalidInstallations(List<String> invalidFids) {
+		if (invalidFids.isEmpty()) {
+			return;
+		}
+		installations.deleteAllByFidIn(invalidFids);
 	}
 }
