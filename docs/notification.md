@@ -89,6 +89,7 @@ FID를 중복 제거하고 500개씩 발송합니다. `UNREGISTERED`와 `SENDER_
 
 메시지에는 시각별 훈련 안내, `data.hour`, `data.deepLink=meongcoach://training-curriculum`을 넣습니다.
 Android는 HIGH 우선순위와 TTL 1시간을 사용합니다. APNs는 우선순위 10과 만료 1시간을 사용합니다.
+재실행으로 같은 예약이 중복 전달돼도 기기 알림이 하나만 남도록 예약 키를 Android 알림 `tag`와 APNs `apns-collapse-id`로 보냅니다. 소리·진동은 다시 울릴 수 있습니다.
 
 `FIREBASE_SERVICE_ACCOUNT_JSON`으로 Firebase를 인증합니다. 값이 없으면 ADC를 사용하며 첫 발송 때 초기화합니다.
 개발·운영 백엔드는 각 환경의 Firebase 프로젝트 키를 사용합니다. 키는 Terraform이 API 태스크 환경 변수에 주입합니다.

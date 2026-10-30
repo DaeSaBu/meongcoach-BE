@@ -5,6 +5,7 @@ import com.daesabu.meongcoach.notification.application.required.NotificationSend
 import com.daesabu.meongcoach.notification.domain.NotificationMessage;
 import com.daesabu.meongcoach.notification.domain.exception.NotificationDeliveryException;
 import com.google.firebase.messaging.AndroidConfig;
+import com.google.firebase.messaging.AndroidNotification;
 import com.google.firebase.messaging.ApnsConfig;
 import com.google.firebase.messaging.Aps;
 import com.google.firebase.messaging.FirebaseMessaging;
@@ -50,9 +51,11 @@ public class FirebaseNotificationSender implements NotificationSender {
 				.setFid(entry.getKey())
 				.setNotification(Notification.builder().setTitle(message.title()).setBody(message.body()).build())
 				.putAllData(message.data())
-				.setAndroidConfig(AndroidConfig.builder().setTtl(3_600_000).setPriority(AndroidConfig.Priority.HIGH).build())
+				.setAndroidConfig(AndroidConfig.builder().setTtl(3_600_000).setPriority(AndroidConfig.Priority.HIGH)
+						.setNotification(AndroidNotification.builder().setTag(message.collapseKey()).build()).build())
 				.setApnsConfig(ApnsConfig.builder().setAps(Aps.builder().build())
 						.putHeader("apns-priority", "10")
+						.putHeader("apns-collapse-id", message.collapseKey())
 						.putHeader("apns-expiration", String.valueOf(Instant.now().getEpochSecond() + 3600)).build())
 				.build();
 	}

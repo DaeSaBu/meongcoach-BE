@@ -27,11 +27,12 @@ import org.springframework.validation.annotation.Validated;
 @Transactional(readOnly = true)
 @Validated
 public class NotificationDispatchService implements NotificationDispatcher {
-	private static final Map<Integer, NotificationMessage> MESSAGES = Map.of(
-			8, message(8, "아침 훈련 시간이에요", "오늘의 훈련을 시작해 볼까요?"),
-			11, message(11, "점심 훈련 시간이에요", "잠깐 짬을 내서 한 가지만 연습해 볼까요?"),
-			17, message(17, "저녁 훈련 시간이에요", "오늘의 훈련을 마무리해 볼까요?")
+	private static final Map<Integer, Map.Entry<String, String>> MESSAGES = Map.of(
+			8, Map.entry("아침 훈련 시간이에요", "오늘의 훈련을 시작해 볼까요?"),
+			11, Map.entry("점심 훈련 시간이에요", "잠깐 짬을 내서 한 가지만 연습해 볼까요?"),
+			17, Map.entry("저녁 훈련 시간이에요", "오늘의 훈련을 마무리해 볼까요?")
 	);
+	private static final Map.Entry<String, String> DEFAULT_MESSAGE = Map.entry("훈련 시간이에요", "오늘의 훈련을 시작해 볼까요?");
 
 	private final NotificationDispatchRepository dispatches;
 	private final NotificationPreferenceRepository preferences;
@@ -49,7 +50,7 @@ public class NotificationDispatchService implements NotificationDispatcher {
 		}
 		List<String> fids = findTargets(request.hour());
 		if (!fids.isEmpty()) {
-			List<NotificationBatchResult> results = send(fids, request.hour());
+			List<NotificationBatchResult> results = send(fids, request);
 			List<String> invalidFids = results.stream().flatMap(result -> result.invalidFids().stream()).toList();
 			deleteInvalidInstallations(invalidFids);
 		}
@@ -68,16 +69,17 @@ public class NotificationDispatchService implements NotificationDispatcher {
 				.map(DeviceInstallation::getFid).distinct().toList();
 	}
 
-	private List<NotificationBatchResult> send(List<String> fids, int hour) {
-		NotificationMessage message = MESSAGES.getOrDefault(hour, message(hour, "훈련 시간이에요", "오늘의 훈련을 시작해 볼까요?"));
+	private List<NotificationBatchResult> send(List<String> fids, NotificationDispatchRequest request) {
+		NotificationMessage message = message(request);
 		Map<String, NotificationMessage> messages = new LinkedHashMap<>();
 		fids.forEach(fid -> messages.put(fid, message));
 		return sender.send(messages);
 	}
 
-	private static NotificationMessage message(int hour, String title, String body) {
-		Map<String, String> data = Map.of("hour", String.valueOf(hour), "deepLink", "meongcoach://training-curriculum");
-		return new NotificationMessage(title, body, data);
+	private NotificationMessage message(NotificationDispatchRequest request) {
+		Map.Entry<String, String> content = MESSAGES.getOrDefault(request.hour(), DEFAULT_MESSAGE);
+		Map<String, String> data = Map.of("hour", String.valueOf(request.hour()), "deepLink", "meongcoach://training-curriculum");
+		return new NotificationMessage(content.getKey(), content.getValue(), data, request.key());
 	}
 
 	private void deleteInvalidInstallations(List<String> invalidFids) {
