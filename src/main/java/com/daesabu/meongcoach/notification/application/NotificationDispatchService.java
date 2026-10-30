@@ -7,7 +7,7 @@ import com.daesabu.meongcoach.notification.application.required.DeviceInstallati
 import com.daesabu.meongcoach.notification.application.required.NotificationDispatchRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationPreferenceRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationSender;
-import com.daesabu.meongcoach.notification.application.required.NotificationSender.BatchResult;
+import com.daesabu.meongcoach.notification.application.required.NotificationSender.NotificationBatchResult;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallation;
 import com.daesabu.meongcoach.notification.domain.NotificationDispatch;
 import com.daesabu.meongcoach.notification.domain.NotificationHour;
@@ -48,7 +48,7 @@ public class NotificationDispatchService implements NotificationDispatcher {
 		}
 		List<String> fids = findTargets(request.hour());
 		if (!fids.isEmpty()) {
-			List<BatchResult> results = send(fids, request.hour());
+			List<NotificationBatchResult> results = send(fids, request.hour());
 			List<String> invalidFids = results.stream().flatMap(result -> result.invalidFids().stream()).toList();
 			deleteInvalidInstallations(invalidFids);
 		}
@@ -67,7 +67,7 @@ public class NotificationDispatchService implements NotificationDispatcher {
 				.map(DeviceInstallation::getFid).distinct().toList();
 	}
 
-	private List<BatchResult> send(List<String> fids, int hour) {
+	private List<NotificationBatchResult> send(List<String> fids, int hour) {
 		NotificationMessage message = MESSAGES.getOrDefault(hour, message(hour, "훈련 시간이에요", "오늘의 훈련을 시작해 볼까요?"));
 		Map<String, NotificationMessage> messages = new LinkedHashMap<>();
 		fids.forEach(fid -> messages.put(fid, message));

@@ -14,7 +14,7 @@ import com.daesabu.meongcoach.notification.application.required.DeviceInstallati
 import com.daesabu.meongcoach.notification.application.required.NotificationDispatchRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationPreferenceRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationSender;
-import com.daesabu.meongcoach.notification.application.required.NotificationSender.BatchResult;
+import com.daesabu.meongcoach.notification.application.required.NotificationSender.NotificationBatchResult;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallation;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallationRegisterCommand;
 import com.daesabu.meongcoach.notification.domain.DevicePlatform;
@@ -65,7 +65,7 @@ class NotificationDispatcherTest {
 
 	@Test
 	void 발송_후_무효_FID을_삭제한다() {
-		BatchResult deliveryResults = results(List.of(fid));
+		NotificationBatchResult deliveryResults = results(List.of(fid));
 		given(sender.send(anyMap())).willReturn(List.of(deliveryResults));
 
 		NotificationDispatchResult result = dispatcher.dispatch(request);
@@ -82,7 +82,7 @@ class NotificationDispatcherTest {
 
 	@Test
 	void 같은_예약_시각의_호출은_한_번만_발송한다() {
-		BatchResult deliveryResults = results(List.of());
+		NotificationBatchResult deliveryResults = results(List.of());
 		given(sender.send(anyMap())).willReturn(List.of(deliveryResults));
 
 		dispatcher.dispatch(request);
@@ -95,7 +95,7 @@ class NotificationDispatcherTest {
 	@Test
 	void 실패한_예약은_다시_발송하고_완료한_예약은_재발송하지_않는다() {
 		var failure = new NotificationDeliveryException(new IllegalStateException("FCM unavailable"));
-		BatchResult deliveryResults = results(List.of());
+		NotificationBatchResult deliveryResults = results(List.of());
 		given(sender.send(anyMap())).willThrow(failure)
 				.willReturn(List.of(deliveryResults));
 
@@ -143,7 +143,7 @@ class NotificationDispatcherTest {
 		given(sender.send(anyMap())).willAnswer(invocation -> {
 			started.countDown();
 			assertThat(release.await(10, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
-			BatchResult batchResult = results(List.of());
+			NotificationBatchResult batchResult = results(List.of());
 			return List.of(batchResult);
 		});
 		try (var executor = java.util.concurrent.Executors.newSingleThreadExecutor()) {
@@ -158,8 +158,8 @@ class NotificationDispatcherTest {
 		}
 		verify(sender, times(1)).send(anyMap());
 	}
-	private BatchResult results(List<String> invalidFids) {
-		BatchResult results = mock(BatchResult.class);
+	private NotificationBatchResult results(List<String> invalidFids) {
+		NotificationBatchResult results = mock(NotificationBatchResult.class);
 		given(results.invalidFids()).willReturn(invalidFids);
 		return results;
 	}

@@ -1,6 +1,6 @@
 package com.daesabu.meongcoach.notification.adapter.integration;
 
-import com.daesabu.meongcoach.notification.application.required.NotificationSender.BatchResult;
+import com.daesabu.meongcoach.notification.application.required.NotificationSender.NotificationBatchResult;
 import com.daesabu.meongcoach.notification.domain.exception.NotificationDeliveryException;
 import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.MessagingErrorCode;
@@ -8,7 +8,7 @@ import com.google.firebase.messaging.SendResponse;
 import java.util.ArrayList;
 import java.util.List;
 
-public class FirebaseNotificationBatchResult implements BatchResult {
+public class FirebaseNotificationBatchResult implements NotificationBatchResult {
 	private final List<String> invalidFids;
 
 	private FirebaseNotificationBatchResult(List<String> invalidFids) {

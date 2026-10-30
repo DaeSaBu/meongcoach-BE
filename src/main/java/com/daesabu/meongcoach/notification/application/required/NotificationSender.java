@@ -9,9 +9,9 @@ import java.util.Map;
  * 무효 등록 외 발송 실패가 발생하면 NotificationDeliveryException을 던지고 후속 배치를 중단한다.
  */
 public interface NotificationSender {
-	List<BatchResult> send(Map<String, NotificationMessage> messages);
+	List<NotificationBatchResult> send(Map<String, NotificationMessage> messages);
 
-	interface BatchResult {
+	interface NotificationBatchResult {
 		/** 무효로 판정된 FID 목록을 반환한다. */
 		List<String> invalidFids();
 	}

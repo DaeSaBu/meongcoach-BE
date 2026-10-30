@@ -1,7 +1,7 @@
 package com.daesabu.meongcoach.notification.adapter.integration;
 
 import com.daesabu.meongcoach.notification.application.required.NotificationSender;
-import com.daesabu.meongcoach.notification.application.required.NotificationSender.BatchResult;
+import com.daesabu.meongcoach.notification.application.required.NotificationSender.NotificationBatchResult;
 import com.daesabu.meongcoach.notification.domain.NotificationMessage;
 import com.daesabu.meongcoach.notification.domain.exception.NotificationDeliveryException;
 import com.google.firebase.messaging.AndroidConfig;
@@ -27,9 +27,9 @@ public class FirebaseNotificationSender implements NotificationSender {
 	private final ObjectProvider<FirebaseMessaging> messaging;
 
 	@Override
-	public List<BatchResult> send(Map<String, NotificationMessage> notifications) {
+	public List<NotificationBatchResult> send(Map<String, NotificationMessage> notifications) {
 		List<String> fids = new ArrayList<>(notifications.keySet());
-		List<BatchResult> results = new ArrayList<>();
+		List<NotificationBatchResult> results = new ArrayList<>();
 		for (int start = 0; start < fids.size(); start += BATCH_SIZE) {
 			int end = Math.min(start + BATCH_SIZE, fids.size());
 			List<String> batchFids = fids.subList(start, end);
@@ -39,7 +39,7 @@ public class FirebaseNotificationSender implements NotificationSender {
 		return results;
 	}
 
-	private BatchResult sendBatch(List<String> fids, List<Message> messages) {
+	private NotificationBatchResult sendBatch(List<String> fids, List<Message> messages) {
 		FirebaseMessaging client = messaging.getObject();
 		try {
 			List<SendResponse> responses = client.sendEach(messages).getResponses();

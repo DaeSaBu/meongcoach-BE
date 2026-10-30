@@ -13,7 +13,7 @@ import com.daesabu.meongcoach.notification.application.required.DeviceInstallati
 import com.daesabu.meongcoach.notification.application.required.NotificationDispatchRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationPreferenceRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationSender;
-import com.daesabu.meongcoach.notification.application.required.NotificationSender.BatchResult;
+import com.daesabu.meongcoach.notification.application.required.NotificationSender.NotificationBatchResult;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallation;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallationRegisterCommand;
 import com.daesabu.meongcoach.notification.domain.DevicePlatform;
@@ -40,7 +40,7 @@ class NotificationDispatchServiceTest {
 	@Test
 	void 시각별_메시지를_구성하고_전체_대상을_Sender에_전달한다() {
 		prepareTargets(501);
-		BatchResult deliveryResults = results(List.of());
+		NotificationBatchResult deliveryResults = results(List.of());
 		given(sender.send(anyMap())).willReturn(List.of(deliveryResults));
 
 		assertThat(service.dispatch(request).fids()).isEqualTo(501);
@@ -58,8 +58,8 @@ class NotificationDispatchServiceTest {
 	@Test
 	void 여러_배치의_무효_FID을_모아_삭제한다() {
 		prepareTargets(1001);
-		BatchResult firstBatch = results(List.of("fid-1"));
-		BatchResult secondBatch = results(List.of("fid-500"));
+		NotificationBatchResult firstBatch = results(List.of("fid-1"));
+		NotificationBatchResult secondBatch = results(List.of("fid-500"));
 		given(sender.send(anyMap())).willReturn(List.of(firstBatch, secondBatch));
 
 		assertThat(service.dispatch(request).fids()).isEqualTo(1001);
@@ -78,8 +78,8 @@ class NotificationDispatchServiceTest {
 						new DeviceInstallationRegisterCommand("fid-" + index, DevicePlatform.IOS), request.scheduledTime())).toList();
 		given(installations.findAllByUserIdInOrderByUserIdAscIdAsc(Set.of(1L))).willReturn(results);
 	}
-	private BatchResult results(List<String> invalidFids) {
-		BatchResult results = mock(BatchResult.class);
+	private NotificationBatchResult results(List<String> invalidFids) {
+		NotificationBatchResult results = mock(NotificationBatchResult.class);
 		given(results.invalidFids()).willReturn(invalidFids);
 		return results;
 	}
