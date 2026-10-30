@@ -10,10 +10,8 @@ import com.daesabu.meongcoach.notification.application.provided.dto.Notification
 import com.daesabu.meongcoach.notification.application.required.NotificationSender;
 import com.daesabu.meongcoach.notification.domain.NotificationHour;
 import com.daesabu.meongcoach.notification.domain.NotificationSendResult;
-import com.daesabu.meongcoach.notification.domain.exception.NotificationDeliveryException;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,7 +21,6 @@ import org.springframework.validation.annotation.Validated;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 @Validated
-@Slf4j
 public class NotificationDispatchService implements NotificationDispatcher {
 	private final NotificationDispatchClaimService claims;
 	private final NotificationTargetFinder targets;
@@ -46,10 +43,8 @@ public class NotificationDispatchService implements NotificationDispatcher {
 		if (!result.invalidFids().isEmpty()) {
 			register.deleteDeviceInstallations(new DeviceInstallationDeleteRequest(result.invalidFids()));
 		}
-		log.info("notification dispatch key={} fids={} invalidated={} failed={}",
-				request.key(), fids.size(), result.invalidFids().size(), result.failed());
-		if (result.failed() > 0) {
-			throw new NotificationDeliveryException();
+		if (result.failure() != null) {
+			throw result.failure();
 		}
 		return new NotificationDispatchResult(fids.size(), result.invalidFids().size(), result.failed(), false);
 	}

@@ -2,6 +2,7 @@ package com.daesabu.meongcoach.notification.adapter.integration;
 
 import com.daesabu.meongcoach.notification.application.required.NotificationSender;
 import com.daesabu.meongcoach.notification.domain.NotificationSendResult;
+import com.daesabu.meongcoach.notification.domain.exception.NotificationDeliveryException;
 import com.google.firebase.messaging.AndroidConfig;
 import com.google.firebase.messaging.ApnsConfig;
 import com.google.firebase.messaging.Aps;
@@ -15,13 +16,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-@Slf4j
 public class FirebaseNotificationSender implements NotificationSender {
 	private static final int BATCH_SIZE = 500;
 	private static final Map<Integer, List<String>> TEXTS = Map.of(
@@ -35,6 +34,7 @@ public class FirebaseNotificationSender implements NotificationSender {
 	public NotificationSendResult send(List<String> fids, int hour) {
 		List<String> invalidFids = new ArrayList<>();
 		int failed = 0;
+		NotificationDeliveryException failure = null;
 		FirebaseMessaging client = messaging.getObject();
 		for (int offset = 0; offset < fids.size(); offset += BATCH_SIZE) {
 			List<String> batch = fids.subList(offset, Math.min(offset + BATCH_SIZE, fids.size()));
@@ -50,15 +50,19 @@ public class FirebaseNotificationSender implements NotificationSender {
 						invalidFids.add(batch.get(i));
 						continue;
 					}
-					log.warn("FCM delivery failed code={}", response.getException().getMessagingErrorCode());
+					if (failure == null) {
+						failure = new NotificationDeliveryException(response.getException());
+					}
 					failed++;
 				}
 			} catch (FirebaseMessagingException e) {
-				log.warn("FCM batch failed code={} size={}", e.getMessagingErrorCode(), batch.size());
+				if (failure == null) {
+					failure = new NotificationDeliveryException(e);
+				}
 				failed += batch.size();
 			}
 		}
-		return new NotificationSendResult(invalidFids, failed);
+		return new NotificationSendResult(invalidFids, failed, failure);
 	}
 
 	private Message message(String fid, int hour) {
