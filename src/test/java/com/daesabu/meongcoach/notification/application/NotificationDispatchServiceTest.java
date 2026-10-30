@@ -52,6 +52,7 @@ class NotificationDispatchServiceTest {
 		assertThat(message.title()).isEqualTo("저녁 훈련 시간이에요");
 		assertThat(message.body()).isEqualTo("오늘의 훈련을 마무리해 볼까요?");
 		assertThat(message.data()).isEqualTo(Map.of("hour", "17", "deepLink", "meongcoach://training-curriculum"));
+		assertThat(message.collapseKey()).isEqualTo(request.key());
 		verify(dispatches).save(any(NotificationDispatch.class));
 	}
 

@@ -87,6 +87,24 @@ class FirebaseNotificationSenderTest {
 	}
 
 	@Test
+	void 같은_예약의_중복_알림이_기기에서_교체되도록_묶음_키를_보낸다() throws Exception {
+		FirebaseMessaging messaging = mock(FirebaseMessaging.class);
+		BatchResponse batch = mock(BatchResponse.class);
+		given(batch.getResponses()).willReturn(List.of());
+		given(messaging.sendEach(anyList())).willReturn(batch);
+		sender(messaging).send(messages(List.of("fid")));
+
+		ArgumentCaptor<List<com.google.firebase.messaging.Message>> captor = ArgumentCaptor.captor();
+		verify(messaging).sendEach(captor.capture());
+		String json = com.google.api.client.json.gson.GsonFactory.getDefaultInstance().toString(captor.getValue().getFirst());
+		var message = com.google.gson.JsonParser.parseString(json).getAsJsonObject();
+		assertThat(message.getAsJsonObject("android").getAsJsonObject("notification").get("tag").getAsString())
+				.isEqualTo("2026-10-31T08:00:00Z:17");
+		assertThat(message.getAsJsonObject("apns").getAsJsonObject("headers").get("apns-collapse-id").getAsString())
+				.isEqualTo("2026-10-31T08:00:00Z:17");
+	}
+
+	@Test
 	void FID을_500개씩_분할하고_응답_순서를_유지한다() throws Exception {
 		FirebaseMessaging messaging = mock(FirebaseMessaging.class);
 		SendResponse unregistered = failure(MessagingErrorCode.UNREGISTERED);
@@ -116,7 +134,7 @@ class FirebaseNotificationSenderTest {
 
 	private NotificationMessage message() {
 		Map<String, String> data = Map.of("hour", "17", "deepLink", "meongcoach://training-curriculum");
-		return new NotificationMessage("저녁 훈련 시간이에요", "오늘의 훈련을 마무리해 볼까요?", data);
+		return new NotificationMessage("저녁 훈련 시간이에요", "오늘의 훈련을 마무리해 볼까요?", data, "2026-10-31T08:00:00Z:17");
 	}
 
 	private SendResponse failure(MessagingErrorCode code) {
