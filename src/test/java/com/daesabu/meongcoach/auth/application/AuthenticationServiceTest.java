@@ -33,11 +33,11 @@ import com.daesabu.meongcoach.auth.domain.exception.UnsupportedSocialProviderExc
 import com.daesabu.meongcoach.auth.domain.exception.WithdrawnUserException;
 import com.daesabu.meongcoach.media.application.provided.StoredMediaVerifier;
 import com.daesabu.meongcoach.notification.application.NotificationModifyService;
-import com.daesabu.meongcoach.notification.application.required.DeviceTokenRepository;
+import com.daesabu.meongcoach.notification.application.required.DeviceInstallationRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationPreferenceRepository;
+import com.daesabu.meongcoach.notification.domain.DeviceInstallation;
+import com.daesabu.meongcoach.notification.domain.DeviceInstallationRegisterCommand;
 import com.daesabu.meongcoach.notification.domain.DevicePlatform;
-import com.daesabu.meongcoach.notification.domain.DeviceToken;
-import com.daesabu.meongcoach.notification.domain.DeviceTokenRegisterCommand;
 import com.daesabu.meongcoach.notification.domain.NotificationPreferenceFixture;
 import com.daesabu.meongcoach.user.application.UserQueryService;
 import com.daesabu.meongcoach.user.application.UserRegisterService;
@@ -96,7 +96,7 @@ class AuthenticationServiceTest {
 	private RefreshTokenRepository refreshTokenRepository;
 
 	@Autowired
-	private DeviceTokenRepository deviceTokenRepository;
+	private DeviceInstallationRepository deviceInstallationRepository;
 
 	@Autowired
 	private NotificationPreferenceRepository notificationPreferenceRepository;
@@ -120,7 +120,7 @@ class AuthenticationServiceTest {
 		RefreshTokenModifyService refreshTokenRegister = new RefreshTokenModifyService(refreshTokenRepository,
 				tokenProvider, refreshTokenFinder);
 		AuthTokenProvideService authTokenProvider = new AuthTokenProvideService(tokenProvider, refreshTokenRegister);
-		NotificationModifyService notificationRegister = new NotificationModifyService(deviceTokenRepository,
+		NotificationModifyService notificationRegister = new NotificationModifyService(deviceInstallationRepository,
 				notificationPreferenceRepository);
 
 		service = new AuthenticationService(accountFinder, accountRegister, PASSWORD_ENCODER::matches,
@@ -344,15 +344,15 @@ class AuthenticationServiceTest {
 	@Test
 	void 탈퇴하면_기기_토큰과_알림_설정_행이_삭제된다() {
 		User user = persistSocialUser(APPLE_ACCOUNT);
-		deviceTokenRepository.save(DeviceToken.register(user.getId(),
-				new DeviceTokenRegisterCommand("fcm-token", DevicePlatform.IOS), Instant.now()));
+		deviceInstallationRepository.save(DeviceInstallation.register(user.getId(),
+				new DeviceInstallationRegisterCommand("fcm-token", DevicePlatform.IOS), Instant.now()));
 		notificationPreferenceRepository.save(NotificationPreferenceFixture.create(user.getId(), 17, true));
 		flushAndClear();
 
 		service.withdraw(user.getId(), new WithdrawRequest(APPLE_CODE));
 		flushAndClear();
 
-		assertThat(deviceTokenRepository.findByToken("fcm-token")).isEmpty();
+		assertThat(deviceInstallationRepository.findByFid("fcm-token")).isEmpty();
 		assertThat(notificationPreferenceRepository.findAllByUserId(user.getId())).isEmpty();
 	}
 

@@ -1,11 +1,11 @@
 package com.daesabu.meongcoach.notification.application.provided;
 
+import com.daesabu.meongcoach.notification.domain.DeviceInstallation;
 import com.daesabu.meongcoach.notification.domain.DevicePlatform;
-import com.daesabu.meongcoach.notification.domain.DeviceToken;
 
-public record NotificationTargetResult(Long userId, String token, DevicePlatform platform) {
+public record NotificationTargetResult(Long userId, String fid, DevicePlatform platform) {
 
-	public static NotificationTargetResult from(DeviceToken deviceToken) {
-		return new NotificationTargetResult(deviceToken.getUserId(), deviceToken.getToken(), deviceToken.getPlatform());
+	public static NotificationTargetResult from(DeviceInstallation deviceInstallation) {
+		return new NotificationTargetResult(deviceInstallation.getUserId(), deviceInstallation.getFid(), deviceInstallation.getPlatform());
 	}
 }

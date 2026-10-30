@@ -2,14 +2,14 @@ package com.daesabu.meongcoach.notification.application;
 
 
 import com.daesabu.meongcoach.notification.application.provided.NotificationRegister;
-import com.daesabu.meongcoach.notification.application.provided.dto.DeviceTokenDeleteRequest;
-import com.daesabu.meongcoach.notification.application.provided.dto.DeviceTokenRegisterRequest;
-import com.daesabu.meongcoach.notification.application.provided.dto.DeviceTokenUnregisterRequest;
+import com.daesabu.meongcoach.notification.application.provided.dto.DeviceInstallationDeleteRequest;
+import com.daesabu.meongcoach.notification.application.provided.dto.DeviceInstallationRegisterRequest;
+import com.daesabu.meongcoach.notification.application.provided.dto.DeviceInstallationUnregisterRequest;
 import com.daesabu.meongcoach.notification.application.provided.dto.NotificationPreferenceUpdateRequest;
-import com.daesabu.meongcoach.notification.application.required.DeviceTokenRepository;
+import com.daesabu.meongcoach.notification.application.required.DeviceInstallationRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationPreferenceRepository;
-import com.daesabu.meongcoach.notification.domain.DeviceToken;
-import com.daesabu.meongcoach.notification.domain.DeviceTokenRegisterCommand;
+import com.daesabu.meongcoach.notification.domain.DeviceInstallation;
+import com.daesabu.meongcoach.notification.domain.DeviceInstallationRegisterCommand;
 import com.daesabu.meongcoach.notification.domain.NotificationHour;
 import com.daesabu.meongcoach.notification.domain.NotificationPreference;
 import java.time.Instant;
@@ -26,26 +26,26 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 public class NotificationModifyService implements NotificationRegister {
 
-	private final DeviceTokenRepository deviceTokenRepository;
+	private final DeviceInstallationRepository deviceInstallationRepository;
 	private final NotificationPreferenceRepository notificationPreferenceRepository;
 
 	@Override
 	@Transactional
-	public void registerDeviceToken(Long userId, DeviceTokenRegisterRequest request) {
-		DeviceTokenRegisterCommand command = request.toCommand();
+	public void registerDeviceInstallation(Long userId, DeviceInstallationRegisterRequest request) {
+		DeviceInstallationRegisterCommand command = request.toCommand();
 		Instant now = Instant.now();
 
-		upsertDeviceToken(userId, command, now);
+		upsertDeviceInstallation(userId, command, now);
 		createDefaultPreferencesIfAbsent(userId);
 	}
 
-	private void upsertDeviceToken(Long userId, DeviceTokenRegisterCommand command, Instant now) {
-		Optional<DeviceToken> existing = deviceTokenRepository.findByToken(command.token());
+	private void upsertDeviceInstallation(Long userId, DeviceInstallationRegisterCommand command, Instant now) {
+		Optional<DeviceInstallation> existing = deviceInstallationRepository.findByFid(command.fid());
 		if (existing.isPresent()) {
 			existing.get().renew(userId, now);
 			return;
 		}
-		deviceTokenRepository.save(DeviceToken.register(userId, command, now));
+		deviceInstallationRepository.save(DeviceInstallation.register(userId, command, now));
 	}
 
 	private void createDefaultPreferencesIfAbsent(Long userId) {
@@ -60,17 +60,17 @@ public class NotificationModifyService implements NotificationRegister {
 
 	@Override
 	@Transactional
-	public void deleteDeviceToken(Long userId, DeviceTokenUnregisterRequest request) {
-		deviceTokenRepository.deleteByUserIdAndToken(userId, request.token());
+	public void deleteDeviceInstallation(Long userId, DeviceInstallationUnregisterRequest request) {
+		deviceInstallationRepository.deleteByUserIdAndFid(userId, request.fid());
 	}
 
 	@Override
 	@Transactional
-	public void deleteDeviceTokens(DeviceTokenDeleteRequest request) {
-		if (request.tokens().isEmpty()) {
+	public void deleteDeviceInstallations(DeviceInstallationDeleteRequest request) {
+		if (request.fids().isEmpty()) {
 			return;
 		}
-		deviceTokenRepository.deleteAllByTokenIn(request.tokens());
+		deviceInstallationRepository.deleteAllByFidIn(request.fids());
 	}
 
 	@Override
@@ -90,7 +90,7 @@ public class NotificationModifyService implements NotificationRegister {
 	@Override
 	@Transactional
 	public void deleteAllByUserId(Long userId) {
-		deviceTokenRepository.deleteAllByUserId(userId);
+		deviceInstallationRepository.deleteAllByUserId(userId);
 		notificationPreferenceRepository.deleteAllByUserId(userId);
 	}
 }

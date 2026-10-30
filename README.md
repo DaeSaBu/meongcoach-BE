@@ -160,7 +160,7 @@ AI 분석은 수십 초가 걸리므로 요청-응답이 아니라 S3 업로드 
 
 #### notification — 푸시 알림 토큰·수신 설정
 
-- **책임**: 회원의 FCM 기기 토큰과 시각별 알림 수신 설정 보관, 발송기에 내주는 시각별 발송 대상 규칙. FCM 호출과 발송 시각 판단은 별도 발송기가 맡습니다.
+- **책임**: 회원의 Firebase Installation ID(FID)과 시각별 알림 수신 설정 보관, 발송기에 내주는 시각별 발송 대상 규칙. FCM 호출과 발송 시각 판단은 별도 발송기가 맡습니다.
 - **역할**: `NotificationRegister`(토큰 등록·삭제, 설정 변경, 탈퇴 정리), `NotificationPreferenceFinder`, `NotificationTargetFinder`
 - **협력**: 발송 대상을 고를 때 `user`의 `UserFinder`로 활성 회원만 남깁니다. `auth`가 탈퇴할 때 토큰과 설정 정리에 사용합니다. 발송기는 `/internal/notifications/**`를 `X-Internal-Secret` 헤더로 호출합니다.
 

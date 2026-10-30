@@ -26,7 +26,7 @@ import org.springframework.test.web.servlet.MockMvc;
 class InternalSecurityFilterChainTest {
 
 	private static final String TARGETS_PATH = "/internal/notifications/targets";
-	private static final String TOKENS_PATH = "/internal/notifications/tokens";
+	private static final String TOKENS_PATH = "/internal/notifications/installations";
 	private static final String APP_PREFERENCES_PATH = "/api/notifications/preferences";
 	private static final String INTERNAL_SECRET_HEADER = "X-Internal-Secret";
 	private static final String INTERNAL_SECRET = "test-internal-secret";
@@ -71,7 +71,7 @@ class InternalSecurityFilterChainTest {
 		mockMvc.perform(delete(TOKENS_PATH)
 						.header(INTERNAL_SECRET_HEADER, INTERNAL_SECRET)
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"tokens\": [\"unknown-token\"]}"))
+						.content("{\"fids\": [\"unknown-token\"]}"))
 				.andExpect(status().isNoContent());
 	}
 

@@ -2,7 +2,7 @@ package com.daesabu.meongcoach.notification.application;
 
 import com.daesabu.meongcoach.notification.application.provided.NotificationTargetFinder;
 import com.daesabu.meongcoach.notification.application.provided.NotificationTargetResult;
-import com.daesabu.meongcoach.notification.application.required.DeviceTokenRepository;
+import com.daesabu.meongcoach.notification.application.required.DeviceInstallationRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationPreferenceRepository;
 import com.daesabu.meongcoach.notification.domain.NotificationHour;
 import com.daesabu.meongcoach.user.application.provided.UserFinder;
@@ -18,7 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class NotificationTargetQueryService implements NotificationTargetFinder {
 
 	private final NotificationPreferenceRepository notificationPreferenceRepository;
-	private final DeviceTokenRepository deviceTokenRepository;
+	private final DeviceInstallationRepository deviceInstallationRepository;
 	private final UserFinder userFinder;
 
 	@Override
@@ -29,7 +29,7 @@ public class NotificationTargetQueryService implements NotificationTargetFinder 
 		if (activeUserIds.isEmpty()) {
 			return List.of();
 		}
-		return deviceTokenRepository.findAllByUserIdInOrderByUserIdAscIdAsc(activeUserIds).stream()
+		return deviceInstallationRepository.findAllByUserIdInOrderByUserIdAscIdAsc(activeUserIds).stream()
 				.map(NotificationTargetResult::from)
 				.toList();
 	}
