@@ -8,7 +8,9 @@ import com.daesabu.meongcoach.shared.security.AuthorityRole;
  */
 public enum UserRole {
 	USER(AuthorityRole.USER),
-	ONBOARDING_USER(AuthorityRole.ONBOARDING_USER);
+	ONBOARDING_USER(AuthorityRole.ONBOARDING_USER),
+	ADMIN(AuthorityRole.ADMIN),
+	EXPERT(AuthorityRole.EXPERT);
 
 	private final AuthorityRole authorityRole;
 

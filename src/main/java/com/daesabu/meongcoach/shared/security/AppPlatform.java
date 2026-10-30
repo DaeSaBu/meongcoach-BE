@@ -7,6 +7,7 @@ public enum AppPlatform {
 
 	IOS,
 	ANDROID,
+	WEB,
 	;
 
 	public static AppPlatform from(String value) {

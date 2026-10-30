@@ -1,15 +1,22 @@
 package com.daesabu.meongcoach.auth.adapter.webapi;
 
 import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.document;
+import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.startsWith;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.BDDMockito.willThrow;
+import static org.springframework.restdocs.cookies.CookieDocumentation.cookieWithName;
+import static org.springframework.restdocs.cookies.CookieDocumentation.requestCookies;
+import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
+import static org.springframework.restdocs.headers.HeaderDocumentation.responseHeaders;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.delete;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.post;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -28,12 +35,14 @@ import com.daesabu.meongcoach.auth.domain.exception.InvalidRefreshTokenException
 import com.daesabu.meongcoach.auth.domain.exception.InvalidSocialTokenException;
 import com.daesabu.meongcoach.auth.domain.exception.UnsupportedSocialProviderException;
 import com.daesabu.meongcoach.user.domain.exception.UserNotFoundException;
+import jakarta.servlet.http.Cookie;
 import java.security.Principal;
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -41,6 +50,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(AuthController.class)
 @AutoConfigureRestDocs
+@Import(RefreshTokenCookies.class)
 class AuthControllerTest {
 
 	// 컨트롤러 슬라이스에는 필터 체인이 없으므로 인증 주체를 요청에 직접 실어 보낸다
@@ -50,6 +60,9 @@ class AuthControllerTest {
 	private static final String EMAIL = "review@meongcoach.com";
 	private static final String PASSWORD = "meongcoach-review";
 	private static final String APPLE_CODE = "c1a2b3.0.abcd.efgh";
+	private static final String APP_PLATFORM_HEADER = "X-App-Platform";
+	private static final String WEB_PLATFORM = "web";
+	private static final String REFRESH_TOKEN_COOKIE = "refresh_token";
 	private static final AuthToken AUTH_TOKEN = new AuthToken(42L, "access-token", "refresh-token",
 			new RefreshTokenId("0f8fad5b-d9cb-469f-a165-70867728950e"), LocalDateTime.of(2026, 9, 16, 12, 0));
 
@@ -381,5 +394,114 @@ class AuthControllerTest {
 				.andExpect(status().isUnauthorized());
 
 		then(authenticator).shouldHaveNoInteractions();
+	}
+
+	@Test
+	void 웹에서_이메일로_로그인하면_리프레시_토큰을_본문_대신_쿠키로_내린다() throws Exception {
+		given(authenticator.emailLogin(new EmailLoginRequest(EMAIL, PASSWORD))).willReturn(AUTH_TOKEN);
+
+		mockMvc.perform(post("/api/auth/login/email")
+						.header(APP_PLATFORM_HEADER, WEB_PLATFORM)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(emailLoginBody(EMAIL, PASSWORD)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.accessToken").value("access-token"))
+				.andExpect(jsonPath("$.refreshToken").doesNotExist())
+				.andExpect(header().string(HttpHeaders.SET_COOKIE, startsWith(
+						"refresh_token=refresh-token; Path=/api/auth; Max-Age=1209600;")))
+				.andExpect(header().string(HttpHeaders.SET_COOKIE, endsWith("; Secure; HttpOnly; SameSite=Strict")))
+				.andDo(document("auth/email-login-web",
+						requestFields(
+								fieldWithPath("email").description("필수 입력. 서버에 등록된 계정 이메일"),
+								fieldWithPath("password").description("필수 입력. 계정 비밀번호")
+						),
+						responseHeaders(
+								headerWithName(HttpHeaders.SET_COOKIE).description(
+										"X-App-Platform: web 요청에만 내리는 리프레시 토큰 쿠키(refresh_token). HttpOnly·Secure·SameSite=Strict, Path=/api/auth")
+						),
+						responseFields(
+								fieldWithPath("accessToken").description("API 호출에 사용할 액세스 토큰")
+						)
+				));
+	}
+
+	@Test
+	void 웹에서_소셜_로그인하면_리프레시_토큰을_본문_대신_쿠키로_내린다() throws Exception {
+		given(authenticator.socialLogin(new SocialLoginRequest("kakao", ID_TOKEN))).willReturn(AUTH_TOKEN);
+
+		mockMvc.perform(post("/api/auth/login/social")
+						.header(APP_PLATFORM_HEADER, WEB_PLATFORM)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(socialLoginBody("kakao", ID_TOKEN)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.accessToken").value("access-token"))
+				.andExpect(jsonPath("$.refreshToken").doesNotExist())
+				.andExpect(header().string(HttpHeaders.SET_COOKIE, startsWith("refresh_token=refresh-token;")));
+	}
+
+	@Test
+	void 웹에서는_쿠키의_리프레시_토큰으로_재발급하고_회전된_토큰을_쿠키로_내린다() throws Exception {
+		given(authenticator.refresh(new TokenRefreshRequest(REFRESH_TOKEN))).willReturn(AUTH_TOKEN);
+
+		mockMvc.perform(post("/api/auth/token/refresh")
+						.header(APP_PLATFORM_HEADER, WEB_PLATFORM)
+						.cookie(new Cookie(REFRESH_TOKEN_COOKIE, REFRESH_TOKEN)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.accessToken").value("access-token"))
+				.andExpect(jsonPath("$.refreshToken").doesNotExist())
+				.andExpect(header().string(HttpHeaders.SET_COOKIE, startsWith("refresh_token=refresh-token;")))
+				.andDo(document("auth/token-refresh-web",
+						requestCookies(
+								cookieWithName(REFRESH_TOKEN_COOKIE).description("필수 입력. 로그인 시 발급받은 리프레시 토큰")
+						),
+						responseHeaders(
+								headerWithName(HttpHeaders.SET_COOKIE).description("새로 발급된 리프레시 토큰 쿠키")
+						),
+						responseFields(
+								fieldWithPath("accessToken").description("새로 발급된 액세스 토큰")
+						)
+				));
+	}
+
+	@Test
+	void 웹에서_리프레시_토큰_쿠키_없이_재발급하면_401을_반환한다() throws Exception {
+		mockMvc.perform(post("/api/auth/token/refresh")
+						.header(APP_PLATFORM_HEADER, WEB_PLATFORM))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.code").value("AUTH_INVALID_REFRESH_TOKEN"));
+
+		then(authenticator).shouldHaveNoInteractions();
+	}
+
+	@Test
+	void 웹에서_로그아웃하면_쿠키의_리프레시_토큰을_폐기하고_쿠키를_지운다() throws Exception {
+		mockMvc.perform(post("/api/auth/logout")
+						.header(APP_PLATFORM_HEADER, WEB_PLATFORM)
+						.cookie(new Cookie(REFRESH_TOKEN_COOKIE, REFRESH_TOKEN)))
+				.andExpect(status().isNoContent())
+				.andExpect(header().string(HttpHeaders.SET_COOKIE, startsWith("refresh_token=; Path=/api/auth; Max-Age=0;")))
+				.andDo(document("auth/logout-web",
+						requestCookies(
+								cookieWithName(REFRESH_TOKEN_COOKIE).description("필수 입력. 폐기할 리프레시 토큰")
+						),
+						responseHeaders(
+								headerWithName(HttpHeaders.SET_COOKIE).description("만료 처리한 리프레시 토큰 쿠키")
+						)
+				));
+
+		then(authenticator).should().logout(new LogoutRequest(REFRESH_TOKEN));
+	}
+
+	@Test
+	void 앱에서_로그인하면_쿠키_없이_본문으로_리프레시_토큰을_내린다() throws Exception {
+		given(authenticator.emailLogin(new EmailLoginRequest(EMAIL, PASSWORD))).willReturn(AUTH_TOKEN);
+
+		mockMvc.perform(post("/api/auth/login/email")
+						.header(APP_PLATFORM_HEADER, "ios")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(emailLoginBody(EMAIL, PASSWORD)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.refreshToken").value("refresh-token"))
+				.andExpect(header().doesNotExist(HttpHeaders.SET_COOKIE));
 	}
 }
