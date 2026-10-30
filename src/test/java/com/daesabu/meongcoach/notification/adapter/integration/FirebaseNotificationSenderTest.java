@@ -53,7 +53,7 @@ class FirebaseNotificationSenderTest {
 	}
 
 	@Test
-	void 배치_요청_실패를_집계하고_뒤의_배치도_시도한다() throws Exception {
+	void 배치_요청_실패를_보존하고_뒤의_배치도_시도한다() throws Exception {
 		FirebaseMessaging messaging = mock(FirebaseMessaging.class);
 		FirebaseMessagingException failure = mock(FirebaseMessagingException.class);
 		BatchResponse batch = mock(BatchResponse.class);
@@ -91,7 +91,7 @@ class FirebaseNotificationSenderTest {
 	}
 
 	@Test
-	void 여러_배치의_무효_FID과_실패_수를_합치고_첫_원인을_유지한다() throws Exception {
+	void 여러_배치의_무효_FID을_합치고_첫_원인을_유지한다() throws Exception {
 		FirebaseMessaging messaging = mock(FirebaseMessaging.class);
 		SendResponse success = mock(SendResponse.class);
 		given(success.isSuccessful()).willReturn(true);
