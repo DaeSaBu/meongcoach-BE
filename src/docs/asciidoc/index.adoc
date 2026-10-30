@@ -1033,3 +1033,19 @@ operation::notification/internal-targets-error[snippets='http-response,response-
 FCM이 등록 해제됐다고 답한 토큰을 회원과 무관하게 지웁니다. 없는 토큰이 섞여도 204입니다. 응답 본문은 없습니다.
 
 operation::notification/internal-token-delete[snippets='http-request,request-fields,http-response']
+
+== Dashboard API
+
+관리자 웹 대시보드용 API입니다. `ADMIN`·`EXPERT` 역할만 호출할 수 있고, 그 밖의 역할은 403을 받습니다.
+
+=== 내 정보 조회
+
+link:{swagger-ui}#/Dashboard/dashboard-me[▶ Swagger에서 Try it out,window=swagger]
+
+로그인한 회원의 ID와 역할(`userRole`)을 조회합니다.
+
+operation::dashboard/me[snippets='http-request,http-response,response-fields']
+
+==== 실패 응답
+
+operation::dashboard/me-error[snippets='http-response,response-fields']
