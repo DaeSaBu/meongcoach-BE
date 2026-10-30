@@ -45,13 +45,15 @@ flowchart LR
 
 - `/internal/**`는 `notification/adapter/security/InternalSecurityConfig`가 정의한 별도 시큐리티 필터 체인(`@Order(0)`, `securityMatcher("/internal/**")`)이 처리합니다. JWT 디코더와 앱 버전 게이트를 타지 않습니다.
 - `InternalSecretAuthenticationFilter`가 요청 헤더 `X-Internal-Secret`을 설정값 `meongcoach.notification.internal-secret`(환경 변수 `NOTIFICATION_INTERNAL_SECRET`)과 `MessageDigest.isEqual`로 비교해 같을 때만 인증 주체를 세웁니다. 헤더가 없거나 값이 다르면 401 Problem Details(`UNAUTHORIZED`)입니다.
-- 설정값에 기본값이 없어 미주입 시 기동에 실패합니다. 액세스 FID으로는 내부 API를, 비밀 헤더로는 앱 API를 호출할 수 없습니다.
+- 설정값에 기본값이 없어 미주입 시 기동에 실패합니다. 액세스 토큰으로는 내부 API를, 비밀 헤더로는 앱 API를 호출할 수 없습니다.
 
 ## 발송 대상 규칙
 
+`NotificationDispatchService` 내부에서 발송 대상을 조회합니다.
+
 1. `notification_preferences`에서 `hour = ? AND enabled = true`인 행의 회원 ID를 모읍니다.
 2. `user`의 `UserFinder.findActiveUserIds`로 상태가 `ACTIVE`인 회원만 남깁니다. 탈퇴 회원은 빠집니다.
-3. 남은 회원의 `device_installations`를 한 번에 조회해 FID당 한 행으로 반환합니다. 회원 ID 오름차순, 같은 회원 안에서는 FID 등록 순(`id` 오름차순)입니다. FID가 없는 회원은 응답에서 빠집니다.
+3. 남은 회원의 `device_installations`를 한 번에 조회합니다. 회원 ID 오름차순, 같은 회원 안에서는 FID 등록 순(`id` 오름차순)입니다. FID가 없는 회원은 발송 대상에서 빠집니다.
 
 설정 행이 없는 회원은 기본값이 켜져 있어도 대상이 아닙니다. FID 등록이 기본 행을 만들므로 FID가 있는 회원에게는 행이 있습니다.
 
@@ -62,10 +64,12 @@ flowchart LR
 ## 발송 처리
 
 `NotificationDispatchService`는 대상 조회, 시각별 문구·딥링크 구성, 중복 실행 제어와 저장을 조율합니다.
+Service에서 FID별 `Map<String, NotificationMessage>`를 만들어 Sender에 전달합니다.
 `FirebaseNotificationSender`는 `NotificationMessage`를 Firebase 요청으로 변환하고 500건씩 나누어 호출합니다.
-`FirebaseNotificationBatchResult`가 SDK의 원본 응답을 직접 받아 FID 연결·무효 판별·첫 실패 전파를 담당합니다.
-Sender는 배치별 결과를 `List<NotificationBatchResult>`로 순서대로 반환합니다.
-Service는 모든 배치의 무효 FID를 모아 삭제하고 첫 실패를 확인한 뒤 완료 이력을 저장합니다.
+`FirebaseNotificationBatchResult`가 SDK의 원본 응답을 직접 받아 FID 연결과 무효 등록 판별을 담당합니다.
+Sender는 배치별 결과를 `List<NotificationSender.BatchResult>`로 순서대로 반환합니다.
+무효 FID 외 오류가 발생하면 발송 단계에서 원인을 보존한 예외를 즉시 던지고 후속 배치를 중단합니다.
+발송이 끝나면 Service가 모든 배치의 무효 FID를 모아 삭제하고 완료 이력을 저장합니다.
 `scheduledTime`은 ISO 8601 UTC 시각이고 `hour`는 서울 기준 0~23입니다. Scheduler가 원래 예약 시각을 넘기므로 기동 지연이나 재호출에도 같은 키를 씁니다.
 
 `notification_dispatches`는 자동 생성하는 내부 `id`와 발송을 완료한 예약 식별자 `dispatch_key`를 저장합니다.
@@ -81,7 +85,7 @@ FCM 호출과 무효 FID 정리 뒤 완료 이력을 저장하고 커밋합니�
 일부 FID에 전송된 뒤 실패하거나 완료 이력 커밋 전에 중단되면 재실행 시 중복 전달될 수 있습니다.
 
 FID를 중복 제거하고 500개씩 발송합니다. `UNREGISTERED`만 FID 삭제 대상으로 삼습니다. `INVALID_ARGUMENT`는 메시지 오류일 수도 있으므로 삭제하지 않고 실패로 처리합니다.
-무효 FID 외 실패가 있으면 FID 정리 뒤 첫 FCM 원인을 보존한 도메인 예외를 전파해 502를 반환합니다. 인증 실패는 401, 잘못된 hour는 400입니다.
+무효 FID 외 실패가 있으면 FID 정리 전에 첫 FCM 원인을 보존한 도메인 예외를 전파해 502를 반환합니다. 인증 실패는 401, 잘못된 hour는 400입니다.
 
 메시지에는 시각별 훈련 안내, `data.hour`, `data.deepLink=meongcoach://training-curriculum`을 넣습니다.
 Android는 HIGH 우선순위와 TTL 1시간을 사용합니다. APNs는 우선순위 10과 만료 1시간을 사용합니다.
