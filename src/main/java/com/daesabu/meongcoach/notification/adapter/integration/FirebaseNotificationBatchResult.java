@@ -6,12 +6,8 @@ import com.google.firebase.messaging.MessagingErrorCode;
 import com.google.firebase.messaging.SendResponse;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 public class FirebaseNotificationBatchResult implements NotificationBatchResult {
-	private static final Set<MessagingErrorCode> INVALID_REGISTRATION_CODES =
-			Set.of(MessagingErrorCode.UNREGISTERED, MessagingErrorCode.SENDER_ID_MISMATCH);
-
 	private final List<String> invalidFids;
 
 	private FirebaseNotificationBatchResult(List<String> invalidFids) {
@@ -22,7 +18,11 @@ public class FirebaseNotificationBatchResult implements NotificationBatchResult 
 		List<String> invalidFids = new ArrayList<>();
 		for (int index = 0; index < responses.size(); index++) {
 			FirebaseMessagingException exception = responses.get(index).getException();
-			if (exception != null && INVALID_REGISTRATION_CODES.contains(exception.getMessagingErrorCode())) {
+			if (exception == null) {
+				continue;
+			}
+			MessagingErrorCode code = exception.getMessagingErrorCode();
+			if (code == MessagingErrorCode.UNREGISTERED || code == MessagingErrorCode.SENDER_ID_MISMATCH) {
 				invalidFids.add(fids.get(index));
 			}
 		}
