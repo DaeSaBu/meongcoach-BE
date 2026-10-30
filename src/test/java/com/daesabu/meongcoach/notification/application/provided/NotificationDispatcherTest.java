@@ -65,7 +65,7 @@ class NotificationDispatcherTest {
 
 	@Test
 	void 발송_후_무효_FID을_삭제한다() {
-		given(sender.send(anyList(), eq(17))).willReturn(new NotificationSendResult(List.of(fid), 0));
+		given(sender.send(anyList(), eq(17))).willReturn(new NotificationSendResult(List.of(fid), 0, null));
 
 		NotificationDispatchResult result = dispatcher.dispatch(request);
 
@@ -77,7 +77,7 @@ class NotificationDispatcherTest {
 
 	@Test
 	void 같은_예약_시각의_호출은_한_번만_발송한다() {
-		given(sender.send(anyList(), eq(17))).willReturn(new NotificationSendResult(List.of(), 0));
+		given(sender.send(anyList(), eq(17))).willReturn(new NotificationSendResult(List.of(), 0, null));
 
 		dispatcher.dispatch(request);
 		NotificationDispatchResult repeated = dispatcher.dispatch(request);
@@ -88,7 +88,7 @@ class NotificationDispatcherTest {
 
 	@Test
 	void 발송_실패_후에도_같은_키로_재발송하지_않는다() {
-		given(sender.send(anyList(), eq(17))).willThrow(new NotificationDeliveryException());
+		given(sender.send(anyList(), eq(17))).willThrow(new NotificationDeliveryException(new IllegalStateException("FCM unavailable")));
 
 		assertThatThrownBy(() -> dispatcher.dispatch(request)).isInstanceOf(NotificationDeliveryException.class);
 		assertThat(dispatcher.dispatch(request).duplicate()).isTrue();
@@ -97,9 +97,11 @@ class NotificationDispatcherTest {
 
 	@Test
 	void 일부_실패해도_무효_FID부터_정리한다() {
-		given(sender.send(anyList(), eq(17))).willReturn(new NotificationSendResult(List.of(fid), 1));
+		var cause = new IllegalStateException("FCM unavailable");
+		var failure = new NotificationDeliveryException(cause);
+		given(sender.send(anyList(), eq(17))).willReturn(new NotificationSendResult(List.of(fid), 1, failure));
 
-		assertThatThrownBy(() -> dispatcher.dispatch(request)).isInstanceOf(NotificationDeliveryException.class);
+		assertThatThrownBy(() -> dispatcher.dispatch(request)).isSameAs(failure).hasCause(cause);
 		assertThat(fids.findByFid(fid)).isEmpty();
 	}
 
@@ -127,7 +129,7 @@ class NotificationDispatcherTest {
 		given(sender.send(anyList(), eq(17))).willAnswer(invocation -> {
 			started.countDown();
 			assertThat(release.await(10, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
-			return new NotificationSendResult(List.of(), 0);
+			return new NotificationSendResult(List.of(), 0, null);
 		});
 		try (var executor = java.util.concurrent.Executors.newSingleThreadExecutor()) {
 			var first = executor.submit(() -> dispatcher.dispatch(request));

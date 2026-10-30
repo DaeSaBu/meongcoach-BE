@@ -194,7 +194,7 @@ class InternalNotificationControllerTest {
 	@Test
 	void 발송_실패를_502로_응답한다() throws Exception {
 		var request = new NotificationDispatchRequest(Instant.parse("2026-10-31T08:00:00Z"), 17);
-		given(dispatcher.dispatch(request)).willThrow(new NotificationDeliveryException());
+		given(dispatcher.dispatch(request)).willThrow(new NotificationDeliveryException(new IllegalStateException("FCM unavailable")));
 		mockMvc.perform(post("/internal/notifications/dispatch")
 						.header(INTERNAL_SECRET_HEADER, "internal-secret")
 						.contentType(MediaType.APPLICATION_JSON)
