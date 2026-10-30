@@ -66,11 +66,11 @@ flowchart LR
 기준 코드는 `NotificationDispatchService`와 `FirebaseNotificationSender`입니다.
 `scheduledTime`은 ISO 8601 UTC 시각이고 `hour`는 서울 기준 0~23입니다. Scheduler가 원래 예약 시각을 넘기므로 기동 지연이나 재호출에도 같은 키를 씁니다.
 
-`notification_dispatches`의 `(scheduled_time, hour)` 유니크 키를 먼저 커밋해 동시 호출을 막습니다. FCM 호출 동안 DB 트랜잭션을 열어 두지 않습니다.
+`notification_dispatches.id`에 예약 시각과 hour를 조합한 키를 먼저 커밋해 동시 호출을 막습니다. FCM 호출 동안 DB 트랜잭션을 열어 두지 않습니다.
 발송을 시작한 요청은 실패해도 같은 키로 다시 보내지 않습니다. 프로세스 종료나 부분 실패 시 누락될 수 있으며, 재발송은 별도의 예약 시각으로 요청합니다.
 
 FID를 중복 제거하고 500개씩 발송합니다. `UNREGISTERED`만 FID 삭제 대상으로 삼습니다. `INVALID_ARGUMENT`는 메시지 오류일 수도 있으므로 삭제하지 않고 실패로 처리합니다.
-무효 FID 외 실패가 있으면 FID 정리 뒤 502를 반환합니다. 인증 실패는 401, 잘못된 hour는 400입니다.
+무효 FID 외 실패가 있으면 FID 정리 뒤 첫 FCM 원인을 보존한 도메인 예외를 전파해 502를 반환합니다. 인증 실패는 401, 잘못된 hour는 400입니다.
 
 메시지에는 시각별 훈련 안내, `data.hour`, `data.deepLink=meongcoach://training-curriculum`을 넣습니다.
 Android는 HIGH 우선순위와 TTL 1시간을 사용합니다. APNs는 우선순위 10과 만료 1시간을 사용합니다.
