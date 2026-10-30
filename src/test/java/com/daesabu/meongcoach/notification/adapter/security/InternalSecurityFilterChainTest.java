@@ -3,6 +3,7 @@ package com.daesabu.meongcoach.notification.adapter.security;
 import static com.daesabu.meongcoach.support.AppClientRequests.appGet;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -108,4 +109,12 @@ class InternalSecurityFilterChainTest {
 		user.completeOnboarding(new UserProfileCreateCommand("멍멍이집사", null, "INFP", Set.of(), Set.of()));
 		return userRepository.save(user);
 	}
+
+    @Test
+    void 발송_API는_내부_비밀_헤더가_없으면_401이다() throws Exception {
+        mockMvc.perform(post("/internal/notifications/dispatch")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"scheduledTime\":\"2026-10-31T08:00:00Z\",\"hour\":17}"))
+                .andExpect(status().isUnauthorized());
+    }
 }
