@@ -11,7 +11,6 @@ import com.daesabu.meongcoach.notification.application.required.NotificationSend
 import com.daesabu.meongcoach.notification.application.required.NotificationSender;
 import com.daesabu.meongcoach.notification.domain.NotificationDispatch;
 import com.daesabu.meongcoach.notification.domain.NotificationHour;
-import java.time.Instant;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -42,7 +41,7 @@ public class NotificationDispatchService implements NotificationDispatcher {
 		if (result.failure() != null) {
 			throw result.failure();
 		}
-		NotificationDispatch dispatch = NotificationDispatch.complete(request.key(), Instant.now());
+		NotificationDispatch dispatch = NotificationDispatch.complete(request.key());
 		dispatches.save(dispatch);
 		return new NotificationDispatchResult(fids.size(), false);
 	}
