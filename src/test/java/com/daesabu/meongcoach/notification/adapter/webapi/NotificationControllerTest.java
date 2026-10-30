@@ -18,8 +18,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.daesabu.meongcoach.notification.application.provided.NotificationPreferenceFinder;
 import com.daesabu.meongcoach.notification.application.provided.NotificationPreferenceResult;
 import com.daesabu.meongcoach.notification.application.provided.NotificationRegister;
-import com.daesabu.meongcoach.notification.application.provided.dto.DeviceTokenRegisterRequest;
-import com.daesabu.meongcoach.notification.application.provided.dto.DeviceTokenUnregisterRequest;
+import com.daesabu.meongcoach.notification.application.provided.dto.DeviceInstallationRegisterRequest;
+import com.daesabu.meongcoach.notification.application.provided.dto.DeviceInstallationUnregisterRequest;
 import com.daesabu.meongcoach.notification.application.provided.dto.NotificationPreferenceUpdateRequest;
 import com.daesabu.meongcoach.notification.domain.exception.InvalidDevicePlatformException;
 import com.daesabu.meongcoach.notification.domain.exception.NotAllowedNotificationHourException;
@@ -39,13 +39,13 @@ import org.springframework.test.web.servlet.MockMvc;
 @AutoConfigureRestDocs
 class NotificationControllerTest {
 
-	private static final String TOKENS_PATH = "/api/notifications/tokens";
+	private static final String TOKENS_PATH = "/api/notifications/installations";
 	private static final String PREFERENCES_PATH = "/api/notifications/preferences";
 
 	private static final Principal CURRENT_USER = () -> "42";
 
 	private static final String TOKEN_REGISTER_BODY = """
-			{"token": "fcm-registration-token", "platform": "IOS"}
+			{"fid": "fcm-registration-fid", "platform": "IOS"}
 			""";
 
 	private static final String PREFERENCE_UPDATE_BODY = """
@@ -71,33 +71,33 @@ class NotificationControllerTest {
 	private NotificationPreferenceFinder notificationPreferenceFinder;
 
 	@Test
-	void 기기_토큰을_등록하면_204를_반환한다() throws Exception {
+	void 기기_FID을_등록하면_204를_반환한다() throws Exception {
 		mockMvc.perform(put(TOKENS_PATH)
 						.principal(CURRENT_USER)
-						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-fid")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(TOKEN_REGISTER_BODY))
 				.andExpect(status().isNoContent())
-				.andDo(document("notification/token-register",
+				.andDo(document("notification/fid-register",
 						requestFields(
-								fieldWithPath("token").description("FCM 등록 토큰"),
+								fieldWithPath("fid").description("Firebase Installation ID(FID)"),
 								fieldWithPath("platform").description("기기 플랫폼(IOS 또는 ANDROID)")
 						)
 				));
 
 		then(notificationRegister).should()
-				.registerDeviceToken(42L, new DeviceTokenRegisterRequest("fcm-registration-token", "IOS"));
+				.registerDeviceInstallation(42L, new DeviceInstallationRegisterRequest("fcm-registration-fid", "IOS"));
 	}
 
 	@Test
-	void 토큰이_비어_있으면_등록은_검증에_실패한다() throws Exception {
+	void FID이_비어_있으면_등록은_검증에_실패한다() throws Exception {
 		mockMvc.perform(put(TOKENS_PATH)
 						.principal(CURRENT_USER)
 						.contentType(MediaType.APPLICATION_JSON)
-						.content(TOKEN_REGISTER_BODY.replace("\"fcm-registration-token\"", "\" \"")))
+						.content(TOKEN_REGISTER_BODY.replace("\"fcm-registration-fid\"", "\" \"")))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
-				.andExpect(jsonPath("$.errors[0].field").value("token"));
+				.andExpect(jsonPath("$.errors[0].field").value("fid"));
 
 		then(notificationRegister).shouldHaveNoInteractions();
 	}
@@ -105,31 +105,31 @@ class NotificationControllerTest {
 	@Test
 	void 지원하지_않는_플랫폼이면_400과_에러_코드를_반환한다() throws Exception {
 		willThrow(new InvalidDevicePlatformException("WEB")).given(notificationRegister)
-				.registerDeviceToken(42L, new DeviceTokenRegisterRequest("fcm-registration-token", "WEB"));
+				.registerDeviceInstallation(42L, new DeviceInstallationRegisterRequest("fcm-registration-fid", "WEB"));
 
 		mockMvc.perform(put(TOKENS_PATH)
 						.principal(CURRENT_USER)
-						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-fid")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(TOKEN_REGISTER_BODY.replace("\"IOS\"", "\"WEB\"")))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.code").value("NOTIFICATION_PLATFORM_INVALID"))
-				.andDo(document("notification/token-register-error", responseFields(ERROR_FIELDS)));
+				.andDo(document("notification/fid-register-error", responseFields(ERROR_FIELDS)));
 	}
 
 	@Test
-	void 기기_토큰을_지우면_204를_반환한다() throws Exception {
+	void 기기_FID을_지우면_204를_반환한다() throws Exception {
 		mockMvc.perform(delete(TOKENS_PATH)
 						.principal(CURRENT_USER)
-						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-fid")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"token\": \"fcm-registration-token\"}"))
+						.content("{\"fid\": \"fcm-registration-fid\"}"))
 				.andExpect(status().isNoContent())
-				.andDo(document("notification/token-delete",
-						requestFields(fieldWithPath("token").description("지울 FCM 등록 토큰. URL이 아니라 본문으로 보내 접근 로그에 남지 않게 한다"))
+				.andDo(document("notification/fid-delete",
+						requestFields(fieldWithPath("fid").description("지울 Firebase Installation ID(FID). URL이 아니라 본문으로 보내 접근 로그에 남지 않게 한다"))
 				));
 
-		then(notificationRegister).should().deleteDeviceToken(42L, new DeviceTokenUnregisterRequest("fcm-registration-token"));
+		then(notificationRegister).should().deleteDeviceInstallation(42L, new DeviceInstallationUnregisterRequest("fcm-registration-fid"));
 	}
 
 	@Test
@@ -142,7 +142,7 @@ class NotificationControllerTest {
 
 		mockMvc.perform(get(PREFERENCES_PATH)
 						.principal(CURRENT_USER)
-						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-fid"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.hours.length()").value(3))
 				.andExpect(jsonPath("$.hours[0].hour").value(8))
@@ -162,7 +162,7 @@ class NotificationControllerTest {
 	void 시각별_알림_설정을_바꾸면_204를_반환한다() throws Exception {
 		mockMvc.perform(put(PREFERENCES_PATH + "/{hour}", 17)
 						.principal(CURRENT_USER)
-						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-fid")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(PREFERENCE_UPDATE_BODY))
 				.andExpect(status().isNoContent())
@@ -181,7 +181,7 @@ class NotificationControllerTest {
 
 		mockMvc.perform(put(PREFERENCES_PATH + "/{hour}", 9)
 						.principal(CURRENT_USER)
-						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-fid")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(PREFERENCE_UPDATE_BODY))
 				.andExpect(status().isBadRequest())

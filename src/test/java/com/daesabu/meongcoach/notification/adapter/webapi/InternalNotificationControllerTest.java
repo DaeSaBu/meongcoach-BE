@@ -1,9 +1,9 @@
 package com.daesabu.meongcoach.notification.adapter.webapi;
 
+import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.document;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.BDDMockito.willThrow;
-import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.delete;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.get;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
@@ -18,7 +18,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.daesabu.meongcoach.notification.application.provided.NotificationRegister;
 import com.daesabu.meongcoach.notification.application.provided.NotificationTargetFinder;
 import com.daesabu.meongcoach.notification.application.provided.NotificationTargetResult;
-import com.daesabu.meongcoach.notification.application.provided.dto.DeviceTokenDeleteRequest;
+import com.daesabu.meongcoach.notification.application.provided.dto.DeviceInstallationDeleteRequest;
 import com.daesabu.meongcoach.notification.domain.DevicePlatform;
 import com.daesabu.meongcoach.notification.domain.exception.InvalidNotificationHourException;
 import java.util.List;
@@ -35,11 +35,11 @@ import org.springframework.test.web.servlet.MockMvc;
 class InternalNotificationControllerTest {
 
 	private static final String TARGETS_PATH = "/internal/notifications/targets";
-	private static final String TOKENS_PATH = "/internal/notifications/tokens";
+	private static final String TOKENS_PATH = "/internal/notifications/installations";
 	private static final String INTERNAL_SECRET_HEADER = "X-Internal-Secret";
 
 	private static final String TOKEN_DELETE_BODY = """
-			{"tokens": ["expired-token-1", "expired-token-2"]}
+			{"fids": ["expired-fid-1", "expired-fid-2"]}
 			""";
 
 	@Autowired
@@ -51,12 +51,13 @@ class InternalNotificationControllerTest {
 	@MockitoBean
 	private NotificationRegister notificationRegister;
 
+
 	@Test
-	void 시각의_발송_대상을_토큰_한_행씩_배열로_응답한다() throws Exception {
+	void 시각의_발송_대상을_FID_한_행씩_배열로_응답한다() throws Exception {
 		given(notificationTargetFinder.findTargets(17)).willReturn(List.of(
-				new NotificationTargetResult(42L, "token-ios", DevicePlatform.IOS),
-				new NotificationTargetResult(42L, "token-android", DevicePlatform.ANDROID),
-				new NotificationTargetResult(43L, "token-43", DevicePlatform.IOS)
+				new NotificationTargetResult(42L, "fid-ios", DevicePlatform.IOS),
+				new NotificationTargetResult(42L, "fid-android", DevicePlatform.ANDROID),
+				new NotificationTargetResult(43L, "fid-43", DevicePlatform.IOS)
 		));
 
 		mockMvc.perform(get(TARGETS_PATH)
@@ -65,7 +66,7 @@ class InternalNotificationControllerTest {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.length()").value(3))
 				.andExpect(jsonPath("$[0].userId").value(42))
-				.andExpect(jsonPath("$[0].token").value("token-ios"))
+				.andExpect(jsonPath("$[0].fid").value("fid-ios"))
 				.andExpect(jsonPath("$[0].platform").value("IOS"))
 				.andExpect(jsonPath("$[1].userId").value(42))
 				.andExpect(jsonPath("$[1].platform").value("ANDROID"))
@@ -73,8 +74,8 @@ class InternalNotificationControllerTest {
 				.andDo(document("notification/internal-targets",
 						queryParameters(parameterWithName("hour").description("알림 시각(Asia/Seoul 기준 0~23)")),
 						responseFields(
-								fieldWithPath("[].userId").description("회원 ID. 회원 ID 오름차순, 같은 회원 안에서는 토큰 등록 순"),
-								fieldWithPath("[].token").description("FCM 등록 토큰"),
+								fieldWithPath("[].userId").description("회원 ID. 회원 ID 오름차순, 같은 회원 안에서는 FID 등록 순"),
+								fieldWithPath("[].fid").description("Firebase Installation ID(FID)"),
 								fieldWithPath("[].platform").description("기기 플랫폼(IOS·ANDROID)")
 						)
 				));
@@ -124,30 +125,34 @@ class InternalNotificationControllerTest {
 	}
 
 	@Test
-	void 무효_토큰_목록을_지우면_204를_반환한다() throws Exception {
+	void 무효_FID_목록을_지우면_204를_반환한다() throws Exception {
 		mockMvc.perform(delete(TOKENS_PATH)
 						.header(INTERNAL_SECRET_HEADER, "internal-secret")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(TOKEN_DELETE_BODY))
 				.andExpect(status().isNoContent())
-				.andDo(document("notification/internal-token-delete",
-						requestFields(fieldWithPath("tokens").description("FCM이 무효라고 답한 등록 토큰 목록"))
+				.andDo(document("notification/internal-fid-delete",
+						requestFields(fieldWithPath("fids").description("FCM이 무효라고 답한 등록 FID 목록"))
 				));
 
 		then(notificationRegister).should()
-				.deleteDeviceTokens(new DeviceTokenDeleteRequest(List.of("expired-token-1", "expired-token-2")));
+				.deleteDeviceInstallations(new DeviceInstallationDeleteRequest(List.of("expired-fid-1", "expired-fid-2")));
 	}
 
 	@Test
-	void 빈_문자열_토큰이_섞이면_검증에_실패한다() throws Exception {
+	void 빈_문자열_FID이_섞이면_검증에_실패한다() throws Exception {
 		mockMvc.perform(delete(TOKENS_PATH)
 						.header(INTERNAL_SECRET_HEADER, "internal-secret")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content(TOKEN_DELETE_BODY.replace("\"expired-token-2\"", "\" \"")))
+						.content(TOKEN_DELETE_BODY.replace("\"expired-fid-2\"", "\" \"")))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
-				.andExpect(jsonPath("$.errors[0].field").value("tokens[1]"));
+				.andExpect(jsonPath("$.errors[0].field").value("fids[1]"));
 
 		then(notificationRegister).shouldHaveNoInteractions();
 	}
+
+
+
+
 }
