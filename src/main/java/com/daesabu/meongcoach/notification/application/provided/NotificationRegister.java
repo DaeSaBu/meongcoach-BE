@@ -1,6 +1,5 @@
 package com.daesabu.meongcoach.notification.application.provided;
 
-import com.daesabu.meongcoach.notification.application.provided.dto.DeviceInstallationDeleteRequest;
 import com.daesabu.meongcoach.notification.application.provided.dto.DeviceInstallationRegisterRequest;
 import com.daesabu.meongcoach.notification.application.provided.dto.DeviceInstallationUnregisterRequest;
 import com.daesabu.meongcoach.notification.application.provided.dto.NotificationPreferenceUpdateRequest;
@@ -22,11 +21,6 @@ public interface NotificationRegister {
 	 * 회원 본인의 기기 FID를 지운다. FID가 없거나 다른 회원의 FID가면 아무것도 하지 않는다.
 	 */
 	void deleteDeviceInstallation(Long userId, @Valid DeviceInstallationUnregisterRequest request);
-
-	/**
-	 * 목록의 기기 FID를 회원과 무관하게 모두 지운다. 없는 FID는 무시한다.
-	 */
-	void deleteDeviceInstallations(@Valid DeviceInstallationDeleteRequest request);
 
 	/**
 	 * 회원의 한 시각 알림 수신 여부를 요청 값으로 바꾼다. 회원·시각 행이 있으면 값만 바꾸고, 없으면 새로 만든다.
