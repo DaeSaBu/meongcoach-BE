@@ -7,14 +7,17 @@ import com.daesabu.meongcoach.notification.application.provided.NotificationTarg
 import com.daesabu.meongcoach.notification.application.provided.NotificationTargetResult;
 import com.daesabu.meongcoach.notification.application.provided.dto.DeviceInstallationDeleteRequest;
 import com.daesabu.meongcoach.notification.application.provided.dto.NotificationDispatchRequest;
+import com.daesabu.meongcoach.notification.application.required.NotificationDispatchRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationSender;
 import com.daesabu.meongcoach.notification.domain.NotificationHour;
 import com.daesabu.meongcoach.notification.domain.NotificationSendResult;
+import java.time.Instant;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.validation.annotation.Validated;
 
 @Service
@@ -22,7 +25,8 @@ import org.springframework.validation.annotation.Validated;
 @Transactional(readOnly = true)
 @Validated
 public class NotificationDispatchService implements NotificationDispatcher {
-	private final NotificationDispatchClaimService claims;
+	private final NotificationDispatchRepository dispatches;
+	private final TransactionTemplate transactions;
 	private final NotificationTargetFinder targets;
 	private final NotificationRegister register;
 	private final NotificationSender sender;
@@ -31,7 +35,8 @@ public class NotificationDispatchService implements NotificationDispatcher {
 	@Transactional(propagation = Propagation.NOT_SUPPORTED)
 	public NotificationDispatchResult dispatch(NotificationDispatchRequest request) {
 		NotificationHour.validate(request.hour());
-		if (!claims.claim(request.key())) {
+		Boolean claimed = transactions.execute(status -> dispatches.claim(request.key(), Instant.now()) == 1);
+		if (!Boolean.TRUE.equals(claimed)) {
 			return new NotificationDispatchResult(0, 0, 0, true);
 		}
 		List<String> fids = targets.findTargets(request.hour()).stream()
