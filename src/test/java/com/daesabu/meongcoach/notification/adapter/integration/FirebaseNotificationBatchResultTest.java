@@ -1,7 +1,6 @@
 package com.daesabu.meongcoach.notification.adapter.integration;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
@@ -24,11 +23,23 @@ class FirebaseNotificationBatchResultTest {
 	}
 
 	@Test
-	void 실패가_여러_개면_첫_원인을_전파한다() {
-		SendResponse first = failure(MessagingErrorCode.UNAVAILABLE);
-		SendResponse later = failure(MessagingErrorCode.INVALID_ARGUMENT);
-		assertThatThrownBy(() -> FirebaseNotificationBatchResult.success(
-				List.of("first", "later"), List.of(first, later))).hasCause(first.getException());
+	void SENDER_ID_MISMATCH도_무효_FID으로_추출한다() {
+		SendResponse mismatch = failure(MessagingErrorCode.SENDER_ID_MISMATCH);
+		var results = FirebaseNotificationBatchResult.success(List.of("mismatch"), List.of(mismatch));
+
+		assertThat(results.invalidFids()).containsExactly("mismatch");
+	}
+
+	@Test
+	void 무효_등록_외_개별_실패는_건너뛰고_예외를_던지지_않는다() {
+		SendResponse unavailable = failure(MessagingErrorCode.UNAVAILABLE);
+		SendResponse invalidArgument = failure(MessagingErrorCode.INVALID_ARGUMENT);
+		SendResponse unregistered = failure(MessagingErrorCode.UNREGISTERED);
+		var results = FirebaseNotificationBatchResult.success(
+				List.of("unavailable", "invalid-argument", "unregistered"),
+				List.of(unavailable, invalidArgument, unregistered));
+
+		assertThat(results.invalidFids()).containsExactly("unregistered");
 	}
 
 	@Test

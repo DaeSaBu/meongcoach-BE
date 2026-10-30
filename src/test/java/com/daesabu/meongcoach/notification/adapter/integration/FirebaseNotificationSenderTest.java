@@ -50,7 +50,7 @@ class FirebaseNotificationSenderTest {
 	}
 
 	@Test
-	void 개별_발송이_실패해도_다음_배치는_보내지_않는다() throws Exception {
+	void 개별_발송이_실패해도_다음_배치를_보낸다() throws Exception {
 		FirebaseMessaging messaging = mock(FirebaseMessaging.class);
 		BatchResponse batch = mock(BatchResponse.class);
 		SendResponse failed = failure(MessagingErrorCode.UNAVAILABLE);
@@ -58,9 +58,10 @@ class FirebaseNotificationSenderTest {
 		given(messaging.sendEach(anyList())).willReturn(batch);
 		List<String> fids = java.util.stream.IntStream.range(0, 501).mapToObj(index -> "fid-" + index).toList();
 
-		assertThatThrownBy(() -> sender(messaging).send(messages(fids))).hasCause(failed.getException());
+		var results = sender(messaging).send(messages(fids));
 
-		verify(messaging, times(1)).sendEach(anyList());
+		verify(messaging, times(2)).sendEach(anyList());
+		assertThat(results).allSatisfy(result -> assertThat(result.invalidFids()).isEmpty());
 	}
 
 	@Test
