@@ -21,6 +21,7 @@ com.daesabu.meongcoach
 ├── community    ← 게시글. 훈련 카드 등 다른 모듈의 대상을 멘션할 수 있음
 ├── graduation   ← 토픽 수료(실습 인증) 제출·조회. 수료 사실의 유일한 출처
 ├── notification ← 푸시 알림 기기 토큰·시각별 수신 설정. FCM 호출은 별도 발송기가 맡음
+├── benchmark    ← AI 영상 분석 벤치마크 영상과 평가 결과. 운영자가 SQL로 직접 적재
 ├── health       ← 서비스 상태 확인
 └── shared       ← 횡단 관심사 (config / security / webapi / exception / domain)
 ```
