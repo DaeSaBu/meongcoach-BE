@@ -34,7 +34,7 @@ public class NotificationDispatchService implements NotificationDispatcher {
 	public NotificationDispatchResult dispatch(NotificationDispatchRequest request) {
 		NotificationHour.validate(request.hour());
 		if (!dispatches.tryLock(request.key()) || dispatches.existsById(request.key())) {
-			return new NotificationDispatchResult(0, 0, 0, true);
+			return new NotificationDispatchResult(0, true);
 		}
 		NotificationDispatchResult result = send(request.hour());
 		NotificationDispatch dispatch = NotificationDispatch.complete(request.key(), Instant.now());
@@ -46,7 +46,7 @@ public class NotificationDispatchService implements NotificationDispatcher {
 		List<String> fids = targets.findTargets(hour).stream()
 				.map(NotificationTargetResult::fid).distinct().toList();
 		if (fids.isEmpty()) {
-			return new NotificationDispatchResult(0, 0, 0, false);
+			return new NotificationDispatchResult(0, false);
 		}
 		NotificationSendResult result = sender.send(fids, hour);
 		if (!result.invalidFids().isEmpty()) {
@@ -55,6 +55,6 @@ public class NotificationDispatchService implements NotificationDispatcher {
 		if (result.failure() != null) {
 			throw result.failure();
 		}
-		return new NotificationDispatchResult(fids.size(), result.invalidFids().size(), result.failed(), false);
+		return new NotificationDispatchResult(fids.size(), false);
 	}
 }

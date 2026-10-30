@@ -51,19 +51,16 @@ public class FirebaseNotificationSender implements NotificationSender {
 					.filter(index -> isUnregistered(responses.get(index)))
 					.mapToObj(batch::get)
 					.toList();
-			List<FirebaseMessagingException> errors = responses.stream()
+			NotificationDeliveryException failure = responses.stream()
 					.filter(response -> !response.isSuccessful() && !isUnregistered(response))
 					.map(SendResponse::getException)
-					.toList();
-			int failed = errors.size();
-			NotificationDeliveryException failure = errors.stream().findFirst()
+					.findFirst()
 					.map(NotificationDeliveryException::new).orElse(null);
-			return new NotificationSendResult(invalidFids, failed, failure);
+			return new NotificationSendResult(invalidFids, failure);
 		} catch (FirebaseMessagingException exception) {
 			List<String> invalidFids = List.of();
-			int failed = batch.size();
 			var failure = new NotificationDeliveryException(exception);
-			return new NotificationSendResult(invalidFids, failed, failure);
+			return new NotificationSendResult(invalidFids, failure);
 		}
 	}
 
@@ -74,10 +71,9 @@ public class FirebaseNotificationSender implements NotificationSender {
 
 	private NotificationSendResult summarize(List<NotificationSendResult> results) {
 		List<String> invalidFids = results.stream().flatMap(result -> result.invalidFids().stream()).toList();
-		int failed = results.stream().mapToInt(NotificationSendResult::failed).sum();
 		NotificationDeliveryException failure = results.stream().map(NotificationSendResult::failure)
 				.filter(Objects::nonNull).findFirst().orElse(null);
-		return new NotificationSendResult(invalidFids, failed, failure);
+		return new NotificationSendResult(invalidFids, failure);
 	}
 
 	private Message message(String fid, int hour) {
