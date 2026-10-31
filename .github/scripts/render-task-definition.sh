@@ -14,6 +14,7 @@ CONTAINER=${2}
 IMAGE_URI=${3}
 
 # DB 외 애플리케이션 설정은 GitHub Secrets가 소유한다.
+: "${NOTIFICATION_INTERNAL_SECRET:?NOTIFICATION_INTERNAL_SECRET이 필요합니다.}"
 : "${JWT_SECRET:?JWT_SECRET이 필요합니다.}"
 : "${KAKAO_NATIVE_APP_KEY:?KAKAO_NATIVE_APP_KEY가 필요합니다.}"
 : "${APPLE_BUNDLE_ID:?APPLE_BUNDLE_ID가 필요합니다.}"
@@ -34,10 +35,12 @@ IMAGE_URI=${3}
 : "${S3_PUBLIC_BASE_URL:?S3_PUBLIC_BASE_URL이 필요합니다.}"
 # EVOLINK_MODEL은 application.yml에 기본값이 있어 선택 사항이다.
 : "${EVOLINK_API_KEY:?EVOLINK_API_KEY가 필요합니다.}"
-: "${SQS_REGION:?SQS_REGION이 필요합니다.}"
-: "${SQS_ACCESS_KEY_ID:?SQS_ACCESS_KEY_ID가 필요합니다.}"
-: "${SQS_SECRET_ACCESS_KEY:?SQS_SECRET_ACCESS_KEY가 필요합니다.}"
-: "${AI_VIDEO_QUEUE:?AI_VIDEO_QUEUE가 필요합니다.}"
+: "${GCP_PROJECT_ID:?GCP_PROJECT_ID가 필요합니다.}"
+: "${GCP_SERVICE_ACCOUNT_KEY:?GCP_SERVICE_ACCOUNT_KEY가 필요합니다.}"
+: "${GCS_BUCKET:?GCS_BUCKET이 필요합니다.}"
+: "${AI_VIDEO_SUBSCRIPTION:?AI_VIDEO_SUBSCRIPTION이 필요합니다.}"
+# GEMINI_MODEL은 application.yml에 기본값이 있어 선택 사항이다.
+: "${GEMINI_API_KEY:?GEMINI_API_KEY가 필요합니다.}"
 # REVENUECAT_BASE_URL은 application.yml에 기본값이 있어 주입하지 않는다.
 : "${REVENUECAT_API_KEY:?REVENUECAT_API_KEY가 필요합니다.}"
 : "${REVENUECAT_PROJECT_ID:?REVENUECAT_PROJECT_ID가 필요합니다.}"
@@ -50,6 +53,7 @@ IMAGE_URI=${3}
 jq \
 	--arg container "${CONTAINER}" \
 	--arg image "${IMAGE_URI}" \
+	--arg notification_internal_secret "${NOTIFICATION_INTERNAL_SECRET}" \
 	--arg jwt_secret "${JWT_SECRET:-}" \
 	--arg kakao_native_app_key "${KAKAO_NATIVE_APP_KEY:-}" \
 	--arg kakao_rest_api_key "${KAKAO_REST_API_KEY:-}" \
@@ -71,10 +75,12 @@ jq \
 	--arg s3_public_base_url "${S3_PUBLIC_BASE_URL:-}" \
 	--arg evolink_api_key "${EVOLINK_API_KEY:-}" \
 	--arg evolink_model "${EVOLINK_MODEL:-}" \
-	--arg sqs_region "${SQS_REGION:-}" \
-	--arg sqs_access_key_id "${SQS_ACCESS_KEY_ID:-}" \
-	--arg sqs_secret_access_key "${SQS_SECRET_ACCESS_KEY:-}" \
-	--arg ai_video_queue "${AI_VIDEO_QUEUE:-}" \
+	--arg gcp_project_id "${GCP_PROJECT_ID:-}" \
+	--arg gcp_service_account_key "${GCP_SERVICE_ACCOUNT_KEY:-}" \
+	--arg gcs_bucket "${GCS_BUCKET:-}" \
+	--arg ai_video_subscription "${AI_VIDEO_SUBSCRIPTION:-}" \
+	--arg gemini_api_key "${GEMINI_API_KEY:-}" \
+	--arg gemini_model "${GEMINI_MODEL:-}" \
 	--arg revenuecat_api_key "${REVENUECAT_API_KEY:-}" \
 	--arg revenuecat_project_id "${REVENUECAT_PROJECT_ID:-}" \
 	--arg revenuecat_entitlement_id_puppy "${REVENUECAT_ENTITLEMENT_ID_PUPPY:-}" \
@@ -119,12 +125,15 @@ jq \
 					.secrets = (
 						(.secrets // []) |
 						map(select(
+							.name != "NOTIFICATION_INTERNAL_SECRET" and
 							.name != "R2_ACCESS_KEY_ID" and
 							.name != "R2_SECRET_ACCESS_KEY" and
 							.name != "S3_ACCESS_KEY_ID" and
 							.name != "S3_SECRET_ACCESS_KEY" and
 							.name != "SQS_ACCESS_KEY_ID" and
 							.name != "SQS_SECRET_ACCESS_KEY" and
+							.name != "GCP_SERVICE_ACCOUNT_KEY" and
+							.name != "GEMINI_API_KEY" and
 							.name != "EVOLINK_API_KEY" and
 							.name != "REVENUECAT_API_KEY"
 						))
@@ -132,6 +141,7 @@ jq \
 					| .environment = (
 						((.environment // []) |
 							map(select(
+								.name != "NOTIFICATION_INTERNAL_SECRET" and
 								.name != "JWT_SECRET" and
 								.name != "KAKAO_AUDIENCES" and
 								.name != "KAKAO_NATIVE_APP_KEY" and
@@ -152,12 +162,18 @@ jq \
 								.name != "S3_SECRET_ACCESS_KEY" and
 								.name != "S3_BUCKET" and
 								.name != "S3_PUBLIC_BASE_URL" and
-								# 기존 task definition에 남은 값을 걸러내는 임시 필터다. dev·prod 배포로 제거된 뒤 이 줄도 지운다.
+								# 기존 task definition에 남은 값을 걸러내는 임시 필터다. dev·prod 배포로 제거된 뒤 이 줄들도 지운다.
 								.name != "VIMEO_ACCESS_TOKEN" and
 								.name != "SQS_REGION" and
 								.name != "SQS_ACCESS_KEY_ID" and
 								.name != "SQS_SECRET_ACCESS_KEY" and
 								.name != "AI_VIDEO_QUEUE" and
+								.name != "GCP_PROJECT_ID" and
+								.name != "GCP_SERVICE_ACCOUNT_KEY" and
+								.name != "GCS_BUCKET" and
+								.name != "AI_VIDEO_SUBSCRIPTION" and
+								.name != "GEMINI_API_KEY" and
+								.name != "GEMINI_MODEL" and
 								.name != "EVOLINK_API_KEY" and
 								.name != "EVOLINK_BASE_URL" and
 								.name != "EVOLINK_MODEL" and
@@ -173,6 +189,7 @@ jq \
 								.name != "APP_MINIMUM_VERSION_ANDROID"
 							))) +
 						[
+							{"name": "NOTIFICATION_INTERNAL_SECRET", "value": $notification_internal_secret},
 							{"name": "JWT_SECRET", "value": $jwt_secret},
 							{"name": "KAKAO_NATIVE_APP_KEY", "value": $kakao_native_app_key},
 							{"name": "KAKAO_REST_API_KEY", "value": $kakao_rest_api_key},
@@ -192,10 +209,11 @@ jq \
 							{"name": "S3_SECRET_ACCESS_KEY", "value": $s3_secret_access_key},
 							{"name": "S3_BUCKET", "value": $s3_bucket},
 							{"name": "S3_PUBLIC_BASE_URL", "value": $s3_public_base_url},
-							{"name": "SQS_REGION", "value": $sqs_region},
-							{"name": "SQS_ACCESS_KEY_ID", "value": $sqs_access_key_id},
-							{"name": "SQS_SECRET_ACCESS_KEY", "value": $sqs_secret_access_key},
-							{"name": "AI_VIDEO_QUEUE", "value": $ai_video_queue},
+							{"name": "GCP_PROJECT_ID", "value": $gcp_project_id},
+							{"name": "GCP_SERVICE_ACCOUNT_KEY", "value": $gcp_service_account_key},
+							{"name": "GCS_BUCKET", "value": $gcs_bucket},
+							{"name": "AI_VIDEO_SUBSCRIPTION", "value": $ai_video_subscription},
+							{"name": "GEMINI_API_KEY", "value": $gemini_api_key},
 							{"name": "EVOLINK_API_KEY", "value": $evolink_api_key},
 							{"name": "REVENUECAT_API_KEY", "value": $revenuecat_api_key},
 							{"name": "REVENUECAT_PROJECT_ID", "value": $revenuecat_project_id},
@@ -209,6 +227,11 @@ jq \
 							[]
 						 else
 							[{"name": "EVOLINK_MODEL", "value": $evolink_model}]
+						 end) +
+						(if $gemini_model == "" then
+							[]
+						 else
+							[{"name": "GEMINI_MODEL", "value": $gemini_model}]
 						 end) +
 						# Sentry는 선택 사항이다. DSN이 없으면 주입을 생략해 SDK가 꺼진 채 기동한다
 						(if $sentry_dsn == "" then

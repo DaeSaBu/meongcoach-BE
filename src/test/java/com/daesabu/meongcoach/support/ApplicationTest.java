@@ -1,6 +1,7 @@
 package com.daesabu.meongcoach.support;
 
 import com.daesabu.meongcoach.entitlement.application.required.ActiveEntitlementReader;
+import com.daesabu.meongcoach.notification.application.required.NotificationSender;
 import com.daesabu.meongcoach.plan.application.required.AiPlanGenerator;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -14,6 +15,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Retention(RetentionPolicy.RUNTIME)
 @SpringBootTest
 @Transactional
-@MockitoBean(types = {ActiveEntitlementReader.class, AiPlanGenerator.class})
+@MockitoBean(types = {ActiveEntitlementReader.class, AiPlanGenerator.class, NotificationSender.class})
 public @interface ApplicationTest {
 }

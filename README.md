@@ -158,6 +158,14 @@ AI 분석은 수십 초가 걸리므로 요청-응답이 아니라 S3 업로드 
 - **역할**: `EntitlementSynchronizer`. 이용권 종류(`EntitlementType`)는 `domain/shared`로 노출해 여러 모듈이 같은 어휘를 씁니다.
 - **협력**: 앱이 결제 후 동기화를 요청하면 RevenueCat에서 활성 이용권을 조회해 맞춥니다. `training`이 이용권 종류 타입을 참조합니다.
 
+#### notification — 푸시 알림 토큰·수신 설정
+
+- **책임**: 회원의 Firebase Installation ID(FID)·시각별 수신 설정과 훈련 알림 발송. 외부 스케줄러는 발송 API를 호출합니다.
+- **역할**: `NotificationRegister`(FID 등록·삭제, 설정 변경, 탈퇴 정리), `NotificationPreferenceFinder`, `NotificationDispatcher`
+- **협력**: 발송 대상을 고를 때 `user`의 `UserFinder`로 활성 회원만 남깁니다. `auth`가 탈퇴할 때 토큰과 설정 정리에 사용합니다. 발송기는 `/internal/notifications/**`를 `X-Internal-Secret` 헤더로 호출합니다.
+
+애그리거트·API·발송 대상 규칙은 [docs/notification.md](docs/notification.md)에 있습니다.
+
 #### health — 상태 확인
 
 - **책임**: 배포·모니터링용 헬스 체크 API(`/api/health`). 다른 모듈과 관계가 없습니다.
@@ -194,4 +202,5 @@ AI 분석은 수십 초가 걸리므로 요청-응답이 아니라 S3 업로드 
 | [docs/error-handling.md](docs/error-handling.md) | Problem Details 에러 응답 형식 |
 | [docs/media.md](docs/media.md) | presigned URL 발급과 객체 키 소유권 규칙 |
 | [docs/training.md](docs/training.md) | 훈련 콘텐츠와 사용자 진행 애그리거트, 완료 판단, 레슨 완료 잠금 |
+| [docs/notification.md](docs/notification.md) | 푸시 알림 토큰·수신 설정 애그리거트, 내부 API 인증, 발송 대상 규칙 |
 | [AGENTS.md](AGENTS.md) | 팀 개발 규칙 전체 목록 |

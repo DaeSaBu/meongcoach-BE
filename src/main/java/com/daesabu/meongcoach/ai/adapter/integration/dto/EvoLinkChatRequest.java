@@ -28,19 +28,11 @@ public record EvoLinkChatRequest(
 		}
 	}
 
-	@JsonInclude(JsonInclude.Include.NON_NULL)
-	public record ContentPart(String type, String text, @JsonProperty("video_url") VideoUrl videoUrl) {
+	public record ContentPart(String type, String text) {
 
 		public static ContentPart text(String text) {
-			return new ContentPart("text", text, null);
+			return new ContentPart("text", text);
 		}
-
-		public static ContentPart videoUrl(String url, Double fps) {
-			return new ContentPart("video_url", null, new VideoUrl(url, fps));
-		}
-	}
-
-	public record VideoUrl(String url, Double fps) {
 	}
 
 	public record ResponseFormat(String type, @JsonProperty("json_schema") JsonSchema jsonSchema) {

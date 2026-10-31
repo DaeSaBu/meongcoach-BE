@@ -32,12 +32,20 @@ import com.daesabu.meongcoach.auth.domain.exception.InvalidRefreshTokenException
 import com.daesabu.meongcoach.auth.domain.exception.UnsupportedSocialProviderException;
 import com.daesabu.meongcoach.auth.domain.exception.WithdrawnUserException;
 import com.daesabu.meongcoach.media.application.provided.StoredMediaVerifier;
+import com.daesabu.meongcoach.notification.application.NotificationRegisterService;
+import com.daesabu.meongcoach.notification.application.required.DeviceInstallationRepository;
+import com.daesabu.meongcoach.notification.application.required.NotificationPreferenceRepository;
+import com.daesabu.meongcoach.notification.domain.DeviceInstallation;
+import com.daesabu.meongcoach.notification.domain.DeviceInstallationRegisterCommand;
+import com.daesabu.meongcoach.notification.domain.DevicePlatform;
+import com.daesabu.meongcoach.notification.domain.NotificationPreferenceFixture;
 import com.daesabu.meongcoach.user.application.UserQueryService;
 import com.daesabu.meongcoach.user.application.UserRegisterService;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.User;
 import com.daesabu.meongcoach.user.domain.UserStatus;
 import com.daesabu.meongcoach.user.domain.exception.UserNotFoundException;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -88,6 +96,12 @@ class AuthenticationServiceTest {
 	private RefreshTokenRepository refreshTokenRepository;
 
 	@Autowired
+	private DeviceInstallationRepository deviceInstallationRepository;
+
+	@Autowired
+	private NotificationPreferenceRepository notificationPreferenceRepository;
+
+	@Autowired
 	private TestEntityManager entityManager;
 
 	private final RecordingTokenRevoker tokenRevoker = new RecordingTokenRevoker();
@@ -106,10 +120,13 @@ class AuthenticationServiceTest {
 		RefreshTokenModifyService refreshTokenRegister = new RefreshTokenModifyService(refreshTokenRepository,
 				tokenProvider, refreshTokenFinder);
 		AuthTokenProvideService authTokenProvider = new AuthTokenProvideService(tokenProvider, refreshTokenRegister);
+		NotificationRegisterService notificationRegister = new NotificationRegisterService(deviceInstallationRepository,
+				notificationPreferenceRepository);
 
 		service = new AuthenticationService(accountFinder, accountRegister, PASSWORD_ENCODER::matches,
 				authTokenProvider, tokenProvider, refreshTokenRegister, socialProfileReaders(),
-				new SocialTokenRevokers(List.of(tokenRevoker)), refreshTokenFinder, userFinder, userRegister);
+				new SocialTokenRevokers(List.of(tokenRevoker)), refreshTokenFinder, userFinder, userRegister,
+				notificationRegister);
 	}
 
 	@Test
@@ -322,6 +339,21 @@ class AuthenticationServiceTest {
 
 		assertThat(socialAccountRepository.findAllByUserId(user.getId())).isEmpty();
 		assertThat(emailAccountRepository.findByEmail(EMAIL)).isEmpty();
+	}
+
+	@Test
+	void 탈퇴하면_기기_토큰과_알림_설정_행이_삭제된다() {
+		User user = persistSocialUser(APPLE_ACCOUNT);
+		deviceInstallationRepository.save(DeviceInstallation.register(user.getId(),
+				new DeviceInstallationRegisterCommand("fcm-token", DevicePlatform.IOS), Instant.now()));
+		notificationPreferenceRepository.save(NotificationPreferenceFixture.create(user.getId(), 17, true));
+		flushAndClear();
+
+		service.withdraw(user.getId(), new WithdrawRequest(APPLE_CODE));
+		flushAndClear();
+
+		assertThat(deviceInstallationRepository.findByFid("fcm-token")).isEmpty();
+		assertThat(notificationPreferenceRepository.findAllByUserId(user.getId())).isEmpty();
 	}
 
 	// 애플 심사 요건: 탈퇴 후 같은 계정으로 다시 가입할 수 있어야 한다

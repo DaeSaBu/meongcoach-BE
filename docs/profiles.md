@@ -7,9 +7,9 @@
 
 | 프로파일 | DB | ddl-auto | 용도 | 필요 환경 변수 |
 |---|---|---|---|---|
-| `local` | dev PostgreSQL (bastion 터널) | `validate` | 로컬 실행. dev DB에 접속하며 스키마를 변경하지 않음 | `JWT_SECRET`, `KAKAO_NATIVE_APP_KEY`, `KAKAO_REST_API_KEY`, `APPLE_BUNDLE_ID`, `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY`, `GOOGLE_WEB_CLIENT_ID`, `GOOGLE_IOS_CLIENT_ID`, `DB_HOST`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD` |
-| `dev` | PostgreSQL | `validate` | 개발 서버 | `JWT_SECRET`, `KAKAO_NATIVE_APP_KEY`, `KAKAO_REST_API_KEY`, `APPLE_BUNDLE_ID`, `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY`, `GOOGLE_WEB_CLIENT_ID`, `GOOGLE_IOS_CLIENT_ID`, `DB_HOST`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD`, `SENTRY_DSN`(선택), `APP_MINIMUM_VERSION_IOS`·`APP_MINIMUM_VERSION_ANDROID`(선택) |
-| `prod` | PostgreSQL | `validate` | 운영 | `JWT_SECRET`, `KAKAO_NATIVE_APP_KEY`, `KAKAO_REST_API_KEY`, `APPLE_BUNDLE_ID`, `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY`, `GOOGLE_WEB_CLIENT_ID`, `GOOGLE_IOS_CLIENT_ID`, `DB_HOST`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD`, `SENTRY_DSN`(선택), `APP_MINIMUM_VERSION_IOS`·`APP_MINIMUM_VERSION_ANDROID`(선택) |
+| `local` | dev PostgreSQL (bastion 터널) | `validate` | 로컬 실행. dev DB에 접속하며 스키마를 변경하지 않음. Pub/Sub 구독은 끔 | `.env.example`의 모든 키 (`DB_*` 외에는 더미 값으로도 기동) |
+| `dev` | PostgreSQL | `validate` | 개발 서버 | `JWT_SECRET`, `KAKAO_NATIVE_APP_KEY`, `KAKAO_REST_API_KEY`, `APPLE_BUNDLE_ID`, `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY`, `GOOGLE_WEB_CLIENT_ID`, `GOOGLE_IOS_CLIENT_ID`, `R2_*`, `S3_*`, `GCP_PROJECT_ID`, `GCP_SERVICE_ACCOUNT_KEY`, `GCS_BUCKET`, `AI_VIDEO_SUBSCRIPTION`, `GEMINI_API_KEY`, `GEMINI_MODEL`(선택), `EVOLINK_API_KEY`, `EVOLINK_MODEL`(선택), `REVENUECAT_*`, `DB_HOST`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD`, `SENTRY_DSN`(선택), `APP_MINIMUM_VERSION_IOS`·`APP_MINIMUM_VERSION_ANDROID`(선택) |
+| `prod` | PostgreSQL | `validate` | 운영 | `JWT_SECRET`, `KAKAO_NATIVE_APP_KEY`, `KAKAO_REST_API_KEY`, `APPLE_BUNDLE_ID`, `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY`, `GOOGLE_WEB_CLIENT_ID`, `GOOGLE_IOS_CLIENT_ID`, `R2_*`, `S3_*`, `GCP_PROJECT_ID`, `GCP_SERVICE_ACCOUNT_KEY`, `GCS_BUCKET`, `AI_VIDEO_SUBSCRIPTION`, `GEMINI_API_KEY`, `GEMINI_MODEL`(선택), `EVOLINK_API_KEY`, `EVOLINK_MODEL`(선택), `REVENUECAT_*`, `DB_HOST`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD`, `SENTRY_DSN`(선택), `APP_MINIMUM_VERSION_IOS`·`APP_MINIMUM_VERSION_ANDROID`(선택) |
 | `test` | PostgreSQL 18.3 (Testcontainers) | `create-drop` | 테스트. `build.gradle.kts`가 강제 활성화 | 없음 (더미 값 내장, Docker 데몬 필요) |
 
 - `DB_HOST`와 `DB_NAME`으로 `jdbc:postgresql://{host}:5432/{database}` URL을 구성합니다.
@@ -17,6 +17,8 @@
 - `APP_MINIMUM_VERSION_IOS`·`APP_MINIMUM_VERSION_ANDROID`는 플랫폼별 최소 지원 앱 버전이며, 없으면 `application.yml`의 기본값을 씁니다 ([security.md](security.md) "필터 체인 구성").
   배포 값은 다른 애플리케이션 설정과 같이 GitHub Secrets(`DEV_APP_MINIMUM_VERSION_IOS`·`DEV_APP_MINIMUM_VERSION_ANDROID`, `PROD_`도 같은 이름)에 둡니다.
   CD가 배포할 때 값을 주입하며, Secret이 없으면 주입을 생략해 기본값이 적용됩니다. task definition에 직접 넣은 값은 다음 배포에서 지워집니다.
+  웹 대시보드용 `APP_MINIMUM_VERSION_WEB`은 기본값만 쓰고 CD로 주입하지 않습니다.
+- CORS 허용 오리진(`meongcoach.cors.allowed-origin-patterns`)은 환경 변수 대신 프로파일 yml에 둡니다. 현재 `local`에만 있습니다 ([security.md](security.md) "필터 체인 구성").
 
 ## 활성화 방법
 

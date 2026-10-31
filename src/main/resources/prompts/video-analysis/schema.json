@@ -38,8 +38,9 @@
         "required": ["order", "title", "description"],
         "additionalProperties": false
       }
-    }
+    },
+    "title": { "type": "string" }
   },
-  "required": ["recommend", "report", "solution"],
+  "required": ["recommend", "report", "solution", "title"],
   "additionalProperties": false
 }

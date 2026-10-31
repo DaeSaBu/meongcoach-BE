@@ -13,7 +13,7 @@ public interface AiReportRepository extends JpaRepository<AiReport, Long> {
 
 	/**
 	 * 영상 객체 키로 업로드 URL 발급 시 만든 리포트를 찾는다.
-	 * 컨슈머가 이 row를 PENDING으로 전이하며, 상태가 UPLOADING이 아니면 SQS 중복 전달로 보고 건너뛴다.
+	 * 컨슈머가 이 row를 PENDING으로 전이하며, 상태가 UPLOADING이 아니면 Pub/Sub 중복 전달로 보고 건너뛴다.
 	 */
 	Optional<AiReport> findByVideoObjectKey(String videoObjectKey);
 

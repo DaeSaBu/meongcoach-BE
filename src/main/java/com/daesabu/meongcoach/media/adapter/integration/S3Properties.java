@@ -7,7 +7,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
 /**
- * 훈련 영상을 보관하는 AWS S3 연동 설정. R2와 달리 엔드포인트가 아니라 리전으로 주소가 결정된다.
+ * 실습 인증 영상을 보관하는 AWS S3 연동 설정. R2와 달리 엔드포인트가 아니라 리전으로 주소가 결정된다.
  * 설정 오류는 모두 기동 시점에 드러나야 하므로 모든 필드에 제약을 건다.
  *
  * @param region              버킷이 있는 리전. 예: ap-northeast-2

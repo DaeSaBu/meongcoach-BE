@@ -92,11 +92,20 @@ SHA-1 검증용이라 id_token의 `aud`가 되지 않습니다), 애플은 **iOS
 | 2 | `/swagger-ui/**` | 문서 활성 환경 permitAll, 그 외 denyAll |
 | 3 | `/api/onboarding/**`, `/api/dogs/profile/image` | `USER`, `ONBOARDING_USER` |
 | 4 | `DELETE /api/auth/me`, `GET /api/users/me` | `USER`, `ONBOARDING_USER` |
-| 5 | 그 외 전부 | `USER` |
+| 5 | `/api/dashboard/**` | `ADMIN`, `EXPERT` |
+| 6 | 그 외 전부 | `USER` |
+
+`/internal/**`는 이 체인이 아니라 notification 모듈이 정의한 별도 체인(`@Order(0)`, `securityMatcher("/internal/**")`)이 먼저 잡습니다.
+JWT 대신 `X-Internal-Secret` 헤더를 검사하며, 앱 버전 게이트도 `/api/` 경로만 보므로 걸리지 않습니다. ([notification.md](notification.md) "인증")
 
 3번은 온보딩 화면에 필요한 경로입니다 — 온보딩 완료 요청에 프로필 이미지 URL이 들어가므로
 기본 프로필 이미지 조회는 온보딩 중에도 열려 있어야 합니다. 이미지 업로드 presigned URL 발급은
 `POST /api/onboarding/presigned-urls`라 `/api/onboarding/**`에 이미 포함됩니다.
+
+5번은 관리자 대시보드 웹앱 경로입니다. `ADMIN`·`EXPERT`는 대시보드 전용 계정이라 6번(앱 API)에서는 403입니다.
+가입 흐름으로는 만들 수 없고, 이메일 계정을 만든 뒤 `UPDATE users SET role = 'ADMIN' WHERE id = ?`(또는 `'EXPERT'`)로 지정합니다.
+`role`은 VARCHAR(20)이고 V4에서 check 제약을 지웠으므로 역할을 추가할 때 마이그레이션이 필요 없습니다.
+로그인·재발급·로그아웃은 앱과 같은 `/api/auth/**` 경로를 씁니다.
 
 4번은 스토어 심사관이 온보딩을 마치지 않은 채 탈퇴를 시험할 수 있어서 둔 예외입니다. `DELETE` 메서드만 열어,
 같은 경로에 나중에 생길 회원 조회·수정이 온보딩 회원에게 함께 열리지 않게 합니다.
@@ -133,6 +142,25 @@ SHA-1 검증용이라 id_token의 `aud`가 되지 않습니다), 애플은 **iOS
 
 영속화 이전에 발급된 리프레시 토큰은 저장 이력이 없어 재발급이 401로 끝나므로 클라이언트는 재로그인해야 합니다.
 
+### 웹 대시보드의 리프레시 토큰 쿠키
+
+앱은 토큰을 OS 보안 저장소(Keychain·Keystore)에 두지만, 웹은 JS가 읽을 수 있는 저장소에 둘 수밖에 없어
+XSS 한 번으로 리프레시 토큰이 새어 나갑니다. 그래서 `X-App-Platform: web` 요청만 리프레시 토큰을 본문 대신 쿠키로 주고받습니다.
+경로는 앱과 같고, `AuthController`가 `headers = "X-App-Platform=web"` 조건의 별도 핸들러로 나눕니다. 쿠키 발급·만료는 `RefreshTokenCookies`가 맡습니다.
+
+| 엔드포인트 | 웹 동작 |
+|---|---|
+| `POST /api/auth/login/email`, `/login/social` | `Set-Cookie: refresh_token=…`, 본문은 `{ accessToken }`만 |
+| `POST /api/auth/token/refresh` | 본문 없이 쿠키로 재발급, 회전된 토큰을 다시 쿠키로. 쿠키가 없으면 401 `AUTH_INVALID_REFRESH_TOKEN` |
+| `POST /api/auth/logout` | 쿠키의 토큰을 폐기하고 `Max-Age=0` 쿠키로 지움. 쿠키가 없으면 401 |
+
+- 쿠키 속성: `HttpOnly; Secure; SameSite=Strict; Path=/api/auth; Max-Age=<refresh-token-validity>`, Domain 미지정(API 호스트 전용)
+- **대시보드는 API와 같은 사이트(같은 등록 도메인)에 배포해야 합니다.** SameSite=Strict라 다른 사이트(예: `*.vercel.app`)에서는 쿠키가 전송되지 않습니다.
+  local의 `localhost:3000` ↔ `localhost:8080`은 같은 사이트이고, 브라우저가 localhost를 secure context로 취급해 Secure 쿠키가 동작합니다.
+- CSRF 토큰은 쓰지 않습니다. SameSite=Strict, `/api/auth` 한정 Path, CORS 허용 오리진만 응답을 읽을 수 있다는 점,
+  JSON·커스텀 헤더 요청이 preflight를 강제한다는 점으로 막습니다. 이 때문에 CORS는 `allowCredentials(true)`이고, 프론트는 인증 요청을 `credentials: 'include'`로 보냅니다.
+- 액세스 토큰은 본문으로 내리고 프론트는 메모리에만 둡니다. 새로고침하면 재발급을 먼저 호출해 복구합니다.
+
 ### 탈퇴 시 Sign in with Apple 토큰 revoke
 
 애플 심사 지침 5.1.1(v)은 Sign in with Apple 앱이 계정을 삭제할 때 Apple의 [토큰 revoke API](https://developer.apple.com/documentation/signinwithapplerestapi/revoke_tokens)를
@@ -155,12 +183,14 @@ SHA-1 검증용이라 id_token의 `aud`가 되지 않습니다), 애플은 **iOS
 
 리다이렉트 흐름이 없어 세션이 필요 없으므로 **무상태 체인 하나**를 기본으로 둡니다.
 
-- 앱 버전 게이트 — 체인의 첫 필터(`DisableEncodeUrlFilter`) 앞에 `shared/security/AppVersionFilter`를 두어 인증보다 먼저 검사합니다.
-  - `/api/**` 요청의 `X-App-Platform`(`ios`/`android`)·`X-App-Version`(`숫자.숫자.숫자`)을 플랫폼별 최소 지원 버전(`meongcoach.app-version.minimum`)과 비교합니다.
+- 앱 버전 게이트 — `CorsFilter` 바로 뒤에 `shared/security/AppVersionFilter`를 두어 인증보다 먼저 검사합니다.
+  - CORS 뒤에 두어야 브라우저 preflight(앱 헤더 값이 없음)를 `CorsFilter`가 먼저 응답하고, 426·400 응답에도 CORS 헤더가 붙습니다.
+  - `/api/**` 요청의 `X-App-Platform`(`ios`/`android`/`web`)·`X-App-Version`(`숫자.숫자.숫자`)을 플랫폼별 최소 지원 버전(`meongcoach.app-version.minimum`)과 비교합니다.
   - 헤더가 없거나 최소 버전보다 낮으면 426 `APP_UPDATE_REQUIRED`, 값 형식이 틀리면 400 `APP_VERSION_INVALID`입니다. 헤더가 없는 요청은 강제 업데이트 처리가 없는 v2.0.0 이전 앱이라 426으로 봅니다. 앱은 426 status만 보고 업데이트 화면을 띄웁니다.
   - `/api/health`는 CD·로드밸런서 헬스 체크가 헤더 없이 호출하므로 검사하지 않습니다. curl·JMeter·Swagger UI(Authorize의 `appVersion`·`appPlatform`)로 다른 API를 호출할 때도 두 헤더가 필요합니다.
   - 필터는 빈이 아니라 `SecurityConfig`에서 직접 생성합니다. 빈으로 등록하면 서블릿 컨테이너에도 자동 등록되어 두 번 실행되고 `@WebMvcTest` 슬라이스에 포함됩니다. 실패 응답은 아래 "인증 실패 응답"과 같은 방식으로 전역 예외 처리기에 넘깁니다.
-  - 최소 버전은 `APP_MINIMUM_VERSION_IOS`·`APP_MINIMUM_VERSION_ANDROID`이고, 배포 값은 GitHub Secrets `{DEV|PROD}_APP_MINIMUM_VERSION_{IOS|ANDROID}`에 둡니다 ([profiles.md](profiles.md)).
+  - `web`은 관리자 대시보드 웹앱입니다. 웹은 배포 즉시 최신이 되므로 최소 버전은 `application.yml` 기본값(`APP_MINIMUM_VERSION_WEB`, 1.0.0)만 두고 CD로 주입하지 않습니다.
+  - 앱 최소 버전은 `APP_MINIMUM_VERSION_IOS`·`APP_MINIMUM_VERSION_ANDROID`이고, 배포 값은 GitHub Secrets `{DEV|PROD}_APP_MINIMUM_VERSION_{IOS|ANDROID}`에 둡니다 ([profiles.md](profiles.md)).
     CD가 배포할 때 주입하므로 값을 바꾸면 해당 환경의 CD를 다시 실행해야 반영됩니다.
   - 옛 API를 쓰는 앱을 막으려면 새 앱이 스토어에 출시된 뒤에 `PROD_` Secret을 그 버전으로 올리고, 그 API를 바꾼 서버를 main에 반영합니다. 최소 버전 상향과 API 변경이 같은 배포로 나갑니다.
 - `csrf` / `formLogin` / `httpBasic` / `logout` 비활성화 (`logout`은 Spring의 세션 로그아웃. 앱 로그아웃은 `POST /api/auth/logout`)
@@ -170,7 +200,10 @@ SHA-1 검증용이라 id_token의 `aud`가 되지 않습니다), 애플은 **iOS
 - 그 외 요청은 역할 기반 인가 (위 "URL 인가 규칙" 참고)
 - `oauth2ResourceServer.jwt()` — Bearer 토큰 파싱·검증은 프레임워크가 담당하므로 인증용 커스텀 필터가 없습니다.
   회원 존재 확인·권한 부여도 커스텀 필터가 아니라 디코더 뒤의 컨버터에 얹습니다 (위 "액세스 토큰 검증 순서" 참고)
-- `cors` 비활성화 — 클라이언트가 네이티브 앱뿐이라 브라우저 교차 출처 요청을 받지 않습니다. Swagger UI는 API 서버가 같은 오리진에서 서빙합니다.
+- `cors` — 허용 오리진은 프로파일 yml의 `meongcoach.cors.allowed-origin-patterns`(`shared/security/CorsProperties`)이고, 키가 없으면 교차 출처를 모두 거부합니다.
+  local은 `http://localhost:*`·`http://127.0.0.1:*`이고, dev·prod는 대시보드 도메인이 정해지면 추가합니다.
+  허용 헤더는 `Authorization`·`Content-Type`·`X-App-Platform`·`X-App-Version`이며, 웹 리프레시 토큰 쿠키 때문에 credentials를 허용합니다(위 "웹 대시보드의 리프레시 토큰 쿠키").
+  CORS는 이 체인 안에서 동작하므로 체인을 추가하면 그 체인에도 `.cors(...)`를 설정해야 합니다(`/internal/**` 체인은 비활성).
 - 헤더는 기본값 유지 — `X-Frame-Options: DENY`
 
 ### 인증 실패 응답

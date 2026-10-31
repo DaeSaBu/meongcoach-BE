@@ -28,9 +28,10 @@
 | [docs/error-handling.md](docs/error-handling.md) | Problem Details 에러 응답 형식, 전역 핸들러 처리 범위 |
 | [docs/architecture.md](docs/architecture.md)                               | Spring Modulith 모듈 구조, 의존 규칙   |
 | [docs/security.md](docs/security.md)                                       | JWT 토큰 정책·검증 체인, 필터 체인 제약, 인증 환경 변수 |
-| [docs/ai-pipeline.md](docs/ai-pipeline.md)                                 | 영상 업로드→SQS→EvoLink 분석→리포트 저장 비동기 흐름 |
-| [docs/media.md](docs/media.md)                                             | R2/S3 presigned URL 발급, 객체 키 소유권 규칙 |
+| [docs/ai-pipeline.md](docs/ai-pipeline.md)                                 | 영상 업로드→Pub/Sub→Gemini 분석→리포트 저장 비동기 흐름 |
+| [docs/media.md](docs/media.md)                                             | R2/S3/GCS 서명 URL 발급, 객체 키 소유권 규칙 |
 | [docs/training.md](docs/training.md)                                       | 훈련 콘텐츠·사용자 진행 애그리거트, 완료 판단, 레슨 완료 잠금 |
+| [docs/notification.md](docs/notification.md)                               | 푸시 알림 토큰·수신 설정 애그리거트, 내부 API 인증, 발송 대상 규칙 |
 | [docs/profiles.md](docs/profiles.md)                                       | local/dev/prod 프로파일 구성, DB·ddl-auto 정책 |
 
 ## 문서 추가 방법

@@ -17,18 +17,6 @@ spring:
     clients:
       connect-timeout: 2s
       read-timeout: 3s
-  cloud:
-    aws:
-      # 영상 업로드 이벤트 큐 소비용. S3 presigner와 별개의 자격 증명이라 SQS_ 접두사를 쓴다
-      region:
-        static: ${SQS_REGION}
-      credentials:
-        access-key: ${SQS_ACCESS_KEY_ID}
-        secret-key: ${SQS_SECRET_ACCESS_KEY}
-      sqs:
-        # 기본 전략(CREATE)은 큐가 있어도 sqs:CreateQueue를 호출해 권한 403으로 기동이 죽는다.
-        # 앱이 큐를 만들 이유가 없으므로 GetQueueUrl 조회만 하고, 큐가 없으면 명확히 실패하게 한다
-        queue-not-found-strategy: fail
 
 sentry:
   # DSN이 비어 있으면 SDK가 꺼진다. local은 .env로 dev 프로젝트 DSN을 넣고 test는 주입하지 않는다
@@ -50,6 +38,7 @@ meongcoach:
     minimum:
       ios: ${APP_MINIMUM_VERSION_IOS:2.0.0}
       android: ${APP_MINIMUM_VERSION_ANDROID:2.0.0}
+      web: ${APP_MINIMUM_VERSION_WEB:1.0.0}
   jwt:
     issuer: meongcoach
     # 기본값을 두지 않아 미주입 시 기동에 실패한다 — 커밋된 키가 배포로 흘러가는 것을 막는다
@@ -67,7 +56,7 @@ meongcoach:
       public-base-url: ${R2_PUBLIC_BASE_URL}
       upload-url-validity: PT10M
     s3:
-      # 훈련 영상은 실제 AWS S3에 올린다. R2와 달리 엔드포인트가 아니라 리전으로 주소가 결정된다
+      # 실습 인증 영상은 실제 AWS S3에 올린다. R2와 달리 엔드포인트가 아니라 리전으로 주소가 결정된다
       region: ${S3_REGION}
       access-key-id: ${S3_ACCESS_KEY_ID}
       secret-access-key: ${S3_SECRET_ACCESS_KEY}
@@ -76,28 +65,54 @@ meongcoach:
       public-base-url: ${S3_PUBLIC_BASE_URL}
       # 영상은 파일 선택·압축 시간이 있어 이미지(PT10M)보다 여유를 둔다
       upload-url-validity: PT15M
-      # AI 분석기가 이 URL로 영상을 가져가므로 분석 대기·재시도 시간을 감안해 넉넉히 둔다
+      # 앱이 실습 영상을 다시 볼 때 쓰는 URL이라 재생 시간을 감안해 넉넉히 둔다
       download-url-validity: PT1H
+    gcs:
+      # AI 분석 영상은 GCS에 올린다. Gemini가 gs:// URI로 직접 읽으므로 이 버킷에만 Gemini 서비스 에이전트 읽기 권한을 준다.
+      # 자격 증명은 meongcoach.google-cloud의 서비스 계정 키를 함께 쓴다
+      bucket: ${GCS_BUCKET}
+      # 영상은 파일 선택·압축 시간이 있어 이미지(PT10M)보다 여유를 둔다
+      upload-url-validity: PT15M
+      # 분석은 gs:// URI로 하므로 다운로드 URL은 점검·수동 확인용이다
+      download-url-validity: PT1H
+  google-cloud:
+    # GCS 서명·Pub/Sub 구독·Gemini 파일 등록에 함께 쓰는 서비스 계정. 키 JSON을 base64로 넣는다. 값 미주입 시 기동에 실패한다
+    project-id: ${GCP_PROJECT_ID}
+    service-account-key: ${GCP_SERVICE_ACCOUNT_KEY}
   ai:
-    # S3 영상 업로드 완료 이벤트가 들어오는 SQS 큐 이름
-    video-queue: ${AI_VIDEO_QUEUE}
-    # 영상 분석에 쓰는 EvoLink 채팅 API(OpenAI 호환) 연동 설정. 영상은 S3 presigned GET URL로 전달한다
+    pubsub:
+      # GCS 업로드 완료(OBJECT_FINALIZE) 알림을 받는 pull 구독의 전체 이름(projects/{프로젝트}/subscriptions/{구독})
+      video-subscription: ${AI_VIDEO_SUBSCRIPTION}
+    # 영상 분석에 쓰는 Gemini Developer API 연동 설정. 영상은 GCS 객체를 files:register로 등록해 gs:// URI로 전달한다
+    gemini:
+      # 기본값을 두지 않아 미주입 시 기동에 실패한다 — 커밋된 키가 배포로 흘러가는 것을 막는다
+      api-key: ${GEMINI_API_KEY}
+      model: ${GEMINI_MODEL:gemini-3.8-flash}
+      # 영상 분석은 수십 초가 걸려 전역 read-timeout(3초)으로는 응답 전에 끊긴다
+      response-timeout: PT5M
+      # 상한에 닿으면 리포트가 문장 중간에서 잘린다. 리포트는 2천 토큰 안팎이지만 여유를 둔다
+      max-output-tokens: 4096
+      # 영상 분석·유형 분류는 창의성보다 일관성이 중요해 0으로 고정한다
+      temperature: 0
+      # 사고 수준(low·medium·high). 비용·지연 예측을 위해 가장 낮게 둔다. Gemini 3 이후 모델은 사고를 완전히 끌 수 없다
+      thinking-level: ${GEMINI_THINKING_LEVEL:low}
+      # 영상 프레임 추출 빈도(0.2~5). 높일수록 화면 변화에 민감하지만 토큰 소비가 늘어난다
+      video-fps: 1
+    # 플랜 생성에 쓰는 EvoLink 채팅 API(OpenAI 호환) 연동 설정
     evolink:
       # Cloudflare를 거치지 않는 엔드포인트. api.evolink.ai는 응답 첫 바이트가 100초를 넘으면 Cloudflare가 524로 끊는다
       base-url: https://direct.evolink.ai
       # 기본값을 두지 않아 미주입 시 기동에 실패한다 — 커밋된 키가 배포로 흘러가는 것을 막는다
       api-key: ${EVOLINK_API_KEY}
       model: ${EVOLINK_MODEL:doubao-seed-2.0-pro}
-      # 영상 분석은 수십 초가 걸려 전역 read-timeout(3초)으로는 응답 전에 끊긴다
+      # 플랜 생성은 수십 초가 걸려 전역 read-timeout(3초)으로는 응답 전에 끊긴다
       response-timeout: PT5M
-      # 상한에 닿으면 리포트가 문장 중간에서 잘린다. 리포트는 2천 토큰 안팎이지만 여유를 둔다
+      # 상한에 닿으면 응답이 문장 중간에서 잘린다. 여유를 둔다
       max-tokens: 4096
-      # 영상 분석·유형 분류는 창의성보다 일관성이 중요해 0으로 고정한다
+      # 플랜 생성은 창의성보다 일관성이 중요해 0으로 고정한다
       temperature: 0
       # 심층 사고 모드(enabled·disabled·auto). 비용·지연 예측을 위해 끈다
       thinking: ${EVOLINK_THINKING:disabled}
-      # 영상 프레임 추출 빈도(0.2~5). 높일수록 화면 변화에 민감하지만 토큰 소비가 늘어난다
-      video-fps: 1
   social:
     kakao:
       issuer: https://kauth.kakao.com
@@ -125,6 +140,9 @@ meongcoach:
       # id_token의 aud 후보. 안드로이드·서버 검증은 웹 클라이언트 ID, iOS는 iOS 클라이언트 ID라 쉼표로 나열한다.
       # 다른 앱에서 발급된 토큰을 걸러내는 값이므로 반드시 우리 앱의 클라이언트 ID만 넣는다
       audiences: ${GOOGLE_WEB_CLIENT_ID},${GOOGLE_IOS_CLIENT_ID}
+  notification:
+    # 발송기가 /internal/notifications/** 를 부를 때 X-Internal-Secret 헤더로 제시하는 값. 기본값을 두지 않아 미주입 시 기동에 실패한다
+    internal-secret: ${NOTIFICATION_INTERNAL_SECRET}
   revenuecat:
     base-url: ${REVENUECAT_BASE_URL:https://api.revenuecat.com/v2}
     # 대시보드 Project settings > API keys에서 만든 v2 secret 키. customer_information:customers:read 권한만 준다

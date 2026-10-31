@@ -812,6 +812,21 @@ operation::community/reply-list[snippets='http-request,path-parameters,query-par
 
 operation::community/reply-list-error[snippets='http-response,response-fields']
 
+== Banner API
+
+커뮤니티 탭의 혜택과 업체·앱 소개를 노출하는 배너입니다. 등록·수정 API는 없고, 운영자가 로컬 관리 페이지(admin-local)나 SQL로 `banners`에 직접 넣습니다.
+
+=== 배너 목록
+
+link:{swagger-ui}#/Banner/banner-list[▶ Swagger에서 Try it out,window=swagger]
+
+현재 시각에 노출할 배너를 정렬 순서대로 조회합니다. 숨긴 배너(`active = false`)와 노출 기간 밖의 배너는 빠집니다. `startsAt`은 포함하고 `expiresAt`은 포함하지 않으며, 값이 없으면 해당 시작·종료 제한이 없습니다.
+`type`이 `BENEFIT`이면 `benefitDescription`·`usageLocation`·`startsAt`·`expiresAt`이 있고, `INTRODUCTION`이면 `brandDescription`·`linkLabel`이 있습니다.
+시각은 ISO 8601 UTC로 반환합니다. 앱은 `expiresAt`을 한국 시각으로 바꿔 사용 기한을 표시하며, 한국 자정 만료는 전날까지로 표시합니다.
+배너별 제휴 표시·이미지 배경색·사용 기한 문구 필드는 없습니다. 이미지 영역은 앱에서 흰색으로 표시합니다.
+
+operation::banner/list[snippets='http-request,http-response,response-fields']
+
 == Plan API
 
 === 커스텀 플랜 생성
@@ -947,3 +962,84 @@ operation::plan/lesson-complete-order-error[snippets='http-response,response-fie
 일반 학습 기록 저장이 충돌하면 기존 훈련 기능의 409(`TRAINING_LESSON_COMPLETION_CONFLICT`)를 반환합니다.
 
 operation::plan/lesson-complete-entitlement-error[snippets='http-response,response-fields']
+
+== Notification API
+
+푸시 알림에 쓰는 기기 FID과 시각별 수신 설정을 보관합니다. 서버는 FCM을 직접 호출하지 않고, 별도 발송기가 내부 API로 발송 대상을 받아 보냅니다.
+알림 시각은 Asia/Seoul 기준 시(0~23)이며 지금 앱이 쓰는 시각은 8·11·17시입니다. FID를 처음 등록할 때 만드는 기본 설정은 8시·11시 끔, 17시 켬입니다.
+
+=== 기기 FID 등록
+
+link:{swagger-ui}#/Notification/notification-fid-register[▶ Swagger에서 Try it out,window=swagger]
+
+앱이 Firebase Installation ID(FID)을 받거나 갱신할 때, 그리고 로그인 직후에 호출합니다. 같은 FID가 이미 있으면 그 FID의 회원과 마지막 확인 시각을 요청 회원과 현재 시각으로 바꾸므로,
+같은 기기에서 다른 계정으로 로그인하면 FID가 새 계정으로 옮겨 갑니다. 회원에게 알림 설정이 없으면 기본값으로 8·11·17시의 설정을 만듭니다. 응답 본문은 없습니다.
+
+operation::notification/fid-register[snippets='http-request,request-fields,http-response']
+
+==== 실패 응답
+
+플랫폼이 `IOS`·`ANDROID`가 아니면 400(`NOTIFICATION_PLATFORM_INVALID`)을 반환합니다.
+
+operation::notification/fid-register-error[snippets='http-response,response-fields']
+
+=== 기기 FID 삭제
+
+link:{swagger-ui}#/Notification/notification-fid-delete[▶ Swagger에서 Try it out,window=swagger]
+
+로그아웃할 때 호출합니다. 본인 FID만 지우며, 없는 FID가거나 다른 회원의 FID가어도 204입니다.
+
+operation::notification/fid-delete[snippets='http-request,request-fields,http-response']
+
+=== 알림 설정 조회
+
+link:{swagger-ui}#/Notification/notification-preferences[▶ Swagger에서 Try it out,window=swagger]
+
+시각별 수신 여부를 시각 오름차순으로 반환합니다. 설정 행이 없으면 `hours`가 빈 배열이고 행을 만들지 않습니다.
+
+operation::notification/preferences[snippets='http-request,http-response,response-fields']
+
+=== 알림 설정 변경
+
+link:{swagger-ui}#/Notification/notification-preference-update[▶ Swagger에서 Try it out,window=swagger]
+
+경로의 시각 하나의 수신 여부를 저장합니다. 회원·시각 행이 있으면 값을 바꾸고 없으면 만듭니다. 응답 본문은 없습니다.
+
+operation::notification/preference-update[snippets='http-request,path-parameters,request-fields,http-response']
+
+==== 실패 응답
+
+시각이 8·11·17이 아니면 400(`NOTIFICATION_HOUR_NOT_ALLOWED`)을 반환합니다.
+
+operation::notification/preference-update-error[snippets='http-response,response-fields']
+
+=== 내부 API — 발송기 전용
+
+`/internal/notifications/**`는 앱이 아니라 별도 발송기가 호출합니다. JWT와 앱 헤더 대신 `X-Internal-Secret` 헤더가 서버 설정값(`NOTIFICATION_INTERNAL_SECRET`)과 같아야 하며,
+헤더가 없거나 값이 다르면 401(`UNAUTHORIZED`)을 반환합니다. Swagger UI에는 올리지 않습니다.
+
+=== 내부 알림 발송
+
+`POST /internal/notifications/dispatch`는 예약 시각·발송 시각으로 알림을 발송합니다.
+같은 예약 시각·hour가 진행 중이면 끝날 때까지 기다리고, 완료됐으면 `duplicate=true`로 응답합니다.
+실패한 예약은 같은 키로 다시 실행할 수 있습니다.
+
+operation::notification/internal-dispatch[snippets='http-request,request-fields,http-response,response-fields']
+
+operation::notification/internal-dispatch-error[snippets='http-response,response-fields']
+
+== Dashboard API
+
+관리자 웹 대시보드용 API입니다. `ADMIN`·`EXPERT` 역할만 호출할 수 있고, 그 밖의 역할은 403을 받습니다.
+
+=== 내 정보 조회
+
+link:{swagger-ui}#/Dashboard/dashboard-me[▶ Swagger에서 Try it out,window=swagger]
+
+로그인한 회원의 ID와 역할(`userRole`)을 조회합니다.
+
+operation::dashboard/me[snippets='http-request,http-response,response-fields']
+
+==== 실패 응답
+
+operation::dashboard/me-error[snippets='http-response,response-fields']

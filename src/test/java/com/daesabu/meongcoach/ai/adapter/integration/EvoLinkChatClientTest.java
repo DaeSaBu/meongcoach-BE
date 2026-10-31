@@ -42,7 +42,7 @@ class EvoLinkChatClientTest {
 
 	private static EvoLinkProperties properties() {
 		return new EvoLinkProperties(BASE_URL, API_KEY, Duration.ofMinutes(5),
-				"doubao-seed-2.0-pro", 4096, 0.0, "disabled", 1.0);
+				"doubao-seed-2.0-pro", 4096, 0.0, "disabled");
 	}
 
 	private static EvoLinkChatRequest chatRequest() {

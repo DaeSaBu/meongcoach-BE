@@ -13,16 +13,15 @@ import static org.mockito.Mockito.when;
 
 import com.daesabu.meongcoach.ai.application.provided.AiTrialFinder;
 import com.daesabu.meongcoach.ai.application.required.AiReportRepository;
-import com.daesabu.meongcoach.ai.application.required.ReportTitleGenerator;
 import com.daesabu.meongcoach.ai.application.required.VideoAnalyzer;
+import com.daesabu.meongcoach.ai.application.required.dto.VideoAnalysisResult;
 import com.daesabu.meongcoach.ai.domain.AiReport;
 import com.daesabu.meongcoach.ai.domain.AiReportStatus;
 import com.daesabu.meongcoach.ai.domain.AiReportUploadCommand;
 import com.daesabu.meongcoach.ai.domain.AiTrial;
 import com.daesabu.meongcoach.ai.domain.AiVideo;
-import com.daesabu.meongcoach.ai.domain.exception.ReportTitleGenerationFailedException;
 import com.daesabu.meongcoach.ai.domain.exception.VideoAnalysisFailedException;
-import com.daesabu.meongcoach.media.application.provided.MediaDownloadUrlIssuer;
+import com.daesabu.meongcoach.media.application.provided.MediaStorageUriResolver;
 import com.daesabu.meongcoach.media.domain.exception.InvalidMediaObjectKeyException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -40,15 +39,14 @@ class AiReportGenerateServiceTest {
 
 	private static final Long USER_ID = 7L;
 	private static final String OBJECT_KEY = "videos/training/7/key.mp4";
-	private static final String DOWNLOAD_URL = "https://storage.test/download?X-Amz-Signature=abc";
+	private static final String VIDEO_URI = "gs://test-ai-video-bucket/videos/training/7/key.mp4";
 	private static final String ANALYZED_CONTENT = "{\"recommend\":[],\"report\":[{\"subTitle\":\"영상에서 이런 행동이 보여요\","
 			+ "\"description\":\"분리불안 징후가 관찰됩니다.\"}],\"solution\":[]}";
 	private static final String GENERATED_TITLE = "분리불안 징후 행동 분석";
 	private static final IllegalStateException SAVE_FAILURE = new IllegalStateException("DB 저장 실패");
 
-	private MediaDownloadUrlIssuer downloadUrlIssuer;
+	private MediaStorageUriResolver storageUriResolver;
 	private VideoAnalyzer videoAnalyzer;
-	private ReportTitleGenerator reportTitleGenerator;
 	private AiReportRepository aiReportRepository;
 	private AiTrialFinder aiTrialFinder;
 	private AiReportGenerateService service;
@@ -68,22 +66,19 @@ class AiReportGenerateServiceTest {
 
 	@BeforeEach
 	void setUp() {
-		downloadUrlIssuer = mock(MediaDownloadUrlIssuer.class);
+		storageUriResolver = mock(MediaStorageUriResolver.class);
 		videoAnalyzer = mock(VideoAnalyzer.class);
-		reportTitleGenerator = mock(ReportTitleGenerator.class);
 		aiReportRepository = mock(AiReportRepository.class);
 		aiTrialFinder = mock(AiTrialFinder.class);
-		service = new AiReportGenerateService(downloadUrlIssuer, videoAnalyzer, reportTitleGenerator,
-				aiReportRepository, aiTrialFinder);
+		service = new AiReportGenerateService(storageUriResolver, videoAnalyzer, aiReportRepository, aiTrialFinder);
 
 		// 기본은 성공 경로. 각 테스트는 깨뜨릴 협력자 하나만 덮어쓴다
 		issuedReport = AiReport.uploading(
 				new AiReportUploadCommand(USER_ID, OBJECT_KEY, LocalDateTime.now().plusMinutes(15)));
 		when(aiReportRepository.findByVideoObjectKey(OBJECT_KEY)).thenReturn(Optional.of(issuedReport));
-		when(downloadUrlIssuer.issue(AiVideo.SCOPE, OBJECT_KEY)).thenReturn(DOWNLOAD_URL);
+		when(storageUriResolver.resolve(AiVideo.SCOPE, OBJECT_KEY)).thenReturn(VIDEO_URI);
 		when(aiTrialFinder.findTrial(USER_ID)).thenReturn(new AiTrial(0));
-		when(videoAnalyzer.analyze(DOWNLOAD_URL)).thenReturn(ANALYZED_CONTENT);
-		when(reportTitleGenerator.generateTitle(ANALYZED_CONTENT)).thenReturn(GENERATED_TITLE);
+		when(videoAnalyzer.analyze(VIDEO_URI)).thenReturn(new VideoAnalysisResult(GENERATED_TITLE, ANALYZED_CONTENT));
 		doAnswer(recordSave).when(aiReportRepository).save(any());
 	}
 
@@ -92,7 +87,7 @@ class AiReportGenerateServiceTest {
 		service.generate(OBJECT_KEY);
 
 		// 분석기가 이 presigned URL로 영상을 직접 읽는다
-		verify(videoAnalyzer).analyze(DOWNLOAD_URL);
+		verify(videoAnalyzer).analyze(VIDEO_URI);
 		assertThat(savedReport).isSameAs(issuedReport);
 		assertThat(savedReport.getUserId()).isEqualTo(USER_ID);
 		assertThat(savedReport.getVideoObjectKey()).isEqualTo(OBJECT_KEY);
@@ -109,19 +104,12 @@ class AiReportGenerateServiceTest {
 	}
 
 	@Test
-	void 제목_생성기에_분석_결과_JSON을_그대로_넘긴다() {
-		service.generate(OBJECT_KEY);
-
-		verify(reportTitleGenerator).generateTitle(ANALYZED_CONTENT);
-	}
-
-	@Test
 	void 같은_영상의_리포트가_이미_분석을_시작했으면_URL_발급_분석_저장_없이_건너뛴다() {
 		issuedReport.startAnalysis();
 
 		service.generate(OBJECT_KEY);
 
-		verifyNoInteractions(downloadUrlIssuer, videoAnalyzer);
+		verifyNoInteractions(storageUriResolver, videoAnalyzer);
 		verify(aiReportRepository, never()).save(any());
 	}
 
@@ -131,13 +119,13 @@ class AiReportGenerateServiceTest {
 
 		service.generate(OBJECT_KEY);
 
-		verifyNoInteractions(downloadUrlIssuer, videoAnalyzer);
+		verifyNoInteractions(storageUriResolver, videoAnalyzer);
 		verify(aiReportRepository, never()).save(any());
 	}
 
 	@Test
 	void 객체_키_검증에_실패하면_PENDING으로_전이하지_않고_예외를_그대로_던진다() {
-		when(downloadUrlIssuer.issue(AiVideo.SCOPE, OBJECT_KEY)).thenThrow(new InvalidMediaObjectKeyException(OBJECT_KEY));
+		when(storageUriResolver.resolve(AiVideo.SCOPE, OBJECT_KEY)).thenThrow(new InvalidMediaObjectKeyException(OBJECT_KEY));
 
 		// row는 UPLOADING으로 남아 만료 뒤 FAILED_UPLOAD로 조회된다. 컨슈머가 warn 로그로 버린다
 		assertThatThrownBy(() -> service.generate(OBJECT_KEY))
@@ -158,9 +146,9 @@ class AiReportGenerateServiceTest {
 
 	@Test
 	void 분석이_실패하면_예외를_던지지_않고_FAILED_ANALYSIS로_기록한다() {
-		when(videoAnalyzer.analyze(DOWNLOAD_URL)).thenThrow(new VideoAnalysisFailedException("분석 실패"));
+		when(videoAnalyzer.analyze(VIDEO_URI)).thenThrow(new VideoAnalysisFailedException("분석 실패"));
 
-		// 예외를 던지면 SQS가 같은 메시지를 무한히 재전달한다
+		// 예외를 던지면 Pub/Sub이 같은 메시지를 무한히 재전달한다
 		assertThatCode(() -> service.generate(OBJECT_KEY)).doesNotThrowAnyException();
 
 		assertThat(savedStatuses).containsExactly(AiReportStatus.PENDING, AiReportStatus.FAILED_ANALYSIS);
@@ -168,18 +156,8 @@ class AiReportGenerateServiceTest {
 	}
 
 	@Test
-	void 분석이_실패하면_제목_생성을_시도하지_않는다() {
-		when(videoAnalyzer.analyze(DOWNLOAD_URL)).thenThrow(new VideoAnalysisFailedException("분석 실패"));
-
-		service.generate(OBJECT_KEY);
-
-		verify(reportTitleGenerator, never()).generateTitle(any());
-	}
-
-	@Test
-	void 제목_생성이_실패하면_제목_없이_COMPLETED로_저장한다() {
-		when(reportTitleGenerator.generateTitle(ANALYZED_CONTENT))
-				.thenThrow(new ReportTitleGenerationFailedException("제목 생성 실패"));
+	void 분석_결과에_제목이_없으면_제목_없이_COMPLETED로_저장한다() {
+		when(videoAnalyzer.analyze(VIDEO_URI)).thenReturn(new VideoAnalysisResult(null, ANALYZED_CONTENT));
 
 		assertThatCode(() -> service.generate(OBJECT_KEY)).doesNotThrowAnyException();
 
@@ -190,16 +168,7 @@ class AiReportGenerateServiceTest {
 
 	@Test
 	void 분석기가_선언되지_않은_예외를_던지면_FAILED_ANALYSIS가_아니라_FAILED_UNEXPECTED로_기록한다() {
-		when(videoAnalyzer.analyze(DOWNLOAD_URL)).thenThrow(new IllegalStateException("어댑터 버그"));
-
-		assertThatCode(() -> service.generate(OBJECT_KEY)).doesNotThrowAnyException();
-
-		assertThat(savedStatuses).containsExactly(AiReportStatus.PENDING, AiReportStatus.FAILED_UNEXPECTED);
-	}
-
-	@Test
-	void 제목_생성기가_선언되지_않은_예외를_던지면_제목_없이_완료하지_않고_FAILED_UNEXPECTED로_기록한다() {
-		when(reportTitleGenerator.generateTitle(ANALYZED_CONTENT)).thenThrow(new IllegalStateException("어댑터 버그"));
+		when(videoAnalyzer.analyze(VIDEO_URI)).thenThrow(new IllegalStateException("어댑터 버그"));
 
 		assertThatCode(() -> service.generate(OBJECT_KEY)).doesNotThrowAnyException();
 
@@ -227,7 +196,7 @@ class AiReportGenerateServiceTest {
 
 	@Test
 	void 실패_상태_기록이_실패하면_FAILED_UNEXPECTED로_다시_기록을_시도한다() {
-		when(videoAnalyzer.analyze(DOWNLOAD_URL)).thenThrow(new VideoAnalysisFailedException("분석 실패"));
+		when(videoAnalyzer.analyze(VIDEO_URI)).thenThrow(new VideoAnalysisFailedException("분석 실패"));
 		// 1번째(PENDING) 성공 → 2번째(FAILED_ANALYSIS) 실패 → 3번째(FAILED_UNEXPECTED) 성공
 		doAnswer(recordSave).doThrow(SAVE_FAILURE).doAnswer(recordSave).when(aiReportRepository).save(any());
 
@@ -238,7 +207,7 @@ class AiReportGenerateServiceTest {
 
 	@Test
 	void 실패_기록이_계속_실패하면_예외를_그대로_전파한다() {
-		when(videoAnalyzer.analyze(DOWNLOAD_URL)).thenThrow(new VideoAnalysisFailedException("분석 실패"));
+		when(videoAnalyzer.analyze(VIDEO_URI)).thenThrow(new VideoAnalysisFailedException("분석 실패"));
 		// 1번째(PENDING) 성공 → 2번째부터 계속 실패 (마지막 스터빙이 반복된다)
 		doAnswer(recordSave).doThrow(SAVE_FAILURE).when(aiReportRepository).save(any());
 

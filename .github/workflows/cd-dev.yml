@@ -80,6 +80,7 @@ jobs:
       - name: 배포용 태스크 정의 생성
         env:
           IMAGE_URI: ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+          NOTIFICATION_INTERNAL_SECRET: ${{ secrets.DEV_NOTIFICATION_INTERNAL_SECRET }}
           JWT_SECRET: ${{ secrets.DEV_JWT_SECRET }}
           KAKAO_NATIVE_APP_KEY: ${{ secrets.DEV_KAKAO_NATIVE_APP_KEY }}
           KAKAO_REST_API_KEY: ${{ secrets.DEV_KAKAO_REST_API_KEY }}
@@ -99,10 +100,12 @@ jobs:
           S3_SECRET_ACCESS_KEY: ${{ secrets.DEV_S3_SECRET_ACCESS_KEY }}
           S3_BUCKET: ${{ secrets.DEV_S3_BUCKET }}
           S3_PUBLIC_BASE_URL: ${{ secrets.DEV_S3_PUBLIC_BASE_URL }}
-          SQS_REGION: ${{ secrets.DEV_SQS_REGION }}
-          SQS_ACCESS_KEY_ID: ${{ secrets.DEV_SQS_ACCESS_KEY_ID }}
-          SQS_SECRET_ACCESS_KEY: ${{ secrets.DEV_SQS_SECRET_ACCESS_KEY }}
-          AI_VIDEO_QUEUE: ${{ secrets.DEV_AI_VIDEO_QUEUE }}
+          GCP_PROJECT_ID: ${{ secrets.DEV_GCP_PROJECT_ID }}
+          GCP_SERVICE_ACCOUNT_KEY: ${{ secrets.DEV_GCP_SERVICE_ACCOUNT_KEY }}
+          GCS_BUCKET: ${{ secrets.DEV_GCS_BUCKET }}
+          AI_VIDEO_SUBSCRIPTION: ${{ secrets.DEV_AI_VIDEO_SUBSCRIPTION }}
+          GEMINI_API_KEY: ${{ secrets.DEV_GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ secrets.DEV_GEMINI_MODEL }}
           EVOLINK_API_KEY: ${{ secrets.DEV_EVOLINK_API_KEY }}
           EVOLINK_MODEL: ${{ secrets.DEV_EVOLINK_MODEL }}
           REVENUECAT_API_KEY: ${{ secrets.DEV_REVENUECAT_API_KEY }}
