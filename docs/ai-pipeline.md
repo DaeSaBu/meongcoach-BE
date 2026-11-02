@@ -54,21 +54,19 @@ VideoUploadSubscriber                       (ai/adapter/consumer — streaming p
 - Gemini 클라이언트는 OkHttp로 호출해 `MockRestServiceServer`로 잡을 수 없으므로 테스트는 `HttpOptions.baseUrl`을 `MockWebServer`로 돌립니다. (`GeminiVideoAnalyzerTest`)
 - 실제 Gemini·GCS 호출이 필요한 수동 테스트는 로컬 전용입니다. (`*ManualTest`는 gitignore)
 
-## EvoLink 연동 (플랜 생성)
+## Gemini 연동 (플랜 생성)
 
-- 다른 모듈은 `ai/application/provided`의 `AiContentGenerator`로 시스템 프롬프트, 사용자 프롬프트, 응답 JSON 스키마를 전달합니다. `EvoLinkContentGenerator`가 스키마를 `JsonNode` 객체로 변환하고 내부 클라이언트를 호출합니다. 생성된 내용은 문자열로 반환하며 업무별 결과 해석과 검증은 호출 모듈이 담당합니다.
-- JSON 문법이 잘못되거나 객체가 아닌 스키마는 외부 호출 전에 거절합니다. 통신 오류, 빈 응답, 콘텐츠 차단, 출력 잘림은 원인을 보존한 `AiContentGenerationFailedException`으로 변환하며 오류 코드는 `AI_CONTENT_GENERATION_FAILED`(502)입니다. 로컬 스키마 오류는 내부 오류(500)로 처리합니다.
-- `ai/adapter/integration` 내부의 `EvoLinkChatClient`가 인증, HTTP 전송, 타임아웃과 공통 응답 검증을 담당합니다. 요청과 응답의 전송 DTO도 같은 패키지 아래에 둡니다.
-- 연결 설정(`baseUrl`, `apiKey`, `responseTimeout`)과 모델 설정(`model`, `maxTokens`, `temperature`, `thinking`)은 AI 모듈 내부의 `EvoLinkProperties`가 함께 읽습니다. 기존 `meongcoach.ai.evolink` 설정 키는 유지합니다.
-- OpenAI 호환 chat API를 씁니다. **엔드포인트는 `direct.evolink.ai`입니다.** `api.evolink.ai`는 Cloudflare 뒤에 있어 응답 첫 바이트가 100초를 넘으면 `524`로 끊깁니다.
-- **응답은 `json_schema` + `strict`로 강제합니다.** (`EvoLinkChatRequest.ResponseFormat`)
+- 다른 모듈은 `ai/application/provided`의 `AiContentGenerator`로 시스템 프롬프트, 사용자 프롬프트, 응답 JSON 스키마를 전달합니다. `GeminiContentGenerator`가 스키마를 `responseJsonSchema`로, 시스템 프롬프트를 `systemInstruction`으로 넣어 `generateContent`를 호출합니다. 생성된 내용은 문자열로 반환하며 업무별 결과 해석과 검증은 호출 모듈이 담당합니다. (호출 예시: `plan/adapter/integration/AiPlanGenerationAdapter`)
+- JSON 문법이 잘못되거나 객체가 아닌 스키마는 외부 호출 전에 거절합니다. 통신 오류, `candidates` 없음, 비정상 종료(`SAFETY` 등), `MAX_TOKENS` 잘림, 빈 응답은 원인을 보존한 `AiContentGenerationFailedException`으로 변환하며 오류 코드는 `AI_CONTENT_GENERATION_FAILED`(502)입니다. 로컬 스키마 오류는 내부 오류(500)로 처리합니다.
+- **영상 분석과 같은 `meongcoach.ai.gemini` 설정(모델·타임아웃·토큰 상한·temperature·사고 수준)을 함께 씁니다.** 용도별로 모델을 달리할 필요가 생기면 그때 설정을 나눕니다. `video-fps`는 영상 분석에만 쓰입니다.
+- Gemini `Client`는 `GeminiClientConfiguration`이 빈으로 한 번 만들어 `GeminiVideoAnalyzer`와 `GeminiContentGenerator`가 공유합니다. 응답의 `candidates`·종료 사유·빈 텍스트 검증은 `GeminiResponses`에 모여 있고, 두 어댑터가 각자의 도메인 예외(`VideoAnalysisFailedException`·`AiContentGenerationFailedException`)로 번역합니다.
 
 ## 프롬프트 템플릿 (src/main/resources/prompts/)
 
 `{video-analysis,plan-generation}/{system.md, user.md, schema.json}` 구조입니다.
 
 - `PromptLoader`가 기동 시점에 읽어 검증합니다 — 파일이 없거나 비어 있으면 **애플리케이션이 기동하지 않습니다.**
-- `schema.json`은 응답 형태를 강제하므로, 프롬프트에서 출력 형식을 바꾸려면 스키마를 함께 수정해야 합니다. 영상 분석 스키마는 Gemini `responseJsonSchema`와 EvoLink `json_schema`가 공통으로 받는 JSON Schema 부분집합만 씁니다.
+- `schema.json`은 응답 형태를 강제하므로, 프롬프트에서 출력 형식을 바꾸려면 스키마를 함께 수정해야 합니다. Gemini `responseJsonSchema`는 JSON Schema 부분집합만 받으므로(`minLength` 같은 일부 키워드 무시) 길이 규칙은 도메인에서 검증합니다.
 
 ## 필요 설정
 
