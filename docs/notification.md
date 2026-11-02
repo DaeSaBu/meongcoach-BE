@@ -25,7 +25,7 @@ flowchart LR
 | 중복 방지 | 잠금과 완료 이력 | 없음 |
 | 유스케이스 | `ScheduledNotificationDispatcher` | `EventNotificationDispatcher` |
 
-두 유스케이스는 `NotificationDeliveryService`로 FID 조회, FCM 전송, 무효 FID 삭제를 공유합니다.
+`NotificationDispatchService`가 두 유스케이스를 구현하고 FID 조회, FCM 전송, 무효 FID 삭제를 공유합니다.
 알림 이력 테이블은 두지 않습니다.
 
 ## 애그리거트

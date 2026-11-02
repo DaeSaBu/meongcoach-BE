@@ -8,6 +8,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.util.List;
 import java.util.Map;
 
 @Embeddable
@@ -38,7 +39,11 @@ public record NotificationSlot(@Column(name = "scheduled_at", nullable = false, 
 		}
 	}
 
-	public PushNotification toPushNotification(String fid) {
+	public List<PushNotification> toPushNotifications(List<String> fids) {
+		return fids.stream().map(this::toPushNotification).toList();
+	}
+
+	private PushNotification toPushNotification(String fid) {
 		Map.Entry<String, String> message = MESSAGES.getOrDefault(time().hour(), DEFAULT_MESSAGE);
 		Map<String, String> data = Map.of("hour", String.valueOf(time().hour()), "deepLink", DEEP_LINK);
 		return new PushNotification(fid, message.getKey(), message.getValue(), data, scheduledAt.toString());

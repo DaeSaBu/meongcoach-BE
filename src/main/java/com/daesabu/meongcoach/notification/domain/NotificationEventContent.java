@@ -2,6 +2,7 @@ package com.daesabu.meongcoach.notification.domain;
 
 import com.daesabu.meongcoach.notification.domain.exception.InvalidNotificationDeepLinkException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -15,7 +16,11 @@ public record NotificationEventContent(String title, String body, String deepLin
 		}
 	}
 
-	public PushNotification toPushNotification(String fid, NotificationEventType type) {
+	public List<PushNotification> toPushNotifications(List<String> fids, NotificationEventType type) {
+		return fids.stream().map(fid -> toPushNotification(fid, type)).toList();
+	}
+
+	private PushNotification toPushNotification(String fid, NotificationEventType type) {
 		Map<String, String> data = new HashMap<>();
 		data.put("type", type.name());
 		if (deepLink != null) {

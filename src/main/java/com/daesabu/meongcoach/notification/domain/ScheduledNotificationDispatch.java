@@ -10,6 +10,7 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -43,7 +44,7 @@ public class ScheduledNotificationDispatch extends BaseEntity {
 		return slot.time();
 	}
 
-	public PushNotification toPushNotification(String fid) {
-		return slot.toPushNotification(fid);
+	public List<PushNotification> toPushNotifications(List<String> fids) {
+		return slot.toPushNotifications(fids);
 	}
 }

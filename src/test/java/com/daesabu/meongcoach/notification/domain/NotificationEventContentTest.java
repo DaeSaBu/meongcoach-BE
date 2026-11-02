@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.daesabu.meongcoach.notification.domain.exception.InvalidNotificationDeepLinkException;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
@@ -19,7 +20,7 @@ class NotificationEventContentTest {
 	void 종류와_딥링크를_메시지_데이터에_넣는다() {
 		var content = new NotificationEventContent("제목", "본문", "meongcoach://notice");
 
-		PushNotification message = content.toPushNotification("fid", NotificationEventType.OPERATOR_MESSAGE);
+		PushNotification message = content.toPushNotifications(List.of("fid"), NotificationEventType.OPERATOR_MESSAGE).getFirst();
 
 		assertThat(message.fid()).isEqualTo("fid");
 		assertThat(message.data()).isEqualTo(Map.of("type", "OPERATOR_MESSAGE", "deepLink", "meongcoach://notice"));
@@ -28,7 +29,7 @@ class NotificationEventContentTest {
 
 	@Test
 	void 딥링크가_없으면_종류만_넣는다() {
-		PushNotification message = new NotificationEventContent("제목", "본문", null).toPushNotification("fid", NotificationEventType.COMMENT);
+		PushNotification message = new NotificationEventContent("제목", "본문", null).toPushNotifications(List.of("fid"), NotificationEventType.COMMENT).getFirst();
 
 		assertThat(message.data()).isEqualTo(Map.of("type", "COMMENT"));
 	}

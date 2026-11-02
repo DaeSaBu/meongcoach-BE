@@ -40,7 +40,7 @@ class NotificationSlotTest {
 	void 시각별_문구와_예약_시각_묶음_키로_알림을_만든다() {
 		var slot = NotificationSlot.of(java.time.LocalDate.of(2026, 10, 31), new NotificationTime(17, 0));
 
-		PushNotification notification = slot.toPushNotification("fid");
+		PushNotification notification = slot.toPushNotifications(java.util.List.of("fid")).getFirst();
 
 		assertThat(notification.fid()).isEqualTo("fid");
 		assertThat(notification.title()).isEqualTo("저녁 훈련 시간이에요");
@@ -53,6 +53,6 @@ class NotificationSlotTest {
 	void 문구가_없는_시각은_기본_문구를_쓴다() {
 		var slot = NotificationSlot.of(java.time.LocalDate.of(2026, 10, 31), new NotificationTime(9, 0));
 
-		assertThat(slot.toPushNotification("fid").title()).isEqualTo("훈련 시간이에요");
+		assertThat(slot.toPushNotifications(java.util.List.of("fid")).getFirst().title()).isEqualTo("훈련 시간이에요");
 	}
 }

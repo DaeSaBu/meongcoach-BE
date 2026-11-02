@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verify;
 
 import com.daesabu.meongcoach.notification.application.provided.dto.ScheduledNotificationDispatchRequest;
 import com.daesabu.meongcoach.notification.application.required.DeviceInstallationRepository;
+import com.daesabu.meongcoach.notification.application.required.NotificationEventSettingRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationScheduleRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationSender;
 import com.daesabu.meongcoach.notification.application.required.NotificationSender.NotificationBatchResult;
@@ -31,15 +32,15 @@ import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-class ScheduledNotificationDispatchServiceTest {
+class NotificationDispatchServiceTest {
 	private final ScheduledNotificationDispatchRepository dispatches = mock(ScheduledNotificationDispatchRepository.class);
 	private final NotificationScheduleRepository schedules = mock(NotificationScheduleRepository.class);
 	private final UserFinder users = mock(UserFinder.class);
 	private final DeviceInstallationRepository installations = mock(DeviceInstallationRepository.class);
 	private final NotificationSender sender = mock(NotificationSender.class);
-	private final NotificationDeliveryService delivery = new NotificationDeliveryService(installations, users, sender);
-	private final ScheduledNotificationDispatchService service = new ScheduledNotificationDispatchService(
-			dispatches, schedules, delivery, Clock.fixed(Instant.parse("2026-10-31T08:00:00Z"), ZoneOffset.UTC));
+	private final NotificationEventSettingRepository settings = mock(NotificationEventSettingRepository.class);
+	private final NotificationDispatchService service = new NotificationDispatchService(
+			dispatches, schedules, settings, installations, users, sender, Clock.fixed(Instant.parse("2026-10-31T08:00:00Z"), ZoneOffset.UTC));
 	private final ScheduledNotificationDispatchRequest request = new ScheduledNotificationDispatchRequest(LocalDate.of(2026, 10, 31), 17, 0);
 
 	@Test
