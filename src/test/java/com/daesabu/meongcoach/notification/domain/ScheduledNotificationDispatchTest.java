@@ -15,7 +15,7 @@ class ScheduledNotificationDispatchTest {
 	private static final Instant SCHEDULED_AT = Instant.parse("2026-11-01T23:30:00Z");
 
 	private ScheduledNotificationDispatch dispatchAt(Instant now) {
-		return ScheduledNotificationDispatch.of(DATE, 8, 30, now);
+		return ScheduledNotificationDispatch.of(new ScheduledNotificationDispatchCommand(DATE, 8, 30), now);
 	}
 
 	@Test

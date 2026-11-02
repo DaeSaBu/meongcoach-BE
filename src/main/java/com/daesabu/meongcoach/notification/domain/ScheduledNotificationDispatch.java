@@ -11,7 +11,6 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import lombok.AccessLevel;
@@ -35,9 +34,9 @@ public class ScheduledNotificationDispatch extends BaseEntity {
 	@Column(name = "scheduled_at", nullable = false, updatable = false)
 	private Instant scheduledAt;
 
-	public static ScheduledNotificationDispatch of(LocalDate date, int hour, int minute, Instant now) {
-		NotificationTime time = new NotificationTime(hour, minute);
-		Instant scheduledAt = date.atTime(time.hour(), time.minute()).atZone(SEOUL).toInstant();
+	public static ScheduledNotificationDispatch of(ScheduledNotificationDispatchCommand command, Instant now) {
+		NotificationTime time = new NotificationTime(command.hour(), command.minute());
+		Instant scheduledAt = command.date().atTime(time.hour(), time.minute()).atZone(SEOUL).toInstant();
 		if (scheduledAt.isAfter(now) || scheduledAt.isBefore(now.minus(MAX_DELAY))) {
 			throw new InvalidNotificationDispatchTimeException(scheduledAt);
 		}

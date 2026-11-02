@@ -44,8 +44,7 @@ public class NotificationDispatchService implements ScheduledNotificationDispatc
 	@Override
 	@Transactional
 	public ScheduledNotificationDispatchResult dispatch(ScheduledNotificationDispatchRequest request) {
-		ScheduledNotificationDispatch dispatch = ScheduledNotificationDispatch.of(
-				request.date(), request.hour(), request.minute(), clock.instant());
+		ScheduledNotificationDispatch dispatch = ScheduledNotificationDispatch.of(request.toCommand(), clock.instant());
 
 		dispatches.lock(dispatch.scheduled());
 		if (dispatches.existsByScheduledAt(dispatch.scheduled())) {

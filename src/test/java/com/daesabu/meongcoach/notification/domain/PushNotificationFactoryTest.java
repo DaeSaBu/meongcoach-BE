@@ -14,7 +14,7 @@ class PushNotificationFactoryTest {
 
 	@Test
 	void 시각별_문구와_예약_시각_묶음_키로_정기_알림을_만든다() {
-		var dispatch = ScheduledNotificationDispatch.of(LocalDate.of(2026, 10, 31), 17, 0, Instant.parse("2026-10-31T08:00:00Z"));
+		var dispatch = ScheduledNotificationDispatch.of(new ScheduledNotificationDispatchCommand(LocalDate.of(2026, 10, 31), 17, 0), Instant.parse("2026-10-31T08:00:00Z"));
 
 		PushNotification notification = PushNotificationFactory.scheduled(List.of("fid"), dispatch).getFirst();
 
@@ -27,7 +27,7 @@ class PushNotificationFactoryTest {
 
 	@Test
 	void 문구가_없는_시각은_기본_문구를_쓴다() {
-		var dispatch = ScheduledNotificationDispatch.of(LocalDate.of(2026, 10, 31), 9, 0, Instant.parse("2026-10-31T00:00:00Z"));
+		var dispatch = ScheduledNotificationDispatch.of(new ScheduledNotificationDispatchCommand(LocalDate.of(2026, 10, 31), 9, 0), Instant.parse("2026-10-31T00:00:00Z"));
 
 		assertThat(PushNotificationFactory.scheduled(List.of("fid"), dispatch).getFirst().title()).isEqualTo("훈련 시간이에요");
 	}
