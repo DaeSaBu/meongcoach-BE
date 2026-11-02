@@ -42,8 +42,4 @@ public class ScheduledNotificationDispatch extends BaseEntity {
 	public NotificationTime time() {
 		return slot.time();
 	}
-
-	public PushNotification toPushNotification(String fid) {
-		return slot.toPushNotification(fid);
-	}
 }

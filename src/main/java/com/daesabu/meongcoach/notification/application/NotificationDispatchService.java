@@ -16,6 +16,7 @@ import com.daesabu.meongcoach.notification.domain.NotificationDeepLink;
 import com.daesabu.meongcoach.notification.domain.NotificationEventType;
 import com.daesabu.meongcoach.notification.domain.NotificationTarget;
 import com.daesabu.meongcoach.notification.domain.PushNotification;
+import com.daesabu.meongcoach.notification.domain.PushNotificationFactory;
 import com.daesabu.meongcoach.notification.domain.ScheduledNotificationDispatch;
 import com.daesabu.meongcoach.user.application.provided.UserFinder;
 import java.time.Clock;
@@ -51,8 +52,7 @@ public class NotificationDispatchService implements ScheduledNotificationDispatc
 			return new ScheduledNotificationDispatchResult(0, true);
 		}
 		List<String> fids = findFids(schedules.findUserIdsByTimeEnabled(dispatch.time()));
-		List<PushNotification> notifications = fids.stream().map(dispatch::toPushNotification).toList();
-		deleteInvalidInstallations(send(notifications));
+		deleteInvalidInstallations(send(PushNotificationFactory.scheduled(fids, dispatch.getSlot())));
 		dispatches.save(dispatch);
 		return new ScheduledNotificationDispatchResult(fids.size(), false);
 	}
@@ -65,9 +65,7 @@ public class NotificationDispatchService implements ScheduledNotificationDispatc
 		NotificationDeepLink deepLink = new NotificationDeepLink(request.deepLink());
 
 		List<String> fids = findFids(findEnabledUserIds(type, target));
-		List<PushNotification> notifications = fids.stream()
-				.map(fid -> PushNotification.ofEvent(fid, type, request.title(), request.body(), deepLink)).toList();
-		deleteInvalidInstallations(send(notifications));
+		deleteInvalidInstallations(send(PushNotificationFactory.event(fids, type, request.title(), request.body(), deepLink)));
 		return new EventNotificationDispatchResult(fids.size());
 	}
 
