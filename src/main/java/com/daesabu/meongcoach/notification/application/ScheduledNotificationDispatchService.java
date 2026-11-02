@@ -1,32 +1,30 @@
 package com.daesabu.meongcoach.notification.application;
 
-import com.daesabu.meongcoach.notification.application.provided.NotificationDispatchResult;
-import com.daesabu.meongcoach.notification.application.provided.NotificationDispatcher;
-import com.daesabu.meongcoach.notification.application.provided.dto.NotificationDispatchRequest;
-import com.daesabu.meongcoach.notification.application.required.DeviceInstallationRepository;
-import com.daesabu.meongcoach.notification.application.required.NotificationDispatchRepository;
+import com.daesabu.meongcoach.notification.application.provided.ScheduledNotificationDispatchResult;
+import com.daesabu.meongcoach.notification.application.provided.ScheduledNotificationDispatcher;
+import com.daesabu.meongcoach.notification.application.provided.dto.ScheduledNotificationDispatchRequest;
 import com.daesabu.meongcoach.notification.application.required.NotificationScheduleRepository;
-import com.daesabu.meongcoach.notification.application.required.NotificationSender;
-import com.daesabu.meongcoach.notification.application.required.NotificationSender.NotificationBatchResult;
-import com.daesabu.meongcoach.notification.domain.DeviceInstallation;
-import com.daesabu.meongcoach.notification.domain.NotificationDispatch;
+import com.daesabu.meongcoach.notification.application.required.ScheduledNotificationDispatchRepository;
 import com.daesabu.meongcoach.notification.domain.NotificationMessage;
+import com.daesabu.meongcoach.notification.domain.NotificationSlot;
 import com.daesabu.meongcoach.notification.domain.NotificationTime;
-import com.daesabu.meongcoach.user.application.provided.UserFinder;
-import java.util.LinkedHashMap;
+import com.daesabu.meongcoach.notification.domain.ScheduledNotificationDispatch;
+import java.time.Clock;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 @Validated
-public class NotificationDispatchService implements NotificationDispatcher {
+public class ScheduledNotificationDispatchService implements ScheduledNotificationDispatcher {
 	private static final Map<Integer, Map.Entry<String, String>> MESSAGES = Map.of(
 			8, Map.entry("아침 훈련 시간이에요", "오늘의 훈련을 시작해 볼까요?"),
 			11, Map.entry("점심 훈련 시간이에요", "잠깐 짬을 내서 한 가지만 연습해 볼까요?"),
@@ -34,58 +32,34 @@ public class NotificationDispatchService implements NotificationDispatcher {
 	);
 	private static final Map.Entry<String, String> DEFAULT_MESSAGE = Map.entry("훈련 시간이에요", "오늘의 훈련을 시작해 볼까요?");
 
-	private final NotificationDispatchRepository dispatches;
+	private final ScheduledNotificationDispatchRepository dispatches;
 	private final NotificationScheduleRepository schedules;
-	private final DeviceInstallationRepository installations;
-	private final UserFinder users;
-	private final NotificationSender sender;
+	private final NotificationDeliveryService delivery;
+	private final Clock clock;
 
 	@Override
 	@Transactional
-	public NotificationDispatchResult dispatch(NotificationDispatchRequest request) {
-		new NotificationTime(request.hour(), 0);
-		dispatches.lock(request.key());
-		if (dispatches.existsByDispatchKey(request.key())) {
-			return new NotificationDispatchResult(0, true);
+	public ScheduledNotificationDispatchResult dispatch(ScheduledNotificationDispatchRequest request) {
+		NotificationTime time = new NotificationTime(request.hour(), request.minute());
+		NotificationSlot slot = new NotificationSlot(request.date(), time);
+		slot.validateDispatchable(clock.instant());
+		Instant scheduledAt = slot.scheduledAt();
+
+		dispatches.lock(scheduledAt.toString());
+		if (dispatches.existsByScheduledAt(scheduledAt)) {
+			log.info("event=notification_dispatch type=SCHEDULED scheduledAt={} fids=0 duplicate=true", scheduledAt);
+			return new ScheduledNotificationDispatchResult(0, true);
 		}
-		List<String> fids = findTargets(request.hour());
-		if (!fids.isEmpty()) {
-			List<NotificationBatchResult> results = send(fids, request);
-			List<String> invalidFids = results.stream().flatMap(result -> result.invalidFids().stream()).toList();
-			deleteInvalidInstallations(invalidFids);
-		}
-		NotificationDispatch dispatch = NotificationDispatch.complete(request.key());
-		dispatches.save(dispatch);
-		return new NotificationDispatchResult(fids.size(), false);
+		List<Long> userIds = schedules.findUserIdsByTimeEnabled(time.hour(), time.minute());
+		int fids = delivery.deliver(userIds, message(time, scheduledAt));
+		dispatches.save(ScheduledNotificationDispatch.complete(scheduledAt));
+		log.info("event=notification_dispatch type=SCHEDULED scheduledAt={} fids={} duplicate=false", scheduledAt, fids);
+		return new ScheduledNotificationDispatchResult(fids, false);
 	}
 
-	private List<String> findTargets(int hour) {
-		List<Long> enabledUserIds = schedules.findUserIdsByTimeEnabled(hour, 0);
-		Set<Long> activeUserIds = users.findActiveUserIds(enabledUserIds);
-		if (activeUserIds.isEmpty()) {
-			return List.of();
-		}
-		return installations.findAllByUserIdInOrderByUserIdAscIdAsc(activeUserIds).stream()
-				.map(DeviceInstallation::getFid).distinct().toList();
-	}
-
-	private List<NotificationBatchResult> send(List<String> fids, NotificationDispatchRequest request) {
-		NotificationMessage message = message(request);
-		Map<String, NotificationMessage> messages = new LinkedHashMap<>();
-		fids.forEach(fid -> messages.put(fid, message));
-		return sender.send(messages);
-	}
-
-	private NotificationMessage message(NotificationDispatchRequest request) {
-		Map.Entry<String, String> content = MESSAGES.getOrDefault(request.hour(), DEFAULT_MESSAGE);
-		Map<String, String> data = Map.of("hour", String.valueOf(request.hour()), "deepLink", "meongcoach://training-curriculum");
-		return new NotificationMessage(content.getKey(), content.getValue(), data, request.key());
-	}
-
-	private void deleteInvalidInstallations(List<String> invalidFids) {
-		if (invalidFids.isEmpty()) {
-			return;
-		}
-		installations.deleteAllByFidIn(invalidFids);
+	private NotificationMessage message(NotificationTime time, Instant scheduledAt) {
+		Map.Entry<String, String> content = MESSAGES.getOrDefault(time.hour(), DEFAULT_MESSAGE);
+		Map<String, String> data = Map.of("hour", String.valueOf(time.hour()), "deepLink", "meongcoach://training-curriculum");
+		return new NotificationMessage(content.getKey(), content.getValue(), data, scheduledAt.toString());
 	}
 }

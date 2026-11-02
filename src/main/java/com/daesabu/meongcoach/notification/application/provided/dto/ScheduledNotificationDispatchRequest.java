@@ -1,10 +1,7 @@
 package com.daesabu.meongcoach.notification.application.provided.dto;
 
 import jakarta.validation.constraints.NotNull;
-import java.time.Instant;
+import java.time.LocalDate;
 
-public record NotificationDispatchRequest(@NotNull Instant scheduledTime, @NotNull Integer hour) {
-	public String key() {
-		return scheduledTime.toString() + ":" + hour;
-	}
+public record ScheduledNotificationDispatchRequest(@NotNull LocalDate date, @NotNull Integer hour, @NotNull Integer minute) {
 }
