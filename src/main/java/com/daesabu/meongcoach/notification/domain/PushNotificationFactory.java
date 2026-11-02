@@ -18,11 +18,11 @@ public final class PushNotificationFactory {
 	);
 	private static final Map.Entry<String, String> DEFAULT_TRAINING_MESSAGE = Map.entry("훈련 시간이에요", "오늘의 훈련을 시작해 볼까요?");
 
-	public static List<PushNotification> scheduled(List<String> fids, NotificationSlot slot) {
-		int hour = slot.time().hour();
+	public static List<PushNotification> scheduled(List<String> fids, ScheduledNotificationDispatch dispatch) {
+		int hour = dispatch.time().hour();
 		Map.Entry<String, String> message = TRAINING_MESSAGES.getOrDefault(hour, DEFAULT_TRAINING_MESSAGE);
 		Map<String, String> data = Map.of("hour", String.valueOf(hour), "deepLink", TRAINING_DEEP_LINK);
-		String collapseKey = slot.scheduledAt().toString();
+		String collapseKey = dispatch.scheduled().toString();
 		return fids.stream()
 				.map(fid -> new PushNotification(fid, message.getKey(), message.getValue(), data, collapseKey))
 				.toList();

@@ -70,7 +70,7 @@ class ScheduledNotificationDispatcherTest {
 		fids.deleteAll(fids.findAllByUserIdInOrderByUserIdAscIdAsc(List.of(userId)));
 		schedules.deleteAll(schedules.findAllByUserId(userId));
 		users.deleteById(userId);
-		dispatches.findBySlotScheduledAt(SCHEDULED_AT).ifPresent(dispatches::delete);
+		dispatches.findByScheduledAt(SCHEDULED_AT).ifPresent(dispatches::delete);
 	}
 
 	@Test
@@ -82,7 +82,7 @@ class ScheduledNotificationDispatcherTest {
 
 		assertThat(result.fids()).isEqualTo(1);
 		assertThat(result.duplicate()).isFalse();
-		var history = dispatches.findBySlotScheduledAt(SCHEDULED_AT).orElseThrow();
+		var history = dispatches.findByScheduledAt(SCHEDULED_AT).orElseThrow();
 		assertThat(history.getId()).isPositive();
 		assertThat(history.scheduled()).isEqualTo(SCHEDULED_AT);
 		assertThat(history.getCreatedAt()).isNotNull();
@@ -110,9 +110,9 @@ class ScheduledNotificationDispatcherTest {
 				.willReturn(List.of(deliveryResults));
 
 		assertThatThrownBy(() -> dispatcher.dispatch(request)).isSameAs(failure);
-		assertThat(dispatches.existsBySlotScheduledAt(SCHEDULED_AT)).isFalse();
+		assertThat(dispatches.existsByScheduledAt(SCHEDULED_AT)).isFalse();
 		assertThat(dispatcher.dispatch(request).duplicate()).isFalse();
-		assertThat(dispatches.existsBySlotScheduledAt(SCHEDULED_AT)).isTrue();
+		assertThat(dispatches.existsByScheduledAt(SCHEDULED_AT)).isTrue();
 		assertThat(dispatcher.dispatch(request).duplicate()).isTrue();
 		verify(sender, times(2)).send(anyList());
 	}
@@ -125,7 +125,7 @@ class ScheduledNotificationDispatcherTest {
 
 		assertThatThrownBy(() -> dispatcher.dispatch(request)).isSameAs(failure).hasCause(cause);
 		assertThat(fids.findByFid(fid)).isPresent();
-		assertThat(dispatches.existsBySlotScheduledAt(SCHEDULED_AT)).isFalse();
+		assertThat(dispatches.existsByScheduledAt(SCHEDULED_AT)).isFalse();
 	}
 
 	@Test
@@ -142,7 +142,7 @@ class ScheduledNotificationDispatcherTest {
 		request = new ScheduledNotificationDispatchRequest(request.date(), 24, 0);
 
 		assertThatThrownBy(() -> dispatcher.dispatch(request)).isInstanceOf(InvalidNotificationHourException.class);
-		assertThat(dispatches.existsBySlotScheduledAt(SCHEDULED_AT)).isFalse();
+		assertThat(dispatches.existsByScheduledAt(SCHEDULED_AT)).isFalse();
 		verifyNoInteractions(sender);
 	}
 
@@ -200,7 +200,7 @@ class ScheduledNotificationDispatcherTest {
 			assertThatThrownBy(() -> first.get(10, java.util.concurrent.TimeUnit.SECONDS)).hasCause(failure);
 			assertThat(second.get(10, java.util.concurrent.TimeUnit.SECONDS).duplicate()).isFalse();
 		}
-		assertThat(dispatches.existsBySlotScheduledAt(SCHEDULED_AT)).isTrue();
+		assertThat(dispatches.existsByScheduledAt(SCHEDULED_AT)).isTrue();
 		verify(sender, times(2)).send(anyList());
 	}
 

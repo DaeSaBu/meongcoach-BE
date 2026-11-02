@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.daesabu.meongcoach.notification.domain.exception.InvalidNotificationDeepLinkException;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -13,9 +14,9 @@ class PushNotificationFactoryTest {
 
 	@Test
 	void 시각별_문구와_예약_시각_묶음_키로_정기_알림을_만든다() {
-		NotificationSlot slot = NotificationSlot.of(LocalDate.of(2026, 10, 31), new NotificationTime(17, 0));
+		var dispatch = ScheduledNotificationDispatch.of(LocalDate.of(2026, 10, 31), 17, 0, Instant.parse("2026-10-31T08:00:00Z"));
 
-		PushNotification notification = PushNotificationFactory.scheduled(List.of("fid"), slot).getFirst();
+		PushNotification notification = PushNotificationFactory.scheduled(List.of("fid"), dispatch).getFirst();
 
 		assertThat(notification.fid()).isEqualTo("fid");
 		assertThat(notification.title()).isEqualTo("저녁 훈련 시간이에요");
@@ -26,9 +27,9 @@ class PushNotificationFactoryTest {
 
 	@Test
 	void 문구가_없는_시각은_기본_문구를_쓴다() {
-		NotificationSlot slot = NotificationSlot.of(LocalDate.of(2026, 10, 31), new NotificationTime(9, 0));
+		var dispatch = ScheduledNotificationDispatch.of(LocalDate.of(2026, 10, 31), 9, 0, Instant.parse("2026-10-31T00:00:00Z"));
 
-		assertThat(PushNotificationFactory.scheduled(List.of("fid"), slot).getFirst().title()).isEqualTo("훈련 시간이에요");
+		assertThat(PushNotificationFactory.scheduled(List.of("fid"), dispatch).getFirst().title()).isEqualTo("훈련 시간이에요");
 	}
 
 	@Test

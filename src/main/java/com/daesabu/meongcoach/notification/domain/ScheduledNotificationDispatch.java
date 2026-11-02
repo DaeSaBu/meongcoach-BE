@@ -1,15 +1,19 @@
 package com.daesabu.meongcoach.notification.domain;
 
+import com.daesabu.meongcoach.notification.domain.exception.InvalidNotificationDispatchTimeException;
 import com.daesabu.meongcoach.shared.domain.BaseEntity;
-import jakarta.persistence.Embedded;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -20,26 +24,34 @@ import lombok.NoArgsConstructor;
 		uniqueConstraints = @UniqueConstraint(name = "uk_scheduled_notification_dispatches_scheduled_at", columnNames = "scheduled_at"))
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ScheduledNotificationDispatch extends BaseEntity {
+	private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
+	private static final Duration MAX_DELAY = Duration.ofHours(1);
+
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@Embedded
-	private NotificationSlot slot;
+	@Getter(AccessLevel.NONE)
+	@Column(name = "scheduled_at", nullable = false, updatable = false)
+	private Instant scheduledAt;
 
 	public static ScheduledNotificationDispatch of(LocalDate date, int hour, int minute, Instant now) {
-		NotificationSlot slot = NotificationSlot.of(date, new NotificationTime(hour, minute));
-		slot.validateDispatchable(now);
+		NotificationTime time = new NotificationTime(hour, minute);
+		Instant scheduledAt = date.atTime(time.hour(), time.minute()).atZone(SEOUL).toInstant();
+		if (scheduledAt.isAfter(now) || scheduledAt.isBefore(now.minus(MAX_DELAY))) {
+			throw new InvalidNotificationDispatchTimeException(scheduledAt);
+		}
 		ScheduledNotificationDispatch dispatch = new ScheduledNotificationDispatch();
-		dispatch.slot = slot;
+		dispatch.scheduledAt = scheduledAt;
 		return dispatch;
 	}
 
 	public Instant scheduled() {
-		return slot.scheduledAt();
+		return scheduledAt;
 	}
 
 	public NotificationTime time() {
-		return slot.time();
+		LocalTime local = scheduledAt.atZone(SEOUL).toLocalTime();
+		return new NotificationTime(local.getHour(), local.getMinute());
 	}
 }

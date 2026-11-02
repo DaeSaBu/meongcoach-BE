@@ -48,11 +48,11 @@ public class NotificationDispatchService implements ScheduledNotificationDispatc
 				request.date(), request.hour(), request.minute(), clock.instant());
 
 		dispatches.lock(dispatch.scheduled());
-		if (dispatches.existsBySlotScheduledAt(dispatch.scheduled())) {
+		if (dispatches.existsByScheduledAt(dispatch.scheduled())) {
 			return new ScheduledNotificationDispatchResult(0, true);
 		}
 		List<String> fids = findFids(schedules.findUserIdsByTimeEnabled(dispatch.time()));
-		deleteInvalidInstallations(send(PushNotificationFactory.scheduled(fids, dispatch.getSlot())));
+		deleteInvalidInstallations(send(PushNotificationFactory.scheduled(fids, dispatch)));
 		dispatches.save(dispatch);
 		return new ScheduledNotificationDispatchResult(fids.size(), false);
 	}
