@@ -7,6 +7,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import com.daesabu.meongcoach.notification.domain.NotificationDeepLink;
+import com.daesabu.meongcoach.notification.domain.NotificationEventType;
 import com.daesabu.meongcoach.notification.domain.PushNotification;
 import com.google.firebase.messaging.BatchResponse;
 import com.google.firebase.messaging.FirebaseMessaging;
@@ -14,7 +16,6 @@ import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.MessagingErrorCode;
 import com.google.firebase.messaging.SendResponse;
 import java.util.List;
-import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.ObjectProvider;
@@ -92,6 +93,24 @@ class FirebaseNotificationSenderTest {
 	}
 
 	@Test
+	void 이벤트_알림은_종류를_데이터로_보내고_없는_값은_넣지_않는다() throws Exception {
+		FirebaseMessaging messaging = mock(FirebaseMessaging.class);
+		BatchResponse batch = mock(BatchResponse.class);
+		given(batch.getResponses()).willReturn(List.of());
+		given(messaging.sendEach(anyList())).willReturn(batch);
+		var notification = new PushNotification("fid", "제목", "본문", NotificationEventType.COMMENT, null, new NotificationDeepLink(null), "key");
+		sender(messaging).send(List.of(notification));
+
+		ArgumentCaptor<List<com.google.firebase.messaging.Message>> captor = ArgumentCaptor.captor();
+		verify(messaging).sendEach(captor.capture());
+		String json = com.google.api.client.json.gson.GsonFactory.getDefaultInstance().toString(captor.getValue().getFirst());
+		var data = com.google.gson.JsonParser.parseString(json).getAsJsonObject().getAsJsonObject("data");
+		assertThat(data.get("type").getAsString()).isEqualTo("COMMENT");
+		assertThat(data.has("hour")).isFalse();
+		assertThat(data.has("deepLink")).isFalse();
+	}
+
+	@Test
 	void 같은_예약의_중복_알림이_기기에서_교체되도록_묶음_키를_보낸다() throws Exception {
 		FirebaseMessaging messaging = mock(FirebaseMessaging.class);
 		BatchResponse batch = mock(BatchResponse.class);
@@ -135,8 +154,8 @@ class FirebaseNotificationSenderTest {
 	}
 
 	private PushNotification message(String fid) {
-		Map<String, String> data = Map.of("hour", "17", "deepLink", "meongcoach://training-curriculum");
-		return new PushNotification(fid, "저녁 훈련 시간이에요", "오늘의 훈련을 마무리해 볼까요?", data, "2026-10-31T08:00:00Z:17");
+		return new PushNotification(fid, "저녁 훈련 시간이에요", "오늘의 훈련을 마무리해 볼까요?", null, 17,
+				new NotificationDeepLink("meongcoach://training-curriculum"), "2026-10-31T08:00:00Z:17");
 	}
 
 	private SendResponse failure(MessagingErrorCode code) {

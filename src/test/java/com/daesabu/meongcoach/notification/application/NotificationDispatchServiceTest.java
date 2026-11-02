@@ -20,6 +20,7 @@ import com.daesabu.meongcoach.notification.application.required.ScheduledNotific
 import com.daesabu.meongcoach.notification.domain.DeviceInstallation;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallationRegisterCommand;
 import com.daesabu.meongcoach.notification.domain.DevicePlatform;
+import com.daesabu.meongcoach.notification.domain.NotificationDeepLink;
 import com.daesabu.meongcoach.notification.domain.NotificationTime;
 import com.daesabu.meongcoach.notification.domain.PushNotification;
 import com.daesabu.meongcoach.notification.domain.ScheduledNotificationDispatch;
@@ -30,7 +31,6 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.IntStream;
@@ -62,7 +62,8 @@ class NotificationDispatchServiceTest {
 		PushNotification message = messages.getValue().getFirst();
 		assertThat(message.title()).isEqualTo("저녁 훈련 시간이에요");
 		assertThat(message.body()).isEqualTo("오늘의 훈련을 마무리해 볼까요?");
-		assertThat(message.data()).isEqualTo(Map.of("hour", "17", "deepLink", "meongcoach://training-curriculum"));
+		assertThat(message.hour()).isEqualTo(17);
+		assertThat(message.deepLink()).isEqualTo(new NotificationDeepLink("meongcoach://training-curriculum"));
 		assertThat(message.collapseKey()).isEqualTo("2026-10-31T08:00:00Z");
 		verify(dispatches).save(any(ScheduledNotificationDispatch.class));
 	}

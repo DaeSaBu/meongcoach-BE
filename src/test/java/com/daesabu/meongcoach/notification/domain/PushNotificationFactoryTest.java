@@ -7,7 +7,6 @@ import com.daesabu.meongcoach.notification.domain.exception.InvalidNotificationD
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 class PushNotificationFactoryTest {
@@ -21,7 +20,9 @@ class PushNotificationFactoryTest {
 		assertThat(notification.fid()).isEqualTo("fid");
 		assertThat(notification.title()).isEqualTo("저녁 훈련 시간이에요");
 		assertThat(notification.body()).isEqualTo("오늘의 훈련을 마무리해 볼까요?");
-		assertThat(notification.data()).isEqualTo(Map.of("hour", "17", "deepLink", "meongcoach://training-curriculum"));
+		assertThat(notification.type()).isNull();
+		assertThat(notification.hour()).isEqualTo(17);
+		assertThat(notification.deepLink()).isEqualTo(new NotificationDeepLink("meongcoach://training-curriculum"));
 		assertThat(notification.collapseKey()).isEqualTo("2026-10-31T08:00:00Z");
 	}
 
@@ -44,7 +45,9 @@ class PushNotificationFactoryTest {
 				List.of("fid"), NotificationEventType.OPERATOR_MESSAGE, "제목", "본문", new NotificationDeepLink("meongcoach://notice")).getFirst();
 
 		assertThat(notification.fid()).isEqualTo("fid");
-		assertThat(notification.data()).isEqualTo(Map.of("type", "OPERATOR_MESSAGE", "deepLink", "meongcoach://notice"));
+		assertThat(notification.type()).isEqualTo(NotificationEventType.OPERATOR_MESSAGE);
+		assertThat(notification.hour()).isNull();
+		assertThat(notification.deepLink()).isEqualTo(new NotificationDeepLink("meongcoach://notice"));
 		assertThat(notification.collapseKey()).isNotBlank();
 	}
 
@@ -61,6 +64,7 @@ class PushNotificationFactoryTest {
 		PushNotification notification = PushNotificationFactory.event(
 				List.of("fid"), NotificationEventType.COMMENT, "제목", "본문", new NotificationDeepLink(null)).getFirst();
 
-		assertThat(notification.data()).isEqualTo(Map.of("type", "COMMENT"));
+		assertThat(notification.type()).isEqualTo(NotificationEventType.COMMENT);
+		assertThat(notification.deepLink().value()).isNull();
 	}
 }

@@ -4,12 +4,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
+import com.daesabu.meongcoach.notification.domain.NotificationDeepLink;
 import com.daesabu.meongcoach.notification.domain.PushNotification;
 import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.MessagingErrorCode;
 import com.google.firebase.messaging.SendResponse;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
@@ -78,7 +78,7 @@ class FirebaseNotificationBatchResultTest {
 	}
 
 	private List<PushNotification> notifications(String... fids) {
-		return Stream.of(fids).map(fid -> new PushNotification(fid, "제목", "본문", Map.of(), "key")).toList();
+		return Stream.of(fids).map(fid -> new PushNotification(fid, "제목", "본문", null, null, new NotificationDeepLink(null), "key")).toList();
 	}
 
 	private SendResponse failure(MessagingErrorCode code) {
