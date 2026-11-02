@@ -26,7 +26,7 @@ flowchart LR
 | 유스케이스 | `ScheduledNotificationDispatcher` | `EventNotificationDispatcher` |
 
 `NotificationDispatchService`가 두 유스케이스를 구현하고 FID 조회, FCM 전송, 무효 FID 삭제를 공유합니다.
-알림 이력 테이블은 두지 않습니다.
+알림 이력 테이블은 두지 않습니다. 발송마다 `event=notification_dispatch` 로그를 한 줄 남기며, 대상·성공·실패·무효 FID 수를 적습니다.
 
 ## 애그리거트
 
@@ -61,7 +61,7 @@ flowchart LR
 | 메서드·경로 | 동작 |
 |---|---|
 | `POST /internal/notifications/scheduled-dispatches` | `{date, hour, minute}`로 스케줄 알림 발송. `{fids, duplicate}` 응답 |
-| `POST /internal/notifications/event-dispatches` | `{type, target: {kind, userIds}, title, body, deepLink}`로 이벤트 알림 발송. `{fids}` 응답 |
+| `POST /internal/notifications/event-dispatches` | `{type, targetKind, userIds, title, body, deepLink}`로 이벤트 알림 발송. `{fids}` 응답 |
 
 ### 인증
 
@@ -91,7 +91,8 @@ flowchart LR
 진행 중인 예약이 있으면 잠금이 풀릴 때까지 기다립니다. 완료 이력이 있으면 `duplicate=true`로 응답하고, 앞 요청이 롤백됐으면 이어서 발송합니다.
 FCM 호출과 무효 FID 정리 뒤 완료 이력을 저장하고 커밋합니다. 발송 중에는 DB 트랜잭션과 연결을 유지합니다.
 
-실패하면 FID 정리와 완료 이력을 롤백하며 다시 실행할 수 있습니다.
+배치 호출이 하나라도 실패했거나, 전송에 성공한 FID가 없는데 무효 FID 외의 실패가 있으면 발송 실패로 보고 502를 반환합니다. 무효 FID만 있으면 완료입니다.
+실패하면 FID 정리와 완료 이력을 롤백하며 다시 실행할 수 있습니다. 무효 FID는 다음 발송에서 다시 판정해 삭제합니다.
 프로세스 중단 시 잠금은 DB 연결 종료와 함께 해제됩니다.
 일부 FID에 전송된 뒤 실패하거나 커밋 전에 중단되면 재실행 시 중복 전달될 수 있습니다.
 예약 시각을 Android 알림 `tag`와 APNs `apns-collapse-id`로 보내 기기 알림은 하나만 남습니다. 소리·진동은 다시 울릴 수 있습니다.
@@ -107,7 +108,7 @@ FCM 호출과 무효 FID 정리 뒤 완료 이력을 저장하고 커밋합니�
 
 `FirebaseNotificationSender`가 500건씩 나누어 호출합니다.
 `UNREGISTERED`와 `SENDER_ID_MISMATCH`를 FID 삭제 대상으로 삼습니다. `INVALID_ARGUMENT`는 메시지 오류일 수도 있으므로 삭제하지 않습니다.
-그 밖의 개별 오류는 건너뜁니다. 배치 호출이 실패하면 후속 배치를 중단하고 502를 반환합니다.
+그 밖의 개별 오류는 건너뛰고 실패 수로 셉니다. 배치 호출이 실패해도 남은 배치를 계속 보내고 결과에 원인을 기록합니다. 실패 판정은 Service가 모든 배치가 끝난 뒤 합니다.
 Android는 HIGH 우선순위와 TTL 1시간을 사용합니다. APNs는 우선순위 10과 만료 1시간을 사용합니다.
 
 `FIREBASE_SERVICE_ACCOUNT_JSON`으로 Firebase를 인증합니다. 값이 없으면 ADC를 사용하며 첫 발송 때 초기화합니다.
