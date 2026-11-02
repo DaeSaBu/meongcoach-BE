@@ -34,13 +34,11 @@ flowchart LR
     RC["RevenueCat<br/>구독 결제"]
     Gemini["Gemini<br/>영상 분석 · 플랜 생성"]
     R2["Cloudflare R2<br/>이미지"]
-    S3["AWS S3<br/>실습 인증 영상"]
-    GCS["Google Cloud Storage<br/>AI 분석 영상"]
+    GCS["Google Cloud Storage<br/>영상"]
     PubSub["Cloud Pub/Sub"]
 
     App -->|"API 호출"| API
     App -->|"presigned URL로 직접 업로드"| R2
-    App -->|"presigned URL로 직접 업로드"| S3
     App -->|"presigned URL로 직접 업로드"| GCS
     API --> DB
     API -->|"토큰 검증 · 탈퇴 시 revoke"| Social
@@ -145,7 +143,7 @@ AI 분석은 수십 초가 걸리므로 요청-응답이 아니라 GCS 업로드
 
 #### media — 파일 저장소
 
-- **책임**: 공개(R2)·비공개(S3) 스토리지의 presigned URL 발급, 객체 키 구조와 소유권, 클라이언트가 보낸 미디어 URL·객체 키가 본인이 올린 것인지 확인
+- **책임**: 공개(R2)·비공개(GCS) 스토리지의 presigned URL 발급, 객체 키 구조와 소유권, 클라이언트가 보낸 미디어 URL·객체 키가 본인이 올린 것인지 확인
 - **역할**: `MediaUploadUrlIssuer`, `MediaDownloadUrlIssuer`, `StoredMediaVerifier`
 - **협력**: 다른 모듈을 호출하지 않고, `ai`·`graduation`·`community`·`onboarding`·`dog`가 사용합니다. 경로 범위·크기 상한 같은 용도별 규칙은 각 모듈이 `MediaScope`로 정해 넘기고, media는 스토리지 세부 사항만 가둡니다.
 
