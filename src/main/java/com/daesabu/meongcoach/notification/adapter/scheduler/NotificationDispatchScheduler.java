@@ -2,7 +2,7 @@ package com.daesabu.meongcoach.notification.adapter.scheduler;
 
 import com.daesabu.meongcoach.notification.application.provided.ScheduledNotificationDispatcher;
 import com.daesabu.meongcoach.notification.application.provided.dto.ScheduledNotificationDispatchRequest;
-import com.daesabu.meongcoach.notification.domain.exception.NotificationDeliveryException;
+import com.daesabu.meongcoach.shared.exception.DomainException;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.ZoneId;
@@ -36,12 +36,19 @@ public class NotificationDispatchScheduler {
 	void dispatch(ScheduledNotificationDispatchRequest request, int attempt) {
 		try {
 			dispatcher.dispatch(request);
-		} catch (NotificationDeliveryException exception) {
-			if (attempt >= MAX_ATTEMPTS) {
+		} catch (RuntimeException exception) {
+			if (attempt >= MAX_ATTEMPTS || !isRetryable(exception)) {
 				throw exception;
 			}
 			tasks.schedule(() -> dispatch(request, attempt + 1), clock.instant().plus(RETRY_DELAY));
 		}
+	}
+
+	private static boolean isRetryable(RuntimeException exception) {
+		if (exception instanceof DomainException domain) {
+			return domain.getErrorCode().status() >= 500;
+		}
+		return true;
 	}
 
 	static ScheduledNotificationDispatchRequest request(ZonedDateTime firedAt) {
