@@ -85,6 +85,8 @@ flowchart LR
 ### 스케줄 알림
 
 `NotificationDispatchScheduler`가 서울 8·11·17시에 실행됩니다. `meongcoach.notification.scheduler.enabled=true`인 prod에서만 켜집니다.
+발송이 실패(`NotificationDeliveryException`)하면 2분 뒤 같은 예약을 다시 호출하며 최대 3회 시도합니다. 검증 오류는 재시도하지 않습니다.
+마지막 시도도 실패하면 스케줄러 로그에 남으며, 예약 시각 1시간 안에 내부 API로 수동 재실행할 수 있습니다.
 입력은 서울 기준 날짜·시·분입니다. 예약 시각이 미래이거나 1시간보다 오래됐으면 400입니다.
 
 예약 시각으로 PostgreSQL 트랜잭션 advisory lock을 잡고 완료 이력을 확인합니다.
