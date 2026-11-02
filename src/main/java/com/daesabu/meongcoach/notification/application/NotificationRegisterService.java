@@ -9,8 +9,8 @@ import com.daesabu.meongcoach.notification.application.required.DeviceInstallati
 import com.daesabu.meongcoach.notification.application.required.NotificationScheduleRepository;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallation;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallationRegisterCommand;
-import com.daesabu.meongcoach.notification.domain.NotificationHour;
 import com.daesabu.meongcoach.notification.domain.NotificationSchedule;
+import com.daesabu.meongcoach.notification.domain.NotificationTime;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -48,11 +48,11 @@ public class NotificationRegisterService implements NotificationRegister {
 	}
 
 	private void createDefaultSchedulesIfAbsent(Long userId) {
-		List<Integer> existingHours = notificationScheduleRepository.findAllByUserId(userId).stream()
-				.map(NotificationSchedule::getHour)
+		List<NotificationTime> existingTimes = notificationScheduleRepository.findAllByUserId(userId).stream()
+				.map(NotificationSchedule::time)
 				.toList();
 		List<NotificationSchedule> missingSchedules = NotificationSchedule.createDefaults(userId).stream()
-				.filter(schedule -> !existingHours.contains(schedule.getHour()))
+				.filter(schedule -> !existingTimes.contains(schedule.time()))
 				.toList();
 		notificationScheduleRepository.saveAll(missingSchedules);
 	}
@@ -65,16 +65,17 @@ public class NotificationRegisterService implements NotificationRegister {
 
 	@Override
 	@Transactional
-	public void updateSchedule(Long userId, int hour, NotificationScheduleUpdateRequest request) {
-		NotificationHour.validateAllowed(hour);
+	public void updateSchedule(Long userId, NotificationScheduleUpdateRequest request) {
+		NotificationTime time = new NotificationTime(request.hour(), request.minute());
+		time.validateAllowed();
 		boolean enabled = request.enabled();
 
-		Optional<NotificationSchedule> existing = notificationScheduleRepository.findByUserIdAndHour(userId, hour);
+		Optional<NotificationSchedule> existing = notificationScheduleRepository.findByUserIdAndHourAndMinute(userId, time.hour(), time.minute());
 		if (existing.isPresent()) {
 			existing.get().change(enabled);
 			return;
 		}
-		notificationScheduleRepository.save(NotificationSchedule.create(userId, hour, enabled));
+		notificationScheduleRepository.save(NotificationSchedule.create(userId, time, enabled));
 	}
 
 	@Override

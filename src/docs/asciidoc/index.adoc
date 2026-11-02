@@ -993,25 +993,25 @@ operation::notification/fid-delete[snippets='http-request,request-fields,http-re
 
 === 알림 설정 조회
 
-link:{swagger-ui}#/Notification/notification-preferences[▶ Swagger에서 Try it out,window=swagger]
+link:{swagger-ui}#/Notification/notification-schedules[▶ Swagger에서 Try it out,window=swagger]
 
-시각별 수신 여부를 시각 오름차순으로 반환합니다. 설정 행이 없으면 `hours`가 빈 배열이고 행을 만들지 않습니다.
+시각별 수신 여부를 시·분 오름차순으로 반환합니다. 설정 행이 없으면 `schedules`가 빈 배열이고 행을 만들지 않습니다.
 
-operation::notification/preferences[snippets='http-request,http-response,response-fields']
+operation::notification/schedules[snippets='http-request,http-response,response-fields']
 
 === 알림 설정 변경
 
-link:{swagger-ui}#/Notification/notification-preference-update[▶ Swagger에서 Try it out,window=swagger]
+link:{swagger-ui}#/Notification/notification-schedule-update[▶ Swagger에서 Try it out,window=swagger]
 
-경로의 시각 하나의 수신 여부를 저장합니다. 회원·시각 행이 있으면 값을 바꾸고 없으면 만듭니다. 응답 본문은 없습니다.
+본문의 시·분 하나의 수신 여부를 저장합니다. 회원·시각 행이 있으면 값을 바꾸고 없으면 만듭니다. 응답 본문은 없습니다.
 
-operation::notification/preference-update[snippets='http-request,path-parameters,request-fields,http-response']
+operation::notification/schedule-update[snippets='http-request,request-fields,http-response']
 
 ==== 실패 응답
 
-시각이 8·11·17이 아니면 400(`NOTIFICATION_HOUR_NOT_ALLOWED`)을 반환합니다.
+시각이 8:00·11:00·17:00이 아니면 400(`NOTIFICATION_HOUR_NOT_ALLOWED`)을 반환합니다.
 
-operation::notification/preference-update-error[snippets='http-response,response-fields']
+operation::notification/schedule-update-error[snippets='http-response,response-fields']
 
 === 내부 API — 발송기 전용
 

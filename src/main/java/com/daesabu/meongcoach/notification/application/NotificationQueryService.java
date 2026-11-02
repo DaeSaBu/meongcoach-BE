@@ -21,7 +21,7 @@ public class NotificationQueryService implements NotificationScheduleFinder {
 	public List<NotificationScheduleResult> findSchedules(Long userId) {
 		List<NotificationSchedule> schedules = notificationScheduleRepository.findAllByUserId(userId);
 		return schedules.stream()
-				.sorted(Comparator.comparingInt(NotificationSchedule::getHour))
+				.sorted(Comparator.comparingInt(NotificationSchedule::getHour).thenComparingInt(NotificationSchedule::getMinute))
 				.map(NotificationScheduleResult::from)
 				.toList();
 	}

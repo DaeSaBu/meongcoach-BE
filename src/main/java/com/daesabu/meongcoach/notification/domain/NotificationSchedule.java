@@ -23,8 +23,8 @@ import org.hibernate.type.SqlTypes;
 @Table(
 		name = "notification_schedules",
 		uniqueConstraints = @UniqueConstraint(
-				name = "uk_notification_schedules_user_id_hour", columnNames = {"user_id", "hour"}),
-		indexes = @Index(name = "idx_notification_schedules_hour_enabled", columnList = "hour, enabled")
+				name = "uk_notification_schedules_user_id_hour_minute", columnNames = {"user_id", "hour", "minute"}),
+		indexes = @Index(name = "idx_notification_schedules_hour_minute_enabled", columnList = "hour, minute, enabled")
 )
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class NotificationSchedule extends BaseEntity {
@@ -40,24 +40,32 @@ public class NotificationSchedule extends BaseEntity {
 	@Column(nullable = false)
 	private int hour;
 
+	@JdbcTypeCode(SqlTypes.SMALLINT)
+	@Column(nullable = false)
+	private int minute;
+
 	@Column(nullable = false)
 	private boolean enabled;
 
-	public static NotificationSchedule create(Long userId, int hour, boolean enabled) {
-		NotificationHour.validate(hour);
+	public static NotificationSchedule create(Long userId, NotificationTime time, boolean enabled) {
 		NotificationSchedule schedule = new NotificationSchedule();
 
 		schedule.userId = requireNonNull(userId);
-		schedule.hour = hour;
+		schedule.hour = time.hour();
+		schedule.minute = time.minute();
 		schedule.enabled = enabled;
 
 		return schedule;
 	}
 
 	public static List<NotificationSchedule> createDefaults(Long userId) {
-		return NotificationHour.ALLOWED_HOURS.stream()
-				.map(hour -> create(userId, hour, NotificationHour.isDefaultEnabled(hour)))
+		return NotificationTime.ALLOWED.stream()
+				.map(time -> create(userId, time, time.isDefaultEnabled()))
 				.toList();
+	}
+
+	public NotificationTime time() {
+		return new NotificationTime(hour, minute);
 	}
 
 	public void change(boolean enabled) {

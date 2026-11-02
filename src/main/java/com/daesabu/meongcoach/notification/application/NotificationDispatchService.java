@@ -10,8 +10,8 @@ import com.daesabu.meongcoach.notification.application.required.NotificationSend
 import com.daesabu.meongcoach.notification.application.required.NotificationSender.NotificationBatchResult;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallation;
 import com.daesabu.meongcoach.notification.domain.NotificationDispatch;
-import com.daesabu.meongcoach.notification.domain.NotificationHour;
 import com.daesabu.meongcoach.notification.domain.NotificationMessage;
+import com.daesabu.meongcoach.notification.domain.NotificationTime;
 import com.daesabu.meongcoach.user.application.provided.UserFinder;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -43,7 +43,7 @@ public class NotificationDispatchService implements NotificationDispatcher {
 	@Override
 	@Transactional
 	public NotificationDispatchResult dispatch(NotificationDispatchRequest request) {
-		NotificationHour.validate(request.hour());
+		new NotificationTime(request.hour(), 0);
 		dispatches.lock(request.key());
 		if (dispatches.existsByDispatchKey(request.key())) {
 			return new NotificationDispatchResult(0, true);
@@ -60,7 +60,7 @@ public class NotificationDispatchService implements NotificationDispatcher {
 	}
 
 	private List<String> findTargets(int hour) {
-		List<Long> enabledUserIds = schedules.findUserIdsByHourEnabled(hour);
+		List<Long> enabledUserIds = schedules.findUserIdsByTimeEnabled(hour, 0);
 		Set<Long> activeUserIds = users.findActiveUserIds(enabledUserIds);
 		if (activeUserIds.isEmpty()) {
 			return List.of();
