@@ -29,6 +29,7 @@ import com.daesabu.meongcoach.plan.application.provided.dto.PlanCurriculumProgre
 import com.daesabu.meongcoach.plan.application.provided.dto.PlanLessonProgressResult;
 import com.daesabu.meongcoach.plan.application.provided.dto.PlanOutcomeRecordRequest;
 import com.daesabu.meongcoach.plan.application.provided.dto.PlanOutcomeResult;
+import com.daesabu.meongcoach.plan.domain.AiPlanCreateCommand;
 import com.daesabu.meongcoach.plan.domain.Plan;
 import com.daesabu.meongcoach.plan.domain.PlanCreateCommand;
 import com.daesabu.meongcoach.plan.domain.PlanOutcome;
@@ -283,6 +284,7 @@ class PlanControllerTest {
 				.andExpect(jsonPath("$.plan.planId").value(21))
 				.andExpect(jsonPath("$.plan.completedAt").value(nullValue()))
 				.andExpect(jsonPath("$.plan.outcome").value(nullValue()))
+				.andExpect(jsonPath("$.plan.expectation").value(nullValue()))
 				.andExpect(jsonPath("$.plan.curriculums[0].locked").value(true))
 				.andExpect(jsonPath("$.plan.curriculums[0].status").value("IN_PROGRESS"))
 				.andExpect(jsonPath("$.plan.curriculums[0].lessons[0].completed").value(true))
@@ -293,6 +295,7 @@ class PlanControllerTest {
 						fieldWithPath("plan.dogId").description("플랜 생성 시 선택된 강아지 ID"),
 						fieldWithPath("plan.title").description("플랜 제목"),
 						fieldWithPath("plan.goal").description("플랜 목표"),
+						fieldWithPath("plan.expectation").type(JsonFieldType.STRING).optional().description("AI 플랜을 만들 때 보호자가 적은 고민, 직접 만든 플랜이면 null"),
 						fieldWithPath("plan.dailyMinutes").description("하루 훈련 시간, 20은 20분 이상"),
 						fieldWithPath("plan.daysPerWeek").description("주당 훈련 일수"),
 						fieldWithPath("plan.status").description("ACTIVE 또는 COMPLETED"),
@@ -311,6 +314,17 @@ class PlanControllerTest {
 						fieldWithPath("plan.curriculums[].lessons[].lessonId").description("기존 레슨 상세 조회에 사용하는 ID"),
 						fieldWithPath("plan.curriculums[].lessons[].title").description("레슨 제목"),
 						fieldWithPath("plan.curriculums[].lessons[].completed").description("이 플랜에서의 레슨 완료 여부"))));
+	}
+
+	@Test
+	void AI_플랜은_보호자가_적은_고민을_함께_반환한다() throws Exception {
+		AiPlanCreateCommand command = new AiPlanCreateCommand(42L, 3L, "초코", "차분히 기다려요", 10, 3, "현관에서 짖어요");
+		Plan plan = Plan.createAiPlan(command, List.of(7L));
+		given(currentPlanFinder.find(42L)).willReturn(Optional.of(new CurrentPlanResult(plan, List.of())));
+
+		mockMvc.perform(get("/api/plans/current").principal(CURRENT_USER))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.plan.expectation").value("현관에서 짖어요"));
 	}
 
 	@Test
