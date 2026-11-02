@@ -5,6 +5,7 @@ import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationSubm
 import com.daesabu.meongcoach.graduation.application.required.GraduationSubmissionRepository;
 import com.daesabu.meongcoach.graduation.domain.GraduationSubmission;
 import com.daesabu.meongcoach.graduation.domain.GraduationSubmissionCommand;
+import com.daesabu.meongcoach.graduation.domain.GraduationSubmittedEvent;
 import com.daesabu.meongcoach.graduation.domain.GraduationVideo;
 import com.daesabu.meongcoach.graduation.domain.exception.GraduationSubmissionConflictException;
 import com.daesabu.meongcoach.graduation.domain.exception.InvalidGraduationVideoKeyException;
@@ -13,6 +14,7 @@ import com.daesabu.meongcoach.media.application.provided.StoredMediaVerifier;
 import com.daesabu.meongcoach.training.application.provided.TopicCompletionChecker;
 import java.time.Instant;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +27,7 @@ public class GraduationSubmitService implements GraduationSubmitter {
 	private final TopicCompletionChecker topicCompletionChecker;
 	private final GraduationSubmissionRepository graduationSubmissionRepository;
 	private final StoredMediaVerifier storedMediaVerifier;
+	private final ApplicationEventPublisher eventPublisher;
 
 	@Override
 	@Transactional
@@ -40,6 +43,12 @@ public class GraduationSubmitService implements GraduationSubmitter {
 		}
 		GraduationSubmission submission = GraduationSubmission.create(
 				new GraduationSubmissionCommand(userId, topicId, videoKey, Instant.now()));
+		GraduationSubmission saved = save(submission, topicId);
+		eventPublisher.publishEvent(GraduationSubmittedEvent.from(saved));
+		return saved;
+	}
+
+	private GraduationSubmission save(GraduationSubmission submission, Long topicId) {
 		try {
 			return graduationSubmissionRepository.saveAndFlush(submission);
 		} catch (DataIntegrityViolationException e) {
