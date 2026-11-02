@@ -65,6 +65,7 @@ public class Dog extends BaseEntity {
 	@Column(nullable = false, length = 512)
 	private String profileImageUrl;
 
+	// 프로필의 "우리 아이에게 기대하는 것".
 	@Column(nullable = false, columnDefinition = "TEXT")
 	private String expectation;
 

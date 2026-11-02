@@ -120,7 +120,7 @@ AI 분석은 수십 초가 걸리므로 요청-응답이 아니라 GCS 업로드
 #### user — 회원
 
 - **책임**: 회원의 역할(온보딩 중인 회원 → 온보딩을 마친 회원)·상태(활성·탈퇴)와 보호자 프로필
-- **역할**: `UserRegister`(가입·탈퇴), `UserFinder`, `UserProfileRegister`, `RegisteredUserChecker`, `MbtiFinder`
+- **역할**: `UserRegister`(가입·탈퇴), `UserFinder`, `RegisteredUserChecker`
 - **협력**: 다른 모듈을 호출하지 않습니다. `auth`와 `onboarding`이 `user`를 사용합니다.
 
 #### dog — 반려견
@@ -133,7 +133,7 @@ AI 분석은 수십 초가 걸리므로 요청-응답이 아니라 GCS 업로드
 
 - **책임**: 카테고리·토픽·커리큘럼·레슨·카드로 구성된 훈련 카탈로그, 사용자의 토픽 선택과 레슨별 완료 횟수, 이 진행으로 계산하는 커리큘럼·토픽 완료 판단
 - **역할**: `TrainingCategoryFinder`, `TopicFinder`, `TopicSelector`, `CurriculumFinder`, `LessonFinder`, `LessonCompleter`, `TopicCompletionChecker`
-- **협력**: 카테고리는 열람에 필요한 이용권 종류를 `entitlement`의 `EntitlementType`으로 표현하고, 유료 콘텐츠를 조회·완료할 때 `entitlement`의 `EntitlementChecker`로 이용권을 확인합니다. `graduation`이 토픽 완료 판단과 토픽 조회에, `ai`·`onboarding`이 토픽 목록 조회에, `community`가 레슨 멘션 조회에 사용합니다.
+- **협력**: 카테고리는 열람에 필요한 이용권 종류를 `entitlement`의 `EntitlementType`으로 표현하고, 유료 콘텐츠를 조회·완료할 때 `entitlement`의 `EntitlementChecker`로 이용권을 확인합니다. `graduation`이 토픽 완료 판단과 토픽 조회에, `ai`가 토픽 목록 조회에, `community`가 레슨 멘션 조회에 사용합니다.
 
 애그리거트와 완료 조건은 [docs/training.md](docs/training.md)에 있습니다.
 
@@ -151,9 +151,9 @@ AI 분석은 수십 초가 걸리므로 요청-응답이 아니라 GCS 업로드
 
 #### onboarding — 온보딩 조합
 
-- **책임**: 온보딩 화면에 필요한 데이터를 모으고, 보호자 프로필과 반려견 등록을 하나의 트랜잭션으로 완료
+- **책임**: 온보딩 화면에 필요한 데이터를 모으고, 기본 보호자 프로필 생성과 반려견 등록을 하나의 트랜잭션으로 완료
 - **역할**: `OnboardingMetadataFinder`, `OnboardingCompleter`, `OnboardingImageUploadUrlIssuer`
-- **협력**: 업로드 대상 매핑 외에는 자체 도메인 없이 `user`(프로필·MBTI 목록), `dog`(반려견 등록·견종·성격 목록), `training`(토픽 목록), `media`(프로필 이미지 업로드·검증)를 조합합니다. 여러 모듈에 걸친 화면 흐름을 한 곳에 모아, 각 도메인 모듈이 서로를 알지 않아도 되게 합니다.
+- **협력**: 자체 도메인 없이 `user`(기본 프로필 생성), `dog`(반려견 등록·견종·성격 목록·프로필 이미지 업로드)를 조합합니다. 여러 모듈에 걸친 화면 흐름을 한 곳에 모아, 각 도메인 모듈이 서로를 알지 않아도 되게 합니다.
 
 #### entitlement — 이용권
 
@@ -208,7 +208,6 @@ AI 분석은 수십 초가 걸리므로 요청-응답이 아니라 GCS 업로드
 |---|---|
 | [docs/architecture.md](docs/architecture.md) | 모듈 규칙, 계층 의존 방향, 모듈 경계 검증 |
 | [docs/ai-pipeline.md](docs/ai-pipeline.md) | 영상 업로드 → Pub/Sub → Gemini 분석 → 리포트 저장 비동기 흐름과 실패 처리, 플랜 생성 Gemini 연동 |
-| [docs/release-3.2.0.md](docs/release-3.2.0.md) | 구버전 앱 호환 범위와 DB 점검 전환·복구 절차 |
 | [docs/security.md](docs/security.md) | JWT 토큰 정책과 검증 체인, 필터 체인 |
 | [docs/error-handling.md](docs/error-handling.md) | Problem Details 에러 응답 형식 |
 | [docs/media.md](docs/media.md) | presigned URL 발급과 객체 키 소유권 규칙 |
