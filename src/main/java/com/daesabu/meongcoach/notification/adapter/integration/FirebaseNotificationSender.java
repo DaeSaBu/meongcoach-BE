@@ -14,9 +14,7 @@ import com.google.firebase.messaging.Notification;
 import com.google.firebase.messaging.SendResponse;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Gatherers;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.ObjectProvider;
@@ -69,25 +67,11 @@ public class FirebaseNotificationSender implements NotificationSender {
 		return code == MessagingErrorCode.UNREGISTERED || code == MessagingErrorCode.SENDER_ID_MISMATCH;
 	}
 
-	private Map<String, String> data(PushNotification notification) {
-		Map<String, String> data = new HashMap<>();
-		if (notification.type() != null) {
-			data.put("type", notification.type().name());
-		}
-		if (notification.hour() != null) {
-			data.put("hour", String.valueOf(notification.hour()));
-		}
-		if (notification.deepLink().value() != null) {
-			data.put("deepLink", notification.deepLink().value());
-		}
-		return data;
-	}
-
 	private Message toMessage(PushNotification notification) {
 		return Message.builder()
 				.setFid(notification.fid())
 				.setNotification(Notification.builder().setTitle(notification.title()).setBody(notification.body()).build())
-				.putAllData(data(notification))
+				.putAllData(notification.data())
 				.setAndroidConfig(AndroidConfig.builder().setTtl(3_600_000).setPriority(AndroidConfig.Priority.HIGH)
 						.setNotification(AndroidNotification.builder().setTag(notification.collapseKey()).build()).build())
 				.setApnsConfig(ApnsConfig.builder().setAps(Aps.builder().build())
