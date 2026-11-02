@@ -2,7 +2,7 @@ package com.daesabu.meongcoach.notification.application.provided;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -18,7 +18,7 @@ import com.daesabu.meongcoach.notification.domain.DeviceInstallationRegisterComm
 import com.daesabu.meongcoach.notification.domain.DevicePlatform;
 import com.daesabu.meongcoach.notification.domain.NotificationEventSetting;
 import com.daesabu.meongcoach.notification.domain.NotificationEventType;
-import com.daesabu.meongcoach.notification.domain.NotificationMessage;
+import com.daesabu.meongcoach.notification.domain.PushNotification;
 import com.daesabu.meongcoach.notification.domain.exception.InvalidNotificationEventTypeException;
 import com.daesabu.meongcoach.support.ApplicationTest;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
@@ -26,7 +26,6 @@ import com.daesabu.meongcoach.user.domain.User;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -48,9 +47,9 @@ class EventNotificationDispatcherTest {
 
 	private List<String> capture() {
 		List<String> fids = new ArrayList<>();
-		given(sender.send(anyMap())).willAnswer(invocation -> {
-			Map<String, NotificationMessage> messages = invocation.getArgument(0);
-			fids.addAll(messages.keySet());
+		given(sender.send(anyList())).willAnswer(invocation -> {
+			List<PushNotification> messages = invocation.getArgument(0);
+			messages.forEach(message -> fids.add(message.fid()));
 			return List.of();
 		});
 		return fids;
@@ -100,7 +99,7 @@ class EventNotificationDispatcherTest {
 		dispatcher.dispatch(request("ALL", null));
 		dispatcher.dispatch(request("ALL", null));
 
-		verify(sender, times(2)).send(anyMap());
+		verify(sender, times(2)).send(anyList());
 	}
 
 	@Test

@@ -32,7 +32,7 @@ public class EventNotificationDispatchService implements EventNotificationDispat
 		NotificationEventContent content = new NotificationEventContent(request.title(), request.body(), request.deepLink());
 
 		List<Long> userIds = findEnabledUserIds(type, target);
-		int fids = delivery.deliver(userIds, content.toMessage(type));
+		int fids = delivery.deliver(userIds, fid -> content.toPushNotification(fid, type));
 		log.info("event=notification_dispatch type={} target={} fids={} duplicate=false", type, request.target().kind(), fids);
 		return new EventNotificationDispatchResult(fids);
 	}

@@ -4,12 +4,11 @@ import com.daesabu.meongcoach.notification.application.required.DeviceInstallati
 import com.daesabu.meongcoach.notification.application.required.NotificationSender;
 import com.daesabu.meongcoach.notification.application.required.NotificationSender.NotificationBatchResult;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallation;
-import com.daesabu.meongcoach.notification.domain.NotificationMessage;
+import com.daesabu.meongcoach.notification.domain.PushNotification;
 import com.daesabu.meongcoach.user.application.provided.UserFinder;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,14 +23,13 @@ public class NotificationDeliveryService {
 	private final NotificationSender sender;
 
 	@Transactional
-	public int deliver(List<Long> userIds, NotificationMessage message) {
+	public int deliver(List<Long> userIds, Function<String, PushNotification> notificationFactory) {
 		List<String> fids = findFids(userIds);
 		if (fids.isEmpty()) {
 			return 0;
 		}
-		Map<String, NotificationMessage> messages = new LinkedHashMap<>();
-		fids.forEach(fid -> messages.put(fid, message));
-		List<NotificationBatchResult> results = sender.send(messages);
+		List<PushNotification> notifications = fids.stream().map(notificationFactory).toList();
+		List<NotificationBatchResult> results = sender.send(notifications);
 		List<String> invalidFids = results.stream().flatMap(result -> result.invalidFids().stream()).toList();
 		deleteInvalidInstallations(invalidFids);
 		return fids.size();

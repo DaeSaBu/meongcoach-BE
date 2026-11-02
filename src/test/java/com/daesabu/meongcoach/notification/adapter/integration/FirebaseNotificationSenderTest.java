@@ -8,13 +8,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import com.daesabu.meongcoach.notification.domain.NotificationMessage;
+import com.daesabu.meongcoach.notification.domain.PushNotification;
 import com.google.firebase.messaging.BatchResponse;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.MessagingErrorCode;
 import com.google.firebase.messaging.SendResponse;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -125,16 +124,13 @@ class FirebaseNotificationSenderTest {
 		assertThat(results.stream().flatMap(result -> result.invalidFids().stream()).toList()).containsExactlyElementsOf(fids);
 	}
 
-	private Map<String, NotificationMessage> messages(List<String> fids) {
-		Map<String, NotificationMessage> messages = new LinkedHashMap<>();
-		NotificationMessage message = message();
-		fids.forEach(fid -> messages.put(fid, message));
-		return messages;
+	private List<PushNotification> messages(List<String> fids) {
+		return fids.stream().map(this::message).toList();
 	}
 
-	private NotificationMessage message() {
+	private PushNotification message(String fid) {
 		Map<String, String> data = Map.of("hour", "17", "deepLink", "meongcoach://training-curriculum");
-		return new NotificationMessage("저녁 훈련 시간이에요", "오늘의 훈련을 마무리해 볼까요?", data, "2026-10-31T08:00:00Z:17");
+		return new PushNotification(fid, "저녁 훈련 시간이에요", "오늘의 훈련을 마무리해 볼까요?", data, "2026-10-31T08:00:00Z:17");
 	}
 
 	private SendResponse failure(MessagingErrorCode code) {

@@ -2,7 +2,7 @@ package com.daesabu.meongcoach.notification.application.provided;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -76,7 +76,7 @@ class ScheduledNotificationDispatcherTest {
 	@Test
 	void 발송_후_무효_FID을_삭제한다() {
 		NotificationBatchResult deliveryResults = results(List.of(fid));
-		given(sender.send(anyMap())).willReturn(List.of(deliveryResults));
+		given(sender.send(anyList())).willReturn(List.of(deliveryResults));
 
 		ScheduledNotificationDispatchResult result = dispatcher.dispatch(request);
 
@@ -93,20 +93,20 @@ class ScheduledNotificationDispatcherTest {
 	@Test
 	void 같은_예약_시각의_호출은_한_번만_발송한다() {
 		NotificationBatchResult deliveryResults = results(List.of());
-		given(sender.send(anyMap())).willReturn(List.of(deliveryResults));
+		given(sender.send(anyList())).willReturn(List.of(deliveryResults));
 
 		dispatcher.dispatch(request);
 		ScheduledNotificationDispatchResult repeated = dispatcher.dispatch(request);
 
 		assertThat(repeated.duplicate()).isTrue();
-		verify(sender, times(1)).send(anyMap());
+		verify(sender, times(1)).send(anyList());
 	}
 
 	@Test
 	void 실패한_예약은_다시_발송하고_완료한_예약은_재발송하지_않는다() {
 		var failure = new NotificationDeliveryException(new IllegalStateException("FCM unavailable"));
 		NotificationBatchResult deliveryResults = results(List.of());
-		given(sender.send(anyMap())).willThrow(failure)
+		given(sender.send(anyList())).willThrow(failure)
 				.willReturn(List.of(deliveryResults));
 
 		assertThatThrownBy(() -> dispatcher.dispatch(request)).isSameAs(failure);
@@ -114,14 +114,14 @@ class ScheduledNotificationDispatcherTest {
 		assertThat(dispatcher.dispatch(request).duplicate()).isFalse();
 		assertThat(dispatches.existsByScheduledAt(SCHEDULED_AT)).isTrue();
 		assertThat(dispatcher.dispatch(request).duplicate()).isTrue();
-		verify(sender, times(2)).send(anyMap());
+		verify(sender, times(2)).send(anyList());
 	}
 
 	@Test
 	void 발송이_실패하면_등록을_유지하고_완료_이력을_남기지_않는다() {
 		var cause = new IllegalStateException("FCM unavailable");
 		var failure = new NotificationDeliveryException(cause);
-		given(sender.send(anyMap())).willThrow(failure);
+		given(sender.send(anyList())).willThrow(failure);
 
 		assertThatThrownBy(() -> dispatcher.dispatch(request)).isSameAs(failure).hasCause(cause);
 		assertThat(fids.findByFid(fid)).isPresent();
@@ -158,7 +158,7 @@ class ScheduledNotificationDispatcherTest {
 	void 첫_요청이_완료되면_기다리던_중복_요청은_발송하지_않는다() throws Exception {
 		var started = new java.util.concurrent.CountDownLatch(1);
 		var release = new java.util.concurrent.CountDownLatch(1);
-		given(sender.send(anyMap())).willAnswer(invocation -> {
+		given(sender.send(anyList())).willAnswer(invocation -> {
 			started.countDown();
 			assertThat(release.await(10, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
 			NotificationBatchResult batchResult = results(List.of());
@@ -175,7 +175,7 @@ class ScheduledNotificationDispatcherTest {
 			assertThat(first.get(10, java.util.concurrent.TimeUnit.SECONDS).duplicate()).isFalse();
 			assertThat(second.get(10, java.util.concurrent.TimeUnit.SECONDS).duplicate()).isTrue();
 		}
-		verify(sender, times(1)).send(anyMap());
+		verify(sender, times(1)).send(anyList());
 	}
 
 	@Test
@@ -184,7 +184,7 @@ class ScheduledNotificationDispatcherTest {
 		var release = new java.util.concurrent.CountDownLatch(1);
 		var failure = new NotificationDeliveryException(new IllegalStateException("FCM unavailable"));
 		NotificationBatchResult batchResult = results(List.of());
-		given(sender.send(anyMap())).willAnswer(invocation -> {
+		given(sender.send(anyList())).willAnswer(invocation -> {
 			started.countDown();
 			assertThat(release.await(10, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
 			throw failure;
@@ -201,7 +201,7 @@ class ScheduledNotificationDispatcherTest {
 			assertThat(second.get(10, java.util.concurrent.TimeUnit.SECONDS).duplicate()).isFalse();
 		}
 		assertThat(dispatches.existsByScheduledAt(SCHEDULED_AT)).isTrue();
-		verify(sender, times(2)).send(anyMap());
+		verify(sender, times(2)).send(anyList());
 	}
 
 	private NotificationBatchResult results(List<String> invalidFids) {

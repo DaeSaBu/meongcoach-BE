@@ -2,7 +2,7 @@ package com.daesabu.meongcoach.notification.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -17,7 +17,7 @@ import com.daesabu.meongcoach.notification.application.required.ScheduledNotific
 import com.daesabu.meongcoach.notification.domain.DeviceInstallation;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallationRegisterCommand;
 import com.daesabu.meongcoach.notification.domain.DevicePlatform;
-import com.daesabu.meongcoach.notification.domain.NotificationMessage;
+import com.daesabu.meongcoach.notification.domain.PushNotification;
 import com.daesabu.meongcoach.notification.domain.ScheduledNotificationDispatch;
 import com.daesabu.meongcoach.user.application.provided.UserFinder;
 import java.time.Clock;
@@ -46,14 +46,14 @@ class ScheduledNotificationDispatchServiceTest {
 	void 시각별_메시지를_구성하고_전체_대상을_Sender에_전달한다() {
 		prepareTargets(501);
 		NotificationBatchResult deliveryResults = results(List.of());
-		given(sender.send(anyMap())).willReturn(List.of(deliveryResults));
+		given(sender.send(anyList())).willReturn(List.of(deliveryResults));
 
 		assertThat(service.dispatch(request).fids()).isEqualTo(501);
 
-		ArgumentCaptor<Map<String, NotificationMessage>> messages = ArgumentCaptor.captor();
+		ArgumentCaptor<List<PushNotification>> messages = ArgumentCaptor.captor();
 		verify(sender, times(1)).send(messages.capture());
 		assertThat(messages.getValue()).hasSize(501);
-		NotificationMessage message = messages.getValue().values().iterator().next();
+		PushNotification message = messages.getValue().getFirst();
 		assertThat(message.title()).isEqualTo("저녁 훈련 시간이에요");
 		assertThat(message.body()).isEqualTo("오늘의 훈련을 마무리해 볼까요?");
 		assertThat(message.data()).isEqualTo(Map.of("hour", "17", "deepLink", "meongcoach://training-curriculum"));
@@ -66,11 +66,11 @@ class ScheduledNotificationDispatchServiceTest {
 		prepareTargets(1001);
 		NotificationBatchResult firstBatch = results(List.of("fid-1"));
 		NotificationBatchResult secondBatch = results(List.of("fid-500"));
-		given(sender.send(anyMap())).willReturn(List.of(firstBatch, secondBatch));
+		given(sender.send(anyList())).willReturn(List.of(firstBatch, secondBatch));
 
 		assertThat(service.dispatch(request).fids()).isEqualTo(1001);
 
-		verify(sender, times(1)).send(anyMap());
+		verify(sender, times(1)).send(anyList());
 		verify(installations).deleteAllByFidIn(List.of("fid-1", "fid-500"));
 		verify(dispatches).save(any(ScheduledNotificationDispatch.class));
 	}

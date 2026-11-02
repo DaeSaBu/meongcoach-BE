@@ -5,9 +5,9 @@ import com.daesabu.meongcoach.notification.application.provided.ScheduledNotific
 import com.daesabu.meongcoach.notification.application.provided.dto.ScheduledNotificationDispatchRequest;
 import com.daesabu.meongcoach.notification.application.required.NotificationScheduleRepository;
 import com.daesabu.meongcoach.notification.application.required.ScheduledNotificationDispatchRepository;
-import com.daesabu.meongcoach.notification.domain.NotificationMessage;
 import com.daesabu.meongcoach.notification.domain.NotificationSlot;
 import com.daesabu.meongcoach.notification.domain.NotificationTime;
+import com.daesabu.meongcoach.notification.domain.PushNotification;
 import com.daesabu.meongcoach.notification.domain.ScheduledNotificationDispatch;
 import java.time.Clock;
 import java.time.Instant;
@@ -51,15 +51,15 @@ public class ScheduledNotificationDispatchService implements ScheduledNotificati
 			return new ScheduledNotificationDispatchResult(0, true);
 		}
 		List<Long> userIds = schedules.findUserIdsByTimeEnabled(time.hour(), time.minute());
-		int fids = delivery.deliver(userIds, message(time, scheduledAt));
+		int fids = delivery.deliver(userIds, fid -> message(fid, time, scheduledAt));
 		dispatches.save(ScheduledNotificationDispatch.complete(scheduledAt));
 		log.info("event=notification_dispatch type=SCHEDULED scheduledAt={} fids={} duplicate=false", scheduledAt, fids);
 		return new ScheduledNotificationDispatchResult(fids, false);
 	}
 
-	private NotificationMessage message(NotificationTime time, Instant scheduledAt) {
+	private PushNotification message(String fid, NotificationTime time, Instant scheduledAt) {
 		Map.Entry<String, String> content = MESSAGES.getOrDefault(time.hour(), DEFAULT_MESSAGE);
 		Map<String, String> data = Map.of("hour", String.valueOf(time.hour()), "deepLink", "meongcoach://training-curriculum");
-		return new NotificationMessage(content.getKey(), content.getValue(), data, scheduledAt.toString());
+		return new PushNotification(fid, content.getKey(), content.getValue(), data, scheduledAt.toString());
 	}
 }

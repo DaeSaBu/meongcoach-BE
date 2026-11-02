@@ -19,15 +19,16 @@ class NotificationEventContentTest {
 	void 종류와_딥링크를_메시지_데이터에_넣는다() {
 		var content = new NotificationEventContent("제목", "본문", "meongcoach://notice");
 
-		NotificationMessage message = content.toMessage(NotificationEventType.OPERATOR_MESSAGE);
+		PushNotification message = content.toPushNotification("fid", NotificationEventType.OPERATOR_MESSAGE);
 
+		assertThat(message.fid()).isEqualTo("fid");
 		assertThat(message.data()).isEqualTo(Map.of("type", "OPERATOR_MESSAGE", "deepLink", "meongcoach://notice"));
 		assertThat(message.collapseKey()).isNotBlank();
 	}
 
 	@Test
 	void 딥링크가_없으면_종류만_넣는다() {
-		NotificationMessage message = new NotificationEventContent("제목", "본문", null).toMessage(NotificationEventType.COMMENT);
+		PushNotification message = new NotificationEventContent("제목", "본문", null).toPushNotification("fid", NotificationEventType.COMMENT);
 
 		assertThat(message.data()).isEqualTo(Map.of("type", "COMMENT"));
 	}

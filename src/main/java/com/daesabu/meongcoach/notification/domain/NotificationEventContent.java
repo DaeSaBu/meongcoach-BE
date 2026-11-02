@@ -15,12 +15,12 @@ public record NotificationEventContent(String title, String body, String deepLin
 		}
 	}
 
-	public NotificationMessage toMessage(NotificationEventType type) {
+	public PushNotification toPushNotification(String fid, NotificationEventType type) {
 		Map<String, String> data = new HashMap<>();
 		data.put("type", type.name());
 		if (deepLink != null) {
 			data.put("deepLink", deepLink);
 		}
-		return new NotificationMessage(title, body, Map.copyOf(data), UUID.randomUUID().toString());
+		return new PushNotification(fid, title, body, Map.copyOf(data), UUID.randomUUID().toString());
 	}
 }
