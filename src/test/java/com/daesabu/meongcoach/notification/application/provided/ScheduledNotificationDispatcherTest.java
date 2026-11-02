@@ -11,8 +11,9 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import com.daesabu.meongcoach.notification.application.provided.dto.ScheduledNotificationDispatchRequest;
 import com.daesabu.meongcoach.notification.application.required.DeviceInstallationRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationScheduleRepository;
+import com.daesabu.meongcoach.notification.application.required.NotificationSendOutcome;
+import com.daesabu.meongcoach.notification.application.required.NotificationSendResult;
 import com.daesabu.meongcoach.notification.application.required.NotificationSender;
-import com.daesabu.meongcoach.notification.application.required.NotificationSender.NotificationSendResult;
 import com.daesabu.meongcoach.notification.application.required.ScheduledNotificationDispatchRepository;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallation;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallationRegisterCommand;
@@ -131,7 +132,9 @@ class ScheduledNotificationDispatcherTest {
 	@Test
 	void 발송이_실패해도_무효_FID_삭제는_유지한다() {
 		var cause = new IllegalStateException("FCM unavailable");
-		NotificationSendResult failedWithInvalid = new NotificationSendResult(0, 1, List.of(fid), cause);
+		NotificationSendResult failedWithInvalid = new NotificationSendResult(List.of(
+				NotificationSendOutcome.invalid(fid, cause),
+				NotificationSendOutcome.aborted("other-fid", cause)));
 		given(sender.send(anyList())).willReturn(failedWithInvalid);
 
 		assertThatThrownBy(() -> dispatcher.dispatch(request)).isInstanceOf(NotificationDeliveryException.class);
@@ -216,11 +219,14 @@ class ScheduledNotificationDispatcherTest {
 	}
 
 	private NotificationSendResult results(List<String> invalidFids) {
-		return new NotificationSendResult(0, 0, invalidFids, null);
+		List<NotificationSendOutcome> outcomes = invalidFids.stream()
+				.map(invalidFid -> NotificationSendOutcome.invalid(invalidFid, null))
+				.toList();
+		return new NotificationSendResult(outcomes);
 	}
 
 	private NotificationSendResult failedBatch(Throwable cause) {
-		return new NotificationSendResult(0, 1, List.of(), cause);
+		return new NotificationSendResult(List.of(NotificationSendOutcome.aborted(fid, cause)));
 	}
 
 }

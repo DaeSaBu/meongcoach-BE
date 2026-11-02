@@ -11,8 +11,9 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import com.daesabu.meongcoach.notification.application.provided.dto.EventNotificationDispatchRequest;
 import com.daesabu.meongcoach.notification.application.required.DeviceInstallationRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationEventSettingRepository;
+import com.daesabu.meongcoach.notification.application.required.NotificationSendOutcome;
+import com.daesabu.meongcoach.notification.application.required.NotificationSendResult;
 import com.daesabu.meongcoach.notification.application.required.NotificationSender;
-import com.daesabu.meongcoach.notification.application.required.NotificationSender.NotificationSendResult;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallation;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallationRegisterCommand;
 import com.daesabu.meongcoach.notification.domain.DevicePlatform;
@@ -50,7 +51,10 @@ class EventNotificationDispatcherTest {
 		given(sender.send(anyList())).willAnswer(invocation -> {
 			List<PushNotification> messages = invocation.getArgument(0);
 			messages.forEach(message -> fids.add(message.fid()));
-			return new NotificationSendResult(messages.size(), 0, List.of(), null);
+			List<NotificationSendOutcome> outcomes = messages.stream()
+					.map(message -> NotificationSendOutcome.sent(message.fid()))
+					.toList();
+			return new NotificationSendResult(outcomes);
 		});
 		return fids;
 	}

@@ -7,6 +7,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import com.daesabu.meongcoach.notification.application.required.NotificationSendOutcome;
+import com.daesabu.meongcoach.notification.application.required.NotificationSendStatus;
 import com.daesabu.meongcoach.notification.domain.NotificationDeepLink;
 import com.daesabu.meongcoach.notification.domain.NotificationEventType;
 import com.daesabu.meongcoach.notification.domain.PushNotification;
@@ -34,12 +36,12 @@ class FirebaseNotificationSenderTest {
 		var result = sender(messaging).send(messages(List.of("expired", "keep")));
 
 		assertThat(result.invalidFids()).containsExactly("expired");
-		assertThat(result.sentCount()).isEqualTo(1);
-		assertThat(result.failedCount()).isZero();
+		assertThat(result.outcomes()).extracting(NotificationSendOutcome::status)
+				.containsExactly(NotificationSendStatus.INVALID, NotificationSendStatus.SENT);
 	}
 
 	@Test
-	void SENDER_ID_MISMATCH도_무효_FID으로_반환하고_그_밖의_실패는_실패_수로_센다() throws Exception {
+	void SENDER_ID_MISMATCH도_무효_FID으로_반환하고_그_밖의_오류는_실패로_기록한다() throws Exception {
 		FirebaseMessaging messaging = mock(FirebaseMessaging.class);
 		BatchResponse batch = mock(BatchResponse.class);
 		SendResponse mismatch = failure(MessagingErrorCode.SENDER_ID_MISMATCH);
@@ -51,12 +53,13 @@ class FirebaseNotificationSenderTest {
 		var result = sender(messaging).send(messages(List.of("mismatch", "unavailable", "invalid-argument")));
 
 		assertThat(result.invalidFids()).containsExactly("mismatch");
-		assertThat(result.failedCount()).isEqualTo(2);
-		assertThat(result.failure()).isNull();
+		assertThat(result.outcomes()).extracting(NotificationSendOutcome::status)
+				.containsExactly(NotificationSendStatus.INVALID, NotificationSendStatus.FAILED, NotificationSendStatus.FAILED);
+		assertThat(result.aborted()).isFalse();
 	}
 
 	@Test
-	void 배치_호출이_실패하면_중단하고_남은_FID을_실패로_센다() throws Exception {
+	void 배치_호출이_실패하면_중단하고_남은_알림을_원인과_함께_중단으로_기록한다() throws Exception {
 		FirebaseMessaging messaging = mock(FirebaseMessaging.class);
 		FirebaseMessagingException failure = mock(FirebaseMessagingException.class);
 		given(messaging.sendEach(anyList())).willThrow(failure);
@@ -65,32 +68,60 @@ class FirebaseNotificationSenderTest {
 		var result = sender(messaging).send(messages(fids));
 
 		verify(messaging, times(1)).sendEach(anyList());
-		assertThat(result.failure()).isSameAs(failure);
-		assertThat(result.failedCount()).isEqualTo(501);
-		assertThat(result.sentCount()).isZero();
+		assertThat(result.aborted()).isTrue();
+		assertThat(result.abortCause()).isSameAs(failure);
+		assertThat(result.outcomes()).hasSize(501)
+				.allSatisfy(outcome -> assertThat(outcome.is(NotificationSendStatus.ABORTED)).isTrue());
+		assertThat(result.outcomes()).extracting(NotificationSendOutcome::fid).containsExactlyElementsOf(fids);
+	}
+
+	@Test
+	void 두_번째_배치가_실패하면_앞_배치의_결과는_유지한다() throws Exception {
+		FirebaseMessaging messaging = mock(FirebaseMessaging.class);
+		FirebaseMessagingException failure = mock(FirebaseMessagingException.class);
+		SendResponse unregistered = failure(MessagingErrorCode.UNREGISTERED);
+		given(messaging.sendEach(anyList())).willAnswer(invocation -> {
+			List<?> messages = invocation.getArgument(0);
+			BatchResponse batch = mock(BatchResponse.class);
+			given(batch.getResponses()).willReturn(java.util.Collections.nCopies(messages.size(), unregistered));
+			return batch;
+		}).willThrow(failure);
+		List<String> fids = java.util.stream.IntStream.range(0, 1001).mapToObj(index -> "fid-" + index).toList();
+
+		var result = sender(messaging).send(messages(fids));
+
+		verify(messaging, times(2)).sendEach(anyList());
+		assertThat(result.invalidFids()).containsExactlyElementsOf(fids.subList(0, 500));
+		assertThat(result.abortCause()).isSameAs(failure);
+		assertThat(result.outcomes().subList(500, 1001)).extracting(NotificationSendOutcome::fid)
+				.containsExactlyElementsOf(fids.subList(500, 1001));
 	}
 
 	@Test
 	void 개별_발송이_실패해도_다음_배치를_보낸다() throws Exception {
 		FirebaseMessaging messaging = mock(FirebaseMessaging.class);
-		BatchResponse batch = mock(BatchResponse.class);
 		SendResponse failed = failure(MessagingErrorCode.UNAVAILABLE);
-		given(batch.getResponses()).willReturn(List.of(failed));
-		given(messaging.sendEach(anyList())).willReturn(batch);
+		given(messaging.sendEach(anyList())).willAnswer(invocation -> {
+			List<?> messages = invocation.getArgument(0);
+			BatchResponse batch = mock(BatchResponse.class);
+			given(batch.getResponses()).willReturn(java.util.Collections.nCopies(messages.size(), failed));
+			return batch;
+		});
 		List<String> fids = java.util.stream.IntStream.range(0, 501).mapToObj(index -> "fid-" + index).toList();
 
 		var result = sender(messaging).send(messages(fids));
 
 		verify(messaging, times(2)).sendEach(anyList());
 		assertThat(result.invalidFids()).isEmpty();
-		assertThat(result.failedCount()).isEqualTo(2);
+		assertThat(result.aborted()).isFalse();
+		assertThat(result.allFailed()).isTrue();
 	}
 
 	@Test
 	void 기존_앱이_읽는_시각과_딥링크를_플랫폼_설정과_함께_보낸다() throws Exception {
 		FirebaseMessaging messaging = mock(FirebaseMessaging.class);
 		BatchResponse batch = mock(BatchResponse.class);
-		given(batch.getResponses()).willReturn(List.of());
+		given(batch.getResponses()).willReturn(List.of(success()));
 		given(messaging.sendEach(anyList())).willReturn(batch);
 		sender(messaging).send(messages(List.of("fid")));
 
@@ -112,7 +143,7 @@ class FirebaseNotificationSenderTest {
 	void 이벤트_알림은_종류를_데이터로_보내고_없는_값은_넣지_않는다() throws Exception {
 		FirebaseMessaging messaging = mock(FirebaseMessaging.class);
 		BatchResponse batch = mock(BatchResponse.class);
-		given(batch.getResponses()).willReturn(List.of());
+		given(batch.getResponses()).willReturn(List.of(success()));
 		given(messaging.sendEach(anyList())).willReturn(batch);
 		var notification = new PushNotification("fid", "제목", "본문", NotificationEventType.COMMENT, null, new NotificationDeepLink(null), "key");
 		sender(messaging).send(List.of(notification));
@@ -130,7 +161,7 @@ class FirebaseNotificationSenderTest {
 	void 같은_예약의_중복_알림이_기기에서_교체되도록_묶음_키를_보낸다() throws Exception {
 		FirebaseMessaging messaging = mock(FirebaseMessaging.class);
 		BatchResponse batch = mock(BatchResponse.class);
-		given(batch.getResponses()).willReturn(List.of());
+		given(batch.getResponses()).willReturn(List.of(success()));
 		given(messaging.sendEach(anyList())).willReturn(batch);
 		sender(messaging).send(messages(List.of("fid")));
 
@@ -171,6 +202,10 @@ class FirebaseNotificationSenderTest {
 	private PushNotification message(String fid) {
 		return new PushNotification(fid, "저녁 훈련 시간이에요", "오늘의 훈련을 마무리해 볼까요?", null, 17,
 				new NotificationDeepLink("meongcoach://training-curriculum"), "2026-10-31T08:00:00Z:17");
+	}
+
+	private SendResponse success() {
+		return mock(SendResponse.class);
 	}
 
 	private SendResponse failure(MessagingErrorCode code) {

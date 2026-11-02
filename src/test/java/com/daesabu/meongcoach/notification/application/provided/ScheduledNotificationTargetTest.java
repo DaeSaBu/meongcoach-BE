@@ -8,8 +8,9 @@ import static org.mockito.BDDMockito.given;
 import com.daesabu.meongcoach.notification.application.provided.dto.ScheduledNotificationDispatchRequest;
 import com.daesabu.meongcoach.notification.application.required.DeviceInstallationRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationScheduleRepository;
+import com.daesabu.meongcoach.notification.application.required.NotificationSendOutcome;
+import com.daesabu.meongcoach.notification.application.required.NotificationSendResult;
 import com.daesabu.meongcoach.notification.application.required.NotificationSender;
-import com.daesabu.meongcoach.notification.application.required.NotificationSender.NotificationSendResult;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallation;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallationRegisterCommand;
 import com.daesabu.meongcoach.notification.domain.DevicePlatform;
@@ -161,7 +162,10 @@ class ScheduledNotificationTargetTest {
 		given(sender.send(anyList())).willAnswer(invocation -> {
 			List<PushNotification> messages = invocation.getArgument(0);
 			messages.forEach(message -> fids.add(message.fid()));
-			return new NotificationSendResult(messages.size(), 0, List.of(), null);
+			List<NotificationSendOutcome> outcomes = messages.stream()
+					.map(message -> NotificationSendOutcome.sent(message.fid()))
+					.toList();
+			return new NotificationSendResult(outcomes);
 		});
 		dispatcher.dispatch(new ScheduledNotificationDispatchRequest(TODAY, hour, 0));
 		return fids;

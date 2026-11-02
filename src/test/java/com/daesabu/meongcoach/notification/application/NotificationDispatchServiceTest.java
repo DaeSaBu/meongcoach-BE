@@ -14,8 +14,9 @@ import com.daesabu.meongcoach.notification.application.provided.dto.ScheduledNot
 import com.daesabu.meongcoach.notification.application.required.DeviceInstallationRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationEventSettingRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationScheduleRepository;
+import com.daesabu.meongcoach.notification.application.required.NotificationSendOutcome;
+import com.daesabu.meongcoach.notification.application.required.NotificationSendResult;
 import com.daesabu.meongcoach.notification.application.required.NotificationSender;
-import com.daesabu.meongcoach.notification.application.required.NotificationSender.NotificationSendResult;
 import com.daesabu.meongcoach.notification.application.required.ScheduledNotificationDispatchRepository;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallation;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallationRegisterCommand;
@@ -107,7 +108,10 @@ class NotificationDispatchServiceTest {
 	void 배치_호출이_실패하면_원인과_함께_던지고_완료_이력을_남기지_않는다() {
 		prepareTargets(1001);
 		var cause = new IllegalStateException("FCM unavailable");
-		NotificationSendResult result = new NotificationSendResult(499, 500, List.of("fid-1"), cause);
+		NotificationSendResult result = new NotificationSendResult(List.of(
+				NotificationSendOutcome.sent("fid-0"),
+				NotificationSendOutcome.invalid("fid-1", cause),
+				NotificationSendOutcome.aborted("fid-500", cause)));
 		given(sender.send(anyList())).willReturn(result);
 
 		assertThatThrownBy(() -> service.dispatch(request)).isInstanceOf(NotificationDeliveryException.class).hasCause(cause);
@@ -128,7 +132,12 @@ class NotificationDispatchServiceTest {
 	}
 
 	private NotificationSendResult results(int sent, int failed, List<String> invalidFids) {
-		return new NotificationSendResult(sent, failed, invalidFids, null);
+		var cause = new IllegalStateException("UNAVAILABLE");
+		List<NotificationSendOutcome> outcomes = new java.util.ArrayList<>();
+		IntStream.range(0, sent).forEach(index -> outcomes.add(NotificationSendOutcome.sent("sent-" + index)));
+		IntStream.range(0, failed).forEach(index -> outcomes.add(NotificationSendOutcome.failed("failed-" + index, cause)));
+		invalidFids.forEach(fid -> outcomes.add(NotificationSendOutcome.invalid(fid, cause)));
+		return new NotificationSendResult(outcomes);
 	}
 
 }

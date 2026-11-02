@@ -9,8 +9,8 @@ import com.daesabu.meongcoach.notification.application.provided.dto.ScheduledNot
 import com.daesabu.meongcoach.notification.application.required.DeviceInstallationRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationEventSettingRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationScheduleRepository;
+import com.daesabu.meongcoach.notification.application.required.NotificationSendResult;
 import com.daesabu.meongcoach.notification.application.required.NotificationSender;
-import com.daesabu.meongcoach.notification.application.required.NotificationSender.NotificationSendResult;
 import com.daesabu.meongcoach.notification.application.required.ScheduledNotificationDispatchRepository;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallation;
 import com.daesabu.meongcoach.notification.domain.NotificationDeepLink;
@@ -19,6 +19,7 @@ import com.daesabu.meongcoach.notification.domain.NotificationTarget;
 import com.daesabu.meongcoach.notification.domain.PushNotification;
 import com.daesabu.meongcoach.notification.domain.PushNotificationFactory;
 import com.daesabu.meongcoach.notification.domain.ScheduledNotificationDispatch;
+import com.daesabu.meongcoach.notification.domain.exception.NotificationDeliveryException;
 import com.daesabu.meongcoach.user.application.provided.UserFinder;
 import java.time.Clock;
 import java.time.Instant;
@@ -98,7 +99,12 @@ public class NotificationDispatchService implements ScheduledNotificationDispatc
 		}
 		NotificationSendResult result = sender.send(notifications);
 		deleteInvalidInstallations(result.invalidFids());
-		result.requireDelivered();
+		if (result.aborted()) {
+			throw new NotificationDeliveryException(result.abortCause());
+		}
+		if (result.allFailed()) {
+			throw new NotificationDeliveryException();
+		}
 	}
 
 	private void deleteInvalidInstallations(List<String> invalidFids) {

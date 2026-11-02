@@ -1,5 +1,7 @@
 package com.daesabu.meongcoach.notification.adapter.integration;
 
+import com.daesabu.meongcoach.notification.application.required.NotificationSendOutcome;
+import com.daesabu.meongcoach.notification.application.required.NotificationSendResult;
 import com.daesabu.meongcoach.notification.application.required.NotificationSender;
 import com.daesabu.meongcoach.notification.domain.PushNotification;
 import com.google.firebase.messaging.AndroidConfig;
@@ -29,49 +31,46 @@ public class FirebaseNotificationSender implements NotificationSender {
 	@Override
 	public NotificationSendResult send(List<PushNotification> notifications) {
 		List<List<PushNotification>> batches = notifications.stream().gather(Gatherers.windowFixed(BATCH_SIZE)).toList();
-		List<NotificationSendResult> results = new ArrayList<>();
-		int remaining = notifications.size();
+		List<NotificationSendOutcome> outcomes = new ArrayList<>();
 		for (List<PushNotification> batch : batches) {
-			NotificationSendResult result = sendBatch(batch);
-			remaining -= batch.size();
-			results.add(result);
-			if (result.failure() != null) {
-				results.add(new NotificationSendResult(0, remaining, List.of(), null));
+			try {
+				outcomes.addAll(sendBatch(batch));
+			} catch (FirebaseMessagingException exception) {
+				List<PushNotification> unsent = notifications.subList(outcomes.size(), notifications.size());
+				outcomes.addAll(abort(unsent, exception));
 				break;
 			}
 		}
-		return NotificationSendResult.merge(results);
+		return new NotificationSendResult(outcomes);
 	}
 
-	private NotificationSendResult sendBatch(List<PushNotification> batch) {
+	private List<NotificationSendOutcome> sendBatch(List<PushNotification> batch) throws FirebaseMessagingException {
 		List<Message> firebaseMessages = batch.stream().map(this::toMessage).toList();
 		FirebaseMessaging client = messaging.getObject();
-		try {
-			List<SendResponse> responses = client.sendEach(firebaseMessages).getResponses();
-			return toResult(batch, responses);
-		} catch (FirebaseMessagingException exception) {
-			int failedCount = batch.size();
-			return new NotificationSendResult(0, failedCount, List.of(), exception);
+		List<SendResponse> responses = client.sendEach(firebaseMessages).getResponses();
+		List<NotificationSendOutcome> outcomes = new ArrayList<>();
+		for (int index = 0; index < batch.size(); index++) {
+			outcomes.add(toOutcome(batch.get(index), responses.get(index)));
 		}
+		return outcomes;
 	}
 
-	private NotificationSendResult toResult(List<PushNotification> batch, List<SendResponse> responses) {
-		int sentCount = 0;
-		int failedCount = 0;
-		List<String> invalidFids = new ArrayList<>();
-		for (int index = 0; index < responses.size(); index++) {
-			FirebaseMessagingException exception = responses.get(index).getException();
-			if (exception == null) {
-				sentCount++;
-				continue;
-			}
-			if (isInvalid(exception.getMessagingErrorCode())) {
-				invalidFids.add(batch.get(index).fid());
-				continue;
-			}
-			failedCount++;
+	private NotificationSendOutcome toOutcome(PushNotification notification, SendResponse response) {
+		String fid = notification.fid();
+		FirebaseMessagingException exception = response.getException();
+		if (exception == null) {
+			return NotificationSendOutcome.sent(fid);
 		}
-		return new NotificationSendResult(sentCount, failedCount, invalidFids, null);
+		if (isInvalid(exception.getMessagingErrorCode())) {
+			return NotificationSendOutcome.invalid(fid, exception);
+		}
+		return NotificationSendOutcome.failed(fid, exception);
+	}
+
+	private List<NotificationSendOutcome> abort(List<PushNotification> unsent, FirebaseMessagingException cause) {
+		return unsent.stream()
+				.map(notification -> NotificationSendOutcome.aborted(notification.fid(), cause))
+				.toList();
 	}
 
 	private boolean isInvalid(MessagingErrorCode code) {
