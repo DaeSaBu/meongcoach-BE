@@ -10,7 +10,6 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.List;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -40,11 +39,15 @@ public class ScheduledNotificationDispatch extends BaseEntity {
 		return slot.scheduledAt();
 	}
 
+	public String lockKey() {
+		return slot.scheduledAt().toString();
+	}
+
 	public NotificationTime time() {
 		return slot.time();
 	}
 
-	public List<PushNotification> toPushNotifications(List<String> fids) {
-		return slot.toPushNotifications(fids);
+	public PushNotification toPushNotification(String fid) {
+		return slot.toPushNotification(fid);
 	}
 }
