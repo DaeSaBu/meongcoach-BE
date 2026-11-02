@@ -49,6 +49,14 @@ class PushNotificationFactoryTest {
 	}
 
 	@Test
+	void 이벤트_알림은_한_발송의_묶음_키를_공유한다() {
+		List<PushNotification> notifications = PushNotificationFactory.event(
+				List.of("fid-1", "fid-2"), NotificationEventType.COMMENT, "제목", "본문", new NotificationDeepLink(null));
+
+		assertThat(notifications).extracting(PushNotification::collapseKey).containsOnly(notifications.getFirst().collapseKey());
+	}
+
+	@Test
 	void 딥링크가_없으면_종류만_넣는다() {
 		PushNotification notification = PushNotificationFactory.event(
 				List.of("fid"), NotificationEventType.COMMENT, "제목", "본문", new NotificationDeepLink(null)).getFirst();
