@@ -18,6 +18,7 @@ import com.daesabu.meongcoach.notification.domain.DeviceInstallationRegisterComm
 import com.daesabu.meongcoach.notification.domain.DevicePlatform;
 import com.daesabu.meongcoach.notification.domain.NotificationDelivery;
 import com.daesabu.meongcoach.notification.domain.NotificationScheduleFixture;
+import com.daesabu.meongcoach.notification.domain.PushNotification;
 import com.daesabu.meongcoach.notification.domain.exception.InvalidNotificationDispatchTimeException;
 import com.daesabu.meongcoach.notification.domain.exception.InvalidNotificationHourException;
 import com.daesabu.meongcoach.notification.domain.exception.NotificationDeliveryException;
@@ -32,6 +33,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
@@ -70,6 +72,22 @@ class ScheduledNotificationDispatcherTest {
 		schedules.deleteAll(schedules.findAllByUserId(userId));
 		users.deleteById(userId);
 		dispatches.findByScheduledAt(SCHEDULED_AT).ifPresent(dispatches::delete);
+	}
+
+	@Test
+	void 대상_FID_전체를_시각별_문구로_만들어_한_번에_넘긴다() {
+		String second = UUID.randomUUID().toString();
+		fids.save(DeviceInstallation.register(userId, new DeviceInstallationRegisterCommand(second, DevicePlatform.IOS), Instant.now()));
+		NotificationDelivery delivery = delivered();
+		given(sender.send(anyList())).willReturn(delivery);
+
+		assertThat(dispatcher.dispatch(request).fids()).isEqualTo(2);
+
+		ArgumentCaptor<List<PushNotification>> notifications = ArgumentCaptor.captor();
+		verify(sender, times(1)).send(notifications.capture());
+		assertThat(notifications.getValue()).extracting(PushNotification::fid).containsExactlyInAnyOrder(fid, second);
+		assertThat(notifications.getValue()).extracting(PushNotification::title).containsOnly("저녁 훈련 시간이에요");
+		assertThat(notifications.getValue()).extracting(PushNotification::collapseKey).containsOnly("2026-10-31T08:00:00Z");
 	}
 
 	@Test
