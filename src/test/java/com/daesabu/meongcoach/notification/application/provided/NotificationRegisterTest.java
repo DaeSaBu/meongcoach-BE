@@ -7,14 +7,14 @@ import static org.assertj.core.api.Assertions.tuple;
 
 import com.daesabu.meongcoach.notification.application.provided.dto.DeviceInstallationRegisterRequest;
 import com.daesabu.meongcoach.notification.application.provided.dto.DeviceInstallationUnregisterRequest;
-import com.daesabu.meongcoach.notification.application.provided.dto.NotificationPreferenceUpdateRequest;
+import com.daesabu.meongcoach.notification.application.provided.dto.NotificationScheduleUpdateRequest;
 import com.daesabu.meongcoach.notification.application.required.DeviceInstallationRepository;
-import com.daesabu.meongcoach.notification.application.required.NotificationPreferenceRepository;
+import com.daesabu.meongcoach.notification.application.required.NotificationScheduleRepository;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallation;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallationRegisterCommand;
 import com.daesabu.meongcoach.notification.domain.DevicePlatform;
-import com.daesabu.meongcoach.notification.domain.NotificationPreference;
-import com.daesabu.meongcoach.notification.domain.NotificationPreferenceFixture;
+import com.daesabu.meongcoach.notification.domain.NotificationSchedule;
+import com.daesabu.meongcoach.notification.domain.NotificationScheduleFixture;
 import com.daesabu.meongcoach.notification.domain.exception.InvalidDevicePlatformException;
 import com.daesabu.meongcoach.notification.domain.exception.NotAllowedNotificationHourException;
 import com.daesabu.meongcoach.support.ApplicationTest;
@@ -42,18 +42,23 @@ class NotificationRegisterTest {
 	private DeviceInstallationRepository deviceInstallationRepository;
 
 	@Autowired
-	private NotificationPreferenceRepository notificationPreferenceRepository;
+	private NotificationScheduleRepository notificationScheduleRepository;
 
-	private static final NotificationPreferenceUpdateRequest ON = new NotificationPreferenceUpdateRequest(true);
-	private static final NotificationPreferenceUpdateRequest OFF = new NotificationPreferenceUpdateRequest(false);
+	private static NotificationScheduleUpdateRequest on(int hour) {
+		return new NotificationScheduleUpdateRequest(hour, 0, true);
+	}
+
+	private static NotificationScheduleUpdateRequest off(int hour) {
+		return new NotificationScheduleUpdateRequest(hour, 0, false);
+	}
 
 	private DeviceInstallation saveInstallation(Long userId, String fid) {
 		return deviceInstallationRepository.save(
 				DeviceInstallation.register(userId, new DeviceInstallationRegisterCommand(fid, DevicePlatform.ANDROID), LAST_WEEK));
 	}
 
-	private void savePreference(Long userId, int hour, boolean enabled) {
-		notificationPreferenceRepository.save(NotificationPreferenceFixture.create(userId, hour, enabled));
+	private void saveSchedule(Long userId, int hour, boolean enabled) {
+		notificationScheduleRepository.save(NotificationScheduleFixture.create(userId, hour, enabled));
 	}
 
 	@Test
@@ -73,8 +78,8 @@ class NotificationRegisterTest {
 	void FID을_처음_등록하면_기본_알림_설정_세_행을_만든다() {
 		notificationRegister.registerDeviceInstallation(USER_ID, IOS_TOKEN);
 
-		assertThat(notificationPreferenceRepository.findAllByUserId(USER_ID))
-				.extracting(NotificationPreference::getHour, NotificationPreference::isEnabled)
+		assertThat(notificationScheduleRepository.findAllByUserId(USER_ID))
+				.extracting(NotificationSchedule::getHour, NotificationSchedule::isEnabled)
 				.containsExactlyInAnyOrder(
 						tuple(8, false),
 						tuple(11, false),
@@ -84,24 +89,24 @@ class NotificationRegisterTest {
 
 	@Test
 	void 이미_알림_설정이_있으면_FID을_등록해도_설정을_바꾸지_않는다() {
-		savePreference(USER_ID, 17, false);
+		saveSchedule(USER_ID, 17, false);
 
 		notificationRegister.registerDeviceInstallation(USER_ID, IOS_TOKEN);
 
-		assertThat(notificationPreferenceRepository.findAllByUserId(USER_ID))
-				.extracting(NotificationPreference::getHour, NotificationPreference::isEnabled)
+		assertThat(notificationScheduleRepository.findAllByUserId(USER_ID))
+				.extracting(NotificationSchedule::getHour, NotificationSchedule::isEnabled)
 				.containsExactlyInAnyOrder(tuple(8, false), tuple(11, false), tuple(17, false));
 	}
 
 	@Test
 	void 알림_설정을_먼저_변경해도_FID_등록_시_누락된_시각의_기본값을_만든다() {
-		notificationRegister.updatePreference(USER_ID, 8, ON);
+		notificationRegister.updateSchedule(USER_ID, on(8));
 
 		notificationRegister.registerDeviceInstallation(USER_ID, IOS_TOKEN);
 		notificationRegister.registerDeviceInstallation(USER_ID, IOS_TOKEN);
 
-		assertThat(notificationPreferenceRepository.findAllByUserId(USER_ID))
-				.extracting(NotificationPreference::getHour, NotificationPreference::isEnabled)
+		assertThat(notificationScheduleRepository.findAllByUserId(USER_ID))
+				.extracting(NotificationSchedule::getHour, NotificationSchedule::isEnabled)
 				.containsExactlyInAnyOrder(tuple(8, true), tuple(11, false), tuple(17, true));
 	}
 
@@ -168,60 +173,68 @@ class NotificationRegisterTest {
 
 	@Test
 	void 행이_없는_시각을_켜면_행을_새로_만든다() {
-		notificationRegister.updatePreference(USER_ID, 8, ON);
+		notificationRegister.updateSchedule(USER_ID, on(8));
 
-		assertThat(notificationPreferenceRepository.findAllByUserId(USER_ID))
-				.extracting(NotificationPreference::getHour, NotificationPreference::isEnabled)
+		assertThat(notificationScheduleRepository.findAllByUserId(USER_ID))
+				.extracting(NotificationSchedule::getHour, NotificationSchedule::isEnabled)
 				.containsExactly(tuple(8, true));
 	}
 
 	@Test
 	void 행이_있는_시각을_끄면_행을_새로_만들지_않고_값만_바꾼다() {
-		savePreference(USER_ID, 17, true);
-		Long id = notificationPreferenceRepository.findAllByUserId(USER_ID).getFirst().getId();
+		saveSchedule(USER_ID, 17, true);
+		Long id = notificationScheduleRepository.findAllByUserId(USER_ID).getFirst().getId();
 
-		notificationRegister.updatePreference(USER_ID, 17, OFF);
+		notificationRegister.updateSchedule(USER_ID, off(17));
 
-		assertThat(notificationPreferenceRepository.findAllByUserId(USER_ID))
-				.extracting(NotificationPreference::getId, NotificationPreference::getHour,
-						NotificationPreference::isEnabled)
+		assertThat(notificationScheduleRepository.findAllByUserId(USER_ID))
+				.extracting(NotificationSchedule::getId, NotificationSchedule::getHour,
+						NotificationSchedule::isEnabled)
 				.containsExactly(tuple(id, 17, false));
 	}
 
 	@Test
 	void 다른_시각과_다른_회원의_행은_바꾸지_않는다() {
-		savePreference(USER_ID, 8, false);
-		savePreference(OTHER_USER_ID, 11, false);
+		saveSchedule(USER_ID, 8, false);
+		saveSchedule(OTHER_USER_ID, 11, false);
 
-		notificationRegister.updatePreference(USER_ID, 11, ON);
+		notificationRegister.updateSchedule(USER_ID, on(11));
 
-		assertThat(notificationPreferenceRepository.findAllByUserId(USER_ID))
-				.extracting(NotificationPreference::getHour, NotificationPreference::isEnabled)
+		assertThat(notificationScheduleRepository.findAllByUserId(USER_ID))
+				.extracting(NotificationSchedule::getHour, NotificationSchedule::isEnabled)
 				.containsExactlyInAnyOrder(tuple(8, false), tuple(11, true));
-		assertThat(notificationPreferenceRepository.findAllByUserId(OTHER_USER_ID))
-				.extracting(NotificationPreference::getHour, NotificationPreference::isEnabled)
+		assertThat(notificationScheduleRepository.findAllByUserId(OTHER_USER_ID))
+				.extracting(NotificationSchedule::getHour, NotificationSchedule::isEnabled)
 				.containsExactly(tuple(11, false));
 	}
 
 	@ParameterizedTest
-	@ValueSource(ints = {-1, 9, 24})
+	@ValueSource(ints = {9, 12})
 	void 허용_시각이_아니면_NotAllowedNotificationHourException을_던진다(int hour) {
-		assertThatThrownBy(() -> notificationRegister.updatePreference(USER_ID, hour, ON))
+		assertThatThrownBy(() -> notificationRegister.updateSchedule(USER_ID, on(hour)))
 				.isInstanceOf(NotAllowedNotificationHourException.class);
-		assertThat(notificationPreferenceRepository.findAllByUserId(USER_ID)).isEmpty();
+		assertThat(notificationScheduleRepository.findAllByUserId(USER_ID)).isEmpty();
+	}
+
+	@Test
+	void 허용_시각이어도_분이_다르면_NotAllowedNotificationHourException을_던진다() {
+		var request = new NotificationScheduleUpdateRequest(8, 30, true);
+
+		assertThatThrownBy(() -> notificationRegister.updateSchedule(USER_ID, request))
+				.isInstanceOf(NotAllowedNotificationHourException.class);
 	}
 
 	@Test
 	void 회원의_FID과_알림_설정을_모두_지우고_다른_회원은_건드리지_않는다() {
 		saveInstallation(USER_ID, TOKEN);
 		saveInstallation(OTHER_USER_ID, OTHER_TOKEN);
-		savePreference(USER_ID, 17, true);
-		savePreference(OTHER_USER_ID, 17, true);
+		saveSchedule(USER_ID, 17, true);
+		saveSchedule(OTHER_USER_ID, 17, true);
 
 		notificationRegister.deleteAllByUserId(USER_ID);
 
 		assertThat(deviceInstallationRepository.findAll()).extracting(DeviceInstallation::getUserId).containsExactly(OTHER_USER_ID);
-		assertThat(notificationPreferenceRepository.findAllByUserId(USER_ID)).isEmpty();
-		assertThat(notificationPreferenceRepository.findAllByUserId(OTHER_USER_ID)).hasSize(1);
+		assertThat(notificationScheduleRepository.findAllByUserId(USER_ID)).isEmpty();
+		assertThat(notificationScheduleRepository.findAllByUserId(OTHER_USER_ID)).hasSize(1);
 	}
 }

@@ -10,18 +10,21 @@ import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuild
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
-import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
-import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.daesabu.meongcoach.notification.application.provided.NotificationPreferenceFinder;
-import com.daesabu.meongcoach.notification.application.provided.NotificationPreferenceResult;
+import com.daesabu.meongcoach.notification.application.provided.NotificationEventSettingFinder;
+import com.daesabu.meongcoach.notification.application.provided.NotificationEventSettingResult;
 import com.daesabu.meongcoach.notification.application.provided.NotificationRegister;
+import com.daesabu.meongcoach.notification.application.provided.NotificationScheduleFinder;
+import com.daesabu.meongcoach.notification.application.provided.NotificationScheduleResult;
 import com.daesabu.meongcoach.notification.application.provided.dto.DeviceInstallationRegisterRequest;
 import com.daesabu.meongcoach.notification.application.provided.dto.DeviceInstallationUnregisterRequest;
-import com.daesabu.meongcoach.notification.application.provided.dto.NotificationPreferenceUpdateRequest;
+import com.daesabu.meongcoach.notification.application.provided.dto.NotificationEventSettingUpdateRequest;
+import com.daesabu.meongcoach.notification.application.provided.dto.NotificationScheduleUpdateRequest;
+import com.daesabu.meongcoach.notification.domain.NotificationEventType;
 import com.daesabu.meongcoach.notification.domain.exception.InvalidDevicePlatformException;
+import com.daesabu.meongcoach.notification.domain.exception.InvalidNotificationEventTypeException;
 import com.daesabu.meongcoach.notification.domain.exception.NotAllowedNotificationHourException;
 import java.security.Principal;
 import java.util.List;
@@ -40,7 +43,7 @@ import org.springframework.test.web.servlet.MockMvc;
 class NotificationControllerTest {
 
 	private static final String TOKENS_PATH = "/api/notifications/installations";
-	private static final String PREFERENCES_PATH = "/api/notifications/preferences";
+	private static final String SCHEDULES_PATH = "/api/notifications/schedules";
 
 	private static final Principal CURRENT_USER = () -> "42";
 
@@ -48,8 +51,8 @@ class NotificationControllerTest {
 			{"fid": "fcm-registration-fid", "platform": "IOS"}
 			""";
 
-	private static final String PREFERENCE_UPDATE_BODY = """
-			{"enabled": true}
+	private static final String SCHEDULE_UPDATE_BODY = """
+			{"hour": 17, "minute": 0, "enabled": true}
 			""";
 
 	private static final FieldDescriptor[] ERROR_FIELDS = {
@@ -68,7 +71,10 @@ class NotificationControllerTest {
 	private NotificationRegister notificationRegister;
 
 	@MockitoBean
-	private NotificationPreferenceFinder notificationPreferenceFinder;
+	private NotificationScheduleFinder notificationScheduleFinder;
+
+	@MockitoBean
+	private NotificationEventSettingFinder notificationEventSettingFinder;
 
 	@Test
 	void 기기_FID을_등록하면_204를_반환한다() throws Exception {
@@ -134,67 +140,70 @@ class NotificationControllerTest {
 
 	@Test
 	void 알림_설정을_시각별로_응답한다() throws Exception {
-		given(notificationPreferenceFinder.findPreferences(42L)).willReturn(List.of(
-				new NotificationPreferenceResult(8, false),
-				new NotificationPreferenceResult(11, false),
-				new NotificationPreferenceResult(17, true)
+		given(notificationScheduleFinder.findSchedules(42L)).willReturn(List.of(
+				new NotificationScheduleResult(8, 0, false),
+				new NotificationScheduleResult(11, 0, false),
+				new NotificationScheduleResult(17, 0, true)
 		));
 
-		mockMvc.perform(get(PREFERENCES_PATH)
+		mockMvc.perform(get(SCHEDULES_PATH)
 						.principal(CURRENT_USER)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-fid"))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.hours.length()").value(3))
-				.andExpect(jsonPath("$.hours[0].hour").value(8))
-				.andExpect(jsonPath("$.hours[0].enabled").value(false))
-				.andExpect(jsonPath("$.hours[2].hour").value(17))
-				.andExpect(jsonPath("$.hours[2].enabled").value(true))
-				.andDo(document("notification/preferences",
+				.andExpect(jsonPath("$.schedules.length()").value(3))
+				.andExpect(jsonPath("$.schedules[0].hour").value(8))
+				.andExpect(jsonPath("$.schedules[0].minute").value(0))
+				.andExpect(jsonPath("$.schedules[0].enabled").value(false))
+				.andExpect(jsonPath("$.schedules[2].hour").value(17))
+				.andExpect(jsonPath("$.schedules[2].enabled").value(true))
+				.andDo(document("notification/schedules",
 						responseFields(
-								fieldWithPath("hours").description("시각별 알림 설정. 8·11·17시 순서"),
-								fieldWithPath("hours[].hour").description("알림 시각(Asia/Seoul 기준 0~23)"),
-								fieldWithPath("hours[].enabled").description("해당 시각 알림 수신 여부")
+								fieldWithPath("schedules").description("시각별 알림 설정. 시·분 오름차순"),
+								fieldWithPath("schedules[].hour").description("알림 시(Asia/Seoul 기준 0~23)"),
+								fieldWithPath("schedules[].minute").description("알림 분(0~59)"),
+								fieldWithPath("schedules[].enabled").description("해당 시각 알림 수신 여부")
 						)
 				));
 	}
 
 	@Test
 	void 시각별_알림_설정을_바꾸면_204를_반환한다() throws Exception {
-		mockMvc.perform(put(PREFERENCES_PATH + "/{hour}", 17)
+		mockMvc.perform(put(SCHEDULES_PATH)
 						.principal(CURRENT_USER)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-fid")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content(PREFERENCE_UPDATE_BODY))
+						.content(SCHEDULE_UPDATE_BODY))
 				.andExpect(status().isNoContent())
-				.andDo(document("notification/preference-update",
-						pathParameters(parameterWithName("hour").description("알림 시각(Asia/Seoul 기준). 8·11·17만 허용")),
-						requestFields(fieldWithPath("enabled").description("해당 시각 알림 수신 여부"))
+				.andDo(document("notification/schedule-update",
+						requestFields(fieldWithPath("hour").description("알림 시(Asia/Seoul 기준)"),
+								fieldWithPath("minute").description("알림 분. 지금은 8:00·11:00·17:00만 허용"),
+								fieldWithPath("enabled").description("해당 시각 알림 수신 여부"))
 				));
 
-		then(notificationRegister).should().updatePreference(42L, 17, new NotificationPreferenceUpdateRequest(true));
+		then(notificationRegister).should().updateSchedule(42L, new NotificationScheduleUpdateRequest(17, 0, true));
 	}
 
 	@Test
 	void 허용하지_않는_시각이면_400과_에러_코드를_반환한다() throws Exception {
-		willThrow(new NotAllowedNotificationHourException(9)).given(notificationRegister)
-				.updatePreference(42L, 9, new NotificationPreferenceUpdateRequest(true));
+		willThrow(new NotAllowedNotificationHourException(17, 0)).given(notificationRegister)
+				.updateSchedule(42L, new NotificationScheduleUpdateRequest(17, 0, true));
 
-		mockMvc.perform(put(PREFERENCES_PATH + "/{hour}", 9)
+		mockMvc.perform(put(SCHEDULES_PATH)
 						.principal(CURRENT_USER)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-fid")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content(PREFERENCE_UPDATE_BODY))
+						.content(SCHEDULE_UPDATE_BODY))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.code").value("NOTIFICATION_HOUR_NOT_ALLOWED"))
-				.andDo(document("notification/preference-update-error", responseFields(ERROR_FIELDS)));
+				.andDo(document("notification/schedule-update-error", responseFields(ERROR_FIELDS)));
 	}
 
 	@Test
 	void enabled가_없으면_검증에_실패한다() throws Exception {
-		mockMvc.perform(put(PREFERENCES_PATH + "/{hour}", 17)
+		mockMvc.perform(put(SCHEDULES_PATH)
 						.principal(CURRENT_USER)
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{}"))
+						.content("{\"hour\": 17, \"minute\": 0}"))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
 				.andExpect(jsonPath("$.errors[0].field").value("enabled"));
@@ -203,11 +212,64 @@ class NotificationControllerTest {
 	}
 
 	@Test
+	void 이벤트_알림_설정을_종류별로_응답한다() throws Exception {
+		given(notificationEventSettingFinder.findEventSettings(42L)).willReturn(List.of(
+				new NotificationEventSettingResult(NotificationEventType.AI_ANALYSIS, true),
+				new NotificationEventSettingResult(NotificationEventType.COMMENT, false)
+		));
+
+		mockMvc.perform(get("/api/notifications/event-settings")
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-fid"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.settings[0].type").value("AI_ANALYSIS"))
+				.andExpect(jsonPath("$.settings[1].enabled").value(false))
+				.andDo(document("notification/event-settings",
+						responseFields(
+								fieldWithPath("settings").description("이벤트 알림 종류별 설정"),
+								fieldWithPath("settings[].type").description("알림 종류. AI_ANALYSIS·OPERATOR_MESSAGE·COMMENT"),
+								fieldWithPath("settings[].enabled").description("해당 종류 수신 여부")
+						)
+				));
+	}
+
+	@Test
+	void 이벤트_알림_설정을_바꾸면_204를_반환한다() throws Exception {
+		mockMvc.perform(put("/api/notifications/event-settings")
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-fid")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"type\": \"COMMENT\", \"enabled\": false}"))
+				.andExpect(status().isNoContent())
+				.andDo(document("notification/event-setting-update",
+						requestFields(fieldWithPath("type").description("알림 종류. AI_ANALYSIS·OPERATOR_MESSAGE·COMMENT"),
+								fieldWithPath("enabled").description("해당 종류 수신 여부"))
+				));
+
+		then(notificationRegister).should().updateEventSetting(42L, new NotificationEventSettingUpdateRequest("COMMENT", false));
+	}
+
+	@Test
+	void 없는_이벤트_종류면_400과_에러_코드를_반환한다() throws Exception {
+		willThrow(new InvalidNotificationEventTypeException("MARKETING")).given(notificationRegister)
+				.updateEventSetting(42L, new NotificationEventSettingUpdateRequest("MARKETING", true));
+
+		mockMvc.perform(put("/api/notifications/event-settings")
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-fid")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"type\": \"MARKETING\", \"enabled\": true}"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("NOTIFICATION_EVENT_TYPE_INVALID"))
+				.andDo(document("notification/event-setting-update-error", responseFields(ERROR_FIELDS)));
+	}
+
+	@Test
 	void 인증_정보가_없으면_401을_반환한다() throws Exception {
-		mockMvc.perform(get(PREFERENCES_PATH))
+		mockMvc.perform(get(SCHEDULES_PATH))
 				.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
 
-		then(notificationPreferenceFinder).shouldHaveNoInteractions();
+		then(notificationScheduleFinder).shouldHaveNoInteractions();
 	}
 }

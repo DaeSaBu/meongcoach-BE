@@ -24,9 +24,9 @@ import org.springframework.test.web.servlet.MockMvc;
 @AutoConfigureMockMvc
 class InternalSecurityFilterChainTest {
 
-	private static final String DISPATCH_PATH = "/internal/notifications/dispatch";
-	private static final String DISPATCH_BODY = "{\"scheduledTime\":\"2026-10-31T08:00:00Z\",\"hour\":24}";
-	private static final String APP_PREFERENCES_PATH = "/api/notifications/preferences";
+	private static final String DISPATCH_PATH = "/internal/notifications/scheduled-dispatches";
+	private static final String DISPATCH_BODY = "{\"date\":\"2026-10-31\",\"hour\":24,\"minute\":0}";
+	private static final String APP_SCHEDULES_PATH = "/api/notifications/schedules";
 	private static final String INTERNAL_SECRET_HEADER = "X-Internal-Secret";
 	private static final String INTERNAL_SECRET = "test-internal-secret";
 
@@ -78,7 +78,7 @@ class InternalSecurityFilterChainTest {
 
 	@Test
 	void 비밀_헤더로는_앱_API를_호출할_수_없다() throws Exception {
-		mockMvc.perform(appGet(APP_PREFERENCES_PATH).header(INTERNAL_SECRET_HEADER, INTERNAL_SECRET))
+		mockMvc.perform(appGet(APP_SCHEDULES_PATH).header(INTERNAL_SECRET_HEADER, INTERNAL_SECRET))
 				.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
 	}
@@ -87,10 +87,10 @@ class InternalSecurityFilterChainTest {
 	void 액세스_토큰이_있으면_앱_알림_API를_호출할_수_있다() throws Exception {
 		AuthToken token = tokenProvider.issue(saveUser().getId());
 
-		mockMvc.perform(appGet(APP_PREFERENCES_PATH)
+		mockMvc.perform(appGet(APP_SCHEDULES_PATH)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.hours.length()").value(0));
+				.andExpect(jsonPath("$.schedules.length()").value(0));
 	}
 
 	private User saveUser() {
