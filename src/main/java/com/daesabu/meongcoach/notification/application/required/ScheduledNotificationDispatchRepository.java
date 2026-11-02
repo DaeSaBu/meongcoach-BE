@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface ScheduledNotificationDispatchRepository extends JpaRepository<ScheduledNotificationDispatch, Long> {
 	boolean existsBySlotScheduledAt(Instant scheduledAt);
@@ -14,6 +15,6 @@ public interface ScheduledNotificationDispatchRepository extends JpaRepository<S
 	/**
 	 * 예약 키의 트랜잭션 잠금을 얻을 때까지 기다린다. 잠금은 커밋·롤백 시 해제된다.
 	 */
-	@Query(value = "SELECT 1 FROM pg_advisory_xact_lock(hashtextextended('notification-dispatch:' || :key, 0))", nativeQuery = true)
-	int lock(String key);
+	@Query(value = "SELECT 1 FROM pg_advisory_xact_lock(hashtextextended('notification-dispatch:' || :#{#scheduledAt.toString()}, 0))", nativeQuery = true)
+	int lock(@Param("scheduledAt") Instant scheduledAt);
 }

@@ -47,7 +47,7 @@ public class NotificationDispatchService implements ScheduledNotificationDispatc
 		ScheduledNotificationDispatch dispatch = ScheduledNotificationDispatch.of(
 				request.date(), request.hour(), request.minute(), clock.instant());
 
-		dispatches.lock(dispatch.scheduled().toString());
+		dispatches.lock(dispatch.scheduled());
 		if (dispatches.existsBySlotScheduledAt(dispatch.scheduled())) {
 			return new ScheduledNotificationDispatchResult(0, true);
 		}
