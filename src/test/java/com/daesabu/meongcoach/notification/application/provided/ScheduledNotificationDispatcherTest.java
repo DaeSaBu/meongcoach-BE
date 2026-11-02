@@ -84,7 +84,7 @@ class ScheduledNotificationDispatcherTest {
 		assertThat(result.duplicate()).isFalse();
 		var history = dispatches.findBySlotScheduledAt(SCHEDULED_AT).orElseThrow();
 		assertThat(history.getId()).isPositive();
-		assertThat(history.getScheduledAt()).isEqualTo(SCHEDULED_AT);
+		assertThat(history.scheduled()).isEqualTo(SCHEDULED_AT);
 		assertThat(history.getCreatedAt()).isNotNull();
 		assertThat(history.getUpdatedAt()).isNotNull();
 		assertThat(fids.findByFid(fid)).isEmpty();

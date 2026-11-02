@@ -18,6 +18,7 @@ import com.daesabu.meongcoach.notification.application.required.ScheduledNotific
 import com.daesabu.meongcoach.notification.domain.DeviceInstallation;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallationRegisterCommand;
 import com.daesabu.meongcoach.notification.domain.DevicePlatform;
+import com.daesabu.meongcoach.notification.domain.NotificationTime;
 import com.daesabu.meongcoach.notification.domain.PushNotification;
 import com.daesabu.meongcoach.notification.domain.ScheduledNotificationDispatch;
 import com.daesabu.meongcoach.user.application.provided.UserFinder;
@@ -77,7 +78,7 @@ class NotificationDispatchServiceTest {
 	}
 
 	private void prepareTargets(int count) {
-		given(schedules.findUserIdsByTimeEnabled(17, 0)).willReturn(List.of(1L));
+		given(schedules.findUserIdsByTimeEnabled(new NotificationTime(17, 0))).willReturn(List.of(1L));
 		given(users.findActiveUserIds(List.of(1L))).willReturn(Set.of(1L));
 		List<DeviceInstallation> results = IntStream.range(0, count)
 				.mapToObj(index -> DeviceInstallation.register(1L,

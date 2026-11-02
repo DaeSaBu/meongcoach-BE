@@ -15,7 +15,6 @@ import com.daesabu.meongcoach.notification.domain.DeviceInstallation;
 import com.daesabu.meongcoach.notification.domain.NotificationDeepLink;
 import com.daesabu.meongcoach.notification.domain.NotificationEventType;
 import com.daesabu.meongcoach.notification.domain.NotificationTarget;
-import com.daesabu.meongcoach.notification.domain.NotificationTime;
 import com.daesabu.meongcoach.notification.domain.PushNotification;
 import com.daesabu.meongcoach.notification.domain.ScheduledNotificationDispatch;
 import com.daesabu.meongcoach.user.application.provided.UserFinder;
@@ -47,12 +46,11 @@ public class NotificationDispatchService implements ScheduledNotificationDispatc
 		ScheduledNotificationDispatch dispatch = ScheduledNotificationDispatch.of(
 				request.date(), request.hour(), request.minute(), clock.instant());
 
-		dispatches.lock(dispatch.lockKey());
-		if (dispatches.existsBySlotScheduledAt(dispatch.getScheduledAt())) {
+		dispatches.lock(dispatch.scheduled().toString());
+		if (dispatches.existsBySlotScheduledAt(dispatch.scheduled())) {
 			return new ScheduledNotificationDispatchResult(0, true);
 		}
-		NotificationTime time = dispatch.time();
-		List<String> fids = findFids(schedules.findUserIdsByTimeEnabled(time.hour(), time.minute()));
+		List<String> fids = findFids(schedules.findUserIdsByTimeEnabled(dispatch.time()));
 		List<PushNotification> notifications = fids.stream().map(dispatch::toPushNotification).toList();
 		deleteInvalidInstallations(send(notifications));
 		dispatches.save(dispatch);

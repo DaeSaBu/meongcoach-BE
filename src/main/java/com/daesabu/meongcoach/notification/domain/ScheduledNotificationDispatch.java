@@ -35,12 +35,8 @@ public class ScheduledNotificationDispatch extends BaseEntity {
 		return dispatch;
 	}
 
-	public Instant getScheduledAt() {
+	public Instant scheduled() {
 		return slot.scheduledAt();
-	}
-
-	public String lockKey() {
-		return slot.scheduledAt().toString();
 	}
 
 	public NotificationTime time() {
