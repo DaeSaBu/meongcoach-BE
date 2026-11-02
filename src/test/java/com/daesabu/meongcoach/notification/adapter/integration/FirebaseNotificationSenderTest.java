@@ -56,20 +56,18 @@ class FirebaseNotificationSenderTest {
 	}
 
 	@Test
-	void 배치_호출이_실패해도_남은_배치를_보내고_실패를_기록한다() throws Exception {
+	void 배치_호출이_실패하면_중단하고_남은_FID을_실패로_센다() throws Exception {
 		FirebaseMessaging messaging = mock(FirebaseMessaging.class);
 		FirebaseMessagingException failure = mock(FirebaseMessagingException.class);
-		BatchResponse batch = mock(BatchResponse.class);
-		given(batch.getResponses()).willReturn(List.of(mock(SendResponse.class)));
-		given(messaging.sendEach(anyList())).willThrow(failure).willReturn(batch);
+		given(messaging.sendEach(anyList())).willThrow(failure);
 		List<String> fids = java.util.stream.IntStream.range(0, 501).mapToObj(index -> "fid-" + index).toList();
 
 		var result = sender(messaging).send(messages(fids));
 
-		verify(messaging, times(2)).sendEach(anyList());
+		verify(messaging, times(1)).sendEach(anyList());
 		assertThat(result.failure()).isSameAs(failure);
-		assertThat(result.failedCount()).isEqualTo(500);
-		assertThat(result.sentCount()).isEqualTo(1);
+		assertThat(result.failedCount()).isEqualTo(501);
+		assertThat(result.sentCount()).isZero();
 	}
 
 	@Test
