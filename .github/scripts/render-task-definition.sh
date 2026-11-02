@@ -41,6 +41,7 @@ IMAGE_URI=${3}
 : "${REVENUECAT_ENTITLEMENT_ID_JUNIOR:?REVENUECAT_ENTITLEMENT_ID_JUNIOR가 필요합니다.}"
 : "${REVENUECAT_ENTITLEMENT_ID_ADULT:?REVENUECAT_ENTITLEMENT_ID_ADULT가 필요합니다.}"
 : "${REVENUECAT_ENTITLEMENT_ID_SENIOR:?REVENUECAT_ENTITLEMENT_ID_SENIOR가 필요합니다.}"
+: "${ALERT_SLACK_WEBHOOK_URL:?ALERT_SLACK_WEBHOOK_URL이 필요합니다.}"
 
 # jq 결과는 stdout으로 나간다. workflow가 이를 register-task-definition 입력 파일로 저장한다.
 jq \
@@ -73,6 +74,7 @@ jq \
 	--arg revenuecat_entitlement_id_junior "${REVENUECAT_ENTITLEMENT_ID_JUNIOR:-}" \
 	--arg revenuecat_entitlement_id_adult "${REVENUECAT_ENTITLEMENT_ID_ADULT:-}" \
 	--arg revenuecat_entitlement_id_senior "${REVENUECAT_ENTITLEMENT_ID_SENIOR:-}" \
+	--arg alert_slack_webhook_url "${ALERT_SLACK_WEBHOOK_URL:-}" \
 	--arg sentry_dsn "${SENTRY_DSN:-}" \
 	--arg sentry_release "${SENTRY_RELEASE:-}" \
 	--arg app_minimum_version_ios "${APP_MINIMUM_VERSION_IOS:-}" \
@@ -170,6 +172,7 @@ jq \
 								.name != "REVENUECAT_ENTITLEMENT_ID_JUNIOR" and
 								.name != "REVENUECAT_ENTITLEMENT_ID_ADULT" and
 								.name != "REVENUECAT_ENTITLEMENT_ID_SENIOR" and
+								.name != "ALERT_SLACK_WEBHOOK_URL" and
 								.name != "SENTRY_DSN" and
 								.name != "SENTRY_RELEASE" and
 								.name != "APP_MINIMUM_VERSION_IOS" and
@@ -201,7 +204,8 @@ jq \
 							{"name": "REVENUECAT_ENTITLEMENT_ID_PUPPY", "value": $revenuecat_entitlement_id_puppy},
 							{"name": "REVENUECAT_ENTITLEMENT_ID_JUNIOR", "value": $revenuecat_entitlement_id_junior},
 							{"name": "REVENUECAT_ENTITLEMENT_ID_ADULT", "value": $revenuecat_entitlement_id_adult},
-							{"name": "REVENUECAT_ENTITLEMENT_ID_SENIOR", "value": $revenuecat_entitlement_id_senior}
+							{"name": "REVENUECAT_ENTITLEMENT_ID_SENIOR", "value": $revenuecat_entitlement_id_senior},
+							{"name": "ALERT_SLACK_WEBHOOK_URL", "value": $alert_slack_webhook_url}
 						] +
 						# 미설정 시 application.yml의 기본값을 쓰도록 주입 자체를 생략한다
 						(if $gemini_model == "" then
