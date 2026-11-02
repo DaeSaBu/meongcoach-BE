@@ -34,6 +34,7 @@ import com.daesabu.meongcoach.auth.domain.exception.WithdrawnUserException;
 import com.daesabu.meongcoach.media.application.provided.StoredMediaVerifier;
 import com.daesabu.meongcoach.notification.application.NotificationRegisterService;
 import com.daesabu.meongcoach.notification.application.required.DeviceInstallationRepository;
+import com.daesabu.meongcoach.notification.application.required.NotificationEventSettingRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationScheduleRepository;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallation;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallationRegisterCommand;
@@ -102,6 +103,9 @@ class AuthenticationServiceTest {
 	private NotificationScheduleRepository notificationScheduleRepository;
 
 	@Autowired
+	private NotificationEventSettingRepository notificationEventSettingRepository;
+
+	@Autowired
 	private TestEntityManager entityManager;
 
 	private final RecordingTokenRevoker tokenRevoker = new RecordingTokenRevoker();
@@ -121,7 +125,8 @@ class AuthenticationServiceTest {
 				tokenProvider, refreshTokenFinder);
 		AuthTokenProvideService authTokenProvider = new AuthTokenProvideService(tokenProvider, refreshTokenRegister);
 		NotificationRegisterService notificationRegister = new NotificationRegisterService(deviceInstallationRepository,
-				notificationScheduleRepository);
+				notificationScheduleRepository,
+				notificationEventSettingRepository);
 
 		service = new AuthenticationService(accountFinder, accountRegister, PASSWORD_ENCODER::matches,
 				authTokenProvider, tokenProvider, refreshTokenRegister, socialProfileReaders(),

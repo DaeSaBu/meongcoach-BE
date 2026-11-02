@@ -13,13 +13,18 @@ import static org.springframework.restdocs.payload.PayloadDocumentation.response
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.daesabu.meongcoach.notification.application.provided.NotificationEventSettingFinder;
+import com.daesabu.meongcoach.notification.application.provided.NotificationEventSettingResult;
 import com.daesabu.meongcoach.notification.application.provided.NotificationRegister;
 import com.daesabu.meongcoach.notification.application.provided.NotificationScheduleFinder;
 import com.daesabu.meongcoach.notification.application.provided.NotificationScheduleResult;
 import com.daesabu.meongcoach.notification.application.provided.dto.DeviceInstallationRegisterRequest;
 import com.daesabu.meongcoach.notification.application.provided.dto.DeviceInstallationUnregisterRequest;
+import com.daesabu.meongcoach.notification.application.provided.dto.NotificationEventSettingUpdateRequest;
 import com.daesabu.meongcoach.notification.application.provided.dto.NotificationScheduleUpdateRequest;
+import com.daesabu.meongcoach.notification.domain.NotificationEventType;
 import com.daesabu.meongcoach.notification.domain.exception.InvalidDevicePlatformException;
+import com.daesabu.meongcoach.notification.domain.exception.InvalidNotificationEventTypeException;
 import com.daesabu.meongcoach.notification.domain.exception.NotAllowedNotificationHourException;
 import java.security.Principal;
 import java.util.List;
@@ -67,6 +72,9 @@ class NotificationControllerTest {
 
 	@MockitoBean
 	private NotificationScheduleFinder notificationScheduleFinder;
+
+	@MockitoBean
+	private NotificationEventSettingFinder notificationEventSettingFinder;
 
 	@Test
 	void 기기_FID을_등록하면_204를_반환한다() throws Exception {
@@ -201,6 +209,59 @@ class NotificationControllerTest {
 				.andExpect(jsonPath("$.errors[0].field").value("enabled"));
 
 		then(notificationRegister).shouldHaveNoInteractions();
+	}
+
+	@Test
+	void 이벤트_알림_설정을_종류별로_응답한다() throws Exception {
+		given(notificationEventSettingFinder.findEventSettings(42L)).willReturn(List.of(
+				new NotificationEventSettingResult(NotificationEventType.AI_ANALYSIS, true),
+				new NotificationEventSettingResult(NotificationEventType.COMMENT, false)
+		));
+
+		mockMvc.perform(get("/api/notifications/event-settings")
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-fid"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.settings[0].type").value("AI_ANALYSIS"))
+				.andExpect(jsonPath("$.settings[1].enabled").value(false))
+				.andDo(document("notification/event-settings",
+						responseFields(
+								fieldWithPath("settings").description("이벤트 알림 종류별 설정"),
+								fieldWithPath("settings[].type").description("알림 종류. AI_ANALYSIS·OPERATOR_MESSAGE·COMMENT"),
+								fieldWithPath("settings[].enabled").description("해당 종류 수신 여부")
+						)
+				));
+	}
+
+	@Test
+	void 이벤트_알림_설정을_바꾸면_204를_반환한다() throws Exception {
+		mockMvc.perform(put("/api/notifications/event-settings")
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-fid")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"type\": \"COMMENT\", \"enabled\": false}"))
+				.andExpect(status().isNoContent())
+				.andDo(document("notification/event-setting-update",
+						requestFields(fieldWithPath("type").description("알림 종류. AI_ANALYSIS·OPERATOR_MESSAGE·COMMENT"),
+								fieldWithPath("enabled").description("해당 종류 수신 여부"))
+				));
+
+		then(notificationRegister).should().updateEventSetting(42L, new NotificationEventSettingUpdateRequest("COMMENT", false));
+	}
+
+	@Test
+	void 없는_이벤트_종류면_400과_에러_코드를_반환한다() throws Exception {
+		willThrow(new InvalidNotificationEventTypeException("MARKETING")).given(notificationRegister)
+				.updateEventSetting(42L, new NotificationEventSettingUpdateRequest("MARKETING", true));
+
+		mockMvc.perform(put("/api/notifications/event-settings")
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-fid")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"type\": \"MARKETING\", \"enabled\": true}"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("NOTIFICATION_EVENT_TYPE_INVALID"))
+				.andDo(document("notification/event-setting-update-error", responseFields(ERROR_FIELDS)));
 	}
 
 	@Test
