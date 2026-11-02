@@ -9,6 +9,7 @@ import com.daesabu.meongcoach.entitlement.domain.exception.EntitlementRequiredEx
 import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;
 import com.daesabu.meongcoach.support.ApplicationTest;
 import com.daesabu.meongcoach.training.application.provided.dto.LessonSummaryResult;
+import com.daesabu.meongcoach.training.application.provided.dto.TrainingContentResult;
 import com.daesabu.meongcoach.training.application.required.CardRepository;
 import com.daesabu.meongcoach.training.application.required.CurriculumRepository;
 import com.daesabu.meongcoach.training.application.required.LessonRepository;
@@ -202,13 +203,19 @@ class LessonFinderTest {
 	}
 
 	@Test
-	void 레슨의_id와_제목을_요약으로_반환한다() {
+	void 레슨_요약에_소속_커리큘럼_토픽_카테고리의_id와_제목을_함께_반환한다() {
 		Lesson lesson = saveLesson("기본 교육");
+		Curriculum curriculum = lesson.getCurriculum();
+		Topic topic = curriculum.getTopic();
+		TrainingCategory category = topic.getTrainingCategory();
 		flushAndClear();
 
 		List<LessonSummaryResult> summaries = lessonFinder.findSummaries(Set.of(lesson.getId()));
 
-		assertThat(summaries).containsExactly(new LessonSummaryResult(lesson.getId(), "기본 교육 레슨"));
+		assertThat(summaries).containsExactly(new LessonSummaryResult(lesson.getId(), "기본 교육 레슨",
+				new TrainingContentResult(curriculum.getId(), "기본 교육 커리큘럼"),
+				new TrainingContentResult(topic.getId(), "기본 교육"),
+				new TrainingContentResult(category.getId(), "기본 교육 카테고리")));
 	}
 
 	@Test
