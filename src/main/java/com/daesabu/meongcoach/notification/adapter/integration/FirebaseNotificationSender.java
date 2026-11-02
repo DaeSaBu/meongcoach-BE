@@ -50,7 +50,8 @@ public class FirebaseNotificationSender implements NotificationSender {
 			List<SendResponse> responses = client.sendEach(firebaseMessages).getResponses();
 			return toResult(batch, responses);
 		} catch (FirebaseMessagingException exception) {
-			return new NotificationSendResult(0, batch.size(), List.of(), exception);
+			int failedCount = batch.size();
+			return new NotificationSendResult(0, failedCount, List.of(), exception);
 		}
 	}
 

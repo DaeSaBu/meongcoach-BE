@@ -51,6 +51,8 @@ public class ScheduledNotificationDispatch extends BaseEntity {
 
 	public NotificationTime time() {
 		LocalTime local = scheduledAt.atZone(SEOUL).toLocalTime();
-		return new NotificationTime(local.getHour(), local.getMinute());
+		int hour = local.getHour();
+		int minute = local.getMinute();
+		return new NotificationTime(hour, minute);
 	}
 }

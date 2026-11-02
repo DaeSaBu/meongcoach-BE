@@ -19,6 +19,7 @@ public interface ScheduledNotificationDispatchRepository extends JpaRepository<S
 	int lockByKey(@Param("key") String key);
 
 	default int lock(Instant scheduledAt) {
-		return lockByKey(scheduledAt.toString());
+		String key = scheduledAt.toString();
+		return lockByKey(key);
 	}
 }

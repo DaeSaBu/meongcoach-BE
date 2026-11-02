@@ -18,7 +18,9 @@ public interface NotificationScheduleRepository extends JpaRepository<Notificati
 	List<Long> findUserIdsByHourAndMinuteEnabled(@Param("hour") int hour, @Param("minute") int minute);
 
 	default List<Long> findUserIdsByTimeEnabled(NotificationTime time) {
-		return findUserIdsByHourAndMinuteEnabled(time.hour(), time.minute());
+		int hour = time.hour();
+		int minute = time.minute();
+		return findUserIdsByHourAndMinuteEnabled(hour, minute);
 	}
 
 	void deleteAllByUserId(Long userId);
