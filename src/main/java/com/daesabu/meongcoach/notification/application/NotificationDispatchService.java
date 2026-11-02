@@ -39,6 +39,7 @@ public class NotificationDispatchService implements ScheduledNotificationDispatc
 	private final NotificationScheduleRepository schedules;
 	private final NotificationEventSettingRepository settings;
 	private final DeviceInstallationRepository installations;
+	private final DeviceInstallationCleanupService cleanup;
 	private final UserFinder users;
 	private final NotificationSender sender;
 	private final Clock clock;
@@ -104,6 +105,6 @@ public class NotificationDispatchService implements ScheduledNotificationDispatc
 		if (invalidFids.isEmpty()) {
 			return;
 		}
-		installations.deleteAllByFidIn(invalidFids);
+		cleanup.deleteInvalid(invalidFids);
 	}
 }

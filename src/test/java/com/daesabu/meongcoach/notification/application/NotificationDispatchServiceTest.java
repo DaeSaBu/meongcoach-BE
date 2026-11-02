@@ -44,7 +44,7 @@ class NotificationDispatchServiceTest {
 	private final NotificationSender sender = mock(NotificationSender.class);
 	private final NotificationEventSettingRepository settings = mock(NotificationEventSettingRepository.class);
 	private final NotificationDispatchService service = new NotificationDispatchService(
-			dispatches, schedules, settings, installations, users, sender, Clock.fixed(Instant.parse("2026-10-31T08:00:00Z"), ZoneOffset.UTC));
+			dispatches, schedules, settings, installations, new DeviceInstallationCleanupService(installations), users, sender, Clock.fixed(Instant.parse("2026-10-31T08:00:00Z"), ZoneOffset.UTC));
 	private final ScheduledNotificationDispatchRequest request = new ScheduledNotificationDispatchRequest(LocalDate.of(2026, 10, 31), 17, 0);
 
 	@Test
