@@ -55,25 +55,13 @@ meongcoach:
       # 버킷에 연결된 공개 도메인(커스텀 도메인 또는 r2.dev). 클라이언트가 보낸 이미지 URL 검증 기준이 된다
       public-base-url: ${R2_PUBLIC_BASE_URL}
       upload-url-validity: PT10M
-    s3:
-      # 실습 인증 영상은 실제 AWS S3에 올린다. R2와 달리 엔드포인트가 아니라 리전으로 주소가 결정된다
-      region: ${S3_REGION}
-      access-key-id: ${S3_ACCESS_KEY_ID}
-      secret-access-key: ${S3_SECRET_ACCESS_KEY}
-      bucket: ${S3_BUCKET}
-      # 버킷의 공개 도메인(CDN 또는 S3 표준 URL). 비공개 운영 시에도 응답의 publicUrl 조립에 쓰인다
-      public-base-url: ${S3_PUBLIC_BASE_URL}
-      # 영상은 파일 선택·압축 시간이 있어 이미지(PT10M)보다 여유를 둔다
-      upload-url-validity: PT15M
-      # 앱이 실습 영상을 다시 볼 때 쓰는 URL이라 재생 시간을 감안해 넉넉히 둔다
-      download-url-validity: PT1H
     gcs:
-      # AI 분석 영상은 GCS에 올린다. Gemini가 gs:// URI로 직접 읽으므로 이 버킷에만 Gemini 서비스 에이전트 읽기 권한을 준다.
-      # 자격 증명은 meongcoach.google-cloud의 서비스 계정 키를 함께 쓴다
+      # AI 분석 영상과 실습 인증 영상은 GCS 한 버킷에 올린다. Gemini가 gs:// URI로 직접 읽으므로 이 버킷에만 Gemini 서비스 에이전트 읽기 권한을 준다.
+      # 업로드 완료 알림은 버킷 알림 설정의 접두사(videos/training/)로 분석 영상만 받는다. 자격 증명은 meongcoach.google-cloud의 서비스 계정 키를 함께 쓴다
       bucket: ${GCS_BUCKET}
       # 영상은 파일 선택·압축 시간이 있어 이미지(PT10M)보다 여유를 둔다
       upload-url-validity: PT15M
-      # 분석은 gs:// URI로 하므로 다운로드 URL은 점검·수동 확인용이다
+      # 앱이 실습 인증 영상을 다시 볼 때 쓰는 URL이라 재생 시간을 감안해 넉넉히 둔다. 분석 영상은 gs:// URI로 읽어 점검용이다
       download-url-validity: PT1H
   google-cloud:
     # GCS 서명·Pub/Sub 구독·Gemini 파일 등록에 함께 쓰는 서비스 계정. 키 JSON을 base64로 넣는다. 값 미주입 시 기동에 실패한다
