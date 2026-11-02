@@ -54,7 +54,7 @@ public class SlackAlertSender implements AlertSender {
 		Map<String, Object> payload = toPayload(alert);
 		try {
 			restClient.post()
-					.uri(properties.webhookUrl())
+					.uri(properties.graduationWebhookUrl())
 					.contentType(MediaType.APPLICATION_JSON)
 					.body(payload)
 					.retrieve()

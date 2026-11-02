@@ -51,12 +51,12 @@ class SlackAlertPropertiesTest {
 	@Test
 	void 켜져_있는데_webhook_URL이_비어_있으면_위반이다() {
 		assertThat(violatedFields(new SlackAlertProperties(true, " ")))
-				.containsExactly("webhookUrlPresentWhenEnabled");
+				.containsExactly("graduationWebhookUrlPresentWhenEnabled");
 	}
 
 	@Test
 	void 켜져_있는데_webhook_URL이_없으면_위반이다() {
 		assertThat(violatedFields(new SlackAlertProperties(true, null)))
-				.containsExactly("webhookUrlPresentWhenEnabled");
+				.containsExactly("graduationWebhookUrlPresentWhenEnabled");
 	}
 }
