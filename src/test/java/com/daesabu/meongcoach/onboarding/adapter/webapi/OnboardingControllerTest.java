@@ -329,6 +329,23 @@ class OnboardingControllerTest {
 	}
 
 	@Test
+	void 요청에_target이_있어도_무시하고_업로드_URL을_발급한다() throws Exception {
+		mockMvc.perform(post("/api/onboarding/presigned-urls")
+						.principal(() -> "1")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+									"target": "DOG_PROFILE",
+									"contentType": "image/jpeg"
+								}
+								"""))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.uploadUrl").value(UPLOAD_URL))
+				.andExpect(jsonPath("$.publicUrl").value(IMAGE_PUBLIC_URL));
+	}
+
+	@Test
 	void 지원하지_않는_이미지_형식이면_400을_반환한다() throws Exception {
 		mockMvc.perform(post("/api/onboarding/presigned-urls")
 						.principal(() -> "1")
