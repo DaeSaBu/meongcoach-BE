@@ -6,9 +6,8 @@ alert 모듈은 신규 가입·영상 업로드 같은 운영 이벤트를 개�
 
 ```mermaid
 flowchart LR
-    Caller["호출 모듈<br/>(auth · ai …)"] -- "Alerter.alert" --> Service["AlertService<br/>검증 · Alert 생성"]
-    Service -- "@Async" --> Delivery["AlertDeliveryService"]
-    Delivery -- "AlertSender.send" --> Slack["Slack Incoming Webhook"]
+    Caller["호출 모듈<br/>(auth · ai …)"] -- "Alerter.alert" --> Service["AlertService (@Async)<br/>검증 · Alert 생성"]
+    Service -- "AlertSender.send" --> Slack["Slack Incoming Webhook"]
 ```
 
 ## 호출 방법
@@ -26,8 +25,8 @@ alerter.alert(AlertRequest.of(AlertLevel.INFO, "신규 가입",
 | `title` | 비어 있지 않은 120자 이하. Slack header 블록 한도(150자)에서 이모지 접두 여유를 뺀 값 |
 | `fields` | 20개 이하. 이름은 50자 이하, 값은 `AlertField.of`가 `Objects.toString`으로 바꾸며 null은 `-` |
 
-- 검증은 호출 스레드에서 끝납니다. 위반이면 `ConstraintViolationException`이 호출자에게 던져지고 전송하지 않습니다. 제목·필드는 호출 코드의 상수라 위반은 버그이며 테스트에서 잡습니다.
-- 전송은 비동기입니다. `Alerter.alert`는 바로 돌아오고, Slack 장애·지연은 호출 모듈의 흐름에 영향을 주지 않습니다.
+- `Alerter.alert`는 바로 돌아옵니다. 검증과 전송은 비동기 스레드에서 수행되어 Slack 장애·지연은 호출 모듈의 흐름에 영향을 주지 않습니다.
+- 검증 위반은 호출자에게 예외로 돌아오지 않고 전송 실패와 같은 경로(error 로그 → Sentry)로 보고됩니다. 제목·필드는 호출 코드의 상수라 위반은 버그이며, Sentry에서 `ConstraintViolationException`으로 보입니다.
 - 필드 값에 이메일·전화번호 같은 개인정보를 넣지 않습니다. 회원은 ID로만 적습니다.
 
 ## 메시지 형식
@@ -69,8 +68,8 @@ alerter.alert(AlertRequest.of(AlertLevel.INFO, "신규 가입",
 - `SlackAlertSender`는 Slack 응답 오류와 연결 실패를 `AlertDeliveryFailedException`으로 번역합니다. 예외에 cause를 담지 않습니다. `RestClient` 예외 메시지에 요청 URL이 들어가 webhook URL이 로그와 Sentry에 남기 때문입니다. detail은 `status=404`·`reason=ResourceAccessException`처럼 원인 종류만 적습니다.
 - 비동기 메서드의 예외는 아무도 catch하지 않습니다. Spring의 `SimpleAsyncUncaughtExceptionHandler`가 error 로그를 남기고, logback 연동으로 Sentry에 보고됩니다.
 
-## 검증과 비동기를 나눈 이유
+## 비동기 실행
 
-`AlertService`(`@Validated`)와 `AlertDeliveryService`(`@Async`)를 다른 빈으로 둡니다. 한 빈에 두 애노테이션을 같이 붙이면 `AsyncAnnotationBeanPostProcessor`가 어드바이저를 체인 맨 앞에 넣어 `@Async`가 항상 바깥이 되고, 검증이 비동기 스레드에서 수행되어 호출자가 `ConstraintViolationException`을 받지 못합니다.
+`AlertService` 하나에 `@Validated`와 `@Async`를 함께 둡니다. `AsyncAnnotationBeanPostProcessor`가 어드바이저를 체인 맨 앞에 넣어 `@Async`가 항상 바깥이 되므로, 검증도 비동기 스레드에서 실행됩니다. 검증 위반을 호출자에게 돌려주려면 검증 빈과 비동기 빈을 나눠야 하는데, 알림은 best-effort라 두 실패를 같은 경로로 두는 쪽을 택했습니다.
 
-비동기 실행기는 Spring Boot가 자동 구성하는 `applicationTaskExecutor`입니다(`shared/config/AsyncConfig`의 `@EnableAsync`). 두 서비스에는 `@Transactional`을 붙이지 않습니다. DB를 쓰지 않을뿐더러, 비동기 스레드가 커넥션을 잡으면 테스트의 Hikari 풀(최대 2)이 바닥납니다.
+비동기 실행기는 Spring Boot가 자동 구성하는 `applicationTaskExecutor`입니다(`shared/config/AsyncConfig`의 `@EnableAsync`). `AlertService`에는 `@Transactional`을 붙이지 않습니다. DB를 쓰지 않을뿐더러, 비동기 스레드가 커넥션을 잡으면 테스트의 Hikari 풀(최대 2)이 바닥납니다.
