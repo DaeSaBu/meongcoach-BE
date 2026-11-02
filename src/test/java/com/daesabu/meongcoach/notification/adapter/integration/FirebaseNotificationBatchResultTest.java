@@ -46,6 +46,31 @@ class FirebaseNotificationBatchResultTest {
 	}
 
 	@Test
+	void 성공과_무효_외_실패를_따로_센다() {
+		SendResponse success = mock(SendResponse.class);
+		SendResponse unavailable = failure(MessagingErrorCode.UNAVAILABLE);
+		SendResponse unregistered = failure(MessagingErrorCode.UNREGISTERED);
+		var results = FirebaseNotificationBatchResult.success(
+				notifications("sent", "unavailable", "unregistered"), List.of(success, unavailable, unregistered));
+
+		assertThat(results.sentCount()).isEqualTo(1);
+		assertThat(results.failedCount()).isEqualTo(1);
+		assertThat(results.invalidFids()).containsExactly("unregistered");
+		assertThat(results.failure()).isEmpty();
+	}
+
+	@Test
+	void 배치_호출_실패는_전체를_실패로_세고_원인을_남긴다() {
+		var cause = new IllegalStateException("FCM unavailable");
+		var results = FirebaseNotificationBatchResult.failure(notifications("a", "b"), cause);
+
+		assertThat(results.sentCount()).isZero();
+		assertThat(results.failedCount()).isEqualTo(2);
+		assertThat(results.invalidFids()).isEmpty();
+		assertThat(results.failure()).contains(cause);
+	}
+
+	@Test
 	void 빈_응답은_무효_FID와_실패가_없다() {
 		var results = FirebaseNotificationBatchResult.success(List.of(), List.of());
 

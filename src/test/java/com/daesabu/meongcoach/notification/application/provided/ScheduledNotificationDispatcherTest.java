@@ -29,6 +29,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -104,12 +105,13 @@ class ScheduledNotificationDispatcherTest {
 
 	@Test
 	void 실패한_예약은_다시_발송하고_완료한_예약은_재발송하지_않는다() {
-		var failure = new NotificationDeliveryException(new IllegalStateException("FCM unavailable"));
+		var cause = new IllegalStateException("FCM unavailable");
+		NotificationBatchResult failedBatch = failedBatch(cause);
 		NotificationBatchResult deliveryResults = results(List.of());
-		given(sender.send(anyList())).willThrow(failure)
+		given(sender.send(anyList())).willReturn(List.of(failedBatch))
 				.willReturn(List.of(deliveryResults));
 
-		assertThatThrownBy(() -> dispatcher.dispatch(request)).isSameAs(failure);
+		assertThatThrownBy(() -> dispatcher.dispatch(request)).isInstanceOf(NotificationDeliveryException.class).hasCause(cause);
 		assertThat(dispatches.existsByScheduledAt(SCHEDULED_AT)).isFalse();
 		assertThat(dispatcher.dispatch(request).duplicate()).isFalse();
 		assertThat(dispatches.existsByScheduledAt(SCHEDULED_AT)).isTrue();
@@ -207,6 +209,14 @@ class ScheduledNotificationDispatcherTest {
 	private NotificationBatchResult results(List<String> invalidFids) {
 		NotificationBatchResult results = mock(NotificationBatchResult.class);
 		given(results.invalidFids()).willReturn(invalidFids);
+		given(results.failure()).willReturn(Optional.empty());
+		return results;
+	}
+
+	private NotificationBatchResult failedBatch(Throwable cause) {
+		NotificationBatchResult results = results(List.of());
+		given(results.failedCount()).willReturn(1);
+		given(results.failure()).willReturn(Optional.of(cause));
 		return results;
 	}
 

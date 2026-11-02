@@ -1,10 +1,12 @@
 package com.daesabu.meongcoach.notification.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -21,6 +23,7 @@ import com.daesabu.meongcoach.notification.domain.DevicePlatform;
 import com.daesabu.meongcoach.notification.domain.NotificationTime;
 import com.daesabu.meongcoach.notification.domain.PushNotification;
 import com.daesabu.meongcoach.notification.domain.ScheduledNotificationDispatch;
+import com.daesabu.meongcoach.notification.domain.exception.NotificationDeliveryException;
 import com.daesabu.meongcoach.user.application.provided.UserFinder;
 import java.time.Clock;
 import java.time.Instant;
@@ -28,6 +31,7 @@ import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
@@ -77,6 +81,42 @@ class NotificationDispatchServiceTest {
 		verify(dispatches).save(any(ScheduledNotificationDispatch.class));
 	}
 
+	@Test
+	void 전송에_성공한_FID이_없고_무효_외_실패가_있으면_완료_이력을_남기지_않고_던진다() {
+		prepareTargets(2);
+		NotificationBatchResult allFailed = results(0, 2, List.of());
+		given(sender.send(anyList())).willReturn(List.of(allFailed));
+
+		assertThatThrownBy(() -> service.dispatch(request)).isInstanceOf(NotificationDeliveryException.class);
+
+		verify(dispatches, never()).save(any());
+	}
+
+	@Test
+	void 무효_FID만_있으면_삭제하고_완료한다() {
+		prepareTargets(2);
+		NotificationBatchResult onlyInvalid = results(0, 0, List.of("fid-0", "fid-1"));
+		given(sender.send(anyList())).willReturn(List.of(onlyInvalid));
+
+		assertThat(service.dispatch(request).fids()).isEqualTo(2);
+
+		verify(installations).deleteAllByFidIn(List.of("fid-0", "fid-1"));
+		verify(dispatches).save(any(ScheduledNotificationDispatch.class));
+	}
+
+	@Test
+	void 배치_호출이_실패하면_원인과_함께_던지고_완료_이력을_남기지_않는다() {
+		prepareTargets(1001);
+		var cause = new IllegalStateException("FCM unavailable");
+		NotificationBatchResult firstBatch = results(499, 0, List.of("fid-1"));
+		NotificationBatchResult secondBatch = failedBatch(cause);
+		given(sender.send(anyList())).willReturn(List.of(firstBatch, secondBatch));
+
+		assertThatThrownBy(() -> service.dispatch(request)).isInstanceOf(NotificationDeliveryException.class).hasCause(cause);
+
+		verify(dispatches, never()).save(any());
+	}
+
 	private void prepareTargets(int count) {
 		given(schedules.findUserIdsByTimeEnabled(new NotificationTime(17, 0))).willReturn(List.of(1L));
 		given(users.findActiveUserIds(List.of(1L))).willReturn(Set.of(1L));
@@ -86,8 +126,21 @@ class NotificationDispatchServiceTest {
 		given(installations.findAllByUserIdInOrderByUserIdAscIdAsc(Set.of(1L))).willReturn(results);
 	}
 	private NotificationBatchResult results(List<String> invalidFids) {
+		return results(0, 0, invalidFids);
+	}
+
+	private NotificationBatchResult results(int sent, int failed, List<String> invalidFids) {
 		NotificationBatchResult results = mock(NotificationBatchResult.class);
+		given(results.sentCount()).willReturn(sent);
+		given(results.failedCount()).willReturn(failed);
 		given(results.invalidFids()).willReturn(invalidFids);
+		given(results.failure()).willReturn(Optional.empty());
+		return results;
+	}
+
+	private NotificationBatchResult failedBatch(Throwable cause) {
+		NotificationBatchResult results = results(0, 500, List.of());
+		given(results.failure()).willReturn(Optional.of(cause));
 		return results;
 	}
 

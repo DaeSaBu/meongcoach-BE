@@ -1,7 +1,6 @@
 package com.daesabu.meongcoach.notification.adapter.integration;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -37,15 +36,22 @@ class FirebaseNotificationSenderTest {
 	}
 
 	@Test
-	void 배치_호출이_실패하면_즉시_중단한다() throws Exception {
+	void 배치_호출이_실패해도_남은_배치를_보내고_실패를_기록한다() throws Exception {
 		FirebaseMessaging messaging = mock(FirebaseMessaging.class);
 		FirebaseMessagingException failure = mock(FirebaseMessagingException.class);
-		given(messaging.sendEach(anyList())).willThrow(failure);
+		BatchResponse batch = mock(BatchResponse.class);
+		given(batch.getResponses()).willReturn(List.of(mock(SendResponse.class)));
+		given(messaging.sendEach(anyList())).willThrow(failure).willReturn(batch);
 		List<String> fids = java.util.stream.IntStream.range(0, 501).mapToObj(index -> "fid-" + index).toList();
 
-		assertThatThrownBy(() -> sender(messaging).send(messages(fids))).hasCause(failure);
+		var results = sender(messaging).send(messages(fids));
 
-		verify(messaging, times(1)).sendEach(anyList());
+		verify(messaging, times(2)).sendEach(anyList());
+		assertThat(results).hasSize(2);
+		assertThat(results.getFirst().failure()).contains(failure);
+		assertThat(results.getFirst().failedCount()).isEqualTo(500);
+		assertThat(results.getLast().failure()).isEmpty();
+		assertThat(results.getLast().sentCount()).isEqualTo(1);
 	}
 
 	@Test
