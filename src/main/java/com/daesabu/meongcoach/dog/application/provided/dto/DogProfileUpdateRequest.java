@@ -14,7 +14,7 @@ import java.time.LocalDate;
 import java.util.Set;
 
 public record DogProfileUpdateRequest(
-		@NotBlank @Size(max = 50) String name,
+		@NotBlank @Size(max = 12) String name,
 		@NotBlank @Size(max = 30) String breed,
 		@NotBlank String sex,
 		@Past LocalDate birthDate,
