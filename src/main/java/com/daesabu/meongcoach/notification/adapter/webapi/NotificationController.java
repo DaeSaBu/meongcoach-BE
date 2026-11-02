@@ -1,12 +1,16 @@
 package com.daesabu.meongcoach.notification.adapter.webapi;
 
-import com.daesabu.meongcoach.notification.adapter.webapi.dto.NotificationPreferencesResponse;
-import com.daesabu.meongcoach.notification.application.provided.NotificationPreferenceFinder;
-import com.daesabu.meongcoach.notification.application.provided.NotificationPreferenceResult;
+import com.daesabu.meongcoach.notification.adapter.webapi.dto.NotificationEventSettingsResponse;
+import com.daesabu.meongcoach.notification.adapter.webapi.dto.NotificationSchedulesResponse;
+import com.daesabu.meongcoach.notification.application.provided.NotificationEventSettingFinder;
+import com.daesabu.meongcoach.notification.application.provided.NotificationEventSettingResult;
 import com.daesabu.meongcoach.notification.application.provided.NotificationRegister;
+import com.daesabu.meongcoach.notification.application.provided.NotificationScheduleFinder;
+import com.daesabu.meongcoach.notification.application.provided.NotificationScheduleResult;
 import com.daesabu.meongcoach.notification.application.provided.dto.DeviceInstallationRegisterRequest;
 import com.daesabu.meongcoach.notification.application.provided.dto.DeviceInstallationUnregisterRequest;
-import com.daesabu.meongcoach.notification.application.provided.dto.NotificationPreferenceUpdateRequest;
+import com.daesabu.meongcoach.notification.application.provided.dto.NotificationEventSettingUpdateRequest;
+import com.daesabu.meongcoach.notification.application.provided.dto.NotificationScheduleUpdateRequest;
 import com.daesabu.meongcoach.shared.security.CurrentUserId;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -14,7 +18,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -27,7 +30,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class NotificationController {
 
 	private final NotificationRegister notificationRegister;
-	private final NotificationPreferenceFinder notificationPreferenceFinder;
+	private final NotificationScheduleFinder notificationScheduleFinder;
+	private final NotificationEventSettingFinder notificationEventSettingFinder;
 
 	@PutMapping("/installations")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
@@ -41,16 +45,27 @@ public class NotificationController {
 		notificationRegister.deleteDeviceInstallation(userId, request);
 	}
 
-	@GetMapping("/preferences")
-	public NotificationPreferencesResponse findPreferences(@CurrentUserId Long userId) {
-		List<NotificationPreferenceResult> preferences = notificationPreferenceFinder.findPreferences(userId);
-		return NotificationPreferencesResponse.from(preferences);
+	@GetMapping("/schedules")
+	public NotificationSchedulesResponse findSchedules(@CurrentUserId Long userId) {
+		List<NotificationScheduleResult> schedules = notificationScheduleFinder.findSchedules(userId);
+		return NotificationSchedulesResponse.from(schedules);
 	}
 
-	@PutMapping("/preferences/{hour}")
+	@PutMapping("/schedules")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	public void updatePreference(@CurrentUserId Long userId, @PathVariable int hour,
-	                             @Valid @RequestBody NotificationPreferenceUpdateRequest request) {
-		notificationRegister.updatePreference(userId, hour, request);
+	public void updateSchedule(@CurrentUserId Long userId, @Valid @RequestBody NotificationScheduleUpdateRequest request) {
+		notificationRegister.updateSchedule(userId, request);
+	}
+
+	@GetMapping("/event-settings")
+	public NotificationEventSettingsResponse findEventSettings(@CurrentUserId Long userId) {
+		List<NotificationEventSettingResult> settings = notificationEventSettingFinder.findEventSettings(userId);
+		return new NotificationEventSettingsResponse(settings);
+	}
+
+	@PutMapping("/event-settings")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public void updateEventSetting(@CurrentUserId Long userId, @Valid @RequestBody NotificationEventSettingUpdateRequest request) {
+		notificationRegister.updateEventSetting(userId, request);
 	}
 }
