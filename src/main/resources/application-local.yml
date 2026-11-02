@@ -20,7 +20,7 @@ meongcoach:
       enabled: false
   alert:
     slack:
-      # 로컬은 Slack 대신 로그로만 남긴다. 실제 채널로 확인하려면 true로 바꾸고 ALERT_SLACK_GRADUATION_WEBHOOK_URL에 dev 채널 webhook을 넣는다
+      # 로컬은 Slack 대신 로그로만 남긴다. 실제 채널로 확인하려면 true로 바꾸고 ALERT_SLACK_GRADUATION_WEBHOOK_URL에 webhook을 넣는다
       enabled: false
       graduation-webhook-url: ${ALERT_SLACK_GRADUATION_WEBHOOK_URL:}
   # 로컬에서는 /swagger-ui/** 문서 페이지를 인증 없이 연다

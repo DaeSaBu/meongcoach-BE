@@ -57,9 +57,9 @@ alerter.alert(AlertRequest.of("신규 가입",
 | `meongcoach.alert.slack.enabled` | 없음(프로파일 yml) | `false`면 Slack 대신 `LogAlertSender`가 info 로그만 남깁니다. `local`·`test`는 `false` |
 | `meongcoach.alert.slack.graduation-webhook-url` | `ALERT_SLACK_GRADUATION_WEBHOOK_URL` | 실습 인증 알림 채널의 Incoming Webhook URL. 기본값이 없어 `dev`·`prod`는 미주입 시 기동에 실패합니다 |
 
-- 배포 값은 GitHub Secrets `DEV_ALERT_SLACK_GRADUATION_WEBHOOK_URL`·`PROD_ALERT_SLACK_GRADUATION_WEBHOOK_URL`에 둡니다. 없으면 CD의 task definition 렌더링이 실패합니다.
+- 배포 값은 GitHub Secrets `ALERT_SLACK_GRADUATION_WEBHOOK_URL` 하나에 두고 `dev`·`prod`가 같은 채널로 보냅니다. 메시지는 context의 환경 이름으로 구분합니다. 시크릿이 없으면 CD의 task definition 렌더링이 실패합니다.
 - 배포 CI가 쓰는 `SLACK_WEBHOOK_URL`과는 다른 값입니다.
-- 로컬에서 실제 채널로 확인하려면 `application-local.yml`의 `enabled`를 `true`로 바꾸고 `ALERT_SLACK_GRADUATION_WEBHOOK_URL`에 dev 채널 webhook을 넣습니다. 확인 후 되돌립니다.
+- 로컬에서 실제 채널로 확인하려면 `application-local.yml`의 `enabled`를 `true`로 바꾸고 `ALERT_SLACK_GRADUATION_WEBHOOK_URL`에 webhook을 넣습니다. 메시지가 `dev`·`prod`와 같은 채널에 `local`로 올라갑니다. 확인 후 되돌립니다.
 
 ## 실패 처리
 
