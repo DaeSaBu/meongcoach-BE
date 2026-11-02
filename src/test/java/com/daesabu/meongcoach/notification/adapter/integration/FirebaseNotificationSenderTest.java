@@ -9,6 +9,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.daesabu.meongcoach.notification.domain.NotificationDeepLink;
+import com.daesabu.meongcoach.notification.domain.NotificationDelivery;
 import com.daesabu.meongcoach.notification.domain.NotificationEventType;
 import com.daesabu.meongcoach.notification.domain.PushNotification;
 import com.daesabu.meongcoach.notification.domain.exception.NotificationDeliveryException;
@@ -25,7 +26,7 @@ import org.springframework.beans.factory.ObjectProvider;
 class FirebaseNotificationSenderTest {
 
 	@Test
-	void UNREGISTERED만_무효_FID으로_반환한다() throws Exception {
+	void UNREGISTERED만_수신_불가_FID으로_반환한다() throws Exception {
 		FirebaseMessaging messaging = mock(FirebaseMessaging.class);
 		BatchResponse batch = mock(BatchResponse.class);
 		SendResponse expired = failure(MessagingErrorCode.UNREGISTERED);
@@ -33,15 +34,15 @@ class FirebaseNotificationSenderTest {
 		given(batch.getResponses()).willReturn(List.of(expired, success));
 		given(messaging.sendEach(anyList())).willReturn(batch);
 
-		var result = sender(messaging).send(messages(List.of("expired", "keep")));
+		NotificationDelivery delivery = sender(messaging).send(messages(List.of("expired", "keep")));
 
-		assertThat(result.invalidFids()).containsExactly("expired");
-		assertThat(result.sentCount()).isEqualTo(1);
-		assertThat(result.failedCount()).isZero();
+		assertThat(delivery.unreachableFids()).containsExactly("expired");
+		assertThat(delivery.deliveredCount()).isEqualTo(1);
+		assertThat(delivery.failedCount()).isZero();
 	}
 
 	@Test
-	void SENDER_ID_MISMATCH도_무효_FID으로_반환하고_그_밖의_실패는_실패_수로_센다() throws Exception {
+	void SENDER_ID_MISMATCH도_수신_불가_FID으로_반환하고_그_밖의_오류는_실패로_센다() throws Exception {
 		FirebaseMessaging messaging = mock(FirebaseMessaging.class);
 		BatchResponse batch = mock(BatchResponse.class);
 		SendResponse mismatch = failure(MessagingErrorCode.SENDER_ID_MISMATCH);
@@ -50,11 +51,11 @@ class FirebaseNotificationSenderTest {
 		given(batch.getResponses()).willReturn(List.of(mismatch, unavailable, invalidArgument));
 		given(messaging.sendEach(anyList())).willReturn(batch);
 
-		var result = sender(messaging).send(messages(List.of("mismatch", "unavailable", "invalid-argument")));
+		NotificationDelivery delivery = sender(messaging).send(messages(List.of("mismatch", "unavailable", "invalid-argument")));
 
-		assertThat(result.invalidFids()).containsExactly("mismatch");
-		assertThat(result.failedCount()).isEqualTo(2);
-		assertThat(result.failure()).isNull();
+		assertThat(delivery.unreachableFids()).containsExactly("mismatch");
+		assertThat(delivery.failedCount()).isEqualTo(2);
+		assertThat(delivery.deliveredCount()).isZero();
 	}
 
 	@Test
@@ -92,11 +93,12 @@ class FirebaseNotificationSenderTest {
 		given(messaging.sendEach(anyList())).willReturn(batch);
 		List<String> fids = java.util.stream.IntStream.range(0, 501).mapToObj(index -> "fid-" + index).toList();
 
-		var result = sender(messaging).send(messages(fids));
+		NotificationDelivery delivery = sender(messaging).send(messages(fids));
 
 		verify(messaging, times(2)).sendEach(anyList());
-		assertThat(result.invalidFids()).isEmpty();
-		assertThat(result.failedCount()).isEqualTo(2);
+		assertThat(delivery.unreachableFids()).isEmpty();
+		assertThat(delivery.failedCount()).isEqualTo(2);
+		assertThat(delivery.deliveredCount()).isZero();
 	}
 
 	@Test
@@ -169,12 +171,12 @@ class FirebaseNotificationSenderTest {
 		});
 		List<String> fids = java.util.stream.IntStream.range(0, 1001).mapToObj(index -> "fid-" + index).toList();
 
-		var result = sender(messaging).send(messages(fids));
+		NotificationDelivery delivery = sender(messaging).send(messages(fids));
 
 		ArgumentCaptor<List<com.google.firebase.messaging.Message>> batches = ArgumentCaptor.captor();
 		verify(messaging, times(3)).sendEach(batches.capture());
 		assertThat(batches.getAllValues()).extracting(List::size).containsExactly(500, 500, 1);
-		assertThat(result.invalidFids()).containsExactlyElementsOf(fids);
+		assertThat(delivery.unreachableFids()).containsExactlyElementsOf(fids);
 	}
 
 	private List<PushNotification> messages(List<String> fids) {

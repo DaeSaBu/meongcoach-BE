@@ -1,6 +1,7 @@
 package com.daesabu.meongcoach.notification.adapter.integration;
 
 import com.daesabu.meongcoach.notification.application.required.NotificationSender;
+import com.daesabu.meongcoach.notification.domain.NotificationDelivery;
 import com.daesabu.meongcoach.notification.domain.PushNotification;
 import com.daesabu.meongcoach.notification.domain.exception.NotificationDeliveryException;
 import com.google.firebase.messaging.AndroidConfig;
@@ -28,46 +29,46 @@ public class FirebaseNotificationSender implements NotificationSender {
 	private final ObjectProvider<FirebaseMessaging> messaging;
 
 	@Override
-	public NotificationSendResult send(List<PushNotification> notifications) {
+	public NotificationDelivery send(List<PushNotification> notifications) {
 		List<List<PushNotification>> batches = notifications.stream().gather(Gatherers.windowFixed(BATCH_SIZE)).toList();
-		List<NotificationSendResult> results = new ArrayList<>();
+		NotificationDelivery delivery = NotificationDelivery.none();
 		for (List<PushNotification> batch : batches) {
-			results.add(sendBatch(batch));
+			delivery = delivery.plus(sendBatch(batch));
 		}
-		return NotificationSendResult.merge(results);
+		return delivery;
 	}
 
-	private NotificationSendResult sendBatch(List<PushNotification> batch) {
+	private NotificationDelivery sendBatch(List<PushNotification> batch) {
 		List<Message> firebaseMessages = batch.stream().map(this::toMessage).toList();
 		FirebaseMessaging client = messaging.getObject();
 		try {
 			List<SendResponse> responses = client.sendEach(firebaseMessages).getResponses();
-			return toResult(batch, responses);
+			return toDelivery(batch, responses);
 		} catch (FirebaseMessagingException exception) {
 			throw new NotificationDeliveryException(exception);
 		}
 	}
 
-	private NotificationSendResult toResult(List<PushNotification> batch, List<SendResponse> responses) {
-		int sentCount = 0;
+	private NotificationDelivery toDelivery(List<PushNotification> batch, List<SendResponse> responses) {
+		int deliveredCount = 0;
 		int failedCount = 0;
-		List<String> invalidFids = new ArrayList<>();
+		List<String> unreachableFids = new ArrayList<>();
 		for (int index = 0; index < responses.size(); index++) {
 			FirebaseMessagingException exception = responses.get(index).getException();
 			if (exception == null) {
-				sentCount++;
+				deliveredCount++;
 				continue;
 			}
-			if (isInvalid(exception.getMessagingErrorCode())) {
-				invalidFids.add(batch.get(index).fid());
+			if (isUnreachable(exception.getMessagingErrorCode())) {
+				unreachableFids.add(batch.get(index).fid());
 				continue;
 			}
 			failedCount++;
 		}
-		return new NotificationSendResult(sentCount, failedCount, invalidFids, null);
+		return new NotificationDelivery(deliveredCount, failedCount, unreachableFids);
 	}
 
-	private boolean isInvalid(MessagingErrorCode code) {
+	private boolean isUnreachable(MessagingErrorCode code) {
 		return code == MessagingErrorCode.UNREGISTERED || code == MessagingErrorCode.SENDER_ID_MISMATCH;
 	}
 

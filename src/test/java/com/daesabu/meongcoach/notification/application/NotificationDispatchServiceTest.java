@@ -15,12 +15,12 @@ import com.daesabu.meongcoach.notification.application.required.DeviceInstallati
 import com.daesabu.meongcoach.notification.application.required.NotificationEventSettingRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationScheduleRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationSender;
-import com.daesabu.meongcoach.notification.application.required.NotificationSender.NotificationSendResult;
 import com.daesabu.meongcoach.notification.application.required.ScheduledNotificationDispatchRepository;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallation;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallationRegisterCommand;
 import com.daesabu.meongcoach.notification.domain.DevicePlatform;
 import com.daesabu.meongcoach.notification.domain.NotificationDeepLink;
+import com.daesabu.meongcoach.notification.domain.NotificationDelivery;
 import com.daesabu.meongcoach.notification.domain.NotificationTime;
 import com.daesabu.meongcoach.notification.domain.PushNotification;
 import com.daesabu.meongcoach.notification.domain.ScheduledNotificationDispatch;
@@ -50,8 +50,8 @@ class NotificationDispatchServiceTest {
 	@Test
 	void 시각별_메시지를_구성하고_전체_대상을_Sender에_전달한다() {
 		prepareTargets(501);
-		NotificationSendResult deliveryResults = results(List.of());
-		given(sender.send(anyList())).willReturn(deliveryResults);
+		NotificationDelivery delivery = delivery(501, 0, List.of());
+		given(sender.send(anyList())).willReturn(delivery);
 
 		assertThat(service.dispatch(request).fids()).isEqualTo(501);
 
@@ -68,10 +68,10 @@ class NotificationDispatchServiceTest {
 	}
 
 	@Test
-	void 여러_배치의_무효_FID을_모아_삭제한다() {
+	void 수신_불가_FID을_삭제한다() {
 		prepareTargets(1001);
-		NotificationSendResult result = results(List.of("fid-1", "fid-500"));
-		given(sender.send(anyList())).willReturn(result);
+		NotificationDelivery delivery = delivery(999, 0, List.of("fid-1", "fid-500"));
+		given(sender.send(anyList())).willReturn(delivery);
 
 		assertThat(service.dispatch(request).fids()).isEqualTo(1001);
 
@@ -81,9 +81,9 @@ class NotificationDispatchServiceTest {
 	}
 
 	@Test
-	void 전송에_성공한_FID이_없고_무효_외_실패가_있으면_완료_이력을_남기지_않고_던진다() {
+	void 전달된_기기가_없고_수신_불가_외_실패가_있으면_완료_이력을_남기지_않고_던진다() {
 		prepareTargets(2);
-		NotificationSendResult allFailed = results(0, 2, List.of());
+		NotificationDelivery allFailed = delivery(0, 2, List.of());
 		given(sender.send(anyList())).willReturn(allFailed);
 
 		assertThatThrownBy(() -> service.dispatch(request)).isInstanceOf(NotificationDeliveryException.class);
@@ -92,10 +92,10 @@ class NotificationDispatchServiceTest {
 	}
 
 	@Test
-	void 무효_FID만_있으면_삭제하고_완료한다() {
+	void 수신_불가_FID만_있으면_삭제하고_완료한다() {
 		prepareTargets(2);
-		NotificationSendResult onlyInvalid = results(0, 0, List.of("fid-0", "fid-1"));
-		given(sender.send(anyList())).willReturn(onlyInvalid);
+		NotificationDelivery onlyUnreachable = delivery(0, 0, List.of("fid-0", "fid-1"));
+		given(sender.send(anyList())).willReturn(onlyUnreachable);
 
 		assertThat(service.dispatch(request).fids()).isEqualTo(2);
 
@@ -123,12 +123,9 @@ class NotificationDispatchServiceTest {
 						new DeviceInstallationRegisterCommand("fid-" + index, DevicePlatform.IOS), Instant.parse("2026-10-31T08:00:00Z"))).toList();
 		given(installations.findAllByUserIdInOrderByUserIdAscIdAsc(Set.of(1L))).willReturn(results);
 	}
-	private NotificationSendResult results(List<String> invalidFids) {
-		return results(0, 0, invalidFids);
-	}
 
-	private NotificationSendResult results(int sent, int failed, List<String> invalidFids) {
-		return new NotificationSendResult(sent, failed, invalidFids, null);
+	private NotificationDelivery delivery(int delivered, int failed, List<String> unreachableFids) {
+		return new NotificationDelivery(delivered, failed, unreachableFids);
 	}
 
 }
