@@ -35,8 +35,9 @@ public final class PushNotificationFactory {
 			mutableData.put("deepLink", deepLink.value());
 		}
 		Map<String, String> data = Map.copyOf(mutableData);
+		String collapseKey = UUID.randomUUID().toString();
 		return fids.stream()
-				.map(fid -> new PushNotification(fid, title, body, data, UUID.randomUUID().toString()))
+				.map(fid -> new PushNotification(fid, title, body, data, collapseKey))
 				.toList();
 	}
 }
