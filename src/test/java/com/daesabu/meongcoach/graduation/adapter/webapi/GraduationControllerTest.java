@@ -52,7 +52,7 @@ class GraduationControllerTest {
 	private static final Instant REVIEWED_AT = Instant.parse("2026-10-15T01:00:00Z");
 	private static final String VIDEO_KEY = "videos/graduation/42/7/550e8400.mp4";
 	private static final String VIDEO_URL =
-			"https://test-video-bucket.s3.ap-northeast-2.amazonaws.com/" + VIDEO_KEY + "?X-Amz-Signature=example";
+			"https://storage.googleapis.com/test-ai-video-bucket/" + VIDEO_KEY + "?X-Goog-Signature=example";
 	private static final TopicResult TOPIC = new TopicResult(TOPIC_ID, "분리불안", "혼자 있는 시간을 편안하게");
 
 	private static final FieldDescriptor[] ERROR_FIELDS = {
