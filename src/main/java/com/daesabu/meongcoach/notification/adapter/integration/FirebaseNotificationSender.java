@@ -33,12 +33,11 @@ public class FirebaseNotificationSender implements NotificationSender {
 	}
 
 	private NotificationBatchResult sendBatch(List<PushNotification> batch) {
-		List<String> fids = batch.stream().map(PushNotification::fid).toList();
 		List<Message> firebaseMessages = batch.stream().map(this::toMessage).toList();
 		FirebaseMessaging client = messaging.getObject();
 		try {
 			List<SendResponse> responses = client.sendEach(firebaseMessages).getResponses();
-			return FirebaseNotificationBatchResult.success(fids, responses);
+			return FirebaseNotificationBatchResult.success(batch, responses);
 		} catch (FirebaseMessagingException exception) {
 			throw new NotificationDeliveryException(exception);
 		}

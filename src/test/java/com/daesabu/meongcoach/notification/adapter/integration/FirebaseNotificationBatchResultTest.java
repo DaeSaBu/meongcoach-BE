@@ -4,10 +4,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
+import com.daesabu.meongcoach.notification.domain.PushNotification;
 import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.MessagingErrorCode;
 import com.google.firebase.messaging.SendResponse;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
 class FirebaseNotificationBatchResultTest {
@@ -17,7 +20,7 @@ class FirebaseNotificationBatchResultTest {
 		given(success.isSuccessful()).willReturn(true);
 		SendResponse unregistered = failure(MessagingErrorCode.UNREGISTERED);
 		var results = FirebaseNotificationBatchResult.success(
-				List.of("success", "invalid"), List.of(success, unregistered));
+				notifications("success", "invalid"), List.of(success, unregistered));
 
 		assertThat(results.invalidFids()).containsExactly("invalid");
 	}
@@ -25,7 +28,7 @@ class FirebaseNotificationBatchResultTest {
 	@Test
 	void SENDER_ID_MISMATCH도_무효_FID으로_추출한다() {
 		SendResponse mismatch = failure(MessagingErrorCode.SENDER_ID_MISMATCH);
-		var results = FirebaseNotificationBatchResult.success(List.of("mismatch"), List.of(mismatch));
+		var results = FirebaseNotificationBatchResult.success(notifications("mismatch"), List.of(mismatch));
 
 		assertThat(results.invalidFids()).containsExactly("mismatch");
 	}
@@ -36,7 +39,7 @@ class FirebaseNotificationBatchResultTest {
 		SendResponse invalidArgument = failure(MessagingErrorCode.INVALID_ARGUMENT);
 		SendResponse unregistered = failure(MessagingErrorCode.UNREGISTERED);
 		var results = FirebaseNotificationBatchResult.success(
-				List.of("unavailable", "invalid-argument", "unregistered"),
+				notifications("unavailable", "invalid-argument", "unregistered"),
 				List.of(unavailable, invalidArgument, unregistered));
 
 		assertThat(results.invalidFids()).containsExactly("unregistered");
@@ -47,6 +50,10 @@ class FirebaseNotificationBatchResultTest {
 		var results = FirebaseNotificationBatchResult.success(List.of(), List.of());
 
 		assertThat(results.invalidFids()).isEmpty();
+	}
+
+	private List<PushNotification> notifications(String... fids) {
+		return Stream.of(fids).map(fid -> new PushNotification(fid, "제목", "본문", Map.of(), "key")).toList();
 	}
 
 	private SendResponse failure(MessagingErrorCode code) {
