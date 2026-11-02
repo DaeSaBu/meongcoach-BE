@@ -9,10 +9,10 @@ import com.daesabu.meongcoach.notification.application.provided.dto.ScheduledNot
 import com.daesabu.meongcoach.notification.application.required.DeviceInstallationRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationScheduleRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationSender;
-import com.daesabu.meongcoach.notification.application.required.NotificationSender.NotificationSendResult;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallation;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallationRegisterCommand;
 import com.daesabu.meongcoach.notification.domain.DevicePlatform;
+import com.daesabu.meongcoach.notification.domain.NotificationDelivery;
 import com.daesabu.meongcoach.notification.domain.NotificationScheduleFixture;
 import com.daesabu.meongcoach.notification.domain.PushNotification;
 import com.daesabu.meongcoach.notification.domain.exception.InvalidNotificationHourException;
@@ -161,7 +161,7 @@ class ScheduledNotificationTargetTest {
 		given(sender.send(anyList())).willAnswer(invocation -> {
 			List<PushNotification> messages = invocation.getArgument(0);
 			messages.forEach(message -> fids.add(message.fid()));
-			return new NotificationSendResult(messages.size(), 0, List.of(), null);
+			return new NotificationDelivery(messages.size(), 0, List.of());
 		});
 		dispatcher.dispatch(new ScheduledNotificationDispatchRequest(TODAY, hour, 0));
 		return fids;

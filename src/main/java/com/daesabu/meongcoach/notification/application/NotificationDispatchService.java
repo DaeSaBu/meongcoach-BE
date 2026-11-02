@@ -10,10 +10,10 @@ import com.daesabu.meongcoach.notification.application.required.DeviceInstallati
 import com.daesabu.meongcoach.notification.application.required.NotificationEventSettingRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationScheduleRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationSender;
-import com.daesabu.meongcoach.notification.application.required.NotificationSender.NotificationSendResult;
 import com.daesabu.meongcoach.notification.application.required.ScheduledNotificationDispatchRepository;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallation;
 import com.daesabu.meongcoach.notification.domain.NotificationDeepLink;
+import com.daesabu.meongcoach.notification.domain.NotificationDelivery;
 import com.daesabu.meongcoach.notification.domain.NotificationEventType;
 import com.daesabu.meongcoach.notification.domain.NotificationTarget;
 import com.daesabu.meongcoach.notification.domain.PushNotification;
@@ -96,15 +96,15 @@ public class NotificationDispatchService implements ScheduledNotificationDispatc
 		if (notifications.isEmpty()) {
 			return;
 		}
-		NotificationSendResult result = sender.send(notifications);
-		deleteInvalidInstallations(result.invalidFids());
-		result.requireDelivered();
+		NotificationDelivery delivery = sender.send(notifications);
+		retireUnreachable(delivery);
+		delivery.requireDelivered();
 	}
 
-	private void deleteInvalidInstallations(List<String> invalidFids) {
-		if (invalidFids.isEmpty()) {
+	private void retireUnreachable(NotificationDelivery delivery) {
+		if (!delivery.hasUnreachable()) {
 			return;
 		}
-		cleanup.deleteInvalid(invalidFids);
+		cleanup.deleteUnreachable(delivery.unreachableFids());
 	}
 }

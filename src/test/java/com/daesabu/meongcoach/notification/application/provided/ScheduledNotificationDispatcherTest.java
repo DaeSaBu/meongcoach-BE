@@ -12,12 +12,13 @@ import com.daesabu.meongcoach.notification.application.provided.dto.ScheduledNot
 import com.daesabu.meongcoach.notification.application.required.DeviceInstallationRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationScheduleRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationSender;
-import com.daesabu.meongcoach.notification.application.required.NotificationSender.NotificationSendResult;
 import com.daesabu.meongcoach.notification.application.required.ScheduledNotificationDispatchRepository;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallation;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallationRegisterCommand;
 import com.daesabu.meongcoach.notification.domain.DevicePlatform;
+import com.daesabu.meongcoach.notification.domain.NotificationDelivery;
 import com.daesabu.meongcoach.notification.domain.NotificationScheduleFixture;
+import com.daesabu.meongcoach.notification.domain.PushNotification;
 import com.daesabu.meongcoach.notification.domain.exception.InvalidNotificationDispatchTimeException;
 import com.daesabu.meongcoach.notification.domain.exception.InvalidNotificationHourException;
 import com.daesabu.meongcoach.notification.domain.exception.NotificationDeliveryException;
@@ -32,6 +33,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
@@ -73,9 +75,25 @@ class ScheduledNotificationDispatcherTest {
 	}
 
 	@Test
-	void 발송_후_무효_FID을_삭제한다() {
-		NotificationSendResult deliveryResults = results(List.of(fid));
-		given(sender.send(anyList())).willReturn(deliveryResults);
+	void 대상_FID_전체를_시각별_문구로_만들어_한_번에_넘긴다() {
+		String second = UUID.randomUUID().toString();
+		fids.save(DeviceInstallation.register(userId, new DeviceInstallationRegisterCommand(second, DevicePlatform.IOS), Instant.now()));
+		NotificationDelivery delivery = delivered();
+		given(sender.send(anyList())).willReturn(delivery);
+
+		assertThat(dispatcher.dispatch(request).fids()).isEqualTo(2);
+
+		ArgumentCaptor<List<PushNotification>> notifications = ArgumentCaptor.captor();
+		verify(sender, times(1)).send(notifications.capture());
+		assertThat(notifications.getValue()).extracting(PushNotification::fid).containsExactlyInAnyOrder(fid, second);
+		assertThat(notifications.getValue()).extracting(PushNotification::title).containsOnly("저녁 훈련 시간이에요");
+		assertThat(notifications.getValue()).extracting(PushNotification::collapseKey).containsOnly("2026-10-31T08:00:00Z");
+	}
+
+	@Test
+	void 발송_후_수신_불가_FID을_삭제한다() {
+		NotificationDelivery delivery = unreachable(List.of(fid));
+		given(sender.send(anyList())).willReturn(delivery);
 
 		ScheduledNotificationDispatchResult result = dispatcher.dispatch(request);
 
@@ -91,8 +109,8 @@ class ScheduledNotificationDispatcherTest {
 
 	@Test
 	void 같은_예약_시각의_호출은_한_번만_발송한다() {
-		NotificationSendResult deliveryResults = results(List.of());
-		given(sender.send(anyList())).willReturn(deliveryResults);
+		NotificationDelivery delivery = delivered();
+		given(sender.send(anyList())).willReturn(delivery);
 
 		dispatcher.dispatch(request);
 		ScheduledNotificationDispatchResult repeated = dispatcher.dispatch(request);
@@ -104,12 +122,12 @@ class ScheduledNotificationDispatcherTest {
 	@Test
 	void 실패한_예약은_다시_발송하고_완료한_예약은_재발송하지_않는다() {
 		var cause = new IllegalStateException("FCM unavailable");
-		NotificationSendResult failedBatch = failedBatch(cause);
-		NotificationSendResult deliveryResults = results(List.of());
-		given(sender.send(anyList())).willReturn(failedBatch)
-				.willReturn(deliveryResults);
+		var failure = new NotificationDeliveryException(cause);
+		NotificationDelivery delivery = delivered();
+		given(sender.send(anyList())).willThrow(failure)
+				.willReturn(delivery);
 
-		assertThatThrownBy(() -> dispatcher.dispatch(request)).isInstanceOf(NotificationDeliveryException.class).hasCause(cause);
+		assertThatThrownBy(() -> dispatcher.dispatch(request)).isSameAs(failure).hasCause(cause);
 		assertThat(dispatches.existsByScheduledAt(SCHEDULED_AT)).isFalse();
 		assertThat(dispatcher.dispatch(request).duplicate()).isFalse();
 		assertThat(dispatches.existsByScheduledAt(SCHEDULED_AT)).isTrue();
@@ -129,10 +147,9 @@ class ScheduledNotificationDispatcherTest {
 	}
 
 	@Test
-	void 발송이_실패해도_무효_FID_삭제는_유지한다() {
-		var cause = new IllegalStateException("FCM unavailable");
-		NotificationSendResult failedWithInvalid = new NotificationSendResult(0, 1, List.of(fid), cause);
-		given(sender.send(anyList())).willReturn(failedWithInvalid);
+	void 발송이_실패해도_수신_불가_FID_삭제는_유지한다() {
+		NotificationDelivery failedWithUnreachable = new NotificationDelivery(0, 1, List.of(fid));
+		given(sender.send(anyList())).willReturn(failedWithUnreachable);
 
 		assertThatThrownBy(() -> dispatcher.dispatch(request)).isInstanceOf(NotificationDeliveryException.class);
 		assertThat(fids.findByFid(fid)).isEmpty();
@@ -172,8 +189,8 @@ class ScheduledNotificationDispatcherTest {
 		given(sender.send(anyList())).willAnswer(invocation -> {
 			started.countDown();
 			assertThat(release.await(10, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
-			NotificationSendResult batchResult = results(List.of());
-			return batchResult;
+			NotificationDelivery delivery = delivered();
+			return delivery;
 		});
 		try (var executor = java.util.concurrent.Executors.newFixedThreadPool(2)) {
 			var first = executor.submit(() -> dispatcher.dispatch(request));
@@ -194,12 +211,12 @@ class ScheduledNotificationDispatcherTest {
 		var started = new java.util.concurrent.CountDownLatch(1);
 		var release = new java.util.concurrent.CountDownLatch(1);
 		var failure = new NotificationDeliveryException(new IllegalStateException("FCM unavailable"));
-		NotificationSendResult batchResult = results(List.of());
+		NotificationDelivery delivery = delivered();
 		given(sender.send(anyList())).willAnswer(invocation -> {
 			started.countDown();
 			assertThat(release.await(10, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
 			throw failure;
-		}).willReturn(batchResult);
+		}).willReturn(delivery);
 		try (var executor = java.util.concurrent.Executors.newFixedThreadPool(2)) {
 			var first = executor.submit(() -> dispatcher.dispatch(request));
 			assertThat(started.await(10, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
@@ -215,12 +232,12 @@ class ScheduledNotificationDispatcherTest {
 		verify(sender, times(2)).send(anyList());
 	}
 
-	private NotificationSendResult results(List<String> invalidFids) {
-		return new NotificationSendResult(0, 0, invalidFids, null);
+	private NotificationDelivery delivered() {
+		return new NotificationDelivery(1, 0, List.of());
 	}
 
-	private NotificationSendResult failedBatch(Throwable cause) {
-		return new NotificationSendResult(0, 1, List.of(), cause);
+	private NotificationDelivery unreachable(List<String> unreachableFids) {
+		return new NotificationDelivery(0, 0, unreachableFids);
 	}
 
 }

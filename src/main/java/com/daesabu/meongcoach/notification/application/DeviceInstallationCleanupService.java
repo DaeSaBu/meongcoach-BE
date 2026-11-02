@@ -14,7 +14,7 @@ public class DeviceInstallationCleanupService {
 
 	private final DeviceInstallationRepository installations;
 
-	public void deleteInvalid(List<String> fids) {
+	public void deleteUnreachable(List<String> fids) {
 		installations.deleteAllByFidIn(fids);
 	}
 }
