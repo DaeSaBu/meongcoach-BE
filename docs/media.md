@@ -41,13 +41,12 @@ media는 소비 모듈의 이름이나 용도를 모릅니다. 용도별 규칙�
 
 | 경로 범위 | 종류·공개 | 영상 상한 | 정의 위치 | 사용처 |
 |---|---|---|---|---|
-| `user-profile` | 이미지·공개 | — | `user/domain/UserProfileImage` | 사용자 프로필 이미지 발급, 온보딩 완료 검증 |
 | `dog-profile` | 이미지·공개 | — | `dog/domain/DogProfileImage` | 강아지 프로필 이미지 발급, 강아지 등록·수정 검증 |
 | `community-post` | 이미지·영상·공개 | 512MiB | `community/domain/PostMediaType` | 게시글 미디어 발급, 게시글 작성 검증 |
 | `training` | 영상·분석 | 512MiB | `ai/domain/AiVideo` | AI 분석 영상 발급·`gs://` URI 조회 |
 | `graduation` + 하위 경로 `{topicId}` | 영상·비공개 | 512MiB | `graduation/domain/GraduationVideo` | 실습 인증 발급·제출 검증·다운로드 |
 
-- 범위는 그 이미지를 저장하는 모듈 안에 두고 밖에 노출하지 않습니다. 온보딩은 클라이언트가 보낸 target(`USER_PROFILE`·`DOG_PROFILE`)에 따라 user·dog의 발급 API(`UserProfileImageUploadUrlIssuer`·`DogProfileImageUploadUrlIssuer`)를 고르기만 합니다. 클라이언트가 범위를 고를 수 없게 하려는 것이므로, **target 문자열을 media나 범위로 그대로 흘려보내지 않습니다.**
+- 범위는 그 이미지를 저장하는 모듈 안에 두고 밖에 노출하지 않습니다. 온보딩은 `DogProfileImageUploadUrlIssuer`로 강아지 프로필 범위에만 발급하며, 클라이언트가 범위를 고르지 못하도록 범위를 선택하는 입력을 받지 않습니다.
 - 크기 위반은 어느 모듈에서 발급하든 `MEDIA_VIDEO_FILE_SIZE_EXCEEDED`·`MEDIA_INVALID_VIDEO_FILE_SIZE`로 내려갑니다. 앱이 이 코드로 안내 문구를 고르므로, 소비 모듈은 상한 값만 정하고 검증은 media에 넘깁니다. 자기 에러 코드로 직접 검증하면 앱 분기가 깨집니다.
 - 사진은 크기 상한이 없어 Content-Type만 서명합니다. 상한이 있는 요청만 Content-Length를 서명에 넣고, 이때 앱은 chunked 전송이 아니라 길이를 아는 body로 PUT해야 합니다.
 - GCS V4 서명은 `withContentType()` 옵션이 서명 헤더에 반영되지 않으므로(V2 전용) Content-Type·Content-Length를 확장 헤더로 직접 넣습니다. 두 스토리지 모두 앱이 보내야 하는 PUT 헤더는 같습니다.
