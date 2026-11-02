@@ -1,6 +1,7 @@
 package com.daesabu.meongcoach.notification.adapter.integration;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -10,6 +11,7 @@ import static org.mockito.Mockito.verify;
 import com.daesabu.meongcoach.notification.domain.NotificationDeepLink;
 import com.daesabu.meongcoach.notification.domain.NotificationEventType;
 import com.daesabu.meongcoach.notification.domain.PushNotification;
+import com.daesabu.meongcoach.notification.domain.exception.NotificationDeliveryException;
 import com.google.firebase.messaging.BatchResponse;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.FirebaseMessagingException;
@@ -56,18 +58,29 @@ class FirebaseNotificationSenderTest {
 	}
 
 	@Test
-	void 배치_호출이_실패하면_중단하고_남은_FID을_실패로_센다() throws Exception {
+	void 배치_호출이_실패하면_도메인_예외로_번역해_던지고_남은_배치를_보내지_않는다() throws Exception {
 		FirebaseMessaging messaging = mock(FirebaseMessaging.class);
 		FirebaseMessagingException failure = mock(FirebaseMessagingException.class);
 		given(messaging.sendEach(anyList())).willThrow(failure);
-		List<String> fids = java.util.stream.IntStream.range(0, 501).mapToObj(index -> "fid-" + index).toList();
+		List<PushNotification> notifications = messages(java.util.stream.IntStream.range(0, 501).mapToObj(index -> "fid-" + index).toList());
 
-		var result = sender(messaging).send(messages(fids));
-
+		assertThatThrownBy(() -> sender(messaging).send(notifications))
+				.isInstanceOf(NotificationDeliveryException.class).hasCause(failure);
 		verify(messaging, times(1)).sendEach(anyList());
-		assertThat(result.failure()).isSameAs(failure);
-		assertThat(result.failedCount()).isEqualTo(501);
-		assertThat(result.sentCount()).isZero();
+	}
+
+	@Test
+	void 앞_배치가_성공했어도_다음_배치_호출이_실패하면_던진다() throws Exception {
+		FirebaseMessaging messaging = mock(FirebaseMessaging.class);
+		FirebaseMessagingException failure = mock(FirebaseMessagingException.class);
+		BatchResponse batch = mock(BatchResponse.class);
+		given(batch.getResponses()).willReturn(java.util.Collections.nCopies(500, mock(SendResponse.class)));
+		given(messaging.sendEach(anyList())).willReturn(batch).willThrow(failure);
+		List<PushNotification> notifications = messages(java.util.stream.IntStream.range(0, 501).mapToObj(index -> "fid-" + index).toList());
+
+		assertThatThrownBy(() -> sender(messaging).send(notifications))
+				.isInstanceOf(NotificationDeliveryException.class).hasCause(failure);
+		verify(messaging, times(2)).sendEach(anyList());
 	}
 
 	@Test
