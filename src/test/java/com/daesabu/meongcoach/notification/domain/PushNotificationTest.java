@@ -1,11 +1,18 @@
 package com.daesabu.meongcoach.notification.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 class PushNotificationTest {
+
+	@Test
+	void 딥링크_객체가_없으면_만들_수_없다() {
+		assertThatThrownBy(() -> new PushNotification("fid", "제목", "본문", NotificationEventType.COMMENT, null, null, "key"))
+				.isInstanceOf(NullPointerException.class);
+	}
 
 	@Test
 	void 정기_알림은_시각과_딥링크를_데이터로_만든다() {
