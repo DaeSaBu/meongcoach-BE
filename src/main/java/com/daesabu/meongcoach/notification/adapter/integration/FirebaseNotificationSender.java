@@ -28,8 +28,18 @@ public class FirebaseNotificationSender implements NotificationSender {
 
 	@Override
 	public NotificationSendResult send(List<PushNotification> notifications) {
-		List<NotificationSendResult> results = notifications.stream().gather(Gatherers.windowFixed(BATCH_SIZE))
-				.map(this::sendBatch).toList();
+		List<List<PushNotification>> batches = notifications.stream().gather(Gatherers.windowFixed(BATCH_SIZE)).toList();
+		List<NotificationSendResult> results = new ArrayList<>();
+		int remaining = notifications.size();
+		for (List<PushNotification> batch : batches) {
+			NotificationSendResult result = sendBatch(batch);
+			remaining -= batch.size();
+			results.add(result);
+			if (result.failure() != null) {
+				results.add(new NotificationSendResult(0, remaining, List.of(), null));
+				break;
+			}
+		}
 		return NotificationSendResult.merge(results);
 	}
 
