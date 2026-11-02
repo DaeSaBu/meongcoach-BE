@@ -10,6 +10,7 @@ import com.daesabu.meongcoach.notification.application.required.DeviceInstallati
 import com.daesabu.meongcoach.notification.application.required.NotificationEventSettingRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationScheduleRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationSender;
+import com.daesabu.meongcoach.notification.application.required.NotificationSender.NotificationBatchResult;
 import com.daesabu.meongcoach.notification.application.required.ScheduledNotificationDispatchRepository;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallation;
 import com.daesabu.meongcoach.notification.domain.NotificationDeepLink;
@@ -18,15 +19,20 @@ import com.daesabu.meongcoach.notification.domain.NotificationTarget;
 import com.daesabu.meongcoach.notification.domain.PushNotification;
 import com.daesabu.meongcoach.notification.domain.PushNotificationFactory;
 import com.daesabu.meongcoach.notification.domain.ScheduledNotificationDispatch;
+import com.daesabu.meongcoach.notification.domain.exception.NotificationDeliveryException;
 import com.daesabu.meongcoach.user.application.provided.UserFinder;
 import java.time.Clock;
+import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -45,15 +51,19 @@ public class NotificationDispatchService implements ScheduledNotificationDispatc
 	@Transactional
 	public ScheduledNotificationDispatchResult dispatch(ScheduledNotificationDispatchRequest request) {
 		ScheduledNotificationDispatch dispatch = ScheduledNotificationDispatch.of(request.toCommand(), clock.instant());
+		Instant scheduledAt = dispatch.scheduled();
 
-		dispatches.lock(dispatch.scheduled());
-		if (dispatches.existsByScheduledAt(dispatch.scheduled())) {
+		dispatches.lock(scheduledAt);
+		if (dispatches.existsByScheduledAt(scheduledAt)) {
+			log.info("event=notification_dispatch type=SCHEDULED scheduledAt={} duplicate=true", scheduledAt);
 			return new ScheduledNotificationDispatchResult(0, true);
 		}
 		List<String> fids = findFids(schedules.findUserIdsByTimeEnabled(dispatch.time()));
-		deleteInvalidInstallations(send(PushNotificationFactory.scheduled(fids, dispatch)));
+		List<PushNotification> notifications = PushNotificationFactory.scheduled(fids, dispatch);
+		deliver("type=SCHEDULED scheduledAt=" + scheduledAt, notifications);
 		dispatches.save(dispatch);
-		return new ScheduledNotificationDispatchResult(fids.size(), false);
+		int count = fids.size();
+		return new ScheduledNotificationDispatchResult(count, false);
 	}
 
 	@Override
@@ -64,8 +74,10 @@ public class NotificationDispatchService implements ScheduledNotificationDispatc
 		NotificationDeepLink deepLink = new NotificationDeepLink(request.deepLink());
 
 		List<String> fids = findFids(findEnabledUserIds(type, target));
-		deleteInvalidInstallations(send(PushNotificationFactory.event(fids, type, request.title(), request.body(), deepLink)));
-		return new EventNotificationDispatchResult(fids.size());
+		List<PushNotification> notifications = PushNotificationFactory.event(fids, type, request.title(), request.body(), deepLink);
+		deliver("type=" + type + " target=" + request.targetKind(), notifications);
+		int count = fids.size();
+		return new EventNotificationDispatchResult(count);
 	}
 
 	private List<Long> findEnabledUserIds(NotificationEventType type, NotificationTarget target) {
@@ -84,12 +96,30 @@ public class NotificationDispatchService implements ScheduledNotificationDispatc
 				.map(DeviceInstallation::getFid).distinct().toList();
 	}
 
-	private List<String> send(List<PushNotification> notifications) {
+	/**
+	 * 전송 뒤 무효 FID를 삭제하고 요약 로그를 남긴다.
+	 * 배치 호출이 하나라도 실패했거나, 전송에 성공한 알림이 없는데 무효 등록 외의 실패가 있으면 발송 실패로 던진다.
+	 */
+	private void deliver(String label, List<PushNotification> notifications) {
 		if (notifications.isEmpty()) {
-			return List.of();
+			log.info("event=notification_dispatch {} fids=0", label);
+			return;
 		}
-		return sender.send(notifications).stream()
-				.flatMap(result -> result.invalidFids().stream()).toList();
+		List<NotificationBatchResult> results = sender.send(notifications);
+		List<String> invalidFids = results.stream().flatMap(result -> result.invalidFids().stream()).toList();
+		deleteInvalidInstallations(invalidFids);
+		int sent = results.stream().mapToInt(NotificationBatchResult::sentCount).sum();
+		int failed = results.stream().mapToInt(NotificationBatchResult::failedCount).sum();
+		log.info("event=notification_dispatch {} fids={} sent={} failed={} invalid={}",
+				label, notifications.size(), sent, failed, invalidFids.size());
+
+		Optional<Throwable> failure = results.stream().map(NotificationBatchResult::failure).flatMap(Optional::stream).findFirst();
+		if (failure.isPresent()) {
+			throw new NotificationDeliveryException(failure.get());
+		}
+		if (sent == 0 && failed > 0) {
+			throw new NotificationDeliveryException();
+		}
 	}
 
 	private void deleteInvalidInstallations(List<String> invalidFids) {

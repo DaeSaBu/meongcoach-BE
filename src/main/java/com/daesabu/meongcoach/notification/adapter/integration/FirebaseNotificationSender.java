@@ -3,7 +3,6 @@ package com.daesabu.meongcoach.notification.adapter.integration;
 import com.daesabu.meongcoach.notification.application.required.NotificationSender;
 import com.daesabu.meongcoach.notification.application.required.NotificationSender.NotificationBatchResult;
 import com.daesabu.meongcoach.notification.domain.PushNotification;
-import com.daesabu.meongcoach.notification.domain.exception.NotificationDeliveryException;
 import com.google.firebase.messaging.AndroidConfig;
 import com.google.firebase.messaging.AndroidNotification;
 import com.google.firebase.messaging.ApnsConfig;
@@ -39,7 +38,7 @@ public class FirebaseNotificationSender implements NotificationSender {
 			List<SendResponse> responses = client.sendEach(firebaseMessages).getResponses();
 			return FirebaseNotificationBatchResult.success(batch, responses);
 		} catch (FirebaseMessagingException exception) {
-			throw new NotificationDeliveryException(exception);
+			return FirebaseNotificationBatchResult.failure(batch, exception);
 		}
 	}
 
