@@ -19,10 +19,8 @@ import com.daesabu.meongcoach.onboarding.application.provided.OnboardingImageUpl
 import com.daesabu.meongcoach.onboarding.application.provided.OnboardingMetadataFinder;
 import com.daesabu.meongcoach.onboarding.application.provided.OnboardingMetadataResult;
 import com.daesabu.meongcoach.onboarding.application.provided.dto.OnboardingCompleteRequest;
-import com.daesabu.meongcoach.onboarding.domain.OnboardingImageTarget;
 import com.daesabu.meongcoach.user.domain.exception.AlreadyOnboardedException;
 import java.util.List;
-import java.util.Objects;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
@@ -32,7 +30,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.restdocs.payload.JsonFieldType;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(OnboardingController.class)
@@ -318,8 +315,6 @@ class OnboardingControllerTest {
 				.andExpect(jsonPath("$.expiresInSeconds").value(600))
 				.andDo(document("onboarding/image-upload-url",
 						requestFields(
-								fieldWithPath("target").type(JsonFieldType.STRING).optional()
-										.description("USER_PROFILE 또는 DOG_PROFILE. 생략하면 DOG_PROFILE"),
 								fieldWithPath("contentType").description(
 										"필수 입력. 업로드할 이미지의 Content-Type. `image/jpeg`, `image/png`, `image/webp`만 지원")
 						),
@@ -374,24 +369,6 @@ class OnboardingControllerTest {
 				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
 	}
 
-	@Test
-	void 구버전_보호자_사진_업로드_대상을_전달한다() throws Exception {
-		mockMvc.perform(post("/api/onboarding/presigned-urls").principal(() -> "1")
-				.contentType(MediaType.APPLICATION_JSON)
-				.content("{\"target\":\"USER_PROFILE\",\"contentType\":\"image/jpeg\"}"))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.publicUrl").value(IMAGE_PUBLIC_URL.replace("dog-profile", "user-profile")));
-	}
-
-	@Test
-	void 잘못된_업로드_대상은_400으로_거절한다() throws Exception {
-		mockMvc.perform(post("/api/onboarding/presigned-urls").principal(() -> "1")
-				.contentType(MediaType.APPLICATION_JSON)
-				.content("{\"target\":\"INVALID\",\"contentType\":\"image/jpeg\"}"))
-				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.code").value("ONBOARDING_INVALID_IMAGE_UPLOAD_TARGET"));
-	}
-
 	private void assertValidationFails(String request, String field) throws Exception {
 		mockMvc.perform(post("/api/onboarding")
 						.principal(() -> "1")
@@ -421,12 +398,6 @@ class OnboardingControllerTest {
 		OnboardingImageUploadUrlIssuer onboardingImageUploadUrlIssuer() {
 			return (userId, request) -> {
 				ImageType.fromContentType(request.contentType());
-				OnboardingImageTarget target = OnboardingImageTarget.from(
-						Objects.requireNonNullElse(request.target(), "DOG_PROFILE"));
-				if (target == OnboardingImageTarget.USER_PROFILE) {
-					return new OnboardingImageUploadUrlResult(UPLOAD_URL.replace("dog-profile", "user-profile"),
-							IMAGE_PUBLIC_URL.replace("dog-profile", "user-profile"), 600L);
-				}
 				return new OnboardingImageUploadUrlResult(UPLOAD_URL, IMAGE_PUBLIC_URL, 600L);
 			};
 		}
