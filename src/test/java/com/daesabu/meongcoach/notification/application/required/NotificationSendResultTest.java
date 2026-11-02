@@ -27,6 +27,18 @@ class NotificationSendResultTest {
 	}
 
 	@Test
+	void 여러_배치_실패_원인은_첫_원인에_덧붙인다() {
+		var first = new IllegalStateException("first");
+		var second = new IllegalStateException("second");
+		var results = List.of(new NotificationSendResult(0, 1, List.of(), first), new NotificationSendResult(0, 1, List.of(), second));
+
+		NotificationSendResult merged = NotificationSendResult.merge(results);
+
+		assertThat(merged.failure()).isSameAs(first);
+		assertThat(first.getSuppressed()).containsExactly(second);
+	}
+
+	@Test
 	void 배치_호출이_실패했으면_원인과_함께_던진다() {
 		var cause = new IllegalStateException("FCM unavailable");
 		var result = new NotificationSendResult(10, 500, List.of(), cause);
