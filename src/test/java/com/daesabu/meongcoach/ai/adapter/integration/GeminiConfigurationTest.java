@@ -2,6 +2,7 @@ package com.daesabu.meongcoach.ai.adapter.integration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.google.genai.Client;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -43,6 +44,21 @@ class GeminiConfigurationTest {
 						"meongcoach.ai.gemini.thinking-level=low",
 						"meongcoach.ai.gemini.video-fps=6")
 				.run(context -> assertThat(context).hasFailed());
+	}
+
+	@Test
+	void 설정으로_Gemini_클라이언트를_생성한다() {
+		new ApplicationContextRunner()
+				.withUserConfiguration(TestConfiguration.class, GeminiClientConfiguration.class)
+				.withPropertyValues(
+						"meongcoach.ai.gemini.api-key=test-key",
+						"meongcoach.ai.gemini.model=gemini-test",
+						"meongcoach.ai.gemini.response-timeout=5m",
+						"meongcoach.ai.gemini.max-output-tokens=4096",
+						"meongcoach.ai.gemini.temperature=0",
+						"meongcoach.ai.gemini.thinking-level=low",
+						"meongcoach.ai.gemini.video-fps=1")
+				.run(context -> assertThat(context).hasNotFailed().hasSingleBean(Client.class));
 	}
 
 	@Configuration(proxyBeanMethods = false)

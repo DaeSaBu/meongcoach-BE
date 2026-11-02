@@ -45,9 +45,9 @@ class AiControllerTest {
 
 	private static final String VIDEO_OBJECT_KEY = "videos/training/42/uuid.mp4";
 	private static final String VIDEO_UPLOAD_URL =
-			"https://test-video-bucket.s3.ap-northeast-2.amazonaws.com/" + VIDEO_OBJECT_KEY
-					+ "?X-Amz-Expires=900&X-Amz-Signature=example";
-	private static final String VIDEO_PUBLIC_URL = "https://videos.test.meongcoach.com/" + VIDEO_OBJECT_KEY;
+			"https://storage.googleapis.com/test-ai-video-bucket/" + VIDEO_OBJECT_KEY
+					+ "?X-Goog-Expires=900&X-Goog-Signature=example";
+	private static final String VIDEO_PUBLIC_URL = "https://storage.googleapis.com/test-ai-video-bucket/" + VIDEO_OBJECT_KEY;
 
 	private static final String VIDEO_ISSUE_REQUEST = """
 			{
@@ -101,7 +101,7 @@ class AiControllerTest {
 						responseFields(
 								fieldWithPath("reports[]").description("사용자의 AI 리포트 목록. 생성 시각 내림차순"),
 								fieldWithPath("reports[].reportId").description("리포트 ID"),
-								fieldWithPath("reports[].videoObjectKey").description("분석한 영상의 S3 객체 키"),
+								fieldWithPath("reports[].videoObjectKey").description("분석한 영상의 GCS 객체 키"),
 								fieldWithPath("reports[].title").optional()
 										.description("AI가 요약한 리포트 제목. COMPLETED가 아니거나 제목 생성에 실패한 리포트는 null"),
 								fieldWithPath("reports[].status").description(
@@ -169,7 +169,7 @@ class AiControllerTest {
 						),
 						responseFields(
 								fieldWithPath("reportId").description("리포트 ID"),
-								fieldWithPath("videoObjectKey").description("분석한 영상의 S3 객체 키"),
+								fieldWithPath("videoObjectKey").description("분석한 영상의 GCS 객체 키"),
 								fieldWithPath("title").optional()
 										.description("AI가 요약한 리포트 제목. COMPLETED가 아니거나 제목 생성에 실패한 리포트는 null"),
 								fieldWithPath("status").description(

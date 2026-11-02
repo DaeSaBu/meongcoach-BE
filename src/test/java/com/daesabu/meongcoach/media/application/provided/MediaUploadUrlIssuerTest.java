@@ -21,8 +21,6 @@ class MediaUploadUrlIssuerTest {
 
 	private static final String R2_UPLOAD_BASE_URL = "https://test-account.r2.cloudflarestorage.com/test-bucket/";
 	private static final String R2_PUBLIC_BASE_URL = "https://images.test.meongcoach.com/";
-	private static final String S3_UPLOAD_BASE_URL = "https://test-video-bucket.s3.ap-northeast-2.amazonaws.com/";
-	private static final String S3_PUBLIC_BASE_URL = "https://videos.test.meongcoach.com/";
 	private static final MediaScope PUBLIC_IMAGE = MediaScope.of(MediaKind.IMAGE, MediaVisibility.PUBLIC, "test-image");
 	private static final MediaScope PUBLIC_VIDEO = MediaScope.of(MediaKind.VIDEO, MediaVisibility.PUBLIC, "test-video");
 	private static final MediaScope PRIVATE_VIDEO =
@@ -65,15 +63,15 @@ class MediaUploadUrlIssuerTest {
 	}
 
 	@Test
-	void 비공개_범위_영상은_S3_업로드_URL을_발급한다() {
+	void 비공개_범위_영상은_파일_크기를_서명한_GCS_업로드_URL과_버킷_표준_URL을_발급한다() {
 		MediaUploadUrlResult result =
 				issuer.issue(MediaUploadRequest.video(PRIVATE_VIDEO, 7L, "video/mp4", MAX_BYTES, MAX_BYTES));
 
 		assertThat(result.objectKey()).matches("videos/test-video/7/[0-9a-f-]{36}\\.mp4");
 		assertThat(result.uploadUrl())
-				.startsWith(S3_UPLOAD_BASE_URL + result.objectKey())
-				.contains("X-Amz-SignedHeaders=content-length%3Bcontent-type%3Bhost");
-		assertThat(result.publicUrl()).isEqualTo(S3_PUBLIC_BASE_URL + result.objectKey());
+				.startsWith(GCS_BASE_URL + result.objectKey())
+				.contains("X-Goog-SignedHeaders=content-length%3Bcontent-type%3Bhost");
+		assertThat(result.publicUrl()).isEqualTo(GCS_BASE_URL + result.objectKey());
 		assertThat(result.expiresInSeconds()).isEqualTo(900L);
 	}
 

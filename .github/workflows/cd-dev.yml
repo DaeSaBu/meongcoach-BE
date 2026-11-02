@@ -95,19 +95,12 @@ jobs:
           R2_SECRET_ACCESS_KEY: ${{ secrets.DEV_R2_SECRET_ACCESS_KEY }}
           R2_BUCKET: ${{ secrets.DEV_R2_BUCKET }}
           R2_PUBLIC_BASE_URL: ${{ secrets.DEV_R2_PUBLIC_BASE_URL }}
-          S3_REGION: ${{ secrets.DEV_S3_REGION }}
-          S3_ACCESS_KEY_ID: ${{ secrets.DEV_S3_ACCESS_KEY_ID }}
-          S3_SECRET_ACCESS_KEY: ${{ secrets.DEV_S3_SECRET_ACCESS_KEY }}
-          S3_BUCKET: ${{ secrets.DEV_S3_BUCKET }}
-          S3_PUBLIC_BASE_URL: ${{ secrets.DEV_S3_PUBLIC_BASE_URL }}
           GCP_PROJECT_ID: ${{ secrets.DEV_GCP_PROJECT_ID }}
           GCP_SERVICE_ACCOUNT_KEY: ${{ secrets.DEV_GCP_SERVICE_ACCOUNT_KEY }}
           GCS_BUCKET: ${{ secrets.DEV_GCS_BUCKET }}
           AI_VIDEO_SUBSCRIPTION: ${{ secrets.DEV_AI_VIDEO_SUBSCRIPTION }}
           GEMINI_API_KEY: ${{ secrets.DEV_GEMINI_API_KEY }}
           GEMINI_MODEL: ${{ secrets.DEV_GEMINI_MODEL }}
-          EVOLINK_API_KEY: ${{ secrets.DEV_EVOLINK_API_KEY }}
-          EVOLINK_MODEL: ${{ secrets.DEV_EVOLINK_MODEL }}
           REVENUECAT_API_KEY: ${{ secrets.DEV_REVENUECAT_API_KEY }}
           REVENUECAT_PROJECT_ID: ${{ secrets.DEV_REVENUECAT_PROJECT_ID }}
           REVENUECAT_ENTITLEMENT_ID_PUPPY: ${{ secrets.DEV_REVENUECAT_ENTITLEMENT_ID_PUPPY }}

@@ -31,6 +31,7 @@ import com.daesabu.meongcoach.community.application.provided.dto.CommentListResu
 import com.daesabu.meongcoach.community.application.provided.dto.CommentRegisterRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.CommentResult;
 import com.daesabu.meongcoach.community.application.provided.dto.CommentUpdateRequest;
+import com.daesabu.meongcoach.community.application.provided.dto.MentionLevelResult;
 import com.daesabu.meongcoach.community.application.provided.dto.MentionRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.MentionTargetResult;
 import com.daesabu.meongcoach.community.application.provided.dto.PostListRequest;
@@ -104,7 +105,11 @@ class CommunityControllerTest {
 		PostResult withMention = new PostResult(
 				commented,
 				new AuthorResult(7L, "초코", "https://media.meongcoach.com/images/dog-profile/7/choco.jpg"),
-				new MentionTargetResult(MentionTargetType.LESSON, 101L, "앉아 기초"));
+				new MentionTargetResult(MentionTargetType.LESSON, 101L,
+						new MentionLevelResult(1L, "기본 예절"),
+						new MentionLevelResult(3L, "앉아"),
+						new MentionLevelResult(7L, "앉아 기초"),
+						new MentionLevelResult(101L, "손 신호로 앉기")));
 		PostResult withoutMention = new PostResult(
 				PostFixture.create(29L, 8L, "오늘 산책 성공!", LocalDateTime.of(2026, 10, 19, 9, 0, 0)),
 				new AuthorResult(8L, "콩이", "https://media.meongcoach.com/images/dog-profile/8/kong.jpg"),
@@ -126,7 +131,15 @@ class CommunityControllerTest {
 				.andExpect(jsonPath("$.posts[0].author.profileImageUrl").value("https://media.meongcoach.com/images/dog-profile/7/choco.jpg"))
 				.andExpect(jsonPath("$.posts[0].mention.targetType").value("LESSON"))
 				.andExpect(jsonPath("$.posts[0].mention.targetId").value(101))
-				.andExpect(jsonPath("$.posts[0].mention.title").value("앉아 기초"))
+				.andExpect(jsonPath("$.posts[0].mention.categoryId").value(1))
+				.andExpect(jsonPath("$.posts[0].mention.categoryTitle").value("기본 예절"))
+				.andExpect(jsonPath("$.posts[0].mention.topicId").value(3))
+				.andExpect(jsonPath("$.posts[0].mention.topicTitle").value("앉아"))
+				.andExpect(jsonPath("$.posts[0].mention.curriculumId").value(7))
+				.andExpect(jsonPath("$.posts[0].mention.curriculumTitle").value("앉아 기초"))
+				.andExpect(jsonPath("$.posts[0].mention.lessonId").value(101))
+				.andExpect(jsonPath("$.posts[0].mention.lessonTitle").value("손 신호로 앉기"))
+				.andExpect(jsonPath("$.posts[0].mention.title").doesNotExist())
 				.andExpect(jsonPath("$.posts[0].media[0].type").value("IMAGE"))
 				.andExpect(jsonPath("$.posts[0].media[0].url")
 						.value("https://media.meongcoach.com/images/community-post/7/photo.jpg"))
@@ -161,7 +174,14 @@ class CommunityControllerTest {
 										.description("멘션 대상 요약. 멘션이 없거나 멘션 대상이 없으면 null"),
 								fieldWithPath("posts[].mention.targetType").description("멘션 대상 종류. 현재 LESSON(레슨)만 있다"),
 								fieldWithPath("posts[].mention.targetId").description("멘션 대상 ID"),
-								fieldWithPath("posts[].mention.title").description("멘션 대상 제목"),
+								fieldWithPath("posts[].mention.categoryId").description("멘션한 레슨이 속한 카테고리 ID"),
+								fieldWithPath("posts[].mention.categoryTitle").description("멘션한 레슨이 속한 카테고리 제목"),
+								fieldWithPath("posts[].mention.topicId").description("멘션한 레슨이 속한 토픽 ID"),
+								fieldWithPath("posts[].mention.topicTitle").description("멘션한 레슨이 속한 토픽 제목"),
+								fieldWithPath("posts[].mention.curriculumId").description("멘션한 레슨이 속한 커리큘럼 ID"),
+								fieldWithPath("posts[].mention.curriculumTitle").description("멘션한 레슨이 속한 커리큘럼 제목"),
+								fieldWithPath("posts[].mention.lessonId").description("멘션한 레슨 ID. targetId와 같다"),
+								fieldWithPath("posts[].mention.lessonTitle").description("멘션한 레슨 제목"),
 								fieldWithPath("posts[].media[]").description("게시글 사진·영상 목록. 배열 순서가 표시 순서이고, 없으면 빈 배열"),
 								fieldWithPath("posts[].media[].type").description("미디어 종류. IMAGE(사진), VIDEO(영상)"),
 								fieldWithPath("posts[].media[].url").description("미디어 공개 URL"),
@@ -255,7 +275,11 @@ class CommunityControllerTest {
 		PostResult result = new PostResult(
 				commented,
 				new AuthorResult(7L, "초코", "https://media.meongcoach.com/images/dog-profile/7/choco.jpg"),
-				new MentionTargetResult(MentionTargetType.LESSON, 101L, "앉아 기초"));
+				new MentionTargetResult(MentionTargetType.LESSON, 101L,
+						new MentionLevelResult(1L, "기본 예절"),
+						new MentionLevelResult(3L, "앉아"),
+						new MentionLevelResult(7L, "앉아 기초"),
+						new MentionLevelResult(101L, "손 신호로 앉기")));
 		given(postFinder.findPostDetail(30L)).willReturn(result);
 
 		mockMvc.perform(get("/api/community/posts/{postId}", 30L)
@@ -267,7 +291,16 @@ class CommunityControllerTest {
 				.andExpect(jsonPath("$.author.userId").value(7))
 				.andExpect(jsonPath("$.author.nickname").value("초코 보호자"))
 				.andExpect(jsonPath("$.mention.targetType").value("LESSON"))
-				.andExpect(jsonPath("$.mention.title").value("앉아 기초"))
+				.andExpect(jsonPath("$.mention.targetId").value(101))
+				.andExpect(jsonPath("$.mention.categoryId").value(1))
+				.andExpect(jsonPath("$.mention.categoryTitle").value("기본 예절"))
+				.andExpect(jsonPath("$.mention.topicId").value(3))
+				.andExpect(jsonPath("$.mention.topicTitle").value("앉아"))
+				.andExpect(jsonPath("$.mention.curriculumId").value(7))
+				.andExpect(jsonPath("$.mention.curriculumTitle").value("앉아 기초"))
+				.andExpect(jsonPath("$.mention.lessonId").value(101))
+				.andExpect(jsonPath("$.mention.lessonTitle").value("손 신호로 앉기"))
+				.andExpect(jsonPath("$.mention.title").doesNotExist())
 				.andExpect(jsonPath("$.media[0].type").value("IMAGE"))
 				.andExpect(jsonPath("$.media[0].url")
 						.value("https://media.meongcoach.com/images/community-post/7/photo.jpg"))
@@ -287,7 +320,14 @@ class CommunityControllerTest {
 										.description("멘션 대상 요약. 멘션이 없거나 멘션 대상이 없으면 null"),
 								fieldWithPath("mention.targetType").description("멘션 대상 종류. 현재 LESSON(레슨)만 있다"),
 								fieldWithPath("mention.targetId").description("멘션 대상 ID"),
-								fieldWithPath("mention.title").description("멘션 대상 제목"),
+								fieldWithPath("mention.categoryId").description("멘션한 레슨이 속한 카테고리 ID"),
+								fieldWithPath("mention.categoryTitle").description("멘션한 레슨이 속한 카테고리 제목"),
+								fieldWithPath("mention.topicId").description("멘션한 레슨이 속한 토픽 ID"),
+								fieldWithPath("mention.topicTitle").description("멘션한 레슨이 속한 토픽 제목"),
+								fieldWithPath("mention.curriculumId").description("멘션한 레슨이 속한 커리큘럼 ID"),
+								fieldWithPath("mention.curriculumTitle").description("멘션한 레슨이 속한 커리큘럼 제목"),
+								fieldWithPath("mention.lessonId").description("멘션한 레슨 ID. targetId와 같다"),
+								fieldWithPath("mention.lessonTitle").description("멘션한 레슨 제목"),
 								fieldWithPath("media[]").description("게시글 사진·영상 목록. 배열 순서가 표시 순서이고, 없으면 빈 배열"),
 								fieldWithPath("media[].type").description("미디어 종류. IMAGE(사진), VIDEO(영상)"),
 								fieldWithPath("media[].url").description("미디어 공개 URL"),

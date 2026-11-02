@@ -20,7 +20,8 @@ public interface LessonFinder {
 	Lesson find(Long lessonId);
 
 	/**
-	 * 레슨 ID 목록에 해당하는 레슨의 ID와 제목을 반환한다. 존재하지 않는 ID는 결과에서 빠진다.
+	 * 레슨 ID 목록에 해당하는 레슨의 ID·제목과 소속 커리큘럼·토픽·카테고리의 ID·제목을 반환한다.
+	 * 존재하지 않는 ID는 결과에서 빠진다.
 	 */
 	List<LessonSummaryResult> findSummaries(Collection<Long> lessonIds);
 }
