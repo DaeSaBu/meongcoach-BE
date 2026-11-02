@@ -13,6 +13,6 @@ public class LogAlertSender implements AlertSender {
 
 	@Override
 	public void send(Alert alert) {
-		log.info("개발자 알림: level={}, title={}, fields={}", alert.level(), alert.title(), alert.fields());
+		log.info("개발자 알림: title={}, fields={}", alert.title(), alert.fields());
 	}
 }

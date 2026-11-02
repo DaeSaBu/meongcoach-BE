@@ -4,7 +4,6 @@ import com.daesabu.meongcoach.alert.application.required.AlertSender;
 import com.daesabu.meongcoach.alert.domain.Alert;
 import com.daesabu.meongcoach.alert.domain.exception.AlertDeliveryFailedException;
 import com.daesabu.meongcoach.alert.domain.shared.AlertField;
-import com.daesabu.meongcoach.alert.domain.shared.AlertLevel;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -24,10 +23,6 @@ import org.springframework.web.client.RestClientResponseException;
 @ConditionalOnProperty(prefix = "meongcoach.alert.slack", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class SlackAlertSender implements AlertSender {
 
-	private static final Map<AlertLevel, String> EMOJIS = Map.of(
-			AlertLevel.INFO, ":information_source:",
-			AlertLevel.WARNING, ":warning:",
-			AlertLevel.ERROR, ":rotating_light:");
 	private static final int FIELDS_PER_SECTION = 10;
 	private static final int FIELD_VALUE_MAX_LENGTH = 500;
 	private static final String ELLIPSIS = "…";
@@ -76,13 +71,11 @@ public class SlackAlertSender implements AlertSender {
 		blocks.add(headerBlock(alert));
 		blocks.addAll(sectionBlocks(alert.fields()));
 		blocks.add(contextBlock(alert.occurredAt()));
-		String fallbackText = "[" + alert.level().name() + "] " + alert.title();
-		return Map.of("text", fallbackText, "blocks", blocks);
+		return Map.of("text", alert.title(), "blocks", blocks);
 	}
 
 	private static Map<String, Object> headerBlock(Alert alert) {
-		String text = EMOJIS.get(alert.level()) + " " + alert.title();
-		return Map.of("type", "header", "text", Map.of("type", "plain_text", "text", text, "emoji", true));
+		return Map.of("type", "header", "text", Map.of("type", "plain_text", "text", alert.title()));
 	}
 
 	private static List<Map<String, Object>> sectionBlocks(List<AlertField> fields) {
