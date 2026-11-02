@@ -21,10 +21,12 @@ import com.daesabu.meongcoach.ai.application.provided.AiReportResult;
 import com.daesabu.meongcoach.ai.application.provided.AiTrialFinder;
 import com.daesabu.meongcoach.ai.application.provided.AiVideoUploadUrlIssuer;
 import com.daesabu.meongcoach.ai.application.provided.AiVideoUploadUrlResult;
+import com.daesabu.meongcoach.ai.application.provided.dto.AiVideoUploadUrlRequest;
 import com.daesabu.meongcoach.ai.domain.AiReportStatus;
 import com.daesabu.meongcoach.ai.domain.AiTrial;
 import com.daesabu.meongcoach.ai.domain.exception.AiReportNotFoundException;
 import com.daesabu.meongcoach.ai.domain.exception.AiReportTrialExceededException;
+import com.daesabu.meongcoach.ai.domain.exception.AiVideoDurationOutOfRangeException;
 import java.security.Principal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -52,9 +54,12 @@ class AiControllerTest {
 	private static final String VIDEO_ISSUE_REQUEST = """
 			{
 				"contentType": "video/mp4",
-				"fileSizeBytes": 10485760
+				"fileSizeBytes": 10485760,
+				"durationSeconds": 60
 			}
 			""";
+	private static final AiVideoUploadUrlRequest VIDEO_REQUEST =
+			new AiVideoUploadUrlRequest("video/mp4", 10485760L, 60L);
 
 	private static final AiReportContent REPORT_CONTENT = new AiReportContent(
 			List.of(new AiReportContent.Recommend(106L, "분리불안 교육", "혼자 있는 시간을 편안하게 만드는 교육이라 도움이 돼요.")),
@@ -249,7 +254,7 @@ class AiControllerTest {
 
 	@Test
 	void 체험_횟수가_남아_있으면_영상_업로드_URL을_발급한다() throws Exception {
-		given(aiVideoUploadUrlIssuer.issue(42L, "video/mp4", 10485760L)).willReturn(
+		given(aiVideoUploadUrlIssuer.issue(42L, VIDEO_REQUEST)).willReturn(
 				new AiVideoUploadUrlResult(10L, VIDEO_UPLOAD_URL, VIDEO_PUBLIC_URL, VIDEO_OBJECT_KEY, 900L));
 
 		mockMvc.perform(post("/api/ai/presigned-urls")
@@ -268,8 +273,10 @@ class AiControllerTest {
 								fieldWithPath("contentType").description(
 										"필수 입력. 업로드할 영상의 Content-Type. `video/mp4`, `video/quicktime`만 지원"),
 								fieldWithPath("fileSizeBytes").description(
-										"필수 입력. 업로드할 영상의 바이트 수. 1 이상 52428800(50MB) 이하여야 하며, "
-												+ "이 값이 그대로 presigned URL의 Content-Length 서명에 들어간다")
+										"필수 입력. 업로드할 영상의 바이트 수. 1 이상 536870912(512MiB) 이하여야 하며, "
+												+ "이 값이 그대로 presigned URL의 Content-Length 서명에 들어간다"),
+								fieldWithPath("durationSeconds").description(
+										"필수 입력. 업로드할 영상의 길이(초, 정수). 10 이상 300(5분) 이하여야 한다")
 						),
 						responseFields(
 								fieldWithPath("reportId").description(
@@ -288,7 +295,7 @@ class AiControllerTest {
 
 	@Test
 	void 인증_주체에서_읽은_사용자로_영상_업로드_URL_발급을_위임한다() throws Exception {
-		given(aiVideoUploadUrlIssuer.issue(42L, "video/mp4", 10485760L)).willReturn(
+		given(aiVideoUploadUrlIssuer.issue(42L, VIDEO_REQUEST)).willReturn(
 				new AiVideoUploadUrlResult(10L, VIDEO_UPLOAD_URL, VIDEO_PUBLIC_URL, VIDEO_OBJECT_KEY, 900L));
 
 		mockMvc.perform(post("/api/ai/presigned-urls")
@@ -297,12 +304,12 @@ class AiControllerTest {
 						.content(VIDEO_ISSUE_REQUEST))
 				.andExpect(status().isOk());
 
-		then(aiVideoUploadUrlIssuer).should().issue(42L, "video/mp4", 10485760L);
+		then(aiVideoUploadUrlIssuer).should().issue(42L, VIDEO_REQUEST);
 	}
 
 	@Test
 	void 체험_횟수를_소진했으면_403과_에러_코드를_반환한다() throws Exception {
-		given(aiVideoUploadUrlIssuer.issue(42L, "video/mp4", 10485760L))
+		given(aiVideoUploadUrlIssuer.issue(42L, VIDEO_REQUEST))
 				.willThrow(new AiReportTrialExceededException());
 
 		mockMvc.perform(post("/api/ai/presigned-urls")
@@ -341,10 +348,34 @@ class AiControllerTest {
 		mockMvc.perform(post("/api/ai/presigned-urls")
 						.principal(CURRENT_USER)
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"contentType\": \"video/mp4\"}"))
+						.content("{\"contentType\": \"video/mp4\", \"durationSeconds\": 60}"))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
 				.andExpect(jsonPath("$.errors[0].field").value("fileSizeBytes"));
+	}
+
+	@Test
+	void 영상_길이가_없으면_검증에_실패한다() throws Exception {
+		mockMvc.perform(post("/api/ai/presigned-urls")
+						.principal(CURRENT_USER)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"contentType\": \"video/mp4\", \"fileSizeBytes\": 10485760}"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
+				.andExpect(jsonPath("$.errors[0].field").value("durationSeconds"));
+	}
+
+	@Test
+	void 영상_길이가_허용_범위를_벗어나면_400과_에러_코드를_반환한다() throws Exception {
+		given(aiVideoUploadUrlIssuer.issue(42L, VIDEO_REQUEST))
+				.willThrow(new AiVideoDurationOutOfRangeException());
+
+		mockMvc.perform(post("/api/ai/presigned-urls")
+						.principal(CURRENT_USER)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(VIDEO_ISSUE_REQUEST))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("AI_VIDEO_DURATION_OUT_OF_RANGE"));
 	}
 
 	@Test
