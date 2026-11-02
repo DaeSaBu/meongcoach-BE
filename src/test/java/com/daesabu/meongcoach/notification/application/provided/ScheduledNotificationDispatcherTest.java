@@ -129,6 +129,17 @@ class ScheduledNotificationDispatcherTest {
 	}
 
 	@Test
+	void 발송이_실패해도_무효_FID_삭제는_유지한다() {
+		var cause = new IllegalStateException("FCM unavailable");
+		NotificationSendResult failedWithInvalid = new NotificationSendResult(0, 1, List.of(fid), cause);
+		given(sender.send(anyList())).willReturn(failedWithInvalid);
+
+		assertThatThrownBy(() -> dispatcher.dispatch(request)).isInstanceOf(NotificationDeliveryException.class);
+		assertThat(fids.findByFid(fid)).isEmpty();
+		assertThat(dispatches.existsByScheduledAt(SCHEDULED_AT)).isFalse();
+	}
+
+	@Test
 	void 대상이_없으면_FCM을_호출하지_않는다() {
 		fids.deleteAll(fids.findAllByUserIdInOrderByUserIdAscIdAsc(List.of(userId)));
 
