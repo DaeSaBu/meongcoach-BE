@@ -115,3 +115,8 @@ meongcoach:
       junior: entl_test_junior
       adult: entl_test_adult
       senior: entl_test_senior
+  alert:
+    slack:
+      # 테스트는 Slack을 부르지 않는다. 꺼 두면 로그 전송기가 뜨고, Application 테스트는 AlertSender를 목으로 대체한다
+      enabled: false
+      webhook-url: https://hooks.slack.test/services/test
