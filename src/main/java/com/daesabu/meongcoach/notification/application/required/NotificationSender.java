@@ -22,8 +22,15 @@ public interface NotificationSender {
 			int sentCount = results.stream().mapToInt(NotificationSendResult::sentCount).sum();
 			int failedCount = results.stream().mapToInt(NotificationSendResult::failedCount).sum();
 			List<String> invalidFids = results.stream().flatMap(result -> result.invalidFids().stream()).toList();
-			Throwable failure = results.stream().map(NotificationSendResult::failure)
-					.filter(Objects::nonNull).findFirst().orElse(null);
+			List<Throwable> failures = results.stream().map(NotificationSendResult::failure).filter(Objects::nonNull).toList();
+			Throwable failure = null;
+			for (Throwable each : failures) {
+				if (failure == null) {
+					failure = each;
+					continue;
+				}
+				failure.addSuppressed(each);
+			}
 			return new NotificationSendResult(sentCount, failedCount, invalidFids, failure);
 		}
 
