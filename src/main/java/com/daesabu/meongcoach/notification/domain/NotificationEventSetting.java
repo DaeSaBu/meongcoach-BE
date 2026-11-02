@@ -19,10 +19,6 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-/**
- * 회원이 어떤 종류의 이벤트 알림을 구독할지 나타내는 설정이다. 회원과 이벤트 종류의 조합마다 한 행을 갖는다.
- * 이벤트 알림은 해당 종류의 {@code enabled}가 켜진 회원에게만 발송한다.
- */
 @Getter
 @Entity
 @Table(
