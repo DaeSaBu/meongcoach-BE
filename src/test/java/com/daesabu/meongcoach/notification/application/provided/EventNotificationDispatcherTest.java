@@ -9,7 +9,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.daesabu.meongcoach.notification.application.provided.dto.EventNotificationDispatchRequest;
-import com.daesabu.meongcoach.notification.application.provided.dto.NotificationTargetRequest;
 import com.daesabu.meongcoach.notification.application.required.DeviceInstallationRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationEventSettingRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationSender;
@@ -56,7 +55,7 @@ class EventNotificationDispatcherTest {
 	}
 
 	private EventNotificationDispatchRequest request(String kind, List<Long> userIds) {
-		return new EventNotificationDispatchRequest("OPERATOR_MESSAGE", new NotificationTargetRequest(kind, userIds), "제목", "본문", null);
+		return new EventNotificationDispatchRequest("OPERATOR_MESSAGE", kind, userIds, "제목", "본문", null);
 	}
 
 	@Test
@@ -104,7 +103,7 @@ class EventNotificationDispatcherTest {
 
 	@Test
 	void 없는_종류면_던진다() {
-		var request = new EventNotificationDispatchRequest("MARKETING", new NotificationTargetRequest("ALL", null), "제목", "본문", null);
+		var request = new EventNotificationDispatchRequest("MARKETING", "ALL", null, "제목", "본문", null);
 
 		assertThatThrownBy(() -> dispatcher.dispatch(request)).isInstanceOf(InvalidNotificationEventTypeException.class);
 	}

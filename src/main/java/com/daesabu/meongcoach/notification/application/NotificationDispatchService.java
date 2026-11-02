@@ -61,7 +61,7 @@ public class NotificationDispatchService implements ScheduledNotificationDispatc
 	@Transactional
 	public EventNotificationDispatchResult dispatch(EventNotificationDispatchRequest request) {
 		NotificationEventType type = NotificationEventType.from(request.type());
-		NotificationTarget target = NotificationTarget.of(request.target().kind(), request.target().userIds());
+		NotificationTarget target = NotificationTarget.of(request.targetKind(), request.userIds());
 		NotificationDeepLink deepLink = new NotificationDeepLink(request.deepLink());
 
 		List<String> fids = findFids(findEnabledUserIds(type, target));
