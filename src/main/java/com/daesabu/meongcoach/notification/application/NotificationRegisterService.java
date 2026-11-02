@@ -12,11 +12,12 @@ import com.daesabu.meongcoach.notification.application.required.NotificationSche
 import com.daesabu.meongcoach.notification.domain.DeviceInstallation;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallationRegisterCommand;
 import com.daesabu.meongcoach.notification.domain.NotificationEventSetting;
+import com.daesabu.meongcoach.notification.domain.NotificationEventSettings;
 import com.daesabu.meongcoach.notification.domain.NotificationEventType;
 import com.daesabu.meongcoach.notification.domain.NotificationSchedule;
+import com.daesabu.meongcoach.notification.domain.NotificationSchedules;
 import com.daesabu.meongcoach.notification.domain.NotificationTime;
 import java.time.Instant;
-import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -54,23 +55,13 @@ public class NotificationRegisterService implements NotificationRegister {
 	}
 
 	private void createDefaultSchedulesIfAbsent(Long userId) {
-		List<NotificationTime> existingTimes = notificationScheduleRepository.findAllByUserId(userId).stream()
-				.map(NotificationSchedule::time)
-				.toList();
-		List<NotificationSchedule> missingSchedules = NotificationSchedule.createDefaults(userId).stream()
-				.filter(schedule -> !existingTimes.contains(schedule.time()))
-				.toList();
-		notificationScheduleRepository.saveAll(missingSchedules);
+		NotificationSchedules schedules = new NotificationSchedules(notificationScheduleRepository.findAllByUserId(userId));
+		notificationScheduleRepository.saveAll(schedules.createMissingDefaults(userId));
 	}
 
 	private void createDefaultEventSettingsIfAbsent(Long userId) {
-		List<NotificationEventType> existingTypes = notificationEventSettingRepository.findAllByUserId(userId).stream()
-				.map(NotificationEventSetting::getType)
-				.toList();
-		List<NotificationEventSetting> missingSettings = NotificationEventSetting.createDefaults(userId).stream()
-				.filter(setting -> !existingTypes.contains(setting.getType()))
-				.toList();
-		notificationEventSettingRepository.saveAll(missingSettings);
+		NotificationEventSettings settings = new NotificationEventSettings(notificationEventSettingRepository.findAllByUserId(userId));
+		notificationEventSettingRepository.saveAll(settings.createMissingDefaults(userId));
 	}
 
 	@Override
