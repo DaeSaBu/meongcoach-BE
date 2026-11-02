@@ -13,6 +13,10 @@ meongcoach:
   # 기본값이 이미 false지만 운영에서 문서를 차단한다는 의도를 명시한다
   api-docs:
     enabled: false
+  # 서울 8·11·17시 알림 발송 트리거. 운영에서만 켠다
+  notification:
+    scheduler:
+      enabled: true
 
 sentry:
   environment: production
