@@ -1,5 +1,7 @@
 package com.daesabu.meongcoach.notification.domain;
 
+import static java.util.Objects.requireNonNull;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -12,6 +14,14 @@ public record PushNotification(
 		NotificationDeepLink deepLink,
 		String collapseKey
 ) {
+
+	public PushNotification {
+		requireNonNull(fid);
+		requireNonNull(title);
+		requireNonNull(body);
+		requireNonNull(deepLink);
+		requireNonNull(collapseKey);
+	}
 
 	public Map<String, String> data() {
 		Map<String, String> data = new HashMap<>();
