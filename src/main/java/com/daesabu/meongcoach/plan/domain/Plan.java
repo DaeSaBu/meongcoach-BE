@@ -69,6 +69,7 @@ public class Plan extends BaseTimeEntity {
 	@Column(nullable = false, columnDefinition = "TEXT")
 	private String goal;
 
+	// AI 플랜을 만들 때 보호자가 적은 고민. 직접 만든 플랜은 null이다.
 	@Column(length = 500)
 	private String expectation;
 

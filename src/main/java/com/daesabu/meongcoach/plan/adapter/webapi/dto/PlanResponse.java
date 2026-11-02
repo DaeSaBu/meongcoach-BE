@@ -8,14 +8,14 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 
-public record PlanResponse(Long planId, Long dogId, String title, String goal, int dailyMinutes, int daysPerWeek,
+public record PlanResponse(Long planId, Long dogId, String title, String goal, String expectation, int dailyMinutes, int daysPerWeek,
 		PlanStatus status, LocalDateTime createdAt, Instant completedAt, PlanOutcome outcome,
 		List<PlanCurriculumResponse> curriculums) {
 
 	public static PlanResponse from(CurrentPlanResult result) {
 		Plan plan = result.plan();
 		List<PlanCurriculumResponse> curriculums = result.curriculums().stream().map(PlanCurriculumResponse::from).toList();
-		return new PlanResponse(plan.getId(), plan.getDogId(), plan.getTitle(), plan.getGoal(), plan.getDailyMinutes(),
-				plan.getDaysPerWeek(), plan.getStatus(), plan.getCreatedAt(), plan.getCompletedAt(), plan.getOutcome(), curriculums);
+		return new PlanResponse(plan.getId(), plan.getDogId(), plan.getTitle(), plan.getGoal(), plan.getExpectation(),
+				plan.getDailyMinutes(), plan.getDaysPerWeek(), plan.getStatus(), plan.getCreatedAt(), plan.getCompletedAt(), plan.getOutcome(), curriculums);
 	}
 }
