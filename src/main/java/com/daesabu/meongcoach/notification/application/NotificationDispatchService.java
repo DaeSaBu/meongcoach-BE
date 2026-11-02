@@ -12,7 +12,6 @@ import com.daesabu.meongcoach.notification.application.required.NotificationSche
 import com.daesabu.meongcoach.notification.application.required.NotificationSender;
 import com.daesabu.meongcoach.notification.application.required.ScheduledNotificationDispatchRepository;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallation;
-import com.daesabu.meongcoach.notification.domain.NotificationEventContent;
 import com.daesabu.meongcoach.notification.domain.NotificationEventType;
 import com.daesabu.meongcoach.notification.domain.NotificationTarget;
 import com.daesabu.meongcoach.notification.domain.NotificationTime;
@@ -65,10 +64,9 @@ public class NotificationDispatchService implements ScheduledNotificationDispatc
 	public EventNotificationDispatchResult dispatch(EventNotificationDispatchRequest request) {
 		NotificationEventType type = NotificationEventType.from(request.type());
 		NotificationTarget target = NotificationTarget.of(request.target().kind(), request.target().userIds());
-		NotificationEventContent content = new NotificationEventContent(request.title(), request.body(), request.deepLink());
 
 		List<String> fids = findFids(findEnabledUserIds(type, target));
-		send(content.toPushNotifications(fids, type));
+		send(PushNotification.ofEvent(fids, type, request.title(), request.body(), request.deepLink()));
 		return new EventNotificationDispatchResult(fids.size());
 	}
 
