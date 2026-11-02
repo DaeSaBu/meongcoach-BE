@@ -3,6 +3,7 @@ package com.daesabu.meongcoach.ai.application;
 import com.daesabu.meongcoach.ai.application.provided.AiTrialFinder;
 import com.daesabu.meongcoach.ai.application.provided.AiVideoUploadUrlIssuer;
 import com.daesabu.meongcoach.ai.application.provided.AiVideoUploadUrlResult;
+import com.daesabu.meongcoach.ai.application.provided.dto.AiVideoUploadUrlRequest;
 import com.daesabu.meongcoach.ai.application.required.AiReportRepository;
 import com.daesabu.meongcoach.ai.domain.AiReport;
 import com.daesabu.meongcoach.ai.domain.AiReportUploadCommand;
@@ -16,10 +17,12 @@ import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
+@Validated
 public class AiVideoUploadUrlService implements AiVideoUploadUrlIssuer {
 
 	private final MediaUploadUrlIssuer mediaUploadUrlIssuer;
@@ -28,14 +31,15 @@ public class AiVideoUploadUrlService implements AiVideoUploadUrlIssuer {
 
 	@Override
 	@Transactional
-	public AiVideoUploadUrlResult issue(Long userId, String contentType, long fileSizeBytes) {
+	public AiVideoUploadUrlResult issue(Long userId, AiVideoUploadUrlRequest request) {
 		AiTrial trial = aiTrialFinder.findTrial(userId);
 		if (!trial.isAvailable()) {
 			throw new AiReportTrialExceededException();
 		}
+		AiVideo.validateDuration(request.durationSeconds());
 
-		MediaUploadRequest uploadRequest = MediaUploadRequest.video(AiVideo.SCOPE, userId, contentType, fileSizeBytes,
-				AiVideo.MAX_FILE_SIZE_BYTES);
+		MediaUploadRequest uploadRequest = MediaUploadRequest.video(AiVideo.SCOPE, userId, request.contentType(),
+				request.fileSizeBytes(), AiVideo.MAX_FILE_SIZE_BYTES);
 		MediaUploadUrlResult result = mediaUploadUrlIssuer.issue(uploadRequest);
 		LocalDateTime uploadExpiresAt = LocalDateTime.now().plusSeconds(result.expiresInSeconds());
 		AiReport report = aiReportRepository.save(

@@ -114,7 +114,7 @@ meongcoach:
       # 다른 앱에서 발급된 토큰을 걸러내는 값이므로 반드시 우리 앱의 클라이언트 ID만 넣는다
       audiences: ${GOOGLE_WEB_CLIENT_ID},${GOOGLE_IOS_CLIENT_ID}
   notification:
-    # 발송기가 /internal/notifications/** 를 부를 때 X-Internal-Secret 헤더로 제시하는 값. 기본값을 두지 않아 미주입 시 기동에 실패한다
+    # 운영진이 /internal/notifications/** 를 부를 때 X-Internal-Secret 헤더로 제시하는 값. 기본값을 두지 않아 미주입 시 기동에 실패한다
     internal-secret: ${NOTIFICATION_INTERNAL_SECRET}
   revenuecat:
     base-url: ${REVENUECAT_BASE_URL:https://api.revenuecat.com/v2}
@@ -127,3 +127,9 @@ meongcoach:
       junior: ${REVENUECAT_ENTITLEMENT_ID_JUNIOR}
       adult: ${REVENUECAT_ENTITLEMENT_ID_ADULT}
       senior: ${REVENUECAT_ENTITLEMENT_ID_SENIOR}
+  alert:
+    slack:
+      # 신규 가입·영상 업로드 같은 운영 이벤트를 개발자 채널로 보낸다. false면 Slack 대신 info 로그로만 남긴다
+      enabled: true
+      # Incoming Webhook URL. 기본값을 두지 않아 미주입 시 기동에 실패한다. 배포 CI용 SLACK_WEBHOOK_URL과는 다른 값이다
+      graduation-webhook-url: ${ALERT_SLACK_GRADUATION_WEBHOOK_URL}

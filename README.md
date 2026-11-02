@@ -36,6 +36,7 @@ flowchart LR
     R2["Cloudflare R2<br/>이미지"]
     GCS["Google Cloud Storage<br/>영상"]
     PubSub["Cloud Pub/Sub"]
+    Slack["Slack<br/>개발자 알림"]
 
     App -->|"API 호출"| API
     App -->|"presigned URL로 직접 업로드"| R2
@@ -48,6 +49,7 @@ flowchart LR
     PubSub --> Consumer
     Consumer -->|"영상 분석 · 리포트 생성"| Gemini
     Consumer --> DB
+    API -->|"운영 이벤트 알림"| Slack
 ```
 
 AI 분석은 수십 초가 걸리므로 요청-응답이 아니라 GCS 업로드 이벤트를 Pub/Sub으로 받아 비동기로 처리합니다. 앱은 리포트 목록을 폴링해 결과를 확인합니다. 흐름과 실패 처리는 [docs/ai-pipeline.md](docs/ai-pipeline.md)에 있습니다.
@@ -163,9 +165,17 @@ AI 분석은 수십 초가 걸리므로 요청-응답이 아니라 GCS 업로드
 
 - **책임**: 회원의 Firebase Installation ID(FID)·시각별 수신 설정과 훈련 알림 발송. 외부 스케줄러는 발송 API를 호출합니다.
 - **역할**: `NotificationRegister`(FID 등록·삭제, 설정 변경, 탈퇴 정리), `NotificationPreferenceFinder`, `NotificationDispatcher`
-- **협력**: 발송 대상을 고를 때 `user`의 `UserFinder`로 활성 회원만 남깁니다. `auth`가 탈퇴할 때 토큰과 설정 정리에 사용합니다. 발송기는 `/internal/notifications/**`를 `X-Internal-Secret` 헤더로 호출합니다.
+- **협력**: 발송 대상을 고를 때 `user`의 `UserFinder`로 활성 회원만 남깁니다. `auth`가 탈퇴할 때 토큰과 설정 정리에 사용합니다. 운영진은 `/internal/notifications/**`를 `X-Internal-Secret` 헤더로 호출합니다.
 
 애그리거트·API·발송 대상 규칙은 [docs/notification.md](docs/notification.md)에 있습니다.
+
+#### alert — 개발자 알림
+
+- **책임**: 신규 가입·영상 업로드 같은 운영 이벤트를 개발자 Slack 채널로 비동기 전송
+- **역할**: `Alerter`. 필드(`AlertField`)는 `domain/shared`로 노출해 호출 모듈이 그대로 씁니다.
+- **협력**: 다른 모듈을 참조하지 않습니다. 호출 모듈이 제목·필드를 넘기고, 어떤 이벤트를 알릴지는 호출 모듈이 정합니다.
+
+호출 방법·메시지 형식·설정은 [docs/alert.md](docs/alert.md)에 있습니다.
 
 #### health — 상태 확인
 
@@ -204,4 +214,5 @@ AI 분석은 수십 초가 걸리므로 요청-응답이 아니라 GCS 업로드
 | [docs/media.md](docs/media.md) | presigned URL 발급과 객체 키 소유권 규칙 |
 | [docs/training.md](docs/training.md) | 훈련 콘텐츠와 사용자 진행 애그리거트, 완료 판단, 레슨 완료 잠금 |
 | [docs/notification.md](docs/notification.md) | 푸시 알림 토큰·수신 설정 애그리거트, 내부 API 인증, 발송 대상 규칙 |
+| [docs/alert.md](docs/alert.md) | 개발자 Slack 알림 호출 방법, 메시지 형식, 설정, 비동기·실패 처리 |
 | [AGENTS.md](AGENTS.md) | 팀 개발 규칙 전체 목록 |
