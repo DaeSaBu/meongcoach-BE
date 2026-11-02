@@ -9,7 +9,7 @@ import jakarta.validation.Valid;
 public interface OnboardingImageUploadUrlIssuer {
 
 	/**
-	 * 보호자 또는 강아지 프로필 이미지의 업로드 URL을 발급한다. 대상이 생략되면 강아지 프로필로 발급한다.
+	 * 강아지 프로필 이미지의 업로드 URL을 발급한다.
 	 */
 	OnboardingImageUploadUrlResult issue(Long userId, @Valid OnboardingImageUploadUrlRequest request);
 }
