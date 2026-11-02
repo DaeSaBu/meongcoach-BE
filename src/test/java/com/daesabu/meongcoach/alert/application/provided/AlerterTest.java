@@ -2,12 +2,11 @@ package com.daesabu.meongcoach.alert.application.provided;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.after;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.daesabu.meongcoach.alert.application.provided.dto.AlertRequest;
 import com.daesabu.meongcoach.alert.application.required.AlertSender;
@@ -16,7 +15,6 @@ import com.daesabu.meongcoach.alert.domain.exception.AlertDeliveryFailedExceptio
 import com.daesabu.meongcoach.alert.domain.shared.AlertField;
 import com.daesabu.meongcoach.alert.domain.shared.AlertLevel;
 import com.daesabu.meongcoach.support.ApplicationTest;
-import jakarta.validation.ConstraintViolationException;
 import java.time.Instant;
 import java.util.List;
 import java.util.stream.IntStream;
@@ -28,6 +26,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 class AlerterTest {
 
 	private static final long ASYNC_TIMEOUT_MILLIS = 2000;
+	private static final long ASYNC_SETTLE_MILLIS = 300;
 
 	@Autowired
 	private Alerter alerter;
@@ -63,32 +62,32 @@ class AlerterTest {
 	}
 
 	@Test
-	void 제목이_비어_있으면_검증_예외를_던지고_전송하지_않는다() {
+	void 제목이_비어_있으면_예외_없이_끝나고_전송하지_않는다() {
 		AlertRequest request = new AlertRequest(AlertLevel.INFO, " ", List.of());
 
-		assertThatThrownBy(() -> alerter.alert(request))
-				.isInstanceOf(ConstraintViolationException.class);
-		verifyNoInteractions(alertSender);
+		assertThatCode(() -> alerter.alert(request)).doesNotThrowAnyException();
+
+		verify(alertSender, after(ASYNC_SETTLE_MILLIS).never()).send(any());
 	}
 
 	@Test
-	void 필드_이름이_비어_있으면_검증_예외를_던진다() {
+	void 필드_이름이_비어_있으면_전송하지_않는다() {
 		AlertRequest request = new AlertRequest(AlertLevel.INFO, "신규 가입", List.of(new AlertField(" ", "42")));
 
-		assertThatThrownBy(() -> alerter.alert(request))
-				.isInstanceOf(ConstraintViolationException.class);
-		verifyNoInteractions(alertSender);
+		assertThatCode(() -> alerter.alert(request)).doesNotThrowAnyException();
+
+		verify(alertSender, after(ASYNC_SETTLE_MILLIS).never()).send(any());
 	}
 
 	@Test
-	void 필드가_20개를_넘으면_검증_예외를_던진다() {
+	void 필드가_20개를_넘으면_전송하지_않는다() {
 		List<AlertField> fields = IntStream.range(0, 21)
 				.mapToObj(index -> AlertField.of("field" + index, index))
 				.toList();
 		AlertRequest request = new AlertRequest(AlertLevel.INFO, "신규 가입", fields);
 
-		assertThatThrownBy(() -> alerter.alert(request))
-				.isInstanceOf(ConstraintViolationException.class);
-		verifyNoInteractions(alertSender);
+		assertThatCode(() -> alerter.alert(request)).doesNotThrowAnyException();
+
+		verify(alertSender, after(ASYNC_SETTLE_MILLIS).never()).send(any());
 	}
 }
