@@ -127,3 +127,9 @@ meongcoach:
       junior: ${REVENUECAT_ENTITLEMENT_ID_JUNIOR}
       adult: ${REVENUECAT_ENTITLEMENT_ID_ADULT}
       senior: ${REVENUECAT_ENTITLEMENT_ID_SENIOR}
+  alert:
+    slack:
+      # 신규 가입·영상 업로드 같은 운영 이벤트를 개발자 채널로 보낸다. false면 Slack 대신 info 로그로만 남긴다
+      enabled: true
+      # Incoming Webhook URL. 기본값을 두지 않아 미주입 시 기동에 실패한다. 배포 CI용 SLACK_WEBHOOK_URL과는 다른 값이다
+      graduation-webhook-url: ${ALERT_SLACK_GRADUATION_WEBHOOK_URL}
