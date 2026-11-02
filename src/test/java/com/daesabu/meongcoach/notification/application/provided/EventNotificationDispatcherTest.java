@@ -12,6 +12,7 @@ import com.daesabu.meongcoach.notification.application.provided.dto.EventNotific
 import com.daesabu.meongcoach.notification.application.required.DeviceInstallationRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationEventSettingRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationSender;
+import com.daesabu.meongcoach.notification.application.required.NotificationSender.NotificationSendResult;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallation;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallationRegisterCommand;
 import com.daesabu.meongcoach.notification.domain.DevicePlatform;
@@ -49,7 +50,7 @@ class EventNotificationDispatcherTest {
 		given(sender.send(anyList())).willAnswer(invocation -> {
 			List<PushNotification> messages = invocation.getArgument(0);
 			messages.forEach(message -> fids.add(message.fid()));
-			return List.of();
+			return new NotificationSendResult(messages.size(), 0, List.of(), null);
 		});
 		return fids;
 	}

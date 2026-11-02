@@ -10,7 +10,7 @@ import com.daesabu.meongcoach.notification.application.required.DeviceInstallati
 import com.daesabu.meongcoach.notification.application.required.NotificationEventSettingRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationScheduleRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationSender;
-import com.daesabu.meongcoach.notification.application.required.NotificationSender.NotificationBatchResult;
+import com.daesabu.meongcoach.notification.application.required.NotificationSender.NotificationSendResult;
 import com.daesabu.meongcoach.notification.application.required.ScheduledNotificationDispatchRepository;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallation;
 import com.daesabu.meongcoach.notification.domain.NotificationDeepLink;
@@ -19,12 +19,10 @@ import com.daesabu.meongcoach.notification.domain.NotificationTarget;
 import com.daesabu.meongcoach.notification.domain.PushNotification;
 import com.daesabu.meongcoach.notification.domain.PushNotificationFactory;
 import com.daesabu.meongcoach.notification.domain.ScheduledNotificationDispatch;
-import com.daesabu.meongcoach.notification.domain.exception.NotificationDeliveryException;
 import com.daesabu.meongcoach.user.application.provided.UserFinder;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -96,30 +94,16 @@ public class NotificationDispatchService implements ScheduledNotificationDispatc
 				.map(DeviceInstallation::getFid).distinct().toList();
 	}
 
-	/**
-	 * 전송 뒤 무효 FID를 삭제하고 요약 로그를 남긴다.
-	 * 배치 호출이 하나라도 실패했거나, 전송에 성공한 알림이 없는데 무효 등록 외의 실패가 있으면 발송 실패로 던진다.
-	 */
 	private void deliver(String label, List<PushNotification> notifications) {
 		if (notifications.isEmpty()) {
 			log.info("event=notification_dispatch {} fids=0", label);
 			return;
 		}
-		List<NotificationBatchResult> results = sender.send(notifications);
-		List<String> invalidFids = results.stream().flatMap(result -> result.invalidFids().stream()).toList();
-		deleteInvalidInstallations(invalidFids);
-		int sent = results.stream().mapToInt(NotificationBatchResult::sentCount).sum();
-		int failed = results.stream().mapToInt(NotificationBatchResult::failedCount).sum();
+		NotificationSendResult result = sender.send(notifications);
+		deleteInvalidInstallations(result.invalidFids());
 		log.info("event=notification_dispatch {} fids={} sent={} failed={} invalid={}",
-				label, notifications.size(), sent, failed, invalidFids.size());
-
-		Optional<Throwable> failure = results.stream().map(NotificationBatchResult::failure).flatMap(Optional::stream).findFirst();
-		if (failure.isPresent()) {
-			throw new NotificationDeliveryException(failure.get());
-		}
-		if (sent == 0 && failed > 0) {
-			throw new NotificationDeliveryException();
-		}
+				label, notifications.size(), result.sentCount(), result.failedCount(), result.invalidFids().size());
+		result.requireDelivered();
 	}
 
 	private void deleteInvalidInstallations(List<String> invalidFids) {

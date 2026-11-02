@@ -31,9 +31,28 @@ class FirebaseNotificationSenderTest {
 		given(batch.getResponses()).willReturn(List.of(expired, success));
 		given(messaging.sendEach(anyList())).willReturn(batch);
 
-		var result = sender(messaging).send(messages(List.of("expired", "keep"))).getFirst();
+		var result = sender(messaging).send(messages(List.of("expired", "keep")));
 
 		assertThat(result.invalidFids()).containsExactly("expired");
+		assertThat(result.sentCount()).isEqualTo(1);
+		assertThat(result.failedCount()).isZero();
+	}
+
+	@Test
+	void SENDER_ID_MISMATCH도_무효_FID으로_반환하고_그_밖의_실패는_실패_수로_센다() throws Exception {
+		FirebaseMessaging messaging = mock(FirebaseMessaging.class);
+		BatchResponse batch = mock(BatchResponse.class);
+		SendResponse mismatch = failure(MessagingErrorCode.SENDER_ID_MISMATCH);
+		SendResponse unavailable = failure(MessagingErrorCode.UNAVAILABLE);
+		SendResponse invalidArgument = failure(MessagingErrorCode.INVALID_ARGUMENT);
+		given(batch.getResponses()).willReturn(List.of(mismatch, unavailable, invalidArgument));
+		given(messaging.sendEach(anyList())).willReturn(batch);
+
+		var result = sender(messaging).send(messages(List.of("mismatch", "unavailable", "invalid-argument")));
+
+		assertThat(result.invalidFids()).containsExactly("mismatch");
+		assertThat(result.failedCount()).isEqualTo(2);
+		assertThat(result.failure()).isNull();
 	}
 
 	@Test
@@ -45,14 +64,12 @@ class FirebaseNotificationSenderTest {
 		given(messaging.sendEach(anyList())).willThrow(failure).willReturn(batch);
 		List<String> fids = java.util.stream.IntStream.range(0, 501).mapToObj(index -> "fid-" + index).toList();
 
-		var results = sender(messaging).send(messages(fids));
+		var result = sender(messaging).send(messages(fids));
 
 		verify(messaging, times(2)).sendEach(anyList());
-		assertThat(results).hasSize(2);
-		assertThat(results.getFirst().failure()).contains(failure);
-		assertThat(results.getFirst().failedCount()).isEqualTo(500);
-		assertThat(results.getLast().failure()).isEmpty();
-		assertThat(results.getLast().sentCount()).isEqualTo(1);
+		assertThat(result.failure()).isSameAs(failure);
+		assertThat(result.failedCount()).isEqualTo(500);
+		assertThat(result.sentCount()).isEqualTo(1);
 	}
 
 	@Test
@@ -64,10 +81,11 @@ class FirebaseNotificationSenderTest {
 		given(messaging.sendEach(anyList())).willReturn(batch);
 		List<String> fids = java.util.stream.IntStream.range(0, 501).mapToObj(index -> "fid-" + index).toList();
 
-		var results = sender(messaging).send(messages(fids));
+		var result = sender(messaging).send(messages(fids));
 
 		verify(messaging, times(2)).sendEach(anyList());
-		assertThat(results).allSatisfy(result -> assertThat(result.invalidFids()).isEmpty());
+		assertThat(result.invalidFids()).isEmpty();
+		assertThat(result.failedCount()).isEqualTo(2);
 	}
 
 	@Test
@@ -140,13 +158,12 @@ class FirebaseNotificationSenderTest {
 		});
 		List<String> fids = java.util.stream.IntStream.range(0, 1001).mapToObj(index -> "fid-" + index).toList();
 
-		var results = sender(messaging).send(messages(fids));
+		var result = sender(messaging).send(messages(fids));
 
 		ArgumentCaptor<List<com.google.firebase.messaging.Message>> batches = ArgumentCaptor.captor();
 		verify(messaging, times(3)).sendEach(batches.capture());
 		assertThat(batches.getAllValues()).extracting(List::size).containsExactly(500, 500, 1);
-		assertThat(results).hasSize(3);
-		assertThat(results.stream().flatMap(result -> result.invalidFids().stream()).toList()).containsExactlyElementsOf(fids);
+		assertThat(result.invalidFids()).containsExactlyElementsOf(fids);
 	}
 
 	private List<PushNotification> messages(List<String> fids) {

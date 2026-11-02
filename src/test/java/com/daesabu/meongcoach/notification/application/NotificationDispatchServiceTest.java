@@ -15,7 +15,7 @@ import com.daesabu.meongcoach.notification.application.required.DeviceInstallati
 import com.daesabu.meongcoach.notification.application.required.NotificationEventSettingRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationScheduleRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationSender;
-import com.daesabu.meongcoach.notification.application.required.NotificationSender.NotificationBatchResult;
+import com.daesabu.meongcoach.notification.application.required.NotificationSender.NotificationSendResult;
 import com.daesabu.meongcoach.notification.application.required.ScheduledNotificationDispatchRepository;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallation;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallationRegisterCommand;
@@ -31,7 +31,6 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
@@ -51,8 +50,8 @@ class NotificationDispatchServiceTest {
 	@Test
 	void 시각별_메시지를_구성하고_전체_대상을_Sender에_전달한다() {
 		prepareTargets(501);
-		NotificationBatchResult deliveryResults = results(List.of());
-		given(sender.send(anyList())).willReturn(List.of(deliveryResults));
+		NotificationSendResult deliveryResults = results(List.of());
+		given(sender.send(anyList())).willReturn(deliveryResults);
 
 		assertThat(service.dispatch(request).fids()).isEqualTo(501);
 
@@ -71,9 +70,8 @@ class NotificationDispatchServiceTest {
 	@Test
 	void 여러_배치의_무효_FID을_모아_삭제한다() {
 		prepareTargets(1001);
-		NotificationBatchResult firstBatch = results(List.of("fid-1"));
-		NotificationBatchResult secondBatch = results(List.of("fid-500"));
-		given(sender.send(anyList())).willReturn(List.of(firstBatch, secondBatch));
+		NotificationSendResult result = results(List.of("fid-1", "fid-500"));
+		given(sender.send(anyList())).willReturn(result);
 
 		assertThat(service.dispatch(request).fids()).isEqualTo(1001);
 
@@ -85,8 +83,8 @@ class NotificationDispatchServiceTest {
 	@Test
 	void 전송에_성공한_FID이_없고_무효_외_실패가_있으면_완료_이력을_남기지_않고_던진다() {
 		prepareTargets(2);
-		NotificationBatchResult allFailed = results(0, 2, List.of());
-		given(sender.send(anyList())).willReturn(List.of(allFailed));
+		NotificationSendResult allFailed = results(0, 2, List.of());
+		given(sender.send(anyList())).willReturn(allFailed);
 
 		assertThatThrownBy(() -> service.dispatch(request)).isInstanceOf(NotificationDeliveryException.class);
 
@@ -96,8 +94,8 @@ class NotificationDispatchServiceTest {
 	@Test
 	void 무효_FID만_있으면_삭제하고_완료한다() {
 		prepareTargets(2);
-		NotificationBatchResult onlyInvalid = results(0, 0, List.of("fid-0", "fid-1"));
-		given(sender.send(anyList())).willReturn(List.of(onlyInvalid));
+		NotificationSendResult onlyInvalid = results(0, 0, List.of("fid-0", "fid-1"));
+		given(sender.send(anyList())).willReturn(onlyInvalid);
 
 		assertThat(service.dispatch(request).fids()).isEqualTo(2);
 
@@ -109,9 +107,8 @@ class NotificationDispatchServiceTest {
 	void 배치_호출이_실패하면_원인과_함께_던지고_완료_이력을_남기지_않는다() {
 		prepareTargets(1001);
 		var cause = new IllegalStateException("FCM unavailable");
-		NotificationBatchResult firstBatch = results(499, 0, List.of("fid-1"));
-		NotificationBatchResult secondBatch = failedBatch(cause);
-		given(sender.send(anyList())).willReturn(List.of(firstBatch, secondBatch));
+		NotificationSendResult result = new NotificationSendResult(499, 500, List.of("fid-1"), cause);
+		given(sender.send(anyList())).willReturn(result);
 
 		assertThatThrownBy(() -> service.dispatch(request)).isInstanceOf(NotificationDeliveryException.class).hasCause(cause);
 
@@ -126,23 +123,12 @@ class NotificationDispatchServiceTest {
 						new DeviceInstallationRegisterCommand("fid-" + index, DevicePlatform.IOS), Instant.parse("2026-10-31T08:00:00Z"))).toList();
 		given(installations.findAllByUserIdInOrderByUserIdAscIdAsc(Set.of(1L))).willReturn(results);
 	}
-	private NotificationBatchResult results(List<String> invalidFids) {
+	private NotificationSendResult results(List<String> invalidFids) {
 		return results(0, 0, invalidFids);
 	}
 
-	private NotificationBatchResult results(int sent, int failed, List<String> invalidFids) {
-		NotificationBatchResult results = mock(NotificationBatchResult.class);
-		given(results.sentCount()).willReturn(sent);
-		given(results.failedCount()).willReturn(failed);
-		given(results.invalidFids()).willReturn(invalidFids);
-		given(results.failure()).willReturn(Optional.empty());
-		return results;
-	}
-
-	private NotificationBatchResult failedBatch(Throwable cause) {
-		NotificationBatchResult results = results(0, 500, List.of());
-		given(results.failure()).willReturn(Optional.of(cause));
-		return results;
+	private NotificationSendResult results(int sent, int failed, List<String> invalidFids) {
+		return new NotificationSendResult(sent, failed, invalidFids, null);
 	}
 
 }
