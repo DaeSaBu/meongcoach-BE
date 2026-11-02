@@ -22,6 +22,7 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.scheduling.TaskScheduler;
 
 class NotificationDispatchSchedulerTest {
@@ -68,7 +69,16 @@ class NotificationDispatchSchedulerTest {
 	}
 
 	@Test
-	void 발송_실패가_아닌_예외는_재시도하지_않는다() {
+	void 요청값_오류가_아닌_서버_오류도_재시도한다() {
+		given(dispatcher.dispatch(request)).willThrow(new DataAccessResourceFailureException("db down"));
+
+		scheduler.dispatch(request, 1);
+
+		verify(tasks).schedule(any(Runnable.class), eq(NOW.plusSeconds(120)));
+	}
+
+	@Test
+	void 요청값_오류는_재시도하지_않는다() {
 		given(dispatcher.dispatch(request)).willThrow(new InvalidNotificationDispatchTimeException(NOW));
 
 		assertThatThrownBy(() -> scheduler.dispatch(request, 1)).isInstanceOf(InvalidNotificationDispatchTimeException.class);
