@@ -1,6 +1,7 @@
 package com.daesabu.meongcoach.notification.application.required;
 
 import com.daesabu.meongcoach.notification.domain.NotificationSchedule;
+import com.daesabu.meongcoach.notification.domain.NotificationTime;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -14,7 +15,13 @@ public interface NotificationScheduleRepository extends JpaRepository<Notificati
 	Optional<NotificationSchedule> findByUserIdAndHourAndMinute(Long userId, int hour, int minute);
 
 	@Query("select p.userId from NotificationSchedule p where p.hour = :hour and p.minute = :minute and p.enabled = true")
-	List<Long> findUserIdsByTimeEnabled(@Param("hour") int hour, @Param("minute") int minute);
+	List<Long> findUserIdsByHourAndMinuteEnabled(@Param("hour") int hour, @Param("minute") int minute);
+
+	default List<Long> findUserIdsByTimeEnabled(NotificationTime time) {
+		int hour = time.hour();
+		int minute = time.minute();
+		return findUserIdsByHourAndMinuteEnabled(hour, minute);
+	}
 
 	void deleteAllByUserId(Long userId);
 }

@@ -2,23 +2,23 @@ package com.daesabu.meongcoach.notification.application.provided;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.daesabu.meongcoach.notification.application.provided.dto.EventNotificationDispatchRequest;
-import com.daesabu.meongcoach.notification.application.provided.dto.NotificationTargetRequest;
 import com.daesabu.meongcoach.notification.application.required.DeviceInstallationRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationEventSettingRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationSender;
+import com.daesabu.meongcoach.notification.application.required.NotificationSender.NotificationSendResult;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallation;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallationRegisterCommand;
 import com.daesabu.meongcoach.notification.domain.DevicePlatform;
 import com.daesabu.meongcoach.notification.domain.NotificationEventSetting;
 import com.daesabu.meongcoach.notification.domain.NotificationEventType;
-import com.daesabu.meongcoach.notification.domain.NotificationMessage;
+import com.daesabu.meongcoach.notification.domain.PushNotification;
 import com.daesabu.meongcoach.notification.domain.exception.InvalidNotificationEventTypeException;
 import com.daesabu.meongcoach.support.ApplicationTest;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
@@ -26,7 +26,6 @@ import com.daesabu.meongcoach.user.domain.User;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -48,16 +47,16 @@ class EventNotificationDispatcherTest {
 
 	private List<String> capture() {
 		List<String> fids = new ArrayList<>();
-		given(sender.send(anyMap())).willAnswer(invocation -> {
-			Map<String, NotificationMessage> messages = invocation.getArgument(0);
-			fids.addAll(messages.keySet());
-			return List.of();
+		given(sender.send(anyList())).willAnswer(invocation -> {
+			List<PushNotification> messages = invocation.getArgument(0);
+			messages.forEach(message -> fids.add(message.fid()));
+			return new NotificationSendResult(messages.size(), 0, List.of(), null);
 		});
 		return fids;
 	}
 
 	private EventNotificationDispatchRequest request(String kind, List<Long> userIds) {
-		return new EventNotificationDispatchRequest("OPERATOR_MESSAGE", new NotificationTargetRequest(kind, userIds), "제목", "본문", null);
+		return new EventNotificationDispatchRequest("OPERATOR_MESSAGE", kind, userIds, "제목", "본문", null);
 	}
 
 	@Test
@@ -100,12 +99,12 @@ class EventNotificationDispatcherTest {
 		dispatcher.dispatch(request("ALL", null));
 		dispatcher.dispatch(request("ALL", null));
 
-		verify(sender, times(2)).send(anyMap());
+		verify(sender, times(2)).send(anyList());
 	}
 
 	@Test
 	void 없는_종류면_던진다() {
-		var request = new EventNotificationDispatchRequest("MARKETING", new NotificationTargetRequest("ALL", null), "제목", "본문", null);
+		var request = new EventNotificationDispatchRequest("MARKETING", "ALL", null, "제목", "본문", null);
 
 		assertThatThrownBy(() -> dispatcher.dispatch(request)).isInstanceOf(InvalidNotificationEventTypeException.class);
 	}

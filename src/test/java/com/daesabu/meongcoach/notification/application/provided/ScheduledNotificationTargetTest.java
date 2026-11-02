@@ -2,18 +2,19 @@ package com.daesabu.meongcoach.notification.application.provided;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.BDDMockito.given;
 
 import com.daesabu.meongcoach.notification.application.provided.dto.ScheduledNotificationDispatchRequest;
 import com.daesabu.meongcoach.notification.application.required.DeviceInstallationRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationScheduleRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationSender;
+import com.daesabu.meongcoach.notification.application.required.NotificationSender.NotificationSendResult;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallation;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallationRegisterCommand;
 import com.daesabu.meongcoach.notification.domain.DevicePlatform;
-import com.daesabu.meongcoach.notification.domain.NotificationMessage;
 import com.daesabu.meongcoach.notification.domain.NotificationScheduleFixture;
+import com.daesabu.meongcoach.notification.domain.PushNotification;
 import com.daesabu.meongcoach.notification.domain.exception.InvalidNotificationHourException;
 import com.daesabu.meongcoach.support.ApplicationTest;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
@@ -24,7 +25,6 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -158,10 +158,10 @@ class ScheduledNotificationTargetTest {
 	private List<String> dispatchTargets(int hour) {
 		given(clock.instant()).willReturn(TODAY.atTime(Math.floorMod(hour, 24), 0).atZone(ZoneId.of("Asia/Seoul")).toInstant());
 		List<String> fids = new ArrayList<>();
-		given(sender.send(anyMap())).willAnswer(invocation -> {
-			Map<String, NotificationMessage> messages = invocation.getArgument(0);
-			fids.addAll(messages.keySet());
-			return List.of();
+		given(sender.send(anyList())).willAnswer(invocation -> {
+			List<PushNotification> messages = invocation.getArgument(0);
+			messages.forEach(message -> fids.add(message.fid()));
+			return new NotificationSendResult(messages.size(), 0, List.of(), null);
 		});
 		dispatcher.dispatch(new ScheduledNotificationDispatchRequest(TODAY, hour, 0));
 		return fids;

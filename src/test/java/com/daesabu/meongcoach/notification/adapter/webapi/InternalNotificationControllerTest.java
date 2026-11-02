@@ -15,7 +15,6 @@ import com.daesabu.meongcoach.notification.application.provided.EventNotificatio
 import com.daesabu.meongcoach.notification.application.provided.ScheduledNotificationDispatchResult;
 import com.daesabu.meongcoach.notification.application.provided.ScheduledNotificationDispatcher;
 import com.daesabu.meongcoach.notification.application.provided.dto.EventNotificationDispatchRequest;
-import com.daesabu.meongcoach.notification.application.provided.dto.NotificationTargetRequest;
 import com.daesabu.meongcoach.notification.application.provided.dto.ScheduledNotificationDispatchRequest;
 import com.daesabu.meongcoach.notification.domain.exception.NotificationDeliveryException;
 import java.time.LocalDate;
@@ -99,22 +98,22 @@ class InternalNotificationControllerTest {
 	@Test
 	void 이벤트_알림을_발송하고_결과를_응답한다() throws Exception {
 		var request = new EventNotificationDispatchRequest("OPERATOR_MESSAGE",
-				new NotificationTargetRequest("USERS", List.of(1L, 2L)), "점검 안내", "오늘 밤 점검합니다.", "meongcoach://home");
+				"USERS", List.of(1L, 2L), "점검 안내", "오늘 밤 점검합니다.", "meongcoach://home");
 		given(eventDispatcher.dispatch(request)).willReturn(new EventNotificationDispatchResult(2));
 
 		mockMvc.perform(post("/internal/notifications/event-dispatches")
 						.header(INTERNAL_SECRET_HEADER, "internal-secret")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
-								{"type":"OPERATOR_MESSAGE","target":{"kind":"USERS","userIds":[1,2]},
+								{"type":"OPERATOR_MESSAGE","targetKind":"USERS","userIds":[1,2],
 								"title":"점검 안내","body":"오늘 밤 점검합니다.","deepLink":"meongcoach://home"}
 								"""))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.fids").value(2))
 				.andDo(document("notification/internal-event-dispatch",
 						requestFields(fieldWithPath("type").description("알림 종류. AI_ANALYSIS·OPERATOR_MESSAGE·COMMENT"),
-								fieldWithPath("target.kind").description("대상 종류. ALL·USERS"),
-								fieldWithPath("target.userIds").description("USERS일 때 회원 ID 목록(1~1,000명)"),
+								fieldWithPath("targetKind").description("대상 종류. ALL·USERS"),
+								fieldWithPath("userIds").description("USERS일 때 회원 ID 목록(1~1,000명)"),
 								fieldWithPath("title").description("제목(100자 이하)"),
 								fieldWithPath("body").description("본문(500자 이하)"),
 								fieldWithPath("deepLink").description("선택. meongcoach:// 로 시작하는 딥링크")),
@@ -126,7 +125,7 @@ class InternalNotificationControllerTest {
 		mockMvc.perform(post("/internal/notifications/event-dispatches")
 						.header(INTERNAL_SECRET_HEADER, "internal-secret")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"type\":\"COMMENT\",\"target\":{\"kind\":\"ALL\"},\"title\":\"\",\"body\":\"본문\"}"))
+						.content("{\"type\":\"COMMENT\",\"targetKind\":\"ALL\",\"title\":\"\",\"body\":\"본문\"}"))
 				.andExpect(status().isBadRequest());
 		then(eventDispatcher).shouldHaveNoInteractions();
 	}
