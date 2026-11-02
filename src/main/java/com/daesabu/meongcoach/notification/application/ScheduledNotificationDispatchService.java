@@ -12,12 +12,10 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -38,13 +36,11 @@ public class ScheduledNotificationDispatchService implements ScheduledNotificati
 
 		dispatches.lock(scheduledAt.toString());
 		if (dispatches.existsByScheduledAt(scheduledAt)) {
-			log.info("event=notification_dispatch type=SCHEDULED scheduledAt={} fids=0 duplicate=true", scheduledAt);
 			return new ScheduledNotificationDispatchResult(0, true);
 		}
 		List<Long> userIds = schedules.findUserIdsByTimeEnabled(time.hour(), time.minute());
 		int fids = delivery.deliver(userIds, slot::toPushNotification);
 		dispatches.save(ScheduledNotificationDispatch.complete(scheduledAt));
-		log.info("event=notification_dispatch type=SCHEDULED scheduledAt={} fids={} duplicate=false", scheduledAt, fids);
 		return new ScheduledNotificationDispatchResult(fids, false);
 	}
 }

@@ -9,12 +9,10 @@ import com.daesabu.meongcoach.notification.domain.NotificationEventType;
 import com.daesabu.meongcoach.notification.domain.NotificationTarget;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -33,7 +31,6 @@ public class EventNotificationDispatchService implements EventNotificationDispat
 
 		List<Long> userIds = findEnabledUserIds(type, target);
 		int fids = delivery.deliver(userIds, fid -> content.toPushNotification(fid, type));
-		log.info("event=notification_dispatch type={} target={} fids={} duplicate=false", type, request.target().kind(), fids);
 		return new EventNotificationDispatchResult(fids);
 	}
 

@@ -26,7 +26,7 @@ flowchart LR
 | 유스케이스 | `ScheduledNotificationDispatcher` | `EventNotificationDispatcher` |
 
 두 유스케이스는 `NotificationDeliveryService`로 FID 조회, FCM 전송, 무효 FID 삭제를 공유합니다.
-알림 이력 테이블은 두지 않습니다. 발송마다 `event=notification_dispatch` 로그를 한 줄 남깁니다.
+알림 이력 테이블은 두지 않습니다.
 
 ## 애그리거트
 
