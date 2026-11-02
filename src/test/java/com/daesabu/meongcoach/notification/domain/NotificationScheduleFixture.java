@@ -6,6 +6,10 @@ public final class NotificationScheduleFixture {
 	}
 
 	public static NotificationSchedule create(Long userId, int hour, boolean enabled) {
-		return NotificationSchedule.create(userId, hour, enabled);
+		return create(userId, hour, 0, enabled);
+	}
+
+	public static NotificationSchedule create(Long userId, int hour, int minute, boolean enabled) {
+		return NotificationSchedule.create(userId, new NotificationTime(hour, minute), enabled);
 	}
 }

@@ -71,7 +71,7 @@ class NotificationDispatchServiceTest {
 	}
 
 	private void prepareTargets(int count) {
-		given(schedules.findUserIdsByHourEnabled(17)).willReturn(List.of(1L));
+		given(schedules.findUserIdsByTimeEnabled(17, 0)).willReturn(List.of(1L));
 		given(users.findActiveUserIds(List.of(1L))).willReturn(Set.of(1L));
 		List<DeviceInstallation> results = IntStream.range(0, count)
 				.mapToObj(index -> DeviceInstallation.register(1L,

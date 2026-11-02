@@ -29,17 +29,19 @@ class NotificationScheduleFinderTest {
 	}
 
 	@Test
-	void 저장된_설정을_시각_순서로_반환한다() {
+	void 저장된_설정을_시와_분_순서로_반환한다() {
 		notificationScheduleRepository.save(NotificationScheduleFixture.create(USER_ID, 17, false));
 		notificationScheduleRepository.save(NotificationScheduleFixture.create(USER_ID, 8, true));
 		notificationScheduleRepository.save(NotificationScheduleFixture.create(USER_ID, 11, false));
+		notificationScheduleRepository.save(NotificationScheduleFixture.create(USER_ID, 8, 30, false));
 
 		List<NotificationScheduleResult> schedules = notificationScheduleFinder.findSchedules(USER_ID);
 
 		assertThat(schedules).containsExactly(
-				new NotificationScheduleResult(8, true),
-				new NotificationScheduleResult(11, false),
-				new NotificationScheduleResult(17, false)
+				new NotificationScheduleResult(8, 0, true),
+				new NotificationScheduleResult(8, 30, false),
+				new NotificationScheduleResult(11, 0, false),
+				new NotificationScheduleResult(17, 0, false)
 		);
 	}
 }

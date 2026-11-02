@@ -44,8 +44,13 @@ class NotificationRegisterTest {
 	@Autowired
 	private NotificationScheduleRepository notificationScheduleRepository;
 
-	private static final NotificationScheduleUpdateRequest ON = new NotificationScheduleUpdateRequest(true);
-	private static final NotificationScheduleUpdateRequest OFF = new NotificationScheduleUpdateRequest(false);
+	private static NotificationScheduleUpdateRequest on(int hour) {
+		return new NotificationScheduleUpdateRequest(hour, 0, true);
+	}
+
+	private static NotificationScheduleUpdateRequest off(int hour) {
+		return new NotificationScheduleUpdateRequest(hour, 0, false);
+	}
 
 	private DeviceInstallation saveInstallation(Long userId, String fid) {
 		return deviceInstallationRepository.save(
@@ -95,7 +100,7 @@ class NotificationRegisterTest {
 
 	@Test
 	void 알림_설정을_먼저_변경해도_FID_등록_시_누락된_시각의_기본값을_만든다() {
-		notificationRegister.updateSchedule(USER_ID, 8, ON);
+		notificationRegister.updateSchedule(USER_ID, on(8));
 
 		notificationRegister.registerDeviceInstallation(USER_ID, IOS_TOKEN);
 		notificationRegister.registerDeviceInstallation(USER_ID, IOS_TOKEN);
@@ -168,7 +173,7 @@ class NotificationRegisterTest {
 
 	@Test
 	void 행이_없는_시각을_켜면_행을_새로_만든다() {
-		notificationRegister.updateSchedule(USER_ID, 8, ON);
+		notificationRegister.updateSchedule(USER_ID, on(8));
 
 		assertThat(notificationScheduleRepository.findAllByUserId(USER_ID))
 				.extracting(NotificationSchedule::getHour, NotificationSchedule::isEnabled)
@@ -180,7 +185,7 @@ class NotificationRegisterTest {
 		saveSchedule(USER_ID, 17, true);
 		Long id = notificationScheduleRepository.findAllByUserId(USER_ID).getFirst().getId();
 
-		notificationRegister.updateSchedule(USER_ID, 17, OFF);
+		notificationRegister.updateSchedule(USER_ID, off(17));
 
 		assertThat(notificationScheduleRepository.findAllByUserId(USER_ID))
 				.extracting(NotificationSchedule::getId, NotificationSchedule::getHour,
@@ -193,7 +198,7 @@ class NotificationRegisterTest {
 		saveSchedule(USER_ID, 8, false);
 		saveSchedule(OTHER_USER_ID, 11, false);
 
-		notificationRegister.updateSchedule(USER_ID, 11, ON);
+		notificationRegister.updateSchedule(USER_ID, on(11));
 
 		assertThat(notificationScheduleRepository.findAllByUserId(USER_ID))
 				.extracting(NotificationSchedule::getHour, NotificationSchedule::isEnabled)
@@ -204,11 +209,19 @@ class NotificationRegisterTest {
 	}
 
 	@ParameterizedTest
-	@ValueSource(ints = {-1, 9, 24})
+	@ValueSource(ints = {9, 12})
 	void 허용_시각이_아니면_NotAllowedNotificationHourException을_던진다(int hour) {
-		assertThatThrownBy(() -> notificationRegister.updateSchedule(USER_ID, hour, ON))
+		assertThatThrownBy(() -> notificationRegister.updateSchedule(USER_ID, on(hour)))
 				.isInstanceOf(NotAllowedNotificationHourException.class);
 		assertThat(notificationScheduleRepository.findAllByUserId(USER_ID)).isEmpty();
+	}
+
+	@Test
+	void 허용_시각이어도_분이_다르면_NotAllowedNotificationHourException을_던진다() {
+		var request = new NotificationScheduleUpdateRequest(8, 30, true);
+
+		assertThatThrownBy(() -> notificationRegister.updateSchedule(USER_ID, request))
+				.isInstanceOf(NotAllowedNotificationHourException.class);
 	}
 
 	@Test
