@@ -6,7 +6,7 @@ alert 모듈은 신규 가입·영상 업로드 같은 운영 이벤트를 개�
 
 ```mermaid
 flowchart LR
-    Caller["호출 모듈<br/>(auth · ai …)"] -- "Alerter.alert" --> Service["AlertService (@Async)<br/>검증 · Alert 생성"]
+    Caller["호출 모듈<br/>(graduation …)"] -- "Alerter.alert" --> Service["AlertService (@Async)<br/>검증 · Alert 생성"]
     Service -- "AlertSender.send" --> Slack["Slack Incoming Webhook"]
 ```
 
@@ -27,6 +27,7 @@ alerter.alert(AlertRequest.of("신규 가입",
 - `Alerter.alert`는 바로 돌아옵니다. 검증과 전송은 비동기 스레드에서 수행되어 Slack 장애·지연은 호출 모듈의 흐름에 영향을 주지 않습니다.
 - 검증 위반은 호출자에게 예외로 돌아오지 않고 전송 실패와 같은 경로(error 로그 → Sentry)로 보고됩니다. 제목·필드는 호출 코드의 상수라 위반은 버그이며, Sentry에서 `ConstraintViolationException`으로 보입니다.
 - 필드 값에 이메일·전화번호 같은 개인정보를 넣지 않습니다. 회원은 ID로만 적습니다.
+- 롤백된 작업이 알림으로 나가면 안 되는 호출은 `@TransactionalEventListener`로 커밋 뒤에 호출합니다. (살아있는 예시: `graduation/application/GraduationSubmissionAlertListener`) 트랜잭션 밖에서 발행한 이벤트는 기본 설정에서 버려지므로, `NOT_SUPPORTED`인 `socialLogin` 같은 경로는 `Alerter`를 직접 호출합니다.
 
 ## 메시지 형식
 
