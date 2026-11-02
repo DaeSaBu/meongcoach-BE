@@ -9,48 +9,58 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
-import com.daesabu.meongcoach.notification.application.provided.dto.NotificationDispatchRequest;
+import com.daesabu.meongcoach.notification.application.provided.dto.ScheduledNotificationDispatchRequest;
 import com.daesabu.meongcoach.notification.application.required.DeviceInstallationRepository;
-import com.daesabu.meongcoach.notification.application.required.NotificationDispatchRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationScheduleRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationSender;
 import com.daesabu.meongcoach.notification.application.required.NotificationSender.NotificationBatchResult;
+import com.daesabu.meongcoach.notification.application.required.ScheduledNotificationDispatchRepository;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallation;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallationRegisterCommand;
 import com.daesabu.meongcoach.notification.domain.DevicePlatform;
 import com.daesabu.meongcoach.notification.domain.NotificationScheduleFixture;
+import com.daesabu.meongcoach.notification.domain.exception.InvalidNotificationDispatchTimeException;
 import com.daesabu.meongcoach.notification.domain.exception.InvalidNotificationHourException;
 import com.daesabu.meongcoach.notification.domain.exception.NotificationDeliveryException;
 import com.daesabu.meongcoach.support.NonTransactionalApplicationTest;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.User;
+import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @NonTransactionalApplicationTest
-class NotificationDispatcherTest {
+class ScheduledNotificationDispatcherTest {
 
-	@Autowired NotificationDispatcher dispatcher;
+	@Autowired ScheduledNotificationDispatcher dispatcher;
 	@Autowired NotificationSender sender;
 	@Autowired UserRepository users;
 	@Autowired DeviceInstallationRepository fids;
 	@Autowired NotificationScheduleRepository schedules;
-	@Autowired NotificationDispatchRepository dispatches;
+	@Autowired ScheduledNotificationDispatchRepository dispatches;
+
+	@MockitoBean Clock clock;
+
+	private static final Instant NOW = Instant.parse("2026-10-31T08:05:00Z");
+	private static final Instant SCHEDULED_AT = Instant.parse("2026-10-31T08:00:00Z");
 
 	private Long userId;
 	private String fid;
-	private NotificationDispatchRequest request;
+	private ScheduledNotificationDispatchRequest request;
 
 	@BeforeEach
 	void 준비한다() {
 		userId = users.save(User.registerUser()).getId();
 		fid = UUID.randomUUID().toString();
-		request = new NotificationDispatchRequest(Instant.now(), 17);
+		given(clock.instant()).willReturn(NOW);
+		request = new ScheduledNotificationDispatchRequest(LocalDate.of(2026, 10, 31), 17, 0);
 		fids.save(DeviceInstallation.register(userId, new DeviceInstallationRegisterCommand(fid, DevicePlatform.IOS), Instant.now()));
 		schedules.save(NotificationScheduleFixture.create(userId, 17, true));
 	}
@@ -60,7 +70,7 @@ class NotificationDispatcherTest {
 		fids.deleteAll(fids.findAllByUserIdInOrderByUserIdAscIdAsc(List.of(userId)));
 		schedules.deleteAll(schedules.findAllByUserId(userId));
 		users.deleteById(userId);
-		dispatches.findByDispatchKey(request.key()).ifPresent(dispatches::delete);
+		dispatches.findByScheduledAt(SCHEDULED_AT).ifPresent(dispatches::delete);
 	}
 
 	@Test
@@ -68,13 +78,13 @@ class NotificationDispatcherTest {
 		NotificationBatchResult deliveryResults = results(List.of(fid));
 		given(sender.send(anyMap())).willReturn(List.of(deliveryResults));
 
-		NotificationDispatchResult result = dispatcher.dispatch(request);
+		ScheduledNotificationDispatchResult result = dispatcher.dispatch(request);
 
 		assertThat(result.fids()).isEqualTo(1);
 		assertThat(result.duplicate()).isFalse();
-		var history = dispatches.findByDispatchKey(request.key()).orElseThrow();
+		var history = dispatches.findByScheduledAt(SCHEDULED_AT).orElseThrow();
 		assertThat(history.getId()).isPositive();
-		assertThat(history.getDispatchKey()).isEqualTo(request.key());
+		assertThat(history.getScheduledAt()).isEqualTo(SCHEDULED_AT);
 		assertThat(history.getCreatedAt()).isNotNull();
 		assertThat(history.getUpdatedAt()).isNotNull();
 		assertThat(fids.findByFid(fid)).isEmpty();
@@ -86,7 +96,7 @@ class NotificationDispatcherTest {
 		given(sender.send(anyMap())).willReturn(List.of(deliveryResults));
 
 		dispatcher.dispatch(request);
-		NotificationDispatchResult repeated = dispatcher.dispatch(request);
+		ScheduledNotificationDispatchResult repeated = dispatcher.dispatch(request);
 
 		assertThat(repeated.duplicate()).isTrue();
 		verify(sender, times(1)).send(anyMap());
@@ -100,9 +110,9 @@ class NotificationDispatcherTest {
 				.willReturn(List.of(deliveryResults));
 
 		assertThatThrownBy(() -> dispatcher.dispatch(request)).isSameAs(failure);
-		assertThat(dispatches.existsByDispatchKey(request.key())).isFalse();
+		assertThat(dispatches.existsByScheduledAt(SCHEDULED_AT)).isFalse();
 		assertThat(dispatcher.dispatch(request).duplicate()).isFalse();
-		assertThat(dispatches.existsByDispatchKey(request.key())).isTrue();
+		assertThat(dispatches.existsByScheduledAt(SCHEDULED_AT)).isTrue();
 		assertThat(dispatcher.dispatch(request).duplicate()).isTrue();
 		verify(sender, times(2)).send(anyMap());
 	}
@@ -115,7 +125,7 @@ class NotificationDispatcherTest {
 
 		assertThatThrownBy(() -> dispatcher.dispatch(request)).isSameAs(failure).hasCause(cause);
 		assertThat(fids.findByFid(fid)).isPresent();
-		assertThat(dispatches.existsByDispatchKey(request.key())).isFalse();
+		assertThat(dispatches.existsByScheduledAt(SCHEDULED_AT)).isFalse();
 	}
 
 	@Test
@@ -129,10 +139,18 @@ class NotificationDispatcherTest {
 
 	@Test
 	void 잘못된_시각은_발송_키를_선점하지_않는다() {
-		request = new NotificationDispatchRequest(request.scheduledTime(), 24);
+		request = new ScheduledNotificationDispatchRequest(request.date(), 24, 0);
 
 		assertThatThrownBy(() -> dispatcher.dispatch(request)).isInstanceOf(InvalidNotificationHourException.class);
-		assertThat(dispatches.existsByDispatchKey(request.key())).isFalse();
+		assertThat(dispatches.existsByScheduledAt(SCHEDULED_AT)).isFalse();
+		verifyNoInteractions(sender);
+	}
+
+	@Test
+	void 미래_예약은_발송하지_않는다() {
+		given(clock.instant()).willReturn(SCHEDULED_AT.minusSeconds(1));
+
+		assertThatThrownBy(() -> dispatcher.dispatch(request)).isInstanceOf(InvalidNotificationDispatchTimeException.class);
 		verifyNoInteractions(sender);
 	}
 
@@ -182,7 +200,7 @@ class NotificationDispatcherTest {
 			assertThatThrownBy(() -> first.get(10, java.util.concurrent.TimeUnit.SECONDS)).hasCause(failure);
 			assertThat(second.get(10, java.util.concurrent.TimeUnit.SECONDS).duplicate()).isFalse();
 		}
-		assertThat(dispatches.existsByDispatchKey(request.key())).isTrue();
+		assertThat(dispatches.existsByScheduledAt(SCHEDULED_AT)).isTrue();
 		verify(sender, times(2)).send(anyMap());
 	}
 

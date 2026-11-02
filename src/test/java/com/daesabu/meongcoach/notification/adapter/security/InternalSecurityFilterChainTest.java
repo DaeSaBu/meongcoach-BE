@@ -24,8 +24,8 @@ import org.springframework.test.web.servlet.MockMvc;
 @AutoConfigureMockMvc
 class InternalSecurityFilterChainTest {
 
-	private static final String DISPATCH_PATH = "/internal/notifications/dispatch";
-	private static final String DISPATCH_BODY = "{\"scheduledTime\":\"2026-10-31T08:00:00Z\",\"hour\":24}";
+	private static final String DISPATCH_PATH = "/internal/notifications/scheduled-dispatches";
+	private static final String DISPATCH_BODY = "{\"date\":\"2026-10-31\",\"hour\":24,\"minute\":0}";
 	private static final String APP_SCHEDULES_PATH = "/api/notifications/schedules";
 	private static final String INTERNAL_SECRET_HEADER = "X-Internal-Secret";
 	private static final String INTERNAL_SECRET = "test-internal-secret";

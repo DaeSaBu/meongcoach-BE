@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.BDDMockito.given;
 
-import com.daesabu.meongcoach.notification.application.provided.dto.NotificationDispatchRequest;
+import com.daesabu.meongcoach.notification.application.provided.dto.ScheduledNotificationDispatchRequest;
 import com.daesabu.meongcoach.notification.application.required.DeviceInstallationRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationScheduleRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationSender;
@@ -18,20 +18,25 @@ import com.daesabu.meongcoach.notification.domain.exception.InvalidNotificationH
 import com.daesabu.meongcoach.support.ApplicationTest;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.User;
+import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @ApplicationTest
-class NotificationDispatchTargetTest {
+class ScheduledNotificationTargetTest {
 
 	private static final Instant NOW = Instant.parse("2026-10-28T08:00:00Z");
+	private static final LocalDate TODAY = LocalDate.of(2026, 10, 28);
 
 	@Autowired
-	private NotificationDispatcher dispatcher;
+	private ScheduledNotificationDispatcher dispatcher;
 
 	@Autowired
 	private NotificationSender sender;
@@ -44,6 +49,9 @@ class NotificationDispatchTargetTest {
 
 	@Autowired
 	private UserRepository userRepository;
+
+	@MockitoBean
+	private Clock clock;
 
 	private Long saveUser() {
 		return userRepository.save(User.registerUser()).getId();
@@ -134,18 +142,28 @@ class NotificationDispatchTargetTest {
 	}
 
 	@Test
+	void 분까지_같은_시각만_대상이다() {
+		Long userId = saveUser();
+		notificationScheduleRepository.save(NotificationScheduleFixture.create(userId, 17, 30, true));
+		saveInstallation(userId, "fid", DevicePlatform.IOS);
+
+		assertThat(dispatchTargets(17)).isEmpty();
+	}
+
+	@Test
 	void 시각이_0에서_23_밖이면_InvalidNotificationHourException을_던진다() {
 		assertThatThrownBy(() -> dispatchTargets(24))
 				.isInstanceOf(InvalidNotificationHourException.class);
 	}
 	private List<String> dispatchTargets(int hour) {
+		given(clock.instant()).willReturn(TODAY.atTime(Math.floorMod(hour, 24), 0).atZone(ZoneId.of("Asia/Seoul")).toInstant());
 		List<String> fids = new ArrayList<>();
 		given(sender.send(anyMap())).willAnswer(invocation -> {
 			Map<String, NotificationMessage> messages = invocation.getArgument(0);
 			fids.addAll(messages.keySet());
 			return List.of();
 		});
-		dispatcher.dispatch(new NotificationDispatchRequest(NOW, hour));
+		dispatcher.dispatch(new ScheduledNotificationDispatchRequest(TODAY, hour, 0));
 		return fids;
 	}
 
