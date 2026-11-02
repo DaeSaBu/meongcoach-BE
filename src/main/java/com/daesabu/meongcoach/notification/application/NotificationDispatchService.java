@@ -25,12 +25,10 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -53,12 +51,11 @@ public class NotificationDispatchService implements ScheduledNotificationDispatc
 
 		dispatches.lock(scheduledAt);
 		if (dispatches.existsByScheduledAt(scheduledAt)) {
-			log.info("event=notification_dispatch type=SCHEDULED scheduledAt={} duplicate=true", scheduledAt);
 			return new ScheduledNotificationDispatchResult(0, true);
 		}
 		List<String> fids = findFids(schedules.findUserIdsByTimeEnabled(dispatch.time()));
 		List<PushNotification> notifications = PushNotificationFactory.scheduled(fids, dispatch);
-		deliver("type=SCHEDULED scheduledAt=" + scheduledAt, notifications);
+		deliver(notifications);
 		dispatches.save(dispatch);
 		int count = fids.size();
 		return new ScheduledNotificationDispatchResult(count, false);
@@ -73,7 +70,7 @@ public class NotificationDispatchService implements ScheduledNotificationDispatc
 
 		List<String> fids = findFids(findEnabledUserIds(type, target));
 		List<PushNotification> notifications = PushNotificationFactory.event(fids, type, request.title(), request.body(), deepLink);
-		deliver("type=" + type + " target=" + request.targetKind(), notifications);
+		deliver(notifications);
 		int count = fids.size();
 		return new EventNotificationDispatchResult(count);
 	}
@@ -94,15 +91,12 @@ public class NotificationDispatchService implements ScheduledNotificationDispatc
 				.map(DeviceInstallation::getFid).distinct().toList();
 	}
 
-	private void deliver(String label, List<PushNotification> notifications) {
+	private void deliver(List<PushNotification> notifications) {
 		if (notifications.isEmpty()) {
-			log.info("event=notification_dispatch {} fids=0", label);
 			return;
 		}
 		NotificationSendResult result = sender.send(notifications);
 		deleteInvalidInstallations(result.invalidFids());
-		log.info("event=notification_dispatch {} fids={} sent={} failed={} invalid={}",
-				label, notifications.size(), result.sentCount(), result.failedCount(), result.invalidFids().size());
 		result.requireDelivered();
 	}
 

@@ -26,7 +26,7 @@ flowchart LR
 | 유스케이스 | `ScheduledNotificationDispatcher` | `EventNotificationDispatcher` |
 
 `NotificationDispatchService`가 두 유스케이스를 구현하고 FID 조회, FCM 전송, 무효 FID 삭제를 공유합니다.
-알림 이력 테이블은 두지 않습니다. 발송마다 `event=notification_dispatch` 로그를 한 줄 남기며, 대상·성공·실패·무효 FID 수를 적습니다.
+알림 이력 테이블과 발송 로그는 두지 않습니다.
 
 ## 애그리거트
 
@@ -99,7 +99,7 @@ FCM 호출과 무효 FID 정리 뒤 완료 이력을 저장하고 커밋합니�
 
 ### 이벤트 알림
 
-호출마다 한 번 발송하고 중복을 막지 않습니다. 운영진 호출에서 응답을 받지 못하면 다시 호출하지 않고 로그부터 확인합니다.
+호출마다 한 번 발송하고 중복을 막지 않습니다. 발송 기록을 남기지 않으므로, 운영진 호출에서 응답을 받지 못하면 중복 발송을 피하기 위해 다시 호출하지 않습니다.
 제목은 100자, 본문은 500자까지입니다. 딥링크는 선택이며 `meongcoach://`로 시작해야 합니다.
 대상 `ALL`은 `userIds` 없이, `USERS`는 1~1,000명으로 보냅니다.
 다른 모듈은 HTTP 대신 `EventNotificationDispatcher`를 호출합니다. 지금 호출하는 모듈은 없습니다.
