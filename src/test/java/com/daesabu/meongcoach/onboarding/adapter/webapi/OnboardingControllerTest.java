@@ -131,22 +131,8 @@ class OnboardingControllerTest {
 				.andExpect(jsonPath("$.dogIds[0]").value(1))
 				.andDo(document("onboarding/complete",
 						requestFields(
-								fieldWithPath("nickname").type(JsonFieldType.STRING).optional()
-										.description("구버전 보호자 닉네임, 최대 50자. 생략하면 빈 문자열"),
-								fieldWithPath("mbti").type(JsonFieldType.STRING).optional()
-										.description("구버전 MBTI. 생략하면 null"),
-								fieldWithPath("profileImageUrl").type(JsonFieldType.STRING).optional()
-										.description("구버전 보호자 이미지 URL, 최대 512자"),
-								fieldWithPath("priorTrainingTopicIds").type(JsonFieldType.ARRAY).optional()
-										.description("구버전 학습 토픽 ID 목록, 최대 100개"),
-								fieldWithPath("trainingGoalTopicIds").type(JsonFieldType.ARRAY).optional()
-										.description("구버전 교육 목표 토픽 ID 목록, 최대 100개"),
-								fieldWithPath("dogs[].weightKg").type(JsonFieldType.NUMBER).optional()
-										.description("구버전 몸무게, 양수. 생략하면 null"),
-								fieldWithPath("dogs[].expectation").type(JsonFieldType.STRING).optional()
-										.description("구버전 교육 기대 사항, 최대 500자"),
-								fieldWithPath("dogs[]").description("등록할 강아지 목록. 1~5마리. 3.2.0 앱은 1마리만 입력"),
-								fieldWithPath("dogs[].name").description("강아지 이름. 필수 입력, 최대 50자"),
+								fieldWithPath("dogs[]").description("등록할 강아지 목록. 정확히 1마리"),
+								fieldWithPath("dogs[].name").description("강아지 이름. 필수 입력, 최대 12자"),
 								fieldWithPath("dogs[].breed").description(
 										"메타데이터 조회 응답에서 선택한 강아지 견종 코드. "
 												+ "목록에 없는 견종은 견종 이름을 직접 입력. 최대 30자"),
@@ -169,21 +155,6 @@ class OnboardingControllerTest {
 	}
 
 	@Test
-	void 구버전_보호자_프로필을_받고_성별과_보호자_생일은_무시한다() throws Exception {
-		String request = COMPLETE_REQUEST.replace("\"dogs\": [",
-				"\"nickname\": \"멍멍이집사\", \"gender\": \"FEMALE\", \"birthDate\": \"1998-01-01\", \"dogs\": [");
-
-		mockMvc.perform(post("/api/onboarding")
-						.principal(() -> "1")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content(request))
-				.andExpect(status().isCreated());
-
-		assertThat(onboardingCompleter.lastInfo.dogs()).hasSize(1);
-		assertThat(onboardingCompleter.lastInfo.nickname()).isEqualTo("멍멍이집사");
-	}
-
-	@Test
 	void 필수_입력만으로_온보딩을_완료한다() throws Exception {
 		mockMvc.perform(post("/api/onboarding")
 						.principal(() -> "1")
@@ -193,7 +164,7 @@ class OnboardingControllerTest {
 	}
 
 	@Test
-	void 강아지가_5마리를_넘으면_온보딩_완료에_실패한다() throws Exception {
+	void 강아지가_두_마리_이상이면_온보딩_완료에_실패한다() throws Exception {
 		String dog = """
 				{
 				    "name": "초코",
@@ -203,7 +174,7 @@ class OnboardingControllerTest {
 				}
 				""";
 		String request = COMPLETE_REQUEST_WITH_REQUIRED_FIELDS.replace(
-				"\"dogs\": [", "\"dogs\": [" + (dog + ", ").repeat(5));
+				"\"dogs\": [", "\"dogs\": [" + dog + ", ");
 
 		assertValidationFails(request, "dogs");
 	}
@@ -230,10 +201,10 @@ class OnboardingControllerTest {
 	}
 
 	@Test
-	void 강아지_이름이_50자이면_온보딩을_완료할_수_있다() throws Exception {
+	void 강아지_이름이_12자이면_온보딩을_완료할_수_있다() throws Exception {
 		String request = COMPLETE_REQUEST.replace(
 				"\"name\": \"초코\"",
-				"\"name\": \"" + "가".repeat(50) + "\"");
+				"\"name\": \"" + "가".repeat(12) + "\"");
 
 		mockMvc.perform(post("/api/onboarding")
 						.principal(() -> "1")
@@ -243,10 +214,10 @@ class OnboardingControllerTest {
 	}
 
 	@Test
-	void 강아지_이름이_50자를_넘으면_검증에_실패한다() throws Exception {
+	void 강아지_이름이_12자를_넘으면_검증에_실패한다() throws Exception {
 		String request = COMPLETE_REQUEST.replace(
 				"\"name\": \"초코\"",
-				"\"name\": \"" + "가".repeat(51) + "\"");
+				"\"name\": \"" + "가".repeat(13) + "\"");
 
 		assertValidationFails(request, "dogs[0].name");
 	}
@@ -296,18 +267,6 @@ class OnboardingControllerTest {
 	}
 
 	@Test
-	void 강아지_몸무게_없이_온보딩을_완료한다() throws Exception {
-		mockMvc.perform(post("/api/onboarding")
-						.principal(() -> "1")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content(COMPLETE_REQUEST))
-				.andExpect(status().isCreated());
-
-		assertThat(onboardingCompleter.lastInfo.dogs().getFirst().toInfo().weightKg())
-				.isNull();
-	}
-
-	@Test
 	void 강아지_프로필_이미지_URL이_550자를_넘으면_검증에_실패한다() throws Exception {
 		String request = COMPLETE_REQUEST.replace(
 				"https://images.test.meongcoach.com/images/dog-profile/1/b.jpg",
@@ -323,35 +282,6 @@ class OnboardingControllerTest {
 				""";
 
 		assertValidationFails(request, "dogs[0]");
-	}
-
-	@Test
-	void 구버전처럼_강아지를_두_마리_등록한다() throws Exception {
-		String request = """
-				{
-				    "dogs": [
-				        {
-				            "name": "초코",
-				            "breed": "POODLE",
-				            "sex": "MALE",
-				            "birthDate": "2024-03-01"
-				        },
-				        {
-				            "name": "보리",
-				            "breed": "POODLE",
-				            "sex": "FEMALE",
-				            "birthDate": "2024-03-01"
-				        }
-				    ]
-				}
-				""";
-
-		mockMvc.perform(post("/api/onboarding")
-				.principal(() -> "1")
-				.contentType(MediaType.APPLICATION_JSON)
-				.content(request))
-				.andExpect(status().isCreated());
-		assertThat(onboardingCompleter.lastInfo.dogs()).hasSize(2);
 	}
 
 	@Test
@@ -442,31 +372,6 @@ class OnboardingControllerTest {
 						.content(IMAGE_ISSUE_REQUEST))
 				.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
-	}
-
-	@Test
-	void 구버전_입력값을_온보딩_서비스에_전달한다() throws Exception {
-		String request = COMPLETE_REQUEST.replace("\"dogs\": [",
-				"\"nickname\": \"보호자\", \"mbti\": \"INTJ\", \"priorTrainingTopicIds\": [1], "
-						+ "\"trainingGoalTopicIds\": [2], \"dogs\": [")
-				.replace("\"name\": \"초코\"", "\"name\": \"초코\", \"weightKg\": 4.5, \"expectation\": \"산책\"");
-
-		mockMvc.perform(post("/api/onboarding").principal(() -> "1")
-				.contentType(MediaType.APPLICATION_JSON).content(request))
-				.andExpect(status().isCreated());
-
-		OnboardingCompleteRequest saved = onboardingCompleter.lastInfo;
-		assertThat(saved.mbti()).isEqualTo("INTJ");
-		assertThat(saved.priorTrainingTopicIds()).containsExactly(1L);
-		assertThat(saved.trainingGoalTopicIds()).containsExactly(2L);
-		assertThat(saved.dogs().getFirst().weightKg()).isEqualByComparingTo("4.5");
-		assertThat(saved.dogs().getFirst().expectation()).isEqualTo("산책");
-	}
-
-	@Test
-	void 구버전_몸무게가_양수가_아니면_거절한다() throws Exception {
-		String request = COMPLETE_REQUEST.replace("\"name\": \"초코\"", "\"name\": \"초코\", \"weightKg\": 0");
-		assertValidationFails(request, "dogs[0].weightKg");
 	}
 
 	@Test
