@@ -21,7 +21,7 @@ alerter.alert(AlertRequest.of("신규 가입",
 
 | 항목 | 제약 |
 |---|---|
-| `title` | 비어 있지 않은 150자 이하. Slack header 블록 한도와 같은 값 |
+| `title` | 비어 있지 않은 140자 이하. Slack header 블록 한도 150자에서 환경 이름 표시분을 뺀 값 |
 | `fields` | 20개 이하. 이름은 50자 이하, 값은 `AlertField.of`가 `Objects.toString`으로 바꾸며 null은 `-` |
 
 - `Alerter.alert`는 바로 돌아옵니다. 검증과 전송은 비동기 스레드에서 수행되어 Slack 장애·지연은 호출 모듈의 흐름에 영향을 주지 않습니다.
@@ -34,9 +34,9 @@ alerter.alert(AlertRequest.of("신규 가입",
 
 ```json
 {
-  "text": "영상 분석 실패",
+  "text": "[prod] 영상 분석 실패",
   "blocks": [
-    {"type": "header", "text": {"type": "plain_text", "text": "영상 분석 실패"}},
+    {"type": "header", "text": {"type": "plain_text", "text": "[prod] 영상 분석 실패"}},
     {"type": "section", "fields": [
       {"type": "mrkdwn", "text": "*userId*\n42"},
       {"type": "mrkdwn", "text": "*reason*\nGemini 응답 시간 초과"}
@@ -48,7 +48,7 @@ alerter.alert(AlertRequest.of("신규 가입",
 
 - section 블록은 필드 10개까지만 담을 수 있어 11개부터는 블록을 나눕니다. 필드가 없으면 section 블록을 만들지 않습니다.
 - 필드 값이 500자를 넘으면 끝을 `…`로 잘라 보냅니다.
-- context의 환경 이름은 활성 프로파일(`dev`·`prod`)이고, 시각은 서울 기준입니다.
+- 제목과 context의 환경 이름은 활성 프로파일(`dev`·`prod`)이고, 시각은 서울 기준입니다. `text`에도 들어가 푸시 알림 미리보기에서 환경을 구분할 수 있습니다.
 
 ## 설정
 
