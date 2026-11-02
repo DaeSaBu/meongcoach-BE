@@ -1,5 +1,6 @@
 package com.daesabu.meongcoach.community.adapter.webapi.dto;
 
+import com.daesabu.meongcoach.community.application.provided.dto.MentionLevelResult;
 import com.daesabu.meongcoach.community.application.provided.dto.MentionTargetResult;
 import com.daesabu.meongcoach.community.application.provided.dto.PostResult;
 import com.daesabu.meongcoach.community.domain.MentionTargetType;
@@ -26,10 +27,18 @@ public record PostResponse(Long postId, String content, AuthorResponse author, M
 				post.getCommentCount(), post.getCreatedAt());
 	}
 
-	public record MentionResponse(MentionTargetType targetType, Long targetId, String title) {
+	public record MentionResponse(MentionTargetType targetType, Long targetId, Long categoryId, String categoryTitle,
+			Long topicId, String topicTitle, Long curriculumId, String curriculumTitle, Long lessonId,
+			String lessonTitle) {
 
 		public static MentionResponse from(MentionTargetResult result) {
-			return new MentionResponse(result.targetType(), result.targetId(), result.title());
+			MentionLevelResult category = result.category();
+			MentionLevelResult topic = result.topic();
+			MentionLevelResult curriculum = result.curriculum();
+			MentionLevelResult lesson = result.lesson();
+			return new MentionResponse(result.targetType(), result.targetId(),
+					category.id(), category.title(), topic.id(), topic.title(),
+					curriculum.id(), curriculum.title(), lesson.id(), lesson.title());
 		}
 	}
 }
