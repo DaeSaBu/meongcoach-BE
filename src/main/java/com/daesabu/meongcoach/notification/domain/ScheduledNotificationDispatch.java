@@ -1,9 +1,7 @@
 package com.daesabu.meongcoach.notification.domain;
 
-import static java.util.Objects.requireNonNull;
-
 import com.daesabu.meongcoach.shared.domain.BaseEntity;
-import jakarta.persistence.Column;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -11,6 +9,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.time.Instant;
+import java.time.LocalDate;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -25,12 +24,26 @@ public class ScheduledNotificationDispatch extends BaseEntity {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@Column(name = "scheduled_at", nullable = false, updatable = false)
-	private Instant scheduledAt;
+	@Embedded
+	private NotificationSlot slot;
 
-	public static ScheduledNotificationDispatch complete(Instant scheduledAt) {
+	public static ScheduledNotificationDispatch of(LocalDate date, int hour, int minute, Instant now) {
+		NotificationSlot slot = NotificationSlot.of(date, new NotificationTime(hour, minute));
+		slot.validateDispatchable(now);
 		ScheduledNotificationDispatch dispatch = new ScheduledNotificationDispatch();
-		dispatch.scheduledAt = requireNonNull(scheduledAt);
+		dispatch.slot = slot;
 		return dispatch;
+	}
+
+	public Instant getScheduledAt() {
+		return slot.scheduledAt();
+	}
+
+	public NotificationTime time() {
+		return slot.time();
+	}
+
+	public PushNotification toPushNotification(String fid) {
+		return slot.toPushNotification(fid);
 	}
 }

@@ -5,7 +5,6 @@ import com.daesabu.meongcoach.notification.application.provided.ScheduledNotific
 import com.daesabu.meongcoach.notification.application.provided.dto.ScheduledNotificationDispatchRequest;
 import com.daesabu.meongcoach.notification.application.required.NotificationScheduleRepository;
 import com.daesabu.meongcoach.notification.application.required.ScheduledNotificationDispatchRepository;
-import com.daesabu.meongcoach.notification.domain.NotificationSlot;
 import com.daesabu.meongcoach.notification.domain.NotificationTime;
 import com.daesabu.meongcoach.notification.domain.ScheduledNotificationDispatch;
 import java.time.Clock;
@@ -29,18 +28,18 @@ public class ScheduledNotificationDispatchService implements ScheduledNotificati
 	@Override
 	@Transactional
 	public ScheduledNotificationDispatchResult dispatch(ScheduledNotificationDispatchRequest request) {
-		NotificationTime time = new NotificationTime(request.hour(), request.minute());
-		NotificationSlot slot = new NotificationSlot(request.date(), time);
-		slot.validateDispatchable(clock.instant());
-		Instant scheduledAt = slot.scheduledAt();
+		ScheduledNotificationDispatch dispatch = ScheduledNotificationDispatch.of(
+				request.date(), request.hour(), request.minute(), clock.instant());
+		Instant scheduledAt = dispatch.getScheduledAt();
 
 		dispatches.lock(scheduledAt.toString());
-		if (dispatches.existsByScheduledAt(scheduledAt)) {
+		if (dispatches.existsBySlotScheduledAt(scheduledAt)) {
 			return new ScheduledNotificationDispatchResult(0, true);
 		}
+		NotificationTime time = dispatch.time();
 		List<Long> userIds = schedules.findUserIdsByTimeEnabled(time.hour(), time.minute());
-		int fids = delivery.deliver(userIds, slot::toPushNotification);
-		dispatches.save(ScheduledNotificationDispatch.complete(scheduledAt));
+		int fids = delivery.deliver(userIds, dispatch::toPushNotification);
+		dispatches.save(dispatch);
 		return new ScheduledNotificationDispatchResult(fids, false);
 	}
 }

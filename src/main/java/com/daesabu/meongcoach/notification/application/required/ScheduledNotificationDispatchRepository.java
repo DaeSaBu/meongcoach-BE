@@ -7,9 +7,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
 public interface ScheduledNotificationDispatchRepository extends JpaRepository<ScheduledNotificationDispatch, Long> {
-	boolean existsByScheduledAt(Instant scheduledAt);
+	boolean existsBySlotScheduledAt(Instant scheduledAt);
 
-	Optional<ScheduledNotificationDispatch> findByScheduledAt(Instant scheduledAt);
+	Optional<ScheduledNotificationDispatch> findBySlotScheduledAt(Instant scheduledAt);
 
 	/**
 	 * 예약 키의 트랜잭션 잠금을 얻을 때까지 기다린다. 잠금은 커밋·롤백 시 해제된다.

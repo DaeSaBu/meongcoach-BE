@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 
 class NotificationSlotTest {
 
-	private final NotificationSlot slot = new NotificationSlot(LocalDate.of(2026, 11, 2), new NotificationTime(8, 30));
+	private final NotificationSlot slot = NotificationSlot.of(LocalDate.of(2026, 11, 2), new NotificationTime(8, 30));
 
 	@Test
 	void 서울_시각을_UTC_예약_시각으로_바꾼다() {
@@ -38,7 +38,7 @@ class NotificationSlotTest {
 
 	@Test
 	void 시각별_문구와_예약_시각_묶음_키로_알림을_만든다() {
-		var slot = new NotificationSlot(java.time.LocalDate.of(2026, 10, 31), new NotificationTime(17, 0));
+		var slot = NotificationSlot.of(java.time.LocalDate.of(2026, 10, 31), new NotificationTime(17, 0));
 
 		PushNotification notification = slot.toPushNotification("fid");
 
@@ -51,7 +51,7 @@ class NotificationSlotTest {
 
 	@Test
 	void 문구가_없는_시각은_기본_문구를_쓴다() {
-		var slot = new NotificationSlot(java.time.LocalDate.of(2026, 10, 31), new NotificationTime(9, 0));
+		var slot = NotificationSlot.of(java.time.LocalDate.of(2026, 10, 31), new NotificationTime(9, 0));
 
 		assertThat(slot.toPushNotification("fid").title()).isEqualTo("훈련 시간이에요");
 	}

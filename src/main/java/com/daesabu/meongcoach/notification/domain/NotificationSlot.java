@@ -1,13 +1,17 @@
 package com.daesabu.meongcoach.notification.domain;
 
 import com.daesabu.meongcoach.notification.domain.exception.InvalidNotificationDispatchTimeException;
+import jakarta.persistence.Column;
+import jakarta.persistence.Embeddable;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.Map;
 
-public record NotificationSlot(LocalDate date, NotificationTime time) {
+@Embeddable
+public record NotificationSlot(@Column(name = "scheduled_at", nullable = false, updatable = false) Instant scheduledAt) {
 
 	private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
 	private static final Duration MAX_DELAY = Duration.ofHours(1);
@@ -19,20 +23,24 @@ public record NotificationSlot(LocalDate date, NotificationTime time) {
 	);
 	private static final Map.Entry<String, String> DEFAULT_MESSAGE = Map.entry("훈련 시간이에요", "오늘의 훈련을 시작해 볼까요?");
 
-	public Instant scheduledAt() {
-		return date.atTime(time.hour(), time.minute()).atZone(SEOUL).toInstant();
+	public static NotificationSlot of(LocalDate date, NotificationTime time) {
+		return new NotificationSlot(date.atTime(time.hour(), time.minute()).atZone(SEOUL).toInstant());
+	}
+
+	public NotificationTime time() {
+		LocalTime local = scheduledAt.atZone(SEOUL).toLocalTime();
+		return new NotificationTime(local.getHour(), local.getMinute());
 	}
 
 	public void validateDispatchable(Instant now) {
-		Instant scheduledAt = scheduledAt();
 		if (scheduledAt.isAfter(now) || scheduledAt.isBefore(now.minus(MAX_DELAY))) {
 			throw new InvalidNotificationDispatchTimeException(scheduledAt);
 		}
 	}
 
 	public PushNotification toPushNotification(String fid) {
-		Map.Entry<String, String> message = MESSAGES.getOrDefault(time.hour(), DEFAULT_MESSAGE);
-		Map<String, String> data = Map.of("hour", String.valueOf(time.hour()), "deepLink", DEEP_LINK);
-		return new PushNotification(fid, message.getKey(), message.getValue(), data, scheduledAt().toString());
+		Map.Entry<String, String> message = MESSAGES.getOrDefault(time().hour(), DEFAULT_MESSAGE);
+		Map<String, String> data = Map.of("hour", String.valueOf(time().hour()), "deepLink", DEEP_LINK);
+		return new PushNotification(fid, message.getKey(), message.getValue(), data, scheduledAt.toString());
 	}
 }
