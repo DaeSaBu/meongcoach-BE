@@ -21,6 +21,7 @@ com.daesabu.meongcoach
 ├── community    ← 게시글. 훈련 카드 등 다른 모듈의 대상을 멘션할 수 있음
 ├── graduation   ← 토픽 수료(실습 인증) 제출·조회. 수료 사실의 유일한 출처
 ├── notification ← 푸시 알림 FID·시각별 수신 설정·FCM 발송
+├── alert        ← 개발자 모니터링용 Slack 알림. 각 모듈이 Alerter로 호출
 ├── health       ← 서비스 상태 확인
 └── shared       ← 횡단 관심사 (config / security / webapi / exception / domain)
 ```
