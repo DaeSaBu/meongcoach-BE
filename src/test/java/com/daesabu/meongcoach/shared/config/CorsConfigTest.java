@@ -21,7 +21,7 @@ class CorsConfigTest {
 
 	private static final String ALLOWED_ORIGIN = "http://localhost:3000";
 
-	private static final String PROTECTED_PATH = "/api/dashboard/users";
+	private static final String PROTECTED_PATH = "/api/dogs";
 
 	@Autowired
 	private MockMvc mockMvc;
