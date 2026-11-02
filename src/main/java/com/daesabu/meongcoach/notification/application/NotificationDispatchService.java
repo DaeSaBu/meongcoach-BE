@@ -54,7 +54,7 @@ public class NotificationDispatchService implements ScheduledNotificationDispatc
 		}
 		NotificationTime time = dispatch.time();
 		List<String> fids = findFids(schedules.findUserIdsByTimeEnabled(time.hour(), time.minute()));
-		send(dispatch.toPushNotifications(fids));
+		deleteInvalidInstallations(send(dispatch.toPushNotifications(fids)));
 		dispatches.save(dispatch);
 		return new ScheduledNotificationDispatchResult(fids.size(), false);
 	}
@@ -66,7 +66,7 @@ public class NotificationDispatchService implements ScheduledNotificationDispatc
 		NotificationTarget target = NotificationTarget.of(request.target().kind(), request.target().userIds());
 
 		List<String> fids = findFids(findEnabledUserIds(type, target));
-		send(PushNotification.ofEvent(fids, type, request.title(), request.body(), request.deepLink()));
+		deleteInvalidInstallations(send(PushNotification.ofEvent(fids, type, request.title(), request.body(), request.deepLink())));
 		return new EventNotificationDispatchResult(fids.size());
 	}
 
@@ -86,14 +86,18 @@ public class NotificationDispatchService implements ScheduledNotificationDispatc
 				.map(DeviceInstallation::getFid).distinct().toList();
 	}
 
-	private void send(List<PushNotification> notifications) {
+	private List<String> send(List<PushNotification> notifications) {
 		if (notifications.isEmpty()) {
+			return List.of();
+		}
+		return sender.send(notifications).stream()
+				.flatMap(result -> result.invalidFids().stream()).toList();
+	}
+
+	private void deleteInvalidInstallations(List<String> invalidFids) {
+		if (invalidFids.isEmpty()) {
 			return;
 		}
-		List<String> invalidFids = sender.send(notifications).stream()
-				.flatMap(result -> result.invalidFids().stream()).toList();
-		if (!invalidFids.isEmpty()) {
-			installations.deleteAllByFidIn(invalidFids);
-		}
+		installations.deleteAllByFidIn(invalidFids);
 	}
 }
