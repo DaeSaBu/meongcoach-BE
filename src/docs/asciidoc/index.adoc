@@ -341,7 +341,8 @@ AI 리포트 생성은 무료 체험으로 사용자당 총 30회까지 가능�
 link:{swagger-ui}#/AI/ai-video-upload-url[▶ Swagger에서 Try it out,window=swagger]
 
 훈련 영상을 Google Cloud Storage에 직접 업로드하기 위한 API입니다. 무료 체험 횟수를 검증한 뒤 URL을 발급합니다.
-최대 50MB(52428800바이트)까지 단일 `PUT`으로 올리며, `video/mp4`(mp4)와 `video/quicktime`(mov) 두 형식만 허용합니다.
+최대 512MiB(536870912바이트)까지 단일 `PUT`으로 올리며, `video/mp4`(mp4)와 `video/quicktime`(mov) 두 형식만 허용합니다.
+영상 길이는 10초 이상 5분(300초) 이하만 허용하므로, 앱이 잰 길이를 `durationSeconds`에 정수 초로 보냅니다.
 
 발급과 동시에 `UPLOADING` 상태의 리포트가 만들어지고 그 `reportId`가 응답에 내려갑니다.
 `reportId`를 잃어버려도 리포트 목록 조회로 다시 찾을 수 있습니다.
@@ -366,7 +367,7 @@ operation::ai/video-upload-url[snippets='http-request,request-fields,http-respon
 ==== 실패 응답
 
 무료 체험 횟수(30회)를 소진하면 403(`AI_REPORT_TRIAL_EXCEEDED`)을 반환합니다.
-파일 크기가 상한을 넘으면 `MEDIA_VIDEO_FILE_SIZE_EXCEEDED`, 0 이하면 `MEDIA_INVALID_VIDEO_FILE_SIZE`,
+영상 길이가 허용 범위를 벗어나면 `AI_VIDEO_DURATION_OUT_OF_RANGE`, 파일 크기가 상한을 넘으면 `MEDIA_VIDEO_FILE_SIZE_EXCEEDED`, 0 이하면 `MEDIA_INVALID_VIDEO_FILE_SIZE`,
 지원하지 않는 형식이면 `MEDIA_UNSUPPORTED_VIDEO_TYPE`을 400으로 반환합니다.
 
 operation::ai/video-upload-url-error[snippets='http-response,response-fields']

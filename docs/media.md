@@ -44,7 +44,7 @@ media는 소비 모듈의 이름이나 용도를 모릅니다. 용도별 규칙�
 | `user-profile` | 이미지·공개 | — | `user/domain/UserProfileImage` | 사용자 프로필 이미지 발급, 온보딩 완료 검증 |
 | `dog-profile` | 이미지·공개 | — | `dog/domain/DogProfileImage` | 강아지 프로필 이미지 발급, 강아지 등록·수정 검증 |
 | `community-post` | 이미지·영상·공개 | 512MiB | `community/domain/PostMediaType` | 게시글 미디어 발급, 게시글 작성 검증 |
-| `training` | 영상·분석 | 50MiB | `ai/domain/AiVideo` | AI 분석 영상 발급·`gs://` URI 조회 |
+| `training` | 영상·분석 | 512MiB | `ai/domain/AiVideo` | AI 분석 영상 발급·`gs://` URI 조회 |
 | `graduation` + 하위 경로 `{topicId}` | 영상·비공개 | 512MiB | `graduation/domain/GraduationVideo` | 실습 인증 발급·제출 검증·다운로드 |
 
 - 범위는 그 이미지를 저장하는 모듈 안에 두고 밖에 노출하지 않습니다. 온보딩은 클라이언트가 보낸 target(`USER_PROFILE`·`DOG_PROFILE`)에 따라 user·dog의 발급 API(`UserProfileImageUploadUrlIssuer`·`DogProfileImageUploadUrlIssuer`)를 고르기만 합니다. 클라이언트가 범위를 고를 수 없게 하려는 것이므로, **target 문자열을 media나 범위로 그대로 흘려보내지 않습니다.**
