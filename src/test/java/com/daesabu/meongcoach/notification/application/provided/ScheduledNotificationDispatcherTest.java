@@ -104,12 +104,12 @@ class ScheduledNotificationDispatcherTest {
 	@Test
 	void 실패한_예약은_다시_발송하고_완료한_예약은_재발송하지_않는다() {
 		var cause = new IllegalStateException("FCM unavailable");
-		NotificationSendResult failedBatch = failedBatch(cause);
+		var failure = new NotificationDeliveryException(cause);
 		NotificationSendResult deliveryResults = results(List.of());
-		given(sender.send(anyList())).willReturn(failedBatch)
+		given(sender.send(anyList())).willThrow(failure)
 				.willReturn(deliveryResults);
 
-		assertThatThrownBy(() -> dispatcher.dispatch(request)).isInstanceOf(NotificationDeliveryException.class).hasCause(cause);
+		assertThatThrownBy(() -> dispatcher.dispatch(request)).isSameAs(failure).hasCause(cause);
 		assertThat(dispatches.existsByScheduledAt(SCHEDULED_AT)).isFalse();
 		assertThat(dispatcher.dispatch(request).duplicate()).isFalse();
 		assertThat(dispatches.existsByScheduledAt(SCHEDULED_AT)).isTrue();
@@ -130,8 +130,7 @@ class ScheduledNotificationDispatcherTest {
 
 	@Test
 	void 발송이_실패해도_무효_FID_삭제는_유지한다() {
-		var cause = new IllegalStateException("FCM unavailable");
-		NotificationSendResult failedWithInvalid = new NotificationSendResult(0, 1, List.of(fid), cause);
+		NotificationSendResult failedWithInvalid = new NotificationSendResult(0, 1, List.of(fid), null);
 		given(sender.send(anyList())).willReturn(failedWithInvalid);
 
 		assertThatThrownBy(() -> dispatcher.dispatch(request)).isInstanceOf(NotificationDeliveryException.class);
@@ -217,10 +216,6 @@ class ScheduledNotificationDispatcherTest {
 
 	private NotificationSendResult results(List<String> invalidFids) {
 		return new NotificationSendResult(0, 0, invalidFids, null);
-	}
-
-	private NotificationSendResult failedBatch(Throwable cause) {
-		return new NotificationSendResult(0, 1, List.of(), cause);
 	}
 
 }

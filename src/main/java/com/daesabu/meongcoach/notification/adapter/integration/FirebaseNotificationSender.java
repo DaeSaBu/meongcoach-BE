@@ -2,6 +2,7 @@ package com.daesabu.meongcoach.notification.adapter.integration;
 
 import com.daesabu.meongcoach.notification.application.required.NotificationSender;
 import com.daesabu.meongcoach.notification.domain.PushNotification;
+import com.daesabu.meongcoach.notification.domain.exception.NotificationDeliveryException;
 import com.google.firebase.messaging.AndroidConfig;
 import com.google.firebase.messaging.AndroidNotification;
 import com.google.firebase.messaging.ApnsConfig;
@@ -30,15 +31,8 @@ public class FirebaseNotificationSender implements NotificationSender {
 	public NotificationSendResult send(List<PushNotification> notifications) {
 		List<List<PushNotification>> batches = notifications.stream().gather(Gatherers.windowFixed(BATCH_SIZE)).toList();
 		List<NotificationSendResult> results = new ArrayList<>();
-		int remaining = notifications.size();
 		for (List<PushNotification> batch : batches) {
-			NotificationSendResult result = sendBatch(batch);
-			remaining -= batch.size();
-			results.add(result);
-			if (result.failure() != null) {
-				results.add(new NotificationSendResult(0, remaining, List.of(), null));
-				break;
-			}
+			results.add(sendBatch(batch));
 		}
 		return NotificationSendResult.merge(results);
 	}
@@ -50,8 +44,7 @@ public class FirebaseNotificationSender implements NotificationSender {
 			List<SendResponse> responses = client.sendEach(firebaseMessages).getResponses();
 			return toResult(batch, responses);
 		} catch (FirebaseMessagingException exception) {
-			int failedCount = batch.size();
-			return new NotificationSendResult(0, failedCount, List.of(), exception);
+			throw new NotificationDeliveryException(exception);
 		}
 	}
 

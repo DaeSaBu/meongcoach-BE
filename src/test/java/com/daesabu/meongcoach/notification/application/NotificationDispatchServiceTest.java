@@ -104,14 +104,14 @@ class NotificationDispatchServiceTest {
 	}
 
 	@Test
-	void 배치_호출이_실패하면_원인과_함께_던지고_완료_이력을_남기지_않는다() {
+	void 전송_호출이_실패하면_그대로_던지고_완료_이력을_남기지_않는다() {
 		prepareTargets(1001);
-		var cause = new IllegalStateException("FCM unavailable");
-		NotificationSendResult result = new NotificationSendResult(499, 500, List.of("fid-1"), cause);
-		given(sender.send(anyList())).willReturn(result);
+		var failure = new NotificationDeliveryException(new IllegalStateException("FCM unavailable"));
+		given(sender.send(anyList())).willThrow(failure);
 
-		assertThatThrownBy(() -> service.dispatch(request)).isInstanceOf(NotificationDeliveryException.class).hasCause(cause);
+		assertThatThrownBy(() -> service.dispatch(request)).isSameAs(failure);
 
+		verify(installations, never()).deleteAllByFidIn(any());
 		verify(dispatches, never()).save(any());
 	}
 
