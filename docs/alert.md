@@ -2,7 +2,7 @@
 
 alert 모듈은 신규 가입·영상 업로드 같은 운영 이벤트를 개발자 Slack 채널로 보냅니다.
 앱 사용자에게 가는 푸시 알림(`notification` 모듈)과 구분하려고 alert 용어를 씁니다.
-어떤 이벤트를 알릴지는 호출하는 모듈이 정하고, alert 모듈은 수준·제목·필드만 받아 전송합니다.
+어떤 이벤트를 알릴지는 호출하는 모듈이 정하고, alert 모듈은 제목·필드만 받아 전송합니다.
 
 ```mermaid
 flowchart LR
@@ -12,17 +12,16 @@ flowchart LR
 
 ## 호출 방법
 
-다른 모듈은 `application/provided`의 `Alerter`를 주입받아 `AlertRequest`를 넘깁니다. 수준(`AlertLevel`)과 필드(`AlertField`)는 `domain/shared`로 노출되어 있습니다.
+다른 모듈은 `application/provided`의 `Alerter`를 주입받아 `AlertRequest`를 넘깁니다. 필드(`AlertField`)는 `domain/shared`로 노출되어 있습니다.
 
 ```java
-alerter.alert(AlertRequest.of(AlertLevel.INFO, "신규 가입",
+alerter.alert(AlertRequest.of("신규 가입",
 		AlertField.of("userId", userId), AlertField.of("provider", provider)));
 ```
 
 | 항목 | 제약 |
 |---|---|
-| `level` | `INFO`·`WARNING`·`ERROR` |
-| `title` | 비어 있지 않은 120자 이하. Slack header 블록 한도(150자)에서 이모지 접두 여유를 뺀 값 |
+| `title` | 비어 있지 않은 150자 이하. Slack header 블록 한도와 같은 값 |
 | `fields` | 20개 이하. 이름은 50자 이하, 값은 `AlertField.of`가 `Objects.toString`으로 바꾸며 null은 `-` |
 
 - `Alerter.alert`는 바로 돌아옵니다. 검증과 전송은 비동기 스레드에서 수행되어 Slack 장애·지연은 호출 모듈의 흐름에 영향을 주지 않습니다.
@@ -35,9 +34,9 @@ alerter.alert(AlertRequest.of(AlertLevel.INFO, "신규 가입",
 
 ```json
 {
-  "text": "[ERROR] 영상 분석 실패",
+  "text": "영상 분석 실패",
   "blocks": [
-    {"type": "header", "text": {"type": "plain_text", "text": ":rotating_light: 영상 분석 실패", "emoji": true}},
+    {"type": "header", "text": {"type": "plain_text", "text": "영상 분석 실패"}},
     {"type": "section", "fields": [
       {"type": "mrkdwn", "text": "*userId*\n42"},
       {"type": "mrkdwn", "text": "*reason*\nGemini 응답 시간 초과"}
@@ -47,7 +46,6 @@ alerter.alert(AlertRequest.of(AlertLevel.INFO, "신규 가입",
 }
 ```
 
-- 이모지는 수준별로 `INFO` `:information_source:`, `WARNING` `:warning:`, `ERROR` `:rotating_light:`입니다.
 - section 블록은 필드 10개까지만 담을 수 있어 11개부터는 블록을 나눕니다. 필드가 없으면 section 블록을 만들지 않습니다.
 - 필드 값이 500자를 넘으면 끝을 `…`로 잘라 보냅니다.
 - context의 환경 이름은 활성 프로파일(`dev`·`prod`)이고, 시각은 서울 기준입니다.
