@@ -71,11 +71,15 @@ public class SlackAlertSender implements AlertSender {
 		blocks.add(headerBlock(alert));
 		blocks.addAll(sectionBlocks(alert.fields()));
 		blocks.add(contextBlock(alert.occurredAt()));
-		return Map.of("text", alert.title(), "blocks", blocks);
+		return Map.of("text", titleWithEnvironment(alert), "blocks", blocks);
 	}
 
-	private static Map<String, Object> headerBlock(Alert alert) {
-		return Map.of("type", "header", "text", Map.of("type", "plain_text", "text", alert.title()));
+	private Map<String, Object> headerBlock(Alert alert) {
+		return Map.of("type", "header", "text", Map.of("type", "plain_text", "text", titleWithEnvironment(alert)));
+	}
+
+	private String titleWithEnvironment(Alert alert) {
+		return "[" + environmentName + "] " + alert.title();
 	}
 
 	private static List<Map<String, Object>> sectionBlocks(List<AlertField> fields) {

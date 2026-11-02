@@ -9,7 +9,7 @@ import jakarta.validation.constraints.Size;
 import java.util.List;
 
 public record AlertRequest(
-		@NotBlank @Size(max = 150) String title,
+		@NotBlank @Size(max = 140) String title,
 		@NotNull @Size(max = 20) List<@Valid AlertField> fields
 ) {
 
