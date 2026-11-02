@@ -28,13 +28,6 @@ IMAGE_URI=${3}
 : "${R2_SECRET_ACCESS_KEY:?R2_SECRET_ACCESS_KEY가 필요합니다.}"
 : "${R2_BUCKET:?R2_BUCKET이 필요합니다.}"
 : "${R2_PUBLIC_BASE_URL:?R2_PUBLIC_BASE_URL이 필요합니다.}"
-: "${S3_REGION:?S3_REGION이 필요합니다.}"
-: "${S3_ACCESS_KEY_ID:?S3_ACCESS_KEY_ID가 필요합니다.}"
-: "${S3_SECRET_ACCESS_KEY:?S3_SECRET_ACCESS_KEY가 필요합니다.}"
-: "${S3_BUCKET:?S3_BUCKET이 필요합니다.}"
-: "${S3_PUBLIC_BASE_URL:?S3_PUBLIC_BASE_URL이 필요합니다.}"
-# EVOLINK_MODEL은 application.yml에 기본값이 있어 선택 사항이다.
-: "${EVOLINK_API_KEY:?EVOLINK_API_KEY가 필요합니다.}"
 : "${GCP_PROJECT_ID:?GCP_PROJECT_ID가 필요합니다.}"
 : "${GCP_SERVICE_ACCOUNT_KEY:?GCP_SERVICE_ACCOUNT_KEY가 필요합니다.}"
 : "${GCS_BUCKET:?GCS_BUCKET이 필요합니다.}"
@@ -68,13 +61,6 @@ jq \
 	--arg r2_secret_access_key "${R2_SECRET_ACCESS_KEY:-}" \
 	--arg r2_bucket "${R2_BUCKET:-}" \
 	--arg r2_public_base_url "${R2_PUBLIC_BASE_URL:-}" \
-	--arg s3_region "${S3_REGION:-}" \
-	--arg s3_access_key_id "${S3_ACCESS_KEY_ID:-}" \
-	--arg s3_secret_access_key "${S3_SECRET_ACCESS_KEY:-}" \
-	--arg s3_bucket "${S3_BUCKET:-}" \
-	--arg s3_public_base_url "${S3_PUBLIC_BASE_URL:-}" \
-	--arg evolink_api_key "${EVOLINK_API_KEY:-}" \
-	--arg evolink_model "${EVOLINK_MODEL:-}" \
 	--arg gcp_project_id "${GCP_PROJECT_ID:-}" \
 	--arg gcp_service_account_key "${GCP_SERVICE_ACCOUNT_KEY:-}" \
 	--arg gcs_bucket "${GCS_BUCKET:-}" \
@@ -128,12 +114,13 @@ jq \
 							.name != "NOTIFICATION_INTERNAL_SECRET" and
 							.name != "R2_ACCESS_KEY_ID" and
 							.name != "R2_SECRET_ACCESS_KEY" and
+							.name != "GCP_SERVICE_ACCOUNT_KEY" and
+							.name != "GEMINI_API_KEY" and
+							# 기존 task definition에 남은 값을 걸러내는 임시 필터다. dev·prod 배포로 제거된 뒤 이 줄들도 지운다.
 							.name != "S3_ACCESS_KEY_ID" and
 							.name != "S3_SECRET_ACCESS_KEY" and
 							.name != "SQS_ACCESS_KEY_ID" and
 							.name != "SQS_SECRET_ACCESS_KEY" and
-							.name != "GCP_SERVICE_ACCOUNT_KEY" and
-							.name != "GEMINI_API_KEY" and
 							.name != "EVOLINK_API_KEY" and
 							.name != "REVENUECAT_API_KEY"
 						))
@@ -157,12 +144,12 @@ jq \
 								.name != "R2_SECRET_ACCESS_KEY" and
 								.name != "R2_BUCKET" and
 								.name != "R2_PUBLIC_BASE_URL" and
+								# 기존 task definition에 남은 값을 걸러내는 임시 필터다. dev·prod 배포로 제거된 뒤 이 줄들도 지운다.
 								.name != "S3_REGION" and
 								.name != "S3_ACCESS_KEY_ID" and
 								.name != "S3_SECRET_ACCESS_KEY" and
 								.name != "S3_BUCKET" and
 								.name != "S3_PUBLIC_BASE_URL" and
-								# 기존 task definition에 남은 값을 걸러내는 임시 필터다. dev·prod 배포로 제거된 뒤 이 줄들도 지운다.
 								.name != "VIMEO_ACCESS_TOKEN" and
 								.name != "SQS_REGION" and
 								.name != "SQS_ACCESS_KEY_ID" and
@@ -204,17 +191,11 @@ jq \
 							{"name": "R2_SECRET_ACCESS_KEY", "value": $r2_secret_access_key},
 							{"name": "R2_BUCKET", "value": $r2_bucket},
 							{"name": "R2_PUBLIC_BASE_URL", "value": $r2_public_base_url},
-							{"name": "S3_REGION", "value": $s3_region},
-							{"name": "S3_ACCESS_KEY_ID", "value": $s3_access_key_id},
-							{"name": "S3_SECRET_ACCESS_KEY", "value": $s3_secret_access_key},
-							{"name": "S3_BUCKET", "value": $s3_bucket},
-							{"name": "S3_PUBLIC_BASE_URL", "value": $s3_public_base_url},
 							{"name": "GCP_PROJECT_ID", "value": $gcp_project_id},
 							{"name": "GCP_SERVICE_ACCOUNT_KEY", "value": $gcp_service_account_key},
 							{"name": "GCS_BUCKET", "value": $gcs_bucket},
 							{"name": "AI_VIDEO_SUBSCRIPTION", "value": $ai_video_subscription},
 							{"name": "GEMINI_API_KEY", "value": $gemini_api_key},
-							{"name": "EVOLINK_API_KEY", "value": $evolink_api_key},
 							{"name": "REVENUECAT_API_KEY", "value": $revenuecat_api_key},
 							{"name": "REVENUECAT_PROJECT_ID", "value": $revenuecat_project_id},
 							{"name": "REVENUECAT_ENTITLEMENT_ID_PUPPY", "value": $revenuecat_entitlement_id_puppy},
@@ -223,11 +204,6 @@ jq \
 							{"name": "REVENUECAT_ENTITLEMENT_ID_SENIOR", "value": $revenuecat_entitlement_id_senior}
 						] +
 						# 미설정 시 application.yml의 기본값을 쓰도록 주입 자체를 생략한다
-						(if $evolink_model == "" then
-							[]
-						 else
-							[{"name": "EVOLINK_MODEL", "value": $evolink_model}]
-						 end) +
 						(if $gemini_model == "" then
 							[]
 						 else

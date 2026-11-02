@@ -14,7 +14,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 @ApplicationTest
 class MediaDownloadUrlIssuerTest {
 
-	private static final String S3_BASE_URL = "https://test-video-bucket.s3.ap-northeast-2.amazonaws.com/";
 	private static final MediaScope GRADUATION_VIDEO =
 			MediaScope.of(MediaKind.VIDEO, MediaVisibility.PRIVATE, "graduation");
 	private static final String GCS_BASE_URL = "https://storage.googleapis.com/test-ai-video-bucket/";
@@ -29,9 +28,9 @@ class MediaDownloadUrlIssuerTest {
 		String downloadUrl = issuer.issue(GRADUATION_VIDEO, "videos/graduation/7/1101/a.mp4");
 
 		assertThat(downloadUrl)
-				.startsWith(S3_BASE_URL + "videos/graduation/7/1101/a.mp4")
-				.contains("X-Amz-Signature=")
-				.contains("X-Amz-Expires=3600");
+				.startsWith(GCS_BASE_URL + "videos/graduation/7/1101/a.mp4")
+				.contains("X-Goog-Signature=")
+				.contains("X-Goog-Expires=3600");
 	}
 
 	@Test

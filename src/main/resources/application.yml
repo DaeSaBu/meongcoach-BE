@@ -55,25 +55,13 @@ meongcoach:
       # 버킷에 연결된 공개 도메인(커스텀 도메인 또는 r2.dev). 클라이언트가 보낸 이미지 URL 검증 기준이 된다
       public-base-url: ${R2_PUBLIC_BASE_URL}
       upload-url-validity: PT10M
-    s3:
-      # 실습 인증 영상은 실제 AWS S3에 올린다. R2와 달리 엔드포인트가 아니라 리전으로 주소가 결정된다
-      region: ${S3_REGION}
-      access-key-id: ${S3_ACCESS_KEY_ID}
-      secret-access-key: ${S3_SECRET_ACCESS_KEY}
-      bucket: ${S3_BUCKET}
-      # 버킷의 공개 도메인(CDN 또는 S3 표준 URL). 비공개 운영 시에도 응답의 publicUrl 조립에 쓰인다
-      public-base-url: ${S3_PUBLIC_BASE_URL}
-      # 영상은 파일 선택·압축 시간이 있어 이미지(PT10M)보다 여유를 둔다
-      upload-url-validity: PT15M
-      # 앱이 실습 영상을 다시 볼 때 쓰는 URL이라 재생 시간을 감안해 넉넉히 둔다
-      download-url-validity: PT1H
     gcs:
-      # AI 분석 영상은 GCS에 올린다. Gemini가 gs:// URI로 직접 읽으므로 이 버킷에만 Gemini 서비스 에이전트 읽기 권한을 준다.
-      # 자격 증명은 meongcoach.google-cloud의 서비스 계정 키를 함께 쓴다
+      # AI 분석 영상과 실습 인증 영상은 GCS 한 버킷에 올린다. Gemini가 gs:// URI로 직접 읽으므로 이 버킷에만 Gemini 서비스 에이전트 읽기 권한을 준다.
+      # 업로드 완료 알림은 버킷 알림 설정의 접두사(videos/training/)로 분석 영상만 받는다. 자격 증명은 meongcoach.google-cloud의 서비스 계정 키를 함께 쓴다
       bucket: ${GCS_BUCKET}
       # 영상은 파일 선택·압축 시간이 있어 이미지(PT10M)보다 여유를 둔다
       upload-url-validity: PT15M
-      # 분석은 gs:// URI로 하므로 다운로드 URL은 점검·수동 확인용이다
+      # 앱이 실습 인증 영상을 다시 볼 때 쓰는 URL이라 재생 시간을 감안해 넉넉히 둔다. 분석 영상은 gs:// URI로 읽어 점검용이다
       download-url-validity: PT1H
   google-cloud:
     # GCS 서명·Pub/Sub 구독·Gemini 파일 등록에 함께 쓰는 서비스 계정. 키 JSON을 base64로 넣는다. 값 미주입 시 기동에 실패한다
@@ -83,36 +71,21 @@ meongcoach:
     pubsub:
       # GCS 업로드 완료(OBJECT_FINALIZE) 알림을 받는 pull 구독의 전체 이름(projects/{프로젝트}/subscriptions/{구독})
       video-subscription: ${AI_VIDEO_SUBSCRIPTION}
-    # 영상 분석에 쓰는 Gemini Developer API 연동 설정. 영상은 GCS 객체를 files:register로 등록해 gs:// URI로 전달한다
+    # 영상 분석과 플랜 생성에 쓰는 Gemini Developer API 연동 설정. 영상은 GCS 객체를 files:register로 등록해 gs:// URI로 전달한다
     gemini:
       # 기본값을 두지 않아 미주입 시 기동에 실패한다 — 커밋된 키가 배포로 흘러가는 것을 막는다
       api-key: ${GEMINI_API_KEY}
       model: ${GEMINI_MODEL:gemini-3.8-flash}
-      # 영상 분석은 수십 초가 걸려 전역 read-timeout(3초)으로는 응답 전에 끊긴다
+      # 영상 분석·플랜 생성은 수십 초가 걸려 전역 read-timeout(3초)으로는 응답 전에 끊긴다
       response-timeout: PT5M
-      # 상한에 닿으면 리포트가 문장 중간에서 잘린다. 리포트는 2천 토큰 안팎이지만 여유를 둔다
+      # 상한에 닿으면 응답이 문장 중간에서 잘린다. 리포트는 2천 토큰 안팎이지만 여유를 둔다
       max-output-tokens: 4096
-      # 영상 분석·유형 분류는 창의성보다 일관성이 중요해 0으로 고정한다
+      # 영상 분석·플랜 생성은 창의성보다 일관성이 중요해 0으로 고정한다
       temperature: 0
       # 사고 수준(low·medium·high). 비용·지연 예측을 위해 가장 낮게 둔다. Gemini 3 이후 모델은 사고를 완전히 끌 수 없다
       thinking-level: ${GEMINI_THINKING_LEVEL:low}
       # 영상 프레임 추출 빈도(0.2~5). 높일수록 화면 변화에 민감하지만 토큰 소비가 늘어난다
       video-fps: 1
-    # 플랜 생성에 쓰는 EvoLink 채팅 API(OpenAI 호환) 연동 설정
-    evolink:
-      # Cloudflare를 거치지 않는 엔드포인트. api.evolink.ai는 응답 첫 바이트가 100초를 넘으면 Cloudflare가 524로 끊는다
-      base-url: https://direct.evolink.ai
-      # 기본값을 두지 않아 미주입 시 기동에 실패한다 — 커밋된 키가 배포로 흘러가는 것을 막는다
-      api-key: ${EVOLINK_API_KEY}
-      model: ${EVOLINK_MODEL:doubao-seed-2.0-pro}
-      # 플랜 생성은 수십 초가 걸려 전역 read-timeout(3초)으로는 응답 전에 끊긴다
-      response-timeout: PT5M
-      # 상한에 닿으면 응답이 문장 중간에서 잘린다. 여유를 둔다
-      max-tokens: 4096
-      # 플랜 생성은 창의성보다 일관성이 중요해 0으로 고정한다
-      temperature: 0
-      # 심층 사고 모드(enabled·disabled·auto). 비용·지연 예측을 위해 끈다
-      thinking: ${EVOLINK_THINKING:disabled}
   social:
     kakao:
       issuer: https://kauth.kakao.com

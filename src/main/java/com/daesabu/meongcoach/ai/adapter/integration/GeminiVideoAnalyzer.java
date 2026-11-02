@@ -14,14 +14,11 @@ import com.google.auth.oauth2.GoogleCredentials;
 import com.google.genai.Client;
 import com.google.genai.errors.ApiException;
 import com.google.genai.errors.GenAiIOException;
-import com.google.genai.types.Candidate;
 import com.google.genai.types.Content;
 import com.google.genai.types.File;
 import com.google.genai.types.FileData;
-import com.google.genai.types.FinishReason;
 import com.google.genai.types.GenerateContentConfig;
 import com.google.genai.types.GenerateContentResponse;
-import com.google.genai.types.HttpOptions;
 import com.google.genai.types.Part;
 import com.google.genai.types.RegisterFilesResponse;
 import com.google.genai.types.ThinkingConfig;
@@ -31,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
@@ -54,13 +50,7 @@ public class GeminiVideoAnalyzer implements VideoAnalyzer {
 	private final String userPrompt;
 	private final GenerateContentConfig generateConfig;
 
-	@Autowired
-	public GeminiVideoAnalyzer(GeminiProperties properties, GoogleCredentials credentials, TopicFinder topicFinder,
-			ObjectMapper objectMapper) {
-		this(newClient(properties), properties, credentials, topicFinder, objectMapper);
-	}
-
-	GeminiVideoAnalyzer(Client client, GeminiProperties properties, GoogleCredentials credentials,
+	public GeminiVideoAnalyzer(Client client, GeminiProperties properties, GoogleCredentials credentials,
 			TopicFinder topicFinder, ObjectMapper objectMapper) {
 		this.client = client;
 		this.properties = properties;
@@ -81,16 +71,6 @@ public class GeminiVideoAnalyzer implements VideoAnalyzer {
 			throw new IllegalStateException(
 					"사용자 프롬프트에 " + TOPICS_PLACEHOLDER + " 자리가 없습니다: " + USER_PROMPT_PATH);
 		}
-	}
-
-	private static Client newClient(GeminiProperties properties) {
-		HttpOptions httpOptions = HttpOptions.builder()
-				.timeout((int) properties.responseTimeout().toMillis())
-				.build();
-		return Client.builder()
-				.apiKey(properties.apiKey())
-				.httpOptions(httpOptions)
-				.build();
 	}
 
 	@Override
@@ -142,24 +122,12 @@ public class GeminiVideoAnalyzer implements VideoAnalyzer {
 	}
 
 	private static String extractText(GenerateContentResponse response, String videoUri) {
-		List<Candidate> candidates = response.candidates().orElse(List.of());
-		if (candidates.isEmpty()) {
-			throw new VideoAnalysisFailedException("영상 분석 응답에 candidates가 없습니다: " + videoUri);
+		try {
+			return GeminiResponses.extractText(response);
 		}
-		FinishReason finishReason = candidates.getFirst().finishReason()
-				.orElse(new FinishReason(FinishReason.Known.FINISH_REASON_UNSPECIFIED));
-		if (finishReason.knownEnum() == FinishReason.Known.MAX_TOKENS) {
-			throw new VideoAnalysisFailedException("영상 분석 응답이 max_output_tokens 상한에 걸려 잘렸습니다: " + videoUri);
+		catch (GeminiResponseException e) {
+			throw new VideoAnalysisFailedException("영상 분석 " + e.getMessage() + ": " + videoUri, e);
 		}
-		if (finishReason.knownEnum() != FinishReason.Known.STOP) {
-			throw new VideoAnalysisFailedException(
-					"영상 분석 응답이 정상 종료되지 않았습니다(" + finishReason + "): " + videoUri);
-		}
-		String text = response.text();
-		if (text == null || text.isBlank()) {
-			throw new VideoAnalysisFailedException("영상 분석 응답 내용이 비어 있습니다: " + videoUri);
-		}
-		return text;
 	}
 
 	private GeneratedReport parseGenerated(String rawText, String videoUri) {

@@ -14,7 +14,7 @@
 | AI 행동 분석 | 보호자가 올린 반려견 영상을 AI가 분석해 문제 행동 리포트와 추천 훈련을 돌려줍니다 |
 | 구독 | 결제는 RevenueCat이 처리하고, 서버는 활성 이용권 사본을 동기화해 유료 콘텐츠 접근을 판단합니다 |
 
-**기술 스택**: Java 25, Spring Boot 4.1, Spring Data JPA, PostgreSQL, Flyway, Spring Modulith 2.1, Spring Cloud AWS(SQS), JUnit 5, Testcontainers, ArchUnit, Spring REST Docs
+**기술 스택**: Java 25, Spring Boot 4.1, Spring Data JPA, PostgreSQL, Flyway, Spring Modulith 2.1, Google Cloud(Pub/Sub·GCS·Gemini), JUnit 5, Testcontainers, ArchUnit, Spring REST Docs
 
 ## 시스템 구성
 
@@ -26,30 +26,31 @@ flowchart LR
 
     subgraph Backend["멍코치 백엔드 (Spring Boot)"]
         API["REST API"]
-        Consumer["SQS 컨슈머"]
+        Consumer["Pub/Sub 컨슈머"]
     end
 
     DB[("PostgreSQL")]
     Social["카카오 · 애플 · 구글<br/>소셜 로그인"]
     RC["RevenueCat<br/>구독 결제"]
-    EvoLink["EvoLink<br/>멀티모달 AI"]
+    Gemini["Gemini<br/>영상 분석 · 플랜 생성"]
     R2["Cloudflare R2<br/>이미지"]
-    S3["AWS S3<br/>영상"]
-    SQS["AWS SQS"]
+    GCS["Google Cloud Storage<br/>영상"]
+    PubSub["Cloud Pub/Sub"]
 
     App -->|"API 호출"| API
     App -->|"presigned URL로 직접 업로드"| R2
-    App -->|"presigned URL로 직접 업로드"| S3
+    App -->|"presigned URL로 직접 업로드"| GCS
     API --> DB
     API -->|"토큰 검증 · 탈퇴 시 revoke"| Social
     API -->|"활성 이용권 조회"| RC
-    S3 -->|"업로드 완료 이벤트"| SQS
-    SQS --> Consumer
-    Consumer -->|"영상 분석 · 리포트 생성"| EvoLink
+    API -->|"AI 플랜 생성"| Gemini
+    GCS -->|"업로드 완료 이벤트"| PubSub
+    PubSub --> Consumer
+    Consumer -->|"영상 분석 · 리포트 생성"| Gemini
     Consumer --> DB
 ```
 
-AI 분석은 수십 초가 걸리므로 요청-응답이 아니라 S3 업로드 이벤트를 SQS로 받아 비동기로 처리합니다. 앱은 리포트 목록을 폴링해 결과를 확인합니다. 흐름과 실패 처리는 [docs/ai-pipeline.md](docs/ai-pipeline.md)에 있습니다.
+AI 분석은 수십 초가 걸리므로 요청-응답이 아니라 GCS 업로드 이벤트를 Pub/Sub으로 받아 비동기로 처리합니다. 앱은 리포트 목록을 폴링해 결과를 확인합니다. 흐름과 실패 처리는 [docs/ai-pipeline.md](docs/ai-pipeline.md)에 있습니다.
 
 ## 아키텍처
 
@@ -136,13 +137,13 @@ AI 분석은 수십 초가 걸리므로 요청-응답이 아니라 S3 업로드 
 
 #### ai — AI 행동 분석
 
-- **책임**: 영상 업로드 URL 발급과 리포트 생성, 비동기 분석 파이프라인, 리포트 상태(업로드 중·분석 중·완료·실패) 관리, 무료 체험 횟수 제한
-- **역할**: `AiVideoUploadUrlIssuer`, `AiReportGenerator`, `AiReportFinder`, `AiTrialFinder`
-- **협력**: 업로드·다운로드 presigned URL은 `media`에 요청합니다. 분석할 때는 `training`의 `TopicFinder`로 토픽 목록을 받아 AI가 추천할 수 있는 훈련 후보로 넘깁니다. 외부로는 SQS에서 업로드 이벤트를 받고(`VideoUploadSqsConsumer`), EvoLink로 영상 분석과 제목 생성을 요청합니다.
+- **책임**: 영상 업로드 URL 발급과 리포트 생성, 비동기 분석 파이프라인, 리포트 상태(업로드 중·분석 중·완료·실패) 관리, 무료 체험 횟수 제한, 다른 모듈이 쓰는 AI 콘텐츠 생성
+- **역할**: `AiVideoUploadUrlIssuer`, `AiReportGenerator`, `AiReportFinder`, `AiTrialFinder`, `AiContentGenerator`
+- **협력**: 업로드·다운로드 presigned URL은 `media`에 요청합니다. 분석할 때는 `training`의 `TopicFinder`로 토픽 목록을 받아 AI가 추천할 수 있는 훈련 후보로 넘깁니다. 외부로는 Pub/Sub에서 업로드 이벤트를 받고(`VideoUploadPubSubConsumer`), Gemini로 영상 분석과 제목 생성을 요청합니다. `plan`이 AI 플랜 구성을 만들 때 `AiContentGenerator`로 Gemini 호출을 위임받습니다.
 
 #### media — 파일 저장소
 
-- **책임**: 공개(R2)·비공개(S3) 스토리지의 presigned URL 발급, 객체 키 구조와 소유권, 클라이언트가 보낸 미디어 URL·객체 키가 본인이 올린 것인지 확인
+- **책임**: 공개(R2)·비공개(GCS) 스토리지의 presigned URL 발급, 객체 키 구조와 소유권, 클라이언트가 보낸 미디어 URL·객체 키가 본인이 올린 것인지 확인
 - **역할**: `MediaUploadUrlIssuer`, `MediaDownloadUrlIssuer`, `StoredMediaVerifier`
 - **협력**: 다른 모듈을 호출하지 않고, `ai`·`graduation`·`community`·`onboarding`·`dog`가 사용합니다. 경로 범위·크기 상한 같은 용도별 규칙은 각 모듈이 `MediaScope`로 정해 넘기고, media는 스토리지 세부 사항만 가둡니다.
 
@@ -196,7 +197,7 @@ AI 분석은 수십 초가 걸리므로 요청-응답이 아니라 S3 업로드 
 | 문서 | 내용 |
 |---|---|
 | [docs/architecture.md](docs/architecture.md) | 모듈 규칙, 계층 의존 방향, 모듈 경계 검증 |
-| [docs/ai-pipeline.md](docs/ai-pipeline.md) | 영상 업로드 → SQS → AI 분석 → 리포트 저장 비동기 흐름과 실패 처리 |
+| [docs/ai-pipeline.md](docs/ai-pipeline.md) | 영상 업로드 → Pub/Sub → Gemini 분석 → 리포트 저장 비동기 흐름과 실패 처리, 플랜 생성 Gemini 연동 |
 | [docs/release-3.2.0.md](docs/release-3.2.0.md) | 구버전 앱 호환 범위와 DB 점검 전환·복구 절차 |
 | [docs/security.md](docs/security.md) | JWT 토큰 정책과 검증 체인, 필터 체인 |
 | [docs/error-handling.md](docs/error-handling.md) | Problem Details 에러 응답 형식 |
