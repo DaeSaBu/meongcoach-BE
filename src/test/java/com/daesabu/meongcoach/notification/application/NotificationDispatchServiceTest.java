@@ -11,7 +11,7 @@ import static org.mockito.Mockito.verify;
 import com.daesabu.meongcoach.notification.application.provided.dto.NotificationDispatchRequest;
 import com.daesabu.meongcoach.notification.application.required.DeviceInstallationRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationDispatchRepository;
-import com.daesabu.meongcoach.notification.application.required.NotificationPreferenceRepository;
+import com.daesabu.meongcoach.notification.application.required.NotificationScheduleRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationSender;
 import com.daesabu.meongcoach.notification.application.required.NotificationSender.NotificationBatchResult;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallation;
@@ -30,11 +30,11 @@ import org.mockito.ArgumentCaptor;
 
 class NotificationDispatchServiceTest {
 	private final NotificationDispatchRepository dispatches = mock(NotificationDispatchRepository.class);
-	private final NotificationPreferenceRepository preferences = mock(NotificationPreferenceRepository.class);
+	private final NotificationScheduleRepository schedules = mock(NotificationScheduleRepository.class);
 	private final UserFinder users = mock(UserFinder.class);
 	private final DeviceInstallationRepository installations = mock(DeviceInstallationRepository.class);
 	private final NotificationSender sender = mock(NotificationSender.class);
-	private final NotificationDispatchService service = new NotificationDispatchService(dispatches, preferences, installations, users, sender);
+	private final NotificationDispatchService service = new NotificationDispatchService(dispatches, schedules, installations, users, sender);
 	private final NotificationDispatchRequest request = new NotificationDispatchRequest(Instant.parse("2026-10-31T08:00:00Z"), 17);
 
 	@Test
@@ -71,7 +71,7 @@ class NotificationDispatchServiceTest {
 	}
 
 	private void prepareTargets(int count) {
-		given(preferences.findUserIdsByHourEnabled(17)).willReturn(List.of(1L));
+		given(schedules.findUserIdsByHourEnabled(17)).willReturn(List.of(1L));
 		given(users.findActiveUserIds(List.of(1L))).willReturn(Set.of(1L));
 		List<DeviceInstallation> results = IntStream.range(0, count)
 				.mapToObj(index -> DeviceInstallation.register(1L,

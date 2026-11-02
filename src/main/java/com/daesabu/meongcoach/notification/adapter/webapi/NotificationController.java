@@ -1,12 +1,12 @@
 package com.daesabu.meongcoach.notification.adapter.webapi;
 
-import com.daesabu.meongcoach.notification.adapter.webapi.dto.NotificationPreferencesResponse;
-import com.daesabu.meongcoach.notification.application.provided.NotificationPreferenceFinder;
-import com.daesabu.meongcoach.notification.application.provided.NotificationPreferenceResult;
+import com.daesabu.meongcoach.notification.adapter.webapi.dto.NotificationSchedulesResponse;
 import com.daesabu.meongcoach.notification.application.provided.NotificationRegister;
+import com.daesabu.meongcoach.notification.application.provided.NotificationScheduleFinder;
+import com.daesabu.meongcoach.notification.application.provided.NotificationScheduleResult;
 import com.daesabu.meongcoach.notification.application.provided.dto.DeviceInstallationRegisterRequest;
 import com.daesabu.meongcoach.notification.application.provided.dto.DeviceInstallationUnregisterRequest;
-import com.daesabu.meongcoach.notification.application.provided.dto.NotificationPreferenceUpdateRequest;
+import com.daesabu.meongcoach.notification.application.provided.dto.NotificationScheduleUpdateRequest;
 import com.daesabu.meongcoach.shared.security.CurrentUserId;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -27,7 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class NotificationController {
 
 	private final NotificationRegister notificationRegister;
-	private final NotificationPreferenceFinder notificationPreferenceFinder;
+	private final NotificationScheduleFinder notificationScheduleFinder;
 
 	@PutMapping("/installations")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
@@ -42,15 +42,15 @@ public class NotificationController {
 	}
 
 	@GetMapping("/preferences")
-	public NotificationPreferencesResponse findPreferences(@CurrentUserId Long userId) {
-		List<NotificationPreferenceResult> preferences = notificationPreferenceFinder.findPreferences(userId);
-		return NotificationPreferencesResponse.from(preferences);
+	public NotificationSchedulesResponse findSchedules(@CurrentUserId Long userId) {
+		List<NotificationScheduleResult> schedules = notificationScheduleFinder.findSchedules(userId);
+		return NotificationSchedulesResponse.from(schedules);
 	}
 
 	@PutMapping("/preferences/{hour}")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	public void updatePreference(@CurrentUserId Long userId, @PathVariable int hour,
-	                             @Valid @RequestBody NotificationPreferenceUpdateRequest request) {
-		notificationRegister.updatePreference(userId, hour, request);
+	public void updateSchedule(@CurrentUserId Long userId, @PathVariable int hour,
+	                             @Valid @RequestBody NotificationScheduleUpdateRequest request) {
+		notificationRegister.updateSchedule(userId, hour, request);
 	}
 }

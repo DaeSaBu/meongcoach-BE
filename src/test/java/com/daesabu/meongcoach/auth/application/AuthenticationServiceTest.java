@@ -34,11 +34,11 @@ import com.daesabu.meongcoach.auth.domain.exception.WithdrawnUserException;
 import com.daesabu.meongcoach.media.application.provided.StoredMediaVerifier;
 import com.daesabu.meongcoach.notification.application.NotificationRegisterService;
 import com.daesabu.meongcoach.notification.application.required.DeviceInstallationRepository;
-import com.daesabu.meongcoach.notification.application.required.NotificationPreferenceRepository;
+import com.daesabu.meongcoach.notification.application.required.NotificationScheduleRepository;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallation;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallationRegisterCommand;
 import com.daesabu.meongcoach.notification.domain.DevicePlatform;
-import com.daesabu.meongcoach.notification.domain.NotificationPreferenceFixture;
+import com.daesabu.meongcoach.notification.domain.NotificationScheduleFixture;
 import com.daesabu.meongcoach.user.application.UserQueryService;
 import com.daesabu.meongcoach.user.application.UserRegisterService;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
@@ -99,7 +99,7 @@ class AuthenticationServiceTest {
 	private DeviceInstallationRepository deviceInstallationRepository;
 
 	@Autowired
-	private NotificationPreferenceRepository notificationPreferenceRepository;
+	private NotificationScheduleRepository notificationScheduleRepository;
 
 	@Autowired
 	private TestEntityManager entityManager;
@@ -121,7 +121,7 @@ class AuthenticationServiceTest {
 				tokenProvider, refreshTokenFinder);
 		AuthTokenProvideService authTokenProvider = new AuthTokenProvideService(tokenProvider, refreshTokenRegister);
 		NotificationRegisterService notificationRegister = new NotificationRegisterService(deviceInstallationRepository,
-				notificationPreferenceRepository);
+				notificationScheduleRepository);
 
 		service = new AuthenticationService(accountFinder, accountRegister, PASSWORD_ENCODER::matches,
 				authTokenProvider, tokenProvider, refreshTokenRegister, socialProfileReaders(),
@@ -346,14 +346,14 @@ class AuthenticationServiceTest {
 		User user = persistSocialUser(APPLE_ACCOUNT);
 		deviceInstallationRepository.save(DeviceInstallation.register(user.getId(),
 				new DeviceInstallationRegisterCommand("fcm-token", DevicePlatform.IOS), Instant.now()));
-		notificationPreferenceRepository.save(NotificationPreferenceFixture.create(user.getId(), 17, true));
+		notificationScheduleRepository.save(NotificationScheduleFixture.create(user.getId(), 17, true));
 		flushAndClear();
 
 		service.withdraw(user.getId(), new WithdrawRequest(APPLE_CODE));
 		flushAndClear();
 
 		assertThat(deviceInstallationRepository.findByFid("fcm-token")).isEmpty();
-		assertThat(notificationPreferenceRepository.findAllByUserId(user.getId())).isEmpty();
+		assertThat(notificationScheduleRepository.findAllByUserId(user.getId())).isEmpty();
 	}
 
 	// 애플 심사 요건: 탈퇴 후 같은 계정으로 다시 가입할 수 있어야 한다

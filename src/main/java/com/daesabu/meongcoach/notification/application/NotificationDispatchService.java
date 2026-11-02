@@ -5,7 +5,7 @@ import com.daesabu.meongcoach.notification.application.provided.NotificationDisp
 import com.daesabu.meongcoach.notification.application.provided.dto.NotificationDispatchRequest;
 import com.daesabu.meongcoach.notification.application.required.DeviceInstallationRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationDispatchRepository;
-import com.daesabu.meongcoach.notification.application.required.NotificationPreferenceRepository;
+import com.daesabu.meongcoach.notification.application.required.NotificationScheduleRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationSender;
 import com.daesabu.meongcoach.notification.application.required.NotificationSender.NotificationBatchResult;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallation;
@@ -35,7 +35,7 @@ public class NotificationDispatchService implements NotificationDispatcher {
 	private static final Map.Entry<String, String> DEFAULT_MESSAGE = Map.entry("훈련 시간이에요", "오늘의 훈련을 시작해 볼까요?");
 
 	private final NotificationDispatchRepository dispatches;
-	private final NotificationPreferenceRepository preferences;
+	private final NotificationScheduleRepository schedules;
 	private final DeviceInstallationRepository installations;
 	private final UserFinder users;
 	private final NotificationSender sender;
@@ -60,7 +60,7 @@ public class NotificationDispatchService implements NotificationDispatcher {
 	}
 
 	private List<String> findTargets(int hour) {
-		List<Long> enabledUserIds = preferences.findUserIdsByHourEnabled(hour);
+		List<Long> enabledUserIds = schedules.findUserIdsByHourEnabled(hour);
 		Set<Long> activeUserIds = users.findActiveUserIds(enabledUserIds);
 		if (activeUserIds.isEmpty()) {
 			return List.of();

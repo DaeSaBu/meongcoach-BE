@@ -7,13 +7,13 @@ import static org.mockito.BDDMockito.given;
 
 import com.daesabu.meongcoach.notification.application.provided.dto.NotificationDispatchRequest;
 import com.daesabu.meongcoach.notification.application.required.DeviceInstallationRepository;
-import com.daesabu.meongcoach.notification.application.required.NotificationPreferenceRepository;
+import com.daesabu.meongcoach.notification.application.required.NotificationScheduleRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationSender;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallation;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallationRegisterCommand;
 import com.daesabu.meongcoach.notification.domain.DevicePlatform;
 import com.daesabu.meongcoach.notification.domain.NotificationMessage;
-import com.daesabu.meongcoach.notification.domain.NotificationPreferenceFixture;
+import com.daesabu.meongcoach.notification.domain.NotificationScheduleFixture;
 import com.daesabu.meongcoach.notification.domain.exception.InvalidNotificationHourException;
 import com.daesabu.meongcoach.support.ApplicationTest;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
@@ -40,7 +40,7 @@ class NotificationDispatchTargetTest {
 	private DeviceInstallationRepository deviceInstallationRepository;
 
 	@Autowired
-	private NotificationPreferenceRepository notificationPreferenceRepository;
+	private NotificationScheduleRepository notificationScheduleRepository;
 
 	@Autowired
 	private UserRepository userRepository;
@@ -59,14 +59,14 @@ class NotificationDispatchTargetTest {
 		deviceInstallationRepository.save(DeviceInstallation.register(userId, new DeviceInstallationRegisterCommand(fid, platform), NOW));
 	}
 
-	private void savePreference(Long userId, int hour, boolean enabled) {
-		notificationPreferenceRepository.save(NotificationPreferenceFixture.create(userId, hour, enabled));
+	private void saveSchedule(Long userId, int hour, boolean enabled) {
+		notificationScheduleRepository.save(NotificationScheduleFixture.create(userId, hour, enabled));
 	}
 
 	@Test
 	void 시각을_켠_활성_회원의_FID을_한_행씩_반환한다() {
 		Long userId = saveUser();
-		savePreference(userId, 17, true);
+		saveSchedule(userId, 17, true);
 		saveInstallation(userId, "fid-ios", DevicePlatform.IOS);
 		saveInstallation(userId, "fid-android", DevicePlatform.ANDROID);
 
@@ -79,8 +79,8 @@ class NotificationDispatchTargetTest {
 	void 회원_ID_오름차순_같은_회원_안에서는_FID_등록_순으로_정렬한다() {
 		Long firstUserId = saveUser();
 		Long secondUserId = saveUser();
-		savePreference(firstUserId, 17, true);
-		savePreference(secondUserId, 17, true);
+		saveSchedule(firstUserId, 17, true);
+		saveSchedule(secondUserId, 17, true);
 		saveInstallation(secondUserId, "second-ios", DevicePlatform.IOS);
 		saveInstallation(firstUserId, "first-android", DevicePlatform.ANDROID);
 		saveInstallation(firstUserId, "first-ios", DevicePlatform.IOS);
@@ -93,7 +93,7 @@ class NotificationDispatchTargetTest {
 	@Test
 	void 시각을_끈_회원은_빠진다() {
 		Long userId = saveUser();
-		savePreference(userId, 17, false);
+		saveSchedule(userId, 17, false);
 		saveInstallation(userId, "fid", DevicePlatform.IOS);
 
 		assertThat(dispatchTargets(17)).isEmpty();
@@ -102,7 +102,7 @@ class NotificationDispatchTargetTest {
 	@Test
 	void 다른_시각만_켠_회원은_빠진다() {
 		Long userId = saveUser();
-		savePreference(userId, 8, true);
+		saveSchedule(userId, 8, true);
 		saveInstallation(userId, "fid", DevicePlatform.IOS);
 
 		assertThat(dispatchTargets(17)).isEmpty();
@@ -119,7 +119,7 @@ class NotificationDispatchTargetTest {
 	@Test
 	void 탈퇴한_회원은_빠진다() {
 		Long userId = saveWithdrawnUser();
-		savePreference(userId, 17, true);
+		saveSchedule(userId, 17, true);
 		saveInstallation(userId, "fid", DevicePlatform.IOS);
 
 		assertThat(dispatchTargets(17)).isEmpty();
@@ -128,7 +128,7 @@ class NotificationDispatchTargetTest {
 	@Test
 	void FID이_없는_회원은_빠진다() {
 		Long userId = saveUser();
-		savePreference(userId, 17, true);
+		saveSchedule(userId, 17, true);
 
 		assertThat(dispatchTargets(17)).isEmpty();
 	}

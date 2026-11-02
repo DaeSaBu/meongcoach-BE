@@ -12,13 +12,13 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import com.daesabu.meongcoach.notification.application.provided.dto.NotificationDispatchRequest;
 import com.daesabu.meongcoach.notification.application.required.DeviceInstallationRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationDispatchRepository;
-import com.daesabu.meongcoach.notification.application.required.NotificationPreferenceRepository;
+import com.daesabu.meongcoach.notification.application.required.NotificationScheduleRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationSender;
 import com.daesabu.meongcoach.notification.application.required.NotificationSender.NotificationBatchResult;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallation;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallationRegisterCommand;
 import com.daesabu.meongcoach.notification.domain.DevicePlatform;
-import com.daesabu.meongcoach.notification.domain.NotificationPreferenceFixture;
+import com.daesabu.meongcoach.notification.domain.NotificationScheduleFixture;
 import com.daesabu.meongcoach.notification.domain.exception.InvalidNotificationHourException;
 import com.daesabu.meongcoach.notification.domain.exception.NotificationDeliveryException;
 import com.daesabu.meongcoach.support.NonTransactionalApplicationTest;
@@ -39,7 +39,7 @@ class NotificationDispatcherTest {
 	@Autowired NotificationSender sender;
 	@Autowired UserRepository users;
 	@Autowired DeviceInstallationRepository fids;
-	@Autowired NotificationPreferenceRepository preferences;
+	@Autowired NotificationScheduleRepository schedules;
 	@Autowired NotificationDispatchRepository dispatches;
 
 	private Long userId;
@@ -52,13 +52,13 @@ class NotificationDispatcherTest {
 		fid = UUID.randomUUID().toString();
 		request = new NotificationDispatchRequest(Instant.now(), 17);
 		fids.save(DeviceInstallation.register(userId, new DeviceInstallationRegisterCommand(fid, DevicePlatform.IOS), Instant.now()));
-		preferences.save(NotificationPreferenceFixture.create(userId, 17, true));
+		schedules.save(NotificationScheduleFixture.create(userId, 17, true));
 	}
 
 	@AfterEach
 	void 정리한다() {
 		fids.deleteAll(fids.findAllByUserIdInOrderByUserIdAscIdAsc(List.of(userId)));
-		preferences.deleteAll(preferences.findAllByUserId(userId));
+		schedules.deleteAll(schedules.findAllByUserId(userId));
 		users.deleteById(userId);
 		dispatches.findByDispatchKey(request.key()).ifPresent(dispatches::delete);
 	}

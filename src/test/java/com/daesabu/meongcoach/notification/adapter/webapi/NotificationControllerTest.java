@@ -15,12 +15,12 @@ import static org.springframework.restdocs.request.RequestDocumentation.pathPara
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.daesabu.meongcoach.notification.application.provided.NotificationPreferenceFinder;
-import com.daesabu.meongcoach.notification.application.provided.NotificationPreferenceResult;
 import com.daesabu.meongcoach.notification.application.provided.NotificationRegister;
+import com.daesabu.meongcoach.notification.application.provided.NotificationScheduleFinder;
+import com.daesabu.meongcoach.notification.application.provided.NotificationScheduleResult;
 import com.daesabu.meongcoach.notification.application.provided.dto.DeviceInstallationRegisterRequest;
 import com.daesabu.meongcoach.notification.application.provided.dto.DeviceInstallationUnregisterRequest;
-import com.daesabu.meongcoach.notification.application.provided.dto.NotificationPreferenceUpdateRequest;
+import com.daesabu.meongcoach.notification.application.provided.dto.NotificationScheduleUpdateRequest;
 import com.daesabu.meongcoach.notification.domain.exception.InvalidDevicePlatformException;
 import com.daesabu.meongcoach.notification.domain.exception.NotAllowedNotificationHourException;
 import java.security.Principal;
@@ -68,7 +68,7 @@ class NotificationControllerTest {
 	private NotificationRegister notificationRegister;
 
 	@MockitoBean
-	private NotificationPreferenceFinder notificationPreferenceFinder;
+	private NotificationScheduleFinder notificationScheduleFinder;
 
 	@Test
 	void 기기_FID을_등록하면_204를_반환한다() throws Exception {
@@ -134,10 +134,10 @@ class NotificationControllerTest {
 
 	@Test
 	void 알림_설정을_시각별로_응답한다() throws Exception {
-		given(notificationPreferenceFinder.findPreferences(42L)).willReturn(List.of(
-				new NotificationPreferenceResult(8, false),
-				new NotificationPreferenceResult(11, false),
-				new NotificationPreferenceResult(17, true)
+		given(notificationScheduleFinder.findSchedules(42L)).willReturn(List.of(
+				new NotificationScheduleResult(8, false),
+				new NotificationScheduleResult(11, false),
+				new NotificationScheduleResult(17, true)
 		));
 
 		mockMvc.perform(get(PREFERENCES_PATH)
@@ -171,13 +171,13 @@ class NotificationControllerTest {
 						requestFields(fieldWithPath("enabled").description("해당 시각 알림 수신 여부"))
 				));
 
-		then(notificationRegister).should().updatePreference(42L, 17, new NotificationPreferenceUpdateRequest(true));
+		then(notificationRegister).should().updateSchedule(42L, 17, new NotificationScheduleUpdateRequest(true));
 	}
 
 	@Test
 	void 허용하지_않는_시각이면_400과_에러_코드를_반환한다() throws Exception {
 		willThrow(new NotAllowedNotificationHourException(9)).given(notificationRegister)
-				.updatePreference(42L, 9, new NotificationPreferenceUpdateRequest(true));
+				.updateSchedule(42L, 9, new NotificationScheduleUpdateRequest(true));
 
 		mockMvc.perform(put(PREFERENCES_PATH + "/{hour}", 9)
 						.principal(CURRENT_USER)
@@ -208,6 +208,6 @@ class NotificationControllerTest {
 				.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
 
-		then(notificationPreferenceFinder).shouldHaveNoInteractions();
+		then(notificationScheduleFinder).shouldHaveNoInteractions();
 	}
 }

@@ -4,13 +4,13 @@ package com.daesabu.meongcoach.notification.application;
 import com.daesabu.meongcoach.notification.application.provided.NotificationRegister;
 import com.daesabu.meongcoach.notification.application.provided.dto.DeviceInstallationRegisterRequest;
 import com.daesabu.meongcoach.notification.application.provided.dto.DeviceInstallationUnregisterRequest;
-import com.daesabu.meongcoach.notification.application.provided.dto.NotificationPreferenceUpdateRequest;
+import com.daesabu.meongcoach.notification.application.provided.dto.NotificationScheduleUpdateRequest;
 import com.daesabu.meongcoach.notification.application.required.DeviceInstallationRepository;
-import com.daesabu.meongcoach.notification.application.required.NotificationPreferenceRepository;
+import com.daesabu.meongcoach.notification.application.required.NotificationScheduleRepository;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallation;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallationRegisterCommand;
 import com.daesabu.meongcoach.notification.domain.NotificationHour;
-import com.daesabu.meongcoach.notification.domain.NotificationPreference;
+import com.daesabu.meongcoach.notification.domain.NotificationSchedule;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -26,7 +26,7 @@ import org.springframework.validation.annotation.Validated;
 public class NotificationRegisterService implements NotificationRegister {
 
 	private final DeviceInstallationRepository deviceInstallationRepository;
-	private final NotificationPreferenceRepository notificationPreferenceRepository;
+	private final NotificationScheduleRepository notificationScheduleRepository;
 
 	@Override
 	@Transactional
@@ -35,7 +35,7 @@ public class NotificationRegisterService implements NotificationRegister {
 		Instant now = Instant.now();
 
 		upsertDeviceInstallation(userId, command, now);
-		createDefaultPreferencesIfAbsent(userId);
+		createDefaultSchedulesIfAbsent(userId);
 	}
 
 	private void upsertDeviceInstallation(Long userId, DeviceInstallationRegisterCommand command, Instant now) {
@@ -47,14 +47,14 @@ public class NotificationRegisterService implements NotificationRegister {
 		deviceInstallationRepository.save(DeviceInstallation.register(userId, command, now));
 	}
 
-	private void createDefaultPreferencesIfAbsent(Long userId) {
-		List<Integer> existingHours = notificationPreferenceRepository.findAllByUserId(userId).stream()
-				.map(NotificationPreference::getHour)
+	private void createDefaultSchedulesIfAbsent(Long userId) {
+		List<Integer> existingHours = notificationScheduleRepository.findAllByUserId(userId).stream()
+				.map(NotificationSchedule::getHour)
 				.toList();
-		List<NotificationPreference> missingPreferences = NotificationPreference.createDefaults(userId).stream()
-				.filter(preference -> !existingHours.contains(preference.getHour()))
+		List<NotificationSchedule> missingSchedules = NotificationSchedule.createDefaults(userId).stream()
+				.filter(schedule -> !existingHours.contains(schedule.getHour()))
 				.toList();
-		notificationPreferenceRepository.saveAll(missingPreferences);
+		notificationScheduleRepository.saveAll(missingSchedules);
 	}
 
 	@Override
@@ -65,22 +65,22 @@ public class NotificationRegisterService implements NotificationRegister {
 
 	@Override
 	@Transactional
-	public void updatePreference(Long userId, int hour, NotificationPreferenceUpdateRequest request) {
+	public void updateSchedule(Long userId, int hour, NotificationScheduleUpdateRequest request) {
 		NotificationHour.validateAllowed(hour);
 		boolean enabled = request.enabled();
 
-		Optional<NotificationPreference> existing = notificationPreferenceRepository.findByUserIdAndHour(userId, hour);
+		Optional<NotificationSchedule> existing = notificationScheduleRepository.findByUserIdAndHour(userId, hour);
 		if (existing.isPresent()) {
 			existing.get().change(enabled);
 			return;
 		}
-		notificationPreferenceRepository.save(NotificationPreference.create(userId, hour, enabled));
+		notificationScheduleRepository.save(NotificationSchedule.create(userId, hour, enabled));
 	}
 
 	@Override
 	@Transactional
 	public void deleteAllByUserId(Long userId) {
 		deviceInstallationRepository.deleteAllByUserId(userId);
-		notificationPreferenceRepository.deleteAllByUserId(userId);
+		notificationScheduleRepository.deleteAllByUserId(userId);
 	}
 }

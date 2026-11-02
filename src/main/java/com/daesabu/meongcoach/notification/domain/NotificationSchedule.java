@@ -21,13 +21,13 @@ import org.hibernate.type.SqlTypes;
 @Getter
 @Entity
 @Table(
-		name = "notification_preferences",
+		name = "notification_schedules",
 		uniqueConstraints = @UniqueConstraint(
-				name = "uk_notification_preferences_user_id_hour", columnNames = {"user_id", "hour"}),
-		indexes = @Index(name = "idx_notification_preferences_hour_enabled", columnList = "hour, enabled")
+				name = "uk_notification_schedules_user_id_hour", columnNames = {"user_id", "hour"}),
+		indexes = @Index(name = "idx_notification_schedules_hour_enabled", columnList = "hour, enabled")
 )
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class NotificationPreference extends BaseEntity {
+public class NotificationSchedule extends BaseEntity {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -43,18 +43,18 @@ public class NotificationPreference extends BaseEntity {
 	@Column(nullable = false)
 	private boolean enabled;
 
-	public static NotificationPreference create(Long userId, int hour, boolean enabled) {
+	public static NotificationSchedule create(Long userId, int hour, boolean enabled) {
 		NotificationHour.validate(hour);
-		NotificationPreference preference = new NotificationPreference();
+		NotificationSchedule schedule = new NotificationSchedule();
 
-		preference.userId = requireNonNull(userId);
-		preference.hour = hour;
-		preference.enabled = enabled;
+		schedule.userId = requireNonNull(userId);
+		schedule.hour = hour;
+		schedule.enabled = enabled;
 
-		return preference;
+		return schedule;
 	}
 
-	public static List<NotificationPreference> createDefaults(Long userId) {
+	public static List<NotificationSchedule> createDefaults(Long userId) {
 		return NotificationHour.ALLOWED_HOURS.stream()
 				.map(hour -> create(userId, hour, NotificationHour.isDefaultEnabled(hour)))
 				.toList();
