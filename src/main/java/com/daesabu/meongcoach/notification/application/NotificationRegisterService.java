@@ -4,11 +4,15 @@ package com.daesabu.meongcoach.notification.application;
 import com.daesabu.meongcoach.notification.application.provided.NotificationRegister;
 import com.daesabu.meongcoach.notification.application.provided.dto.DeviceInstallationRegisterRequest;
 import com.daesabu.meongcoach.notification.application.provided.dto.DeviceInstallationUnregisterRequest;
+import com.daesabu.meongcoach.notification.application.provided.dto.NotificationEventSettingUpdateRequest;
 import com.daesabu.meongcoach.notification.application.provided.dto.NotificationScheduleUpdateRequest;
 import com.daesabu.meongcoach.notification.application.required.DeviceInstallationRepository;
+import com.daesabu.meongcoach.notification.application.required.NotificationEventSettingRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationScheduleRepository;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallation;
 import com.daesabu.meongcoach.notification.domain.DeviceInstallationRegisterCommand;
+import com.daesabu.meongcoach.notification.domain.NotificationEventSetting;
+import com.daesabu.meongcoach.notification.domain.NotificationEventType;
 import com.daesabu.meongcoach.notification.domain.NotificationSchedule;
 import com.daesabu.meongcoach.notification.domain.NotificationTime;
 import java.time.Instant;
@@ -27,6 +31,7 @@ public class NotificationRegisterService implements NotificationRegister {
 
 	private final DeviceInstallationRepository deviceInstallationRepository;
 	private final NotificationScheduleRepository notificationScheduleRepository;
+	private final NotificationEventSettingRepository notificationEventSettingRepository;
 
 	@Override
 	@Transactional
@@ -36,6 +41,7 @@ public class NotificationRegisterService implements NotificationRegister {
 
 		upsertDeviceInstallation(userId, command, now);
 		createDefaultSchedulesIfAbsent(userId);
+		createDefaultEventSettingsIfAbsent(userId);
 	}
 
 	private void upsertDeviceInstallation(Long userId, DeviceInstallationRegisterCommand command, Instant now) {
@@ -55,6 +61,16 @@ public class NotificationRegisterService implements NotificationRegister {
 				.filter(schedule -> !existingTimes.contains(schedule.time()))
 				.toList();
 		notificationScheduleRepository.saveAll(missingSchedules);
+	}
+
+	private void createDefaultEventSettingsIfAbsent(Long userId) {
+		List<NotificationEventType> existingTypes = notificationEventSettingRepository.findAllByUserId(userId).stream()
+				.map(NotificationEventSetting::getType)
+				.toList();
+		List<NotificationEventSetting> missingSettings = NotificationEventSetting.createDefaults(userId).stream()
+				.filter(setting -> !existingTypes.contains(setting.getType()))
+				.toList();
+		notificationEventSettingRepository.saveAll(missingSettings);
 	}
 
 	@Override
@@ -80,8 +96,23 @@ public class NotificationRegisterService implements NotificationRegister {
 
 	@Override
 	@Transactional
+	public void updateEventSetting(Long userId, NotificationEventSettingUpdateRequest request) {
+		NotificationEventType type = NotificationEventType.from(request.type());
+		boolean enabled = request.enabled();
+
+		Optional<NotificationEventSetting> existing = notificationEventSettingRepository.findByUserIdAndType(userId, type);
+		if (existing.isPresent()) {
+			existing.get().change(enabled);
+			return;
+		}
+		notificationEventSettingRepository.save(NotificationEventSetting.create(userId, type, enabled));
+	}
+
+	@Override
+	@Transactional
 	public void deleteAllByUserId(Long userId) {
 		deviceInstallationRepository.deleteAllByUserId(userId);
 		notificationScheduleRepository.deleteAllByUserId(userId);
+		notificationEventSettingRepository.deleteAllByUserId(userId);
 	}
 }

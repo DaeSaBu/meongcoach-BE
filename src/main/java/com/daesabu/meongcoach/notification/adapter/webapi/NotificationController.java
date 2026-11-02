@@ -1,11 +1,15 @@
 package com.daesabu.meongcoach.notification.adapter.webapi;
 
+import com.daesabu.meongcoach.notification.adapter.webapi.dto.NotificationEventSettingsResponse;
 import com.daesabu.meongcoach.notification.adapter.webapi.dto.NotificationSchedulesResponse;
+import com.daesabu.meongcoach.notification.application.provided.NotificationEventSettingFinder;
+import com.daesabu.meongcoach.notification.application.provided.NotificationEventSettingResult;
 import com.daesabu.meongcoach.notification.application.provided.NotificationRegister;
 import com.daesabu.meongcoach.notification.application.provided.NotificationScheduleFinder;
 import com.daesabu.meongcoach.notification.application.provided.NotificationScheduleResult;
 import com.daesabu.meongcoach.notification.application.provided.dto.DeviceInstallationRegisterRequest;
 import com.daesabu.meongcoach.notification.application.provided.dto.DeviceInstallationUnregisterRequest;
+import com.daesabu.meongcoach.notification.application.provided.dto.NotificationEventSettingUpdateRequest;
 import com.daesabu.meongcoach.notification.application.provided.dto.NotificationScheduleUpdateRequest;
 import com.daesabu.meongcoach.shared.security.CurrentUserId;
 import jakarta.validation.Valid;
@@ -27,6 +31,7 @@ public class NotificationController {
 
 	private final NotificationRegister notificationRegister;
 	private final NotificationScheduleFinder notificationScheduleFinder;
+	private final NotificationEventSettingFinder notificationEventSettingFinder;
 
 	@PutMapping("/installations")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
@@ -50,5 +55,17 @@ public class NotificationController {
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public void updateSchedule(@CurrentUserId Long userId, @Valid @RequestBody NotificationScheduleUpdateRequest request) {
 		notificationRegister.updateSchedule(userId, request);
+	}
+
+	@GetMapping("/event-settings")
+	public NotificationEventSettingsResponse findEventSettings(@CurrentUserId Long userId) {
+		List<NotificationEventSettingResult> settings = notificationEventSettingFinder.findEventSettings(userId);
+		return new NotificationEventSettingsResponse(settings);
+	}
+
+	@PutMapping("/event-settings")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public void updateEventSetting(@CurrentUserId Long userId, @Valid @RequestBody NotificationEventSettingUpdateRequest request) {
+		notificationRegister.updateEventSetting(userId, request);
 	}
 }
