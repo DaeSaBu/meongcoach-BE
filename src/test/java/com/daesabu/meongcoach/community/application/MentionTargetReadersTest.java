@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.daesabu.meongcoach.community.application.provided.dto.MentionLevelResult;
 import com.daesabu.meongcoach.community.application.provided.dto.MentionTargetResult;
 import com.daesabu.meongcoach.community.domain.MentionCommand;
 import com.daesabu.meongcoach.community.domain.MentionTargetType;
@@ -47,8 +48,8 @@ class MentionTargetReadersTest {
 		Map<MentionTargetType, Map<Long, MentionTargetResult>> summaries = READERS.findSummaries(mentions);
 
 		assertThat(summaries.get(MentionTargetType.LESSON)).containsOnly(
-				Map.entry(1L, new MentionTargetResult(MentionTargetType.LESSON, 1L, "앉아 기초")),
-				Map.entry(2L, new MentionTargetResult(MentionTargetType.LESSON, 2L, "기다려")));
+				Map.entry(1L, lessonResultOf(1L, "앉아 기초")),
+				Map.entry(2L, lessonResultOf(2L, "기다려")));
 	}
 
 	@Test
@@ -71,6 +72,14 @@ class MentionTargetReadersTest {
 				.hasMessageContaining("LESSON");
 	}
 
+	private static MentionTargetResult lessonResultOf(Long lessonId, String lessonTitle) {
+		return new MentionTargetResult(MentionTargetType.LESSON, lessonId,
+				new MentionLevelResult(10L, "기본 예절"),
+				new MentionLevelResult(20L, "앉아"),
+				new MentionLevelResult(30L, "앉아 기초"),
+				new MentionLevelResult(lessonId, lessonTitle));
+	}
+
 	private static PostMention mentionOf(MentionTargetType targetType, Long targetId) {
 		MentionCommand mention = new MentionCommand(targetType, targetId);
 		Post post = Post.register(42L, new PostRegisterCommand("본문", mention, List.of()));
@@ -84,7 +93,7 @@ class MentionTargetReadersTest {
 		public List<MentionTargetResult> findSummaries(Collection<Long> targetIds) {
 			return targetIds.stream()
 					.filter(titles::containsKey)
-					.map(targetId -> new MentionTargetResult(targetType, targetId, titles.get(targetId)))
+					.map(targetId -> lessonResultOf(targetId, titles.get(targetId)))
 					.toList();
 		}
 	}

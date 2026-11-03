@@ -2,7 +2,8 @@ package com.daesabu.meongcoach.notification.application.provided;
 
 import com.daesabu.meongcoach.notification.application.provided.dto.DeviceInstallationRegisterRequest;
 import com.daesabu.meongcoach.notification.application.provided.dto.DeviceInstallationUnregisterRequest;
-import com.daesabu.meongcoach.notification.application.provided.dto.NotificationPreferenceUpdateRequest;
+import com.daesabu.meongcoach.notification.application.provided.dto.NotificationEventSettingUpdateRequest;
+import com.daesabu.meongcoach.notification.application.provided.dto.NotificationScheduleUpdateRequest;
 import jakarta.validation.Valid;
 
 /**
@@ -12,7 +13,7 @@ public interface NotificationRegister {
 
 	/**
 	 * 회원의 기기 FID를 저장한다. 같은 FID가 이미 있으면 그 행의 회원과 마지막 확인 시각을 요청 회원과 현재 시각으로 바꾼다.
-	 * 회원의 8·11·17시 알림 설정 중 없는 시각만 기본값으로 만들고 기존 설정은 유지한다.
+	 * 회원의 8:00·11:00·17:00 알림 설정 중 없는 시각만 기본값으로 만들고 이벤트 알림 설정도 없는 종류만 기본값으로 만들고 기존 설정은 유지한다.
 	 * 플랫폼이 IOS·ANDROID가 아니면 {@code InvalidDevicePlatformException}을 던진다.
 	 */
 	void registerDeviceInstallation(Long userId, @Valid DeviceInstallationRegisterRequest request);
@@ -24,9 +25,15 @@ public interface NotificationRegister {
 
 	/**
 	 * 회원의 한 시각 알림 수신 여부를 요청 값으로 바꾼다. 회원·시각 행이 있으면 값만 바꾸고, 없으면 새로 만든다.
-	 * 시각이 허용 시각(8·11·17시)이 아니면 {@code NotAllowedNotificationHourException}을 던진다.
+	 * 시각이 허용 시각(8:00·11:00·17:00)이 아니면 {@code NotAllowedNotificationHourException}을 던진다.
 	 */
-	void updatePreference(Long userId, int hour, @Valid NotificationPreferenceUpdateRequest request);
+	void updateSchedule(Long userId, @Valid NotificationScheduleUpdateRequest request);
+
+	/**
+	 * 회원의 한 종류 이벤트 알림 수신 여부를 요청 값으로 바꾼다. 행이 있으면 값만 바꾸고, 없으면 새로 만든다.
+	 * 없는 종류면 {@code InvalidNotificationEventTypeException}을 던진다.
+	 */
+	void updateEventSetting(Long userId, @Valid NotificationEventSettingUpdateRequest request);
 
 	/**
 	 * 회원의 기기 FID와 알림 설정을 모두 지운다.

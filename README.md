@@ -14,7 +14,7 @@
 | AI 행동 분석 | 보호자가 올린 반려견 영상을 AI가 분석해 문제 행동 리포트와 추천 훈련을 돌려줍니다 |
 | 구독 | 결제는 RevenueCat이 처리하고, 서버는 활성 이용권 사본을 동기화해 유료 콘텐츠 접근을 판단합니다 |
 
-**기술 스택**: Java 25, Spring Boot 4.1, Spring Data JPA, PostgreSQL, Flyway, Spring Modulith 2.1, Spring Cloud AWS(SQS), JUnit 5, Testcontainers, ArchUnit, Spring REST Docs
+**기술 스택**: Java 25, Spring Boot 4.1, Spring Data JPA, PostgreSQL, Flyway, Spring Modulith 2.1, Google Cloud(Pub/Sub·GCS·Gemini), JUnit 5, Testcontainers, ArchUnit, Spring REST Docs
 
 ## 시스템 구성
 
@@ -26,30 +26,33 @@ flowchart LR
 
     subgraph Backend["멍코치 백엔드 (Spring Boot)"]
         API["REST API"]
-        Consumer["SQS 컨슈머"]
+        Consumer["Pub/Sub 컨슈머"]
     end
 
     DB[("PostgreSQL")]
     Social["카카오 · 애플 · 구글<br/>소셜 로그인"]
     RC["RevenueCat<br/>구독 결제"]
-    EvoLink["EvoLink<br/>멀티모달 AI"]
+    Gemini["Gemini<br/>영상 분석 · 플랜 생성"]
     R2["Cloudflare R2<br/>이미지"]
-    S3["AWS S3<br/>영상"]
-    SQS["AWS SQS"]
+    GCS["Google Cloud Storage<br/>영상"]
+    PubSub["Cloud Pub/Sub"]
+    Slack["Slack<br/>개발자 알림"]
 
     App -->|"API 호출"| API
     App -->|"presigned URL로 직접 업로드"| R2
-    App -->|"presigned URL로 직접 업로드"| S3
+    App -->|"presigned URL로 직접 업로드"| GCS
     API --> DB
     API -->|"토큰 검증 · 탈퇴 시 revoke"| Social
     API -->|"활성 이용권 조회"| RC
-    S3 -->|"업로드 완료 이벤트"| SQS
-    SQS --> Consumer
-    Consumer -->|"영상 분석 · 리포트 생성"| EvoLink
+    API -->|"AI 플랜 생성"| Gemini
+    GCS -->|"업로드 완료 이벤트"| PubSub
+    PubSub --> Consumer
+    Consumer -->|"영상 분석 · 리포트 생성"| Gemini
     Consumer --> DB
+    API -->|"운영 이벤트 알림"| Slack
 ```
 
-AI 분석은 수십 초가 걸리므로 요청-응답이 아니라 S3 업로드 이벤트를 SQS로 받아 비동기로 처리합니다. 앱은 리포트 목록을 폴링해 결과를 확인합니다. 흐름과 실패 처리는 [docs/ai-pipeline.md](docs/ai-pipeline.md)에 있습니다.
+AI 분석은 수십 초가 걸리므로 요청-응답이 아니라 GCS 업로드 이벤트를 Pub/Sub으로 받아 비동기로 처리합니다. 앱은 리포트 목록을 폴링해 결과를 확인합니다. 흐름과 실패 처리는 [docs/ai-pipeline.md](docs/ai-pipeline.md)에 있습니다.
 
 ## 아키텍처
 
@@ -117,7 +120,7 @@ AI 분석은 수십 초가 걸리므로 요청-응답이 아니라 S3 업로드 
 #### user — 회원
 
 - **책임**: 회원의 역할(온보딩 중인 회원 → 온보딩을 마친 회원)·상태(활성·탈퇴)와 보호자 프로필
-- **역할**: `UserRegister`(가입·탈퇴), `UserFinder`, `UserProfileRegister`, `RegisteredUserChecker`, `MbtiFinder`
+- **역할**: `UserRegister`(가입·탈퇴), `UserFinder`, `RegisteredUserChecker`
 - **협력**: 다른 모듈을 호출하지 않습니다. `auth`와 `onboarding`이 `user`를 사용합니다.
 
 #### dog — 반려견
@@ -130,27 +133,27 @@ AI 분석은 수십 초가 걸리므로 요청-응답이 아니라 S3 업로드 
 
 - **책임**: 카테고리·토픽·커리큘럼·레슨·카드로 구성된 훈련 카탈로그, 사용자의 토픽 선택과 레슨별 완료 횟수, 이 진행으로 계산하는 커리큘럼·토픽 완료 판단
 - **역할**: `TrainingCategoryFinder`, `TopicFinder`, `TopicSelector`, `CurriculumFinder`, `LessonFinder`, `LessonCompleter`, `TopicCompletionChecker`
-- **협력**: 카테고리는 열람에 필요한 이용권 종류를 `entitlement`의 `EntitlementType`으로 표현하고, 유료 콘텐츠를 조회·완료할 때 `entitlement`의 `EntitlementChecker`로 이용권을 확인합니다. `graduation`이 토픽 완료 판단과 토픽 조회에, `ai`·`onboarding`이 토픽 목록 조회에, `community`가 레슨 멘션 조회에 사용합니다.
+- **협력**: 카테고리는 열람에 필요한 이용권 종류를 `entitlement`의 `EntitlementType`으로 표현하고, 유료 콘텐츠를 조회·완료할 때 `entitlement`의 `EntitlementChecker`로 이용권을 확인합니다. `graduation`이 토픽 완료 판단과 토픽 조회에, `ai`가 토픽 목록 조회에, `community`가 레슨 멘션 조회에 사용합니다.
 
 애그리거트와 완료 조건은 [docs/training.md](docs/training.md)에 있습니다.
 
 #### ai — AI 행동 분석
 
-- **책임**: 영상 업로드 URL 발급과 리포트 생성, 비동기 분석 파이프라인, 리포트 상태(업로드 중·분석 중·완료·실패) 관리, 무료 체험 횟수 제한
-- **역할**: `AiVideoUploadUrlIssuer`, `AiReportGenerator`, `AiReportFinder`, `AiTrialFinder`
-- **협력**: 업로드·다운로드 presigned URL은 `media`에 요청합니다. 분석할 때는 `training`의 `TopicFinder`로 토픽 목록을 받아 AI가 추천할 수 있는 훈련 후보로 넘깁니다. 외부로는 SQS에서 업로드 이벤트를 받고(`VideoUploadSqsConsumer`), EvoLink로 영상 분석과 제목 생성을 요청합니다.
+- **책임**: 영상 업로드 URL 발급과 리포트 생성, 비동기 분석 파이프라인, 리포트 상태(업로드 중·분석 중·완료·실패) 관리, 무료 체험 횟수 제한, 다른 모듈이 쓰는 AI 콘텐츠 생성
+- **역할**: `AiVideoUploadUrlIssuer`, `AiReportGenerator`, `AiReportFinder`, `AiTrialFinder`, `AiContentGenerator`
+- **협력**: 업로드·다운로드 presigned URL은 `media`에 요청합니다. 분석할 때는 `training`의 `TopicFinder`로 토픽 목록을 받아 AI가 추천할 수 있는 훈련 후보로 넘깁니다. 외부로는 Pub/Sub에서 업로드 이벤트를 받고(`VideoUploadPubSubConsumer`), Gemini로 영상 분석과 제목 생성을 요청합니다. `plan`이 AI 플랜 구성을 만들 때 `AiContentGenerator`로 Gemini 호출을 위임받습니다.
 
 #### media — 파일 저장소
 
-- **책임**: 공개(R2)·비공개(S3) 스토리지의 presigned URL 발급, 객체 키 구조와 소유권, 클라이언트가 보낸 미디어 URL·객체 키가 본인이 올린 것인지 확인
+- **책임**: 공개(R2)·비공개(GCS) 스토리지의 presigned URL 발급, 객체 키 구조와 소유권, 클라이언트가 보낸 미디어 URL·객체 키가 본인이 올린 것인지 확인
 - **역할**: `MediaUploadUrlIssuer`, `MediaDownloadUrlIssuer`, `StoredMediaVerifier`
 - **협력**: 다른 모듈을 호출하지 않고, `ai`·`graduation`·`community`·`onboarding`·`dog`가 사용합니다. 경로 범위·크기 상한 같은 용도별 규칙은 각 모듈이 `MediaScope`로 정해 넘기고, media는 스토리지 세부 사항만 가둡니다.
 
 #### onboarding — 온보딩 조합
 
-- **책임**: 온보딩 화면에 필요한 데이터를 모으고, 보호자 프로필과 반려견 등록을 하나의 트랜잭션으로 완료
+- **책임**: 온보딩 화면에 필요한 데이터를 모으고, 기본 보호자 프로필 생성과 반려견 등록을 하나의 트랜잭션으로 완료
 - **역할**: `OnboardingMetadataFinder`, `OnboardingCompleter`, `OnboardingImageUploadUrlIssuer`
-- **협력**: 업로드 대상 매핑 외에는 자체 도메인 없이 `user`(프로필·MBTI 목록), `dog`(반려견 등록·견종·성격 목록), `training`(토픽 목록), `media`(프로필 이미지 업로드·검증)를 조합합니다. 여러 모듈에 걸친 화면 흐름을 한 곳에 모아, 각 도메인 모듈이 서로를 알지 않아도 되게 합니다.
+- **협력**: 자체 도메인 없이 `user`(기본 프로필 생성), `dog`(반려견 등록·견종·성격 목록·프로필 이미지 업로드)를 조합합니다. 여러 모듈에 걸친 화면 흐름을 한 곳에 모아, 각 도메인 모듈이 서로를 알지 않아도 되게 합니다.
 
 #### entitlement — 이용권
 
@@ -162,9 +165,17 @@ AI 분석은 수십 초가 걸리므로 요청-응답이 아니라 S3 업로드 
 
 - **책임**: 회원의 Firebase Installation ID(FID)·시각별 수신 설정과 훈련 알림 발송. 외부 스케줄러는 발송 API를 호출합니다.
 - **역할**: `NotificationRegister`(FID 등록·삭제, 설정 변경, 탈퇴 정리), `NotificationPreferenceFinder`, `NotificationDispatcher`
-- **협력**: 발송 대상을 고를 때 `user`의 `UserFinder`로 활성 회원만 남깁니다. `auth`가 탈퇴할 때 토큰과 설정 정리에 사용합니다. 발송기는 `/internal/notifications/**`를 `X-Internal-Secret` 헤더로 호출합니다.
+- **협력**: 발송 대상을 고를 때 `user`의 `UserFinder`로 활성 회원만 남깁니다. `auth`가 탈퇴할 때 토큰과 설정 정리에 사용합니다. 운영진은 `/internal/notifications/**`를 `X-Internal-Secret` 헤더로 호출합니다.
 
 애그리거트·API·발송 대상 규칙은 [docs/notification.md](docs/notification.md)에 있습니다.
+
+#### alert — 개발자 알림
+
+- **책임**: 신규 가입·영상 업로드 같은 운영 이벤트를 개발자 Slack 채널로 비동기 전송
+- **역할**: `Alerter`. 필드(`AlertField`)는 `domain/shared`로 노출해 호출 모듈이 그대로 씁니다.
+- **협력**: 다른 모듈을 참조하지 않습니다. 호출 모듈이 제목·필드를 넘기고, 어떤 이벤트를 알릴지는 호출 모듈이 정합니다.
+
+호출 방법·메시지 형식·설정은 [docs/alert.md](docs/alert.md)에 있습니다.
 
 #### health — 상태 확인
 
@@ -196,11 +207,11 @@ AI 분석은 수십 초가 걸리므로 요청-응답이 아니라 S3 업로드 
 | 문서 | 내용 |
 |---|---|
 | [docs/architecture.md](docs/architecture.md) | 모듈 규칙, 계층 의존 방향, 모듈 경계 검증 |
-| [docs/ai-pipeline.md](docs/ai-pipeline.md) | 영상 업로드 → SQS → AI 분석 → 리포트 저장 비동기 흐름과 실패 처리 |
-| [docs/release-3.2.0.md](docs/release-3.2.0.md) | 구버전 앱 호환 범위와 DB 점검 전환·복구 절차 |
+| [docs/ai-pipeline.md](docs/ai-pipeline.md) | 영상 업로드 → Pub/Sub → Gemini 분석 → 리포트 저장 비동기 흐름과 실패 처리, 플랜 생성 Gemini 연동 |
 | [docs/security.md](docs/security.md) | JWT 토큰 정책과 검증 체인, 필터 체인 |
 | [docs/error-handling.md](docs/error-handling.md) | Problem Details 에러 응답 형식 |
 | [docs/media.md](docs/media.md) | presigned URL 발급과 객체 키 소유권 규칙 |
 | [docs/training.md](docs/training.md) | 훈련 콘텐츠와 사용자 진행 애그리거트, 완료 판단, 레슨 완료 잠금 |
 | [docs/notification.md](docs/notification.md) | 푸시 알림 토큰·수신 설정 애그리거트, 내부 API 인증, 발송 대상 규칙 |
+| [docs/alert.md](docs/alert.md) | 개발자 Slack 알림 호출 방법, 메시지 형식, 설정, 비동기·실패 처리 |
 | [AGENTS.md](AGENTS.md) | 팀 개발 규칙 전체 목록 |

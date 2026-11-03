@@ -39,8 +39,6 @@ class SecurityFilterChainTest {
 
 	private static final long UNREGISTERED_ID_OFFSET = 1_000_000L;
 
-	private static final String DASHBOARD_PATH = "/api/dashboard/users";
-
 	@Autowired
 	private MockMvc mockMvc;
 
@@ -278,34 +276,12 @@ class SecurityFilterChainTest {
 				.andExpect(status().isForbidden());
 	}
 
-	@Test
-	void 정회원은_대시보드_경로에_접근할_수_없다() throws Exception {
-		AuthToken token = tokenProvider.issue(userId);
-
-		mockMvc.perform(appGet(DASHBOARD_PATH)
-						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))
-				.andExpect(status().isForbidden())
-				.andExpect(jsonPath("$.code").value("FORBIDDEN"));
-	}
-
-	@ParameterizedTest
-	@ValueSource(strings = {"ADMIN", "EXPERT"})
-	void 관리자와_전문가는_대시보드_경로의_인가를_통과한다(String role) throws Exception {
-		Long dashboardUserId = userRepository.save(User.registerUser()).getId();
-		jdbcTemplate.update("UPDATE users SET role = ? WHERE id = ?", role, dashboardUserId);
-		AuthToken token = tokenProvider.issue(dashboardUserId);
-
-		mockMvc.perform(appGet(DASHBOARD_PATH)
-						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))
-				.andExpect(status().isNotFound());
-	}
-
 	@ParameterizedTest
 	@ValueSource(strings = {"ADMIN", "EXPERT"})
 	void 관리자와_전문가는_앱_회원_경로에_접근할_수_없다(String role) throws Exception {
-		Long dashboardUserId = userRepository.save(User.registerUser()).getId();
-		jdbcTemplate.update("UPDATE users SET role = ? WHERE id = ?", role, dashboardUserId);
-		AuthToken token = tokenProvider.issue(dashboardUserId);
+		Long staffUserId = userRepository.save(User.registerUser()).getId();
+		jdbcTemplate.update("UPDATE users SET role = ? WHERE id = ?", role, staffUserId);
+		AuthToken token = tokenProvider.issue(staffUserId);
 
 		mockMvc.perform(appGet(PROTECTED_PATH)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))

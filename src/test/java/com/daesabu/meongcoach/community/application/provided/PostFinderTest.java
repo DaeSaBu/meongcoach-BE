@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 
 import com.daesabu.meongcoach.community.application.provided.dto.AuthorResult;
+import com.daesabu.meongcoach.community.application.provided.dto.MentionLevelResult;
 import com.daesabu.meongcoach.community.application.provided.dto.MentionTargetResult;
 import com.daesabu.meongcoach.community.application.provided.dto.PostListRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.PostListResult;
@@ -239,16 +240,22 @@ class PostFinderTest {
 	}
 
 	@Test
-	void 멘션_대상_요약을_함께_반환한다() {
+	void 멘션_대상의_카테고리_토픽_커리큘럼_레슨_요약을_함께_반환한다() {
 		Lesson lesson = saveLesson("기본 교육");
+		Curriculum curriculum = lesson.getCurriculum();
+		Topic topic = curriculum.getTopic();
+		TrainingCategory category = topic.getTrainingCategory();
 		savePost(USER_ID, "본문", lesson.getId());
 		flushAndClear();
 
 		PostListResult result = postFinder.findPosts(new PostListRequest(null, 20, null));
 
 		assertThat(result.posts()).extracting(PostResult::mentionTarget)
-				.extracting(MentionTargetResult::targetType, MentionTargetResult::targetId, MentionTargetResult::title)
-				.containsExactly(tuple(MentionTargetType.LESSON, lesson.getId(), "기본 교육 레슨"));
+				.containsExactly(new MentionTargetResult(MentionTargetType.LESSON, lesson.getId(),
+						new MentionLevelResult(category.getId(), "기본 교육 카테고리"),
+						new MentionLevelResult(topic.getId(), "기본 교육"),
+						new MentionLevelResult(curriculum.getId(), "기본 교육 커리큘럼"),
+						new MentionLevelResult(lesson.getId(), "기본 교육 레슨")));
 	}
 
 	@Test
@@ -391,8 +398,7 @@ class PostFinderTest {
 		assertThat(contentOf(result)).isEqualTo("본문");
 		assertThat(result.author()).isEqualTo(
 				new AuthorResult(author.getId(), "보리", SELECTED_DOG_IMAGE_URL));
-		assertThat(result.mentionTarget()).isEqualTo(
-				new MentionTargetResult(MentionTargetType.LESSON, lesson.getId(), "기본 교육 레슨"));
+		assertThat(result.mentionTarget().lesson()).isEqualTo(new MentionLevelResult(lesson.getId(), "기본 교육 레슨"));
 		assertThat(result.post().getMedia())
 				.extracting(PostMedia::getType, PostMedia::getUrl)
 				.containsExactly(

@@ -3,11 +3,11 @@ package com.daesabu.meongcoach.ai.adapter.webapi;
 import com.daesabu.meongcoach.ai.adapter.webapi.dto.AiReportDetailResponse;
 import com.daesabu.meongcoach.ai.adapter.webapi.dto.AiReportListResponse;
 import com.daesabu.meongcoach.ai.adapter.webapi.dto.AiTrialResponse;
-import com.daesabu.meongcoach.ai.adapter.webapi.dto.AiVideoUploadUrlRequest;
 import com.daesabu.meongcoach.ai.adapter.webapi.dto.AiVideoUploadUrlResponse;
 import com.daesabu.meongcoach.ai.application.provided.AiReportFinder;
 import com.daesabu.meongcoach.ai.application.provided.AiTrialFinder;
 import com.daesabu.meongcoach.ai.application.provided.AiVideoUploadUrlIssuer;
+import com.daesabu.meongcoach.ai.application.provided.dto.AiVideoUploadUrlRequest;
 import com.daesabu.meongcoach.shared.security.CurrentUserId;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -40,11 +40,9 @@ public class AiController {
 	@PostMapping("/presigned-urls")
 	public AiVideoUploadUrlResponse issueVideoUploadUrl(@CurrentUserId Long userId,
 	                                                    @Valid @RequestBody AiVideoUploadUrlRequest request) {
-		return AiVideoUploadUrlResponse.from(
-				aiVideoUploadUrlIssuer.issue(userId, request.contentType(), request.fileSizeBytes()));
+		return AiVideoUploadUrlResponse.from(aiVideoUploadUrlIssuer.issue(userId, request));
 	}
 
-	// 사용자별 단일 체험 상태이므로 단수형 경로를 쓴다
 	@GetMapping("/trial")
 	public AiTrialResponse findTrial(@CurrentUserId Long userId) {
 		return AiTrialResponse.from(aiTrialFinder.findTrial(userId));

@@ -3,13 +3,16 @@ package com.daesabu.meongcoach.ai.application.provided;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.daesabu.meongcoach.ai.application.provided.dto.AiVideoUploadUrlRequest;
 import com.daesabu.meongcoach.ai.application.required.AiReportRepository;
 import com.daesabu.meongcoach.ai.domain.AiReport;
 import com.daesabu.meongcoach.ai.domain.AiReportStatus;
 import com.daesabu.meongcoach.ai.domain.AiReportUploadCommand;
 import com.daesabu.meongcoach.ai.domain.AiTrial;
 import com.daesabu.meongcoach.ai.domain.exception.AiReportTrialExceededException;
+import com.daesabu.meongcoach.ai.domain.exception.AiVideoDurationOutOfRangeException;
 import com.daesabu.meongcoach.support.ApplicationTest;
+import jakarta.validation.ConstraintViolationException;
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -22,6 +25,7 @@ class AiVideoUploadUrlIssuerTest {
 	private static final Long USER_ID = 7L;
 	private static final String GCS_BASE_URL = "https://storage.googleapis.com/test-ai-video-bucket/";
 	private static final long EXPIRES_IN_SECONDS = 900L;
+	private static final AiVideoUploadUrlRequest REQUEST = new AiVideoUploadUrlRequest("video/mp4", 10485760L, 60L);
 
 	@Autowired
 	private AiVideoUploadUrlIssuer service;
@@ -34,7 +38,7 @@ class AiVideoUploadUrlIssuerTest {
 	void 체험_횟수가_남아_있으면_분석_저장소의_훈련_영상_업로드_URL_발급을_위임한다(int usedCount) {
 		persistCompletedReports(usedCount);
 
-		AiVideoUploadUrlResult result = service.issue(USER_ID, "video/mp4", 10485760L);
+		AiVideoUploadUrlResult result = service.issue(USER_ID, REQUEST);
 
 		assertThat(result.objectKey()).matches("videos/training/7/[0-9a-f-]{36}\\.mp4");
 		assertThat(result.uploadUrl())
@@ -46,7 +50,7 @@ class AiVideoUploadUrlIssuerTest {
 
 	@Test
 	void 발급과_함께_UPLOADING_리포트를_저장하고_그_ID를_돌려준다() {
-		AiVideoUploadUrlResult result = service.issue(USER_ID, "video/mp4", 10485760L);
+		AiVideoUploadUrlResult result = service.issue(USER_ID, REQUEST);
 
 		AiReport saved = aiReportRepository.findById(result.reportId()).orElseThrow();
 		assertThat(saved.getUserId()).isEqualTo(USER_ID);
@@ -58,7 +62,7 @@ class AiVideoUploadUrlIssuerTest {
 	void 업로드_만료_시각은_발급_시각에_URL_유효_시간을_더한_값이다() {
 		LocalDateTime before = LocalDateTime.now();
 
-		AiVideoUploadUrlResult result = service.issue(USER_ID, "video/mp4", 10485760L);
+		AiVideoUploadUrlResult result = service.issue(USER_ID, REQUEST);
 
 		LocalDateTime after = LocalDateTime.now();
 		AiReport saved = aiReportRepository.findById(result.reportId()).orElseThrow();
@@ -70,9 +74,27 @@ class AiVideoUploadUrlIssuerTest {
 	void 체험_횟수를_소진했으면_URL_발급과_리포트_저장_없이_예외를_던진다() {
 		persistCompletedReports(AiTrial.MAX_COUNT);
 
-		assertThatThrownBy(() -> service.issue(USER_ID, "video/mp4", 10485760L))
+		assertThatThrownBy(() -> service.issue(USER_ID, REQUEST))
 				.isInstanceOf(AiReportTrialExceededException.class);
 		assertThat(aiReportRepository.findAllByUserIdOrderByCreatedAtDescIdDesc(USER_ID)).hasSize(AiTrial.MAX_COUNT);
+	}
+
+	@ParameterizedTest
+	@ValueSource(longs = {9L, 301L})
+	void 영상_길이가_허용_범위를_벗어나면_URL_발급과_리포트_저장_없이_예외를_던진다(long durationSeconds) {
+		AiVideoUploadUrlRequest request = new AiVideoUploadUrlRequest("video/mp4", 10485760L, durationSeconds);
+
+		assertThatThrownBy(() -> service.issue(USER_ID, request))
+				.isInstanceOf(AiVideoDurationOutOfRangeException.class);
+		assertThat(aiReportRepository.findAllByUserIdOrderByCreatedAtDescIdDesc(USER_ID)).isEmpty();
+	}
+
+	@Test
+	void 영상_길이가_없으면_검증에_실패한다() {
+		AiVideoUploadUrlRequest request = new AiVideoUploadUrlRequest("video/mp4", 10485760L, null);
+
+		assertThatThrownBy(() -> service.issue(USER_ID, request))
+				.isInstanceOf(ConstraintViolationException.class);
 	}
 
 	@Test
@@ -81,7 +103,7 @@ class AiVideoUploadUrlIssuerTest {
 			persistCompletedReport(99L, "videos/training/99/" + i + ".mp4");
 		}
 
-		AiVideoUploadUrlResult result = service.issue(USER_ID, "video/mp4", 10485760L);
+		AiVideoUploadUrlResult result = service.issue(USER_ID, REQUEST);
 
 		assertThat(result.reportId()).isNotNull();
 	}

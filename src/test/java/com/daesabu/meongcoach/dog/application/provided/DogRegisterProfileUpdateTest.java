@@ -153,12 +153,12 @@ class DogRegisterProfileUpdateTest {
 	}
 
 	@Test
-	void 구버전이_저장한_사진_URL을_유지하며_긴_이름을_수정할_수_있다() {
+	void 저장된_사진_URL을_그대로_보내면_재검증_없이_수정할_수_있다() {
 		Dog saved = persistSelectedDog(USER_ID);
 		ReflectionTestUtils.setField(saved, "profileImageUrl", "https://legacy.example.com/a.jpg");
 		entityManager.flush();
 		entityManager.clear();
-		var request = new DogProfileUpdateRequest("가".repeat(50), "POODLE", "MALE", null,
+		var request = new DogProfileUpdateRequest("보리", "POODLE", "MALE", null,
 				new BigDecimal("4.5"), null, "https://legacy.example.com/a.jpg", null);
 
 		dogRegister.update(USER_ID, saved.getId(), request);
@@ -166,7 +166,7 @@ class DogRegisterProfileUpdateTest {
 		entityManager.clear();
 
 		Dog updated = dogRepository.findById(saved.getId()).orElseThrow();
-		assertThat(updated.getName()).isEqualTo("가".repeat(50));
+		assertThat(updated.getName()).isEqualTo("보리");
 		assertThat(updated.getProfileImageUrl()).isEqualTo("https://legacy.example.com/a.jpg");
 	}
 
