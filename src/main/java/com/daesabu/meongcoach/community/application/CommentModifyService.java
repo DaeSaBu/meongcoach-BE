@@ -12,11 +12,13 @@ import com.daesabu.meongcoach.community.application.required.CommentQueryReposit
 import com.daesabu.meongcoach.community.application.required.CommentRepository;
 import com.daesabu.meongcoach.community.domain.Comment;
 import com.daesabu.meongcoach.community.domain.CommentClosure;
+import com.daesabu.meongcoach.community.domain.CommentRegisteredEvent;
 import com.daesabu.meongcoach.community.domain.Post;
 import com.daesabu.meongcoach.community.domain.exception.CommentNotFoundException;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -32,6 +34,7 @@ public class CommentModifyService implements CommentRegister {
 	private final CommentRepository commentRepository;
 	private final CommentClosureRepository commentClosureRepository;
 	private final CommentQueryRepository commentQueryRepository;
+	private final ApplicationEventPublisher eventPublisher;
 
 	@Override
 	@Transactional
@@ -44,6 +47,7 @@ public class CommentModifyService implements CommentRegister {
 		commentClosureRepository.save(CommentClosure.self(comment));
 		root.ifPresent(it -> commentClosureRepository.save(CommentClosure.reply(it, comment)));
 		post.increaseCommentCount();
+		eventPublisher.publishEvent(CommentRegisteredEvent.from(comment, root.orElse(null)));
 
 		return comment;
 	}
