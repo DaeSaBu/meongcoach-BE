@@ -17,6 +17,9 @@ meongcoach:
   notification:
     scheduler:
       enabled: false
+    # 댓글 알림 발송. 재활성화 전까지 운영에서 끈다
+    comment:
+      enabled: false
 
 sentry:
   environment: production
