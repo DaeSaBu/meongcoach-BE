@@ -134,6 +134,7 @@ CommentModifyService.register (@Transactional)
 - 수신자 계산과 문구 조립은 `community/domain`의 `CommentRegisteredEvent`·`CommentNotification`이 합니다.
 - 리스너는 커밋 뒤 비동기 스레드에서 실행됩니다. 댓글 등록이 롤백되면 발송하지 않고, FCM 실패·지연은 댓글 등록 응답에 영향을 주지 않습니다. 실패는 비동기 예외 핸들러의 error 로그로 Sentry에 남으며 재시도하지 않습니다.
 - 수신자가 비어 있으면(본인 게시글에 본인 댓글) 발송을 요청하지 않습니다. `COMMENT` 종류를 끈 회원 제외, 활성 회원 필터, FID 조회는 이벤트 알림 공통 규칙을 따릅니다.
+- `meongcoach.notification.comment.enabled=true`일 때만 리스너가 등록됩니다. 현재 prod에서는 꺼 두었습니다.
 - 앱에서 딥링크로 게시글 화면을 열려면 앱의 딥링크 허용 목록에 `community-post/{postId}` 경로가 있어야 합니다.
 
 ### FCM 전송
