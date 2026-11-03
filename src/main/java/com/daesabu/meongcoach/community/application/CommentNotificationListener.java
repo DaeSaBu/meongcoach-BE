@@ -8,12 +8,14 @@ import com.daesabu.meongcoach.user.application.provided.UserFinder;
 import com.daesabu.meongcoach.user.application.provided.UserProfileSummaryResult;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 @Component
 @RequiredArgsConstructor
+@ConditionalOnProperty(name = "meongcoach.notification.comment.enabled", havingValue = "true")
 public class CommentNotificationListener {
 
 	private static final String EVENT_TYPE = "COMMENT";
