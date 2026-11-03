@@ -85,7 +85,7 @@ flowchart LR
 
 ### 스케줄 알림
 
-`NotificationDispatchScheduler`가 서울 8·11·17시에 실행됩니다. `meongcoach.notification.scheduler.enabled=true`인 prod에서만 켜집니다.
+`NotificationDispatchScheduler`가 서울 8·11·17시에 실행됩니다. `meongcoach.notification.scheduler.enabled=true`일 때만 켜지며, 현재는 prod에서도 꺼 두었습니다.
 요청값 오류(4xx)가 아닌 실패이면 2분 뒤 같은 예약을 다시 호출하며 최대 3회 시도합니다. 재시도는 전체 대상에 다시 보내므로 일부가 이미 받았으면 중복 전달될 수 있습니다.
 마지막 시도도 실패하면 스케줄러 로그에 남으며, 예약 시각 1시간 안에 내부 API로 수동 재실행할 수 있습니다.
 입력은 서울 기준 날짜·시·분입니다. 예약 시각이 미래이거나 1시간보다 오래됐으면 400입니다.
