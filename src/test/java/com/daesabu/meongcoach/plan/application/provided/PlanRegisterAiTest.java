@@ -84,7 +84,7 @@ class PlanRegisterAiTest {
 			Dog dog = Dog.register(dogCommand);
 			entityManager.persist(dog);
 			dogId = dog.getId();
-			request = new AiPlanCreateRequest(dogId, 10, 3, "  차분하게 기다렸으면 해요  ");
+			request = new AiPlanCreateRequest(10, 3, "  차분하게 기다렸으면 해요  ");
 			TrainingCategory category = TrainingCategoryFixture.create("AI 플랜 테스트", 1, "", "");
 			entityManager.persist(category);
 			categoryId = category.getId();
@@ -118,6 +118,18 @@ class PlanRegisterAiTest {
 	}
 
 	@Test
+	void 이전_AI_API는_대표_강아지로_플랜을_생성한다() {
+		new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+			Dog dog = entityManager.find(Dog.class, dogId);
+			dog.select();
+		});
+
+		Plan created = register.createAiPlan(USER_ID, request);
+
+		assertThat(created.getDogId()).isEqualTo(dogId);
+	}
+
+	@Test
 	void AI는_트랜잭션_밖에서_호출하고_첫_미완료부터_끝까지_저장한다() {
 		Plan existing = saveExistingPlan();
 		LocalDate before = LocalDate.now(ZoneId.of("Asia/Seoul"));
@@ -133,7 +145,7 @@ class PlanRegisterAiTest {
 			return new AiPlanGenerateResult(List.of(topicId), "차분히 기다리는 습관을 길러요");
 		});
 
-		Plan created = register.createAiPlan(USER_ID, request);
+		Plan created = register.createAiPlan(USER_ID, dogId, request);
 
 		assertThat(created.getTitle()).isEqualTo("초코의 2주 훈련 플랜");
 		assertThat(created.getCurriculumIds()).containsExactly(curriculumIds.get(1), curriculumIds.get(2));
@@ -150,7 +162,7 @@ class PlanRegisterAiTest {
 		InvalidAiPlanResponseException failure = new InvalidAiPlanResponseException();
 		given(generator.generate(any())).willThrow(failure);
 
-		assertThatThrownBy(() -> register.createAiPlan(USER_ID, request)).isSameAs(failure);
+		assertThatThrownBy(() -> register.createAiPlan(USER_ID, dogId, request)).isSameAs(failure);
 
 		assertActivePlan(existing.getId());
 		assertThat(planRepository.count()).isEqualTo(1);
@@ -165,7 +177,7 @@ class PlanRegisterAiTest {
 			throw failure;
 		}).when(planRepository).saveAndFlush(any(Plan.class));
 
-		assertThatThrownBy(() -> register.createAiPlan(USER_ID, request))
+		assertThatThrownBy(() -> register.createAiPlan(USER_ID, dogId, request))
 				.isInstanceOf(PlanCreationConflictException.class).hasCause(failure);
 
 		assertActivePlan(existing.getId());
@@ -176,7 +188,7 @@ class PlanRegisterAiTest {
 		Plan existing = saveExistingPlan();
 		new TransactionTemplate(transactionManager).executeWithoutResult(status -> completeLesson(lessonIds.get(1)));
 
-		assertThatThrownBy(() -> register.createAiPlan(USER_ID, request)).isInstanceOf(EmptyPlanCurriculumsException.class);
+		assertThatThrownBy(() -> register.createAiPlan(USER_ID, dogId, request)).isInstanceOf(EmptyPlanCurriculumsException.class);
 
 		verifyNoInteractions(generator);
 		assertActivePlan(existing.getId());
@@ -190,7 +202,7 @@ class PlanRegisterAiTest {
 			return new AiPlanGenerateResult(List.of(topicId), "기다리기");
 		});
 
-		assertThatThrownBy(() -> register.createAiPlan(USER_ID, request)).isInstanceOf(EmptyPlanCurriculumsException.class);
+		assertThatThrownBy(() -> register.createAiPlan(USER_ID, dogId, request)).isInstanceOf(EmptyPlanCurriculumsException.class);
 		assertActivePlan(existing.getId());
 	}
 
@@ -203,15 +215,15 @@ class PlanRegisterAiTest {
 	@ParameterizedTest
 	@MethodSource("invalidRequests")
 	void 잘못된_요청은_AI_호출_전에_거절한다(AiPlanCreateRequest request) {
-		assertThatThrownBy(() -> register.createAiPlan(USER_ID, request)).isInstanceOf(RuntimeException.class);
+		assertThatThrownBy(() -> register.createAiPlan(USER_ID, dogId, request)).isInstanceOf(RuntimeException.class);
 		verifyNoInteractions(generator);
 	}
 
 	private static Stream<AiPlanCreateRequest> invalidRequests() {
-		return Stream.of(new AiPlanCreateRequest(7L, 15, 3, "목표"), new AiPlanCreateRequest(7L, 10, 4, "목표"),
-				new AiPlanCreateRequest(7L, null, 3, "목표"), new AiPlanCreateRequest(7L, 10, null, "목표"),
-				new AiPlanCreateRequest(7L, 10, 3, null), new AiPlanCreateRequest(7L, 10, 3, "  "),
-				new AiPlanCreateRequest(7L, 10, 3, "가".repeat(501)));
+		return Stream.of(new AiPlanCreateRequest(15, 3, "목표"), new AiPlanCreateRequest(10, 4, "목표"),
+				new AiPlanCreateRequest(null, 3, "목표"), new AiPlanCreateRequest(10, null, "목표"),
+				new AiPlanCreateRequest(10, 3, null), new AiPlanCreateRequest(10, 3, "  "),
+				new AiPlanCreateRequest(10, 3, "가".repeat(501)));
 	}
 
 	private Plan saveExistingPlan() {
