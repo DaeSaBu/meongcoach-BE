@@ -56,7 +56,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 class PlanRegisterAiTest {
 
 	private static final long USER_ID = 627001L;
-	private static final AiPlanCreateRequest REQUEST = new AiPlanCreateRequest(10, 3, "  차분하게 기다렸으면 해요  ");
+	private AiPlanCreateRequest request;
 	@Autowired
 	private PlanRegister register;
 	@Autowired
@@ -82,9 +82,9 @@ class PlanRegisterAiTest {
 			DogRegisterCommand dogCommand = new DogRegisterCommand(USER_ID, "초코", new Breed("푸들"),
 					DogSex.MALE, LocalDate.of(2025, 1, 31), null, null, null);
 			Dog dog = Dog.register(dogCommand);
-			dog.select();
 			entityManager.persist(dog);
 			dogId = dog.getId();
+			request = new AiPlanCreateRequest(dogId, 10, 3, "  차분하게 기다렸으면 해요  ");
 			TrainingCategory category = TrainingCategoryFixture.create("AI 플랜 테스트", 1, "", "");
 			entityManager.persist(category);
 			categoryId = category.getId();
@@ -128,16 +128,16 @@ class PlanRegisterAiTest {
 			assertThat(input.dog().id()).isEqualTo(dogId);
 			assertThat(input.dog().birthDate()).isEqualTo(LocalDate.of(2025, 1, 31));
 			assertThat(input.dog().weightKg()).isNull();
-			assertThat(input.expectation()).isEqualTo(REQUEST.expectation());
+			assertThat(input.expectation()).isEqualTo(request.expectation());
 			assertThat(input.generationDate()).isBetween(before, LocalDate.now(ZoneId.of("Asia/Seoul")));
 			return new AiPlanGenerateResult(List.of(topicId), "차분히 기다리는 습관을 길러요");
 		});
 
-		Plan created = register.createAiPlan(USER_ID, REQUEST);
+		Plan created = register.createAiPlan(USER_ID, request);
 
 		assertThat(created.getTitle()).isEqualTo("초코의 2주 훈련 플랜");
 		assertThat(created.getCurriculumIds()).containsExactly(curriculumIds.get(1), curriculumIds.get(2));
-		assertThat(planRepository.findById(created.getId()).orElseThrow().getExpectation()).isEqualTo(REQUEST.expectation());
+		assertThat(planRepository.findById(created.getId()).orElseThrow().getExpectation()).isEqualTo(request.expectation());
 		assertThat(planRepository.findById(existing.getId()).orElseThrow().getStatus()).isEqualTo(PlanStatus.REPLACED);
 		assertActivePlan(created.getId());
 		assertThat(jdbc.queryForObject("SELECT sum(completed_count) FROM lesson_progress WHERE user_id = ?", Long.class, USER_ID))
@@ -150,7 +150,7 @@ class PlanRegisterAiTest {
 		InvalidAiPlanResponseException failure = new InvalidAiPlanResponseException();
 		given(generator.generate(any())).willThrow(failure);
 
-		assertThatThrownBy(() -> register.createAiPlan(USER_ID, REQUEST)).isSameAs(failure);
+		assertThatThrownBy(() -> register.createAiPlan(USER_ID, request)).isSameAs(failure);
 
 		assertActivePlan(existing.getId());
 		assertThat(planRepository.count()).isEqualTo(1);
@@ -165,7 +165,7 @@ class PlanRegisterAiTest {
 			throw failure;
 		}).when(planRepository).saveAndFlush(any(Plan.class));
 
-		assertThatThrownBy(() -> register.createAiPlan(USER_ID, REQUEST))
+		assertThatThrownBy(() -> register.createAiPlan(USER_ID, request))
 				.isInstanceOf(PlanCreationConflictException.class).hasCause(failure);
 
 		assertActivePlan(existing.getId());
@@ -176,7 +176,7 @@ class PlanRegisterAiTest {
 		Plan existing = saveExistingPlan();
 		new TransactionTemplate(transactionManager).executeWithoutResult(status -> completeLesson(lessonIds.get(1)));
 
-		assertThatThrownBy(() -> register.createAiPlan(USER_ID, REQUEST)).isInstanceOf(EmptyPlanCurriculumsException.class);
+		assertThatThrownBy(() -> register.createAiPlan(USER_ID, request)).isInstanceOf(EmptyPlanCurriculumsException.class);
 
 		verifyNoInteractions(generator);
 		assertActivePlan(existing.getId());
@@ -190,13 +190,13 @@ class PlanRegisterAiTest {
 			return new AiPlanGenerateResult(List.of(topicId), "기다리기");
 		});
 
-		assertThatThrownBy(() -> register.createAiPlan(USER_ID, REQUEST)).isInstanceOf(EmptyPlanCurriculumsException.class);
+		assertThatThrownBy(() -> register.createAiPlan(USER_ID, request)).isInstanceOf(EmptyPlanCurriculumsException.class);
 		assertActivePlan(existing.getId());
 	}
 
 	@Test
 	void 선택된_강아지가_없으면_AI를_호출하지_않는다() {
-		assertThatThrownBy(() -> register.createAiPlan(USER_ID + 1, REQUEST)).isInstanceOf(DogNotFoundException.class);
+		assertThatThrownBy(() -> register.createAiPlan(USER_ID + 1, request)).isInstanceOf(DogNotFoundException.class);
 		verifyNoInteractions(generator);
 	}
 
@@ -208,10 +208,10 @@ class PlanRegisterAiTest {
 	}
 
 	private static Stream<AiPlanCreateRequest> invalidRequests() {
-		return Stream.of(new AiPlanCreateRequest(15, 3, "목표"), new AiPlanCreateRequest(10, 4, "목표"),
-				new AiPlanCreateRequest(null, 3, "목표"), new AiPlanCreateRequest(10, null, "목표"),
-				new AiPlanCreateRequest(10, 3, null), new AiPlanCreateRequest(10, 3, "  "),
-				new AiPlanCreateRequest(10, 3, "가".repeat(501)));
+		return Stream.of(new AiPlanCreateRequest(7L, 15, 3, "목표"), new AiPlanCreateRequest(7L, 10, 4, "목표"),
+				new AiPlanCreateRequest(7L, null, 3, "목표"), new AiPlanCreateRequest(7L, 10, null, "목표"),
+				new AiPlanCreateRequest(7L, 10, 3, null), new AiPlanCreateRequest(7L, 10, 3, "  "),
+				new AiPlanCreateRequest(7L, 10, 3, "가".repeat(501)));
 	}
 
 	private Plan saveExistingPlan() {

@@ -8,7 +8,8 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
 import com.daesabu.meongcoach.dog.application.provided.DogProfileFinder;
-import com.daesabu.meongcoach.dog.application.provided.dto.DogSummaryResult;
+import com.daesabu.meongcoach.dog.application.provided.dto.DogProfileResult;
+import com.daesabu.meongcoach.dog.domain.exception.DogNotFoundException;
 import com.daesabu.meongcoach.plan.application.provided.dto.CustomPlanCreateRequest;
 import com.daesabu.meongcoach.plan.application.required.PlanRepository;
 import com.daesabu.meongcoach.plan.domain.Plan;
@@ -39,7 +40,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 class PlanRegisterCustomTest {
 
 	private static final Long USER_ID = 597001L;
-	private static final CustomPlanCreateRequest REQUEST = new CustomPlanCreateRequest(List.of(11L), 10, 3);
+	private static final CustomPlanCreateRequest REQUEST = new CustomPlanCreateRequest(7L, List.of(11L), 10, 3);
 
 	@Autowired
 	private PlanRegister creator;
@@ -57,7 +58,7 @@ class PlanRegisterCustomTest {
 	@BeforeEach
 	void 준비한다() {
 		jdbc.execute("CREATE UNIQUE INDEX IF NOT EXISTS uk_plans_active_user ON plans (user_id) WHERE status = 'ACTIVE'");
-		when(dogProfileFinder.findSelectedDogSummary(USER_ID)).thenReturn(new DogSummaryResult(7L, "초코"));
+		when(dogProfileFinder.findDogProfile(USER_ID, 7L)).thenReturn(new DogProfileResult(7L, "초코", null, null, null));
 		when(preparationFinder.find(USER_ID, REQUEST.topicIds())).thenReturn(
 				new PlanPreparationResult(List.of(9L, 4L)));
 	}
@@ -69,7 +70,16 @@ class PlanRegisterCustomTest {
 	}
 
 	@Test
-	void 선택된_강아지와_교육_순서로_플랜을_저장하고_기존_플랜을_교체한다() {
+	void 소유하지_않은_강아지는_플랜을_생성하지_않는다() {
+		when(dogProfileFinder.findDogProfile(USER_ID, 999L)).thenThrow(new DogNotFoundException(999L));
+
+		assertThatThrownBy(() -> creator.createCustom(USER_ID, new CustomPlanCreateRequest(999L, List.of(11L), 10, 3)))
+				.isInstanceOf(DogNotFoundException.class);
+		assertThat(planRepository.count()).isZero();
+	}
+
+	@Test
+	void 요청한_강아지와_교육_순서로_플랜을_저장하고_기존_플랜을_교체한다() {
 		Plan first = creator.createCustom(USER_ID, REQUEST);
 
 		Plan second = creator.createCustom(USER_ID, REQUEST);

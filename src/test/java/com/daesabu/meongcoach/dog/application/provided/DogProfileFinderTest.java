@@ -28,6 +28,24 @@ class DogProfileFinderTest {
 	private DogRepository dogRepository;
 
 	@Test
+	void 대표_상태와_무관하게_요청한_강아지의_프로필을_반환한다() {
+		Dog dog = dogRepository.save(newDog(42L, "보리"));
+
+		DogProfileResult result = finder.findDogProfile(42L, dog.getId());
+
+		assertThat(result.id()).isEqualTo(dog.getId());
+		assertThat(result.name()).isEqualTo("보리");
+	}
+
+	@Test
+	void 다른_사용자의_강아지_프로필은_조회할_수_없다() {
+		Dog dog = dogRepository.save(newDog(99L, "보리"));
+
+		assertThatThrownBy(() -> finder.findDogProfile(42L, dog.getId()))
+				.isInstanceOf(DogNotFoundException.class);
+	}
+
+	@Test
 	void 본인의_선택된_강아지_프로필을_저장된_값으로_반환한다() {
 		dogRepository.save(newDog(42L, "보리"));
 		Dog selected = newDog(42L, "초코");

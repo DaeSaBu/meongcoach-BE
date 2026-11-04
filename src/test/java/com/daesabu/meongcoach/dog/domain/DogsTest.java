@@ -118,37 +118,6 @@ class DogsTest {
 				.isInstanceOf(DogNotFoundException.class);
 	}
 
-	@Test
-	void 선택하면_기존_선택이_해제된다() {
-		Dog previous = selectedDog(10L);
-		Dog target = unselectedDog(11L);
-		Dogs dogs = new Dogs(List.of(previous, target));
-
-		dogs.select(11L);
-
-		assertThat(previous.isSelected()).isFalse();
-		assertThat(target.isSelected()).isTrue();
-	}
-
-	@Test
-	void 같은_강아지를_다시_선택할_수_있다() {
-		Dog target = selectedDog(10L);
-		Dogs dogs = new Dogs(List.of(target));
-
-		dogs.select(10L);
-
-		assertThat(target.isSelected()).isTrue();
-	}
-
-	@Test
-	void 없는_강아지를_선택해도_기존_선택은_유지된다() {
-		Dog previous = selectedDog(10L);
-		Dogs dogs = new Dogs(List.of(previous));
-
-		assertThatThrownBy(() -> dogs.select(999L)).isInstanceOf(DogNotFoundException.class);
-		assertThat(previous.isSelected()).isTrue();
-	}
-
 	private List<Dog> unselectedDogs(int count) {
 		return LongStream.range(0, count)
 				.mapToObj(this::unselectedDog)
