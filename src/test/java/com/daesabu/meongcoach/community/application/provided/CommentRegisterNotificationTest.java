@@ -123,7 +123,7 @@ class CommentRegisterNotificationTest {
 		verify(sender, timeout(ASYNC_TIMEOUT_MILLIS)).send(anyList());
 		PushNotification notification = batches.getFirst().getFirst();
 		assertThat(batches.getFirst()).extracting(PushNotification::fid).containsExactly(POST_AUTHOR_FID);
-		assertThat(notification.title()).isEqualTo("새 댓글");
+		assertThat(notification.title()).isNull();
 		assertThat(notification.body()).isEqualTo("멍멍이집사님이 댓글을 남겼어요: 축하해요!");
 		assertThat(notification.type()).isEqualTo(NotificationEventType.COMMENT);
 		assertThat(notification.deepLink().value()).isEqualTo("meongcoach://community-post/" + postId);
@@ -139,7 +139,7 @@ class CommentRegisterNotificationTest {
 		verify(sender, timeout(ASYNC_TIMEOUT_MILLIS).times(2)).send(anyList());
 		List<PushNotification> replyBatch = batches.get(1);
 		assertThat(replyBatch).extracting(PushNotification::fid).containsExactlyInAnyOrder(POST_AUTHOR_FID, ROOT_AUTHOR_FID);
-		assertThat(replyBatch).extracting(PushNotification::title).containsOnly("새 답글");
+		assertThat(replyBatch).extracting(PushNotification::title).containsOnly((String) null);
 		assertThat(replyBatch).extracting(PushNotification::body).containsOnly("멍멍이집사님이 답글을 남겼어요: 저도 축하해요!");
 	}
 
