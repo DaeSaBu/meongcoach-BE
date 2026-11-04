@@ -12,7 +12,7 @@ class CommentNotificationTest {
 	void 루트_댓글은_닉네임과_본문으로_댓글_문구를_만든다() {
 		CommentNotification notification = CommentNotification.of(event(null), "멍멍이집사");
 
-		assertThat(notification.title()).isEqualTo("새 댓글");
+		assertThat(notification.title()).isNull();
 		assertThat(notification.body()).isEqualTo("멍멍이집사님이 댓글을 남겼어요: 축하해요!");
 	}
 
@@ -20,7 +20,7 @@ class CommentNotificationTest {
 	void 답글은_답글_문구를_만든다() {
 		CommentNotification notification = CommentNotification.of(event(2L), "멍멍이집사");
 
-		assertThat(notification.title()).isEqualTo("새 답글");
+		assertThat(notification.title()).isNull();
 		assertThat(notification.body()).isEqualTo("멍멍이집사님이 답글을 남겼어요: 축하해요!");
 	}
 

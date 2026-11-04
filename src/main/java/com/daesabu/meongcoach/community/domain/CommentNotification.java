@@ -13,7 +13,7 @@ public record CommentNotification(String title, String body, String deepLink) {
 		String kind = kindOf(event);
 		String author = requireNonNullElse(nickname, DEFAULT_NICKNAME);
 		return new CommentNotification(
-				"새 " + kind,
+				null,
 				author + "님이 " + kind + "을 남겼어요: " + event.content(),
 				DEEP_LINK_PREFIX + event.postId());
 	}
