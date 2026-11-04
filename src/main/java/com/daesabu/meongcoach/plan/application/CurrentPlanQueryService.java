@@ -1,5 +1,6 @@
 package com.daesabu.meongcoach.plan.application;
 
+import com.daesabu.meongcoach.dog.application.provided.DogProfileFinder;
 import com.daesabu.meongcoach.plan.application.provided.CurrentPlanFinder;
 import com.daesabu.meongcoach.plan.application.provided.dto.CurrentPlanResult;
 import com.daesabu.meongcoach.plan.application.provided.dto.PlanCurriculumProgressResult;
@@ -23,12 +24,21 @@ import org.springframework.transaction.annotation.Transactional;
 public class CurrentPlanQueryService implements CurrentPlanFinder {
 
 	private final PlanRepository planRepository;
+	private final DogProfileFinder dogProfileFinder;
 	private final PlanCurriculumFinder planCurriculumFinder;
 
 	@Override
 	public Optional<CurrentPlanResult> find(Long userId) {
-		return planRepository.findByUserIdAndStatus(userId, PlanStatus.ACTIVE)
+		return planRepository.findFirstByUserIdAndStatusOrderByIdDesc(userId, PlanStatus.ACTIVE)
 				.or(() -> planRepository.findFirstByUserIdAndStatusOrderByCompletedAtDescIdDesc(userId, PlanStatus.COMPLETED))
+				.map(plan -> toResult(userId, plan));
+	}
+
+	@Override
+	public Optional<CurrentPlanResult> find(Long userId, Long dogId) {
+		dogProfileFinder.findDogProfile(userId, dogId);
+		return planRepository.findByUserIdAndDogIdAndStatus(userId, dogId, PlanStatus.ACTIVE)
+				.or(() -> planRepository.findFirstByUserIdAndDogIdAndStatusOrderByCompletedAtDescIdDesc(userId, dogId, PlanStatus.COMPLETED))
 				.map(plan -> toResult(userId, plan));
 	}
 

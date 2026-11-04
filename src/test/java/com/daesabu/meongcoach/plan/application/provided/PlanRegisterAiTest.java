@@ -233,7 +233,7 @@ class PlanRegisterAiTest {
 	}
 
 	private void assertActivePlan(Long expectedId) {
-		assertThat(planRepository.findByUserIdAndStatus(USER_ID, PlanStatus.ACTIVE).orElseThrow().getId())
+		assertThat(planRepository.findByUserIdAndDogIdAndStatus(USER_ID, dogId, PlanStatus.ACTIVE).orElseThrow().getId())
 				.isEqualTo(expectedId);
 	}
 

@@ -910,7 +910,20 @@ AI 호출 후 다시 확인한 선택 토픽에 미완료 커리큘럼이 없는
 
 operation::plan/dog-ai-create-error[snippets='http-response,response-fields']
 
-=== 현재 플랜 조회
+=== 강아지별 현재 플랜 조회
+
+link:{swagger-ui}#/Plan/plan-dog-current[▶ Swagger에서 Try it out,window=swagger]
+
+`GET /api/dogs/{dogId}/plans/current`는 본인 소유 강아지의 활성 플랜을 반환합니다.
+활성 플랜이 없으면 해당 강아지의 최근 완료 플랜을 반환하며, 둘 다 없으면 `plan: null`입니다.
+다른 강아지의 플랜은 반환하지 않습니다. 강아지가 없거나 본인 소유가 아니면 404(`DOG_NOT_FOUND`)입니다.
+강아지마다 활성 플랜을 하나씩 유지하며, 새 플랜을 만들 때 같은 강아지의 활성 플랜만 교체합니다.
+
+operation::plan/dog-current[snippets='http-request,path-parameters,http-response,response-fields']
+
+operation::plan/dog-current-error[snippets='http-response,response-fields']
+
+=== 이전 현재 플랜 조회 (Deprecated)
 
 활성 플랜을 우선 반환하고, 없으면 완료 시각이 가장 최근인 플랜을 반환합니다.
 완료 시각이 같으면 ID가 큰 플랜을 반환하며, 교체된 플랜은 반환하지 않습니다.
@@ -929,6 +942,9 @@ operation::plan/dog-ai-create-error[snippets='http-response,response-fields']
 `locked`는 이용권에 따른 표시용입니다.
 잠긴 커리큘럼도 목록에 포함하고 실제 레슨 접근 제한은 기존 API에서 검사합니다.
 이 조회는 플랜 상태를 변경하지 않습니다.
+
+사용 중단 예정입니다. 신규 앱은 강아지별 현재 플랜 조회를 사용합니다.
+여러 강아지의 활성 플랜이 있으면 이전 API는 가장 최근에 생성한 활성 플랜 하나를 반환합니다.
 
 link:{swagger-ui}#/Plan/plan-current[▶ Swagger에서 Try it out,window=swagger]
 
