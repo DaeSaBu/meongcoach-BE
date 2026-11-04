@@ -128,7 +128,7 @@ CommentModifyService.register (@Transactional)
 |---|---|
 | 수신자 | 게시글 작성자. 답글이면 루트 댓글 작성자도 포함. 댓글 작성자 본인은 제외하고 같은 사람이면 한 번만 |
 | 제목 | `새 댓글` 또는 `새 답글` |
-| 본문 | `{닉네임}님이 댓글을 남겼어요: {댓글 본문}`. 답글은 `답글을`. 프로필이 없으면 `회원` |
+| 본문 | `댓글이 달렸어요: {댓글 본문}`. 답글은 `답글이 달렸어요: {댓글 본문}` |
 | 딥링크 | `meongcoach://community-post/{postId}` |
 
 - 수신자 계산과 문구 조립은 `community/domain`의 `CommentRegisteredEvent`·`CommentNotification`이 합니다.
