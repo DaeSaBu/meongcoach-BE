@@ -44,4 +44,9 @@ public interface DogProfileFinder {
 	 * 삭제된 강아지는 제외하며, 선택된 강아지가 없는 사용자는 결과에서 빠진다.
 	 */
 	List<SelectedDogResult> findSelectedDogs(Collection<Long> userIds);
+
+	/**
+	 * 지정한 강아지의 프로필을 반환한다. 없거나 본인 소유가 아니면 DogNotFoundException을 던진다.
+	 */
+	DogProfileResult findDogProfile(Long userId, Long dogId);
 }

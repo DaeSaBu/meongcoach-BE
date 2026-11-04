@@ -60,13 +60,4 @@ public class DogRegisterService implements DogRegister {
 		dog.updateProfile(request.toCommand());
 		return dog;
 	}
-
-	@Override
-	@Transactional
-	public void select(Long userId, Long dogId) {
-		dogRepository.lockSelectionByUserId(userId);
-		List<Dog> owned = dogProfileFinder.findDogs(userId);
-		Dogs dogs = new Dogs(owned);
-		dogs.select(dogId);
-	}
 }

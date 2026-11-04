@@ -26,6 +26,12 @@ public class DogProfileFinderService implements DogProfileFinder {
 	private final DogRepository dogRepository;
 
 	@Override
+	public DogProfileResult findDogProfile(Long userId, Long dogId) {
+		Dog dog = findDog(userId, dogId);
+		return DogProfileResult.from(dog);
+	}
+
+	@Override
 	public List<Dog> findDogs(Long userId) {
 		return dogRepository.findAllByUserIdOrderByIdAsc(userId);
 	}

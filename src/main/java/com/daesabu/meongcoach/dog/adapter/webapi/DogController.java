@@ -62,12 +62,6 @@ public class DogController {
 		return DogResponse.from(dog);
 	}
 
-	@PutMapping("/{dogId}/selection")
-	@ResponseStatus(HttpStatus.NO_CONTENT)
-	public void selectDog(@CurrentUserId Long userId, @PathVariable Long dogId) {
-		dogRegister.select(userId, dogId);
-	}
-
 	@DeleteMapping("/{dogId}")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public void deleteDog(@CurrentUserId Long userId, @PathVariable Long dogId) {

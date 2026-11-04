@@ -2,7 +2,6 @@ package com.daesabu.meongcoach.plan.application;
 
 import com.daesabu.meongcoach.dog.application.provided.DogProfileFinder;
 import com.daesabu.meongcoach.dog.application.provided.dto.DogProfileResult;
-import com.daesabu.meongcoach.dog.application.provided.dto.DogSummaryResult;
 import com.daesabu.meongcoach.plan.application.provided.PlanRegister;
 import com.daesabu.meongcoach.plan.application.provided.dto.AiPlanCreateRequest;
 import com.daesabu.meongcoach.plan.application.provided.dto.CustomPlanCreateRequest;
@@ -50,7 +49,7 @@ public class PlanRegisterService implements PlanRegister {
 	@Override
 	@Transactional
 	public Plan createCustom(Long userId, CustomPlanCreateRequest request) {
-		DogSummaryResult dog = dogProfileFinder.findSelectedDogSummary(userId);
+		DogProfileResult dog = dogProfileFinder.findDogProfile(userId, request.dogId());
 		PlanPreparationResult preparation = preparationFinder.find(userId, request.topicIds());
 		CustomPlanCreateCommand command = new CustomPlanCreateCommand(userId, dog.id(), dog.name(),
 				request.dailyMinutes(), request.daysPerWeek());
@@ -61,7 +60,7 @@ public class PlanRegisterService implements PlanRegister {
 	@Override
 	public Plan createAiPlan(Long userId, AiPlanCreateRequest request) {
 		Plan.validatePracticeSettings(request.dailyMinutes(), request.daysPerWeek());
-		DogProfileResult dog = dogProfileFinder.findSelectedDogProfile(userId);
+		DogProfileResult dog = dogProfileFinder.findDogProfile(userId, request.dogId());
 		AiPlanPreparationResult candidates = aiPreparationFinder.find(userId);
 		boolean hasIncompleteCurriculum = candidates.curriculums().stream()
 				.anyMatch(curriculum -> curriculum.completedLessons() < curriculum.totalLessons());
