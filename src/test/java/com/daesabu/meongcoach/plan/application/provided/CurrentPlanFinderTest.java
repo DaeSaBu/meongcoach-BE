@@ -1,7 +1,13 @@
 package com.daesabu.meongcoach.plan.application.provided;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.daesabu.meongcoach.dog.domain.Dog;
+import com.daesabu.meongcoach.dog.domain.DogRegisterCommand;
+import com.daesabu.meongcoach.dog.domain.DogSex;
+import com.daesabu.meongcoach.dog.domain.exception.DogNotFoundException;
+import com.daesabu.meongcoach.dog.domain.shared.Breed;
 import com.daesabu.meongcoach.plan.application.provided.dto.PlanLessonProgressResult;
 import com.daesabu.meongcoach.plan.application.required.PlanRepository;
 import com.daesabu.meongcoach.plan.domain.Plan;
@@ -33,6 +39,50 @@ class CurrentPlanFinderTest {
 	private PlanRepository planRepository;
 	@Autowired
 	private EntityManager entityManager;
+
+	@Test
+	void 강아지별로_자신의_활성_플랜만_반환한다() {
+		Long firstDog = saveDog(42L);
+		Long secondDog = saveDog(42L);
+		Long curriculum = saveCurriculum();
+		Plan first = savePlan(42L, firstDog, curriculum);
+		Plan second = savePlan(42L, secondDog, curriculum);
+		flushAndClear();
+
+		assertThat(finder.find(42L, firstDog).orElseThrow().plan().getId()).isEqualTo(first.getId());
+		assertThat(finder.find(42L, secondDog).orElseThrow().plan().getId()).isEqualTo(second.getId());
+		assertThat(finder.find(42L).orElseThrow().plan().getId()).isEqualTo(second.getId());
+	}
+
+	@Test
+	void 선택한_강아지의_플랜이_없으면_다른_강아지의_플랜을_반환하지_않는다() {
+		Long firstDog = saveDog(42L);
+		Long secondDog = saveDog(42L);
+		savePlan(42L, firstDog, saveCurriculum());
+		flushAndClear();
+
+		assertThat(finder.find(42L, secondDog)).isEmpty();
+	}
+
+	@Test
+	void 다른_강아지의_활성_플랜보다_요청한_강아지의_완료_플랜을_반환한다() {
+		Long firstDog = saveDog(42L);
+		Long secondDog = saveDog(42L);
+		Long curriculum = saveCurriculum();
+		Plan completed = savePlan(42L, firstDog, curriculum);
+		completed.complete(Instant.now());
+		savePlan(42L, secondDog, curriculum);
+		flushAndClear();
+
+		assertThat(finder.find(42L, firstDog).orElseThrow().plan().getId()).isEqualTo(completed.getId());
+	}
+
+	@Test
+	void 다른_사용자의_강아지_플랜은_조회할_수_없다() {
+		Long dogId = saveDog(43L);
+
+		assertThatThrownBy(() -> finder.find(42L, dogId)).isInstanceOf(DogNotFoundException.class);
+	}
 
 	@Test
 	void 완료한_플랜보다_활성_플랜을_우선_반환한다() {
@@ -192,10 +242,20 @@ class CurrentPlanFinderTest {
 	}
 
 	private Plan savePlan(Long userId, Long curriculumId) {
-		PlanCreateCommand command = new PlanCreateCommand(userId, 1L, "초코의 2주 훈련 플랜", "목표", 10, 3);
+		return savePlan(userId, 1L, curriculumId);
+	}
+
+	private Plan savePlan(Long userId, Long dogId, Long curriculumId) {
+		PlanCreateCommand command = new PlanCreateCommand(userId, dogId, "초코의 2주 훈련 플랜", "목표", 10, 3);
 		Plan plan = Plan.create(command, List.of(curriculumId));
 		planRepository.flush();
 		return planRepository.save(plan);
+	}
+
+	private Long saveDog(Long userId) {
+		Dog dog = Dog.register(new DogRegisterCommand(userId, "보리", new Breed("믹스"), DogSex.MALE, null, null, null, null));
+		entityManager.persist(dog);
+		return dog.getId();
 	}
 
 	private Long saveCurriculum() {
