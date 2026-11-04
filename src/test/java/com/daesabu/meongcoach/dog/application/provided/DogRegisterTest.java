@@ -10,6 +10,7 @@ import com.daesabu.meongcoach.dog.domain.DogStatus;
 import com.daesabu.meongcoach.dog.domain.Dogs;
 import com.daesabu.meongcoach.dog.domain.exception.BreedRequiredException;
 import com.daesabu.meongcoach.dog.domain.exception.DogLimitExceededException;
+import com.daesabu.meongcoach.dog.domain.exception.DogNotFoundException;
 import com.daesabu.meongcoach.dog.domain.exception.InvalidDogSexException;
 import com.daesabu.meongcoach.dog.domain.exception.InvalidPersonalityException;
 import com.daesabu.meongcoach.dog.domain.shared.Breed;
@@ -247,6 +248,36 @@ class DogRegisterTest {
 		Long otherUserDogId = dogRegister.register(2L, registerInfo("MALE", Set.of()));
 
 		assertThat(dogRepository.findById(otherUserDogId)).isPresent();
+	}
+
+	@Test
+	void 선택한_강아지만_선택_상태로_저장된다() {
+		List<Long> ids = registerDogs(1L, 3);
+		dogRegister.select(1L, ids.getLast());
+		entityManager.flush();
+		entityManager.clear();
+
+		List<Dog> dogs = dogRepository.findAllByUserIdOrderByIdAsc(1L);
+		assertThat(dogs).filteredOn(Dog::isSelected).extracting(Dog::getId).containsExactly(ids.getLast());
+	}
+
+	@Test
+	void 다른_사용자의_강아지는_선택할_수_없다() {
+		Long original = registerDogs(1L, 1).getFirst();
+		Long other = registerDogs(2L, 1).getFirst();
+
+		assertThatThrownBy(() -> dogRegister.select(1L, other)).isInstanceOf(DogNotFoundException.class);
+		assertThat(dogRepository.findById(original).orElseThrow().isSelected()).isTrue();
+	}
+
+	@Test
+	void 삭제된_강아지는_선택할_수_없다() {
+		List<Long> ids = registerDogs(1L, 2);
+		new Dogs(dogRepository.findAllByUserIdOrderByIdAsc(1L)).delete(ids.getLast());
+		entityManager.flush();
+		entityManager.clear();
+
+		assertThatThrownBy(() -> dogRegister.select(1L, ids.getLast())).isInstanceOf(DogNotFoundException.class);
 	}
 
 	private List<Long> registerDogs(Long userId, int count) {

@@ -55,6 +55,38 @@ import org.springframework.test.web.servlet.MockMvc;
 @AutoConfigureRestDocs
 class DogControllerTest {
 
+	@Test
+	void 강아지를_선택하면_204를_반환한다() throws Exception {
+		mockMvc.perform(put("/api/dogs/{dogId}/selection", 11L)
+				.principal(CURRENT_USER)
+				.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+				.andExpect(status().isNoContent())
+				.andDo(document("dog/select",
+						pathParameters(parameterWithName("dogId").description("선택할 강아지 ID"))));
+
+		then(dogRegister).should().select(42L, 11L);
+	}
+
+	@Test
+	void 소유하지_않은_강아지를_선택하면_404를_반환한다() throws Exception {
+		willThrow(new DogNotFoundException(999L)).given(dogRegister).select(42L, 999L);
+
+		mockMvc.perform(put("/api/dogs/{dogId}/selection", 999L)
+				.principal(CURRENT_USER)
+				.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.code").value("DOG_NOT_FOUND"))
+				.andDo(document("dog/select-error",
+						pathParameters(parameterWithName("dogId").description("선택할 강아지 ID")),
+						responseFields(
+								fieldWithPath("title").description("오류 제목"),
+								fieldWithPath("status").description("HTTP 상태"),
+								fieldWithPath("detail").description("오류 설명"),
+								fieldWithPath("instance").description("요청 경로"),
+								fieldWithPath("code").description("오류 코드"),
+								fieldWithPath("timestamp").description("발생 시각"))));
+	}
+
 	private static final Principal CURRENT_USER = () -> "42";
 
 	private static final String IMAGE_URL = "https://images.test.meongcoach.com/images/dog-profile/42/a.jpg";
