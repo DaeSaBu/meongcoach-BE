@@ -4,8 +4,6 @@ import com.daesabu.meongcoach.community.domain.CommentNotification;
 import com.daesabu.meongcoach.community.domain.CommentRegisteredEvent;
 import com.daesabu.meongcoach.notification.application.provided.EventNotificationDispatcher;
 import com.daesabu.meongcoach.notification.application.provided.dto.EventNotificationDispatchRequest;
-import com.daesabu.meongcoach.user.application.provided.UserFinder;
-import com.daesabu.meongcoach.user.application.provided.UserProfileSummaryResult;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -21,7 +19,6 @@ public class CommentNotificationListener {
 	private static final String EVENT_TYPE = "COMMENT";
 	private static final String TARGET_KIND = "USERS";
 
-	private final UserFinder userFinder;
 	private final EventNotificationDispatcher eventNotificationDispatcher;
 
 	@Async
@@ -31,16 +28,8 @@ public class CommentNotificationListener {
 		if (recipientIds.isEmpty()) {
 			return;
 		}
-		String nickname = findNickname(event.commenterId());
-		CommentNotification notification = CommentNotification.of(event, nickname);
+		CommentNotification notification = CommentNotification.of(event);
 		eventNotificationDispatcher.dispatch(new EventNotificationDispatchRequest(EVENT_TYPE, TARGET_KIND, recipientIds,
 				notification.title(), notification.body(), notification.deepLink()));
-	}
-
-	private String findNickname(Long userId) {
-		return userFinder.findProfileSummaries(List.of(userId)).stream()
-				.map(UserProfileSummaryResult::nickname)
-				.findFirst()
-				.orElse(null);
 	}
 }
