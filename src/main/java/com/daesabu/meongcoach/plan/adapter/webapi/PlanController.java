@@ -53,6 +53,10 @@ public class PlanController {
 		return CurrentPlanResponse.from(result);
 	}
 
+	/**
+	 * @deprecated 사용 중단 예정. POST /api/dogs/{dogId}/plans/custom으로 이전한다.
+	 */
+	@Deprecated(forRemoval = true)
 	@PostMapping("/custom")
 	@ResponseStatus(HttpStatus.CREATED)
 	public PlanCreateResponse createCustom(@CurrentUserId Long userId,
@@ -61,6 +65,10 @@ public class PlanController {
 		return PlanCreateResponse.from(plan);
 	}
 
+	/**
+	 * @deprecated 사용 중단 예정. POST /api/dogs/{dogId}/plans/ai로 이전한다.
+	 */
+	@Deprecated(forRemoval = true)
 	@PostMapping("/ai")
 	@ResponseStatus(HttpStatus.CREATED)
 	public PlanCreateResponse createAiPlan(@CurrentUserId Long userId,
