@@ -8,7 +8,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface PlanRepository extends JpaRepository<Plan, Long> {
 	Optional<Plan> findByIdAndUserId(Long planId, Long userId);
 
-	Optional<Plan> findByUserIdAndStatus(Long userId, PlanStatus status);
-
 	Optional<Plan> findFirstByUserIdAndStatusOrderByCompletedAtDescIdDesc(Long userId, PlanStatus status);
+
+	Optional<Plan> findByUserIdAndDogIdAndStatus(Long userId, Long dogId, PlanStatus status);
+
+	Optional<Plan> findFirstByUserIdAndDogIdAndStatusOrderByCompletedAtDescIdDesc(Long userId, Long dogId, PlanStatus status);
+
+	Optional<Plan> findFirstByUserIdAndStatusOrderByIdDesc(Long userId, PlanStatus status);
 }

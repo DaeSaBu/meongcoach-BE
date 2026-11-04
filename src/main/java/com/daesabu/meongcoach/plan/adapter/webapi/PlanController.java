@@ -47,6 +47,10 @@ public class PlanController {
 		return PlanOutcomeResponse.from(result);
 	}
 
+	/**
+	 * @deprecated 사용 중단 예정. GET /api/dogs/{dogId}/plans/current로 이전한다.
+	 */
+	@Deprecated(forRemoval = true)
 	@GetMapping("/current")
 	public CurrentPlanResponse findCurrent(@CurrentUserId Long userId) {
 		Optional<CurrentPlanResult> result = currentPlanFinder.find(userId);

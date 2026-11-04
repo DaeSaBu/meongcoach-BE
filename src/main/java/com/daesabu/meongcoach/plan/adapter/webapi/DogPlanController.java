@@ -1,14 +1,19 @@
 package com.daesabu.meongcoach.plan.adapter.webapi;
 
+import com.daesabu.meongcoach.plan.adapter.webapi.dto.CurrentPlanResponse;
 import com.daesabu.meongcoach.plan.adapter.webapi.dto.PlanCreateResponse;
+import com.daesabu.meongcoach.plan.application.provided.CurrentPlanFinder;
 import com.daesabu.meongcoach.plan.application.provided.PlanRegister;
 import com.daesabu.meongcoach.plan.application.provided.dto.AiPlanCreateRequest;
+import com.daesabu.meongcoach.plan.application.provided.dto.CurrentPlanResult;
 import com.daesabu.meongcoach.plan.application.provided.dto.CustomPlanCreateRequest;
 import com.daesabu.meongcoach.plan.domain.Plan;
 import com.daesabu.meongcoach.shared.security.CurrentUserId;
 import jakarta.validation.Valid;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -22,6 +27,13 @@ import org.springframework.web.bind.annotation.RestController;
 public class DogPlanController {
 
 	private final PlanRegister planRegister;
+	private final CurrentPlanFinder currentPlanFinder;
+
+	@GetMapping("/current")
+	public CurrentPlanResponse findCurrent(@CurrentUserId Long userId, @PathVariable Long dogId) {
+		Optional<CurrentPlanResult> result = currentPlanFinder.find(userId, dogId);
+		return CurrentPlanResponse.from(result);
+	}
 
 	@PostMapping("/custom")
 	@ResponseStatus(HttpStatus.CREATED)
