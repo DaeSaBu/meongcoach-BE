@@ -6,6 +6,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 /**
  * 강아지 저장·조회 리포지토리. Spring Data JPA가 런타임에 구현한다.
@@ -32,4 +33,10 @@ public interface DogRepository extends JpaRepository<Dog, Long> {
 	 * 여러 사용자의 강아지 중 상태가 일치하는 강아지를 id 오름차순으로 조회한다. 소프트 딜리트된 강아지는 제외한다.
 	 */
 	List<Dog> findAllByUserIdInAndStatusOrderByIdAsc(Collection<Long> userIds, DogStatus status);
+
+	/**
+	 * 사용자의 강아지 선택 변경을 트랜잭션 종료까지 직렬화한다.
+	 */
+	@Query(value = "SELECT 1 FROM pg_advisory_xact_lock(hashtextextended('dog-selection:' || :userId, 0))", nativeQuery = true)
+	void lockSelectionByUserId(Long userId);
 }
