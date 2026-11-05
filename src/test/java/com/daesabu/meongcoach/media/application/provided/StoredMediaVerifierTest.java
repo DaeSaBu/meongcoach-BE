@@ -28,7 +28,7 @@ class StoredMediaVerifierTest {
 
 	@Test
 	void 범위와_사용자에_맞는_우리_스토리지의_공개_URL이면_통과한다() {
-		assertThatCode(() -> verifier.validateUrl(DOG_IMAGE, 7L, PUBLIC_BASE_URL + "images/dog-profile/7/a.jpg"))
+		assertThatCode(() -> verifier.validateR2PublicUrl(DOG_IMAGE, 7L, PUBLIC_BASE_URL + "images/dog-profile/7/a.jpg"))
 				.doesNotThrowAnyException();
 	}
 
@@ -36,7 +36,7 @@ class StoredMediaVerifierTest {
 	@NullAndEmptySource
 	@ValueSource(strings = " ")
 	void URL이_없으면_통과한다(String url) {
-		assertThatCode(() -> verifier.validateUrl(DOG_IMAGE, 7L, url)).doesNotThrowAnyException();
+		assertThatCode(() -> verifier.validateR2PublicUrl(DOG_IMAGE, 7L, url)).doesNotThrowAnyException();
 	}
 
 	@ParameterizedTest
@@ -48,7 +48,7 @@ class StoredMediaVerifierTest {
 			PUBLIC_BASE_URL + "videos/dog-profile/7/a.mp4",
 			PUBLIC_BASE_URL + "images/dog-profile/7/sub/a.jpg"})
 	void 범위나_사용자가_다르거나_우리_스토리지가_아닌_URL이면_실패한다(String url) {
-		assertThatThrownBy(() -> verifier.validateUrl(DOG_IMAGE, 7L, url))
+		assertThatThrownBy(() -> verifier.validateR2PublicUrl(DOG_IMAGE, 7L, url))
 				.isInstanceOf(InvalidMediaUrlException.class);
 	}
 

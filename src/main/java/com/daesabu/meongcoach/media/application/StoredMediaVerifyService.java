@@ -15,7 +15,7 @@ public class StoredMediaVerifyService implements StoredMediaVerifier {
 	private final R2Storage r2Storage;
 
 	@Override
-	public void validateUrl(MediaScope scope, Long userId, String url) {
+	public void validateR2PublicUrl(MediaScope scope, Long userId, String url) {
 		if (url == null || url.isBlank()) {
 			return;
 		}

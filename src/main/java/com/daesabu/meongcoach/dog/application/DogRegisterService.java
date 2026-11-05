@@ -34,7 +34,7 @@ public class DogRegisterService implements DogRegister {
 	@Override
 	@Transactional
 	public Long register(Long userId, DogRegisterInfo info) {
-		storedMediaVerifier.validateUrl(DogProfileImage.SCOPE, userId, info.profileImageUrl());
+		storedMediaVerifier.validateR2PublicUrl(DogProfileImage.SCOPE, userId, info.profileImageUrl());
 		List<Dog> owned = dogRepository.findAllByUserIdOrderByIdAsc(userId);
 		Dogs dogs = new Dogs(owned);
 		Dog dog = dogs.register(new DogRegisterCommand(userId, info.name(), Breed.from(info.breed()),
@@ -55,7 +55,7 @@ public class DogRegisterService implements DogRegister {
 	public Dog update(Long userId, Long dogId, DogProfileUpdateRequest request) {
 		Dog dog = dogProfileFinder.findDog(userId, dogId);
 		if (!Objects.equals(dog.getProfileImageUrl(), request.profileImageUrl())) {
-			storedMediaVerifier.validateUrl(DogProfileImage.SCOPE, userId, request.profileImageUrl());
+			storedMediaVerifier.validateR2PublicUrl(DogProfileImage.SCOPE, userId, request.profileImageUrl());
 		}
 		dog.updateProfile(request.toCommand());
 		return dog;
