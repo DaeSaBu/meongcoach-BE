@@ -49,6 +49,7 @@ public class DogProfileFinderService implements DogProfileFinder {
 	}
 
 	@Override
+	@Deprecated(forRemoval = true)
 	public DogSummaryResult findSelectedDogSummary(Long userId) {
 		Dog dog = findSelectedDog(userId);
 		return DogSummaryResult.from(dog);

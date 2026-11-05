@@ -30,7 +30,10 @@ public interface DogProfileFinder {
 	/**
 	 * 사용자가 선택한 강아지의 ID와 이름을 조회한다.
 	 * 선택된 강아지가 없으면 {@code DogNotFoundException}을 던진다.
+	 *
+	 * @deprecated 사용 중단 예정. 이전 플랜 생성 API를 제거할 때 함께 제거한다.
 	 */
+	@Deprecated(forRemoval = true)
 	DogSummaryResult findSelectedDogSummary(Long userId);
 
 	/**

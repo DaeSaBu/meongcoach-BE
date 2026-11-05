@@ -28,6 +28,7 @@ public class CurrentPlanQueryService implements CurrentPlanFinder {
 	private final PlanCurriculumFinder planCurriculumFinder;
 
 	@Override
+	@Deprecated(forRemoval = true)
 	public Optional<CurrentPlanResult> find(Long userId) {
 		return planRepository.findFirstByUserIdAndStatusOrderByIdDesc(userId, PlanStatus.ACTIVE)
 				.or(() -> planRepository.findFirstByUserIdAndStatusOrderByCompletedAtDescIdDesc(userId, PlanStatus.COMPLETED))
