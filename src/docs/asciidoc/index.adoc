@@ -863,7 +863,16 @@ operation::plan/custom-create-conflict-error[snippets='http-response,response-fi
 기존 앱의 `POST /api/plans/custom`, `POST /api/plans/ai`는 요청·응답 계약을 유지합니다.
 강아지 ID를 받지 않고 서버의 대표 강아지로 플랜을 생성합니다.
 사용 중단 예정이며 신규 앱은 `/api/plans/custom?dogId={dogId}`, `/api/plans/ai?dogId={dogId}`를 사용합니다.
-제거 시점은 아직 정하지 않았습니다.
+
+아래 순서를 마치면 제거합니다. 그 전까지는 prod 구버전 앱이 쓰는 API이므로 유지합니다. 제거 날짜는 아직 정하지 않았습니다.
+
+. 이 API 변경이 포함된 백엔드를 prod에 배포합니다.
+. `dogId`를 보내는 새 앱을 스토어에 출시합니다.
+. 구버전 앱 사용자가 충분히 줄면 앱 최소 지원 버전을 새 앱 버전으로 올립니다.
+. 다음 코드를 함께 삭제합니다.
+** `PlanController`의 `dogId` 없는 핸들러 3개 (`/current`, `/custom`, `/ai`)
+** `PlanRegister.createCustom(userId, request)`, `PlanRegister.createAiPlan(userId, request)`
+** `CurrentPlanFinder.find(userId)`, `PlanRepository.findFirstByUserIdAndStatusOrderByIdDesc`
 
 link:{swagger-ui}#/Plan/plan-custom-create[▶ 이전 커스텀 API,window=swagger]
 
