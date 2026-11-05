@@ -12,7 +12,7 @@ import com.daesabu.meongcoach.ai.domain.AiAnalysis;
 import com.daesabu.meongcoach.ai.domain.AiAnalysisStatus;
 import com.daesabu.meongcoach.ai.domain.AiAnalysisUploadCommand;
 import com.daesabu.meongcoach.ai.domain.exception.AiReportNotFoundException;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -166,7 +166,7 @@ class AiReportQueryServiceTest {
 	@Test
 	void 업로드_만료_전의_UPLOADING_리포트는_목록에_UPLOADING으로_나온다() {
 		aiAnalysisRepository.saveAndFlush(uploadingAnalysis(USER_ID, "videos/training/42/uploading.mp4",
-				LocalDateTime.now().plusMinutes(15)));
+				Instant.now().plusSeconds(900)));
 
 		AiReportResult result = aiReportFinder.findReports(USER_ID).getFirst();
 
@@ -176,7 +176,7 @@ class AiReportQueryServiceTest {
 	@Test
 	void 업로드가_만료된_UPLOADING_리포트는_목록에_FAILED_UPLOAD로_나온다() {
 		aiAnalysisRepository.saveAndFlush(uploadingAnalysis(USER_ID, "videos/training/42/expired.mp4",
-				LocalDateTime.now().minusSeconds(1)));
+				Instant.now().minusSeconds(1)));
 
 		AiReportResult result = aiReportFinder.findReports(USER_ID).getFirst();
 
@@ -186,7 +186,7 @@ class AiReportQueryServiceTest {
 	@Test
 	void 업로드가_만료된_UPLOADING_리포트_상세는_FAILED_UPLOAD와_빈_본문을_담는다() {
 		AiAnalysis saved = aiAnalysisRepository.saveAndFlush(uploadingAnalysis(USER_ID, "videos/training/42/expired.mp4",
-				LocalDateTime.now().minusSeconds(1)));
+				Instant.now().minusSeconds(1)));
 
 		AiReportDetailResult detail = aiReportFinder.findReport(USER_ID, saved.getId());
 
@@ -210,12 +210,12 @@ class AiReportQueryServiceTest {
 		return aiAnalysisRepository.saveAndFlush(analysis);
 	}
 
-	private static AiAnalysis uploadingAnalysis(Long userId, String videoObjectKey, LocalDateTime uploadExpiresAt) {
+	private static AiAnalysis uploadingAnalysis(Long userId, String videoObjectKey, Instant uploadExpiresAt) {
 		return AiAnalysis.uploading(new AiAnalysisUploadCommand(userId, videoObjectKey, uploadExpiresAt));
 	}
 
 	private static AiAnalysis pendingAnalysis(Long userId, String videoObjectKey) {
-		AiAnalysis analysis = uploadingAnalysis(userId, videoObjectKey, LocalDateTime.now().plusMinutes(15));
+		AiAnalysis analysis = uploadingAnalysis(userId, videoObjectKey, Instant.now().plusSeconds(900));
 		analysis.startAnalysis();
 		return analysis;
 	}

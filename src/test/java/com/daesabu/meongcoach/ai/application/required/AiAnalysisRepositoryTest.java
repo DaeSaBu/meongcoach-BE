@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.daesabu.meongcoach.ai.domain.AiAnalysis;
 import com.daesabu.meongcoach.ai.domain.AiAnalysisStatus;
 import com.daesabu.meongcoach.ai.domain.AiAnalysisUploadCommand;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +18,7 @@ class AiAnalysisRepositoryTest {
 	private static final String VIDEO_OBJECT_KEY = "videos/training/7/key.mp4";
 	private static final String TITLE = "분리불안 징후 행동 분석";
 	private static final String CONTENT = "분리불안 징후가 관찰됩니다.";
-	private static final LocalDateTime UPLOAD_EXPIRES_AT = LocalDateTime.of(2026, 8, 21, 12, 15, 0);
+	private static final Instant UPLOAD_EXPIRES_AT = Instant.parse("2026-08-21T12:15:00Z");
 
 	@Autowired
 	private AiAnalysisRepository aiAnalysisRepository;

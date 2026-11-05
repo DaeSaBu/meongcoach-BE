@@ -2,7 +2,7 @@ package com.daesabu.meongcoach.ai.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import org.junit.jupiter.api.Test;
 
 class AiAnalysisTest {
@@ -10,8 +10,7 @@ class AiAnalysisTest {
 	private static final String VIDEO_OBJECT_KEY = "videos/training/1/video.mp4";
 	private static final String TITLE = "분리불안 징후 행동 분석";
 	private static final String CONTENT = "분리불안 징후가 관찰됩니다.";
-	private static final LocalDateTime NOW = LocalDateTime.of(2026, 8, 21, 12, 0, 0);
-	private static final LocalDateTime UPLOAD_EXPIRES_AT = NOW.plusMinutes(15);
+	private static final Instant UPLOAD_EXPIRES_AT = Instant.parse("2026-08-21T12:15:00Z");
 
 	@Test
 	void UPLOADING으로_생성하면_사용자와_영상_객체_키_업로드_만료_시각이_설정되고_결과는_없다() {
@@ -62,7 +61,7 @@ class AiAnalysisTest {
 	void UPLOADING이_아닌_분석은_만료_시각이_지나도_조회_시점_상태가_그대로다() {
 		AiAnalysis analysis = pendingAnalysis();
 
-		assertThat(analysis.statusAt(UPLOAD_EXPIRES_AT.plusDays(1))).isEqualTo(AiAnalysisStatus.PENDING);
+		assertThat(analysis.statusAt(UPLOAD_EXPIRES_AT.plusSeconds(86400))).isEqualTo(AiAnalysisStatus.PENDING);
 	}
 
 	@Test

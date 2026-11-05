@@ -23,7 +23,7 @@ import com.daesabu.meongcoach.ai.domain.AiVideo;
 import com.daesabu.meongcoach.ai.domain.exception.VideoAnalysisFailedException;
 import com.daesabu.meongcoach.media.application.provided.MediaStorageUriResolver;
 import com.daesabu.meongcoach.media.domain.exception.InvalidMediaObjectKeyException;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -66,7 +66,7 @@ class AiReportGenerateServiceTest {
 		service = new AiReportGenerateService(storageUriResolver, videoAnalyzer, aiAnalysisRepository, aiTrialFinder);
 
 		issuedAnalysis = AiAnalysis.uploading(
-				new AiAnalysisUploadCommand(USER_ID, OBJECT_KEY, LocalDateTime.now().plusMinutes(15)));
+				new AiAnalysisUploadCommand(USER_ID, OBJECT_KEY, Instant.now().plusSeconds(900)));
 		when(aiAnalysisRepository.findByVideoObjectKey(OBJECT_KEY)).thenReturn(Optional.of(issuedAnalysis));
 		when(storageUriResolver.resolve(AiVideo.SCOPE, OBJECT_KEY)).thenReturn(VIDEO_URI);
 		when(aiTrialFinder.findTrial(USER_ID)).thenReturn(new AiTrial(0));

@@ -7,7 +7,7 @@ import com.daesabu.meongcoach.ai.application.required.AiAnalysisRepository;
 import com.daesabu.meongcoach.ai.domain.AiAnalysis;
 import com.daesabu.meongcoach.ai.domain.AiAnalysisUploadCommand;
 import com.daesabu.meongcoach.ai.domain.AiTrial;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -78,7 +78,7 @@ class AiReportTrialFinderServiceTest {
 	}
 
 	private static AiAnalysis uploadingAnalysis(Long userId, String videoObjectKey) {
-		return AiAnalysis.uploading(new AiAnalysisUploadCommand(userId, videoObjectKey, LocalDateTime.now().plusMinutes(15)));
+		return AiAnalysis.uploading(new AiAnalysisUploadCommand(userId, videoObjectKey, Instant.now().plusSeconds(900)));
 	}
 
 	private static AiAnalysis pendingAnalysis(Long userId, String videoObjectKey) {

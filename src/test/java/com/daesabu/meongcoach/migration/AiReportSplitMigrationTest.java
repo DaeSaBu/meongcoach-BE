@@ -35,8 +35,11 @@ class AiReportSplitMigrationTest {
 						Map.of("id", 2L, "user_id", 7L, "video_object_key", "untitled.mp4", "status", "COMPLETED", "report_id", 2L),
 						analysisWithoutReport(3L, 7L, "failed.mp4", "FAILED_ANALYSIS"),
 						analysisWithoutReport(4L, 8L, "uploading.mp4", "UPLOADING"));
-		assertThat(jdbc.queryForObject("select upload_expires_at::text from ai_analyses where id = 4", String.class))
-				.isEqualTo("2026-08-04 09:15:00");
+		assertThat(jdbc.queryForObject("select upload_expires_at = timestamptz '2026-08-04 09:15:00+00' from ai_analyses where id = 4", Boolean.class))
+				.isTrue();
+		assertThat(jdbc.queryForObject("select data_type from information_schema.columns "
+				+ "where table_name = 'ai_analyses' and column_name = 'upload_expires_at'", String.class))
+				.isEqualTo("timestamp with time zone");
 		assertThat(jdbc.queryForObject("select upload_expires_at from ai_analyses where id = 1", String.class)).isNull();
 		assertThat(jdbc.queryForObject("select title from ai_reports where id = 1", String.class)).isEqualTo("제목");
 		assertThat(jdbc.queryForObject("select title from ai_reports where id = 2", String.class)).isNull();

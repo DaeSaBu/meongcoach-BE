@@ -13,7 +13,7 @@ import com.daesabu.meongcoach.ai.domain.exception.AiReportTrialExceededException
 import com.daesabu.meongcoach.ai.domain.exception.AiVideoDurationOutOfRangeException;
 import com.daesabu.meongcoach.support.ApplicationTest;
 import jakarta.validation.ConstraintViolationException;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -60,11 +60,11 @@ class AiVideoUploadUrlIssuerTest {
 
 	@Test
 	void 업로드_만료_시각은_발급_시각에_URL_유효_시간을_더한_값이다() {
-		LocalDateTime before = LocalDateTime.now();
+		Instant before = Instant.now();
 
 		AiVideoUploadUrlResult result = service.issue(USER_ID, REQUEST);
 
-		LocalDateTime after = LocalDateTime.now();
+		Instant after = Instant.now();
 		AiAnalysis saved = aiAnalysisRepository.findById(result.reportId()).orElseThrow();
 		assertThat(saved.getUploadExpiresAt())
 				.isBetween(before.plusSeconds(EXPIRES_IN_SECONDS), after.plusSeconds(EXPIRES_IN_SECONDS));
@@ -116,7 +116,7 @@ class AiVideoUploadUrlIssuerTest {
 
 	private void persistCompletedAnalysis(Long userId, String videoObjectKey) {
 		AiAnalysis analysis = AiAnalysis.uploading(
-				new AiAnalysisUploadCommand(userId, videoObjectKey, LocalDateTime.now().plusMinutes(15)));
+				new AiAnalysisUploadCommand(userId, videoObjectKey, Instant.now().plusSeconds(900)));
 		analysis.startAnalysis();
 		analysis.complete("제목", "본문");
 		aiAnalysisRepository.saveAndFlush(analysis);
