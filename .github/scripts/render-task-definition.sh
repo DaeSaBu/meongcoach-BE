@@ -118,10 +118,6 @@ jq \
 							.name != "R2_SECRET_ACCESS_KEY" and
 							.name != "GCP_SERVICE_ACCOUNT_KEY" and
 							.name != "GEMINI_API_KEY" and
-							# 기존 task definition에 남은 값을 걸러내는 임시 필터다. dev·prod 배포로 제거된 뒤 이 줄들도 지운다.
-							.name != "SQS_ACCESS_KEY_ID" and
-							.name != "SQS_SECRET_ACCESS_KEY" and
-							.name != "EVOLINK_API_KEY" and
 							.name != "REVENUECAT_API_KEY"
 						))
 					)
@@ -146,19 +142,12 @@ jq \
 								.name != "R2_PUBLIC_BASE_URL" and
 								# 기존 task definition에 남은 값을 걸러내는 임시 필터다. dev·prod 배포로 제거된 뒤 이 줄들도 지운다.
 								.name != "VIMEO_ACCESS_TOKEN" and
-								.name != "SQS_REGION" and
-								.name != "SQS_ACCESS_KEY_ID" and
-								.name != "SQS_SECRET_ACCESS_KEY" and
-								.name != "AI_VIDEO_QUEUE" and
 								.name != "GCP_PROJECT_ID" and
 								.name != "GCP_SERVICE_ACCOUNT_KEY" and
 								.name != "GCS_BUCKET" and
 								.name != "AI_VIDEO_SUBSCRIPTION" and
 								.name != "GEMINI_API_KEY" and
 								.name != "GEMINI_MODEL" and
-								.name != "EVOLINK_API_KEY" and
-								.name != "EVOLINK_BASE_URL" and
-								.name != "EVOLINK_MODEL" and
 								.name != "REVENUECAT_API_KEY" and
 								.name != "REVENUECAT_PROJECT_ID" and
 								.name != "REVENUECAT_ENTITLEMENT_ID_PUPPY" and
