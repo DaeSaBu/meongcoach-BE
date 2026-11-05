@@ -9,21 +9,21 @@ media는 소비 모듈의 이름이나 용도를 모릅니다. 용도별 규칙�
 | 소비 모듈이 정한다 | media가 정한다 |
 |---|---|
 | 경로 범위(`MediaScope.path`)와 하위 경로(`withSubPath`) | 객체 키 구조와 그 안의 사용자 ID 위치 |
-| 공개 여부(`MediaVisibility`) | 어느 스토리지에 둘지(공개 → R2, 비공개·분석 → GCS) |
+| 어느 스토리지에 올릴지(`issueToR2`·`issueToGcs`) | 스토리지별 서명 방식 |
 | 영상 크기 상한 | Content-Type 허용 목록(`ImageType`·`VideoType`), 크기 검증, Content-Length 서명 |
 | 언제 발급할지(자격·한도 검사) | 경로 범위 문자열 형식 검증 |
 
-새 업로드 용도를 붙일 때는 **media를 고치지 않습니다.** 소비 모듈에 `MediaScope` 상수와 (영상이면) 크기 상한만 두고 `MediaUploadUrlIssuer`를 호출합니다.
+새 업로드 용도를 붙일 때는 **media를 고치지 않습니다.** 소비 모듈에 `MediaScope` 상수와 (영상이면) 크기 상한만 두고 `MediaUploadUrlIssuer`의 스토리지별 메서드를 호출합니다.
 
 ## 공개 API (provided)
 
 | 인터페이스 | 용도 |
 |---|---|
-| `MediaUploadUrlIssuer` | 업로드 URL 발급. 결과에 공개 URL과 객체 키가 함께 온다 |
-| `StoredMediaVerifier.validateUrl` | 클라이언트가 보낸 공개 URL이 **본인이 그 범위에 올린** 파일인지 확인 (`MEDIA_INVALID_URL`) |
+| `MediaUploadUrlIssuer` | `issueToR2`·`issueToGcs`로 업로드 URL 발급. 결과에 객체 URL(`publicUrl`)과 객체 키가 함께 온다 |
+| `StoredMediaVerifier.validateR2PublicUrl` | 클라이언트가 보낸 R2 공개 경로 URL이 **본인이 그 범위에 올린** 파일인지 확인 (`MEDIA_INVALID_URL`) |
 | `StoredMediaVerifier.isOwnedObjectKey` | 객체 키가 본인 것인지 확인. 에러 코드는 호출하는 모듈이 고른다 (예: `GRADUATION_INVALID_VIDEO_KEY`) |
-| `MediaDownloadUrlIssuer` | 비공개·분석 스토리지 객체의 다운로드 URL 발급. 범위 밖 키면 `MEDIA_INVALID_OBJECT_KEY` |
-| `MediaStorageUriResolver` | 분석 스토리지 객체의 `gs://` URI 조회. AI 분석기가 서명 URL 없이 직접 읽을 때 쓴다. 범위 밖 키면 `MEDIA_INVALID_OBJECT_KEY` |
+| `MediaDownloadUrlIssuer` | GCS 객체의 다운로드 URL 발급. 범위 밖 키면 `MEDIA_INVALID_OBJECT_KEY` |
+| `MediaStorageUriResolver` | GCS 객체의 `gs://` URI 조회. AI 분석기가 서명 URL 없이 직접 읽을 때 쓴다. 범위 밖 키면 `MEDIA_INVALID_OBJECT_KEY` |
 
 업로드 완료 알림 없이 클라이언트가 URL을 보내 오므로, **URL을 저장하는 모든 경로에서 `StoredMediaVerifier`로 확인해야 합니다.** 빠뜨리면 외부 URL이나 남이 올린 파일 URL이 그대로 저장됩니다.
 
@@ -39,12 +39,12 @@ media는 소비 모듈의 이름이나 용도를 모릅니다. 용도별 규칙�
 
 두 모듈이 같은 경로 범위를 쓰면 키 공간이 겹칩니다. 새 범위를 추가하면 이 표에 등록합니다.
 
-| 경로 범위 | 종류·공개 | 영상 상한 | 정의 위치 | 사용처 |
+| 경로 범위 | 종류·스토리지 | 영상 상한 | 정의 위치 | 사용처 |
 |---|---|---|---|---|
-| `dog-profile` | 이미지·공개 | — | `dog/domain/DogProfileImage` | 강아지 프로필 이미지 발급, 강아지 등록·수정 검증 |
-| `community-post` | 이미지·영상·공개 | 512MiB | `community/domain/PostMediaType` | 게시글 미디어 발급, 게시글 작성 검증 |
-| `training` | 영상·분석 | 512MiB | `ai/domain/AiVideo` | AI 분석 영상 발급·`gs://` URI 조회 |
-| `graduation` + 하위 경로 `{topicId}` | 영상·비공개 | 512MiB | `graduation/domain/GraduationVideo` | 실습 인증 발급·제출 검증·다운로드 |
+| `dog-profile` | 이미지·R2 | — | `dog/domain/DogProfileImage` | 강아지 프로필 이미지 발급, 강아지 등록·수정 검증 |
+| `community-post` | 이미지·영상·R2 | 512MiB | `community/domain/PostMediaType` | 게시글 미디어 발급, 게시글 작성 검증 |
+| `training` | 영상·GCS | 512MiB | `ai/domain/AiVideo` | AI 분석 영상 발급·`gs://` URI 조회 |
+| `graduation` + 하위 경로 `{topicId}` | 영상·GCS | 512MiB | `graduation/domain/GraduationVideo` | 실습 인증 발급·제출 검증·다운로드 |
 
 - 범위는 그 이미지를 저장하는 모듈 안에 두고 밖에 노출하지 않습니다. 온보딩은 `DogProfileImageUploadUrlIssuer`로 강아지 프로필 범위에만 발급하며, 클라이언트가 범위를 고르지 못하도록 범위를 선택하는 입력을 받지 않습니다.
 - 크기 위반은 어느 모듈에서 발급하든 `MEDIA_VIDEO_FILE_SIZE_EXCEEDED`·`MEDIA_INVALID_VIDEO_FILE_SIZE`로 내려갑니다. 앱이 이 코드로 안내 문구를 고르므로, 소비 모듈은 상한 값만 정하고 검증은 media에 넘깁니다. 자기 에러 코드로 직접 검증하면 앱 분기가 깨집니다.
@@ -53,12 +53,15 @@ media는 소비 모듈의 이름이나 용도를 모릅니다. 용도별 규칙�
 
 ## 스토리지
 
-| 공개 여부 | 스토리지 | 어댑터 | 배포 Secret |
-|---|---|---|---|
-| 공개 (프로필·게시글) | Cloudflare R2 | `R2ObjectStorage` | `R2_*` |
-| 비공개 (실습 인증) | Google Cloud Storage | `GcsObjectStorage` | `GCS_BUCKET` + `GCP_*`(shared) |
-| 분석 (AI 분석 영상) | Google Cloud Storage | `GcsObjectStorage` | `GCS_BUCKET` + `GCP_*`(shared) |
+| 스토리지 | 포트 | 어댑터 | 사용처 | 배포 Secret |
+|---|---|---|---|---|
+| Cloudflare R2 | `R2Storage` | `R2ObjectStorage` | 프로필·게시글 | `R2_*` |
+| Google Cloud Storage | `GcsStorage` | `GcsObjectStorage` | 실습 인증·AI 분석 영상 | `GCS_BUCKET` + `GCP_*`(shared) |
+
+**접근 권한은 인프라(버킷 설정)가 제어하며 백엔드는 지정하지 않습니다.** 서명에 ACL이 없고, 백엔드가 아는 것은 R2 공개 경로 설정값(`R2_PUBLIC_BASE_URL`)뿐입니다. 소비 모듈은 스토리지만 고르지만, 현재 R2 버킷 설정상 R2에 올린 객체는 공개 경로로 읽힐 수 있습니다. 공유되면 안 되는 미디어의 스토리지를 고를 때 이 설정을 확인합니다.
+
+`MediaUploadUrlResult.publicUrl`은 앱 응답 계약이라 이름을 유지합니다. GCS로 발급한 값은 버킷 표준 도메인 기준의 객체 URL이며, 읽으려면 `MediaDownloadUrlIssuer`로 서명 URL을 받아야 합니다.
 
 두 스토리지는 자격 증명이 다릅니다. GCS는 `shared/config/GoogleCloudConfig`의 서비스 계정(Pub/Sub 구독·Gemini 등록과 공용)으로 서명합니다. 서명은 로컬 연산이라 테스트는 목 없이 실제 어댑터로 URL을 검증하며, GCS는 테스트 전용 RSA 키로 만든 가짜 서비스 계정을 씁니다(`application-test.yml`, `GcsObjectStorageTest`).
 
-비공개와 분석은 같은 GCS 버킷을 쓰고 `GcsObjectStorage` 하나가 `PrivateObjectStorage`·`AnalysisObjectStorage`를 모두 구현합니다. 분석 포트를 따로 두는 이유는 AI 분석기(Gemini)가 서명 URL이 아니라 `gs://` URI로 버킷을 직접 읽기 때문입니다(`storageUri`). 실습 인증 영상(`videos/graduation/`)은 버킷 알림 접두사(`videos/training/`) 밖이라 분석 파이프라인으로 흘러가지 않습니다. 실습 인증 영상은 2026-11 전까지 AWS S3에 있었으므로, 그 전에 제출된 영상은 같은 객체 키로 GCS 버킷에 복사해야 다운로드 URL이 열립니다.
+실습 인증 영상과 AI 분석 영상은 같은 GCS 버킷을 씁니다. AI 분석기(Gemini)는 서명 URL이 아니라 `gs://` URI로 버킷을 직접 읽습니다(`storageUri`). 실습 인증 영상(`videos/graduation/`)은 버킷 알림 접두사(`videos/training/`) 밖이라 분석 파이프라인으로 흘러가지 않습니다. 실습 인증 영상은 2026-11 전까지 AWS S3에 있었으므로, 그 전에 제출된 영상은 같은 객체 키로 GCS 버킷에 복사해야 다운로드 URL이 열립니다.
