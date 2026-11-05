@@ -15,5 +15,5 @@ public interface GcsStorage extends ObjectStorage {
 	/**
 	 * 객체의 스토리지 URI(gs://버킷/키)를 반환한다.
 	 */
-	String storageUri(MediaObjectKey key);
+	String resolveStorageUri(MediaObjectKey key);
 }

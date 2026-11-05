@@ -16,6 +16,6 @@ public class MediaStorageUriResolveService implements MediaStorageUriResolver {
 	@Override
 	public String resolve(MediaScope scope, String objectKey) {
 		MediaObjectKey key = MediaObjectKey.parse(scope, objectKey);
-		return gcsStorage.storageUri(key);
+		return gcsStorage.resolveStorageUri(key);
 	}
 }

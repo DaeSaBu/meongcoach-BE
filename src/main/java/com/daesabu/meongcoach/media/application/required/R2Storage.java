@@ -11,5 +11,5 @@ public interface R2Storage extends ObjectStorage {
 	/**
 	 * URL이 R2 공개 경로 아래면 가리키는 객체 키를 반환한다.
 	 */
-	Optional<MediaObjectKey> objectKeyOfPublicUrl(String url);
+	Optional<MediaObjectKey> findObjectKeyByPublicUrl(String url);
 }

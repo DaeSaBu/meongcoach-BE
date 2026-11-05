@@ -47,7 +47,7 @@ public class R2ObjectStorage implements R2Storage {
 	}
 
 	@Override
-	public Optional<MediaObjectKey> objectKeyOfPublicUrl(String url) {
+	public Optional<MediaObjectKey> findObjectKeyByPublicUrl(String url) {
 		if (url == null || !url.startsWith(publicUrlPrefix)) {
 			return Optional.empty();
 		}

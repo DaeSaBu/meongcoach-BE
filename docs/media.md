@@ -64,4 +64,4 @@ media는 소비 모듈의 이름이나 용도를 모릅니다. 용도별 규칙�
 
 두 스토리지는 자격 증명이 다릅니다. GCS는 `shared/config/GoogleCloudConfig`의 서비스 계정(Pub/Sub 구독·Gemini 등록과 공용)으로 서명합니다. 서명은 로컬 연산이라 테스트는 목 없이 실제 어댑터로 URL을 검증하며, GCS는 테스트 전용 RSA 키로 만든 가짜 서비스 계정을 씁니다(`application-test.yml`, `GcsObjectStorageTest`).
 
-실습 인증 영상과 AI 분석 영상은 같은 GCS 버킷을 씁니다. AI 분석기(Gemini)는 서명 URL이 아니라 `gs://` URI로 버킷을 직접 읽습니다(`storageUri`). 실습 인증 영상(`videos/graduation/`)은 버킷 알림 접두사(`videos/training/`) 밖이라 분석 파이프라인으로 흘러가지 않습니다. 실습 인증 영상은 2026-11 전까지 AWS S3에 있었으므로, 그 전에 제출된 영상은 같은 객체 키로 GCS 버킷에 복사해야 다운로드 URL이 열립니다.
+실습 인증 영상과 AI 분석 영상은 같은 GCS 버킷을 씁니다. AI 분석기(Gemini)는 서명 URL이 아니라 `gs://` URI로 버킷을 직접 읽습니다(`resolveStorageUri`). 실습 인증 영상(`videos/graduation/`)은 버킷 알림 접두사(`videos/training/`) 밖이라 분석 파이프라인으로 흘러가지 않습니다. 실습 인증 영상은 2026-11 전까지 AWS S3에 있었으므로, 그 전에 제출된 영상은 같은 객체 키로 GCS 버킷에 복사해야 다운로드 URL이 열립니다.

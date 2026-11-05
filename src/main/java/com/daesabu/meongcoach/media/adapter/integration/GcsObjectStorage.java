@@ -57,7 +57,7 @@ public class GcsObjectStorage implements GcsStorage {
 	}
 
 	@Override
-	public String storageUri(MediaObjectKey key) {
+	public String resolveStorageUri(MediaObjectKey key) {
 		return STORAGE_URI_SCHEME + properties.bucket() + "/" + key.value();
 	}
 
