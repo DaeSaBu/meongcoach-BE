@@ -29,7 +29,7 @@ class FlywaySchemaValidationTest {
 	private DataSource dataSource;
 
 	@Test
-	void 강아지별_최신_교체_플랜만_복구하고_완료_플랜은_유지한다() throws Exception {
+	void 강아지별_활성_플랜_제약을_변경해도_기존_플랜_상태는_유지한다() throws Exception {
 		String insert = "INSERT INTO plans (user_id, dog_id, title, goal, daily_minutes, days_per_week, status, created_at) "
 				+ "VALUES (955636, ?, ?, '검증', 10, 3, ?, CURRENT_TIMESTAMP)";
 		try {
@@ -42,7 +42,7 @@ class FlywaySchemaValidationTest {
 			jdbc.sql("DROP INDEX IF EXISTS uk_plans_active_user_dog").update();
 			jdbc.sql("CREATE UNIQUE INDEX uk_plans_active_user ON plans (user_id) WHERE status = 'ACTIVE'").update();
 			jdbc.sql(insert).params(95563601L, "이전", "REPLACED").update();
-			jdbc.sql(insert).params(95563601L, "복구", "REPLACED").update();
+			jdbc.sql(insert).params(95563601L, "최신 교체", "REPLACED").update();
 			jdbc.sql(insert).params(95563602L, "활성", "ACTIVE").update();
 			jdbc.sql(insert).params(95563603L, "교체", "REPLACED").update();
 			jdbc.sql(insert).params(95563603L, "완료", "COMPLETED").update();
@@ -52,7 +52,9 @@ class FlywaySchemaValidationTest {
 			}
 
 			assertThat(jdbc.sql("SELECT title FROM plans WHERE user_id = 955636 AND status = 'ACTIVE' ORDER BY dog_id")
-					.query(String.class).list()).containsExactly("복구", "활성");
+					.query(String.class).list()).containsExactly("활성");
+			assertThat(jdbc.sql("SELECT title FROM plans WHERE user_id = 955636 AND status = 'REPLACED' ORDER BY id")
+					.query(String.class).list()).containsExactly("이전", "최신 교체", "교체", "삭제된 강아지");
 			assertThat(jdbc.sql("SELECT title FROM plans WHERE user_id = 955636 AND status = 'COMPLETED'")
 					.query(String.class).single()).isEqualTo("완료");
 		} finally {
