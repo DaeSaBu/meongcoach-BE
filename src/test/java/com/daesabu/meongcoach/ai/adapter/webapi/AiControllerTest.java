@@ -22,7 +22,7 @@ import com.daesabu.meongcoach.ai.application.provided.AiTrialFinder;
 import com.daesabu.meongcoach.ai.application.provided.AiVideoUploadUrlIssuer;
 import com.daesabu.meongcoach.ai.application.provided.AiVideoUploadUrlResult;
 import com.daesabu.meongcoach.ai.application.provided.dto.AiVideoUploadUrlRequest;
-import com.daesabu.meongcoach.ai.domain.AiReportStatus;
+import com.daesabu.meongcoach.ai.domain.AiAnalysisStatus;
 import com.daesabu.meongcoach.ai.domain.AiTrial;
 import com.daesabu.meongcoach.ai.domain.exception.AiReportNotFoundException;
 import com.daesabu.meongcoach.ai.domain.exception.AiReportTrialExceededException;
@@ -84,9 +84,9 @@ class AiControllerTest {
 	void 리포트_목록을_최신순으로_반환한다() throws Exception {
 		given(aiReportFinder.findReports(42L)).willReturn(List.of(
 				new AiReportResult(11L, "videos/training/42/second.mp4", "물체를 물고 달리는 행동 분석",
-						AiReportStatus.COMPLETED, LocalDateTime.of(2026, 8, 2, 10, 30, 0)),
+						AiAnalysisStatus.COMPLETED, LocalDateTime.of(2026, 8, 2, 10, 30, 0)),
 				new AiReportResult(10L, "videos/training/42/first.mp4", "분리불안 징후 행동 분석",
-						AiReportStatus.COMPLETED, LocalDateTime.of(2026, 8, 1, 9, 0, 0))
+						AiAnalysisStatus.COMPLETED, LocalDateTime.of(2026, 8, 1, 9, 0, 0))
 		));
 
 		mockMvc.perform(get("/api/ai/reports")
@@ -148,7 +148,7 @@ class AiControllerTest {
 	@Test
 	void 리포트_하나를_본문과_함께_반환한다() throws Exception {
 		given(aiReportFinder.findReport(42L, 10L)).willReturn(new AiReportDetailResult(10L,
-				"videos/training/42/first.mp4", "분리불안 징후 행동 분석", AiReportStatus.COMPLETED, REPORT_CONTENT,
+				"videos/training/42/first.mp4", "분리불안 징후 행동 분석", AiAnalysisStatus.COMPLETED, REPORT_CONTENT,
 				LocalDateTime.of(2026, 8, 1, 9, 0, 0)));
 
 		mockMvc.perform(get("/api/ai/reports/{reportId}", 10L)
@@ -205,7 +205,7 @@ class AiControllerTest {
 	@Test
 	void 완료되지_않은_리포트_상세는_상태와_함께_본문을_null로_내린다() throws Exception {
 		given(aiReportFinder.findReport(42L, 10L)).willReturn(new AiReportDetailResult(10L,
-				"videos/training/42/first.mp4", null, AiReportStatus.PENDING, null,
+				"videos/training/42/first.mp4", null, AiAnalysisStatus.PENDING, null,
 				LocalDateTime.of(2026, 8, 1, 9, 0, 0)));
 
 		mockMvc.perform(get("/api/ai/reports/{reportId}", 10L).principal(CURRENT_USER))
@@ -218,7 +218,7 @@ class AiControllerTest {
 	@Test
 	void 인증_주체에서_읽은_사용자로_리포트_상세_조회를_위임한다() throws Exception {
 		given(aiReportFinder.findReport(42L, 10L)).willReturn(new AiReportDetailResult(10L,
-				"videos/training/42/first.mp4", "분리불안 징후 행동 분석", AiReportStatus.COMPLETED, REPORT_CONTENT,
+				"videos/training/42/first.mp4", "분리불안 징후 행동 분석", AiAnalysisStatus.COMPLETED, REPORT_CONTENT,
 				LocalDateTime.of(2026, 8, 1, 9, 0, 0)));
 
 		mockMvc.perform(get("/api/ai/reports/{reportId}", 10L).principal(CURRENT_USER))
