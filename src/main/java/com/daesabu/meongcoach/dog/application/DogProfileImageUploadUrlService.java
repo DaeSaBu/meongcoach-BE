@@ -17,6 +17,6 @@ public class DogProfileImageUploadUrlService implements DogProfileImageUploadUrl
 	@Override
 	public MediaUploadUrlResult issue(Long userId, String contentType) {
 		MediaUploadRequest uploadRequest = MediaUploadRequest.image(DogProfileImage.SCOPE, userId, contentType);
-		return mediaUploadUrlIssuer.issue(uploadRequest);
+		return mediaUploadUrlIssuer.issueToR2(uploadRequest);
 	}
 }

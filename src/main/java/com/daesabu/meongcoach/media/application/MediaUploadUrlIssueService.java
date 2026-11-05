@@ -3,14 +3,13 @@ package com.daesabu.meongcoach.media.application;
 import com.daesabu.meongcoach.media.application.provided.MediaUploadUrlIssuer;
 import com.daesabu.meongcoach.media.application.provided.dto.MediaUploadRequest;
 import com.daesabu.meongcoach.media.application.provided.dto.MediaUploadUrlResult;
-import com.daesabu.meongcoach.media.application.required.AnalysisObjectStorage;
-import com.daesabu.meongcoach.media.application.required.PrivateObjectStorage;
-import com.daesabu.meongcoach.media.application.required.PublicObjectStorage;
+import com.daesabu.meongcoach.media.application.required.GcsStorage;
+import com.daesabu.meongcoach.media.application.required.ObjectStorage;
+import com.daesabu.meongcoach.media.application.required.R2Storage;
 import com.daesabu.meongcoach.media.application.required.StorageUploadUrl;
 import com.daesabu.meongcoach.media.domain.MediaFileSize;
 import com.daesabu.meongcoach.media.domain.MediaObjectKey;
 import com.daesabu.meongcoach.media.domain.shared.MediaScope;
-import com.daesabu.meongcoach.media.domain.shared.MediaVisibility;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -18,18 +17,26 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class MediaUploadUrlIssueService implements MediaUploadUrlIssuer {
 
-	private final PublicObjectStorage publicObjectStorage;
-	private final PrivateObjectStorage privateObjectStorage;
-	private final AnalysisObjectStorage analysisObjectStorage;
+	private final R2Storage r2Storage;
+	private final GcsStorage gcsStorage;
 
 	@Override
-	public MediaUploadUrlResult issue(MediaUploadRequest request) {
+	public MediaUploadUrlResult issueToR2(MediaUploadRequest request) {
+		return issue(request, r2Storage);
+	}
+
+	@Override
+	public MediaUploadUrlResult issueToGcs(MediaUploadRequest request) {
+		return issue(request, gcsStorage);
+	}
+
+	private MediaUploadUrlResult issue(MediaUploadRequest request, ObjectStorage objectStorage) {
 		MediaScope scope = request.scope();
 		String extension = scope.kind().extensionOf(request.contentType());
 		Long contentLength = contentLengthOf(request);
 
 		MediaObjectKey key = MediaObjectKey.create(scope, request.userId(), extension);
-		StorageUploadUrl uploadUrl = issueUploadUrl(scope.visibility(), key, request.contentType(), contentLength);
+		StorageUploadUrl uploadUrl = objectStorage.issueUploadUrl(key, request.contentType(), contentLength);
 		return new MediaUploadUrlResult(uploadUrl.uploadUrl(), uploadUrl.publicUrl(), key.value(),
 				uploadUrl.expiresInSeconds());
 	}
@@ -39,16 +46,5 @@ public class MediaUploadUrlIssueService implements MediaUploadUrlIssuer {
 			return null;
 		}
 		return new MediaFileSize(request.fileSizeBytes(), request.maxFileSizeBytes()).bytes();
-	}
-
-	private StorageUploadUrl issueUploadUrl(MediaVisibility visibility, MediaObjectKey key, String contentType,
-			Long contentLength) {
-		if (visibility == MediaVisibility.PRIVATE) {
-			return privateObjectStorage.issueUploadUrl(key, contentType, contentLength);
-		}
-		if (visibility == MediaVisibility.ANALYSIS) {
-			return analysisObjectStorage.issueUploadUrl(key, contentType, contentLength);
-		}
-		return publicObjectStorage.issueUploadUrl(key, contentType, contentLength);
 	}
 }

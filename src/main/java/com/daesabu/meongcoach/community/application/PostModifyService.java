@@ -62,6 +62,7 @@ public class PostModifyService implements PostRegister {
 
 	private void validateStoredMedia(Long userId, Post post) {
 		post.getMedia()
-				.forEach(media -> storedMediaVerifier.validateUrl(media.getType().getMediaScope(), userId, media.getUrl()));
+				.forEach(media -> storedMediaVerifier.validateR2PublicUrl(media.getType().getMediaScope(), userId,
+						media.getUrl()));
 	}
 }

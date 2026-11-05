@@ -57,7 +57,7 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-security")
 	implementation("org.springframework.boot:spring-boot-starter-security-oauth2-resource-server")
 	implementation("org.springframework.boot:spring-boot-starter-restclient")
-	// R2는 S3 호환 API라 presigned URL 발급에 AWS SDK의 S3Presigner를 그대로 쓴다. 실습 영상 S3 버킷도 같은 presigner를 쓴다
+	// R2는 S3 호환 API라 presigned URL 발급에 AWS SDK의 S3Presigner를 그대로 쓴다.
 	implementation("software.amazon.awssdk:s3:2.46.7")
 	// AI 분석 영상은 GCS에 두고 V4 서명 URL로 업로드한다
 	implementation("com.google.cloud:google-cloud-storage")

@@ -3,7 +3,7 @@ package com.daesabu.meongcoach.media.application.provided;
 import com.daesabu.meongcoach.media.domain.shared.MediaScope;
 
 /**
- * 비공개 스토리지에 올린 미디어를 읽을 수 있는 다운로드 URL 발급 능력.
+ * GCS에 올린 미디어를 읽을 수 있는 다운로드 URL 발급 능력.
  */
 public interface MediaDownloadUrlIssuer {
 

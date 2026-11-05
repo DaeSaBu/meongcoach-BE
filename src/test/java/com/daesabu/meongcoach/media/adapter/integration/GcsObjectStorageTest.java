@@ -94,6 +94,6 @@ class GcsObjectStorageTest {
 
 	@Test
 	void 스토리지_URI는_gs_스킴의_버킷_키_경로다() {
-		assertThat(storage.storageUri(KEY)).isEqualTo("gs://" + BUCKET + "/" + KEY.value());
+		assertThat(storage.resolveStorageUri(KEY)).isEqualTo("gs://" + BUCKET + "/" + KEY.value());
 	}
 }
