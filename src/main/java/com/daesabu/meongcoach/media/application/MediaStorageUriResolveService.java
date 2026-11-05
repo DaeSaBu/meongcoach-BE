@@ -4,7 +4,6 @@ import com.daesabu.meongcoach.media.application.provided.MediaStorageUriResolver
 import com.daesabu.meongcoach.media.application.required.GcsStorage;
 import com.daesabu.meongcoach.media.domain.MediaObjectKey;
 import com.daesabu.meongcoach.media.domain.shared.MediaScope;
-import com.daesabu.meongcoach.media.domain.shared.MediaVisibility;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -16,9 +15,6 @@ public class MediaStorageUriResolveService implements MediaStorageUriResolver {
 
 	@Override
 	public String resolve(MediaScope scope, String objectKey) {
-		if (scope.visibility() != MediaVisibility.ANALYSIS) {
-			throw new IllegalArgumentException("분석 스토리지 범위가 아니다: " + scope.path());
-		}
 		MediaObjectKey key = MediaObjectKey.parse(scope, objectKey);
 		return gcsStorage.storageUri(key);
 	}

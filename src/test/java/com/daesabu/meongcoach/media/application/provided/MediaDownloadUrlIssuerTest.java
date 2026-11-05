@@ -6,7 +6,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.daesabu.meongcoach.media.domain.exception.InvalidMediaObjectKeyException;
 import com.daesabu.meongcoach.media.domain.shared.MediaKind;
 import com.daesabu.meongcoach.media.domain.shared.MediaScope;
-import com.daesabu.meongcoach.media.domain.shared.MediaVisibility;
 import com.daesabu.meongcoach.support.ApplicationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,31 +13,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 @ApplicationTest
 class MediaDownloadUrlIssuerTest {
 
-	private static final MediaScope GRADUATION_VIDEO =
-			MediaScope.of(MediaKind.VIDEO, MediaVisibility.PRIVATE, "graduation");
+	private static final MediaScope GRADUATION_VIDEO = MediaScope.of(MediaKind.VIDEO, "graduation");
 	private static final String GCS_BASE_URL = "https://storage.googleapis.com/test-ai-video-bucket/";
-	private static final MediaScope ANALYSIS_VIDEO =
-			MediaScope.of(MediaKind.VIDEO, MediaVisibility.ANALYSIS, "test-analysis");
 
 	@Autowired
 	private MediaDownloadUrlIssuer issuer;
 
 	@Test
-	void 범위_아래의_객체_키면_비공개_스토리지의_다운로드_URL을_발급한다() {
+	void 범위_아래의_객체_키면_GCS_다운로드_URL을_발급한다() {
 		String downloadUrl = issuer.issue(GRADUATION_VIDEO, "videos/graduation/7/1101/a.mp4");
 
 		assertThat(downloadUrl)
 				.startsWith(GCS_BASE_URL + "videos/graduation/7/1101/a.mp4")
-				.contains("X-Goog-Signature=")
-				.contains("X-Goog-Expires=3600");
-	}
-
-	@Test
-	void 분석_범위의_객체_키면_분석_스토리지의_다운로드_URL을_발급한다() {
-		String downloadUrl = issuer.issue(ANALYSIS_VIDEO, "videos/test-analysis/7/a.mp4");
-
-		assertThat(downloadUrl)
-				.startsWith(GCS_BASE_URL + "videos/test-analysis/7/a.mp4")
 				.contains("X-Goog-Signature=")
 				.contains("X-Goog-Expires=3600");
 	}

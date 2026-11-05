@@ -6,7 +6,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.daesabu.meongcoach.media.domain.exception.InvalidMediaObjectKeyException;
 import com.daesabu.meongcoach.media.domain.shared.MediaKind;
 import com.daesabu.meongcoach.media.domain.shared.MediaScope;
-import com.daesabu.meongcoach.media.domain.shared.MediaVisibility;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullSource;
@@ -14,12 +13,9 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 class MediaObjectKeyTest {
 
-	private static final MediaScope COMMUNITY_IMAGE =
-			MediaScope.of(MediaKind.IMAGE, MediaVisibility.PUBLIC, "community-post");
-	private static final MediaScope TRAINING_VIDEO =
-			MediaScope.of(MediaKind.VIDEO, MediaVisibility.PRIVATE, "training");
-	private static final MediaScope GRADUATION_VIDEO =
-			MediaScope.of(MediaKind.VIDEO, MediaVisibility.PRIVATE, "graduation");
+	private static final MediaScope COMMUNITY_IMAGE = MediaScope.of(MediaKind.IMAGE, "community-post");
+	private static final MediaScope TRAINING_VIDEO = MediaScope.of(MediaKind.VIDEO, "training");
+	private static final MediaScope GRADUATION_VIDEO = MediaScope.of(MediaKind.VIDEO, "graduation");
 
 	@Test
 	void 객체_키는_사용자_경로_아래_UUID_파일명과_확장자를_담는다() {
@@ -51,8 +47,7 @@ class MediaObjectKeyTest {
 
 	@Test
 	void 다른_범위의_키는_그_범위의_것이_아니다() {
-		MediaObjectKey key = MediaObjectKey.create(MediaScope.of(MediaKind.IMAGE, MediaVisibility.PUBLIC,
-				"dog-profile"), 7L, "png");
+		MediaObjectKey key = MediaObjectKey.create(MediaScope.of(MediaKind.IMAGE, "dog-profile"), 7L, "png");
 
 		assertThat(key.belongsTo(COMMUNITY_IMAGE, 7L)).isFalse();
 	}

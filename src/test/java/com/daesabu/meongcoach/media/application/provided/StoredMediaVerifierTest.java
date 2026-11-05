@@ -7,7 +7,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.daesabu.meongcoach.media.domain.exception.InvalidMediaUrlException;
 import com.daesabu.meongcoach.media.domain.shared.MediaKind;
 import com.daesabu.meongcoach.media.domain.shared.MediaScope;
-import com.daesabu.meongcoach.media.domain.shared.MediaVisibility;
 import com.daesabu.meongcoach.support.ApplicationTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -19,9 +18,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 class StoredMediaVerifierTest {
 
 	private static final String PUBLIC_BASE_URL = "https://images.test.meongcoach.com/";
-	private static final MediaScope DOG_IMAGE = MediaScope.of(MediaKind.IMAGE, MediaVisibility.PUBLIC, "dog-profile");
-	private static final MediaScope GRADUATION_VIDEO =
-			MediaScope.of(MediaKind.VIDEO, MediaVisibility.PRIVATE, "graduation");
+	private static final MediaScope DOG_IMAGE = MediaScope.of(MediaKind.IMAGE, "dog-profile");
+	private static final MediaScope GRADUATION_VIDEO = MediaScope.of(MediaKind.VIDEO, "graduation");
 
 	@Autowired
 	private StoredMediaVerifier verifier;
