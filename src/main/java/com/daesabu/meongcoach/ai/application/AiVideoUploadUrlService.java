@@ -4,9 +4,9 @@ import com.daesabu.meongcoach.ai.application.provided.AiTrialFinder;
 import com.daesabu.meongcoach.ai.application.provided.AiVideoUploadUrlIssuer;
 import com.daesabu.meongcoach.ai.application.provided.AiVideoUploadUrlResult;
 import com.daesabu.meongcoach.ai.application.provided.dto.AiVideoUploadUrlRequest;
-import com.daesabu.meongcoach.ai.application.required.AiReportRepository;
-import com.daesabu.meongcoach.ai.domain.AiReport;
-import com.daesabu.meongcoach.ai.domain.AiReportUploadCommand;
+import com.daesabu.meongcoach.ai.application.required.AiAnalysisRepository;
+import com.daesabu.meongcoach.ai.domain.AiAnalysis;
+import com.daesabu.meongcoach.ai.domain.AiAnalysisUploadCommand;
 import com.daesabu.meongcoach.ai.domain.AiTrial;
 import com.daesabu.meongcoach.ai.domain.AiVideo;
 import com.daesabu.meongcoach.ai.domain.exception.AiReportTrialExceededException;
@@ -27,7 +27,7 @@ public class AiVideoUploadUrlService implements AiVideoUploadUrlIssuer {
 
 	private final MediaUploadUrlIssuer mediaUploadUrlIssuer;
 	private final AiTrialFinder aiTrialFinder;
-	private final AiReportRepository aiReportRepository;
+	private final AiAnalysisRepository aiAnalysisRepository;
 
 	@Override
 	@Transactional
@@ -42,9 +42,9 @@ public class AiVideoUploadUrlService implements AiVideoUploadUrlIssuer {
 				request.fileSizeBytes(), AiVideo.MAX_FILE_SIZE_BYTES);
 		MediaUploadUrlResult result = mediaUploadUrlIssuer.issueToGcs(uploadRequest);
 		LocalDateTime uploadExpiresAt = LocalDateTime.now().plusSeconds(result.expiresInSeconds());
-		AiReport report = aiReportRepository.save(
-				AiReport.uploading(new AiReportUploadCommand(userId, result.objectKey(), uploadExpiresAt)));
-		return new AiVideoUploadUrlResult(report.getId(), result.uploadUrl(), result.publicUrl(), result.objectKey(),
+		AiAnalysis analysis = aiAnalysisRepository.save(
+				AiAnalysis.uploading(new AiAnalysisUploadCommand(userId, result.objectKey(), uploadExpiresAt)));
+		return new AiVideoUploadUrlResult(analysis.getId(), result.uploadUrl(), result.publicUrl(), result.objectKey(),
 				result.expiresInSeconds());
 	}
 }
