@@ -13,7 +13,7 @@ import com.daesabu.meongcoach.ai.domain.exception.AiReportTrialExceededException
 import com.daesabu.meongcoach.media.application.provided.MediaUploadUrlIssuer;
 import com.daesabu.meongcoach.media.application.provided.dto.MediaUploadRequest;
 import com.daesabu.meongcoach.media.application.provided.dto.MediaUploadUrlResult;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,7 +41,7 @@ public class AiVideoUploadUrlService implements AiVideoUploadUrlIssuer {
 		MediaUploadRequest uploadRequest = MediaUploadRequest.video(AiVideo.SCOPE, userId, request.contentType(),
 				request.fileSizeBytes(), AiVideo.MAX_FILE_SIZE_BYTES);
 		MediaUploadUrlResult result = mediaUploadUrlIssuer.issueToGcs(uploadRequest);
-		LocalDateTime uploadExpiresAt = LocalDateTime.now().plusSeconds(result.expiresInSeconds());
+		Instant uploadExpiresAt = Instant.now().plusSeconds(result.expiresInSeconds());
 		AiAnalysis analysis = aiAnalysisRepository.save(
 				AiAnalysis.uploading(new AiAnalysisUploadCommand(userId, result.objectKey(), uploadExpiresAt)));
 		return new AiVideoUploadUrlResult(analysis.getId(), result.uploadUrl(), result.publicUrl(), result.objectKey(),

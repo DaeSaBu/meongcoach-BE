@@ -7,7 +7,7 @@ import com.daesabu.meongcoach.ai.application.provided.AiReportResult;
 import com.daesabu.meongcoach.ai.application.required.AiAnalysisRepository;
 import com.daesabu.meongcoach.ai.domain.AiAnalysis;
 import com.daesabu.meongcoach.ai.domain.exception.AiReportNotFoundException;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -24,7 +24,7 @@ public class AiReportQueryService implements AiReportFinder {
 
 	@Override
 	public List<AiReportResult> findReports(Long userId) {
-		LocalDateTime now = LocalDateTime.now();
+		Instant now = Instant.now();
 		return aiAnalysisRepository.findAllByUserIdOrderByCreatedAtDescIdDesc(userId).stream()
 				.map(analysis -> new AiReportResult(analysis.getId(), analysis.getVideoObjectKey(), analysis.getTitle(),
 						analysis.statusAt(now), analysis.getCreatedAt()))
@@ -36,7 +36,7 @@ public class AiReportQueryService implements AiReportFinder {
 		AiAnalysis analysis = aiAnalysisRepository.findByIdAndUserId(reportId, userId)
 				.orElseThrow(() -> new AiReportNotFoundException(reportId));
 		AiReportContent content = parseContentOrNull(analysis.getContent());
-		LocalDateTime now = LocalDateTime.now();
+		Instant now = Instant.now();
 		return new AiReportDetailResult(analysis.getId(), analysis.getVideoObjectKey(), analysis.getTitle(),
 				analysis.statusAt(now), content, analysis.getCreatedAt());
 	}

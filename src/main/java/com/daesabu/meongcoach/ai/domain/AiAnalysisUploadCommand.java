@@ -1,6 +1,6 @@
 package com.daesabu.meongcoach.ai.domain;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
-public record AiAnalysisUploadCommand(Long userId, String videoObjectKey, LocalDateTime uploadExpiresAt) {
+public record AiAnalysisUploadCommand(Long userId, String videoObjectKey, Instant uploadExpiresAt) {
 }

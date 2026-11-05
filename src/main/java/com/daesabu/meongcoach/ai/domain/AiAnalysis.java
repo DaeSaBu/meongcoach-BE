@@ -13,7 +13,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -38,7 +38,7 @@ public class AiAnalysis extends BaseTimeEntity {
 	@Column(nullable = false, length = 30)
 	private AiAnalysisStatus status;
 
-	private LocalDateTime uploadExpiresAt;
+	private Instant uploadExpiresAt;
 
 	@OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
 	@JoinColumn(name = "report_id", unique = true)
@@ -61,7 +61,7 @@ public class AiAnalysis extends BaseTimeEntity {
 		this.status = AiAnalysisStatus.PENDING;
 	}
 
-	public AiAnalysisStatus statusAt(LocalDateTime now) {
+	public AiAnalysisStatus statusAt(Instant now) {
 		if (isUploading() && now.isAfter(uploadExpiresAt)) {
 			return AiAnalysisStatus.FAILED_UPLOAD;
 		}
