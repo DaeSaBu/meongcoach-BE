@@ -869,10 +869,7 @@ operation::plan/custom-create-conflict-error[snippets='http-response,response-fi
 . 이 API 변경이 포함된 백엔드를 prod에 배포합니다.
 . `dogId`를 보내는 새 앱을 스토어에 출시합니다.
 . 구버전 앱 사용자가 충분히 줄면 앱 최소 지원 버전을 새 앱 버전으로 올립니다.
-. 다음 코드를 함께 삭제합니다.
-** `PlanController`의 `dogId` 없는 핸들러 3개 (`/current`, `/custom`, `/ai`)
-** `PlanRegister.createCustom(userId, request)`, `PlanRegister.createAiPlan(userId, request)`
-** `CurrentPlanFinder.find(userId)`, `PlanRepository.findFirstByUserIdAndStatusOrderByIdDesc`
+. `@Deprecated(forRemoval = true)`가 붙은 코드를 모두 삭제합니다.
 
 link:{swagger-ui}#/Plan/plan-custom-create[▶ 이전 커스텀 API,window=swagger]
 
