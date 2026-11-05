@@ -1,6 +1,7 @@
 package com.daesabu.meongcoach.media.domain;
 
 import com.daesabu.meongcoach.media.domain.exception.InvalidMediaObjectKeyException;
+import com.daesabu.meongcoach.media.domain.exception.InvalidMediaUrlException;
 import com.daesabu.meongcoach.media.domain.shared.MediaScope;
 import java.util.UUID;
 import java.util.regex.Pattern;
@@ -25,6 +26,16 @@ public record MediaObjectKey(String value) {
 			throw new InvalidMediaObjectKeyException(value);
 		}
 		return new MediaObjectKey(value);
+	}
+
+	public static void validatePublicUrl(String publicUrlPrefix, String url, MediaScope scope, Long userId) {
+		if (!url.startsWith(publicUrlPrefix) || !isOwnedKey(url.substring(publicUrlPrefix.length()), scope, userId)) {
+			throw new InvalidMediaUrlException();
+		}
+	}
+
+	private static boolean isOwnedKey(String value, MediaScope scope, Long userId) {
+		return new MediaObjectKey(value).belongsTo(scope, userId);
 	}
 
 	private static String subPathPattern(MediaScope scope) {

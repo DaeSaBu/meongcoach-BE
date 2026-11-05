@@ -3,7 +3,6 @@ package com.daesabu.meongcoach.media.application;
 import com.daesabu.meongcoach.media.application.provided.StoredMediaVerifier;
 import com.daesabu.meongcoach.media.application.required.R2Storage;
 import com.daesabu.meongcoach.media.domain.MediaObjectKey;
-import com.daesabu.meongcoach.media.domain.exception.InvalidMediaUrlException;
 import com.daesabu.meongcoach.media.domain.shared.MediaScope;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,10 +18,8 @@ public class StoredMediaVerifyService implements StoredMediaVerifier {
 		if (url == null || url.isBlank()) {
 			return;
 		}
-		MediaObjectKey key = r2Storage.parsePublicUrl(url);
-		if (!key.belongsTo(scope, userId)) {
-			throw new InvalidMediaUrlException();
-		}
+		String publicUrlPrefix = r2Storage.resolvePublicUrlPrefix();
+		MediaObjectKey.validatePublicUrl(publicUrlPrefix, url, scope, userId);
 	}
 
 	@Override
