@@ -119,8 +119,6 @@ jq \
 							.name != "GCP_SERVICE_ACCOUNT_KEY" and
 							.name != "GEMINI_API_KEY" and
 							# 기존 task definition에 남은 값을 걸러내는 임시 필터다. dev·prod 배포로 제거된 뒤 이 줄들도 지운다.
-							.name != "S3_ACCESS_KEY_ID" and
-							.name != "S3_SECRET_ACCESS_KEY" and
 							.name != "SQS_ACCESS_KEY_ID" and
 							.name != "SQS_SECRET_ACCESS_KEY" and
 							.name != "EVOLINK_API_KEY" and
@@ -147,11 +145,6 @@ jq \
 								.name != "R2_BUCKET" and
 								.name != "R2_PUBLIC_BASE_URL" and
 								# 기존 task definition에 남은 값을 걸러내는 임시 필터다. dev·prod 배포로 제거된 뒤 이 줄들도 지운다.
-								.name != "S3_REGION" and
-								.name != "S3_ACCESS_KEY_ID" and
-								.name != "S3_SECRET_ACCESS_KEY" and
-								.name != "S3_BUCKET" and
-								.name != "S3_PUBLIC_BASE_URL" and
 								.name != "VIMEO_ACCESS_TOKEN" and
 								.name != "SQS_REGION" and
 								.name != "SQS_ACCESS_KEY_ID" and
