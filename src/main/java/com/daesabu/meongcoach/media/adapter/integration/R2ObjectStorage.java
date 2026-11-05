@@ -23,7 +23,7 @@ public class R2ObjectStorage implements R2Storage {
 
 	public R2ObjectStorage(R2Properties properties) {
 		this.properties = properties;
-		this.publicUrlPrefix = StorageUrls.trimTrailingSlash(properties.publicBaseUrl()) + "/";
+		this.publicUrlPrefix = trimTrailingSlash(properties.publicBaseUrl()) + "/";
 		this.presigner = S3Presigner.builder()
 				.endpointOverride(URI.create(properties.endpoint()))
 				.region(Region.of("auto"))
@@ -35,8 +35,12 @@ public class R2ObjectStorage implements R2Storage {
 
 	@Override
 	public StorageUploadUrl issueUploadUrl(MediaObjectKey key, String contentType, Long contentLength) {
-		PutObjectRequest putObjectRequest =
-				StorageUrls.putObjectRequest(properties.bucket(), key, contentType, contentLength);
+		PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+				.bucket(properties.bucket())
+				.key(key.value())
+				.contentType(contentType)
+				.contentLength(contentLength)
+				.build();
 		PresignedPutObjectRequest presigned = presigner.presignPutObject(PutObjectPresignRequest.builder()
 				.signatureDuration(properties.uploadUrlValidity())
 				.putObjectRequest(putObjectRequest)
@@ -48,5 +52,12 @@ public class R2ObjectStorage implements R2Storage {
 	@Override
 	public String resolvePublicUrlPrefix() {
 		return publicUrlPrefix;
+	}
+
+	private String trimTrailingSlash(String url) {
+		if (url.endsWith("/")) {
+			return url.substring(0, url.length() - 1);
+		}
+		return url;
 	}
 }
