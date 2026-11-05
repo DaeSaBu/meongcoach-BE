@@ -8,6 +8,8 @@ import com.daesabu.meongcoach.plan.domain.exception.EmptyPlanCurriculumsExceptio
 import com.daesabu.meongcoach.plan.domain.exception.InvalidDailyMinutesException;
 import com.daesabu.meongcoach.plan.domain.exception.InvalidDaysPerWeekException;
 import com.daesabu.meongcoach.plan.domain.exception.InvalidPlanCurriculumException;
+import com.daesabu.meongcoach.plan.domain.exception.PlanLessonOrderException;
+import com.daesabu.meongcoach.plan.domain.exception.PlanNotActiveException;
 import com.daesabu.meongcoach.plan.domain.exception.PlanNotCompletedException;
 import com.daesabu.meongcoach.plan.domain.exception.PlanOutcomeAlreadyRecordedException;
 import java.time.Instant;
@@ -92,6 +94,71 @@ class PlanTest {
 
 		assertThat(plan.getCompletedLessonIds()).containsExactlyInAnyOrder(101L, 102L);
 		assertThat(plan.getStatus()).isEqualTo(PlanStatus.ACTIVE);
+	}
+
+	@Test
+	void 아직_완료하지_않은_레슨은_완료_처리가_필요하다() {
+		assertThat(createPlan().needsLessonCompletion(101L)).isTrue();
+	}
+
+	@Test
+	void 이미_완료한_레슨은_플랜이_완료되어도_완료_처리가_필요_없다() {
+		Plan plan = createPlan();
+		plan.completeCurrentLesson(101L, List.of(101L), Instant.parse("2026-10-25T12:00:00Z"));
+
+		assertThat(plan.needsLessonCompletion(101L)).isFalse();
+	}
+
+	@Test
+	void 완료된_플랜의_새_레슨은_거절한다() {
+		Plan plan = createPlan();
+		plan.complete(Instant.parse("2026-10-25T12:00:00Z"));
+
+		assertThatThrownBy(() -> plan.needsLessonCompletion(101L)).isInstanceOf(PlanNotActiveException.class);
+	}
+
+	@Test
+	void 교체된_플랜은_이미_완료한_레슨도_거절한다() {
+		Plan plan = createPlan();
+		plan.completeLesson(101L);
+		plan.replace();
+
+		assertThatThrownBy(() -> plan.needsLessonCompletion(101L)).isInstanceOf(PlanNotActiveException.class);
+	}
+
+	@Test
+	void 현재_차례가_아닌_레슨은_거절하고_기록하지_않는다() {
+		Plan plan = createPlan();
+		Instant completedAt = Instant.parse("2026-10-25T12:00:00Z");
+
+		assertThatThrownBy(() -> plan.completeCurrentLesson(102L, List.of(101L, 102L), completedAt))
+				.isInstanceOf(PlanLessonOrderException.class);
+		assertThat(plan.getCompletedLessonIds()).isEmpty();
+	}
+
+	@Test
+	void 남은_레슨이_없으면_어떤_레슨도_현재_레슨으로_완료할_수_없다() {
+		Plan plan = createPlan();
+		plan.completeLesson(101L);
+		Instant completedAt = Instant.parse("2026-10-25T12:00:00Z");
+
+		assertThatThrownBy(() -> plan.completeCurrentLesson(102L, List.of(101L), completedAt))
+				.isInstanceOf(PlanLessonOrderException.class);
+	}
+
+	@Test
+	void 마지막_레슨을_완료해야_플랜이_완료된다() {
+		Plan plan = createPlan();
+		List<Long> orderedLessonIds = List.of(101L, 102L);
+		Instant completedAt = Instant.parse("2026-10-25T12:00:00Z");
+
+		plan.completeCurrentLesson(101L, orderedLessonIds, completedAt);
+		assertThat(plan.getStatus()).isEqualTo(PlanStatus.ACTIVE);
+		assertThat(plan.getCompletedAt()).isNull();
+
+		plan.completeCurrentLesson(102L, orderedLessonIds, completedAt);
+		assertThat(plan.getStatus()).isEqualTo(PlanStatus.COMPLETED);
+		assertThat(plan.getCompletedAt()).isEqualTo(completedAt);
 	}
 
 	@Test
