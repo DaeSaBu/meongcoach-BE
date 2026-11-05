@@ -22,6 +22,6 @@ public class PostMediaUploadUrlService implements PostMediaUploadUrlIssuer {
 		PostMediaType mediaType = PostMediaType.from(request.mediaType());
 		MediaUploadRequest uploadRequest = new MediaUploadRequest(mediaType.getMediaScope(), userId,
 				request.contentType(), request.fileSizeBytes(), mediaType.getMaxFileSizeBytes());
-		return mediaUploadUrlIssuer.issue(uploadRequest);
+		return mediaUploadUrlIssuer.issueToR2(uploadRequest);
 	}
 }

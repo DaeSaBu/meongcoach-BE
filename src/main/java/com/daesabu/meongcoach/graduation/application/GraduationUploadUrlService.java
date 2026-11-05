@@ -32,6 +32,6 @@ public class GraduationUploadUrlService implements GraduationUploadUrlIssuer {
 		}
 		MediaUploadRequest uploadRequest = MediaUploadRequest.video(GraduationVideo.scopeOf(topicId), userId,
 				request.contentType(), request.fileSizeBytes(), GraduationVideo.MAX_FILE_SIZE_BYTES);
-		return mediaUploadUrlIssuer.issue(uploadRequest);
+		return mediaUploadUrlIssuer.issueToGcs(uploadRequest);
 	}
 }

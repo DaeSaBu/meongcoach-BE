@@ -9,10 +9,18 @@ import com.daesabu.meongcoach.media.application.provided.dto.MediaUploadUrlResul
 public interface MediaUploadUrlIssuer {
 
 	/**
-	 * 범위의 사용자 경로 아래에 새 객체 키를 만들고, 범위의 공개 여부에 맞는 스토리지의 업로드 URL과 공개 URL을 발급한다.
+	 * 범위의 사용자 경로 아래에 새 객체 키를 만들고, R2 업로드 URL과 R2 공개 경로 기준의 객체 URL을 발급한다.
 	 * Content-Type을 서명에 포함하며, 상한이 있는 요청은 파일 크기도 서명에 포함한다.
 	 * 범위의 미디어 종류가 지원하지 않는 형식이면 UnsupportedImageTypeException 또는 UnsupportedVideoTypeException을,
 	 * 파일 크기가 없거나 0 이하면 InvalidVideoFileSizeException을, 상한을 넘으면 VideoFileSizeExceededException을 던진다.
 	 */
-	MediaUploadUrlResult issue(MediaUploadRequest request);
+	MediaUploadUrlResult issueToR2(MediaUploadRequest request);
+
+	/**
+	 * 범위의 사용자 경로 아래에 새 객체 키를 만들고, GCS 업로드 URL과 버킷 표준 도메인 기준의 객체 URL을 발급한다.
+	 * Content-Type을 서명에 포함하며, 상한이 있는 요청은 파일 크기도 서명에 포함한다.
+	 * 범위의 미디어 종류가 지원하지 않는 형식이면 UnsupportedImageTypeException 또는 UnsupportedVideoTypeException을,
+	 * 파일 크기가 없거나 0 이하면 InvalidVideoFileSizeException을, 상한을 넘으면 VideoFileSizeExceededException을 던진다.
+	 */
+	MediaUploadUrlResult issueToGcs(MediaUploadRequest request);
 }

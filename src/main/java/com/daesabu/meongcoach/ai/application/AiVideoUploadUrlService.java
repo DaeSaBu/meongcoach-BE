@@ -40,7 +40,7 @@ public class AiVideoUploadUrlService implements AiVideoUploadUrlIssuer {
 
 		MediaUploadRequest uploadRequest = MediaUploadRequest.video(AiVideo.SCOPE, userId, request.contentType(),
 				request.fileSizeBytes(), AiVideo.MAX_FILE_SIZE_BYTES);
-		MediaUploadUrlResult result = mediaUploadUrlIssuer.issue(uploadRequest);
+		MediaUploadUrlResult result = mediaUploadUrlIssuer.issueToGcs(uploadRequest);
 		LocalDateTime uploadExpiresAt = LocalDateTime.now().plusSeconds(result.expiresInSeconds());
 		AiReport report = aiReportRepository.save(
 				AiReport.uploading(new AiReportUploadCommand(userId, result.objectKey(), uploadExpiresAt)));
