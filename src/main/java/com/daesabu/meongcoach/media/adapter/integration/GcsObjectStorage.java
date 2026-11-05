@@ -1,7 +1,6 @@
 package com.daesabu.meongcoach.media.adapter.integration;
 
-import com.daesabu.meongcoach.media.application.required.AnalysisObjectStorage;
-import com.daesabu.meongcoach.media.application.required.PrivateObjectStorage;
+import com.daesabu.meongcoach.media.application.required.GcsStorage;
 import com.daesabu.meongcoach.media.application.required.StorageUploadUrl;
 import com.daesabu.meongcoach.media.domain.MediaObjectKey;
 import com.google.cloud.storage.BlobId;
@@ -16,7 +15,7 @@ import java.util.concurrent.TimeUnit;
 import org.springframework.stereotype.Component;
 
 @Component
-public class GcsObjectStorage implements PrivateObjectStorage, AnalysisObjectStorage {
+public class GcsObjectStorage implements GcsStorage {
 
 	private static final String PUBLIC_BASE_URL = "https://storage.googleapis.com/";
 	private static final String STORAGE_URI_SCHEME = "gs://";

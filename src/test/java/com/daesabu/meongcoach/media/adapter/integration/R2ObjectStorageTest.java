@@ -64,13 +64,13 @@ class R2ObjectStorageTest {
 
 	@Test
 	void 공개_도메인_아래의_URL에서_객체_키를_꺼낸다() {
-		assertThat(storage.objectKeyOf(PUBLIC_BASE_URL + "/" + KEY.value())).contains(KEY);
+		assertThat(storage.objectKeyOfPublicUrl(PUBLIC_BASE_URL + "/" + KEY.value())).contains(KEY);
 	}
 
 	@Test
 	void 공개_도메인_아래가_아닌_URL에서는_객체_키를_꺼내지_않는다() {
-		assertThat(storage.objectKeyOf("https://evil.example.com/" + KEY.value())).isEmpty();
-		assertThat(storage.objectKeyOf(PUBLIC_BASE_URL + ".evil.example.com/" + KEY.value())).isEmpty();
-		assertThat(storage.objectKeyOf(null)).isEmpty();
+		assertThat(storage.objectKeyOfPublicUrl("https://evil.example.com/" + KEY.value())).isEmpty();
+		assertThat(storage.objectKeyOfPublicUrl(PUBLIC_BASE_URL + ".evil.example.com/" + KEY.value())).isEmpty();
+		assertThat(storage.objectKeyOfPublicUrl(null)).isEmpty();
 	}
 }

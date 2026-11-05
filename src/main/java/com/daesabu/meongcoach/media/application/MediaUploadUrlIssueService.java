@@ -3,9 +3,8 @@ package com.daesabu.meongcoach.media.application;
 import com.daesabu.meongcoach.media.application.provided.MediaUploadUrlIssuer;
 import com.daesabu.meongcoach.media.application.provided.dto.MediaUploadRequest;
 import com.daesabu.meongcoach.media.application.provided.dto.MediaUploadUrlResult;
-import com.daesabu.meongcoach.media.application.required.AnalysisObjectStorage;
-import com.daesabu.meongcoach.media.application.required.PrivateObjectStorage;
-import com.daesabu.meongcoach.media.application.required.PublicObjectStorage;
+import com.daesabu.meongcoach.media.application.required.GcsStorage;
+import com.daesabu.meongcoach.media.application.required.R2Storage;
 import com.daesabu.meongcoach.media.application.required.StorageUploadUrl;
 import com.daesabu.meongcoach.media.domain.MediaFileSize;
 import com.daesabu.meongcoach.media.domain.MediaObjectKey;
@@ -18,9 +17,8 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class MediaUploadUrlIssueService implements MediaUploadUrlIssuer {
 
-	private final PublicObjectStorage publicObjectStorage;
-	private final PrivateObjectStorage privateObjectStorage;
-	private final AnalysisObjectStorage analysisObjectStorage;
+	private final R2Storage r2Storage;
+	private final GcsStorage gcsStorage;
 
 	@Override
 	public MediaUploadUrlResult issue(MediaUploadRequest request) {
@@ -43,12 +41,9 @@ public class MediaUploadUrlIssueService implements MediaUploadUrlIssuer {
 
 	private StorageUploadUrl issueUploadUrl(MediaVisibility visibility, MediaObjectKey key, String contentType,
 			Long contentLength) {
-		if (visibility == MediaVisibility.PRIVATE) {
-			return privateObjectStorage.issueUploadUrl(key, contentType, contentLength);
+		if (visibility == MediaVisibility.PUBLIC) {
+			return r2Storage.issueUploadUrl(key, contentType, contentLength);
 		}
-		if (visibility == MediaVisibility.ANALYSIS) {
-			return analysisObjectStorage.issueUploadUrl(key, contentType, contentLength);
-		}
-		return publicObjectStorage.issueUploadUrl(key, contentType, contentLength);
+		return gcsStorage.issueUploadUrl(key, contentType, contentLength);
 	}
 }

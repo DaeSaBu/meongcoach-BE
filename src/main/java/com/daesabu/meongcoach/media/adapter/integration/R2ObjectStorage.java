@@ -1,6 +1,6 @@
 package com.daesabu.meongcoach.media.adapter.integration;
 
-import com.daesabu.meongcoach.media.application.required.PublicObjectStorage;
+import com.daesabu.meongcoach.media.application.required.R2Storage;
 import com.daesabu.meongcoach.media.application.required.StorageUploadUrl;
 import com.daesabu.meongcoach.media.domain.MediaObjectKey;
 import java.net.URI;
@@ -16,7 +16,7 @@ import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequ
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
 @Component
-public class R2ObjectStorage implements PublicObjectStorage {
+public class R2ObjectStorage implements R2Storage {
 
 	private final R2Properties properties;
 	private final String publicUrlPrefix;
@@ -47,7 +47,7 @@ public class R2ObjectStorage implements PublicObjectStorage {
 	}
 
 	@Override
-	public Optional<MediaObjectKey> objectKeyOf(String url) {
+	public Optional<MediaObjectKey> objectKeyOfPublicUrl(String url) {
 		if (url == null || !url.startsWith(publicUrlPrefix)) {
 			return Optional.empty();
 		}
