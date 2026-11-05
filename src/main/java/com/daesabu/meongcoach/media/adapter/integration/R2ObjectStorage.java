@@ -3,8 +3,8 @@ package com.daesabu.meongcoach.media.adapter.integration;
 import com.daesabu.meongcoach.media.application.required.R2Storage;
 import com.daesabu.meongcoach.media.application.required.StorageUploadUrl;
 import com.daesabu.meongcoach.media.domain.MediaObjectKey;
+import com.daesabu.meongcoach.media.domain.exception.InvalidMediaUrlException;
 import java.net.URI;
-import java.util.Optional;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -47,10 +47,10 @@ public class R2ObjectStorage implements R2Storage {
 	}
 
 	@Override
-	public Optional<MediaObjectKey> findObjectKeyByPublicUrl(String url) {
+	public MediaObjectKey parsePublicUrl(String url) {
 		if (url == null || !url.startsWith(publicUrlPrefix)) {
-			return Optional.empty();
+			throw new InvalidMediaUrlException();
 		}
-		return Optional.of(new MediaObjectKey(url.substring(publicUrlPrefix.length())));
+		return new MediaObjectKey(url.substring(publicUrlPrefix.length()));
 	}
 }

@@ -1,12 +1,17 @@
 package com.daesabu.meongcoach.media.adapter.integration;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.daesabu.meongcoach.media.application.required.StorageUploadUrl;
 import com.daesabu.meongcoach.media.domain.MediaObjectKey;
+import com.daesabu.meongcoach.media.domain.exception.InvalidMediaUrlException;
 import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class R2ObjectStorageTest {
 
@@ -64,13 +69,15 @@ class R2ObjectStorageTest {
 
 	@Test
 	void 공개_도메인_아래의_URL에서_객체_키를_꺼낸다() {
-		assertThat(storage.findObjectKeyByPublicUrl(PUBLIC_BASE_URL + "/" + KEY.value())).contains(KEY);
+		assertThat(storage.parsePublicUrl(PUBLIC_BASE_URL + "/" + KEY.value())).isEqualTo(KEY);
 	}
 
-	@Test
-	void 공개_도메인_아래가_아닌_URL에서는_객체_키를_꺼내지_않는다() {
-		assertThat(storage.findObjectKeyByPublicUrl("https://evil.example.com/" + KEY.value())).isEmpty();
-		assertThat(storage.findObjectKeyByPublicUrl(PUBLIC_BASE_URL + ".evil.example.com/" + KEY.value())).isEmpty();
-		assertThat(storage.findObjectKeyByPublicUrl(null)).isEmpty();
+	@ParameterizedTest
+	@NullSource
+	@ValueSource(strings = {"https://evil.example.com/images/a.png",
+			PUBLIC_BASE_URL + ".evil.example.com/images/a.png"})
+	void 공개_도메인_아래가_아닌_URL이면_실패한다(String url) {
+		assertThatThrownBy(() -> storage.parsePublicUrl(url))
+				.isInstanceOf(InvalidMediaUrlException.class);
 	}
 }

@@ -19,10 +19,8 @@ public class StoredMediaVerifyService implements StoredMediaVerifier {
 		if (url == null || url.isBlank()) {
 			return;
 		}
-		boolean owned = r2Storage.findObjectKeyByPublicUrl(url)
-				.filter(key -> key.belongsTo(scope, userId))
-				.isPresent();
-		if (!owned) {
+		MediaObjectKey key = r2Storage.parsePublicUrl(url);
+		if (!key.belongsTo(scope, userId)) {
 			throw new InvalidMediaUrlException();
 		}
 	}
