@@ -110,9 +110,9 @@ class AiControllerTest {
 								fieldWithPath("reports[].title").optional()
 										.description("AI가 요약한 리포트 제목. COMPLETED가 아니거나 제목 생성에 실패한 리포트는 null"),
 								fieldWithPath("reports[].status").description(
-										"리포트 상태. UPLOADING(업로드 대기), PENDING(분석 중), COMPLETED(완료), FAILED_UPLOAD(업로드 미완료), "
+										"리포트 상태. UPLOADING(업로드 대기), ANALYZING(분석 중), COMPLETED(완료), FAILED_UPLOAD(업로드 미완료), "
 												+ "FAILED_TRIAL_EXCEEDED(체험 횟수 초과), FAILED_ANALYSIS(분석 실패), FAILED_UNEXPECTED(예기치 못한 오류). "
-												+ "UPLOADING·PENDING이 아니면 폴링을 멈춘다"),
+												+ "UPLOADING·ANALYZING이 아니면 폴링을 멈춘다"),
 								fieldWithPath("reports[].createdAt").description("리포트 생성 시각(ISO-8601, 초 단위)")
 						)
 				));
@@ -178,9 +178,9 @@ class AiControllerTest {
 								fieldWithPath("title").optional()
 										.description("AI가 요약한 리포트 제목. COMPLETED가 아니거나 제목 생성에 실패한 리포트는 null"),
 								fieldWithPath("status").description(
-										"리포트 상태. UPLOADING(업로드 대기), PENDING(분석 중), COMPLETED(완료), FAILED_UPLOAD(업로드 미완료), "
+										"리포트 상태. UPLOADING(업로드 대기), ANALYZING(분석 중), COMPLETED(완료), FAILED_UPLOAD(업로드 미완료), "
 												+ "FAILED_TRIAL_EXCEEDED(체험 횟수 초과), FAILED_ANALYSIS(분석 실패), FAILED_UNEXPECTED(예기치 못한 오류). "
-												+ "UPLOADING·PENDING이 아니면 폴링을 멈춘다"),
+												+ "UPLOADING·ANALYZING이 아니면 폴링을 멈춘다"),
 								fieldWithPath("content").optional().description("AI 분석 리포트 본문. COMPLETED가 아니면 null"),
 								fieldWithPath("content.recommend[]").description(
 										"추천 교육 목록. 문제 행동이 아닌 영상은 빈 배열"),
@@ -205,12 +205,12 @@ class AiControllerTest {
 	@Test
 	void 완료되지_않은_리포트_상세는_상태와_함께_본문을_null로_내린다() throws Exception {
 		given(aiReportFinder.findReport(42L, 10L)).willReturn(new AiReportDetailResult(10L,
-				"videos/training/42/first.mp4", null, AiAnalysisStatus.PENDING, null,
+				"videos/training/42/first.mp4", null, AiAnalysisStatus.ANALYZING, null,
 				LocalDateTime.of(2026, 8, 1, 9, 0, 0)));
 
 		mockMvc.perform(get("/api/ai/reports/{reportId}", 10L).principal(CURRENT_USER))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.status").value("PENDING"))
+				.andExpect(jsonPath("$.status").value("ANALYZING"))
 				.andExpect(jsonPath("$.title").value(nullValue()))
 				.andExpect(jsonPath("$.content").value(nullValue()));
 	}

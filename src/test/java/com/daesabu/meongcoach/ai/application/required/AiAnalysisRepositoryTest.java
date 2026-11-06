@@ -65,7 +65,7 @@ class AiAnalysisRepositoryTest {
 
 	@Test
 	void 준영속_분석의_상태를_전이한_뒤_다시_저장하면_갱신된_상태로_조회된다() {
-		AiAnalysis saved = aiAnalysisRepository.saveAndFlush(pendingAnalysis(7L, VIDEO_OBJECT_KEY));
+		AiAnalysis saved = aiAnalysisRepository.saveAndFlush(startedAnalysis(7L, VIDEO_OBJECT_KEY));
 		entityManager.clear();
 
 		saved.failByAnalysis();
@@ -78,7 +78,7 @@ class AiAnalysisRepositoryTest {
 
 	@Test
 	void 준영속_분석을_완료한_뒤_다시_저장하면_리포트까지_저장되고_연결된다() {
-		AiAnalysis saved = aiAnalysisRepository.saveAndFlush(pendingAnalysis(7L, VIDEO_OBJECT_KEY));
+		AiAnalysis saved = aiAnalysisRepository.saveAndFlush(startedAnalysis(7L, VIDEO_OBJECT_KEY));
 		entityManager.clear();
 
 		saved.complete(TITLE, CONTENT);
@@ -130,7 +130,7 @@ class AiAnalysisRepositoryTest {
 		aiAnalysisRepository.saveAndFlush(completedAnalysis(7L, "videos/training/7/first.mp4", "첫 제목", "첫 리포트"));
 		aiAnalysisRepository.saveAndFlush(completedAnalysis(7L, "videos/training/7/second.mp4", "둘째 제목", "둘째 리포트"));
 		aiAnalysisRepository.saveAndFlush(failedAnalysis(7L, "videos/training/7/failed.mp4"));
-		aiAnalysisRepository.saveAndFlush(pendingAnalysis(7L, "videos/training/7/pending.mp4"));
+		aiAnalysisRepository.saveAndFlush(startedAnalysis(7L, "videos/training/7/pending.mp4"));
 		aiAnalysisRepository.saveAndFlush(completedAnalysis(8L, "videos/training/8/other.mp4", "남의 제목", "남의 리포트"));
 
 		assertThat(aiAnalysisRepository.countByUserIdAndStatus(7L, AiAnalysisStatus.COMPLETED)).isEqualTo(2);
@@ -148,20 +148,20 @@ class AiAnalysisRepositoryTest {
 		return AiAnalysis.uploading(new AiAnalysisUploadCommand(userId, videoObjectKey, UPLOAD_EXPIRES_AT));
 	}
 
-	private static AiAnalysis pendingAnalysis(Long userId, String videoObjectKey) {
+	private static AiAnalysis startedAnalysis(Long userId, String videoObjectKey) {
 		AiAnalysis analysis = uploadingAnalysis(userId, videoObjectKey);
 		analysis.startAnalysis();
 		return analysis;
 	}
 
 	private static AiAnalysis completedAnalysis(Long userId, String videoObjectKey, String title, String content) {
-		AiAnalysis analysis = pendingAnalysis(userId, videoObjectKey);
+		AiAnalysis analysis = startedAnalysis(userId, videoObjectKey);
 		analysis.complete(title, content);
 		return analysis;
 	}
 
 	private static AiAnalysis failedAnalysis(Long userId, String videoObjectKey) {
-		AiAnalysis analysis = pendingAnalysis(userId, videoObjectKey);
+		AiAnalysis analysis = startedAnalysis(userId, videoObjectKey);
 		analysis.failByAnalysis();
 		return analysis;
 	}

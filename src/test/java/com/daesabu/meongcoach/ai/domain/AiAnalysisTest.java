@@ -33,12 +33,12 @@ class AiAnalysisTest {
 	}
 
 	@Test
-	void 분석을_시작하면_상태가_PENDING이_된다() {
+	void 분석을_시작하면_상태가_ANALYZING이_된다() {
 		AiAnalysis analysis = uploadingAnalysis();
 
 		analysis.startAnalysis();
 
-		assertThat(analysis.getStatus()).isEqualTo(AiAnalysisStatus.PENDING);
+		assertThat(analysis.getStatus()).isEqualTo(AiAnalysisStatus.ANALYZING);
 		assertThat(analysis.isUploading()).isFalse();
 	}
 
@@ -59,14 +59,14 @@ class AiAnalysisTest {
 
 	@Test
 	void UPLOADING이_아닌_분석은_만료_시각이_지나도_조회_시점_상태가_그대로다() {
-		AiAnalysis analysis = pendingAnalysis();
+		AiAnalysis analysis = startedAnalysis();
 
-		assertThat(analysis.statusAt(UPLOAD_EXPIRES_AT.plusSeconds(86400))).isEqualTo(AiAnalysisStatus.PENDING);
+		assertThat(analysis.statusAt(UPLOAD_EXPIRES_AT.plusSeconds(86400))).isEqualTo(AiAnalysisStatus.ANALYZING);
 	}
 
 	@Test
 	void 완료하면_리포트가_생기고_상태가_COMPLETED가_된다() {
-		AiAnalysis analysis = pendingAnalysis();
+		AiAnalysis analysis = startedAnalysis();
 
 		analysis.complete(TITLE, CONTENT);
 
@@ -78,7 +78,7 @@ class AiAnalysisTest {
 
 	@Test
 	void 제목_없이도_완료할_수_있다() {
-		AiAnalysis analysis = pendingAnalysis();
+		AiAnalysis analysis = startedAnalysis();
 
 		analysis.complete(null, CONTENT);
 
@@ -89,7 +89,7 @@ class AiAnalysisTest {
 
 	@Test
 	void 체험_횟수_초과로_실패_처리하면_상태가_FAILED_TRIAL_EXCEEDED가_되고_리포트가_없다() {
-		AiAnalysis analysis = pendingAnalysis();
+		AiAnalysis analysis = startedAnalysis();
 
 		analysis.failByTrialExceeded();
 
@@ -99,7 +99,7 @@ class AiAnalysisTest {
 
 	@Test
 	void 분석_실패로_실패_처리하면_상태가_FAILED_ANALYSIS가_되고_리포트가_없다() {
-		AiAnalysis analysis = pendingAnalysis();
+		AiAnalysis analysis = startedAnalysis();
 
 		analysis.failByAnalysis();
 
@@ -109,7 +109,7 @@ class AiAnalysisTest {
 
 	@Test
 	void 예상하지_못한_예외로_실패_처리하면_상태가_FAILED_UNEXPECTED가_된다() {
-		AiAnalysis analysis = pendingAnalysis();
+		AiAnalysis analysis = startedAnalysis();
 
 		analysis.failUnexpectedly();
 
@@ -118,7 +118,7 @@ class AiAnalysisTest {
 
 	@Test
 	void 완료_후_예상하지_못한_예외로_실패_처리하면_리포트를_버린다() {
-		AiAnalysis analysis = pendingAnalysis();
+		AiAnalysis analysis = startedAnalysis();
 		analysis.complete(TITLE, CONTENT);
 
 		analysis.failUnexpectedly();
@@ -131,7 +131,7 @@ class AiAnalysisTest {
 		return AiAnalysis.uploading(new AiAnalysisUploadCommand(1L, VIDEO_OBJECT_KEY, UPLOAD_EXPIRES_AT));
 	}
 
-	private static AiAnalysis pendingAnalysis() {
+	private static AiAnalysis startedAnalysis() {
 		AiAnalysis analysis = uploadingAnalysis();
 		analysis.startAnalysis();
 		return analysis;

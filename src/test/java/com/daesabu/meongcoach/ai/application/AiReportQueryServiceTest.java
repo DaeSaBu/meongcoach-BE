@@ -87,13 +87,13 @@ class AiReportQueryServiceTest {
 
 	@Test
 	void 완료되지_않은_리포트도_목록에_상태와_함께_나온다() {
-		aiAnalysisRepository.saveAndFlush(pendingAnalysis(USER_ID, "videos/training/42/pending.mp4"));
+		aiAnalysisRepository.saveAndFlush(startedAnalysis(USER_ID, "videos/training/42/pending.mp4"));
 		persistFailedAnalysis(USER_ID, "videos/training/42/failed.mp4");
 
 		List<AiReportResult> reports = aiReportFinder.findReports(USER_ID);
 
 		assertThat(reports).extracting(AiReportResult::status)
-				.containsExactly(AiAnalysisStatus.FAILED_ANALYSIS, AiAnalysisStatus.PENDING);
+				.containsExactly(AiAnalysisStatus.FAILED_ANALYSIS, AiAnalysisStatus.ANALYZING);
 		assertThat(reports).extracting(AiReportResult::title).containsOnlyNulls();
 	}
 
@@ -140,11 +140,11 @@ class AiReportQueryServiceTest {
 
 	@Test
 	void 완료되지_않은_리포트_상세는_본문이_null이고_상태를_담는다() {
-		AiAnalysis saved = aiAnalysisRepository.saveAndFlush(pendingAnalysis(USER_ID, "videos/training/42/pending.mp4"));
+		AiAnalysis saved = aiAnalysisRepository.saveAndFlush(startedAnalysis(USER_ID, "videos/training/42/pending.mp4"));
 
 		AiReportDetailResult detail = aiReportFinder.findReport(USER_ID, saved.getId());
 
-		assertThat(detail.status()).isEqualTo(AiAnalysisStatus.PENDING);
+		assertThat(detail.status()).isEqualTo(AiAnalysisStatus.ANALYZING);
 		assertThat(detail.title()).isNull();
 		assertThat(detail.content()).isNull();
 	}
@@ -195,7 +195,7 @@ class AiReportQueryServiceTest {
 	}
 
 	private void persistFailedAnalysis(Long userId, String videoObjectKey) {
-		AiAnalysis analysis = pendingAnalysis(userId, videoObjectKey);
+		AiAnalysis analysis = startedAnalysis(userId, videoObjectKey);
 		analysis.failByAnalysis();
 		aiAnalysisRepository.saveAndFlush(analysis);
 	}
@@ -205,7 +205,7 @@ class AiReportQueryServiceTest {
 	}
 
 	private AiAnalysis persistCompletedAnalysis(Long userId, String videoObjectKey, String title, String contentJson) {
-		AiAnalysis analysis = pendingAnalysis(userId, videoObjectKey);
+		AiAnalysis analysis = startedAnalysis(userId, videoObjectKey);
 		analysis.complete(title, contentJson);
 		return aiAnalysisRepository.saveAndFlush(analysis);
 	}
@@ -214,7 +214,7 @@ class AiReportQueryServiceTest {
 		return AiAnalysis.uploading(new AiAnalysisUploadCommand(userId, videoObjectKey, uploadExpiresAt));
 	}
 
-	private static AiAnalysis pendingAnalysis(Long userId, String videoObjectKey) {
+	private static AiAnalysis startedAnalysis(Long userId, String videoObjectKey) {
 		AiAnalysis analysis = uploadingAnalysis(userId, videoObjectKey, Instant.now().plusSeconds(900));
 		analysis.startAnalysis();
 		return analysis;

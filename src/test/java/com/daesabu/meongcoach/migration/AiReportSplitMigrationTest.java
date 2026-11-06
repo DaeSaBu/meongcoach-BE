@@ -26,6 +26,7 @@ class AiReportSplitMigrationTest {
 		jdbc.update(INSERT_LEGACY_REPORT, 7L, "untitled.mp4", null, "{\"solution\":[]}", "COMPLETED", "2026-08-02 09:15:00", "2026-08-02 09:00:00");
 		jdbc.update(INSERT_LEGACY_REPORT, 7L, "failed.mp4", null, null, "FAILED_ANALYSIS", "2026-08-03 09:15:00", "2026-08-03 09:00:00");
 		jdbc.update(INSERT_LEGACY_REPORT, 8L, "uploading.mp4", null, null, "UPLOADING", "2026-08-04 09:15:00", "2026-08-04 09:00:00");
+		jdbc.update(INSERT_LEGACY_REPORT, 8L, "pending.mp4", null, null, "PENDING", "2026-08-05 09:15:00", "2026-08-05 09:00:00");
 
 		migrate(dataSource, "44");
 
@@ -34,7 +35,8 @@ class AiReportSplitMigrationTest {
 						Map.of("id", 1L, "user_id", 7L, "video_object_key", "completed.mp4", "status", "COMPLETED", "report_id", 1L),
 						Map.of("id", 2L, "user_id", 7L, "video_object_key", "untitled.mp4", "status", "COMPLETED", "report_id", 2L),
 						analysisWithoutReport(3L, 7L, "failed.mp4", "FAILED_ANALYSIS"),
-						analysisWithoutReport(4L, 8L, "uploading.mp4", "UPLOADING"));
+						analysisWithoutReport(4L, 8L, "uploading.mp4", "UPLOADING"),
+						analysisWithoutReport(5L, 8L, "pending.mp4", "ANALYZING"));
 		assertThat(jdbc.queryForObject("select upload_expires_at = timestamptz '2026-08-04 09:15:00+00' from ai_analyses where id = 4", Boolean.class))
 				.isTrue();
 		assertThat(jdbc.queryForObject("select data_type from information_schema.columns "
@@ -51,7 +53,7 @@ class AiReportSplitMigrationTest {
 				+ "where table_name = 'ai_analyses' and column_name in ('title', 'content')", Long.class)).isZero();
 
 		assertThat(jdbc.queryForObject("insert into ai_analyses (user_id, video_object_key, status, created_at) "
-				+ "values (7, 'next.mp4', 'UPLOADING', now()) returning id", Long.class)).isEqualTo(5L);
+				+ "values (7, 'next.mp4', 'UPLOADING', now()) returning id", Long.class)).isEqualTo(6L);
 		assertThat(jdbc.queryForObject("insert into ai_reports (content, created_at) values ('본문', now()) returning id", Long.class))
 				.isEqualTo(3L);
 	}

@@ -53,7 +53,7 @@ class AiReportTrialFinderServiceTest {
 	@Test
 	void 업로드_대기_중이거나_분석_중인_리포트는_사용_횟수에_세지_않는다() {
 		aiAnalysisRepository.saveAndFlush(uploadingAnalysis(USER_ID, "videos/training/42/uploading.mp4"));
-		aiAnalysisRepository.saveAndFlush(pendingAnalysis(USER_ID, "videos/training/42/pending.mp4"));
+		aiAnalysisRepository.saveAndFlush(startedAnalysis(USER_ID, "videos/training/42/pending.mp4"));
 
 		assertThat(aiTrialFinder.findTrial(USER_ID)).isEqualTo(new AiTrial(0));
 	}
@@ -66,13 +66,13 @@ class AiReportTrialFinderServiceTest {
 	}
 
 	private void persistCompletedAnalysis(Long userId, String videoObjectKey) {
-		AiAnalysis analysis = pendingAnalysis(userId, videoObjectKey);
+		AiAnalysis analysis = startedAnalysis(userId, videoObjectKey);
 		analysis.complete("분리불안 징후 행동 분석", "분리불안 징후가 관찰됩니다.");
 		aiAnalysisRepository.saveAndFlush(analysis);
 	}
 
 	private void persistFailedAnalysis(Long userId, String videoObjectKey, Consumer<AiAnalysis> failure) {
-		AiAnalysis analysis = pendingAnalysis(userId, videoObjectKey);
+		AiAnalysis analysis = startedAnalysis(userId, videoObjectKey);
 		failure.accept(analysis);
 		aiAnalysisRepository.saveAndFlush(analysis);
 	}
@@ -81,7 +81,7 @@ class AiReportTrialFinderServiceTest {
 		return AiAnalysis.uploading(new AiAnalysisUploadCommand(userId, videoObjectKey, Instant.now().plusSeconds(900)));
 	}
 
-	private static AiAnalysis pendingAnalysis(Long userId, String videoObjectKey) {
+	private static AiAnalysis startedAnalysis(Long userId, String videoObjectKey) {
 		AiAnalysis analysis = uploadingAnalysis(userId, videoObjectKey);
 		analysis.startAnalysis();
 		return analysis;

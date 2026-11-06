@@ -88,10 +88,10 @@ class AiReportGenerateServiceTest {
 	}
 
 	@Test
-	void 분석을_시작하기_전에_UPLOADING_row를_PENDING으로_먼저_전이해_저장한다() {
+	void 분석을_시작하기_전에_UPLOADING_row를_ANALYZING으로_먼저_전이해_저장한다() {
 		service.generate(OBJECT_KEY);
 
-		assertThat(savedStatuses).containsExactly(AiAnalysisStatus.PENDING, AiAnalysisStatus.COMPLETED);
+		assertThat(savedStatuses).containsExactly(AiAnalysisStatus.ANALYZING, AiAnalysisStatus.COMPLETED);
 	}
 
 	@Test
@@ -115,7 +115,7 @@ class AiReportGenerateServiceTest {
 	}
 
 	@Test
-	void 객체_키_검증에_실패하면_PENDING으로_전이하지_않고_예외를_그대로_던진다() {
+	void 객체_키_검증에_실패하면_ANALYZING으로_전이하지_않고_예외를_그대로_던진다() {
 		when(storageUriResolver.resolve(AiVideo.SCOPE, OBJECT_KEY)).thenThrow(new InvalidMediaObjectKeyException(OBJECT_KEY));
 
 		assertThatThrownBy(() -> service.generate(OBJECT_KEY))
@@ -131,7 +131,7 @@ class AiReportGenerateServiceTest {
 		service.generate(OBJECT_KEY);
 
 		verify(videoAnalyzer, never()).analyze(any());
-		assertThat(savedStatuses).containsExactly(AiAnalysisStatus.PENDING, AiAnalysisStatus.FAILED_TRIAL_EXCEEDED);
+		assertThat(savedStatuses).containsExactly(AiAnalysisStatus.ANALYZING, AiAnalysisStatus.FAILED_TRIAL_EXCEEDED);
 	}
 
 	@Test
@@ -140,7 +140,7 @@ class AiReportGenerateServiceTest {
 
 		assertThatCode(() -> service.generate(OBJECT_KEY)).doesNotThrowAnyException();
 
-		assertThat(savedStatuses).containsExactly(AiAnalysisStatus.PENDING, AiAnalysisStatus.FAILED_ANALYSIS);
+		assertThat(savedStatuses).containsExactly(AiAnalysisStatus.ANALYZING, AiAnalysisStatus.FAILED_ANALYSIS);
 		assertThat(savedAnalysis.getContent()).isNull();
 	}
 
@@ -161,16 +161,16 @@ class AiReportGenerateServiceTest {
 
 		assertThatCode(() -> service.generate(OBJECT_KEY)).doesNotThrowAnyException();
 
-		assertThat(savedStatuses).containsExactly(AiAnalysisStatus.PENDING, AiAnalysisStatus.FAILED_UNEXPECTED);
+		assertThat(savedStatuses).containsExactly(AiAnalysisStatus.ANALYZING, AiAnalysisStatus.FAILED_UNEXPECTED);
 	}
 
 	@Test
-	void PENDING_기록_뒤_예상하지_못한_예외가_나면_FAILED_UNEXPECTED로_기록한다() {
+	void ANALYZING_기록_뒤_예상하지_못한_예외가_나면_FAILED_UNEXPECTED로_기록한다() {
 		when(aiTrialFinder.findTrial(USER_ID)).thenThrow(new IllegalStateException("체험 조회 실패"));
 
 		assertThatCode(() -> service.generate(OBJECT_KEY)).doesNotThrowAnyException();
 
-		assertThat(savedStatuses).containsExactly(AiAnalysisStatus.PENDING, AiAnalysisStatus.FAILED_UNEXPECTED);
+		assertThat(savedStatuses).containsExactly(AiAnalysisStatus.ANALYZING, AiAnalysisStatus.FAILED_UNEXPECTED);
 	}
 
 	@Test
@@ -179,7 +179,7 @@ class AiReportGenerateServiceTest {
 
 		assertThatCode(() -> service.generate(OBJECT_KEY)).doesNotThrowAnyException();
 
-		assertThat(savedStatuses).containsExactly(AiAnalysisStatus.PENDING, AiAnalysisStatus.FAILED_UNEXPECTED);
+		assertThat(savedStatuses).containsExactly(AiAnalysisStatus.ANALYZING, AiAnalysisStatus.FAILED_UNEXPECTED);
 		assertThat(savedAnalysis.getReport()).isNull();
 	}
 
@@ -190,7 +190,7 @@ class AiReportGenerateServiceTest {
 
 		assertThatCode(() -> service.generate(OBJECT_KEY)).doesNotThrowAnyException();
 
-		assertThat(savedStatuses).containsExactly(AiAnalysisStatus.PENDING, AiAnalysisStatus.FAILED_UNEXPECTED);
+		assertThat(savedStatuses).containsExactly(AiAnalysisStatus.ANALYZING, AiAnalysisStatus.FAILED_UNEXPECTED);
 	}
 
 	@Test
@@ -200,6 +200,6 @@ class AiReportGenerateServiceTest {
 
 		assertThatThrownBy(() -> service.generate(OBJECT_KEY))
 				.isInstanceOf(IllegalStateException.class);
-		assertThat(savedStatuses).containsExactly(AiAnalysisStatus.PENDING);
+		assertThat(savedStatuses).containsExactly(AiAnalysisStatus.ANALYZING);
 	}
 }
