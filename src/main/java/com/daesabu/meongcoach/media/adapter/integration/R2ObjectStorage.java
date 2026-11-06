@@ -1,10 +1,9 @@
 package com.daesabu.meongcoach.media.adapter.integration;
 
-import com.daesabu.meongcoach.media.application.required.PublicObjectStorage;
+import com.daesabu.meongcoach.media.application.required.R2Storage;
 import com.daesabu.meongcoach.media.application.required.StorageUploadUrl;
 import com.daesabu.meongcoach.media.domain.MediaObjectKey;
 import java.net.URI;
-import java.util.Optional;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -16,7 +15,7 @@ import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequ
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
 @Component
-public class R2ObjectStorage implements PublicObjectStorage {
+public class R2ObjectStorage implements R2Storage {
 
 	private final R2Properties properties;
 	private final String publicUrlPrefix;
@@ -24,7 +23,7 @@ public class R2ObjectStorage implements PublicObjectStorage {
 
 	public R2ObjectStorage(R2Properties properties) {
 		this.properties = properties;
-		this.publicUrlPrefix = StorageUrls.trimTrailingSlash(properties.publicBaseUrl()) + "/";
+		this.publicUrlPrefix = trimTrailingSlash(properties.publicBaseUrl()) + "/";
 		this.presigner = S3Presigner.builder()
 				.endpointOverride(URI.create(properties.endpoint()))
 				.region(Region.of("auto"))
@@ -36,8 +35,12 @@ public class R2ObjectStorage implements PublicObjectStorage {
 
 	@Override
 	public StorageUploadUrl issueUploadUrl(MediaObjectKey key, String contentType, Long contentLength) {
-		PutObjectRequest putObjectRequest =
-				StorageUrls.putObjectRequest(properties.bucket(), key, contentType, contentLength);
+		PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+				.bucket(properties.bucket())
+				.key(key.value())
+				.contentType(contentType)
+				.contentLength(contentLength)
+				.build();
 		PresignedPutObjectRequest presigned = presigner.presignPutObject(PutObjectPresignRequest.builder()
 				.signatureDuration(properties.uploadUrlValidity())
 				.putObjectRequest(putObjectRequest)
@@ -47,10 +50,14 @@ public class R2ObjectStorage implements PublicObjectStorage {
 	}
 
 	@Override
-	public Optional<MediaObjectKey> objectKeyOf(String url) {
-		if (url == null || !url.startsWith(publicUrlPrefix)) {
-			return Optional.empty();
+	public String resolvePublicUrlPrefix() {
+		return publicUrlPrefix;
+	}
+
+	private String trimTrailingSlash(String url) {
+		if (url.endsWith("/")) {
+			return url.substring(0, url.length() - 1);
 		}
-		return Optional.of(new MediaObjectKey(url.substring(publicUrlPrefix.length())));
+		return url;
 	}
 }

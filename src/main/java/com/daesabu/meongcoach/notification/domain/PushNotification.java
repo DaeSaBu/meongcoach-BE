@@ -17,7 +17,6 @@ public record PushNotification(
 
 	public PushNotification {
 		requireNonNull(fid);
-		requireNonNull(title);
 		requireNonNull(body);
 		requireNonNull(deepLink);
 		requireNonNull(collapseKey);

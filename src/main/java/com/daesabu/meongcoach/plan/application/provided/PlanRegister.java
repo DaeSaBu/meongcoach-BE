@@ -10,15 +10,29 @@ import jakarta.validation.Valid;
 public interface PlanRegister {
 
 	/**
-	 * 선택된 강아지와 요청한 토픽의 첫 미완료 커리큘럼부터 이후의 모든 커리큘럼으로 플랜을 생성하고 기존 활성 플랜을 교체한다.
+	 * 대표 강아지와 요청한 토픽의 첫 미완료 커리큘럼부터 이후의 모든 커리큘럼으로 플랜을 생성하고 기존 활성 플랜을 교체한다.
+	 * @deprecated 강아지 ID를 명시하는 createCustom(userId, dogId, request)로 이전한다.
 	 */
+	@Deprecated(forRemoval = true)
 	Plan createCustom(Long userId, @Valid CustomPlanCreateRequest request);
 
 	/**
-	 * 선택된 강아지와 사용자 기대사항으로 AI 플랜을 생성하고, 성공하면 기존 활성 플랜을 교체한다.
-	 * 미완료 커리큘럼이 없으면 EmptyPlanCurriculumsException을 던진다.
+	 * 지정한 본인 소유 강아지와 요청한 토픽으로 플랜을 생성하고 기존 활성 플랜을 교체한다.
 	 */
+	Plan createCustom(Long userId, Long dogId, @Valid CustomPlanCreateRequest request);
+
+	/**
+	 * 대표 강아지와 사용자 기대사항으로 AI 플랜을 생성하고, 성공하면 기존 활성 플랜을 교체한다.
+	 * 미완료 커리큘럼이 없으면 EmptyPlanCurriculumsException을 던진다.
+	 * @deprecated 강아지 ID를 명시하는 createAiPlan(userId, dogId, request)로 이전한다.
+	 */
+	@Deprecated(forRemoval = true)
 	Plan createAiPlan(Long userId, @Valid AiPlanCreateRequest request);
+
+	/**
+	 * 지정한 본인 소유 강아지와 기대사항으로 AI 플랜을 생성하고 기존 활성 플랜을 교체한다.
+	 */
+	Plan createAiPlan(Long userId, Long dogId, @Valid AiPlanCreateRequest request);
 
 	/**
 	 * 사용자가 소유한 완료된 플랜에 회고 결과를 기록하고, 걸린 날과 플랜 커리큘럼이 속한 토픽을 함께 반환한다.

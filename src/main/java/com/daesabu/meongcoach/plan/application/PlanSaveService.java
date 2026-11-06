@@ -18,7 +18,7 @@ class PlanSaveService {
 
 	@Transactional
 	public Plan save(Plan plan) {
-		planRepository.findByUserIdAndStatus(plan.getUserId(), PlanStatus.ACTIVE).ifPresent(Plan::replace);
+		planRepository.findByUserIdAndDogIdAndStatus(plan.getUserId(), plan.getDogId(), PlanStatus.ACTIVE).ifPresent(Plan::replace);
 		try {
 			planRepository.flush();
 			return planRepository.saveAndFlush(plan);

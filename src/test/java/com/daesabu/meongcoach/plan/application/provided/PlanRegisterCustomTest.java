@@ -8,7 +8,9 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
 import com.daesabu.meongcoach.dog.application.provided.DogProfileFinder;
+import com.daesabu.meongcoach.dog.application.provided.dto.DogProfileResult;
 import com.daesabu.meongcoach.dog.application.provided.dto.DogSummaryResult;
+import com.daesabu.meongcoach.dog.domain.exception.DogNotFoundException;
 import com.daesabu.meongcoach.plan.application.provided.dto.CustomPlanCreateRequest;
 import com.daesabu.meongcoach.plan.application.required.PlanRepository;
 import com.daesabu.meongcoach.plan.domain.Plan;
@@ -56,8 +58,8 @@ class PlanRegisterCustomTest {
 
 	@BeforeEach
 	void 준비한다() {
-		jdbc.execute("CREATE UNIQUE INDEX IF NOT EXISTS uk_plans_active_user ON plans (user_id) WHERE status = 'ACTIVE'");
-		when(dogProfileFinder.findSelectedDogSummary(USER_ID)).thenReturn(new DogSummaryResult(7L, "초코"));
+		jdbc.execute("CREATE UNIQUE INDEX IF NOT EXISTS uk_plans_active_user_dog ON plans (user_id, dog_id) WHERE status = 'ACTIVE'");
+		when(dogProfileFinder.findDogProfile(USER_ID, 7L)).thenReturn(new DogProfileResult(7L, "초코", null, null, null));
 		when(preparationFinder.find(USER_ID, REQUEST.topicIds())).thenReturn(
 				new PlanPreparationResult(List.of(9L, 4L)));
 	}
@@ -69,39 +71,69 @@ class PlanRegisterCustomTest {
 	}
 
 	@Test
-	void 선택된_강아지와_교육_순서로_플랜을_저장하고_기존_플랜을_교체한다() {
-		Plan first = creator.createCustom(USER_ID, REQUEST);
+	void 다른_강아지의_플랜을_유지하고_같은_강아지의_플랜만_교체한다() {
+		when(dogProfileFinder.findDogProfile(USER_ID, 8L)).thenReturn(new DogProfileResult(8L, "보리", null, null, null));
+		Plan firstDogPlan = creator.createCustom(USER_ID, 7L, REQUEST);
+		Plan secondDogPlan = creator.createCustom(USER_ID, 8L, REQUEST);
+		Plan replacement = creator.createCustom(USER_ID, 7L, REQUEST);
 
-		Plan second = creator.createCustom(USER_ID, REQUEST);
+		assertThat(planRepository.findById(firstDogPlan.getId()).orElseThrow().getStatus()).isEqualTo(PlanStatus.REPLACED);
+		assertThat(planRepository.findById(secondDogPlan.getId()).orElseThrow().getStatus()).isEqualTo(PlanStatus.ACTIVE);
+		assertThat(planRepository.findById(replacement.getId()).orElseThrow().getStatus()).isEqualTo(PlanStatus.ACTIVE);
+	}
+
+	@Test
+	void 이전_API는_대표_강아지로_플랜을_생성한다() {
+		when(dogProfileFinder.findSelectedDogSummary(USER_ID)).thenReturn(new DogSummaryResult(7L, "초코"));
+
+		Plan plan = creator.createCustom(USER_ID, REQUEST);
+
+		assertThat(plan.getDogId()).isEqualTo(7L);
+	}
+
+	@Test
+	void 소유하지_않은_강아지는_플랜을_생성하지_않는다() {
+		when(dogProfileFinder.findDogProfile(USER_ID, 999L)).thenThrow(new DogNotFoundException(999L));
+
+		assertThatThrownBy(() -> creator.createCustom(USER_ID, 999L, new CustomPlanCreateRequest(List.of(11L), 10, 3)))
+				.isInstanceOf(DogNotFoundException.class);
+		assertThat(planRepository.count()).isZero();
+	}
+
+	@Test
+	void 요청한_강아지와_교육_순서로_플랜을_저장하고_기존_플랜을_교체한다() {
+		Plan first = creator.createCustom(USER_ID, 7L, REQUEST);
+
+		Plan second = creator.createCustom(USER_ID, 7L, REQUEST);
 
 		assertThat(second.getDogId()).isEqualTo(7L);
 		assertThat(second.getTitle()).isEqualTo("초코의 2주 훈련 플랜");
 		assertThat(second.getGoal()).isEqualTo("선택한 훈련을 차근차근 익혀요");
 		assertThat(second.getCurriculumIds()).containsExactly(9L, 4L);
 		assertThat(planRepository.findById(first.getId()).orElseThrow().getStatus()).isEqualTo(PlanStatus.REPLACED);
-		assertThat(planRepository.findByUserIdAndStatus(USER_ID, PlanStatus.ACTIVE).orElseThrow().getId())
+		assertThat(planRepository.findByUserIdAndDogIdAndStatus(USER_ID, 7L, PlanStatus.ACTIVE).orElseThrow().getId())
 				.isEqualTo(second.getId());
 	}
 
 	@Test
 	void 남은_커리큘럼이_없으면_기존_활성_플랜을_유지한다() {
-		Plan first = creator.createCustom(USER_ID, REQUEST);
+		Plan first = creator.createCustom(USER_ID, 7L, REQUEST);
 		when(preparationFinder.find(USER_ID, REQUEST.topicIds())).thenReturn(
 				new PlanPreparationResult(List.of()));
 
-		assertThatThrownBy(() -> creator.createCustom(USER_ID, REQUEST)).isInstanceOf(EmptyPlanCurriculumsException.class);
+		assertThatThrownBy(() -> creator.createCustom(USER_ID, 7L, REQUEST)).isInstanceOf(EmptyPlanCurriculumsException.class);
 
-		assertThat(planRepository.findByUserIdAndStatus(USER_ID, PlanStatus.ACTIVE).orElseThrow().getId())
+		assertThat(planRepository.findByUserIdAndDogIdAndStatus(USER_ID, 7L, PlanStatus.ACTIVE).orElseThrow().getId())
 				.isEqualTo(first.getId());
 	}
 
 	@Test
 	void 무결성_오류가_발생하면_교체를_롤백하고_원인을_보존한_충돌로_알린다() {
-		Plan first = creator.createCustom(USER_ID, REQUEST);
+		Plan first = creator.createCustom(USER_ID, 7L, REQUEST);
 		DataIntegrityViolationException failure = new DataIntegrityViolationException("다른 저장 오류");
 		doThrow(failure).when(planRepository).saveAndFlush(any(Plan.class));
 
-		assertThatThrownBy(() -> creator.createCustom(USER_ID, REQUEST))
+		assertThatThrownBy(() -> creator.createCustom(USER_ID, 7L, REQUEST))
 				.isInstanceOf(PlanCreationConflictException.class)
 				.hasCause(failure);
 
@@ -115,7 +147,7 @@ class PlanRegisterCustomTest {
 
 	@Test
 	void 동시에_교체하면_하나만_저장하고_실패한_교체는_롤백한다() throws Exception {
-		Plan first = creator.createCustom(USER_ID, REQUEST);
+		Plan first = creator.createCustom(USER_ID, 7L, REQUEST);
 
 		verifyConcurrentCreation();
 
@@ -128,12 +160,12 @@ class PlanRegisterCustomTest {
 		CyclicBarrier barrier = new CyclicBarrier(2);
 		doAnswer(invocation -> {
 			var result = entityManager.createQuery(
-					"select p from Plan p where p.userId = :userId and p.status = :status", Plan.class)
-					.setParameter("userId", USER_ID).setParameter("status", PlanStatus.ACTIVE)
+					"select p from Plan p where p.userId = :userId and p.dogId = :dogId and p.status = :status", Plan.class)
+					.setParameter("userId", USER_ID).setParameter("dogId", 7L).setParameter("status", PlanStatus.ACTIVE)
 					.getResultList().stream().findFirst();
 			barrier.await(10, TimeUnit.SECONDS);
 			return result;
-		}).when(planRepository).findByUserIdAndStatus(USER_ID, PlanStatus.ACTIVE);
+		}).when(planRepository).findByUserIdAndDogIdAndStatus(USER_ID, 7L, PlanStatus.ACTIVE);
 
 		try (var executor = Executors.newFixedThreadPool(2)) {
 			var first = executor.submit(this::createOutcome);
@@ -147,7 +179,7 @@ class PlanRegisterCustomTest {
 
 	private String createOutcome() {
 		try {
-			creator.createCustom(USER_ID, REQUEST);
+			creator.createCustom(USER_ID, 7L, REQUEST);
 			return "created";
 		} catch (PlanCreationConflictException exception) {
 			return "conflict";

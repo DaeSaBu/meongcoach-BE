@@ -26,6 +26,12 @@ public class DogProfileFinderService implements DogProfileFinder {
 	private final DogRepository dogRepository;
 
 	@Override
+	public DogProfileResult findDogProfile(Long userId, Long dogId) {
+		Dog dog = findDog(userId, dogId);
+		return DogProfileResult.from(dog);
+	}
+
+	@Override
 	public List<Dog> findDogs(Long userId) {
 		return dogRepository.findAllByUserIdOrderByIdAsc(userId);
 	}
@@ -43,6 +49,7 @@ public class DogProfileFinderService implements DogProfileFinder {
 	}
 
 	@Override
+	@Deprecated(forRemoval = true)
 	public DogSummaryResult findSelectedDogSummary(Long userId) {
 		Dog dog = findSelectedDog(userId);
 		return DogSummaryResult.from(dog);

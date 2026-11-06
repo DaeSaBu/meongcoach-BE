@@ -142,6 +142,25 @@ class FirebaseNotificationSenderTest {
 	}
 
 	@Test
+	void 제목이_없는_댓글_알림은_본문만_보낸다() throws Exception {
+		FirebaseMessaging messaging = mock(FirebaseMessaging.class);
+		BatchResponse batch = mock(BatchResponse.class);
+		given(batch.getResponses()).willReturn(List.of());
+		given(messaging.sendEach(anyList())).willReturn(batch);
+		var notification = new PushNotification("fid", null, "회원님이 댓글을 남겼어요: 축하해요!",
+				NotificationEventType.COMMENT, null, new NotificationDeepLink("meongcoach://community-post/20"), "key");
+
+		sender(messaging).send(List.of(notification));
+
+		ArgumentCaptor<List<com.google.firebase.messaging.Message>> captor = ArgumentCaptor.captor();
+		verify(messaging).sendEach(captor.capture());
+		String json = com.google.api.client.json.gson.GsonFactory.getDefaultInstance().toString(captor.getValue().getFirst());
+		var payload = com.google.gson.JsonParser.parseString(json).getAsJsonObject().getAsJsonObject("notification");
+		assertThat(payload.has("title")).isFalse();
+		assertThat(payload.get("body").getAsString()).isEqualTo(notification.body());
+	}
+
+	@Test
 	void 같은_예약의_중복_알림이_기기에서_교체되도록_묶음_키를_보낸다() throws Exception {
 		FirebaseMessaging messaging = mock(FirebaseMessaging.class);
 		BatchResponse batch = mock(BatchResponse.class);

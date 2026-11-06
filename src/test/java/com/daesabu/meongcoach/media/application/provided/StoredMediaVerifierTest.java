@@ -7,7 +7,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.daesabu.meongcoach.media.domain.exception.InvalidMediaUrlException;
 import com.daesabu.meongcoach.media.domain.shared.MediaKind;
 import com.daesabu.meongcoach.media.domain.shared.MediaScope;
-import com.daesabu.meongcoach.media.domain.shared.MediaVisibility;
 import com.daesabu.meongcoach.support.ApplicationTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -19,16 +18,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 class StoredMediaVerifierTest {
 
 	private static final String PUBLIC_BASE_URL = "https://images.test.meongcoach.com/";
-	private static final MediaScope DOG_IMAGE = MediaScope.of(MediaKind.IMAGE, MediaVisibility.PUBLIC, "dog-profile");
-	private static final MediaScope GRADUATION_VIDEO =
-			MediaScope.of(MediaKind.VIDEO, MediaVisibility.PRIVATE, "graduation");
+	private static final MediaScope DOG_IMAGE = MediaScope.of(MediaKind.IMAGE, "dog-profile");
+	private static final MediaScope GRADUATION_VIDEO = MediaScope.of(MediaKind.VIDEO, "graduation");
 
 	@Autowired
 	private StoredMediaVerifier verifier;
 
 	@Test
 	void 범위와_사용자에_맞는_우리_스토리지의_공개_URL이면_통과한다() {
-		assertThatCode(() -> verifier.validateUrl(DOG_IMAGE, 7L, PUBLIC_BASE_URL + "images/dog-profile/7/a.jpg"))
+		assertThatCode(() -> verifier.validateR2PublicUrl(DOG_IMAGE, 7L, PUBLIC_BASE_URL + "images/dog-profile/7/a.jpg"))
 				.doesNotThrowAnyException();
 	}
 
@@ -36,7 +34,7 @@ class StoredMediaVerifierTest {
 	@NullAndEmptySource
 	@ValueSource(strings = " ")
 	void URL이_없으면_통과한다(String url) {
-		assertThatCode(() -> verifier.validateUrl(DOG_IMAGE, 7L, url)).doesNotThrowAnyException();
+		assertThatCode(() -> verifier.validateR2PublicUrl(DOG_IMAGE, 7L, url)).doesNotThrowAnyException();
 	}
 
 	@ParameterizedTest
@@ -48,7 +46,7 @@ class StoredMediaVerifierTest {
 			PUBLIC_BASE_URL + "videos/dog-profile/7/a.mp4",
 			PUBLIC_BASE_URL + "images/dog-profile/7/sub/a.jpg"})
 	void 범위나_사용자가_다르거나_우리_스토리지가_아닌_URL이면_실패한다(String url) {
-		assertThatThrownBy(() -> verifier.validateUrl(DOG_IMAGE, 7L, url))
+		assertThatThrownBy(() -> verifier.validateR2PublicUrl(DOG_IMAGE, 7L, url))
 				.isInstanceOf(InvalidMediaUrlException.class);
 	}
 

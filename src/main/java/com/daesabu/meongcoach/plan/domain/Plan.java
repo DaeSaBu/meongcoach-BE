@@ -8,6 +8,8 @@ import com.daesabu.meongcoach.plan.domain.exception.EmptyPlanCurriculumsExceptio
 import com.daesabu.meongcoach.plan.domain.exception.InvalidDailyMinutesException;
 import com.daesabu.meongcoach.plan.domain.exception.InvalidDaysPerWeekException;
 import com.daesabu.meongcoach.plan.domain.exception.InvalidPlanCurriculumException;
+import com.daesabu.meongcoach.plan.domain.exception.PlanLessonOrderException;
+import com.daesabu.meongcoach.plan.domain.exception.PlanNotActiveException;
 import com.daesabu.meongcoach.plan.domain.exception.PlanNotCompletedException;
 import com.daesabu.meongcoach.plan.domain.exception.PlanOutcomeAlreadyRecordedException;
 import com.daesabu.meongcoach.shared.domain.BaseTimeEntity;
@@ -139,6 +141,35 @@ public class Plan extends BaseTimeEntity {
 
 	public Set<Long> getCompletedLessonIds() {
 		return Collections.unmodifiableSet(completedLessonIds);
+	}
+
+	public boolean needsLessonCompletion(Long lessonId) {
+		if (status == PlanStatus.REPLACED) {
+			throw new PlanNotActiveException();
+		}
+		if (completedLessonIds.contains(lessonId)) {
+			return false;
+		}
+		if (status != PlanStatus.ACTIVE) {
+			throw new PlanNotActiveException();
+		}
+		return true;
+	}
+
+	public void verifyCurrentLesson(Long lessonId, List<Long> orderedLessonIds) {
+		Long currentLessonId = findCurrentLessonId(orderedLessonIds)
+				.orElseThrow(PlanLessonOrderException::new);
+		if (!currentLessonId.equals(lessonId)) {
+			throw new PlanLessonOrderException();
+		}
+	}
+
+	public void completeCurrentLesson(Long lessonId, List<Long> orderedLessonIds, Instant completedAt) {
+		verifyCurrentLesson(lessonId, orderedLessonIds);
+		completeLesson(lessonId);
+		if (hasCompletedAllLessons(orderedLessonIds)) {
+			complete(completedAt);
+		}
 	}
 
 	public void completeLesson(Long lessonId) {

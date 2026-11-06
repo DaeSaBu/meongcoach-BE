@@ -48,9 +48,24 @@ public class PlanRegisterService implements PlanRegister {
 	private final PlanCurriculumFinder planCurriculumFinder;
 
 	@Override
+	@Deprecated(forRemoval = true)
 	@Transactional
 	public Plan createCustom(Long userId, CustomPlanCreateRequest request) {
 		DogSummaryResult dog = dogProfileFinder.findSelectedDogSummary(userId);
+		return createCustom(userId, dog.id(), request);
+	}
+
+	@Override
+	@Deprecated(forRemoval = true)
+	public Plan createAiPlan(Long userId, AiPlanCreateRequest request) {
+		DogSummaryResult dog = dogProfileFinder.findSelectedDogSummary(userId);
+		return createAiPlan(userId, dog.id(), request);
+	}
+
+	@Override
+	@Transactional
+	public Plan createCustom(Long userId, Long dogId, CustomPlanCreateRequest request) {
+		DogProfileResult dog = dogProfileFinder.findDogProfile(userId, dogId);
 		PlanPreparationResult preparation = preparationFinder.find(userId, request.topicIds());
 		CustomPlanCreateCommand command = new CustomPlanCreateCommand(userId, dog.id(), dog.name(),
 				request.dailyMinutes(), request.daysPerWeek());
@@ -59,9 +74,9 @@ public class PlanRegisterService implements PlanRegister {
 	}
 
 	@Override
-	public Plan createAiPlan(Long userId, AiPlanCreateRequest request) {
+	public Plan createAiPlan(Long userId, Long dogId, AiPlanCreateRequest request) {
 		Plan.validatePracticeSettings(request.dailyMinutes(), request.daysPerWeek());
-		DogProfileResult dog = dogProfileFinder.findSelectedDogProfile(userId);
+		DogProfileResult dog = dogProfileFinder.findDogProfile(userId, dogId);
 		AiPlanPreparationResult candidates = aiPreparationFinder.find(userId);
 		boolean hasIncompleteCurriculum = candidates.curriculums().stream()
 				.anyMatch(curriculum -> curriculum.completedLessons() < curriculum.totalLessons());

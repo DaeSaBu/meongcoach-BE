@@ -40,7 +40,7 @@ Java 소스(`src/main/java`, `src/test/java`)의 주석은 interface에만 두�
 | 모듈 공개 API 인터페이스 | `application/provided` | 능력을 나타내는 이름, `~Service` 접미사 없음 | `DogRegister`, `MbtiFinder` |
 | 애플리케이션 조회 결과 래퍼 | `application/provided` 또는 `application/provided/dto` | `~Result` (record) — 도메인 타입만으로 부족할 때만 | `MediaUploadUrlResult`, `CurriculumDetailResult` |
 | 서비스 입력(웹 요청·모듈 경계 공통) | `application/provided/dto` | `~Request` (record). 도메인 입력이 필요하면 `toCommand()`로 변환 | `SocialLoginRequest`, `SocialAccountRegisterRequest` |
-| 필요 자원 인터페이스 | `application/required` | 자원 이름 그대로 | `UserRepository`, `PrivateObjectStorage` |
+| 필요 자원 인터페이스 | `application/required` | 자원 이름 그대로 | `UserRepository`, `R2Storage` |
 | 애플리케이션 서비스 | `application` | `~Service` | `AuthenticationService`, `CurriculumQueryService` |
 | 컨트롤러 | `adapter/webapi` | `~Controller` | `AuthController` |
 | 외부 API 연동 포트 | `application/required` | 자원 이름 그대로 | `SocialProfileReader` |

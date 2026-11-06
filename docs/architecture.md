@@ -18,7 +18,7 @@ com.daesabu.meongcoach
 ├── media        ← 이미지·영상 업로드 URL 발급 (R2/GCS)
 ├── onboarding   ← 온보딩 흐름 조합
 ├── entitlement  ← 이용권 동기화. RevenueCat 활성 이용권의 사본을 둠
-├── community    ← 게시글. 훈련 카드 등 다른 모듈의 대상을 멘션할 수 있음
+├── community    ← 게시글·댓글. 훈련 카드 등 다른 모듈의 대상을 멘션할 수 있고, 댓글 알림을 notification에 요청
 ├── graduation   ← 토픽 수료(실습 인증) 제출·조회. 수료 사실의 유일한 출처
 ├── notification ← 푸시 알림 FID·시각별 수신 설정·FCM 발송
 ├── alert        ← 개발자 모니터링용 Slack 알림. 각 모듈이 Alerter로 호출
@@ -59,7 +59,7 @@ com.daesabu.meongcoach
 
 | 계층 | 책임 | 내용 |
 |---|---|---|
-| `adapter` | 외부 세계와의 연결 | `webapi/` — 컨트롤러, 웹 요청/응답 DTO. `integration/` — 외부 API 호출 구현과 응답 DTO. `security/` — Spring Security 연동 지점. `consumer/` — 메시지 큐 컨슈머(예: `ai/adapter/consumer/VideoUploadSqsConsumer`). 기술 의존은 여기에만 둔다 |
+| `adapter` | 외부 세계와의 연결 | `webapi/` — 컨트롤러, 웹 요청/응답 DTO. `integration/` — 외부 API 호출 구현과 응답 DTO. `security/` — Spring Security 연동 지점. `consumer/` — 메시지 큐 컨슈머(예: `ai/adapter/consumer/VideoUploadPubSubConsumer`). 기술 의존은 여기에만 둔다 |
 | `application` | 유스케이스 | `provided/` — 모듈이 외부에 공개하는 인터페이스, `required/` — 모듈이 필요로 하는 자원 인터페이스(리포지토리, 메일 등), 그리고 이를 구현·사용하는 서비스 |
 | `domain` | 도메인 모델·로직 | 엔티티(`User`), 일급 컬렉션(`Dogs` — 엔티티 하나로 판단할 수 없는 사용자 단위 규칙), 값 객체(`RefreshTokenId`), 예외(`exception/`), 도메인 입력 모델(`~Command`) |
 

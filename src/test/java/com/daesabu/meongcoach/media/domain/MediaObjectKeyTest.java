@@ -1,12 +1,13 @@
 package com.daesabu.meongcoach.media.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.daesabu.meongcoach.media.domain.exception.InvalidMediaObjectKeyException;
+import com.daesabu.meongcoach.media.domain.exception.InvalidMediaUrlException;
 import com.daesabu.meongcoach.media.domain.shared.MediaKind;
 import com.daesabu.meongcoach.media.domain.shared.MediaScope;
-import com.daesabu.meongcoach.media.domain.shared.MediaVisibility;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullSource;
@@ -14,12 +15,10 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 class MediaObjectKeyTest {
 
-	private static final MediaScope COMMUNITY_IMAGE =
-			MediaScope.of(MediaKind.IMAGE, MediaVisibility.PUBLIC, "community-post");
-	private static final MediaScope TRAINING_VIDEO =
-			MediaScope.of(MediaKind.VIDEO, MediaVisibility.PRIVATE, "training");
-	private static final MediaScope GRADUATION_VIDEO =
-			MediaScope.of(MediaKind.VIDEO, MediaVisibility.PRIVATE, "graduation");
+	private static final String PUBLIC_URL_PREFIX = "https://images.test.meongcoach.com/";
+	private static final MediaScope COMMUNITY_IMAGE = MediaScope.of(MediaKind.IMAGE, "community-post");
+	private static final MediaScope TRAINING_VIDEO = MediaScope.of(MediaKind.VIDEO, "training");
+	private static final MediaScope GRADUATION_VIDEO = MediaScope.of(MediaKind.VIDEO, "graduation");
 
 	@Test
 	void 객체_키는_사용자_경로_아래_UUID_파일명과_확장자를_담는다() {
@@ -51,8 +50,7 @@ class MediaObjectKeyTest {
 
 	@Test
 	void 다른_범위의_키는_그_범위의_것이_아니다() {
-		MediaObjectKey key = MediaObjectKey.create(MediaScope.of(MediaKind.IMAGE, MediaVisibility.PUBLIC,
-				"dog-profile"), 7L, "png");
+		MediaObjectKey key = MediaObjectKey.create(MediaScope.of(MediaKind.IMAGE, "dog-profile"), 7L, "png");
 
 		assertThat(key.belongsTo(COMMUNITY_IMAGE, 7L)).isFalse();
 	}
@@ -92,5 +90,23 @@ class MediaObjectKeyTest {
 	void 범위_아래의_키가_아니면_해석에_실패한다(String value) {
 		assertThatThrownBy(() -> MediaObjectKey.parse(TRAINING_VIDEO, value))
 				.isInstanceOf(InvalidMediaObjectKeyException.class);
+	}
+
+	@Test
+	void 공개_경로_아래에서_범위와_사용자에_맞는_URL이면_통과한다() {
+		String url = PUBLIC_URL_PREFIX + "images/community-post/7/a.png";
+
+		assertThatCode(() -> MediaObjectKey.validatePublicUrl(PUBLIC_URL_PREFIX, url, COMMUNITY_IMAGE, 7L))
+				.doesNotThrowAnyException();
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = {"https://evil.example.com/images/community-post/7/a.png",
+			"https://images.test.meongcoach.com.evil.example.com/images/community-post/7/a.png",
+			PUBLIC_URL_PREFIX + "images/community-post/8/a.png",
+			PUBLIC_URL_PREFIX + "images/dog-profile/7/a.png"})
+	void 공개_경로_밖이거나_범위나_사용자가_다른_URL이면_실패한다(String url) {
+		assertThatThrownBy(() -> MediaObjectKey.validatePublicUrl(PUBLIC_URL_PREFIX, url, COMMUNITY_IMAGE, 7L))
+				.isInstanceOf(InvalidMediaUrlException.class);
 	}
 }

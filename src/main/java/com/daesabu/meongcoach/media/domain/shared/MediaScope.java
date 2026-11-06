@@ -5,23 +5,22 @@ import static org.springframework.util.Assert.notNull;
 
 import java.util.regex.Pattern;
 
-public record MediaScope(MediaKind kind, MediaVisibility visibility, String path, String subPath) {
+public record MediaScope(MediaKind kind, String path, String subPath) {
 
 	private static final Pattern SEGMENTS = Pattern.compile("[a-z0-9-]+(/[a-z0-9-]+)*");
 
 	public MediaScope {
 		notNull(kind, "미디어 종류가 필요하다");
-		notNull(visibility, "공개 범위가 필요하다");
 		isTrue(path != null && SEGMENTS.matcher(path).matches(), "경로 범위 형식이 올바르지 않다");
 		isTrue(subPath == null || SEGMENTS.matcher(subPath).matches(), "하위 경로 형식이 올바르지 않다");
 	}
 
-	public static MediaScope of(MediaKind kind, MediaVisibility visibility, String path) {
-		return new MediaScope(kind, visibility, path, null);
+	public static MediaScope of(MediaKind kind, String path) {
+		return new MediaScope(kind, path, null);
 	}
 
 	public MediaScope withSubPath(String subPath) {
-		return new MediaScope(kind, visibility, path, subPath);
+		return new MediaScope(kind, path, subPath);
 	}
 
 	public String rootPrefix() {

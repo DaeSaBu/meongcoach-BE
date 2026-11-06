@@ -85,7 +85,7 @@ flowchart LR
 
 ### 스케줄 알림
 
-`NotificationDispatchScheduler`가 서울 8·11·17시에 실행됩니다. `meongcoach.notification.scheduler.enabled=true`인 prod에서만 켜집니다.
+`NotificationDispatchScheduler`가 서울 8·11·17시에 실행됩니다. `meongcoach.notification.scheduler.enabled=true`일 때만 켜지며, prod에서만 켭니다.
 요청값 오류(4xx)가 아닌 실패이면 2분 뒤 같은 예약을 다시 호출하며 최대 3회 시도합니다. 재시도는 전체 대상에 다시 보내므로 일부가 이미 받았으면 중복 전달될 수 있습니다.
 마지막 시도도 실패하면 스케줄러 로그에 남으며, 예약 시각 1시간 안에 내부 API로 수동 재실행할 수 있습니다.
 입력은 서울 기준 날짜·시·분입니다. 예약 시각이 미래이거나 1시간보다 오래됐으면 400입니다.
@@ -110,7 +110,32 @@ FCM 호출 중에는 DB 트랜잭션을 열지 않습니다. 수신자는 별도
 전송 호출이 실패하면 502를 반환하며 재시도하지 않습니다. 그 호출 앞 배치의 수신 불가 FID는 다음 발송이 성공할 때 삭제됩니다.
 제목은 100자, 본문은 500자까지입니다. 딥링크는 선택이며 `meongcoach://`로 시작해야 합니다.
 대상 `ALL`은 `userIds` 없이, `USERS`는 1~1,000명으로 보냅니다.
-다른 모듈은 HTTP 대신 `EventNotificationDispatcher`를 호출합니다. 지금 호출하는 모듈은 없습니다.
+다른 모듈은 HTTP 대신 `EventNotificationDispatcher`를 호출합니다. 지금 호출하는 모듈은 `community`(댓글 알림)입니다.
+
+### 댓글 알림 (community 모듈 호출)
+
+댓글이 등록되면 `community`가 알림을 요청합니다. 누구에게 어떤 문구를 보낼지는 댓글 트리를 아는 `community`가 정하고, notification은 `COMMENT` 종류의 이벤트 알림으로 발송만 합니다.
+
+```
+CommentModifyService.register (@Transactional)
+  → CommentRegisteredEvent 발행
+  → 커밋
+  → CommentNotificationListener (@Async @TransactionalEventListener)
+  → EventNotificationDispatcher.dispatch(COMMENT, USERS, 수신자, 문구, 딥링크)
+```
+
+| 항목 | 규칙 |
+|---|---|
+| 수신자 | 게시글 작성자. 답글이면 루트 댓글 작성자도 포함. 댓글 작성자 본인은 제외하고 같은 사람이면 한 번만 |
+| 제목 | `새 댓글` 또는 `새 답글` |
+| 본문 | `댓글이 달렸어요: {댓글 본문}`. 답글은 `답글이 달렸어요: {댓글 본문}` |
+| 딥링크 | `meongcoach://community-post/{postId}` |
+
+- 수신자 계산과 문구 조립은 `community/domain`의 `CommentRegisteredEvent`·`CommentNotification`이 합니다.
+- 리스너는 커밋 뒤 비동기 스레드에서 실행됩니다. 댓글 등록이 롤백되면 발송하지 않고, FCM 실패·지연은 댓글 등록 응답에 영향을 주지 않습니다. 실패는 비동기 예외 핸들러의 error 로그로 Sentry에 남으며 재시도하지 않습니다.
+- 수신자가 비어 있으면(본인 게시글에 본인 댓글) 발송을 요청하지 않습니다. `COMMENT` 종류를 끈 회원 제외, 활성 회원 필터, FID 조회는 이벤트 알림 공통 규칙을 따릅니다.
+- `meongcoach.notification.comment.enabled=true`일 때만 리스너가 등록됩니다. 기본값이 `true`라 모든 환경에서 켜져 있습니다.
+- 앱에서 딥링크로 게시글 화면을 열려면 앱의 딥링크 허용 목록에 `community-post/{postId}` 경로가 있어야 합니다.
 
 ### FCM 전송
 
