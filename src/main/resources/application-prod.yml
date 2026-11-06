@@ -17,6 +17,9 @@ meongcoach:
   notification:
     scheduler:
       enabled: true
+  # 운영 앱은 채널톡 memberId를 production-{회원 ID}로 넘긴다
+  channel-talk:
+    member-id-prefix: production-
 
 sentry:
   environment: production

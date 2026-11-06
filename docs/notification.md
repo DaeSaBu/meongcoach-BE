@@ -137,6 +137,29 @@ CommentModifyService.register (@Transactional)
 - `meongcoach.notification.comment.enabled=true`일 때만 리스너가 등록됩니다. 기본값이 `true`라 모든 환경에서 켜져 있습니다.
 - 앱에서 딥링크로 게시글 화면을 열려면 앱의 딥링크 허용 목록에 `community-post/{postId}` 경로가 있어야 합니다.
 
+### 문의 답변 알림 (채널톡 웹훅)
+
+앱의 문의 화면은 채널톡 웹 SDK를 `memberId = {환경}-{회원 ID}`로 부팅합니다. 개발·운영 앱이 같은 채널톡 채널을 쓰므로 환경 접두어로 두 환경의 회원을 나눕니다.
+채널톡 데스크에는 환경마다 웹훅을 하나씩 등록하고(스코프: 메시지), 주소는 `https://{API 호스트}/webhooks/channel-talk?token={CHANNEL_TALK_WEBHOOK_TOKEN}`입니다.
+
+```
+채널톡 → POST /webhooks/channel-talk?token=…
+  → ChannelTalkWebhookController (토큰 확인, 운영자 답변인지·이 환경 회원인지 판별)
+  → EventNotificationDispatcher.dispatch(SUPPORT_REPLY, USERS, [회원 ID], 문구, 딥링크)
+```
+
+| 항목 | 규칙 |
+|---|---|
+| 발송 조건 | `type=message`, `entity.chatType=userChat`, `entity.personType=manager`, `refers.user.memberId`가 `meongcoach.channel-talk.member-id-prefix`(local·dev `development-`, prod `production-`)로 시작 |
+| 제목 | `문의하신 내용에 답변이 왔어요` |
+| 본문 | 메시지 본문(`plainText`)의 앞뒤 공백을 지운 앞 100자. 넘으면 `…`를 붙이고, 글이 없으면 `새 메시지가 도착했어요.` |
+| 딥링크 | `meongcoach://support-chat` |
+
+- 조건에 맞지 않는 이벤트(고객·봇 메시지, 팀 채팅, 다른 환경이나 익명 고객)는 발송하지 않고 200을 반환합니다.
+- 웹훅 요청 안에서 동기로 발송합니다. FCM이 실패하면 502를 반환하며, 중복을 막지 않으므로 채널톡이 같은 이벤트를 다시 보내면 다시 발송합니다.
+- 판별과 본문 자르기는 `adapter/webapi/dto`의 `ChannelTalkWebhookPayload`가 합니다.
+- 경로는 `SecurityConfig`의 `PERMIT_ALL_PATHS`에 있고, 컨트롤러가 토큰을 `ChannelTalkProperties.matches`(`MessageDigest.isEqual`)로 비교해 틀리면 401을 반환합니다. 채널톡은 요청 헤더를 지정할 수 없어 쿼리 파라미터를 씁니다.
+
 ### FCM 전송
 
 `FirebaseNotificationSender`가 500건씩 나누어 호출합니다.
