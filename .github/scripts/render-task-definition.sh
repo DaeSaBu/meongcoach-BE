@@ -15,6 +15,7 @@ IMAGE_URI=${3}
 
 # DB 외 애플리케이션 설정은 GitHub Secrets가 소유한다.
 : "${NOTIFICATION_INTERNAL_SECRET:?NOTIFICATION_INTERNAL_SECRET이 필요합니다.}"
+: "${CHANNEL_TALK_WEBHOOK_TOKEN:?CHANNEL_TALK_WEBHOOK_TOKEN이 필요합니다.}"
 : "${JWT_SECRET:?JWT_SECRET이 필요합니다.}"
 : "${KAKAO_NATIVE_APP_KEY:?KAKAO_NATIVE_APP_KEY가 필요합니다.}"
 : "${APPLE_BUNDLE_ID:?APPLE_BUNDLE_ID가 필요합니다.}"
@@ -48,6 +49,7 @@ jq \
 	--arg container "${CONTAINER}" \
 	--arg image "${IMAGE_URI}" \
 	--arg notification_internal_secret "${NOTIFICATION_INTERNAL_SECRET}" \
+	--arg channel_talk_webhook_token "${CHANNEL_TALK_WEBHOOK_TOKEN}" \
 	--arg jwt_secret "${JWT_SECRET:-}" \
 	--arg kakao_native_app_key "${KAKAO_NATIVE_APP_KEY:-}" \
 	--arg kakao_rest_api_key "${KAKAO_REST_API_KEY:-}" \
@@ -125,6 +127,7 @@ jq \
 						((.environment // []) |
 							map(select(
 								.name != "NOTIFICATION_INTERNAL_SECRET" and
+								.name != "CHANNEL_TALK_WEBHOOK_TOKEN" and
 								.name != "JWT_SECRET" and
 								.name != "KAKAO_AUDIENCES" and
 								.name != "KAKAO_NATIVE_APP_KEY" and
@@ -160,6 +163,7 @@ jq \
 							))) +
 						[
 							{"name": "NOTIFICATION_INTERNAL_SECRET", "value": $notification_internal_secret},
+							{"name": "CHANNEL_TALK_WEBHOOK_TOKEN", "value": $channel_talk_webhook_token},
 							{"name": "JWT_SECRET", "value": $jwt_secret},
 							{"name": "KAKAO_NATIVE_APP_KEY", "value": $kakao_native_app_key},
 							{"name": "KAKAO_REST_API_KEY", "value": $kakao_rest_api_key},
