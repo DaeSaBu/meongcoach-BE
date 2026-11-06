@@ -5,6 +5,7 @@ import static com.daesabu.meongcoach.support.AppClientRequests.appGet;
 import static com.daesabu.meongcoach.support.AppClientRequests.appPost;
 import static com.daesabu.meongcoach.support.AppClientRequests.appPut;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -87,6 +88,24 @@ class SecurityFilterChainTest {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"refreshToken\": \"\"}"))
 				.andExpect(status().isBadRequest());
+	}
+
+	@Test
+	void 채널톡_웹훅은_앱_헤더와_액세스_토큰_없이_웹훅_토큰으로_호출할_수_있다() throws Exception {
+		mockMvc.perform(post("/webhooks/channel-talk").queryParam("token", "test-channel-talk-webhook-token")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"type\":\"message\"}"))
+				.andExpect(status().isOk());
+	}
+
+	@Test
+	void 채널톡_웹훅_토큰이_없으면_Problem_Details로_401을_반환한다() throws Exception {
+		mockMvc.perform(post("/webhooks/channel-talk")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"type\":\"message\"}"))
+				.andExpect(status().isUnauthorized())
+				.andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
 	}
 
 	@Test
