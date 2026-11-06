@@ -1057,7 +1057,7 @@ operation::notification/schedule-update-error[snippets='http-response,response-f
 
 link:{swagger-ui}#/Notification/notification-event-settings[▶ Swagger에서 Try it out,window=swagger]
 
-AI 분석, 운영 알림, 댓글처럼 사건이 시작하는 알림의 종류별 수신 여부를 반환합니다. 설정 행이 없으면 `settings`가 빈 배열입니다.
+AI 분석, 운영 알림, 댓글, 문의 답변처럼 사건이 시작하는 알림의 종류별 수신 여부를 반환합니다. 설정 행이 없으면 `settings`가 빈 배열입니다.
 
 operation::notification/event-settings[snippets='http-request,http-response,response-fields']
 
