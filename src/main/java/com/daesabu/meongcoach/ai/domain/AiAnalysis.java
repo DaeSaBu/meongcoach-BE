@@ -58,7 +58,7 @@ public class AiAnalysis extends BaseTimeEntity {
 	}
 
 	public void startAnalysis() {
-		this.status = AiAnalysisStatus.PENDING;
+		this.status = AiAnalysisStatus.ANALYZING;
 	}
 
 	public AiAnalysisStatus statusAt(Instant now) {

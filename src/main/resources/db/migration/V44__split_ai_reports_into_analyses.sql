@@ -38,6 +38,10 @@ WHERE "status" = 'COMPLETED';
 ALTER TABLE "ai_analyses" DROP COLUMN "title";
 ALTER TABLE "ai_analyses" DROP COLUMN "content";
 
+UPDATE "ai_analyses"
+SET "status" = 'ANALYZING'
+WHERE "status" = 'PENDING';
+
 ALTER TABLE "ai_analyses"
     ALTER COLUMN "upload_expires_at" TYPE TIMESTAMPTZ
     USING "upload_expires_at" AT TIME ZONE 'UTC';

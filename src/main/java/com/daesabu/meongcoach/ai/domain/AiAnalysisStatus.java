@@ -4,7 +4,7 @@ public enum AiAnalysisStatus {
 
 	UPLOADING,
 
-	PENDING,
+	ANALYZING,
 
 	COMPLETED,
 
