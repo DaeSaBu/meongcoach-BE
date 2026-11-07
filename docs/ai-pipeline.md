@@ -5,8 +5,9 @@
 ## 전체 흐름
 
 ```
-앱 → POST /api/ai/presigned-urls           (ai — media의 MediaUploadUrlIssuer로 GCS V4 서명 URL 발급)
-  → AiAnalysis UPLOADING 저장               (발급 즉시. uploadExpiresAt = 발급 시각 + URL 유효 시간. 응답의 reportId는 이 분석 건의 ID)
+앱 → 영상 압축 + 보호자가 맥락 입력          (병렬. 둘 다 끝난 뒤 다음 요청)
+앱 → POST /api/ai/analyses                  (ai — media의 MediaUploadUrlIssuer로 GCS V4 서명 URL 발급. 구 앱은 POST /api/ai/presigned-urls, 맥락 없음)
+  → AiAnalysis UPLOADING 저장               (맥락 포함. 발급 즉시. uploadExpiresAt = 발급 시각 + URL 유효 시간. 응답의 analysisId(구 API는 reportId)는 이 분석 건의 ID)
 앱 → GCS에 영상 직접 업로드                  (서버를 거치지 않음)
 GCS → OBJECT_FINALIZE 알림 → Pub/Sub 토픽    (버킷 알림 설정, videos/training/ 접두사)
 VideoUploadSubscriber                       (ai/adapter/consumer — streaming pull 구독, meongcoach.ai.pubsub.video-subscription)
@@ -16,7 +17,7 @@ VideoUploadSubscriber                       (ai/adapter/consumer — streaming p
      → MediaStorageUriResolver              (media — gs://버킷/키)
      → AiAnalysis ANALYZING 전이 저장           (이후 결말은 이 row의 status로 기록)
      → AiTrialFinder                        (무료 체험 횟수 확인, 초과 시 FAILED_TRIAL_EXCEEDED)
-     → VideoAnalyzer → Gemini 영상 분석·제목  (ai/adapter/integration — files:register로 gs:// 등록 후 generateContent 한 번에 본문과 제목, 실패 시 FAILED_ANALYSIS)
+     → VideoAnalyzer → Gemini 영상 분석·제목  (ai/adapter/integration — files:register로 gs:// 등록 후 저장된 맥락과 함께 generateContent 한 번에 본문과 제목, 실패 시 FAILED_ANALYSIS)
      → AiAnalysis COMPLETED 전이 + AiReport 저장 (save 한 번에 함께 저장. 그 외 예외는 FAILED_UNEXPECTED)
 ```
 
@@ -32,6 +33,8 @@ VideoUploadSubscriber                       (ai/adapter/consumer — streaming p
 - **실패는 error 로그와 함께 같은 `AiAnalysis` row의 `status`로 남깁니다.** 실패가 DB에 흔적을 남기지 않으면 앱 폴링에 종료 조건이 없기 때문입니다. 컨슈머는 발급 row를 ANALYZING으로 전이한 뒤, 체험 초과는 `FAILED_TRIAL_EXCEEDED`, 분석 실패는 `FAILED_ANALYSIS`, 그 뒤의 예상 밖 예외는 `FAILED_UNEXPECTED`로 전이합니다. 실패 기록의 저장이 실패하면 `FAILED_UNEXPECTED`로 한 번 더 시도하고, 그마저 실패하면 예외가 컨슈머로 나가 error 로그 후 버려집니다(row는 ANALYZING으로 남음). 예외는 객체 키 형식 위반(`InvalidMediaObjectKeyException`) 하나뿐입니다 — ANALYZING 전이 전에 나므로 row는 UPLOADING으로 남아 만료 뒤 `FAILED_UPLOAD`로 조회됩니다.
 - **업로드되지 않은 발급 row는 조회 시점에 `FAILED_UPLOAD`로 파생합니다.** 발급만 받고 업로드하지 않은 row가 UPLOADING으로 영영 남으면 앱 폴링이 끝나지 않습니다. 발급 시 저장한 `uploadExpiresAt`(URL 유효 시간)이 지난 UPLOADING은 `AiAnalysis.statusAt(now)`가 `FAILED_UPLOAD`로 돌려줍니다. DB 상태는 바꾸지 않습니다(스케줄러·쓰기 없음) — 유효 시간을 넘겨 끝난 긴 업로드의 이벤트가 늦게 오면 컨슈머가 그대로 ANALYZING으로 전이하므로, 그 사이 잠깐 `FAILED_UPLOAD`로 보이는 것이 유일한 부작용입니다. 상태로 SQL 필터링(예: `?status=`)이 필요해지면 파생이 아니라 저장으로 바꿔야 합니다.
 - **영상 길이(10초~5분)는 앱이 발급 요청에 보낸 `durationSeconds`만 검증합니다** (`AiVideo.validateDuration`). 프리사인 URL은 재생 시간을 제한할 수 없고, 서버가 업로드된 영상을 읽어 대조하지도 않으므로 값을 위조하면 더 긴 영상이 분석될 수 있습니다. 비용 문제가 되면 분석 전 컨슈머에서 실제 길이를 확인하는 검증을 추가해야 합니다.
+- **분석 건은 압축이 끝난 뒤에 만듭니다.** GCS 서명에 `content-length`가 들어가므로(`GcsObjectStorage.issueUploadUrl`) 압축 전 크기로 발급하면 업로드가 403으로 거부됩니다. 맥락 입력이 먼저 끝나도 앱은 압축 완료를 기다렸다가 요청합니다.
+- **보호자가 남긴 맥락은 분석 건에 저장했다가 분석 시 프롬프트에 넣습니다.** 발급 시점과 분석 시점이 다른 요청이라 `AiAnalysis.context`가 둘을 잇습니다. 프롬프트(`user.md`의 `{{context}}`)는 맥락을 `<context>` 안에 넣고 영상 관찰을 우선하는 참고 정보로만 쓰며, 그 안의 지시는 따르지 않게 합니다. 맥락이 없으면 "없음"으로 채웁니다.
 - **발급 기록이 없는 업로드 이벤트는 분석하지 않습니다.** 우리가 발급한 키만 소유자 row가 있습니다. 배포 직전에 발급돼 배포 뒤 업로드된 영상도 row가 없어 스킵되므로(warn 로그), 배포 시 URL 유효 시간만큼의 공백을 감수합니다.
 - **어댑터는 연동 실패를 도메인 예외로 번역해 던지고, 서비스는 그것만 잡습니다.** 영상 분석은 `VideoAnalysisFailedException`(→ `FAILED_ANALYSIS`)이고, 그 외 예외는 버그로 보고 `FAILED_UNEXPECTED`로 남깁니다. 어댑터에서 `catch (Exception)`으로 넓게 잡으면 두 실패 상태의 구분이 무너지므로 유지하지 않습니다.
 - **`AiReportGenerateService`는 의도적으로 트랜잭션이 없습니다.** 영상 분석이 수십 초 걸려 클래스 기본 `@Transactional(readOnly = true)` 패턴을 따르면 분석 내내 DB 커넥션을 점유합니다. 저장과 상태 전이는 리포지토리 `save`(준영속 엔티티는 merge → UPDATE)의 자체 트랜잭션에 맡깁니다. "서비스 클래스에 readOnly 기본" 규칙의 의도적 예외이므로 일괄 정리 대상이 아닙니다.
