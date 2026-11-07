@@ -72,8 +72,13 @@ public class TopicQueryService implements TopicFinder, TopicCompletionChecker, P
 				.flatMap(topic -> topic.getCurriculums().stream())
 				.toList();
 		orderedCurriculums.forEach(Curriculum::validateHasLessons);
-		List<Long> curriculumIds = orderedCurriculums.stream()
+		List<Curriculum> planCurriculums = orderedCurriculums.stream()
 				.dropWhile(curriculum -> curriculum.isCompleted(progresses))
+				.toList();
+		if (planCurriculums.isEmpty()) {
+			planCurriculums = orderedCurriculums;
+		}
+		List<Long> curriculumIds = planCurriculums.stream()
 				.map(Curriculum::getId)
 				.toList();
 		return new PlanPreparationResult(curriculumIds);

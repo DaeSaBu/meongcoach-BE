@@ -78,9 +78,7 @@ public class PlanRegisterService implements PlanRegister {
 		Plan.validatePracticeSettings(request.dailyMinutes(), request.daysPerWeek());
 		DogProfileResult dog = dogProfileFinder.findDogProfile(userId, dogId);
 		AiPlanPreparationResult candidates = aiPreparationFinder.find(userId);
-		boolean hasIncompleteCurriculum = candidates.curriculums().stream()
-				.anyMatch(curriculum -> curriculum.completedLessons() < curriculum.totalLessons());
-		if (!hasIncompleteCurriculum) {
+		if (candidates.curriculums().isEmpty()) {
 			throw new EmptyPlanCurriculumsException();
 		}
 
