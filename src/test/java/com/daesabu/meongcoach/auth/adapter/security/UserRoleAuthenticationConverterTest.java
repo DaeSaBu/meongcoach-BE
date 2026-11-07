@@ -9,6 +9,8 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
@@ -19,25 +21,23 @@ class UserRoleAuthenticationConverterTest {
 
 	private static final Long USER_ID = 42L;
 
-	@Test
-	void 정회원_토큰에는_ROLE_USER_권한을_부여한다() {
-		AbstractAuthenticationToken authentication = convert(AuthorityRole.USER, String.valueOf(USER_ID));
+	@ParameterizedTest
+	@CsvSource({
+			"USER, ROLE_USER",
+			"ONBOARDING_USER, ROLE_ONBOARDING_USER",
+			"ADMIN, ROLE_ADMIN",
+			"EXPERT, ROLE_EXPERT",
+			"TRAINER, ROLE_TRAINER",
+			"OPERATOR, ROLE_OPERATOR"
+	})
+	void 회원_역할에_해당하는_권한을_부여한다(AuthorityRole role, String authority) {
+		AbstractAuthenticationToken authentication = convert(role, String.valueOf(USER_ID));
 
 		assertThat(authentication.getAuthorities())
 				.extracting(GrantedAuthority::getAuthority)
-				.containsExactly("ROLE_USER");
+				.containsExactly(authority);
 	}
 
-	@Test
-	void 온보딩_회원_토큰에는_ROLE_ONBOARDING_USER_권한을_부여한다() {
-		AbstractAuthenticationToken authentication = convert(AuthorityRole.ONBOARDING_USER, String.valueOf(USER_ID));
-
-		assertThat(authentication.getAuthorities())
-				.extracting(GrantedAuthority::getAuthority)
-				.containsExactly("ROLE_ONBOARDING_USER");
-	}
-
-	// CurrentUserIdArgumentResolver가 인증 주체 이름을 회원 ID로 해석하므로 sub가 유지되어야 한다
 	@Test
 	void 인증_주체_이름은_토큰의_sub를_그대로_쓴다() {
 		AbstractAuthenticationToken authentication = convert(AuthorityRole.USER, String.valueOf(USER_ID));
@@ -45,7 +45,6 @@ class UserRoleAuthenticationConverterTest {
 		assertThat(authentication.getName()).isEqualTo(String.valueOf(USER_ID));
 	}
 
-	// AuthenticationException 계열이 아니면 401 대신 500이 되므로 예외 타입 자체가 회귀 가드다
 	@Test
 	void 등록되지_않은_회원의_토큰은_인증_예외로_거부한다() {
 		assertThatThrownBy(() -> convert(null, String.valueOf(USER_ID)))
@@ -59,7 +58,6 @@ class UserRoleAuthenticationConverterTest {
 				.isInstanceOf(InvalidBearerTokenException.class);
 	}
 
-	// 인증 실패 응답에 실리므로 회원 ID가 존재하는지 알려주는 단서를 담으면 안 된다
 	@Test
 	void 거부_사유에_회원_ID를_담지_않는다() {
 		assertThatThrownBy(() -> convert(null, String.valueOf(USER_ID)))
