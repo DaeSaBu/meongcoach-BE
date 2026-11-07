@@ -145,7 +145,7 @@ class AiAnalysisRepositoryTest {
 	}
 
 	private static AiAnalysis uploadingAnalysis(Long userId, String videoObjectKey) {
-		return AiAnalysis.uploading(new AiAnalysisUploadCommand(userId, videoObjectKey, UPLOAD_EXPIRES_AT));
+		return AiAnalysis.uploading(new AiAnalysisUploadCommand(userId, videoObjectKey, UPLOAD_EXPIRES_AT, null));
 	}
 
 	private static AiAnalysis startedAnalysis(Long userId, String videoObjectKey) {
