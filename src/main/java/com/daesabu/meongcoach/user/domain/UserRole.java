@@ -7,8 +7,7 @@ public enum UserRole {
 	ONBOARDING_USER(AuthorityRole.ONBOARDING_USER),
 	ADMIN(AuthorityRole.ADMIN),
 	EXPERT(AuthorityRole.EXPERT),
-	TRAINER(AuthorityRole.TRAINER),
-	OPERATOR(AuthorityRole.OPERATOR);
+	TRAINER(AuthorityRole.TRAINER);
 
 	private final AuthorityRole authorityRole;
 

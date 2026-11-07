@@ -5,8 +5,7 @@ public enum AuthorityRole {
 	ONBOARDING_USER,
 	ADMIN,
 	EXPERT,
-	TRAINER,
-	OPERATOR;
+	TRAINER;
 
 	private static final String AUTHORITY_PREFIX = "ROLE_";
 
