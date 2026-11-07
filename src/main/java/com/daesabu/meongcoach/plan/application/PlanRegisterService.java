@@ -66,7 +66,7 @@ public class PlanRegisterService implements PlanRegister {
 	@Transactional
 	public Plan createCustom(Long userId, Long dogId, CustomPlanCreateRequest request) {
 		DogProfileResult dog = dogProfileFinder.findDogProfile(userId, dogId);
-		PlanPreparationResult preparation = preparationFinder.find(userId, request.topicIds());
+		PlanPreparationResult preparation = preparationFinder.find(request.topicIds());
 		CustomPlanCreateCommand command = new CustomPlanCreateCommand(userId, dog.id(), dog.name(),
 				request.dailyMinutes(), request.daysPerWeek());
 		Plan plan = Plan.createCustom(command, preparation.curriculumIds());
@@ -86,7 +86,7 @@ public class PlanRegisterService implements PlanRegister {
 		AiPlanGenerateRequest generateRequest = new AiPlanGenerateRequest(dog, generationDate,
 				request.dailyMinutes(), request.daysPerWeek(), request.expectation(), candidates.curriculums());
 		AiPlanGenerateResult generated = aiPlanGenerator.generate(generateRequest);
-		PlanPreparationResult preparation = preparationFinder.find(userId, generated.topicIds());
+		PlanPreparationResult preparation = preparationFinder.find(generated.topicIds());
 		AiPlanCreateCommand command = new AiPlanCreateCommand(userId, dog.id(), dog.name(), generated.goal(),
 				request.dailyMinutes(), request.daysPerWeek(), request.expectation());
 		Plan plan = Plan.createAiPlan(command, preparation.curriculumIds());
