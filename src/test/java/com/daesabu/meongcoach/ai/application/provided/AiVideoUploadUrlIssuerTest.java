@@ -116,7 +116,7 @@ class AiVideoUploadUrlIssuerTest {
 
 	private void persistCompletedAnalysis(Long userId, String videoObjectKey) {
 		AiAnalysis analysis = AiAnalysis.uploading(
-				new AiAnalysisUploadCommand(userId, videoObjectKey, Instant.now().plusSeconds(900)));
+				new AiAnalysisUploadCommand(userId, videoObjectKey, Instant.now().plusSeconds(900), null));
 		analysis.startAnalysis();
 		analysis.complete("제목", "본문");
 		aiAnalysisRepository.saveAndFlush(analysis);

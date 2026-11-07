@@ -4,6 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class AiAnalysisTest {
 
@@ -22,6 +25,24 @@ class AiAnalysisTest {
 		assertThat(analysis.getReport()).isNull();
 		assertThat(analysis.getTitle()).isNull();
 		assertThat(analysis.getContent()).isNull();
+	}
+
+	@Test
+	void 보호자가_남긴_맥락을_앞뒤_공백을_지워_저장한다() {
+		AiAnalysis analysis = AiAnalysis.uploading(
+				new AiAnalysisUploadCommand(1L, VIDEO_OBJECT_KEY, UPLOAD_EXPIRES_AT, "  퇴근하면 짖어요  "));
+
+		assertThat(analysis.getContext()).isEqualTo("퇴근하면 짖어요");
+	}
+
+	@ParameterizedTest
+	@NullSource
+	@ValueSource(strings = {"", "   "})
+	void 맥락이_비어_있으면_null로_저장한다(String context) {
+		AiAnalysis analysis = AiAnalysis.uploading(
+				new AiAnalysisUploadCommand(1L, VIDEO_OBJECT_KEY, UPLOAD_EXPIRES_AT, context));
+
+		assertThat(analysis.getContext()).isNull();
 	}
 
 	@Test
@@ -128,7 +149,7 @@ class AiAnalysisTest {
 	}
 
 	private static AiAnalysis uploadingAnalysis() {
-		return AiAnalysis.uploading(new AiAnalysisUploadCommand(1L, VIDEO_OBJECT_KEY, UPLOAD_EXPIRES_AT));
+		return AiAnalysis.uploading(new AiAnalysisUploadCommand(1L, VIDEO_OBJECT_KEY, UPLOAD_EXPIRES_AT, null));
 	}
 
 	private static AiAnalysis startedAnalysis() {
