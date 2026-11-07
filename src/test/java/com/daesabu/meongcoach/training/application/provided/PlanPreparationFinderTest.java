@@ -70,58 +70,42 @@ class PlanPreparationFinderTest {
 		saveCurriculum(saveTopic(firstCategory, 3), 1, false);
 		flushAndClear();
 
-		PlanPreparationResult result = finder.find(USER_ID, List.of(later.getId(), second.getId(), first.getId()));
+		PlanPreparationResult result = finder.find(List.of(later.getId(), second.getId(), first.getId()));
 
 		assertThat(result.curriculumIds())
 				.containsExactly(firstCurriculum.getId(), secondCurriculum.getId(), third.getId(), last.getId());
 	}
 
 	@Test
-	void 앞에서_완료한_커리큘럼은_제외하고_일부_완료와_다른_사용자_완료는_포함한다() {
-		Topic topic = saveTopic(saveCategory(1), 1);
-		Curriculum completed = saveCurriculum(topic, 1, false);
-		complete(USER_ID, saveLesson(completed));
-		Curriculum partial = saveCurriculum(topic, 2, false);
-		complete(USER_ID, saveLesson(partial));
-		saveLesson(partial);
-		Curriculum otherUser = saveCurriculum(topic, 3, false);
-		complete(43L, saveLesson(otherUser));
-		flushAndClear();
-
-		PlanPreparationResult result = finder.find(USER_ID, List.of(topic.getId()));
-
-		assertThat(result.curriculumIds()).containsExactly(partial.getId(), otherUser.getId());
-	}
-
-	@Test
-	void 첫_미완료부터_다음_토픽의_완료된_커리큘럼까지_모두_포함한다() {
+	void 완료_여부와_관계없이_선택한_토픽의_커리큘럼을_모두_포함한다() {
 		TrainingCategory category = saveCategory(1);
 		Topic firstTopic = saveTopic(category, 1);
-		Curriculum completedBefore = saveCurriculum(firstTopic, 1, false);
-		complete(USER_ID, saveLesson(completedBefore));
-		Curriculum firstIncomplete = saveCurriculum(firstTopic, 2, false);
-		saveLesson(firstIncomplete);
+		Curriculum completed = saveCurriculum(firstTopic, 1, false);
+		complete(USER_ID, saveLesson(completed));
+		Curriculum partial = saveCurriculum(firstTopic, 2, false);
+		complete(USER_ID, saveLesson(partial));
+		saveLesson(partial);
 		Topic nextTopic = saveTopic(category, 2);
-		Curriculum completedAfter = saveCurriculum(nextTopic, 1, false);
-		complete(USER_ID, saveLesson(completedAfter));
-		Curriculum lastIncomplete = saveCurriculum(nextTopic, 2, false);
-		saveLesson(lastIncomplete);
+		Curriculum otherUser = saveCurriculum(nextTopic, 1, false);
+		complete(43L, saveLesson(otherUser));
+		Curriculum incomplete = saveCurriculum(nextTopic, 2, false);
+		saveLesson(incomplete);
 		flushAndClear();
 
-		PlanPreparationResult result = finder.find(USER_ID, List.of(nextTopic.getId(), firstTopic.getId()));
+		PlanPreparationResult result = finder.find(List.of(nextTopic.getId(), firstTopic.getId()));
 
 		assertThat(result.curriculumIds())
-				.containsExactly(firstIncomplete.getId(), completedAfter.getId(), lastIncomplete.getId());
+				.containsExactly(completed.getId(), partial.getId(), otherUser.getId(), incomplete.getId());
 	}
 
 	@Test
-	void 첫_미완료_뒤의_커리큘럼에_레슨이_없으면_거절한다() {
+	void 레슨이_없는_커리큘럼이_있으면_거절한다() {
 		Topic topic = saveTopic(saveCategory(1), 1);
 		saveLesson(saveCurriculum(topic, 1, false));
 		saveCurriculum(topic, 2, false);
 		flushAndClear();
 
-		assertThatThrownBy(() -> finder.find(USER_ID, List.of(topic.getId())))
+		assertThatThrownBy(() -> finder.find(List.of(topic.getId())))
 				.isInstanceOf(IllegalStateException.class);
 	}
 
@@ -138,7 +122,7 @@ class PlanPreparationFinderTest {
 		complete(USER_ID, saveLesson(third));
 		flushAndClear();
 
-		PlanPreparationResult result = finder.find(USER_ID, List.of(nextTopic.getId(), firstTopic.getId()));
+		PlanPreparationResult result = finder.find(List.of(nextTopic.getId(), firstTopic.getId()));
 
 		assertThat(result.curriculumIds()).containsExactly(first.getId(), second.getId(), third.getId());
 	}
@@ -148,7 +132,7 @@ class PlanPreparationFinderTest {
 		Topic topic = saveTopic(saveCategory(1), 1);
 		flushAndClear();
 
-		assertThat(finder.find(USER_ID, List.of(topic.getId())).curriculumIds()).isEmpty();
+		assertThat(finder.find(List.of(topic.getId())).curriculumIds()).isEmpty();
 	}
 
 	@Test
@@ -160,7 +144,7 @@ class PlanPreparationFinderTest {
 		saveLesson(curriculum);
 		flushAndClear();
 
-		PlanPreparationResult result = finder.find(USER_ID, List.of(topic.getId()));
+		PlanPreparationResult result = finder.find(List.of(topic.getId()));
 
 		assertThat(result.curriculumIds()).containsExactly(curriculum.getId());
 	}
@@ -170,7 +154,7 @@ class PlanPreparationFinderTest {
 		Topic topic = saveTopic(saveCategory(1), 1);
 		flushAndClear();
 
-		assertThatThrownBy(() -> finder.find(USER_ID, List.of(topic.getId(), Long.MAX_VALUE)))
+		assertThatThrownBy(() -> finder.find(List.of(topic.getId(), Long.MAX_VALUE)))
 				.isInstanceOf(TopicNotFoundException.class);
 	}
 

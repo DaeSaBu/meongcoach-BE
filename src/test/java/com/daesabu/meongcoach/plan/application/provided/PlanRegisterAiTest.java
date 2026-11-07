@@ -130,7 +130,7 @@ class PlanRegisterAiTest {
 	}
 
 	@Test
-	void AI는_트랜잭션_밖에서_호출하고_첫_미완료부터_끝까지_저장한다() {
+	void AI는_트랜잭션_밖에서_호출하고_선택한_토픽의_커리큘럼을_모두_저장한다() {
 		Plan existing = saveExistingPlan();
 		LocalDate before = LocalDate.now(ZoneId.of("Asia/Seoul"));
 		given(generator.generate(any())).willAnswer(invocation -> {
@@ -148,7 +148,7 @@ class PlanRegisterAiTest {
 		Plan created = register.createAiPlan(USER_ID, dogId, request);
 
 		assertThat(created.getTitle()).isEqualTo("초코의 2주 훈련 플랜");
-		assertThat(created.getCurriculumIds()).containsExactly(curriculumIds.get(1), curriculumIds.get(2));
+		assertThat(created.getCurriculumIds()).containsExactlyElementsOf(curriculumIds);
 		assertThat(planRepository.findById(created.getId()).orElseThrow().getExpectation()).isEqualTo(request.expectation());
 		assertThat(planRepository.findById(existing.getId()).orElseThrow().getStatus()).isEqualTo(PlanStatus.REPLACED);
 		assertActivePlan(created.getId());
