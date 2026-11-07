@@ -14,6 +14,7 @@ import static org.springframework.restdocs.payload.PayloadDocumentation.requestF
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
 import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
+import static org.springframework.restdocs.request.RequestDocumentation.queryParameters;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -66,7 +67,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 
-@WebMvcTest({PlanController.class, DogPlanController.class})
+@WebMvcTest(PlanController.class)
 @AutoConfigureRestDocs
 class PlanControllerTest {
 
@@ -97,12 +98,12 @@ class PlanControllerTest {
 	void 강아지별_현재_플랜이_없으면_null을_반환한다() throws Exception {
 		given(currentPlanFinder.find(42L, 7L)).willReturn(Optional.empty());
 
-		mockMvc.perform(get("/api/dogs/{dogId}/plans/current", 7L).principal(CURRENT_USER)
+		mockMvc.perform(get("/api/plans/current").queryParam("dogId", "7").principal(CURRENT_USER)
 				.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.plan").value(nullValue()))
-				.andDo(document("plan/dog-current-empty",
-						pathParameters(parameterWithName("dogId").description("본인 소유 강아지 ID")),
+				.andDo(document("plan/current-empty",
+						queryParameters(parameterWithName("dogId").description("본인 소유 강아지 ID")),
 						responseFields(fieldWithPath("plan").type(JsonFieldType.OBJECT).optional().description("해당 강아지의 활성 또는 최근 완료 플랜. 없으면 null"))));
 		verify(currentPlanFinder).find(42L, 7L);
 	}
@@ -111,11 +112,11 @@ class PlanControllerTest {
 	void 다른_사용자의_강아지로_현재_플랜을_조회하면_404를_반환한다() throws Exception {
 		given(currentPlanFinder.find(42L, 7L)).willThrow(new com.daesabu.meongcoach.dog.domain.exception.DogNotFoundException(7L));
 
-		mockMvc.perform(get("/api/dogs/{dogId}/plans/current", 7L).principal(CURRENT_USER)
+		mockMvc.perform(get("/api/plans/current").queryParam("dogId", "7").principal(CURRENT_USER)
 				.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isNotFound())
-				.andDo(document("plan/dog-current-error",
-						pathParameters(parameterWithName("dogId").description("본인 소유 강아지 ID")), responseFields(ERROR_FIELDS)));
+				.andDo(document("plan/current-error",
+						queryParameters(parameterWithName("dogId").description("본인 소유 강아지 ID")), responseFields(ERROR_FIELDS)));
 	}
 
 	@Test
@@ -129,8 +130,7 @@ class PlanControllerTest {
 				.contentType(MediaType.APPLICATION_JSON).content(JSON))
 				.andExpect(status().isCreated())
 				.andExpect(jsonPath("$.planId").value(21))
-				.andDo(document("plan/custom-create", ResourceSnippetParameters.builder().deprecated(true)
-						.description("사용 중단 예정. POST /api/dogs/{dogId}/plans/custom으로 이전하세요."),
+				.andDo(document("plan/custom-create-legacy", ResourceSnippetParameters.builder().deprecated(true),
 						requestFields(fieldWithPath("topicIds").description("토픽 ID 목록"),
 								fieldWithPath("dailyMinutes").description("하루 훈련 시간"),
 								fieldWithPath("daysPerWeek").description("주당 훈련 일수")),
@@ -151,8 +151,7 @@ class PlanControllerTest {
 				.content("{\"dailyMinutes\":10,\"daysPerWeek\":3,\"expectation\":\"기다리기\"}"))
 				.andExpect(status().isCreated())
 				.andExpect(jsonPath("$.planId").value(22))
-				.andDo(document("plan/ai-create", ResourceSnippetParameters.builder().deprecated(true)
-						.description("사용 중단 예정. POST /api/dogs/{dogId}/plans/ai로 이전하세요."),
+				.andDo(document("plan/ai-create-legacy", ResourceSnippetParameters.builder().deprecated(true),
 						requestFields(fieldWithPath("dailyMinutes").description("하루 훈련 시간"),
 								fieldWithPath("daysPerWeek").description("주당 훈련 일수"),
 								fieldWithPath("expectation").description("훈련 기대사항")),
@@ -165,7 +164,7 @@ class PlanControllerTest {
 		mockMvc.perform(post("/api/plans/custom").principal(CURRENT_USER)
 				.contentType(MediaType.APPLICATION_JSON).content("{}"))
 				.andExpect(status().isBadRequest())
-				.andDo(document("plan/custom-create-error", ResourceSnippetParameters.builder().deprecated(true),
+				.andDo(document("plan/custom-create-legacy-error", ResourceSnippetParameters.builder().deprecated(true),
 						responseFields(ERROR_FIELDS).and(
 								fieldWithPath("errors").description("필드 검증 오류 목록"),
 								fieldWithPath("errors[].field").description("입력 필드"),
@@ -173,13 +172,13 @@ class PlanControllerTest {
 		mockMvc.perform(post("/api/plans/ai").contentType(MediaType.APPLICATION_JSON)
 				.content("{\"dailyMinutes\":10,\"daysPerWeek\":3,\"expectation\":\"기다리기\"}"))
 				.andExpect(status().isUnauthorized())
-				.andDo(document("plan/ai-create-error", ResourceSnippetParameters.builder().deprecated(true), responseFields(ERROR_FIELDS)));
+				.andDo(document("plan/ai-create-legacy-error", ResourceSnippetParameters.builder().deprecated(true), responseFields(ERROR_FIELDS)));
 		verifyNoInteractions(planRegister);
 	}
 
 	@Test
 	void 강아지_ID가_숫자가_아니면_플랜을_생성하지_않는다() throws Exception {
-		mockMvc.perform(post("/api/dogs/{dogId}/plans/custom", "invalid").principal(CURRENT_USER)
+		mockMvc.perform(post("/api/plans/custom").queryParam("dogId", "invalid").principal(CURRENT_USER)
 				.contentType(MediaType.APPLICATION_JSON).content(JSON))
 				.andExpect(status().isBadRequest());
 		verifyNoInteractions(planRegister);
@@ -371,7 +370,7 @@ class PlanControllerTest {
 				new PlanLessonProgressResult(12L, "문을 열어도 기다리기", false)));
 		given(currentPlanFinder.find(42L, 3L)).willReturn(Optional.of(new CurrentPlanResult(plan, List.of(curriculum))));
 
-		mockMvc.perform(get("/api/dogs/{dogId}/plans/current", 3L).principal(CURRENT_USER)
+		mockMvc.perform(get("/api/plans/current").queryParam("dogId", "3").principal(CURRENT_USER)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.plan.planId").value(21))
@@ -382,8 +381,8 @@ class PlanControllerTest {
 				.andExpect(jsonPath("$.plan.curriculums[0].status").value("IN_PROGRESS"))
 				.andExpect(jsonPath("$.plan.curriculums[0].lessons[0].completed").value(true))
 				.andExpect(jsonPath("$.plan.curriculums[0].lessons[1].lessonId").value(12))
-				.andDo(document("plan/dog-current",
-						pathParameters(parameterWithName("dogId").description("본인 소유 강아지 ID")), responseFields(
+				.andDo(document("plan/current",
+						queryParameters(parameterWithName("dogId").description("본인 소유 강아지 ID")), responseFields(
 						fieldWithPath("plan").description("현재 플랜, 활성 플랜 우선, 없으면 가장 최근 완료한 플랜. 둘 다 없으면 null").optional(),
 						fieldWithPath("plan.planId").description("플랜 ID"),
 						fieldWithPath("plan.dogId").description("플랜 생성 시 선택된 강아지 ID"),
@@ -432,7 +431,7 @@ class PlanControllerTest {
 				.andExpect(jsonPath("$.plan.curriculums[0].status").value("IN_PROGRESS"))
 				.andExpect(jsonPath("$.plan.curriculums[0].lessons[0].completed").value(true))
 				.andExpect(jsonPath("$.plan.curriculums[0].lessons[1].lessonId").value(12))
-				.andDo(document("plan/current", ResourceSnippetParameters.builder().deprecated(true).description("사용 중단 예정. GET /api/dogs/{dogId}/plans/current를 사용하세요."), responseFields(
+				.andDo(document("plan/current-legacy", ResourceSnippetParameters.builder().deprecated(true), responseFields(
 						fieldWithPath("plan").description("현재 플랜, 활성 플랜 우선, 없으면 가장 최근 완료한 플랜. 둘 다 없으면 null").optional(),
 						fieldWithPath("plan.planId").description("플랜 ID"),
 						fieldWithPath("plan.dogId").description("플랜 생성 시 선택된 강아지 ID"),
@@ -495,7 +494,7 @@ class PlanControllerTest {
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.plan").value(nullValue()))
-				.andDo(document("plan/current-empty", ResourceSnippetParameters.builder().deprecated(true), responseFields(
+				.andDo(document("plan/current-legacy-empty", ResourceSnippetParameters.builder().deprecated(true), responseFields(
 						fieldWithPath("plan").type(JsonFieldType.OBJECT).optional().description("활성 및 완료한 플랜이 없으면 null"))));
 	}
 
@@ -503,7 +502,7 @@ class PlanControllerTest {
 	void 현재_플랜_조회에_인증이_없으면_401을_반환한다() throws Exception {
 		mockMvc.perform(get("/api/plans/current"))
 				.andExpect(status().isUnauthorized())
-				.andDo(document("plan/current-error", ResourceSnippetParameters.builder().deprecated(true), responseFields(ERROR_FIELDS)));
+				.andDo(document("plan/current-legacy-error", ResourceSnippetParameters.builder().deprecated(true), responseFields(ERROR_FIELDS)));
 
 		verifyNoInteractions(currentPlanFinder);
 	}
@@ -515,13 +514,13 @@ class PlanControllerTest {
 		given(plan.getId()).willReturn(21L);
 		given(planRegister.createCustom(42L, 7L, REQUEST)).willReturn(plan);
 
-		mockMvc.perform(post("/api/dogs/{dogId}/plans/custom", 7L).principal(CURRENT_USER)
+		mockMvc.perform(post("/api/plans/custom").queryParam("dogId", "7").principal(CURRENT_USER)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
 						.contentType(MediaType.APPLICATION_JSON).content(JSON))
 				.andExpect(status().isCreated())
 				.andExpect(jsonPath("$.planId").value(21))
-				.andDo(document("plan/dog-custom-create",
-						pathParameters(parameterWithName("dogId").description("플랜을 생성할 본인 소유 강아지 ID")),
+				.andDo(document("plan/custom-create",
+						queryParameters(parameterWithName("dogId").description("플랜을 생성할 본인 소유 강아지 ID")),
 						requestFields(
 								fieldWithPath("topicIds").description("선택한 토픽 ID 목록, 1~3개. 교육 순서의 첫 미완료 커리큘럼부터 이후 전체 포함"),
 
@@ -534,13 +533,13 @@ class PlanControllerTest {
 	void 미완료_커리큘럼이_없으면_400을_반환한다() throws Exception {
 		given(planRegister.createCustom(42L, 7L, REQUEST)).willThrow(new EmptyPlanCurriculumsException());
 
-		mockMvc.perform(post("/api/dogs/{dogId}/plans/custom", 7L).principal(CURRENT_USER)
+		mockMvc.perform(post("/api/plans/custom").queryParam("dogId", "7").principal(CURRENT_USER)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
 						.contentType(MediaType.APPLICATION_JSON).content(JSON))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.code").value("PLAN_EMPTY_CURRICULUMS"))
-				.andDo(document("plan/dog-custom-create-error",
-						pathParameters(parameterWithName("dogId").description("플랜 대상 강아지 ID")), responseFields(ERROR_FIELDS)));
+				.andDo(document("plan/custom-create-error",
+						queryParameters(parameterWithName("dogId").description("플랜 대상 강아지 ID")), responseFields(ERROR_FIELDS)));
 	}
 
 	@Test
@@ -548,18 +547,18 @@ class PlanControllerTest {
 		given(planRegister.createCustom(42L, 7L, REQUEST)).willThrow(
 				new PlanCreationConflictException(new DataIntegrityViolationException("충돌")));
 
-		mockMvc.perform(post("/api/dogs/{dogId}/plans/custom", 7L).principal(CURRENT_USER)
+		mockMvc.perform(post("/api/plans/custom").queryParam("dogId", "7").principal(CURRENT_USER)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
 						.contentType(MediaType.APPLICATION_JSON).content(JSON))
 				.andExpect(status().isConflict())
 				.andExpect(jsonPath("$.code").value("PLAN_CREATION_CONFLICT"))
-				.andDo(document("plan/dog-custom-create-conflict-error",
-						pathParameters(parameterWithName("dogId").description("플랜 대상 강아지 ID")), responseFields(ERROR_FIELDS)));
+				.andDo(document("plan/custom-create-conflict-error",
+						queryParameters(parameterWithName("dogId").description("플랜 대상 강아지 ID")), responseFields(ERROR_FIELDS)));
 	}
 
 	@Test
 	void 필수_입력이_없으면_생성_서비스를_호출하지_않는다() throws Exception {
-		mockMvc.perform(post("/api/dogs/{dogId}/plans/custom", 7L).principal(CURRENT_USER)
+		mockMvc.perform(post("/api/plans/custom").queryParam("dogId", "7").principal(CURRENT_USER)
 						.contentType(MediaType.APPLICATION_JSON).content("{}"))
 				.andExpect(status().isBadRequest());
 
@@ -568,7 +567,7 @@ class PlanControllerTest {
 
 	@Test
 	void 인증_정보가_없으면_401을_반환한다() throws Exception {
-		mockMvc.perform(post("/api/dogs/{dogId}/plans/custom", 7L).contentType(MediaType.APPLICATION_JSON).content(JSON))
+		mockMvc.perform(post("/api/plans/custom").queryParam("dogId", "7").contentType(MediaType.APPLICATION_JSON).content(JSON))
 				.andExpect(status().isUnauthorized());
 
 		verifyNoInteractions(planRegister);
@@ -580,14 +579,14 @@ class PlanControllerTest {
 		given(plan.getId()).willReturn(22L);
 		given(planRegister.createAiPlan(42L, 7L, request)).willReturn(plan);
 
-		mockMvc.perform(post("/api/dogs/{dogId}/plans/ai", 7L).principal(CURRENT_USER)
+		mockMvc.perform(post("/api/plans/ai").queryParam("dogId", "7").principal(CURRENT_USER)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"dailyMinutes\":10,\"daysPerWeek\":3,\"expectation\":\"차분히 기다렸으면 해요\"}"))
 				.andExpect(status().isCreated())
 				.andExpect(jsonPath("$.planId").value(22))
-				.andDo(document("plan/dog-ai-create",
-						pathParameters(parameterWithName("dogId").description("플랜을 생성할 본인 소유 강아지 ID")), requestFields(
+				.andDo(document("plan/ai-create",
+						queryParameters(parameterWithName("dogId").description("플랜을 생성할 본인 소유 강아지 ID")), requestFields(
 
 								fieldWithPath("dailyMinutes").description("하루 훈련 시간, 5, 10, 20 중 하나. 20은 20분 이상"),
 						fieldWithPath("daysPerWeek").description("주당 훈련 일수, 3, 5, 7 중 하나"),
@@ -601,20 +600,20 @@ class PlanControllerTest {
 		AiPlanCreateRequest request = new AiPlanCreateRequest(10, 3, "기다리기");
 		given(planRegister.createAiPlan(42L, 7L, request)).willThrow(new InvalidAiPlanResponseException());
 
-		mockMvc.perform(post("/api/dogs/{dogId}/plans/ai", 7L).principal(CURRENT_USER)
+		mockMvc.perform(post("/api/plans/ai").queryParam("dogId", "7").principal(CURRENT_USER)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"dailyMinutes\":10,\"daysPerWeek\":3,\"expectation\":\"기다리기\"}"))
 				.andExpect(status().isBadGateway())
 				.andExpect(jsonPath("$.code").value("PLAN_AI_INVALID_RESPONSE"))
-				.andDo(document("plan/dog-ai-create-error",
-						pathParameters(parameterWithName("dogId").description("플랜 대상 강아지 ID")), responseFields(ERROR_FIELDS)));
+				.andDo(document("plan/ai-create-error",
+						queryParameters(parameterWithName("dogId").description("플랜 대상 강아지 ID")), responseFields(ERROR_FIELDS)));
 	}
 
 	@ParameterizedTest
 	@MethodSource("invalidAiRequests")
 	void 잘못된_AI_요청이면_서비스를_호출하지_않는다(String json) throws Exception {
-		mockMvc.perform(post("/api/dogs/{dogId}/plans/ai", 7L).principal(CURRENT_USER)
+		mockMvc.perform(post("/api/plans/ai").queryParam("dogId", "7").principal(CURRENT_USER)
 						.contentType(MediaType.APPLICATION_JSON).content(json))
 				.andExpect(status().isBadRequest());
 		verifyNoInteractions(planRegister);
@@ -630,7 +629,7 @@ class PlanControllerTest {
 
 	@Test
 	void AI_플랜_생성에_인증이_없으면_401을_반환한다() throws Exception {
-		mockMvc.perform(post("/api/dogs/{dogId}/plans/ai", 7L).contentType(MediaType.APPLICATION_JSON)
+		mockMvc.perform(post("/api/plans/ai").queryParam("dogId", "7").contentType(MediaType.APPLICATION_JSON)
 						.content("{\"dailyMinutes\":10,\"daysPerWeek\":3,\"expectation\":\"기다리기\"}"))
 				.andExpect(status().isUnauthorized());
 		verifyNoInteractions(planRegister);

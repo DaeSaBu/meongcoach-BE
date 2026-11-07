@@ -65,6 +65,20 @@ class CurrentPlanFinderTest {
 	}
 
 	@Test
+	void 교체된_플랜만_있는_강아지는_현재_플랜이_없다() {
+		Long firstDog = saveDog(42L);
+		Long secondDog = saveDog(42L);
+		Long curriculum = saveCurriculum();
+		Plan replaced = savePlan(42L, firstDog, curriculum);
+		replaced.replace();
+		savePlan(42L, secondDog, curriculum);
+		flushAndClear();
+
+		assertThat(finder.find(42L, firstDog)).isEmpty();
+		assertThat(planRepository.findById(replaced.getId()).orElseThrow().getStatus()).isEqualTo(PlanStatus.REPLACED);
+	}
+
+	@Test
 	void 다른_강아지의_활성_플랜보다_요청한_강아지의_완료_플랜을_반환한다() {
 		Long firstDog = saveDog(42L);
 		Long secondDog = saveDog(42L);

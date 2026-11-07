@@ -85,7 +85,7 @@ flowchart LR
 
 ### 스케줄 알림
 
-`NotificationDispatchScheduler`가 서울 8·11·17시에 실행됩니다. `meongcoach.notification.scheduler.enabled=true`일 때만 켜지며, 현재는 prod에서도 꺼 두었습니다.
+`NotificationDispatchScheduler`가 서울 8·11·17시에 실행됩니다. `meongcoach.notification.scheduler.enabled=true`일 때만 켜지며, prod에서만 켭니다.
 요청값 오류(4xx)가 아닌 실패이면 2분 뒤 같은 예약을 다시 호출하며 최대 3회 시도합니다. 재시도는 전체 대상에 다시 보내므로 일부가 이미 받았으면 중복 전달될 수 있습니다.
 마지막 시도도 실패하면 스케줄러 로그에 남으며, 예약 시각 1시간 안에 내부 API로 수동 재실행할 수 있습니다.
 입력은 서울 기준 날짜·시·분입니다. 예약 시각이 미래이거나 1시간보다 오래됐으면 400입니다.
@@ -134,7 +134,7 @@ CommentModifyService.register (@Transactional)
 - 수신자 계산과 문구 조립은 `community/domain`의 `CommentRegisteredEvent`·`CommentNotification`이 합니다.
 - 리스너는 커밋 뒤 비동기 스레드에서 실행됩니다. 댓글 등록이 롤백되면 발송하지 않고, FCM 실패·지연은 댓글 등록 응답에 영향을 주지 않습니다. 실패는 비동기 예외 핸들러의 error 로그로 Sentry에 남으며 재시도하지 않습니다.
 - 수신자가 비어 있으면(본인 게시글에 본인 댓글) 발송을 요청하지 않습니다. `COMMENT` 종류를 끈 회원 제외, 활성 회원 필터, FID 조회는 이벤트 알림 공통 규칙을 따릅니다.
-- `meongcoach.notification.comment.enabled=true`일 때만 리스너가 등록됩니다. 현재 prod에서는 꺼 두었습니다.
+- `meongcoach.notification.comment.enabled=true`일 때만 리스너가 등록됩니다. 기본값이 `true`라 모든 환경에서 켜져 있습니다.
 - 앱에서 딥링크로 게시글 화면을 열려면 앱의 딥링크 허용 목록에 `community-post/{postId}` 경로가 있어야 합니다.
 
 ### FCM 전송
