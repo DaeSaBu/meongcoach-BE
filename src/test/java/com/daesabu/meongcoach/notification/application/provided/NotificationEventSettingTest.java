@@ -39,7 +39,8 @@ class NotificationEventSettingTest {
 				.containsExactlyInAnyOrder(
 						tuple(NotificationEventType.AI_ANALYSIS, true),
 						tuple(NotificationEventType.OPERATOR_MESSAGE, true),
-						tuple(NotificationEventType.COMMENT, false));
+						tuple(NotificationEventType.COMMENT, false),
+						tuple(NotificationEventType.SUPPORT_REPLY, true));
 	}
 
 	@Test

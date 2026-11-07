@@ -88,7 +88,7 @@ SHA-1 검증용이라 id_token의 `aud`가 되지 않습니다), 애플은 **iOS
 
 | 순서 | 경로 | 접근 |
 |---|---|---|
-| 1 | `/api/health`, `/api/auth/login/social`, `/api/auth/login/email`, `/api/auth/token/refresh`, `/api/auth/logout` | permitAll |
+| 1 | `/api/health`, `/api/auth/login/social`, `/api/auth/login/email`, `/api/auth/token/refresh`, `/api/auth/logout`, `/webhooks/channel-talk` | permitAll |
 | 2 | `/swagger-ui/**` | 문서 활성 환경 permitAll, 그 외 denyAll |
 | 3 | `/api/onboarding/**`, `/api/dogs/profile/image` | `USER`, `ONBOARDING_USER` |
 | 4 | `DELETE /api/auth/me`, `GET /api/users/me` | `USER`, `ONBOARDING_USER` |
@@ -96,6 +96,8 @@ SHA-1 검증용이라 id_token의 `aud`가 되지 않습니다), 애플은 **iOS
 
 `/internal/**`는 이 체인이 아니라 notification 모듈이 정의한 별도 체인(`@Order(0)`, `securityMatcher("/internal/**")`)이 먼저 잡습니다.
 JWT 대신 `X-Internal-Secret` 헤더를 검사하며, 앱 버전 게이트도 `/api/` 경로만 보므로 걸리지 않습니다. ([notification.md](notification.md) "인증")
+`/webhooks/channel-talk`은 이 체인에서 인증 없이 열고, 컨트롤러가 웹훅 주소의 쿼리 파라미터 `token`을 `CHANNEL_TALK_WEBHOOK_TOKEN`과 `MessageDigest.isEqual`로 비교합니다.
+채널톡은 요청 헤더를 지정할 수 없어 쿼리 파라미터를 씁니다. ([notification.md](notification.md) "문의 답변 알림")
 
 3번은 온보딩 화면에 필요한 경로입니다 — 온보딩 완료 요청에 프로필 이미지 URL이 들어가므로
 기본 프로필 이미지 조회는 온보딩 중에도 열려 있어야 합니다. 이미지 업로드 presigned URL 발급은
@@ -194,7 +196,7 @@ XSS 한 번으로 리프레시 토큰이 새어 나갑니다. 그래서 `X-App-P
   - 옛 API를 쓰는 앱을 막으려면 새 앱이 스토어에 출시된 뒤에 `PROD_` Secret을 그 버전으로 올리고, 그 API를 바꾼 서버를 main에 반영합니다. 최소 버전 상향과 API 변경이 같은 배포로 나갑니다.
 - `csrf` / `formLogin` / `httpBasic` / `logout` 비활성화 (`logout`은 Spring의 세션 로그아웃. 앱 로그아웃은 `POST /api/auth/logout`)
 - `SessionCreationPolicy.STATELESS`
-- permitAll: `/api/health`, `/api/auth/login/social`, `/api/auth/login/email`, `/api/auth/token/refresh`, `/api/auth/logout`
+- permitAll: `/api/health`, `/api/auth/login/social`, `/api/auth/login/email`, `/api/auth/token/refresh`, `/api/auth/logout`, `/webhooks/channel-talk`
   (인증 엔드포인트만 개별 경로로 열고 `/api/auth/**`로 넓히지 않습니다. 이후 추가되는 인증 관련 API가 자동으로 공개되는 것을 막기 위함입니다)
 - 그 외 요청은 역할 기반 인가 (위 "URL 인가 규칙" 참고)
 - `oauth2ResourceServer.jwt()` — Bearer 토큰 파싱·검증은 프레임워크가 담당하므로 인증용 커스텀 필터가 없습니다.

@@ -111,7 +111,7 @@ class InternalNotificationControllerTest {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.fids").value(2))
 				.andDo(document("notification/internal-event-dispatch",
-						requestFields(fieldWithPath("type").description("알림 종류. AI_ANALYSIS·OPERATOR_MESSAGE·COMMENT"),
+						requestFields(fieldWithPath("type").description("알림 종류. AI_ANALYSIS·OPERATOR_MESSAGE·COMMENT·SUPPORT_REPLY"),
 								fieldWithPath("targetKind").description("대상 종류. ALL·USERS"),
 								fieldWithPath("userIds").description("USERS일 때 회원 ID 목록(1~1,000명)"),
 								fieldWithPath("title").description("제목(100자 이하)"),
