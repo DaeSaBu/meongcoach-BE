@@ -314,17 +314,17 @@ operation::training/topic-select-error[snippets='http-response,response-fields']
 
 훈련 영상 업로드 URL 발급과, 업로드한 영상을 AI가 분석해 만든 리포트를 조회하는 API입니다.
 모든 엔드포인트에 액세스 토큰 인증이 필요합니다.
-리포트는 업로드 URL을 발급하는 순간 `UPLOADING`(업로드 대기) 상태로 생성되고, 업로드가 끝나면 `PENDING`(분석 중),
+리포트는 업로드 URL을 발급하는 순간 `UPLOADING`(업로드 대기) 상태로 생성되고, 업로드가 끝나면 `ANALYZING`(분석 중),
 분석이 끝나면 `COMPLETED` 또는 `FAILED_*` 상태로 바뀝니다.
 `COMPLETED`가 아닌 리포트는 `title`과 `content`가 null입니다.
 
 [NOTE]
 .분석 완료 폴링
 ====
-클라이언트는 리포트 목록 조회를 폴링하다가 `UPLOADING`·`PENDING`인 리포트가 없으면 멈춥니다.
+클라이언트는 리포트 목록 조회를 폴링하다가 `UPLOADING`·`ANALYZING`인 리포트가 없으면 멈춥니다.
 리포트는 발급 즉시 목록에 나타나므로 앱이 재시작돼 `objectKey`·`reportId`를 잃어도 목록만으로 진행 중인 분석을 찾을 수 있습니다.
 `uploadUrl` 유효 시간(`expiresInSeconds`) 안에 업로드가 끝나지 않은 리포트는 `FAILED_UPLOAD`로 내려갑니다.
-업로드가 유효 시간을 넘겨 끝난 경우에는 업로드 완료 이벤트가 처리되기까지 잠시 `FAILED_UPLOAD`로 보이다가 `PENDING`으로 바뀔 수 있습니다.
+업로드가 유효 시간을 넘겨 끝난 경우에는 업로드 완료 이벤트가 처리되기까지 잠시 `FAILED_UPLOAD`로 보이다가 `ANALYZING`으로 바뀔 수 있습니다.
 ====
 `videoObjectKey`는 분석한 영상을 가리키는 GCS 객체 키이며,
 영상 재생 URL은 내려가지 않습니다.
