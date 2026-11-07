@@ -126,14 +126,29 @@ class PlanPreparationFinderTest {
 	}
 
 	@Test
-	void 모두_완료하면_빈_커리큘럼_목록을_반환한다() {
-		Topic topic = saveTopic(saveCategory(1), 1);
-		complete(USER_ID, saveLesson(saveCurriculum(topic, 1, false)));
+	void 선택한_토픽을_모두_완료하면_전체_커리큘럼을_교육_순서로_반환한다() {
+		TrainingCategory category = saveCategory(1);
+		Topic firstTopic = saveTopic(category, 1);
+		Curriculum first = saveCurriculum(firstTopic, 1, false);
+		complete(USER_ID, saveLesson(first));
+		Curriculum second = saveCurriculum(firstTopic, 2, false);
+		complete(USER_ID, saveLesson(second));
+		Topic nextTopic = saveTopic(category, 2);
+		Curriculum third = saveCurriculum(nextTopic, 1, false);
+		complete(USER_ID, saveLesson(third));
 		flushAndClear();
 
-		PlanPreparationResult result = finder.find(USER_ID, List.of(topic.getId()));
+		PlanPreparationResult result = finder.find(USER_ID, List.of(nextTopic.getId(), firstTopic.getId()));
 
-		assertThat(result.curriculumIds()).isEmpty();
+		assertThat(result.curriculumIds()).containsExactly(first.getId(), second.getId(), third.getId());
+	}
+
+	@Test
+	void 선택한_토픽에_커리큘럼이_없으면_빈_목록을_반환한다() {
+		Topic topic = saveTopic(saveCategory(1), 1);
+		flushAndClear();
+
+		assertThat(finder.find(USER_ID, List.of(topic.getId())).curriculumIds()).isEmpty();
 	}
 
 	@Test

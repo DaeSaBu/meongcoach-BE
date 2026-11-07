@@ -184,25 +184,45 @@ class PlanRegisterAiTest {
 	}
 
 	@Test
-	void 모든_커리큘럼이_완료됐으면_AI를_호출하지_않는다() {
+	void 모든_커리큘럼이_완료됐어도_AI_플랜을_생성한다() {
 		Plan existing = saveExistingPlan();
 		new TransactionTemplate(transactionManager).executeWithoutResult(status -> completeLesson(lessonIds.get(1)));
 
-		assertThatThrownBy(() -> register.createAiPlan(USER_ID, dogId, request)).isInstanceOf(EmptyPlanCurriculumsException.class);
+		Plan created = register.createAiPlan(USER_ID, dogId, request);
 
-		verifyNoInteractions(generator);
-		assertActivePlan(existing.getId());
+		assertThat(created.getCurriculumIds()).containsExactlyElementsOf(curriculumIds);
+		assertThat(created.getCompletedLessonIds()).isEmpty();
+		assertThat(planRepository.findById(existing.getId()).orElseThrow().getStatus()).isEqualTo(PlanStatus.REPLACED);
+		assertActivePlan(created.getId());
+		assertThat(jdbc.queryForObject("SELECT sum(completed_count) FROM lesson_progress WHERE user_id = ?", Long.class, USER_ID))
+				.isEqualTo(3L);
 	}
 
 	@Test
-	void AI_호출_중_남은_훈련이_완료되면_기존_플랜을_유지한다() {
+	void AI_호출_중_남은_훈련이_완료되어도_복습_플랜을_생성한다() {
 		Plan existing = saveExistingPlan();
 		given(generator.generate(any())).willAnswer(invocation -> {
 			new TransactionTemplate(transactionManager).executeWithoutResult(status -> completeLesson(lessonIds.get(1)));
 			return new AiPlanGenerateResult(List.of(topicId), "기다리기");
 		});
 
+		Plan created = register.createAiPlan(USER_ID, dogId, request);
+
+		assertThat(created.getCurriculumIds()).containsExactlyElementsOf(curriculumIds);
+		assertThat(created.getCompletedLessonIds()).isEmpty();
+		assertThat(planRepository.findById(existing.getId()).orElseThrow().getStatus()).isEqualTo(PlanStatus.REPLACED);
+		assertActivePlan(created.getId());
+	}
+
+	@Test
+	void 커리큘럼_후보가_없으면_AI를_호출하지_않고_기존_플랜을_유지한다() {
+		Plan existing = saveExistingPlan();
+		jdbc.update("DELETE FROM lessons WHERE curriculum_id IN (SELECT id FROM curriculums WHERE topic_id = ?)", topicId);
+		jdbc.update("DELETE FROM curriculums WHERE topic_id = ?", topicId);
+
 		assertThatThrownBy(() -> register.createAiPlan(USER_ID, dogId, request)).isInstanceOf(EmptyPlanCurriculumsException.class);
+
+		verifyNoInteractions(generator);
 		assertActivePlan(existing.getId());
 	}
 
