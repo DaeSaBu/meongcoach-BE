@@ -522,7 +522,7 @@ class PlanControllerTest {
 				.andDo(document("plan/custom-create",
 						queryParameters(parameterWithName("dogId").description("플랜을 생성할 본인 소유 강아지 ID")),
 						requestFields(
-								fieldWithPath("topicIds").description("선택한 토픽 ID 목록, 1~3개. 교육 순서의 첫 미완료 커리큘럼부터 이후 전체 포함"),
+								fieldWithPath("topicIds").description("선택한 토픽 ID 목록, 1~3개. 완료 여부와 관계없이 교육 순서의 커리큘럼 전체 포함"),
 
 								fieldWithPath("dailyMinutes").description("하루 훈련 시간, 5, 10, 20 중 하나. 20은 20분 이상"),
 								fieldWithPath("daysPerWeek").description("주당 훈련 일수, 3, 5, 7 중 하나")),
@@ -530,7 +530,7 @@ class PlanControllerTest {
 	}
 
 	@Test
-	void 미완료_커리큘럼이_없으면_400을_반환한다() throws Exception {
+	void 커리큘럼이_없으면_400을_반환한다() throws Exception {
 		given(planRegister.createCustom(42L, 7L, REQUEST)).willThrow(new EmptyPlanCurriculumsException());
 
 		mockMvc.perform(post("/api/plans/custom").queryParam("dogId", "7").principal(CURRENT_USER)
