@@ -277,7 +277,7 @@ class SecurityFilterChainTest {
 	}
 
 	@ParameterizedTest
-	@ValueSource(strings = {"ADMIN", "EXPERT", "TRAINER", "OPERATOR"})
+	@ValueSource(strings = {"ADMIN", "EXPERT", "TRAINER"})
 	void 앱_회원이_아닌_역할은_앱_회원_경로에_접근할_수_없다(String role) throws Exception {
 		Long staffUserId = userRepository.save(User.registerUser()).getId();
 		jdbcTemplate.update("UPDATE users SET role = ? WHERE id = ?", role, staffUserId);

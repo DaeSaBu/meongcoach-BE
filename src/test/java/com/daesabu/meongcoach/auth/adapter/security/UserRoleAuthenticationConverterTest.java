@@ -27,8 +27,7 @@ class UserRoleAuthenticationConverterTest {
 			"ONBOARDING_USER, ROLE_ONBOARDING_USER",
 			"ADMIN, ROLE_ADMIN",
 			"EXPERT, ROLE_EXPERT",
-			"TRAINER, ROLE_TRAINER",
-			"OPERATOR, ROLE_OPERATOR"
+			"TRAINER, ROLE_TRAINER"
 	})
 	void 회원_역할에_해당하는_권한을_부여한다(AuthorityRole role, String authority) {
 		AbstractAuthenticationToken authentication = convert(role, String.valueOf(USER_ID));
