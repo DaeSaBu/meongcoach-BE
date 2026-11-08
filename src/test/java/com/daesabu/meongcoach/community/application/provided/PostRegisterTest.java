@@ -323,6 +323,23 @@ class PostRegisterTest {
 	}
 
 	@Test
+	void 삭제한_미디어를_재추가하면_같은_DB_행을_복원한다() {
+		Post post = savePost(USER_ID, null, List.of(new PostMediaCommand(PostMediaType.IMAGE, IMAGE_URL)));
+		Long postId = post.getId();
+		Long mediaId = post.getMedia().getFirst().getId();
+
+		postRegister.update(USER_ID, postId, new PostUpdateRequest("본문", null, List.of()));
+		flushAndClear();
+		postRegister.update(USER_ID, postId,
+				new PostUpdateRequest("본문", null, List.of(new PostMediaRequest("IMAGE", IMAGE_URL))));
+		flushAndClear();
+
+		assertThat(mediaRows(postId)).containsExactly(tuple(IMAGE_URL, false));
+		assertThat(postRepository.findById(postId).orElseThrow().getMedia())
+				.extracting(PostMedia::getId).containsExactly(mediaId);
+	}
+
+	@Test
 	void 게시글을_삭제해도_미디어_행은_남는다() {
 		Post post = savePost(USER_ID, null, List.of(new PostMediaCommand(PostMediaType.IMAGE, IMAGE_URL)));
 
