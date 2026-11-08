@@ -55,6 +55,34 @@ class PostTest {
 	}
 
 	@Test
+	void 미디어_URL이_null이면_수정에_실패하고_기존_상태가_유지된다() {
+		Post post = Post.register(USER_ID, new PostRegisterCommand(CONTENT, null, images(1)));
+		List<PostMedia> original = post.getMedia();
+
+		assertThatThrownBy(() -> post.update(new PostUpdateCommand("수정", null,
+				List.of(new PostMediaCommand(PostMediaType.VIDEO, null)))))
+				.isInstanceOf(NullPointerException.class);
+
+		assertThat(post.getMedia()).containsExactlyElementsOf(original);
+		assertThat(original.getFirst().getDeletedAt()).isNull();
+		assertThat(post.getContent()).isEqualTo(new PostContent(CONTENT));
+	}
+
+	@Test
+	void 미디어_종류가_null이면_수정에_실패하고_기존_상태가_유지된다() {
+		Post post = Post.register(USER_ID, new PostRegisterCommand(CONTENT, null, images(1)));
+		List<PostMedia> original = post.getMedia();
+
+		assertThatThrownBy(() -> post.update(new PostUpdateCommand("수정", null,
+				List.of(new PostMediaCommand(null, VIDEO_URL)))))
+				.isInstanceOf(NullPointerException.class);
+
+		assertThat(post.getMedia()).containsExactlyElementsOf(original);
+		assertThat(original.getFirst().getDeletedAt()).isNull();
+		assertThat(post.getContent()).isEqualTo(new PostContent(CONTENT));
+	}
+
+	@Test
 	void 작성하면_작성자와_본문이_채워진다() {
 		Post post = Post.register(USER_ID, new PostRegisterCommand(CONTENT, null, List.of()));
 
