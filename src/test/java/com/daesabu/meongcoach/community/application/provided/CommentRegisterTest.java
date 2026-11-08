@@ -17,9 +17,9 @@ import com.daesabu.meongcoach.community.domain.Post;
 import com.daesabu.meongcoach.community.domain.PostMediaCommand;
 import com.daesabu.meongcoach.community.domain.PostMediaType;
 import com.daesabu.meongcoach.community.domain.PostRegisterCommand;
+import com.daesabu.meongcoach.community.domain.exception.CommentMediaCountExceededException;
 import com.daesabu.meongcoach.community.domain.exception.CommentNotFoundException;
 import com.daesabu.meongcoach.community.domain.exception.InvalidCommentContentException;
-import com.daesabu.meongcoach.community.domain.exception.PostMediaCountExceededException;
 import com.daesabu.meongcoach.community.domain.exception.PostNotFoundException;
 import com.daesabu.meongcoach.media.domain.exception.InvalidMediaUrlException;
 import com.daesabu.meongcoach.support.ApplicationTest;
@@ -382,7 +382,7 @@ class CommentRegisterTest {
 	void 첨부와_함께_댓글을_등록한다() {
 		Post post = savePost();
 		CommentRegisterRequest request = new CommentRegisterRequest("이 화면에서 멈췄어요", null,
-				List.of(new PostMediaRequest("IMAGE", IMAGE_URL), new PostMediaRequest("VIDEO", VIDEO_URL)));
+				List.of(new PostMediaRequest("IMAGE", IMAGE_URL)));
 
 		Comment registered = commentRegister.register(USER_ID, post.getId(), request);
 		flushAndClear();
@@ -390,9 +390,7 @@ class CommentRegisterTest {
 		Comment found = commentRepository.findById(registered.getId()).orElseThrow();
 		assertThat(found.getMedia())
 				.extracting(CommentMedia::getType, CommentMedia::getUrl, CommentMedia::getSortOrder)
-				.containsExactly(
-						tuple(PostMediaType.IMAGE, IMAGE_URL, 0),
-						tuple(PostMediaType.VIDEO, VIDEO_URL, 1));
+				.containsExactly(tuple(PostMediaType.IMAGE, IMAGE_URL, 0));
 	}
 
 	@Test
@@ -422,12 +420,11 @@ class CommentRegisterTest {
 	@Test
 	void 첨부_한도를_넘으면_예외를_던진다() {
 		Post post = savePost();
-		List<PostMediaRequest> media = List.of(new PostMediaRequest("VIDEO", VIDEO_URL),
-				new PostMediaRequest("VIDEO", VIDEO_URL), new PostMediaRequest("VIDEO", VIDEO_URL));
-		CommentRegisterRequest request = new CommentRegisterRequest("영상 세 개", null, media);
+		List<PostMediaRequest> media = List.of(new PostMediaRequest("IMAGE", IMAGE_URL), new PostMediaRequest("VIDEO", VIDEO_URL));
+		CommentRegisterRequest request = new CommentRegisterRequest("사진과 영상", null, media);
 
 		assertThatThrownBy(() -> commentRegister.register(USER_ID, post.getId(), request))
-				.isInstanceOf(PostMediaCountExceededException.class);
+				.isInstanceOf(CommentMediaCountExceededException.class);
 	}
 
 	@Test

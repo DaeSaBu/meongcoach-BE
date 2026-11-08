@@ -1,26 +1,22 @@
 package com.daesabu.meongcoach.community.domain;
 
 import com.daesabu.meongcoach.community.domain.exception.InvalidPostMediaTypeException;
-import com.daesabu.meongcoach.community.domain.exception.PostMediaCountExceededException;
 import com.daesabu.meongcoach.media.domain.shared.MediaKind;
 import com.daesabu.meongcoach.media.domain.shared.MediaScope;
 import java.util.Arrays;
-import java.util.List;
 import lombok.Getter;
 
 @Getter
 public enum PostMediaType {
-	IMAGE("사진", 3, MediaScope.of(MediaKind.IMAGE, "community-post"), null),
-	VIDEO("영상", 2, MediaScope.of(MediaKind.VIDEO, "community-post"), 512L * 1024 * 1024);
+	IMAGE("사진", MediaScope.of(MediaKind.IMAGE, "community-post"), null),
+	VIDEO("영상", MediaScope.of(MediaKind.VIDEO, "community-post"), 512L * 1024 * 1024);
 
 	private final String displayName;
-	private final int maxCount;
 	private final MediaScope mediaScope;
 	private final Long maxFileSizeBytes;
 
-	PostMediaType(String displayName, int maxCount, MediaScope mediaScope, Long maxFileSizeBytes) {
+	PostMediaType(String displayName, MediaScope mediaScope, Long maxFileSizeBytes) {
 		this.displayName = displayName;
-		this.maxCount = maxCount;
 		this.mediaScope = mediaScope;
 		this.maxFileSizeBytes = maxFileSizeBytes;
 	}
@@ -32,18 +28,4 @@ public enum PostMediaType {
 				.orElseThrow(() -> new InvalidPostMediaTypeException(code));
 	}
 
-	public static void validateCount(List<PostMediaCommand> media) {
-		Arrays.stream(values())
-				.filter(type -> type.countIn(media) > type.maxCount)
-				.findFirst()
-				.ifPresent(type -> {
-					throw new PostMediaCountExceededException(type);
-				});
-	}
-
-	private long countIn(List<PostMediaCommand> media) {
-		return media.stream()
-				.filter(command -> command.type() == this)
-				.count();
-	}
 }
