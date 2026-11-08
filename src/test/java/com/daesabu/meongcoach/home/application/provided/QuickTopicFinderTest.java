@@ -112,6 +112,34 @@ class QuickTopicFinderTest {
 	}
 
 	@Test
+	void 사진이_없는_고정_토픽은_빼고_반환한다() {
+		clearThumbnail(1204L);
+		clearBlankThumbnail(1602L);
+		Long dogId = saveDog(USER_ID, TODAY.minusMonths(6));
+
+		List<QuickTopicResult> result = finder.find(USER_ID, dogId);
+
+		assertThat(topicIds(result)).containsExactly(1601L, 1303L, 1201L);
+	}
+
+	@Test
+	void 사진이_없는_토픽은_이어서와_새_토픽에서_뺀다() {
+		complete(USER_ID, 1101L, 0, LocalDateTime.of(2026, 11, 1, 9, 0));
+		complete(USER_ID, 1102L, 0, LocalDateTime.of(2026, 11, 2, 9, 0));
+		clearThumbnail(1102L);
+		clearThumbnail(1201L);
+		clearBlankThumbnail(1303L);
+		Long dogId = saveDog(USER_ID, TODAY.minusMonths(6));
+
+		List<QuickTopicResult> result = finder.find(USER_ID, dogId);
+
+		assertThat(result.getFirst().topic().id()).isEqualTo(1101L);
+		assertThat(result.getFirst().role()).isEqualTo(QuickTopicRole.CONTINUE);
+		assertThat(topicIds(result)).doesNotContain(1102L, 1201L, 1303L);
+		assertThat(result).allSatisfy(item -> assertThat(item.topic().thumbnailUrl()).isNotBlank());
+	}
+
+	@Test
 	void 다른_회원의_학습_기록은_가입_직후_판단에_쓰지_않는다() {
 		complete(43L, 1101L, 0, LocalDateTime.of(2026, 11, 1, 9, 0));
 		Long dogId = saveDog(USER_ID, TODAY.minusMonths(6));
@@ -248,10 +276,11 @@ class QuickTopicFinderTest {
 
 	private void saveTopic(Long id, Long categoryId, int sortOrder) {
 		entityManager.createNativeQuery("INSERT INTO topics "
-						+ "(id, title, description, detail, icon_url, sort_order, training_category_id, created_at, updated_at) "
-						+ "VALUES (:id, :title, '', '', '', :sortOrder, :categoryId, now(), now())")
+						+ "(id, title, description, detail, icon_url, thumbnail_url, sort_order, training_category_id, created_at, updated_at) "
+						+ "VALUES (:id, :title, '', '', '', :thumbnailUrl, :sortOrder, :categoryId, now(), now())")
 				.setParameter("id", id)
 				.setParameter("title", "토픽 " + id)
+				.setParameter("thumbnailUrl", "https://cdn.example.com/topics/thumbnails/" + id + ".jpg")
 				.setParameter("sortOrder", sortOrder)
 				.setParameter("categoryId", categoryId)
 				.executeUpdate();
@@ -265,6 +294,18 @@ class QuickTopicFinderTest {
 			lessons.add(lesson);
 		}
 		lessonsByTopic.put(id, lessons);
+	}
+
+	private void clearThumbnail(Long topicId) {
+		entityManager.createNativeQuery("UPDATE topics SET thumbnail_url = NULL WHERE id = :id")
+				.setParameter("id", topicId)
+				.executeUpdate();
+	}
+
+	private void clearBlankThumbnail(Long topicId) {
+		entityManager.createNativeQuery("UPDATE topics SET thumbnail_url = '  ' WHERE id = :id")
+				.setParameter("id", topicId)
+				.executeUpdate();
 	}
 
 	private void complete(Long userId, Long topicId, int lessonIndex, LocalDateTime completedAt) {
