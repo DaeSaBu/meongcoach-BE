@@ -2,7 +2,6 @@ package com.daesabu.meongcoach.user.application.provided;
 
 import com.daesabu.meongcoach.user.domain.User;
 import java.util.Collection;
-import java.util.List;
 import java.util.Set;
 
 public interface UserFinder {
