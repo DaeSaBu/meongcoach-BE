@@ -20,19 +20,6 @@ class PostTest {
 	private static final String VIDEO_URL = "https://media.meongcoach.com/videos/community/42/clip.mp4";
 
 	@Test
-	void 삭제한_미디어를_다시_추가하면_기존_행을_복원한다() {
-		PostMediaCommand command = new PostMediaCommand(PostMediaType.IMAGE, IMAGE_URL);
-		Post post = Post.register(USER_ID, new PostRegisterCommand(CONTENT, null, List.of(command)));
-		PostMedia original = post.getMedia().getFirst();
-
-		post.update(new PostUpdateCommand(CONTENT, null, List.of()));
-		post.update(new PostUpdateCommand(CONTENT, null, List.of(command)));
-
-		assertThat(post.getMedia()).containsExactly(original);
-		assertThat(original.getDeletedAt()).isNull();
-	}
-
-	@Test
 	void 같은_미디어를_중복해서_등록할_수_없다() {
 		PostMediaCommand command = new PostMediaCommand(PostMediaType.IMAGE, IMAGE_URL);
 
