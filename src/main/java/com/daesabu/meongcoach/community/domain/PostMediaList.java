@@ -38,7 +38,7 @@ public class PostMediaList {
 				.toList();
 	}
 
-	void replace(List<PostMediaCommand> commands) {
+	void update(List<PostMediaCommand> commands) {
 		PostMediaType.validateCount(commands);
 		deleteNotIn(commands);
 		IntStream.range(0, commands.size())
