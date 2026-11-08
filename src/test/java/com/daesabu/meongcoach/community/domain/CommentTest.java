@@ -139,6 +139,36 @@ class CommentTest {
 	}
 
 	@Test
+	void 수정에서_빠진_첨부는_조회에서_빠지고_삭제_시각이_기록된다() {
+		Comment comment = Comment.register(post, USER_ID, CONTENT, List.of(
+				new PostMediaCommand(PostMediaType.IMAGE, IMAGE_URL),
+				new PostMediaCommand(PostMediaType.VIDEO, VIDEO_URL)));
+		CommentMedia image = comment.getMedia().getFirst();
+
+		comment.update("수정한 댓글", List.of(new PostMediaCommand(PostMediaType.VIDEO, VIDEO_URL)));
+
+		assertThat(comment.getMedia()).extracting(CommentMedia::getUrl).containsExactly(VIDEO_URL);
+		assertThat(image.getDeletedAt()).isNotNull();
+	}
+
+	@Test
+	void 수정에서_다시_보낸_첨부는_같은_행을_유지하고_순서만_바뀐다() {
+		Comment comment = Comment.register(post, USER_ID, CONTENT, List.of(
+				new PostMediaCommand(PostMediaType.IMAGE, IMAGE_URL),
+				new PostMediaCommand(PostMediaType.VIDEO, VIDEO_URL)));
+		CommentMedia image = comment.getMedia().get(0);
+		CommentMedia video = comment.getMedia().get(1);
+
+		comment.update("수정한 댓글", List.of(
+				new PostMediaCommand(PostMediaType.VIDEO, VIDEO_URL),
+				new PostMediaCommand(PostMediaType.IMAGE, IMAGE_URL)));
+
+		assertThat(comment.getMedia()).containsExactly(video, image);
+		assertThat(comment.getMedia()).extracting(CommentMedia::getSortOrder).containsExactly(0, 1);
+		assertThat(comment.getMedia()).extracting(CommentMedia::getDeletedAt).containsOnlyNulls();
+	}
+
+	@Test
 	void 수정할_첨부가_한도를_넘으면_수정할_수_없다() {
 		Comment comment = Comment.register(post, USER_ID, CONTENT);
 

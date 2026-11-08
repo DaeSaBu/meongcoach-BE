@@ -40,6 +40,7 @@ import com.daesabu.meongcoach.training.domain.TrainingCategoryFixture;
 import jakarta.persistence.EntityManager;
 import jakarta.validation.ConstraintViolationException;
 import java.util.List;
+import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -290,6 +291,48 @@ class PostRegisterTest {
 	}
 
 	@Test
+	void 수정에서_빠진_미디어는_행을_남기고_삭제_시각만_기록한다() {
+		Post post = savePost(USER_ID, null, List.of(
+				new PostMediaCommand(PostMediaType.IMAGE, IMAGE_URL),
+				new PostMediaCommand(PostMediaType.VIDEO, VIDEO_URL)));
+
+		postRegister.update(USER_ID, post.getId(),
+				new PostUpdateRequest("본문", null, List.of(new PostMediaRequest("VIDEO", VIDEO_URL))));
+		flushAndClear();
+
+		assertThat(mediaRows(post.getId()))
+				.containsExactlyInAnyOrder(tuple(IMAGE_URL, true), tuple(VIDEO_URL, false));
+		assertThat(postRepository.findById(post.getId()).orElseThrow().getMedia())
+				.extracting(PostMedia::getUrl)
+				.containsExactly(VIDEO_URL);
+	}
+
+	@Test
+	void 수정에서_다시_보낸_미디어는_새_행을_만들지_않는다() {
+		Post post = savePost(USER_ID, null, List.of(
+				new PostMediaCommand(PostMediaType.IMAGE, IMAGE_URL),
+				new PostMediaCommand(PostMediaType.VIDEO, VIDEO_URL)));
+
+		postRegister.update(USER_ID, post.getId(), new PostUpdateRequest("본문", null, List.of(
+				new PostMediaRequest("VIDEO", VIDEO_URL),
+				new PostMediaRequest("IMAGE", IMAGE_URL))));
+		flushAndClear();
+
+		assertThat(mediaRows(post.getId()))
+				.containsExactlyInAnyOrder(tuple(IMAGE_URL, false), tuple(VIDEO_URL, false));
+	}
+
+	@Test
+	void 게시글을_삭제해도_미디어_행은_남는다() {
+		Post post = savePost(USER_ID, null, List.of(new PostMediaCommand(PostMediaType.IMAGE, IMAGE_URL)));
+
+		postRegister.delete(USER_ID, post.getId());
+		flushAndClear();
+
+		assertThat(mediaRows(post.getId())).containsExactly(tuple(IMAGE_URL, false));
+	}
+
+	@Test
 	void 다른_사용자의_게시글을_수정하면_예외를_던진다() {
 		Post post = savePost(7L, null, List.of());
 
@@ -399,6 +442,17 @@ class PostRegisterTest {
 		Topic topic = topicRepository.save(TopicFixture.create(category, "기본 토픽", 1, null, null, null));
 		Curriculum curriculum = curriculumRepository.save(CurriculumFixture.create(topic, "기본 커리큘럼", 1, null, null));
 		return lessonRepository.save(LessonFixture.create(curriculum, title, 1, 5));
+	}
+
+	@SuppressWarnings("unchecked")
+	private List<Tuple> mediaRows(Long postId) {
+		List<Object[]> rows = entityManager.createNativeQuery(
+						"SELECT url, deleted_at IS NOT NULL FROM post_media WHERE post_id = :postId")
+				.setParameter("postId", postId)
+				.getResultList();
+		return rows.stream()
+				.map(row -> tuple(row[0], row[1]))
+				.toList();
 	}
 
 	private void flushAndClear() {

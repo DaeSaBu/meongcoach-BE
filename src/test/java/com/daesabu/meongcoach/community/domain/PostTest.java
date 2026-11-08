@@ -158,6 +158,36 @@ class PostTest {
 	}
 
 	@Test
+	void 수정에서_빠진_미디어는_조회에서_빠지고_삭제_시각이_기록된다() {
+		Post post = Post.register(USER_ID, new PostRegisterCommand(CONTENT, null, List.of(
+				new PostMediaCommand(PostMediaType.IMAGE, IMAGE_URL),
+				new PostMediaCommand(PostMediaType.VIDEO, VIDEO_URL))));
+		PostMedia image = post.getMedia().getFirst();
+
+		post.update(new PostUpdateCommand(CONTENT, null, List.of(new PostMediaCommand(PostMediaType.VIDEO, VIDEO_URL))));
+
+		assertThat(post.getMedia()).extracting(PostMedia::getUrl).containsExactly(VIDEO_URL);
+		assertThat(image.getDeletedAt()).isNotNull();
+	}
+
+	@Test
+	void 수정에서_다시_보낸_미디어는_같은_행을_유지하고_순서만_바뀐다() {
+		Post post = Post.register(USER_ID, new PostRegisterCommand(CONTENT, null, List.of(
+				new PostMediaCommand(PostMediaType.IMAGE, IMAGE_URL),
+				new PostMediaCommand(PostMediaType.VIDEO, VIDEO_URL))));
+		PostMedia image = post.getMedia().get(0);
+		PostMedia video = post.getMedia().get(1);
+
+		post.update(new PostUpdateCommand(CONTENT, null, List.of(
+				new PostMediaCommand(PostMediaType.VIDEO, VIDEO_URL),
+				new PostMediaCommand(PostMediaType.IMAGE, IMAGE_URL))));
+
+		assertThat(post.getMedia()).containsExactly(video, image);
+		assertThat(post.getMedia()).extracting(PostMedia::getSortOrder).containsExactly(0, 1);
+		assertThat(post.getMedia()).extracting(PostMedia::getDeletedAt).containsOnlyNulls();
+	}
+
+	@Test
 	void 본문이_비어_있으면_수정할_수_없다() {
 		Post post = Post.register(USER_ID, new PostRegisterCommand(CONTENT, null, List.of()));
 
