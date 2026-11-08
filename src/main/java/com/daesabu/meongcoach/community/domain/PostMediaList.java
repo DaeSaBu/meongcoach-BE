@@ -1,22 +1,31 @@
 package com.daesabu.meongcoach.community.domain;
 
-import static java.util.Objects.requireNonNull;
+import static java.util.Objects.requireNonNullElse;
 
 import com.daesabu.meongcoach.community.domain.exception.DuplicatePostMediaException;
 import com.daesabu.meongcoach.community.domain.exception.PostMediaCountExceededException;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Embeddable;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 
+@Embeddable
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class PostMediaList {
 
 	private static final int MAX_IMAGE_COUNT = 3;
 	private static final int MAX_VIDEO_COUNT = 2;
 
-	private final List<PostMedia> items;
-
-	PostMediaList(List<PostMedia> items) {
-		this.items = requireNonNull(items);
-	}
+	@OneToMany(cascade = CascadeType.PERSIST)
+	@JoinColumn(name = "post_id", nullable = false, updatable = false)
+	@OrderBy("sortOrder ASC")
+	private List<PostMedia> items = new ArrayList<>();
 
 	List<PostMedia> active() {
 		return items.stream()
@@ -26,10 +35,11 @@ public class PostMediaList {
 	}
 
 	void replace(List<PostMediaCommand> commands) {
-		validate(commands);
+		List<PostMediaCommand> requested = requireNonNullElse(commands, List.of());
+		validate(requested);
 		List<PostMedia> activeMedia = active();
-		deleteNotIn(commands, activeMedia);
-		reuseOrCreate(commands, activeMedia);
+		deleteNotIn(requested, activeMedia);
+		reuseOrCreate(requested, activeMedia);
 	}
 
 	private void deleteNotIn(List<PostMediaCommand> commands, List<PostMedia> activeMedia) {

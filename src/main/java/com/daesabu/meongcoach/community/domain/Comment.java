@@ -1,10 +1,8 @@
 package com.daesabu.meongcoach.community.domain;
 
 import static java.util.Objects.requireNonNull;
-import static java.util.Objects.requireNonNullElse;
 
 import com.daesabu.meongcoach.shared.domain.BaseEntity;
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
@@ -14,12 +12,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -45,10 +39,8 @@ public class Comment extends BaseEntity {
 	@Embedded
 	private CommentContent content;
 
-	@OneToMany(cascade = CascadeType.PERSIST)
-	@JoinColumn(name = "comment_id", nullable = false, updatable = false)
-	@OrderBy("sortOrder ASC")
-	private List<CommentMedia> media = new ArrayList<>();
+	@Embedded
+	private CommentMediaList media = new CommentMediaList();
 
 	private LocalDateTime deletedAt;
 
@@ -61,8 +53,7 @@ public class Comment extends BaseEntity {
 		comment.post = requireNonNull(post);
 		comment.userId = requireNonNull(userId);
 		comment.content = new CommentContent(content);
-		CommentMediaList mediaList = new CommentMediaList(comment.media);
-		mediaList.register(requireNonNullElse(media, List.of()));
+		comment.media.register(media);
 		return comment;
 	}
 
@@ -75,7 +66,7 @@ public class Comment extends BaseEntity {
 	}
 
 	public List<CommentMedia> getMedia() {
-		return Collections.unmodifiableList(media);
+		return media.list();
 	}
 
 }
