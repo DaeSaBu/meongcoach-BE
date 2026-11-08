@@ -23,6 +23,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 @ApplicationTest
 class AuthorFinderTest {
 
+	private static final String PROFILE_IMAGE_URL = "https://cdn.example.com/coach.png";
+
 	private static final String DOG_IMAGE_URL = "https://media.meongcoach.com/images/dog-profile/42/bori.jpg";
 
 	@Autowired
@@ -47,27 +49,27 @@ class AuthorFinderTest {
 	}
 
 	@Test
-	void 전문가_회원은_전문가로_표시해_반환한다() {
-		User user = saveUserWithSelectedDog("멍코치 훈련사");
+	void 전문가_회원은_강아지_없이_프로필_닉네임으로_반환한다() {
+		User user = saveUser("멍코치 훈련사");
 		entityManager.createNativeQuery("UPDATE users SET role = 'EXPERT' WHERE id = :id")
 				.setParameter("id", user.getId())
 				.executeUpdate();
 		flushAndClear();
 
 		assertThat(authorFinder.findAuthor(user.getId()))
-				.contains(new AuthorResult(user.getId(), "멍코치 훈련사", DOG_IMAGE_URL, true));
+				.contains(new AuthorResult(user.getId(), "멍코치 훈련사", PROFILE_IMAGE_URL, true));
 	}
 
 	@Test
 	void 선택된_강아지가_없으면_빈_값을_반환한다() {
-		User user = saveUser();
+		User user = saveUser("멍멍이집사");
 		flushAndClear();
 
 		assertThat(authorFinder.findAuthor(user.getId())).isEmpty();
 	}
 
 	private User saveUserWithSelectedDog(String dogName) {
-		User user = saveUser();
+		User user = saveUser("멍멍이집사");
 		Dog dog = Dog.register(new DogRegisterCommand(user.getId(), dogName, Breed.of(RegisteredBreed.POODLE),
 				DogSex.MALE, LocalDate.of(2024, 3, 1), new BigDecimal("4.50"), DOG_IMAGE_URL, ""));
 		dog.select();
@@ -75,9 +77,9 @@ class AuthorFinderTest {
 		return user;
 	}
 
-	private User saveUser() {
+	private User saveUser(String nickname) {
 		User user = User.registerUser();
-		user.completeOnboarding(new UserProfileCreateCommand("멍멍이집사", "", "INFP", Set.of(), Set.of()));
+		user.completeOnboarding(new UserProfileCreateCommand(nickname, PROFILE_IMAGE_URL, "INFP", Set.of(), Set.of()));
 		return userRepository.save(user);
 	}
 

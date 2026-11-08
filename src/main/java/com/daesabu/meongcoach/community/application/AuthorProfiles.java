@@ -5,9 +5,12 @@ import com.daesabu.meongcoach.dog.application.provided.DogProfileFinder;
 import com.daesabu.meongcoach.user.application.provided.UserFinder;
 import com.daesabu.meongcoach.user.application.provided.UserProfileSummaryResult;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -19,10 +22,19 @@ public class AuthorProfiles {
 	private final DogProfileFinder dogProfileFinder;
 
 	public Map<Long, AuthorResult> findByUserIds(Collection<Long> userIds) {
-		Map<Long, Boolean> expertByUserId = userFinder.findProfileSummaries(userIds).stream()
-				.collect(Collectors.toMap(UserProfileSummaryResult::userId, UserProfileSummaryResult::expert));
-		return dogProfileFinder.findSelectedDogs(expertByUserId.keySet()).stream()
-				.map(selectedDog -> AuthorResult.of(selectedDog, expertByUserId.get(selectedDog.userId())))
+		Map<Boolean, List<UserProfileSummaryResult>> profilesByExpert = userFinder.findProfileSummaries(userIds).stream()
+				.collect(Collectors.partitioningBy(UserProfileSummaryResult::expert));
+		Stream<AuthorResult> experts = profilesByExpert.get(true).stream()
+				.map(AuthorResult::fromExpert);
+		Stream<AuthorResult> guardians = dogProfileFinder.findSelectedDogs(userIdsOf(profilesByExpert.get(false))).stream()
+				.map(AuthorResult::from);
+		return Stream.concat(experts, guardians)
 				.collect(Collectors.toMap(AuthorResult::userId, Function.identity()));
+	}
+
+	private Set<Long> userIdsOf(List<UserProfileSummaryResult> profiles) {
+		return profiles.stream()
+				.map(UserProfileSummaryResult::userId)
+				.collect(Collectors.toSet());
 	}
 }
