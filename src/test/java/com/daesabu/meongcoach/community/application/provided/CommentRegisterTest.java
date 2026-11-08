@@ -26,7 +26,6 @@ import com.daesabu.meongcoach.support.ApplicationTest;
 import jakarta.persistence.EntityManager;
 import jakarta.validation.ConstraintViolationException;
 import java.util.List;
-import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -432,22 +431,7 @@ class CommentRegisterTest {
 	}
 
 	@Test
-	void 첨부를_넘겨_수정하면_첨부가_교체된다() {
-		Comment comment = saveRootComment(savePost(), USER_ID,
-				List.of(new PostMediaCommand(PostMediaType.IMAGE, IMAGE_URL)));
-
-		commentRegister.update(USER_ID, comment.getId(),
-				new CommentUpdateRequest("수정한 댓글", List.of(new PostMediaRequest("VIDEO", VIDEO_URL))));
-		flushAndClear();
-
-		Comment found = commentRepository.findById(comment.getId()).orElseThrow();
-		assertThat(found.getMedia())
-				.extracting(CommentMedia::getType, CommentMedia::getUrl)
-				.containsExactly(tuple(PostMediaType.VIDEO, VIDEO_URL));
-	}
-
-	@Test
-	void 첨부를_생략하고_수정하면_기존_첨부를_유지한다() {
+	void 댓글을_수정해도_첨부는_그대로_남는다() {
 		Comment comment = saveRootComment(savePost(), USER_ID,
 				List.of(new PostMediaCommand(PostMediaType.IMAGE, IMAGE_URL)));
 
@@ -457,59 +441,6 @@ class CommentRegisterTest {
 		Comment found = commentRepository.findById(comment.getId()).orElseThrow();
 		assertThat(found.getContent().value()).isEqualTo("수정한 댓글");
 		assertThat(found.getMedia()).extracting(CommentMedia::getUrl).containsExactly(IMAGE_URL);
-	}
-
-	@Test
-	void 수정에서_빠진_첨부는_행을_남기고_삭제_시각만_기록한다() {
-		Comment comment = saveRootComment(savePost(), USER_ID, List.of(
-				new PostMediaCommand(PostMediaType.IMAGE, IMAGE_URL),
-				new PostMediaCommand(PostMediaType.VIDEO, VIDEO_URL)));
-
-		commentRegister.update(USER_ID, comment.getId(),
-				new CommentUpdateRequest("수정한 댓글", List.of(new PostMediaRequest("VIDEO", VIDEO_URL))));
-		flushAndClear();
-
-		assertThat(mediaRows(comment.getId()))
-				.containsExactlyInAnyOrder(tuple(IMAGE_URL, true), tuple(VIDEO_URL, false));
-		assertThat(commentRepository.findById(comment.getId()).orElseThrow().getMedia())
-				.extracting(CommentMedia::getUrl)
-				.containsExactly(VIDEO_URL);
-	}
-
-	@Test
-	void 수정에서_다시_보낸_첨부는_새_행을_만들지_않는다() {
-		Comment comment = saveRootComment(savePost(), USER_ID, List.of(
-				new PostMediaCommand(PostMediaType.IMAGE, IMAGE_URL),
-				new PostMediaCommand(PostMediaType.VIDEO, VIDEO_URL)));
-
-		commentRegister.update(USER_ID, comment.getId(), new CommentUpdateRequest("수정한 댓글", List.of(
-				new PostMediaRequest("VIDEO", VIDEO_URL),
-				new PostMediaRequest("IMAGE", IMAGE_URL))));
-		flushAndClear();
-
-		assertThat(mediaRows(comment.getId()))
-				.containsExactlyInAnyOrder(tuple(IMAGE_URL, false), tuple(VIDEO_URL, false));
-	}
-
-	@Test
-	void 댓글을_삭제해도_첨부_행은_남는다() {
-		Comment comment = saveRootComment(savePost(), USER_ID,
-				List.of(new PostMediaCommand(PostMediaType.IMAGE, IMAGE_URL)));
-
-		commentRegister.delete(USER_ID, comment.getId());
-		flushAndClear();
-
-		assertThat(mediaRows(comment.getId())).containsExactly(tuple(IMAGE_URL, false));
-	}
-
-	@Test
-	void 다른_사용자가_올린_파일로_수정하면_예외를_던진다() {
-		Comment comment = saveRootComment(savePost(), USER_ID);
-		CommentUpdateRequest request = new CommentUpdateRequest("수정한 댓글",
-				List.of(new PostMediaRequest("IMAGE", OTHER_USER_IMAGE_URL)));
-
-		assertThatThrownBy(() -> commentRegister.update(USER_ID, comment.getId(), request))
-				.isInstanceOf(InvalidMediaUrlException.class);
 	}
 
 	private Post savePost() {
@@ -547,17 +478,6 @@ class CommentRegisterTest {
 		commentClosureRepository.save(CommentClosure.self(reply));
 		commentClosureRepository.save(CommentClosure.reply(root, reply));
 		return reply;
-	}
-
-	@SuppressWarnings("unchecked")
-	private List<Tuple> mediaRows(Long commentId) {
-		List<Object[]> rows = entityManager.createNativeQuery(
-						"SELECT url, deleted_at IS NOT NULL FROM comment_media WHERE comment_id = :commentId")
-				.setParameter("commentId", commentId)
-				.getResultList();
-		return rows.stream()
-				.map(row -> tuple(row[0], row[1]))
-				.toList();
 	}
 
 	private void flushAndClear() {

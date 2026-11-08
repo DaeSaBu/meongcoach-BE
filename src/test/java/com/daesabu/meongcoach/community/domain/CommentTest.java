@@ -109,71 +109,13 @@ class CommentTest {
 	}
 
 	@Test
-	void 첨부를_넘겨_수정하면_첨부가_교체된다() {
+	void 본문을_수정해도_첨부는_그대로_남는다() {
 		Comment comment = Comment.register(post, USER_ID, CONTENT, images(2));
 
-		comment.update("수정한 댓글", List.of(new PostMediaCommand(PostMediaType.VIDEO, VIDEO_URL)));
-
-		assertThat(comment.getMedia())
-				.extracting(CommentMedia::getType, CommentMedia::getUrl, CommentMedia::getSortOrder)
-				.containsExactly(tuple(PostMediaType.VIDEO, VIDEO_URL, 0));
-	}
-
-	@Test
-	void 빈_첨부로_수정하면_첨부가_지워진다() {
-		Comment comment = Comment.register(post, USER_ID, CONTENT, images(2));
-
-		comment.update("수정한 댓글", List.of());
-
-		assertThat(comment.getMedia()).isEmpty();
-	}
-
-	@Test
-	void 첨부를_생략하고_수정하면_기존_첨부를_유지한다() {
-		Comment comment = Comment.register(post, USER_ID, CONTENT, images(2));
-
-		comment.update("수정한 댓글", null);
+		comment.update("수정한 댓글");
 
 		assertThat(comment.getContent()).isEqualTo(new CommentContent("수정한 댓글"));
 		assertThat(comment.getMedia()).hasSize(2);
-	}
-
-	@Test
-	void 수정에서_빠진_첨부는_조회에서_빠지고_삭제_시각이_기록된다() {
-		Comment comment = Comment.register(post, USER_ID, CONTENT, List.of(
-				new PostMediaCommand(PostMediaType.IMAGE, IMAGE_URL),
-				new PostMediaCommand(PostMediaType.VIDEO, VIDEO_URL)));
-		CommentMedia image = comment.getMedia().getFirst();
-
-		comment.update("수정한 댓글", List.of(new PostMediaCommand(PostMediaType.VIDEO, VIDEO_URL)));
-
-		assertThat(comment.getMedia()).extracting(CommentMedia::getUrl).containsExactly(VIDEO_URL);
-		assertThat(image.getDeletedAt()).isNotNull();
-	}
-
-	@Test
-	void 수정에서_다시_보낸_첨부는_같은_행을_유지하고_순서만_바뀐다() {
-		Comment comment = Comment.register(post, USER_ID, CONTENT, List.of(
-				new PostMediaCommand(PostMediaType.IMAGE, IMAGE_URL),
-				new PostMediaCommand(PostMediaType.VIDEO, VIDEO_URL)));
-		CommentMedia image = comment.getMedia().get(0);
-		CommentMedia video = comment.getMedia().get(1);
-
-		comment.update("수정한 댓글", List.of(
-				new PostMediaCommand(PostMediaType.VIDEO, VIDEO_URL),
-				new PostMediaCommand(PostMediaType.IMAGE, IMAGE_URL)));
-
-		assertThat(comment.getMedia()).containsExactly(video, image);
-		assertThat(comment.getMedia()).extracting(CommentMedia::getSortOrder).containsExactly(0, 1);
-		assertThat(comment.getMedia()).extracting(CommentMedia::getDeletedAt).containsOnlyNulls();
-	}
-
-	@Test
-	void 수정할_첨부가_한도를_넘으면_수정할_수_없다() {
-		Comment comment = Comment.register(post, USER_ID, CONTENT);
-
-		assertThatThrownBy(() -> comment.update("수정한 댓글", images(4)))
-				.isInstanceOf(PostMediaCountExceededException.class);
 	}
 
 	@Test

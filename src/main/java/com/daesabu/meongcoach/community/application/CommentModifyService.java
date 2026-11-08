@@ -59,8 +59,7 @@ public class CommentModifyService implements CommentRegister {
 	@Transactional
 	public Comment update(Long userId, Long commentId, CommentUpdateRequest request) {
 		Comment comment = commentFinder.findComment(userId, commentId);
-		comment.update(request.content(), request.toMediaCommands());
-		validateStoredMedia(userId, comment);
+		comment.update(request.content());
 		return comment;
 	}
 

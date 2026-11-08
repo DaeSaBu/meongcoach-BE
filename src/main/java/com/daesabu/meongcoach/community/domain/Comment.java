@@ -19,7 +19,7 @@ import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Comparator;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -74,42 +74,13 @@ public class Comment extends BaseEntity {
 		this.content = new CommentContent(content);
 	}
 
-	public void update(String content, List<PostMediaCommand> media) {
-		if (media == null) {
-			update(content);
-			return;
-		}
-		PostMediaType.validateCount(media);
-		update(content);
-		replaceMedia(media);
-	}
 
 	public void delete() {
 		this.deletedAt = LocalDateTime.now();
 	}
 
 	public List<CommentMedia> getMedia() {
-		return media.stream()
-				.filter(CommentMedia::isActive)
-				.sorted(Comparator.comparingInt(CommentMedia::getSortOrder))
-				.toList();
-	}
-
-	private void replaceMedia(List<PostMediaCommand> commands) {
-		List<CommentMedia> remaining = new ArrayList<>(getMedia());
-		IntStream.range(0, commands.size())
-				.forEach(index -> placeMedia(remaining, commands.get(index), index));
-		remaining.forEach(CommentMedia::delete);
-	}
-
-	private void placeMedia(List<CommentMedia> remaining, PostMediaCommand command, int sortOrder) {
-		remaining.stream()
-				.filter(existing -> existing.matches(command))
-				.findFirst()
-				.ifPresentOrElse(existing -> {
-					remaining.remove(existing);
-					existing.moveTo(sortOrder);
-				}, () -> media.add(CommentMedia.create(command, sortOrder)));
+		return Collections.unmodifiableList(media);
 	}
 
 	private static List<CommentMedia> createMedia(List<PostMediaCommand> media) {
