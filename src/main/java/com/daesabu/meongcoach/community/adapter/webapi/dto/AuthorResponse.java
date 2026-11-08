@@ -12,8 +12,8 @@ public record AuthorResponse(Long userId, String nickname, String profileImageUr
 
 	private static String displayName(AuthorResult result) {
 		if (result.expert()) {
-			return result.dogName();
+			return result.name();
 		}
-		return result.dogName() + GUARDIAN_SUFFIX;
+		return result.name() + GUARDIAN_SUFFIX;
 	}
 }
