@@ -1,8 +1,9 @@
 package com.daesabu.meongcoach.community.domain;
 
+import static java.util.Objects.requireNonNull;
+
 import com.daesabu.meongcoach.community.domain.exception.DuplicatePostMediaException;
 import com.daesabu.meongcoach.community.domain.exception.PostMediaCountExceededException;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
@@ -14,7 +15,7 @@ public class PostMediaList {
 	private final List<PostMedia> items;
 
 	PostMediaList(List<PostMedia> items) {
-		this.items = List.copyOf(items);
+		this.items = requireNonNull(items);
 	}
 
 	List<PostMedia> active() {
@@ -24,11 +25,11 @@ public class PostMediaList {
 				.toList();
 	}
 
-	List<PostMedia> update(List<PostMediaCommand> commands) {
+	void replace(List<PostMediaCommand> commands) {
 		validate(commands);
 		List<PostMedia> activeMedia = active();
 		deleteNotIn(commands, activeMedia);
-		return reuseOrCreate(commands, activeMedia);
+		reuseOrCreate(commands, activeMedia);
 	}
 
 	private void deleteNotIn(List<PostMediaCommand> commands, List<PostMedia> activeMedia) {
@@ -37,8 +38,7 @@ public class PostMediaList {
 				.forEach(PostMedia::delete);
 	}
 
-	private List<PostMedia> reuseOrCreate(List<PostMediaCommand> commands, List<PostMedia> activeMedia) {
-		List<PostMedia> created = new ArrayList<>();
+	private void reuseOrCreate(List<PostMediaCommand> commands, List<PostMedia> activeMedia) {
 		for (int index = 0; index < commands.size(); index++) {
 			PostMediaCommand command = commands.get(index);
 			PostMedia existing = activeMedia.stream()
@@ -49,9 +49,8 @@ public class PostMediaList {
 				existing.moveTo(index);
 				continue;
 			}
-			created.add(PostMedia.create(command, index));
+			items.add(PostMedia.create(command, index));
 		}
-		return created;
 	}
 
 	private static void validate(List<PostMediaCommand> commands) {

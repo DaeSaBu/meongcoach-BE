@@ -62,7 +62,7 @@ public class Comment extends BaseEntity {
 		comment.userId = requireNonNull(userId);
 		comment.content = new CommentContent(content);
 		CommentMediaList mediaList = new CommentMediaList(comment.media);
-		comment.media.addAll(mediaList.register(requireNonNullElse(media, List.of())));
+		mediaList.register(requireNonNullElse(media, List.of()));
 		return comment;
 	}
 

@@ -60,14 +60,14 @@ public class Post extends BaseEntity {
 		post.userId = requireNonNull(userId);
 		post.content = new PostContent(command.content());
 		post.mention = createMention(command.mention());
-		post.updateMedia(command.media());
+		post.replaceMedia(command.media());
 		return post;
 	}
 
 	public void update(PostUpdateCommand command) {
 		PostContent updatedContent = new PostContent(command.content());
 		PostMention updatedMention = createMention(command.mention());
-		updateMedia(command.media());
+		replaceMedia(command.media());
 		this.content = updatedContent;
 		this.mention = updatedMention;
 	}
@@ -89,9 +89,9 @@ public class Post extends BaseEntity {
 		return mediaList.active();
 	}
 
-	private void updateMedia(List<PostMediaCommand> commands) {
+	private void replaceMedia(List<PostMediaCommand> commands) {
 		PostMediaList mediaList = new PostMediaList(media);
-		media.addAll(mediaList.update(requireNonNullElse(commands, List.of())));
+		mediaList.replace(requireNonNullElse(commands, List.of()));
 	}
 
 	private static PostMention createMention(MentionCommand mention) {

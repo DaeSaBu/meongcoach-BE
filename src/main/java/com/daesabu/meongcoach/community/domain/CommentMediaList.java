@@ -1,7 +1,8 @@
 package com.daesabu.meongcoach.community.domain;
 
+import static java.util.Objects.requireNonNull;
+
 import com.daesabu.meongcoach.community.domain.exception.CommentMediaCountExceededException;
-import java.util.ArrayList;
 import java.util.List;
 
 public class CommentMediaList {
@@ -11,16 +12,14 @@ public class CommentMediaList {
 	private final List<CommentMedia> items;
 
 	CommentMediaList(List<CommentMedia> items) {
-		this.items = List.copyOf(items);
+		this.items = requireNonNull(items);
 	}
 
-	List<CommentMedia> register(List<PostMediaCommand> commands) {
+	void register(List<PostMediaCommand> commands) {
 		validateCount(commands);
-		List<CommentMedia> created = new ArrayList<>();
-		for (int index = 0; index < commands.size(); index++) {
-			created.add(CommentMedia.create(commands.get(index), items.size() + index));
+		for (PostMediaCommand command : commands) {
+			items.add(CommentMedia.create(command, items.size()));
 		}
-		return created;
 	}
 
 	private void validateCount(List<PostMediaCommand> commands) {
