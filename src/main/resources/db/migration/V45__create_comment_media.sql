@@ -4,7 +4,8 @@ CREATE TABLE "comment_media" (
     "media_type" VARCHAR(20) NOT NULL,
     "url" VARCHAR(512) NOT NULL,
     "sort_order" INT NOT NULL,
-    "created_at" TIMESTAMP NOT NULL
+    "created_at" TIMESTAMP NOT NULL,
+    "deleted_at" TIMESTAMP
 );
 
 CREATE INDEX "idx_comment_media_comment_id" ON "comment_media" ("comment_id", "sort_order");

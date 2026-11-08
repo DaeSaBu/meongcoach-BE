@@ -20,7 +20,7 @@ import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -48,7 +48,7 @@ public class Post extends BaseEntity {
 	@JoinColumn(name = "mention_id", unique = true)
 	private PostMention mention;
 
-	@OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+	@OneToMany(cascade = CascadeType.PERSIST)
 	@JoinColumn(name = "post_id", nullable = false, updatable = false)
 	@OrderBy("sortOrder ASC")
 	private List<PostMedia> media = new ArrayList<>();
@@ -76,8 +76,7 @@ public class Post extends BaseEntity {
 
 		this.content = new PostContent(command.content());
 		this.mention = createMention(command.mention());
-		this.media.clear();
-		this.media.addAll(createMedia(media));
+		replaceMedia(media);
 	}
 
 	public void delete() {
@@ -93,7 +92,27 @@ public class Post extends BaseEntity {
 	}
 
 	public List<PostMedia> getMedia() {
-		return Collections.unmodifiableList(media);
+		return media.stream()
+				.filter(PostMedia::isActive)
+				.sorted(Comparator.comparingInt(PostMedia::getSortOrder))
+				.toList();
+	}
+
+	private void replaceMedia(List<PostMediaCommand> commands) {
+		List<PostMedia> remaining = new ArrayList<>(getMedia());
+		IntStream.range(0, commands.size())
+				.forEach(index -> placeMedia(remaining, commands.get(index), index));
+		remaining.forEach(PostMedia::delete);
+	}
+
+	private void placeMedia(List<PostMedia> remaining, PostMediaCommand command, int sortOrder) {
+		remaining.stream()
+				.filter(existing -> existing.matches(command))
+				.findFirst()
+				.ifPresentOrElse(existing -> {
+					remaining.remove(existing);
+					existing.moveTo(sortOrder);
+				}, () -> media.add(PostMedia.create(command, sortOrder)));
 	}
 
 	private static PostMention createMention(MentionCommand mention) {
