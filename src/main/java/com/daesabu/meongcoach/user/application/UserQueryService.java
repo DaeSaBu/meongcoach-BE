@@ -1,6 +1,7 @@
 package com.daesabu.meongcoach.user.application;
 
 import com.daesabu.meongcoach.user.application.provided.UserFinder;
+import com.daesabu.meongcoach.user.application.provided.UserProfileSummaries;
 import com.daesabu.meongcoach.user.application.provided.UserProfileSummaryResult;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.User;
@@ -31,14 +32,15 @@ public class UserQueryService implements UserFinder {
 	}
 
 	@Override
-	public List<UserProfileSummaryResult> findProfileSummaries(Collection<Long> userIds) {
+	public UserProfileSummaries findProfileSummaries(Collection<Long> userIds) {
 		if (userIds.isEmpty()) {
-			return List.of();
+			return new UserProfileSummaries(List.of());
 		}
-		return userRepository.findAllById(userIds).stream()
+		List<UserProfileSummaryResult> profiles = userRepository.findAllById(userIds).stream()
 				.filter(user -> user.getProfile() != null)
 				.map(UserProfileSummaryResult::from)
 				.toList();
+		return new UserProfileSummaries(profiles);
 	}
 
 	@Override
