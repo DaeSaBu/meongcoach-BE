@@ -6,7 +6,6 @@ import com.daesabu.meongcoach.user.application.provided.UserFinder;
 import com.daesabu.meongcoach.user.application.provided.UserProfileSummaryResult;
 import java.util.Collection;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -20,11 +19,10 @@ public class AuthorProfiles {
 	private final DogProfileFinder dogProfileFinder;
 
 	public Map<Long, AuthorResult> findByUserIds(Collection<Long> userIds) {
-		Set<Long> profiledUserIds = userFinder.findProfileSummaries(userIds).stream()
-				.map(UserProfileSummaryResult::userId)
-				.collect(Collectors.toSet());
-		return dogProfileFinder.findSelectedDogs(profiledUserIds).stream()
-				.map(AuthorResult::from)
+		Map<Long, Boolean> expertByUserId = userFinder.findProfileSummaries(userIds).stream()
+				.collect(Collectors.toMap(UserProfileSummaryResult::userId, UserProfileSummaryResult::expert));
+		return dogProfileFinder.findSelectedDogs(expertByUserId.keySet()).stream()
+				.map(selectedDog -> AuthorResult.of(selectedDog, expertByUserId.get(selectedDog.userId())))
 				.collect(Collectors.toMap(AuthorResult::userId, Function.identity()));
 	}
 }
