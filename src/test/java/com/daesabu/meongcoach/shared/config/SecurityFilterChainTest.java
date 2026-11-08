@@ -17,8 +17,6 @@ import com.daesabu.meongcoach.user.domain.UserProfileCreateCommand;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -276,15 +274,45 @@ class SecurityFilterChainTest {
 				.andExpect(status().isForbidden());
 	}
 
-	@ParameterizedTest
-	@ValueSource(strings = {"ADMIN", "EXPERT"})
-	void 관리자와_전문가는_앱_회원_경로에_접근할_수_없다(String role) throws Exception {
-		Long staffUserId = userRepository.save(User.registerUser()).getId();
-		jdbcTemplate.update("UPDATE users SET role = ? WHERE id = ?", role, staffUserId);
-		AuthToken token = tokenProvider.issue(staffUserId);
+	@Test
+	void 관리자는_앱_회원_경로에_접근할_수_없다() throws Exception {
+		AuthToken token = tokenProvider.issue(staffUserId("ADMIN"));
 
 		mockMvc.perform(appGet(PROTECTED_PATH)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))
 				.andExpect(status().isForbidden());
+	}
+
+	@Test
+	void 전문가는_앱_회원_경로에_접근할_수_있다() throws Exception {
+		AuthToken token = tokenProvider.issue(staffUserId("EXPERT"));
+
+		mockMvc.perform(appGet(PROTECTED_PATH)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))
+				.andExpect(status().isOk());
+	}
+
+	@Test
+	void 전문가도_강아지_프로필_이미지_경로에_접근할_수_있다() throws Exception {
+		AuthToken token = tokenProvider.issue(staffUserId("EXPERT"));
+
+		mockMvc.perform(appGet("/api/dogs/profile/image")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))
+				.andExpect(status().isNotFound());
+	}
+
+	@Test
+	void 전문가는_온보딩_경로에_접근할_수_없다() throws Exception {
+		AuthToken token = tokenProvider.issue(staffUserId("EXPERT"));
+
+		mockMvc.perform(appGet("/api/onboarding/metadata")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))
+				.andExpect(status().isForbidden());
+	}
+
+	private Long staffUserId(String role) {
+		Long staffUserId = userRepository.save(User.registerUser()).getId();
+		jdbcTemplate.update("UPDATE users SET role = ? WHERE id = ?", role, staffUserId);
+		return staffUserId;
 	}
 }
