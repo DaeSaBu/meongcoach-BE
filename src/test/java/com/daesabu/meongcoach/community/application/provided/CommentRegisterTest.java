@@ -2,19 +2,26 @@ package com.daesabu.meongcoach.community.application.provided;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
 import com.daesabu.meongcoach.community.application.provided.dto.CommentRegisterRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.CommentUpdateRequest;
+import com.daesabu.meongcoach.community.application.provided.dto.PostMediaRequest;
 import com.daesabu.meongcoach.community.application.required.CommentClosureRepository;
 import com.daesabu.meongcoach.community.application.required.CommentRepository;
 import com.daesabu.meongcoach.community.application.required.PostRepository;
 import com.daesabu.meongcoach.community.domain.Comment;
 import com.daesabu.meongcoach.community.domain.CommentClosure;
+import com.daesabu.meongcoach.community.domain.CommentMedia;
 import com.daesabu.meongcoach.community.domain.Post;
+import com.daesabu.meongcoach.community.domain.PostMediaCommand;
+import com.daesabu.meongcoach.community.domain.PostMediaType;
 import com.daesabu.meongcoach.community.domain.PostRegisterCommand;
 import com.daesabu.meongcoach.community.domain.exception.CommentNotFoundException;
 import com.daesabu.meongcoach.community.domain.exception.InvalidCommentContentException;
+import com.daesabu.meongcoach.community.domain.exception.PostMediaCountExceededException;
 import com.daesabu.meongcoach.community.domain.exception.PostNotFoundException;
+import com.daesabu.meongcoach.media.domain.exception.InvalidMediaUrlException;
 import com.daesabu.meongcoach.support.ApplicationTest;
 import jakarta.persistence.EntityManager;
 import jakarta.validation.ConstraintViolationException;
@@ -27,6 +34,9 @@ class CommentRegisterTest {
 
 	private static final Long USER_ID = 42L;
 	private static final Long OTHER_USER_ID = 99L;
+	private static final String IMAGE_URL = "https://images.test.meongcoach.com/images/community-post/42/shot.jpg";
+	private static final String VIDEO_URL = "https://images.test.meongcoach.com/videos/community-post/42/clip.mp4";
+	private static final String OTHER_USER_IMAGE_URL = "https://images.test.meongcoach.com/images/community-post/99/shot.jpg";
 
 	@Autowired
 	private CommentRegister commentRegister;
@@ -368,6 +378,71 @@ class CommentRegisterTest {
 				.isInstanceOf(CommentNotFoundException.class);
 	}
 
+	@Test
+	void 첨부와_함께_댓글을_등록한다() {
+		Post post = savePost();
+		CommentRegisterRequest request = new CommentRegisterRequest("이 화면에서 멈췄어요", null,
+				List.of(new PostMediaRequest("IMAGE", IMAGE_URL), new PostMediaRequest("VIDEO", VIDEO_URL)));
+
+		Comment registered = commentRegister.register(USER_ID, post.getId(), request);
+		flushAndClear();
+
+		Comment found = commentRepository.findById(registered.getId()).orElseThrow();
+		assertThat(found.getMedia())
+				.extracting(CommentMedia::getType, CommentMedia::getUrl, CommentMedia::getSortOrder)
+				.containsExactly(
+						tuple(PostMediaType.IMAGE, IMAGE_URL, 0),
+						tuple(PostMediaType.VIDEO, VIDEO_URL, 1));
+	}
+
+	@Test
+	void 답글에도_첨부할_수_있다() {
+		Post post = savePost();
+		Comment root = saveRootComment(post);
+		CommentRegisterRequest request = new CommentRegisterRequest("영상 봐 주세요", root.getId(),
+				List.of(new PostMediaRequest("VIDEO", VIDEO_URL)));
+
+		Comment reply = commentRegister.register(USER_ID, post.getId(), request);
+		flushAndClear();
+
+		Comment found = commentRepository.findById(reply.getId()).orElseThrow();
+		assertThat(found.getMedia()).extracting(CommentMedia::getUrl).containsExactly(VIDEO_URL);
+	}
+
+	@Test
+	void 다른_사용자가_올린_파일을_첨부하면_예외를_던진다() {
+		Post post = savePost();
+		CommentRegisterRequest request = new CommentRegisterRequest("이 화면에서 멈췄어요", null,
+				List.of(new PostMediaRequest("IMAGE", OTHER_USER_IMAGE_URL)));
+
+		assertThatThrownBy(() -> commentRegister.register(USER_ID, post.getId(), request))
+				.isInstanceOf(InvalidMediaUrlException.class);
+	}
+
+	@Test
+	void 첨부_한도를_넘으면_예외를_던진다() {
+		Post post = savePost();
+		List<PostMediaRequest> media = List.of(new PostMediaRequest("VIDEO", VIDEO_URL),
+				new PostMediaRequest("VIDEO", VIDEO_URL), new PostMediaRequest("VIDEO", VIDEO_URL));
+		CommentRegisterRequest request = new CommentRegisterRequest("영상 세 개", null, media);
+
+		assertThatThrownBy(() -> commentRegister.register(USER_ID, post.getId(), request))
+				.isInstanceOf(PostMediaCountExceededException.class);
+	}
+
+	@Test
+	void 댓글을_수정해도_첨부는_그대로_남는다() {
+		Comment comment = saveRootComment(savePost(), USER_ID,
+				List.of(new PostMediaCommand(PostMediaType.IMAGE, IMAGE_URL)));
+
+		commentRegister.update(USER_ID, comment.getId(), new CommentUpdateRequest("수정한 댓글"));
+		flushAndClear();
+
+		Comment found = commentRepository.findById(comment.getId()).orElseThrow();
+		assertThat(found.getContent().value()).isEqualTo("수정한 댓글");
+		assertThat(found.getMedia()).extracting(CommentMedia::getUrl).containsExactly(IMAGE_URL);
+	}
+
 	private Post savePost() {
 		return postRepository.save(Post.register(OTHER_USER_ID, new PostRegisterCommand("오늘 앉아 훈련 성공!", null, List.of())));
 	}
@@ -385,7 +460,11 @@ class CommentRegisterTest {
 	}
 
 	private Comment saveRootComment(Post post, Long userId) {
-		Comment root = commentRepository.save(Comment.register(post, userId, "축하해요!"));
+		return saveRootComment(post, userId, List.of());
+	}
+
+	private Comment saveRootComment(Post post, Long userId, List<PostMediaCommand> media) {
+		Comment root = commentRepository.save(Comment.register(post, userId, "축하해요!", media));
 		commentClosureRepository.save(CommentClosure.self(root));
 		return root;
 	}
