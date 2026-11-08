@@ -67,7 +67,8 @@ public class CurrentPlanQueryService implements CurrentPlanFinder {
 				.filter(PlanLessonProgressResult::completed)
 				.count();
 		ProgressStatus status = ProgressStatus.of(totalLessons, completedLessons);
-		return new PlanCurriculumProgressResult(curriculum.id(), curriculum.title(), curriculum.description(),
+		return new PlanCurriculumProgressResult(curriculum.id(), curriculum.topicId(), curriculum.topicTitle(),
+				curriculum.title(), curriculum.description(),
 				totalLessons, completedLessons, status, curriculum.locked(), planLessons);
 	}
 
