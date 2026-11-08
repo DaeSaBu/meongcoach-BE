@@ -61,6 +61,10 @@ public class User extends BaseEntity {
 		return this.role == UserRole.ONBOARDING_USER;
 	}
 
+	public boolean isExpert() {
+		return this.role == UserRole.EXPERT;
+	}
+
 	public boolean isActive() {
 		return this.status == UserStatus.ACTIVE;
 	}

@@ -90,9 +90,11 @@ SHA-1 검증용이라 id_token의 `aud`가 되지 않습니다), 애플은 **iOS
 |---|---|---|
 | 1 | `/api/health`, `/api/auth/login/social`, `/api/auth/login/email`, `/api/auth/token/refresh`, `/api/auth/logout` | permitAll |
 | 2 | `/swagger-ui/**` | 문서 활성 환경 permitAll, 그 외 denyAll |
-| 3 | `/api/onboarding/**`, `/api/dogs/profile/image` | `USER`, `ONBOARDING_USER` |
-| 4 | `DELETE /api/auth/me`, `GET /api/users/me` | `USER`, `ONBOARDING_USER` |
-| 5 | 그 외 전부 | `USER` |
+| 3 | `/api/onboarding/**` | `USER`, `ONBOARDING_USER` |
+| 3-1 | `/api/dogs/profile/image` | `USER`, `ONBOARDING_USER`, `EXPERT`, `ADMIN` |
+| 4 | `DELETE /api/auth/me` | `USER`, `ONBOARDING_USER` |
+| 4-1 | `GET /api/users/me` | `USER`, `ONBOARDING_USER`, `EXPERT`, `ADMIN` |
+| 5 | 그 외 전부 | `USER`, `EXPERT`, `ADMIN` |
 
 `/internal/**`는 이 체인이 아니라 notification 모듈이 정의한 별도 체인(`@Order(0)`, `securityMatcher("/internal/**")`)이 먼저 잡습니다.
 JWT 대신 `X-Internal-Secret` 헤더를 검사하며, 앱 버전 게이트도 `/api/` 경로만 보므로 걸리지 않습니다. ([notification.md](notification.md) "인증")
@@ -101,7 +103,7 @@ JWT 대신 `X-Internal-Secret` 헤더를 검사하며, 앱 버전 게이트도 `
 기본 프로필 이미지 조회는 온보딩 중에도 열려 있어야 합니다. 이미지 업로드 presigned URL 발급은
 `POST /api/onboarding/presigned-urls`라 `/api/onboarding/**`에 이미 포함됩니다.
 
-`ADMIN`·`EXPERT`는 관리자 웹 대시보드 전용 계정이라 5번(앱 API)에서는 403입니다. 대시보드 API는 아직 없고, 웹 인프라(CORS·`web` 플랫폼·리프레시 토큰 쿠키)와 역할만 준비돼 있습니다.
+`ADMIN`·`EXPERT`(훈련사)는 앱에서도 커뮤니티 등 회원 기능을 쓰므로 정회원 경로와 내 정보·강아지 프로필 이미지 경로를 씁니다. 온보딩 경로는 쓰지 않습니다. 온보딩 완료 요청이 role을 `USER`로 바꾸기 때문입니다. 웹 대시보드 API는 아직 없습니다. 대시보드 API는 아직 없고, 웹 인프라(CORS·`web` 플랫폼·리프레시 토큰 쿠키)와 역할만 준비돼 있습니다.
 가입 흐름으로는 만들 수 없고, 이메일 계정을 만든 뒤 `UPDATE users SET role = 'ADMIN' WHERE id = ?`(또는 `'EXPERT'`)로 지정합니다.
 `role`은 VARCHAR(20)이고 V4에서 check 제약을 지웠으므로 역할을 추가할 때 마이그레이션이 필요 없습니다.
 로그인·재발급·로그아웃은 앱과 같은 `/api/auth/**` 경로를 씁니다.
