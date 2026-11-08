@@ -224,6 +224,47 @@ class PostTest {
 	}
 
 	@Test
+	void 삭제한_미디어를_다시_첨부하면_삭제_기록을_유지하고_새로_생성한다() {
+		PostMediaCommand command = new PostMediaCommand(PostMediaType.IMAGE, IMAGE_URL);
+		Post post = Post.register(USER_ID, new PostRegisterCommand(CONTENT, null, List.of(command)));
+		PostMedia deleted = post.getMedia().getFirst();
+		post.update(new PostUpdateCommand(CONTENT, null, List.of()));
+		var deletedAt = deleted.getDeletedAt();
+
+		post.update(new PostUpdateCommand(CONTENT, null, List.of(command)));
+		PostMedia added = post.getMedia().getFirst();
+		post.update(new PostUpdateCommand(CONTENT, null, List.of(command)));
+
+		assertThat(post.getMedia()).containsExactly(added);
+		assertThat(added).isNotSameAs(deleted);
+		assertThat(added.getUrl()).isEqualTo(IMAGE_URL);
+		assertThat(added.getDeletedAt()).isNull();
+		assertThat(deletedAt).isNotNull();
+		assertThat(deleted.getDeletedAt()).isEqualTo(deletedAt);
+	}
+
+	@Test
+	void 미디어를_추가하고_순서를_바꾸면_남은_미디어의_행과_삭제_기록이_유지된다() {
+		List<PostMediaCommand> images = images(3);
+		PostMediaCommand video = new PostMediaCommand(PostMediaType.VIDEO, VIDEO_URL);
+		Post post = Post.register(USER_ID, new PostRegisterCommand(CONTENT, null, images.subList(0, 2)));
+		PostMedia deleted = post.getMedia().get(0);
+		PostMedia retained = post.getMedia().get(1);
+
+		post.update(new PostUpdateCommand(CONTENT, null, List.of(video, images.get(1), images.get(2))));
+		PostMedia addedVideo = post.getMedia().get(0);
+		PostMedia addedImage = post.getMedia().get(2);
+		var deletedAt = deleted.getDeletedAt();
+		post.update(new PostUpdateCommand(CONTENT, null, List.of(images.get(2), images.get(1), video)));
+
+		assertThat(post.getMedia()).containsExactly(addedImage, retained, addedVideo);
+		assertThat(post.getMedia()).extracting(PostMedia::getSortOrder).containsExactly(0, 1, 2);
+		assertThat(post.getMedia()).extracting(PostMedia::getDeletedAt).containsOnlyNulls();
+		assertThat(deletedAt).isNotNull();
+		assertThat(deleted.getDeletedAt()).isEqualTo(deletedAt);
+	}
+
+	@Test
 	void 본문이_비어_있으면_수정할_수_없다() {
 		Post post = Post.register(USER_ID, new PostRegisterCommand(CONTENT, null, List.of()));
 
