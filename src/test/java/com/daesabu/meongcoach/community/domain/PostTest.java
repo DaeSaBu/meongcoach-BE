@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 
+import com.daesabu.meongcoach.community.domain.exception.DuplicatePostMediaException;
 import com.daesabu.meongcoach.community.domain.exception.InvalidPostContentException;
 import com.daesabu.meongcoach.community.domain.exception.PostMediaCountExceededException;
 import java.util.List;
@@ -17,6 +18,54 @@ class PostTest {
 	private static final String CONTENT = "오늘 앉아 훈련 성공!";
 	private static final String IMAGE_URL = "https://media.meongcoach.com/images/community/42/photo.jpg";
 	private static final String VIDEO_URL = "https://media.meongcoach.com/videos/community/42/clip.mp4";
+
+	@Test
+	void 삭제한_미디어를_다시_추가하면_기존_행을_복원한다() {
+		PostMediaCommand command = new PostMediaCommand(PostMediaType.IMAGE, IMAGE_URL);
+		Post post = Post.register(USER_ID, new PostRegisterCommand(CONTENT, null, List.of(command)));
+		PostMedia original = post.getMedia().getFirst();
+
+		post.update(new PostUpdateCommand(CONTENT, null, List.of()));
+		post.update(new PostUpdateCommand(CONTENT, null, List.of(command)));
+
+		assertThat(post.getMedia()).containsExactly(original);
+		assertThat(original.getDeletedAt()).isNull();
+	}
+
+	@Test
+	void 같은_미디어를_중복해서_등록할_수_없다() {
+		PostMediaCommand command = new PostMediaCommand(PostMediaType.IMAGE, IMAGE_URL);
+
+		assertThatThrownBy(() -> Post.register(USER_ID,
+				new PostRegisterCommand(CONTENT, null, List.of(command, command))))
+				.isInstanceOf(DuplicatePostMediaException.class);
+	}
+
+	@Test
+	void 중복_미디어로_수정에_실패하면_기존_상태가_유지된다() {
+		Post post = Post.register(USER_ID, new PostRegisterCommand(CONTENT, null, images(1)));
+		List<PostMedia> original = post.getMedia();
+		PostMediaCommand command = new PostMediaCommand(PostMediaType.VIDEO, VIDEO_URL);
+
+		assertThatThrownBy(() -> post.update(new PostUpdateCommand("수정", null, List.of(command, command))))
+				.isInstanceOf(DuplicatePostMediaException.class);
+
+		assertThat(post.getMedia()).containsExactlyElementsOf(original);
+		assertThat(original.getFirst().getDeletedAt()).isNull();
+		assertThat(post.getContent()).isEqualTo(new PostContent(CONTENT));
+	}
+
+	@Test
+	void 잘못된_본문으로_수정에_실패하면_미디어가_유지된다() {
+		Post post = Post.register(USER_ID, new PostRegisterCommand(CONTENT, null, images(1)));
+		List<PostMedia> original = post.getMedia();
+
+		assertThatThrownBy(() -> post.update(new PostUpdateCommand(" ", null, List.of())))
+				.isInstanceOf(InvalidPostContentException.class);
+
+		assertThat(post.getMedia()).containsExactlyElementsOf(original);
+		assertThat(original.getFirst().getDeletedAt()).isNull();
+	}
 
 	@Test
 	void 작성하면_작성자와_본문이_채워진다() {
