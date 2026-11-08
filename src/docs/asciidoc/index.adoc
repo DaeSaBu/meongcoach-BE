@@ -624,6 +624,15 @@ operation::community/post-list[snippets='http-request,query-parameters,http-resp
 
 operation::community/post-list-error[snippets='http-response,response-fields']
 
+=== 내 작성자 정보 조회
+
+link:{swagger-ui}#/Community/community-my-author[▶ Swagger에서 Try it out,window=swagger]
+
+글쓰기 화면과 답글 입력칸에 보일 내 작성자 정보를 조회합니다. 게시글·댓글의 `author`와 같은 규칙으로 만들므로, 앱은 `nickname`을 그대로 보여 주면 됩니다.
+선택된 강아지가 없으면 `author`가 null입니다.
+
+operation::community/my-author[snippets='http-request,http-response,response-fields']
+
 === 게시글 단건 조회
 
 link:{swagger-ui}#/Community/community-post-detail[▶ Swagger에서 Try it out,window=swagger]
