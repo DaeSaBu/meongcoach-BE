@@ -99,20 +99,26 @@ public class Post extends BaseEntity {
 	}
 
 	private void replaceMedia(List<PostMediaCommand> commands) {
-		List<PostMedia> remaining = new ArrayList<>(getMedia());
-		IntStream.range(0, commands.size())
-				.forEach(index -> placeMedia(remaining, commands.get(index), index));
-		remaining.forEach(PostMedia::delete);
+		List<PostMedia> previous = new ArrayList<>(getMedia());
+		int sortOrder = 0;
+		for (PostMediaCommand command : commands) {
+			reuseOrCreate(command, sortOrder, previous);
+			sortOrder++;
+		}
+		for (PostMedia removed : previous) {
+			removed.delete();
+		}
 	}
 
-	private void placeMedia(List<PostMedia> remaining, PostMediaCommand command, int sortOrder) {
-		remaining.stream()
-				.filter(existing -> existing.matches(command))
-				.findFirst()
-				.ifPresentOrElse(existing -> {
-					remaining.remove(existing);
-					existing.moveTo(sortOrder);
-				}, () -> media.add(PostMedia.create(command, sortOrder)));
+	private void reuseOrCreate(PostMediaCommand command, int sortOrder, List<PostMedia> previous) {
+		for (PostMedia candidate : previous) {
+			if (candidate.matches(command)) {
+				previous.remove(candidate);
+				candidate.moveTo(sortOrder);
+				return;
+			}
+		}
+		media.add(PostMedia.create(command, sortOrder));
 	}
 
 	private static PostMention createMention(MentionCommand mention) {
