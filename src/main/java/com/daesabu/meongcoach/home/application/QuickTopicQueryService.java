@@ -51,10 +51,13 @@ public class QuickTopicQueryService implements QuickTopicFinder {
 		LocalDate today = LocalDate.now(SEOUL);
 		boolean overTwo = isOverTwo(dog.birthDate(), today);
 		List<TopicProgressResult> topics = topicProgressFinder.findAll(userId);
+		List<TopicProgressResult> pictured = topics.stream()
+				.filter(this::hasThumbnail)
+				.toList();
 		if (topics.stream().noneMatch(TopicProgressResult::isStarted)) {
-			return findStarters(topics, overTwo);
+			return findStarters(pictured, overTwo);
 		}
-		List<TopicProgressResult> visible = topics.stream()
+		List<TopicProgressResult> visible = pictured.stream()
 				.filter(topic -> !overTwo || !EARLY_CATEGORY_IDS.contains(topic.categoryId()))
 				.toList();
 		Set<Long> planTopicIds = Set.copyOf(currentPlanFinder.findActiveTopicIds(userId, dogId));
@@ -70,6 +73,10 @@ public class QuickTopicQueryService implements QuickTopicFinder {
 				.limit(LIMIT - result.size())
 				.forEach(topic -> result.add(new QuickTopicResult(topic, QuickTopicRole.NEW)));
 		return result;
+	}
+
+	private boolean hasThumbnail(TopicProgressResult topic) {
+		return topic.thumbnailUrl() != null && !topic.thumbnailUrl().isBlank();
 	}
 
 	private boolean isOverTwo(LocalDate birthDate, LocalDate today) {
