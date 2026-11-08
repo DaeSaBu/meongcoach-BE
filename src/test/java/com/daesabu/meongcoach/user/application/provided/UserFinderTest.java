@@ -32,7 +32,7 @@ class UserFinderTest {
 		List<UserProfileSummaryResult> summaries = userFinder.findProfileSummaries(Set.of(user.getId()));
 
 		assertThat(summaries).containsExactly(
-				new UserProfileSummaryResult(user.getId(), "멍멍이집사", "https://cdn.example.com/profile.png"));
+				new UserProfileSummaryResult(user.getId(), "멍멍이집사", "https://cdn.example.com/profile.png", false));
 	}
 
 	@Test

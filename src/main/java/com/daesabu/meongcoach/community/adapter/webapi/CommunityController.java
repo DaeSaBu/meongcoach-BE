@@ -3,17 +3,20 @@ package com.daesabu.meongcoach.community.adapter.webapi;
 import com.daesabu.meongcoach.community.adapter.webapi.dto.CommentListResponse;
 import com.daesabu.meongcoach.community.adapter.webapi.dto.CommentRegisterResponse;
 import com.daesabu.meongcoach.community.adapter.webapi.dto.CommentUpdateResponse;
+import com.daesabu.meongcoach.community.adapter.webapi.dto.MyAuthorResponse;
 import com.daesabu.meongcoach.community.adapter.webapi.dto.PostListResponse;
 import com.daesabu.meongcoach.community.adapter.webapi.dto.PostMediaUploadUrlResponse;
 import com.daesabu.meongcoach.community.adapter.webapi.dto.PostRegisterResponse;
 import com.daesabu.meongcoach.community.adapter.webapi.dto.PostResponse;
 import com.daesabu.meongcoach.community.adapter.webapi.dto.PostUpdateResponse;
 import com.daesabu.meongcoach.community.adapter.webapi.dto.ReplyListResponse;
+import com.daesabu.meongcoach.community.application.provided.AuthorFinder;
 import com.daesabu.meongcoach.community.application.provided.CommentFinder;
 import com.daesabu.meongcoach.community.application.provided.CommentRegister;
 import com.daesabu.meongcoach.community.application.provided.PostFinder;
 import com.daesabu.meongcoach.community.application.provided.PostMediaUploadUrlIssuer;
 import com.daesabu.meongcoach.community.application.provided.PostRegister;
+import com.daesabu.meongcoach.community.application.provided.dto.AuthorResult;
 import com.daesabu.meongcoach.community.application.provided.dto.CommentListRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.CommentListResult;
 import com.daesabu.meongcoach.community.application.provided.dto.CommentRegisterRequest;
@@ -30,6 +33,7 @@ import com.daesabu.meongcoach.community.domain.Post;
 import com.daesabu.meongcoach.media.application.provided.dto.MediaUploadUrlResult;
 import com.daesabu.meongcoach.shared.security.CurrentUserId;
 import jakarta.validation.Valid;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -53,6 +57,13 @@ public class CommunityController {
 	private final CommentRegister commentRegister;
 	private final CommentFinder commentFinder;
 	private final PostMediaUploadUrlIssuer postMediaUploadUrlIssuer;
+	private final AuthorFinder authorFinder;
+
+	@GetMapping("/me")
+	public MyAuthorResponse findMyAuthor(@CurrentUserId Long userId) {
+		Optional<AuthorResult> author = authorFinder.findAuthor(userId);
+		return MyAuthorResponse.from(author);
+	}
 
 	@GetMapping("/posts")
 	public PostListResponse findPosts(@Valid @ModelAttribute PostListRequest request) {
