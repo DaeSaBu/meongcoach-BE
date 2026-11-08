@@ -218,6 +218,21 @@ class PostFinderTest {
 	}
 
 	@Test
+	void 전문가_작성자는_강아지_없이_프로필_닉네임으로_반환한다() {
+		User author = saveUserWithProfile("멍코치 훈련사", "https://cdn.example.com/coach.png");
+		entityManager.createNativeQuery("UPDATE users SET role = 'EXPERT' WHERE id = :id")
+				.setParameter("id", author.getId())
+				.executeUpdate();
+		savePost(author.getId(), "본문");
+		flushAndClear();
+
+		PostListResult result = postFinder.findPosts(new PostListRequest(null, 20, null));
+
+		assertThat(result.posts().getFirst().author()).isEqualTo(
+				new AuthorResult(author.getId(), "멍코치 훈련사", "https://cdn.example.com/coach.png", true));
+	}
+
+	@Test
 	void 선택된_강아지가_없는_작성자의_게시글은_author가_null이다() {
 		User author = saveUserWithProfile("멍멍이집사", "https://cdn.example.com/profile.png");
 		saveDog(author.getId(), "초코", UNSELECTED_DOG_IMAGE_URL);

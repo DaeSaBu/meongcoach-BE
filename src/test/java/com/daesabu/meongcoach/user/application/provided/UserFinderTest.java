@@ -29,10 +29,10 @@ class UserFinderTest {
 		User user = saveUserWithProfile("멍멍이집사", "https://cdn.example.com/profile.png");
 		flushAndClear();
 
-		List<UserProfileSummaryResult> summaries = userFinder.findProfileSummaries(Set.of(user.getId()));
+		UserProfileSummaries summaries = userFinder.findProfileSummaries(Set.of(user.getId()));
 
-		assertThat(summaries).containsExactly(
-				new UserProfileSummaryResult(user.getId(), "멍멍이집사", "https://cdn.example.com/profile.png"));
+		assertThat(summaries.profiles()).containsExactly(
+				new UserProfileSummaryResult(user.getId(), "멍멍이집사", "https://cdn.example.com/profile.png", false));
 	}
 
 	@Test
@@ -41,17 +41,33 @@ class UserFinderTest {
 		User withoutProfile = userRepository.save(User.registerUser());
 		flushAndClear();
 
-		List<UserProfileSummaryResult> summaries = userFinder.findProfileSummaries(
+		UserProfileSummaries summaries = userFinder.findProfileSummaries(
 				Set.of(withProfile.getId(), withoutProfile.getId()));
 
-		assertThat(summaries).extracting(UserProfileSummaryResult::userId).containsExactly(withProfile.getId());
+		assertThat(summaries.profiles()).extracting(UserProfileSummaryResult::userId).containsExactly(withProfile.getId());
 	}
 
 	@Test
 	void 빈_id_목록이면_빈_목록을_반환한다() {
-		List<UserProfileSummaryResult> summaries = userFinder.findProfileSummaries(Set.of());
+		UserProfileSummaries summaries = userFinder.findProfileSummaries(Set.of());
 
-		assertThat(summaries).isEmpty();
+		assertThat(summaries.profiles()).isEmpty();
+	}
+
+	@Test
+	void 전문가_프로필과_보호자_회원_ID를_나눠_반환한다() {
+		User guardian = saveUserWithProfile("멍멍이집사", "");
+		User expert = saveUserWithProfile("멍코치 훈련사", "https://cdn.example.com/coach.png");
+		entityManager.createNativeQuery("UPDATE users SET role = 'EXPERT' WHERE id = :id")
+				.setParameter("id", expert.getId())
+				.executeUpdate();
+		flushAndClear();
+
+		UserProfileSummaries summaries = userFinder.findProfileSummaries(Set.of(guardian.getId(), expert.getId()));
+
+		assertThat(summaries.experts()).containsExactly(
+				new UserProfileSummaryResult(expert.getId(), "멍코치 훈련사", "https://cdn.example.com/coach.png", true));
+		assertThat(summaries.guardianUserIds()).containsExactly(guardian.getId());
 	}
 
 	@Test

@@ -12,18 +12,18 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.daesabu.meongcoach.ai.application.provided.AiTrialFinder;
-import com.daesabu.meongcoach.ai.application.required.AiReportRepository;
+import com.daesabu.meongcoach.ai.application.required.AiAnalysisRepository;
 import com.daesabu.meongcoach.ai.application.required.VideoAnalyzer;
 import com.daesabu.meongcoach.ai.application.required.dto.VideoAnalysisResult;
-import com.daesabu.meongcoach.ai.domain.AiReport;
-import com.daesabu.meongcoach.ai.domain.AiReportStatus;
-import com.daesabu.meongcoach.ai.domain.AiReportUploadCommand;
+import com.daesabu.meongcoach.ai.domain.AiAnalysis;
+import com.daesabu.meongcoach.ai.domain.AiAnalysisStatus;
+import com.daesabu.meongcoach.ai.domain.AiAnalysisUploadCommand;
 import com.daesabu.meongcoach.ai.domain.AiTrial;
 import com.daesabu.meongcoach.ai.domain.AiVideo;
 import com.daesabu.meongcoach.ai.domain.exception.VideoAnalysisFailedException;
 import com.daesabu.meongcoach.media.application.provided.MediaStorageUriResolver;
 import com.daesabu.meongcoach.media.domain.exception.InvalidMediaObjectKeyException;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -31,10 +31,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.Answer;
 
-/**
- * 리포지토리까지 mock으로 두는 이유: "n번째 save만 실패" 같은 DB 장애 경로를 재현해야 하는데
- * 실제 DB로는 저장 실패를 주입할 수 없기 때문이다.
- */
 class AiReportGenerateServiceTest {
 
 	private static final Long USER_ID = 7L;
@@ -47,91 +43,85 @@ class AiReportGenerateServiceTest {
 
 	private MediaStorageUriResolver storageUriResolver;
 	private VideoAnalyzer videoAnalyzer;
-	private AiReportRepository aiReportRepository;
+	private AiAnalysisRepository aiAnalysisRepository;
 	private AiTrialFinder aiTrialFinder;
 	private AiReportGenerateService service;
 
-	// 업로드 URL 발급 시 저장된 UPLOADING row. 서비스는 이 row를 찾아 전이시킨다
-	private AiReport issuedReport;
+	private AiAnalysis issuedAnalysis;
 
-	// 서비스는 같은 AiReport 인스턴스를 전이시키며 save()를 여러 번 부르므로, ArgumentCaptor로는 최종 상태만 보인다.
-	// 그래서 save 호출 시점의 상태를 순서대로 기록해 "PENDING이 먼저 저장됐다"를 검증한다
-	private final List<AiReportStatus> savedStatuses = new ArrayList<>();
-	private AiReport savedReport;
-	private final Answer<AiReport> recordSave = invocation -> {
-		savedReport = invocation.getArgument(0);
-		savedStatuses.add(savedReport.getStatus());
-		return savedReport;
+	private final List<AiAnalysisStatus> savedStatuses = new ArrayList<>();
+	private AiAnalysis savedAnalysis;
+	private final Answer<AiAnalysis> recordSave = invocation -> {
+		savedAnalysis = invocation.getArgument(0);
+		savedStatuses.add(savedAnalysis.getStatus());
+		return savedAnalysis;
 	};
 
 	@BeforeEach
 	void setUp() {
 		storageUriResolver = mock(MediaStorageUriResolver.class);
 		videoAnalyzer = mock(VideoAnalyzer.class);
-		aiReportRepository = mock(AiReportRepository.class);
+		aiAnalysisRepository = mock(AiAnalysisRepository.class);
 		aiTrialFinder = mock(AiTrialFinder.class);
-		service = new AiReportGenerateService(storageUriResolver, videoAnalyzer, aiReportRepository, aiTrialFinder);
+		service = new AiReportGenerateService(storageUriResolver, videoAnalyzer, aiAnalysisRepository, aiTrialFinder);
 
-		// 기본은 성공 경로. 각 테스트는 깨뜨릴 협력자 하나만 덮어쓴다
-		issuedReport = AiReport.uploading(
-				new AiReportUploadCommand(USER_ID, OBJECT_KEY, LocalDateTime.now().plusMinutes(15)));
-		when(aiReportRepository.findByVideoObjectKey(OBJECT_KEY)).thenReturn(Optional.of(issuedReport));
+		issuedAnalysis = AiAnalysis.uploading(
+				new AiAnalysisUploadCommand(USER_ID, OBJECT_KEY, Instant.now().plusSeconds(900)));
+		when(aiAnalysisRepository.findByVideoObjectKey(OBJECT_KEY)).thenReturn(Optional.of(issuedAnalysis));
 		when(storageUriResolver.resolve(AiVideo.SCOPE, OBJECT_KEY)).thenReturn(VIDEO_URI);
 		when(aiTrialFinder.findTrial(USER_ID)).thenReturn(new AiTrial(0));
 		when(videoAnalyzer.analyze(VIDEO_URI)).thenReturn(new VideoAnalysisResult(GENERATED_TITLE, ANALYZED_CONTENT));
-		doAnswer(recordSave).when(aiReportRepository).save(any());
+		doAnswer(recordSave).when(aiAnalysisRepository).save(any());
 	}
 
 	@Test
 	void 발급받은_presigned_URL로_분석한_결과를_제목과_함께_발급_시_만든_row에_COMPLETED로_저장한다() {
 		service.generate(OBJECT_KEY);
 
-		// 분석기가 이 presigned URL로 영상을 직접 읽는다
 		verify(videoAnalyzer).analyze(VIDEO_URI);
-		assertThat(savedReport).isSameAs(issuedReport);
-		assertThat(savedReport.getUserId()).isEqualTo(USER_ID);
-		assertThat(savedReport.getVideoObjectKey()).isEqualTo(OBJECT_KEY);
-		assertThat(savedReport.getTitle()).isEqualTo(GENERATED_TITLE);
-		assertThat(savedReport.getContent()).isEqualTo(ANALYZED_CONTENT);
-		assertThat(savedReport.getStatus()).isEqualTo(AiReportStatus.COMPLETED);
+		assertThat(savedAnalysis).isSameAs(issuedAnalysis);
+		assertThat(savedAnalysis.getUserId()).isEqualTo(USER_ID);
+		assertThat(savedAnalysis.getVideoObjectKey()).isEqualTo(OBJECT_KEY);
+		assertThat(savedAnalysis.getTitle()).isEqualTo(GENERATED_TITLE);
+		assertThat(savedAnalysis.getContent()).isEqualTo(ANALYZED_CONTENT);
+		assertThat(savedAnalysis.getStatus()).isEqualTo(AiAnalysisStatus.COMPLETED);
 	}
 
 	@Test
-	void 분석을_시작하기_전에_UPLOADING_row를_PENDING으로_먼저_전이해_저장한다() {
+	void 분석을_시작하기_전에_UPLOADING_row를_ANALYZING으로_먼저_전이해_저장한다() {
 		service.generate(OBJECT_KEY);
 
-		assertThat(savedStatuses).containsExactly(AiReportStatus.PENDING, AiReportStatus.COMPLETED);
+		assertThat(savedStatuses).containsExactly(AiAnalysisStatus.ANALYZING, AiAnalysisStatus.COMPLETED);
 	}
 
 	@Test
 	void 같은_영상의_리포트가_이미_분석을_시작했으면_URL_발급_분석_저장_없이_건너뛴다() {
-		issuedReport.startAnalysis();
+		issuedAnalysis.startAnalysis();
 
 		service.generate(OBJECT_KEY);
 
 		verifyNoInteractions(storageUriResolver, videoAnalyzer);
-		verify(aiReportRepository, never()).save(any());
+		verify(aiAnalysisRepository, never()).save(any());
 	}
 
 	@Test
 	void 업로드_URL_발급_기록이_없는_영상이면_URL_발급_분석_저장_없이_건너뛴다() {
-		when(aiReportRepository.findByVideoObjectKey(OBJECT_KEY)).thenReturn(Optional.empty());
+		when(aiAnalysisRepository.findByVideoObjectKey(OBJECT_KEY)).thenReturn(Optional.empty());
 
 		service.generate(OBJECT_KEY);
 
 		verifyNoInteractions(storageUriResolver, videoAnalyzer);
-		verify(aiReportRepository, never()).save(any());
+		verify(aiAnalysisRepository, never()).save(any());
 	}
 
 	@Test
-	void 객체_키_검증에_실패하면_PENDING으로_전이하지_않고_예외를_그대로_던진다() {
+	void 객체_키_검증에_실패하면_ANALYZING으로_전이하지_않고_예외를_그대로_던진다() {
 		when(storageUriResolver.resolve(AiVideo.SCOPE, OBJECT_KEY)).thenThrow(new InvalidMediaObjectKeyException(OBJECT_KEY));
 
-		// row는 UPLOADING으로 남아 만료 뒤 FAILED_UPLOAD로 조회된다. 컨슈머가 warn 로그로 버린다
 		assertThatThrownBy(() -> service.generate(OBJECT_KEY))
 				.isInstanceOf(InvalidMediaObjectKeyException.class);
-		verify(aiReportRepository, never()).save(any());
-		assertThat(issuedReport.getStatus()).isEqualTo(AiReportStatus.UPLOADING);
+		verify(aiAnalysisRepository, never()).save(any());
+		assertThat(issuedAnalysis.getStatus()).isEqualTo(AiAnalysisStatus.UPLOADING);
 	}
 
 	@Test
@@ -141,18 +131,17 @@ class AiReportGenerateServiceTest {
 		service.generate(OBJECT_KEY);
 
 		verify(videoAnalyzer, never()).analyze(any());
-		assertThat(savedStatuses).containsExactly(AiReportStatus.PENDING, AiReportStatus.FAILED_TRIAL_EXCEEDED);
+		assertThat(savedStatuses).containsExactly(AiAnalysisStatus.ANALYZING, AiAnalysisStatus.FAILED_TRIAL_EXCEEDED);
 	}
 
 	@Test
 	void 분석이_실패하면_예외를_던지지_않고_FAILED_ANALYSIS로_기록한다() {
 		when(videoAnalyzer.analyze(VIDEO_URI)).thenThrow(new VideoAnalysisFailedException("분석 실패"));
 
-		// 예외를 던지면 Pub/Sub이 같은 메시지를 무한히 재전달한다
 		assertThatCode(() -> service.generate(OBJECT_KEY)).doesNotThrowAnyException();
 
-		assertThat(savedStatuses).containsExactly(AiReportStatus.PENDING, AiReportStatus.FAILED_ANALYSIS);
-		assertThat(savedReport.getContent()).isNull();
+		assertThat(savedStatuses).containsExactly(AiAnalysisStatus.ANALYZING, AiAnalysisStatus.FAILED_ANALYSIS);
+		assertThat(savedAnalysis.getContent()).isNull();
 	}
 
 	@Test
@@ -161,9 +150,9 @@ class AiReportGenerateServiceTest {
 
 		assertThatCode(() -> service.generate(OBJECT_KEY)).doesNotThrowAnyException();
 
-		assertThat(savedReport.getTitle()).isNull();
-		assertThat(savedReport.getContent()).isEqualTo(ANALYZED_CONTENT);
-		assertThat(savedReport.getStatus()).isEqualTo(AiReportStatus.COMPLETED);
+		assertThat(savedAnalysis.getTitle()).isNull();
+		assertThat(savedAnalysis.getContent()).isEqualTo(ANALYZED_CONTENT);
+		assertThat(savedAnalysis.getStatus()).isEqualTo(AiAnalysisStatus.COMPLETED);
 	}
 
 	@Test
@@ -172,48 +161,45 @@ class AiReportGenerateServiceTest {
 
 		assertThatCode(() -> service.generate(OBJECT_KEY)).doesNotThrowAnyException();
 
-		assertThat(savedStatuses).containsExactly(AiReportStatus.PENDING, AiReportStatus.FAILED_UNEXPECTED);
+		assertThat(savedStatuses).containsExactly(AiAnalysisStatus.ANALYZING, AiAnalysisStatus.FAILED_UNEXPECTED);
 	}
 
 	@Test
-	void PENDING_기록_뒤_예상하지_못한_예외가_나면_FAILED_UNEXPECTED로_기록한다() {
+	void ANALYZING_기록_뒤_예상하지_못한_예외가_나면_FAILED_UNEXPECTED로_기록한다() {
 		when(aiTrialFinder.findTrial(USER_ID)).thenThrow(new IllegalStateException("체험 조회 실패"));
 
 		assertThatCode(() -> service.generate(OBJECT_KEY)).doesNotThrowAnyException();
 
-		assertThat(savedStatuses).containsExactly(AiReportStatus.PENDING, AiReportStatus.FAILED_UNEXPECTED);
+		assertThat(savedStatuses).containsExactly(AiAnalysisStatus.ANALYZING, AiAnalysisStatus.FAILED_UNEXPECTED);
 	}
 
 	@Test
 	void 완료_저장이_실패하면_FAILED_UNEXPECTED로_기록한다() {
-		// 1번째(PENDING) 성공 → 2번째(COMPLETED) 실패 → 3번째(FAILED_UNEXPECTED) 성공
-		doAnswer(recordSave).doThrow(SAVE_FAILURE).doAnswer(recordSave).when(aiReportRepository).save(any());
+		doAnswer(recordSave).doThrow(SAVE_FAILURE).doAnswer(recordSave).when(aiAnalysisRepository).save(any());
 
 		assertThatCode(() -> service.generate(OBJECT_KEY)).doesNotThrowAnyException();
 
-		assertThat(savedStatuses).containsExactly(AiReportStatus.PENDING, AiReportStatus.FAILED_UNEXPECTED);
+		assertThat(savedStatuses).containsExactly(AiAnalysisStatus.ANALYZING, AiAnalysisStatus.FAILED_UNEXPECTED);
+		assertThat(savedAnalysis.getReport()).isNull();
 	}
 
 	@Test
 	void 실패_상태_기록이_실패하면_FAILED_UNEXPECTED로_다시_기록을_시도한다() {
 		when(videoAnalyzer.analyze(VIDEO_URI)).thenThrow(new VideoAnalysisFailedException("분석 실패"));
-		// 1번째(PENDING) 성공 → 2번째(FAILED_ANALYSIS) 실패 → 3번째(FAILED_UNEXPECTED) 성공
-		doAnswer(recordSave).doThrow(SAVE_FAILURE).doAnswer(recordSave).when(aiReportRepository).save(any());
+		doAnswer(recordSave).doThrow(SAVE_FAILURE).doAnswer(recordSave).when(aiAnalysisRepository).save(any());
 
 		assertThatCode(() -> service.generate(OBJECT_KEY)).doesNotThrowAnyException();
 
-		assertThat(savedStatuses).containsExactly(AiReportStatus.PENDING, AiReportStatus.FAILED_UNEXPECTED);
+		assertThat(savedStatuses).containsExactly(AiAnalysisStatus.ANALYZING, AiAnalysisStatus.FAILED_UNEXPECTED);
 	}
 
 	@Test
 	void 실패_기록이_계속_실패하면_예외를_그대로_전파한다() {
 		when(videoAnalyzer.analyze(VIDEO_URI)).thenThrow(new VideoAnalysisFailedException("분석 실패"));
-		// 1번째(PENDING) 성공 → 2번째부터 계속 실패 (마지막 스터빙이 반복된다)
-		doAnswer(recordSave).doThrow(SAVE_FAILURE).when(aiReportRepository).save(any());
+		doAnswer(recordSave).doThrow(SAVE_FAILURE).when(aiAnalysisRepository).save(any());
 
-		// 더 할 수 있는 일이 없으므로 컨슈머의 최종 catch가 받아 error 로그 후 메시지를 버린다. row는 PENDING으로 남는다
 		assertThatThrownBy(() -> service.generate(OBJECT_KEY))
 				.isInstanceOf(IllegalStateException.class);
-		assertThat(savedStatuses).containsExactly(AiReportStatus.PENDING);
+		assertThat(savedStatuses).containsExactly(AiAnalysisStatus.ANALYZING);
 	}
 }

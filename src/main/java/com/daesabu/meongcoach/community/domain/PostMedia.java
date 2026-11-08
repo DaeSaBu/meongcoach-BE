@@ -11,6 +11,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -35,11 +36,29 @@ public class PostMedia extends BaseTimeEntity {
 	@Column(nullable = false)
 	private int sortOrder;
 
+	private LocalDateTime deletedAt;
+
 	static PostMedia create(PostMediaCommand command, int sortOrder) {
 		PostMedia media = new PostMedia();
 		media.type = requireNonNull(command.type());
 		media.url = requireNonNull(command.url());
 		media.sortOrder = sortOrder;
 		return media;
+	}
+
+	boolean isActive() {
+		return deletedAt == null;
+	}
+
+	boolean matches(PostMediaCommand command) {
+		return type == command.type() && url.equals(command.url());
+	}
+
+	void moveTo(int sortOrder) {
+		this.sortOrder = sortOrder;
+	}
+
+	void delete() {
+		this.deletedAt = LocalDateTime.now();
 	}
 }

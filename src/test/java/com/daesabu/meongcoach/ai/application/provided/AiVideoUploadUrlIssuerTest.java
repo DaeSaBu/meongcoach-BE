@@ -4,16 +4,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.daesabu.meongcoach.ai.application.provided.dto.AiVideoUploadUrlRequest;
-import com.daesabu.meongcoach.ai.application.required.AiReportRepository;
-import com.daesabu.meongcoach.ai.domain.AiReport;
-import com.daesabu.meongcoach.ai.domain.AiReportStatus;
-import com.daesabu.meongcoach.ai.domain.AiReportUploadCommand;
+import com.daesabu.meongcoach.ai.application.required.AiAnalysisRepository;
+import com.daesabu.meongcoach.ai.domain.AiAnalysis;
+import com.daesabu.meongcoach.ai.domain.AiAnalysisStatus;
+import com.daesabu.meongcoach.ai.domain.AiAnalysisUploadCommand;
 import com.daesabu.meongcoach.ai.domain.AiTrial;
 import com.daesabu.meongcoach.ai.domain.exception.AiReportTrialExceededException;
 import com.daesabu.meongcoach.ai.domain.exception.AiVideoDurationOutOfRangeException;
 import com.daesabu.meongcoach.support.ApplicationTest;
 import jakarta.validation.ConstraintViolationException;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -31,12 +31,12 @@ class AiVideoUploadUrlIssuerTest {
 	private AiVideoUploadUrlIssuer service;
 
 	@Autowired
-	private AiReportRepository aiReportRepository;
+	private AiAnalysisRepository aiAnalysisRepository;
 
 	@ParameterizedTest
 	@ValueSource(ints = {0, 1, 29})
 	void 체험_횟수가_남아_있으면_분석_저장소의_훈련_영상_업로드_URL_발급을_위임한다(int usedCount) {
-		persistCompletedReports(usedCount);
+		persistCompletedAnalyses(usedCount);
 
 		AiVideoUploadUrlResult result = service.issue(USER_ID, REQUEST);
 
@@ -52,31 +52,31 @@ class AiVideoUploadUrlIssuerTest {
 	void 발급과_함께_UPLOADING_리포트를_저장하고_그_ID를_돌려준다() {
 		AiVideoUploadUrlResult result = service.issue(USER_ID, REQUEST);
 
-		AiReport saved = aiReportRepository.findById(result.reportId()).orElseThrow();
+		AiAnalysis saved = aiAnalysisRepository.findById(result.reportId()).orElseThrow();
 		assertThat(saved.getUserId()).isEqualTo(USER_ID);
 		assertThat(saved.getVideoObjectKey()).isEqualTo(result.objectKey());
-		assertThat(saved.getStatus()).isEqualTo(AiReportStatus.UPLOADING);
+		assertThat(saved.getStatus()).isEqualTo(AiAnalysisStatus.UPLOADING);
 	}
 
 	@Test
 	void 업로드_만료_시각은_발급_시각에_URL_유효_시간을_더한_값이다() {
-		LocalDateTime before = LocalDateTime.now();
+		Instant before = Instant.now();
 
 		AiVideoUploadUrlResult result = service.issue(USER_ID, REQUEST);
 
-		LocalDateTime after = LocalDateTime.now();
-		AiReport saved = aiReportRepository.findById(result.reportId()).orElseThrow();
+		Instant after = Instant.now();
+		AiAnalysis saved = aiAnalysisRepository.findById(result.reportId()).orElseThrow();
 		assertThat(saved.getUploadExpiresAt())
 				.isBetween(before.plusSeconds(EXPIRES_IN_SECONDS), after.plusSeconds(EXPIRES_IN_SECONDS));
 	}
 
 	@Test
 	void 체험_횟수를_소진했으면_URL_발급과_리포트_저장_없이_예외를_던진다() {
-		persistCompletedReports(AiTrial.MAX_COUNT);
+		persistCompletedAnalyses(AiTrial.MAX_COUNT);
 
 		assertThatThrownBy(() -> service.issue(USER_ID, REQUEST))
 				.isInstanceOf(AiReportTrialExceededException.class);
-		assertThat(aiReportRepository.findAllByUserIdOrderByCreatedAtDescIdDesc(USER_ID)).hasSize(AiTrial.MAX_COUNT);
+		assertThat(aiAnalysisRepository.findAllByUserIdOrderByCreatedAtDescIdDesc(USER_ID)).hasSize(AiTrial.MAX_COUNT);
 	}
 
 	@ParameterizedTest
@@ -86,7 +86,7 @@ class AiVideoUploadUrlIssuerTest {
 
 		assertThatThrownBy(() -> service.issue(USER_ID, request))
 				.isInstanceOf(AiVideoDurationOutOfRangeException.class);
-		assertThat(aiReportRepository.findAllByUserIdOrderByCreatedAtDescIdDesc(USER_ID)).isEmpty();
+		assertThat(aiAnalysisRepository.findAllByUserIdOrderByCreatedAtDescIdDesc(USER_ID)).isEmpty();
 	}
 
 	@Test
@@ -100,7 +100,7 @@ class AiVideoUploadUrlIssuerTest {
 	@Test
 	void 체험_현황은_요청한_사용자_기준으로_조회하므로_다른_사용자의_완료_리포트는_세지_않는다() {
 		for (int i = 0; i < AiTrial.MAX_COUNT; i++) {
-			persistCompletedReport(99L, "videos/training/99/" + i + ".mp4");
+			persistCompletedAnalysis(99L, "videos/training/99/" + i + ".mp4");
 		}
 
 		AiVideoUploadUrlResult result = service.issue(USER_ID, REQUEST);
@@ -108,18 +108,18 @@ class AiVideoUploadUrlIssuerTest {
 		assertThat(result.reportId()).isNotNull();
 	}
 
-	private void persistCompletedReports(int count) {
+	private void persistCompletedAnalyses(int count) {
 		for (int i = 0; i < count; i++) {
-			persistCompletedReport(USER_ID, "videos/training/7/" + i + ".mp4");
+			persistCompletedAnalysis(USER_ID, "videos/training/7/" + i + ".mp4");
 		}
 	}
 
-	private void persistCompletedReport(Long userId, String videoObjectKey) {
-		AiReport report = AiReport.uploading(
-				new AiReportUploadCommand(userId, videoObjectKey, LocalDateTime.now().plusMinutes(15)));
-		report.startAnalysis();
-		report.complete("제목", "본문");
-		aiReportRepository.saveAndFlush(report);
+	private void persistCompletedAnalysis(Long userId, String videoObjectKey) {
+		AiAnalysis analysis = AiAnalysis.uploading(
+				new AiAnalysisUploadCommand(userId, videoObjectKey, Instant.now().plusSeconds(900)));
+		analysis.startAnalysis();
+		analysis.complete("제목", "본문");
+		aiAnalysisRepository.saveAndFlush(analysis);
 	}
 
 }

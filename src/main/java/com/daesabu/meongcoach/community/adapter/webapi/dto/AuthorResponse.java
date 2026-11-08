@@ -7,6 +7,13 @@ public record AuthorResponse(Long userId, String nickname, String profileImageUr
 	private static final String GUARDIAN_SUFFIX = " 보호자";
 
 	public static AuthorResponse from(AuthorResult result) {
-		return new AuthorResponse(result.userId(), result.dogName() + GUARDIAN_SUFFIX, result.profileImageUrl());
+		return new AuthorResponse(result.userId(), displayName(result), result.profileImageUrl());
+	}
+
+	private static String displayName(AuthorResult result) {
+		if (result.expert()) {
+			return result.name();
+		}
+		return result.name() + GUARDIAN_SUFFIX;
 	}
 }

@@ -42,7 +42,7 @@ media는 소비 모듈의 이름이나 용도를 모릅니다. 용도별 규칙�
 | 경로 범위 | 종류·스토리지 | 영상 상한 | 정의 위치 | 사용처 |
 |---|---|---|---|---|
 | `dog-profile` | 이미지·R2 | — | `dog/domain/DogProfileImage` | 강아지 프로필 이미지 발급, 강아지 등록·수정 검증 |
-| `community-post` | 이미지·영상·R2 | 512MiB | `community/domain/PostMediaType` | 게시글 미디어 발급, 게시글 작성 검증 |
+| `community-post` | 이미지·영상·R2 | 512MiB | `community/domain/PostMediaType` | 게시글 미디어 발급, 게시글·댓글 작성·수정 검증 |
 | `training` | 영상·GCS | 512MiB | `ai/domain/AiVideo` | AI 분석 영상 발급·`gs://` URI 조회 |
 | `graduation` + 하위 경로 `{topicId}` | 영상·GCS | 512MiB | `graduation/domain/GraduationVideo` | 실습 인증 발급·제출 검증·다운로드 |
 
