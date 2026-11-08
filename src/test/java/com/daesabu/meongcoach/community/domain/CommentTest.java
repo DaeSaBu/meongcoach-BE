@@ -4,8 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 
+import com.daesabu.meongcoach.community.domain.exception.CommentMediaCountExceededException;
 import com.daesabu.meongcoach.community.domain.exception.InvalidCommentContentException;
-import com.daesabu.meongcoach.community.domain.exception.PostMediaCountExceededException;
 import java.util.List;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
@@ -69,37 +69,22 @@ class CommentTest {
 	}
 
 	@Test
-	void 첨부와_함께_등록하면_요청_순서대로_첨부가_채워진다() {
-		List<PostMediaCommand> media = List.of(
-				new PostMediaCommand(PostMediaType.VIDEO, VIDEO_URL),
-				new PostMediaCommand(PostMediaType.IMAGE, IMAGE_URL));
-
-		Comment comment = Comment.register(post, USER_ID, CONTENT, media);
+	void 첨부와_함께_등록하면_첨부가_채워진다() {
+		Comment comment = Comment.register(post, USER_ID, CONTENT, videos(1));
 
 		assertThat(comment.getMedia())
 				.extracting(CommentMedia::getType, CommentMedia::getUrl, CommentMedia::getSortOrder)
-				.containsExactly(
-						tuple(PostMediaType.VIDEO, VIDEO_URL, 0),
-						tuple(PostMediaType.IMAGE, IMAGE_URL, 1));
+				.containsExactly(tuple(PostMediaType.VIDEO, VIDEO_URL, 0));
 	}
 
 	@Test
-	void 사진은_3개까지_첨부할_수_있다() {
-		Comment comment = Comment.register(post, USER_ID, CONTENT, images(3));
-
-		assertThat(comment.getMedia()).hasSize(3);
-	}
-
-	@Test
-	void 사진이_3개를_넘으면_등록할_수_없다() {
-		assertThatThrownBy(() -> Comment.register(post, USER_ID, CONTENT, images(4)))
-				.isInstanceOf(PostMediaCountExceededException.class);
-	}
-
-	@Test
-	void 영상이_2개를_넘으면_등록할_수_없다() {
-		assertThatThrownBy(() -> Comment.register(post, USER_ID, CONTENT, videos(3)))
-				.isInstanceOf(PostMediaCountExceededException.class);
+	void 첨부는_사진이든_영상이든_1개까지만_붙일_수_있다() {
+		assertThatThrownBy(() -> Comment.register(post, USER_ID, CONTENT, images(2)))
+				.isInstanceOf(CommentMediaCountExceededException.class);
+		assertThatThrownBy(() -> Comment.register(post, USER_ID, CONTENT, List.of(
+				new PostMediaCommand(PostMediaType.IMAGE, IMAGE_URL),
+				new PostMediaCommand(PostMediaType.VIDEO, VIDEO_URL))))
+				.isInstanceOf(CommentMediaCountExceededException.class);
 	}
 
 	@Test
@@ -110,12 +95,12 @@ class CommentTest {
 
 	@Test
 	void 본문을_수정해도_첨부는_그대로_남는다() {
-		Comment comment = Comment.register(post, USER_ID, CONTENT, images(2));
+		Comment comment = Comment.register(post, USER_ID, CONTENT, images(1));
 
 		comment.update("수정한 댓글");
 
 		assertThat(comment.getContent()).isEqualTo(new CommentContent("수정한 댓글"));
-		assertThat(comment.getMedia()).hasSize(2);
+		assertThat(comment.getMedia()).hasSize(1);
 	}
 
 	@Test

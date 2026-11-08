@@ -51,6 +51,7 @@ import com.daesabu.meongcoach.community.domain.Post;
 import com.daesabu.meongcoach.community.domain.PostFixture;
 import com.daesabu.meongcoach.community.domain.PostMediaCommand;
 import com.daesabu.meongcoach.community.domain.PostMediaType;
+import com.daesabu.meongcoach.community.domain.exception.CommentMediaCountExceededException;
 import com.daesabu.meongcoach.community.domain.exception.CommentNotFoundException;
 import com.daesabu.meongcoach.community.domain.exception.InvalidCommentContentException;
 import com.daesabu.meongcoach.community.domain.exception.MentionTargetNotFoundException;
@@ -545,7 +546,7 @@ class CommunityControllerTest {
 	@Test
 	void 첨부한_사진이_3개를_넘으면_400을_반환한다() throws Exception {
 		given(postRegister.register(eq(42L), any(PostRegisterRequest.class)))
-				.willThrow(new PostMediaCountExceededException(PostMediaType.IMAGE));
+				.willThrow(new PostMediaCountExceededException(PostMediaType.IMAGE, 3));
 
 		mockMvc.perform(post("/api/community/posts")
 						.principal(CURRENT_USER)
@@ -728,12 +729,9 @@ class CommunityControllerTest {
 	void 댓글을_작성하면_201과_작성한_댓글을_반환한다() throws Exception {
 		Post post = PostFixture.create(30L, 7L, "이 레슨 따라해봤어요", LocalDateTime.of(2026, 10, 20, 10, 30, 0));
 		String imageUrl = "https://media.meongcoach.com/images/community-post/42/shot.jpg";
-		String videoUrl = "https://media.meongcoach.com/videos/community-post/42/clip.mp4";
 		CommentRegisterRequest request = new CommentRegisterRequest("저희 강아지도 성공했어요!", 100L,
-				List.of(new PostMediaRequest("IMAGE", imageUrl), new PostMediaRequest("VIDEO", videoUrl)));
-		List<PostMediaCommand> media = List.of(
-				new PostMediaCommand(PostMediaType.IMAGE, imageUrl),
-				new PostMediaCommand(PostMediaType.VIDEO, videoUrl));
+				List.of(new PostMediaRequest("IMAGE", imageUrl)));
+		List<PostMediaCommand> media = List.of(new PostMediaCommand(PostMediaType.IMAGE, imageUrl));
 		given(commentRegister.register(42L, 30L, request))
 				.willReturn(CommentFixture.create(101L, post, 42L, "저희 강아지도 성공했어요!", media,
 						LocalDateTime.of(2026, 10, 21, 9, 0, 0)));
@@ -746,10 +744,7 @@ class CommunityControllerTest {
 								{
 								  "content": "저희 강아지도 성공했어요!",
 								  "parentId": 100,
-								  "media": [
-								    {"type": "IMAGE", "url": "https://media.meongcoach.com/images/community-post/42/shot.jpg"},
-								    {"type": "VIDEO", "url": "https://media.meongcoach.com/videos/community-post/42/clip.mp4"}
-								  ]
+								  "media": [{"type": "IMAGE", "url": "https://media.meongcoach.com/images/community-post/42/shot.jpg"}]
 								}
 								"""))
 				.andExpect(status().isCreated())
@@ -759,8 +754,6 @@ class CommunityControllerTest {
 				.andExpect(jsonPath("$.content").value("저희 강아지도 성공했어요!"))
 				.andExpect(jsonPath("$.media[0].type").value("IMAGE"))
 				.andExpect(jsonPath("$.media[0].url").value(imageUrl))
-				.andExpect(jsonPath("$.media[1].type").value("VIDEO"))
-				.andExpect(jsonPath("$.media[1].url").value(videoUrl))
 				.andExpect(jsonPath("$.createdAt").value("2026-10-21T09:00:00"))
 				.andDo(document("community/comment-register",
 						pathParameters(parameterWithName("postId").description("댓글을 작성할 게시글 ID")),
@@ -769,7 +762,7 @@ class CommunityControllerTest {
 								fieldWithPath("parentId").optional()
 										.description("답글을 달 댓글 ID(양의 정수). 답글은 그 댓글의 루트 댓글에 대한 답글로 작성된다. 댓글이면 생략한다"),
 								fieldWithPath("media").optional()
-										.description("첨부할 사진·영상. 배열 순서가 표시 순서이고, 사진 3개·영상 2개까지. 첨부 없이 작성하면 생략한다"),
+										.description("첨부할 사진이나 영상. 종류와 관계없이 1개까지. 첨부 없이 작성하면 생략한다"),
 								fieldWithPath("media[].type").description("미디어 종류. IMAGE(사진), VIDEO(영상)"),
 								fieldWithPath("media[].url")
 										.description("게시글 미디어 업로드 URL 발급 응답의 공개 URL. 본인이 게시글 용도로 올린 파일만 받는다")
@@ -849,20 +842,19 @@ class CommunityControllerTest {
 	@Test
 	void 댓글_첨부가_한도를_넘으면_400을_반환한다() throws Exception {
 		given(commentRegister.register(eq(42L), eq(30L), any(CommentRegisterRequest.class)))
-				.willThrow(new PostMediaCountExceededException(PostMediaType.VIDEO));
+				.willThrow(new CommentMediaCountExceededException());
 
 		mockMvc.perform(post("/api/community/posts/{postId}/comments", 30L)
 						.principal(CURRENT_USER)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
-								{"content": "영상 세 개", "media": [
-								  {"type": "VIDEO", "url": "https://media.meongcoach.com/videos/community-post/42/a.mp4"},
-								  {"type": "VIDEO", "url": "https://media.meongcoach.com/videos/community-post/42/b.mp4"},
-								  {"type": "VIDEO", "url": "https://media.meongcoach.com/videos/community-post/42/c.mp4"}
+								{"content": "사진과 영상", "media": [
+								  {"type": "IMAGE", "url": "https://media.meongcoach.com/images/community-post/42/a.jpg"},
+								  {"type": "VIDEO", "url": "https://media.meongcoach.com/videos/community-post/42/b.mp4"}
 								]}
 								"""))
 				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.code").value("COMMUNITY_POST_MEDIA_COUNT_EXCEEDED"));
+				.andExpect(jsonPath("$.code").value("COMMUNITY_COMMENT_MEDIA_COUNT_EXCEEDED"));
 	}
 
 	@Test
