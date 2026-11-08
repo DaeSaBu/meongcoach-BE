@@ -7,9 +7,9 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import lombok.AccessLevel;
@@ -18,6 +18,8 @@ import lombok.NoArgsConstructor;
 @Embeddable
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class PostMediaList {
+
+	private static final Map<PostMediaType, Integer> MAX_COUNTS = Map.of(PostMediaType.IMAGE, 3, PostMediaType.VIDEO, 2);
 
 	@OneToMany(cascade = CascadeType.PERSIST)
 	@JoinColumn(name = "post_id", nullable = false, updatable = false)
@@ -61,12 +63,11 @@ public class PostMediaList {
 	}
 
 	private static void validateCount(List<PostMediaCommand> commands) {
-		Arrays.stream(PostMediaType.values())
-				.filter(type -> countOf(commands, type) > type.getMaxCount())
-				.findFirst()
-				.ifPresent(type -> {
-					throw new PostMediaCountExceededException(type);
-				});
+		MAX_COUNTS.forEach((type, maxCount) -> {
+			if (countOf(commands, type) > maxCount) {
+				throw new PostMediaCountExceededException(type, maxCount);
+			}
+		});
 	}
 
 	private static long countOf(List<PostMediaCommand> commands, PostMediaType type) {

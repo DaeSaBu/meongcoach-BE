@@ -1,13 +1,12 @@
 package com.daesabu.meongcoach.community.domain;
 
-import com.daesabu.meongcoach.community.domain.exception.PostMediaCountExceededException;
+import com.daesabu.meongcoach.community.domain.exception.CommentMediaCountExceededException;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Embeddable;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -18,6 +17,8 @@ import lombok.NoArgsConstructor;
 @Embeddable
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class CommentMediaList {
+
+	private static final int MAX_COUNT = 1;
 
 	@OneToMany(cascade = CascadeType.PERSIST)
 	@JoinColumn(name = "comment_id", nullable = false, updatable = false)
@@ -38,17 +39,8 @@ public class CommentMediaList {
 	}
 
 	private static void validateCount(List<PostMediaCommand> commands) {
-		Arrays.stream(PostMediaType.values())
-				.filter(type -> countOf(commands, type) > type.getMaxCount())
-				.findFirst()
-				.ifPresent(type -> {
-					throw new PostMediaCountExceededException(type);
-				});
-	}
-
-	private static long countOf(List<PostMediaCommand> commands, PostMediaType type) {
-		return commands.stream()
-				.filter(command -> command.type() == type)
-				.count();
+		if (commands.size() > MAX_COUNT) {
+			throw new CommentMediaCountExceededException();
+		}
 	}
 }
