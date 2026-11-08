@@ -44,7 +44,7 @@ public class PostMediaList {
 		validateCount(commands);
 		deleteNotIn(commands);
 		IntStream.range(0, commands.size())
-				.forEach(index -> place(commands.get(index), index));
+				.forEach(index -> reuseOrCreate(commands.get(index), index));
 	}
 
 	private void deleteNotIn(List<PostMediaCommand> commands) {
@@ -53,7 +53,7 @@ public class PostMediaList {
 				.forEach(PostMedia::delete);
 	}
 
-	private void place(PostMediaCommand command, int sortOrder) {
+	private void reuseOrCreate(PostMediaCommand command, int sortOrder) {
 		active().stream()
 				.filter(existing -> existing.matches(command))
 				.findFirst()
