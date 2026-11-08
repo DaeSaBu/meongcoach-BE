@@ -15,6 +15,7 @@ import com.daesabu.meongcoach.community.domain.CommentClosure;
 import com.daesabu.meongcoach.community.domain.CommentRegisteredEvent;
 import com.daesabu.meongcoach.community.domain.Post;
 import com.daesabu.meongcoach.community.domain.exception.CommentNotFoundException;
+import com.daesabu.meongcoach.media.application.provided.StoredMediaVerifier;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -35,12 +36,14 @@ public class CommentModifyService implements CommentRegister {
 	private final CommentClosureRepository commentClosureRepository;
 	private final CommentQueryRepository commentQueryRepository;
 	private final ApplicationEventPublisher eventPublisher;
+	private final StoredMediaVerifier storedMediaVerifier;
 
 	@Override
 	@Transactional
 	public Comment register(Long userId, Long postId, CommentRegisterRequest request) {
 		Post post = postFinder.findPost(postId);
-		Comment comment = Comment.register(post, userId, request.content());
+		Comment comment = Comment.register(post, userId, request.content(), request.toMediaCommands());
+		validateStoredMedia(userId, comment);
 		Optional<Comment> root = findRoot(postId, request.parentId());
 
 		commentRepository.save(comment);
@@ -69,6 +72,12 @@ public class CommentModifyService implements CommentRegister {
 		comment.delete();
 		replies.forEach(Comment::delete);
 		comment.getPost().decreaseCommentCount(1 + replies.size());
+	}
+
+	private void validateStoredMedia(Long userId, Comment comment) {
+		comment.getMedia()
+				.forEach(media -> storedMediaVerifier.validateR2PublicUrl(media.getType().getMediaScope(), userId,
+						media.getUrl()));
 	}
 
 	private Optional<Comment> findRoot(Long postId, Long parentId) {

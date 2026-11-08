@@ -4,7 +4,6 @@ import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
 import static java.util.Optional.ofNullable;
 
-import com.daesabu.meongcoach.community.domain.exception.PostMediaCountExceededException;
 import com.daesabu.meongcoach.shared.domain.BaseEntity;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -21,7 +20,6 @@ import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -62,7 +60,7 @@ public class Post extends BaseEntity {
 
 	public static Post register(Long userId, PostRegisterCommand command) {
 		List<PostMediaCommand> media = requireNonNullElse(command.media(), List.of());
-		validateMediaCount(media);
+		PostMediaType.validateCount(media);
 
 		Post post = new Post();
 		post.userId = requireNonNull(userId);
@@ -74,7 +72,7 @@ public class Post extends BaseEntity {
 
 	public void update(PostUpdateCommand command) {
 		List<PostMediaCommand> media = requireNonNullElse(command.media(), List.of());
-		validateMediaCount(media);
+		PostMediaType.validateCount(media);
 
 		this.content = new PostContent(command.content());
 		this.mention = createMention(command.mention());
@@ -102,21 +100,6 @@ public class Post extends BaseEntity {
 		return ofNullable(mention)
 				.map(PostMention::create)
 				.orElse(null);
-	}
-
-	private static void validateMediaCount(List<PostMediaCommand> media) {
-		Arrays.stream(PostMediaType.values())
-				.filter(type -> countOf(media, type) > type.getMaxCount())
-				.findFirst()
-				.ifPresent(type -> {
-					throw new PostMediaCountExceededException(type);
-				});
-	}
-
-	private static long countOf(List<PostMediaCommand> media, PostMediaType type) {
-		return media.stream()
-				.filter(command -> command.type() == type)
-				.count();
 	}
 
 	private static List<PostMedia> createMedia(List<PostMediaCommand> media) {
