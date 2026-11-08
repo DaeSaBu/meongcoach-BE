@@ -1,5 +1,6 @@
 package com.daesabu.meongcoach.community.domain;
 
+import com.daesabu.meongcoach.community.domain.exception.DuplicatePostMediaException;
 import com.daesabu.meongcoach.community.domain.exception.PostMediaCountExceededException;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Embeddable;
@@ -27,7 +28,7 @@ public class PostMediaList {
 	private List<PostMedia> items = new ArrayList<>();
 
 	static PostMediaList of(List<PostMediaCommand> commands) {
-		validateCount(commands);
+		validate(commands);
 		PostMediaList list = new PostMediaList();
 		list.items = IntStream.range(0, commands.size())
 				.mapToObj(index -> PostMedia.create(commands.get(index), index))
@@ -43,7 +44,7 @@ public class PostMediaList {
 	}
 
 	void update(List<PostMediaCommand> commands) {
-		validateCount(commands);
+		validate(commands);
 		deleteNotIn(commands);
 		IntStream.range(0, commands.size())
 				.forEach(index -> reuseOrCreate(commands.get(index), index));
@@ -56,10 +57,17 @@ public class PostMediaList {
 	}
 
 	private void reuseOrCreate(PostMediaCommand command, int sortOrder) {
-		active().stream()
+		items.stream()
 				.filter(existing -> existing.matches(command))
 				.findFirst()
-				.ifPresentOrElse(existing -> existing.moveTo(sortOrder), () -> items.add(PostMedia.create(command, sortOrder)));
+				.ifPresentOrElse(existing -> existing.restoreAt(sortOrder), () -> items.add(PostMedia.create(command, sortOrder)));
+	}
+
+	private static void validate(List<PostMediaCommand> commands) {
+		validateCount(commands);
+		if (commands.stream().distinct().count() != commands.size()) {
+			throw new DuplicatePostMediaException();
+		}
 	}
 
 	private static void validateCount(List<PostMediaCommand> commands) {

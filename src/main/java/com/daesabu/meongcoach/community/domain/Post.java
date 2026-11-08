@@ -60,9 +60,11 @@ public class Post extends BaseEntity {
 	}
 
 	public void update(PostUpdateCommand command) {
+		PostContent updatedContent = new PostContent(command.content());
+		PostMention updatedMention = createMention(command.mention());
 		this.media.update(requireNonNullElse(command.media(), List.of()));
-		this.content = new PostContent(command.content());
-		this.mention = createMention(command.mention());
+		this.content = updatedContent;
+		this.mention = updatedMention;
 	}
 
 	public void delete() {
