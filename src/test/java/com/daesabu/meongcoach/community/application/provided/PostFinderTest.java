@@ -218,8 +218,8 @@ class PostFinderTest {
 	}
 
 	@Test
-	void 전문가_작성자는_전문가로_표시해_반환한다() {
-		User author = saveAuthorWithDogs();
+	void 전문가_작성자는_강아지_없이_프로필_닉네임으로_반환한다() {
+		User author = saveUserWithProfile("멍코치 훈련사", "https://cdn.example.com/coach.png");
 		entityManager.createNativeQuery("UPDATE users SET role = 'EXPERT' WHERE id = :id")
 				.setParameter("id", author.getId())
 				.executeUpdate();
@@ -229,7 +229,7 @@ class PostFinderTest {
 		PostListResult result = postFinder.findPosts(new PostListRequest(null, 20, null));
 
 		assertThat(result.posts().getFirst().author()).isEqualTo(
-				new AuthorResult(author.getId(), "보리", SELECTED_DOG_IMAGE_URL, true));
+				new AuthorResult(author.getId(), "멍코치 훈련사", "https://cdn.example.com/coach.png", true));
 	}
 
 	@Test
