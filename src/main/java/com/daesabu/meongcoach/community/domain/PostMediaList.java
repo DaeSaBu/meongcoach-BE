@@ -10,7 +10,6 @@ import jakarta.persistence.OrderBy;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
@@ -18,7 +17,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class PostMediaList {
 
-	private static final Map<PostMediaType, Integer> MAX_COUNTS = Map.of(PostMediaType.IMAGE, 3, PostMediaType.VIDEO, 2);
+	private static final int MAX_IMAGE_COUNT = 3;
+	private static final int MAX_VIDEO_COUNT = 2;
 
 	@OneToMany(cascade = CascadeType.PERSIST)
 	@JoinColumn(name = "post_id", nullable = false, updatable = false)
@@ -66,23 +66,19 @@ public class PostMediaList {
 	}
 
 	private static void validate(List<PostMediaCommand> commands) {
-		validateCount(commands);
+		validateCount(commands, PostMediaType.IMAGE, MAX_IMAGE_COUNT);
+		validateCount(commands, PostMediaType.VIDEO, MAX_VIDEO_COUNT);
 		if (commands.stream().distinct().count() != commands.size()) {
 			throw new DuplicatePostMediaException();
 		}
 	}
 
-	private static void validateCount(List<PostMediaCommand> commands) {
-		MAX_COUNTS.forEach((type, maxCount) -> {
-			if (countOf(commands, type) > maxCount) {
-				throw new PostMediaCountExceededException(type, maxCount);
-			}
-		});
-	}
-
-	private static long countOf(List<PostMediaCommand> commands, PostMediaType type) {
-		return commands.stream()
+	private static void validateCount(List<PostMediaCommand> commands, PostMediaType type, int maxCount) {
+		long count = commands.stream()
 				.filter(command -> command.type() == type)
 				.count();
+		if (count > maxCount) {
+			throw new PostMediaCountExceededException(type, maxCount);
+		}
 	}
 }
