@@ -5,6 +5,7 @@
 
 ## 핵심 규칙
 
+- 의혹이나 우려를 제기하기 전에 코드·문서·설정에서 그렇게 말할 명확한 근거가 실제로 있는지 먼저 확인합니다. 근거 없는 가능성만으로 문제를 제기하거나 선택지를 늘려 작업을 지연시키지 않습니다.
 - 코드 스타일의 원천은 `.editorconfig`(Wooteco 스타일)입니다. 도구로 강제되지 않는 규칙(삼항 연산자·else·switch 금지, return 인자에 호출 중첩 금지)은 code-convention 스킬 참고.
 - 커밋 메시지는 `type(scope): 한글 설명` 형식이며 scope는 선택입니다. (예: `feature(user): 소셜 로그인 API 추가` — 허용 타입·scope 후보는 git-convention 스킬 참고, `feat`이 아니라 `feature`)
 - 아키텍처는 Spring Modulith 기반 모듈 구조를 따릅니다. 모듈 내부 의존 방향은 항상 `adapter → application → domain`이며, 모듈 간 접근은 `application/provided` 인터페이스로만 합니다.
