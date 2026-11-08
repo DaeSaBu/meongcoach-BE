@@ -10,6 +10,7 @@ import com.daesabu.meongcoach.plan.domain.Plan;
 import com.daesabu.meongcoach.plan.domain.PlanStatus;
 import com.daesabu.meongcoach.training.application.provided.PlanCurriculumFinder;
 import com.daesabu.meongcoach.training.application.provided.dto.PlanCurriculumResult;
+import com.daesabu.meongcoach.training.application.provided.dto.TopicResult;
 import com.daesabu.meongcoach.training.domain.shared.ProgressStatus;
 import java.util.List;
 import java.util.Optional;
@@ -41,6 +42,17 @@ public class CurrentPlanQueryService implements CurrentPlanFinder {
 		return planRepository.findByUserIdAndDogIdAndStatus(userId, dogId, PlanStatus.ACTIVE)
 				.or(() -> planRepository.findFirstByUserIdAndDogIdAndStatusOrderByCompletedAtDescIdDesc(userId, dogId, PlanStatus.COMPLETED))
 				.map(plan -> toResult(userId, plan));
+	}
+
+	@Override
+	public List<Long> findActiveTopicIds(Long userId, Long dogId) {
+		dogProfileFinder.findDogProfile(userId, dogId);
+		List<Long> curriculumIds = planRepository.findByUserIdAndDogIdAndStatus(userId, dogId, PlanStatus.ACTIVE)
+				.map(Plan::getCurriculumIds)
+				.orElse(List.of());
+		return planCurriculumFinder.findTopics(curriculumIds).stream()
+				.map(TopicResult::id)
+				.toList();
 	}
 
 	private CurrentPlanResult toResult(Long userId, Plan plan) {
