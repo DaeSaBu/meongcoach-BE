@@ -20,6 +20,7 @@ import static org.springframework.restdocs.request.RequestDocumentation.queryPar
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.daesabu.meongcoach.community.application.provided.AuthorFinder;
 import com.daesabu.meongcoach.community.application.provided.CommentFinder;
 import com.daesabu.meongcoach.community.application.provided.CommentRegister;
 import com.daesabu.meongcoach.community.application.provided.PostFinder;
@@ -60,6 +61,7 @@ import com.daesabu.meongcoach.media.domain.exception.VideoFileSizeExceededExcept
 import java.security.Principal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
@@ -83,6 +85,9 @@ class CommunityControllerTest {
 	private PostFinder postFinder;
 
 	@MockitoBean
+	private AuthorFinder authorFinder;
+
+	@MockitoBean
 	private PostRegister postRegister;
 
 	@MockitoBean
@@ -93,6 +98,50 @@ class CommunityControllerTest {
 
 	@MockitoBean
 	private PostMediaUploadUrlIssuer postMediaUploadUrlIssuer;
+
+	@Test
+	void 내_작성자_정보를_반환한다() throws Exception {
+		given(authorFinder.findAuthor(42L)).willReturn(Optional.of(
+				new AuthorResult(42L, "보리", "https://media.meongcoach.com/images/dog-profile/42/bori.jpg", false)));
+
+		mockMvc.perform(get("/api/community/me")
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.author.userId").value(42))
+				.andExpect(jsonPath("$.author.nickname").value("보리 보호자"))
+				.andExpect(jsonPath("$.author.profileImageUrl")
+						.value("https://media.meongcoach.com/images/dog-profile/42/bori.jpg"))
+				.andDo(document("community/my-author",
+						responseFields(
+								fieldWithPath("author").optional()
+										.description("내 작성자 요약. 게시글·댓글의 author와 같다. 선택된 강아지가 없으면 null"),
+								fieldWithPath("author.userId").description("내 회원 ID"),
+								fieldWithPath("author.nickname").description("내 표시 이름. 게시글·댓글의 author.nickname과 같은 규칙으로 만든다"),
+								fieldWithPath("author.profileImageUrl").description("선택한 강아지의 프로필 이미지 URL. 이미지를 등록하지 않았으면 빈 문자열"))));
+	}
+
+	@Test
+	void 전문가의_작성자_정보에는_보호자를_붙이지_않는다() throws Exception {
+		given(authorFinder.findAuthor(42L)).willReturn(Optional.of(new AuthorResult(42L, "멍코치 훈련사", "", true)));
+
+		mockMvc.perform(get("/api/community/me")
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.author.nickname").value("멍코치 훈련사"));
+	}
+
+	@Test
+	void 선택된_강아지가_없으면_내_작성자_정보가_null이다() throws Exception {
+		given(authorFinder.findAuthor(42L)).willReturn(Optional.empty());
+
+		mockMvc.perform(get("/api/community/me")
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.author").value(nullValue()));
+	}
 
 	@Test
 	void 게시글_목록을_다음_커서와_함께_반환한다() throws Exception {
