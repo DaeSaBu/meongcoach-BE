@@ -43,6 +43,9 @@ public class Topic extends BaseEntity {
 	@Column(nullable = false, length = 512)
 	private String iconUrl;
 
+	@Column(length = 512)
+	private String thumbnailUrl;
+
 	@Column(nullable = false)
 	private int sortOrder;
 

@@ -1,6 +1,8 @@
 package com.daesabu.meongcoach.training.domain;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -33,5 +35,14 @@ public class LessonProgresses {
 		return Optional.ofNullable(progresses.get(lessonId))
 				.map(LessonProgress::getCompletedCount)
 				.orElse(0);
+	}
+
+	public Optional<LocalDateTime> findLastCompletedAt(Collection<Long> lessonIds) {
+		return lessonIds.stream()
+				.map(progresses::get)
+				.filter(Objects::nonNull)
+				.filter(LessonProgress::isCompleted)
+				.map(LessonProgress::getUpdatedAt)
+				.max(Comparator.naturalOrder());
 	}
 }
