@@ -6,8 +6,8 @@ import static org.assertj.core.api.Assertions.tuple;
 
 import com.daesabu.meongcoach.community.domain.exception.InvalidPostContentException;
 import com.daesabu.meongcoach.community.domain.exception.PostMediaCountExceededException;
-import java.util.Collections;
 import java.util.List;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
@@ -112,7 +112,7 @@ class PostTest {
 		Post post = Post.register(USER_ID, new PostRegisterCommand(CONTENT, null, images(2)));
 		MentionCommand mention = new MentionCommand(MentionTargetType.LESSON, 10L);
 
-		post.update(new PostUpdateCommand("수정한 본문", mention, videos(1)));
+		post.update(new PostUpdateCommand("수정한 본문", mention, List.of(new PostMediaCommand(PostMediaType.VIDEO, VIDEO_URL))));
 
 		assertThat(post.getContent()).isEqualTo(new PostContent("수정한 본문"));
 		assertThat(post.getMention().getTargetType()).isEqualTo(MentionTargetType.LESSON);
@@ -252,10 +252,14 @@ class PostTest {
 	}
 
 	private List<PostMediaCommand> images(int count) {
-		return Collections.nCopies(count, new PostMediaCommand(PostMediaType.IMAGE, IMAGE_URL));
+		return IntStream.range(0, count)
+				.mapToObj(index -> new PostMediaCommand(PostMediaType.IMAGE, IMAGE_URL.replace("photo", "photo-" + index)))
+				.toList();
 	}
 
 	private List<PostMediaCommand> videos(int count) {
-		return Collections.nCopies(count, new PostMediaCommand(PostMediaType.VIDEO, VIDEO_URL));
+		return IntStream.range(0, count)
+				.mapToObj(index -> new PostMediaCommand(PostMediaType.VIDEO, VIDEO_URL.replace("clip", "clip-" + index)))
+				.toList();
 	}
 }
