@@ -114,6 +114,19 @@ class CurrentPlanFinderTest {
 	}
 
 	@Test
+	void 커리큘럼마다_속한_토픽의_ID와_제목을_반환한다() {
+		Long curriculumId = saveCurriculum();
+		savePlan(42L, curriculumId);
+		flushAndClear();
+		Topic topic = entityManager.find(Curriculum.class, curriculumId).getTopic();
+
+		var result = finder.find(42L).orElseThrow().curriculums().getFirst();
+
+		assertThat(result.topicId()).isEqualTo(topic.getId());
+		assertThat(result.topicTitle()).isEqualTo("토픽");
+	}
+
+	@Test
 	void 생성_순서가_아닌_완료_시각이_가장_최근인_플랜을_반환한다() {
 		Long curriculumId = saveCurriculum();
 		Plan latest = savePlan(42L, curriculumId);
