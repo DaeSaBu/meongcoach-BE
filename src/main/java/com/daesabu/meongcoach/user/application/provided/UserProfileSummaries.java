@@ -12,7 +12,7 @@ public record UserProfileSummaries(List<UserProfileSummaryResult> profiles) {
 				.toList();
 	}
 
-	public Set<Long> nonExpertUserIds() {
+	public Set<Long> guardianUserIds() {
 		return profiles.stream()
 				.filter(profile -> !profile.expert())
 				.map(UserProfileSummaryResult::userId)

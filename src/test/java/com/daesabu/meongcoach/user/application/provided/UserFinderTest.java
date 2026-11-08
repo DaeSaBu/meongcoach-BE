@@ -55,7 +55,7 @@ class UserFinderTest {
 	}
 
 	@Test
-	void 전문가_프로필과_나머지_회원_ID를_나눠_반환한다() {
+	void 전문가_프로필과_보호자_회원_ID를_나눠_반환한다() {
 		User guardian = saveUserWithProfile("멍멍이집사", "");
 		User expert = saveUserWithProfile("멍코치 훈련사", "https://cdn.example.com/coach.png");
 		entityManager.createNativeQuery("UPDATE users SET role = 'EXPERT' WHERE id = :id")
@@ -67,7 +67,7 @@ class UserFinderTest {
 
 		assertThat(summaries.experts()).containsExactly(
 				new UserProfileSummaryResult(expert.getId(), "멍코치 훈련사", "https://cdn.example.com/coach.png", true));
-		assertThat(summaries.nonExpertUserIds()).containsExactly(guardian.getId());
+		assertThat(summaries.guardianUserIds()).containsExactly(guardian.getId());
 	}
 
 	@Test

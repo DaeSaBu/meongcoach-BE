@@ -23,7 +23,7 @@ public class AuthorProfiles {
 		UserProfileSummaries profiles = userFinder.findProfileSummaries(userIds);
 		Stream<AuthorResult> experts = profiles.experts().stream()
 				.map(AuthorResult::fromExpert);
-		Stream<AuthorResult> guardians = dogProfileFinder.findSelectedDogs(profiles.nonExpertUserIds()).stream()
+		Stream<AuthorResult> guardians = dogProfileFinder.findSelectedDogs(profiles.guardianUserIds()).stream()
 				.map(AuthorResult::from);
 		return Stream.concat(experts, guardians)
 				.collect(Collectors.toMap(AuthorResult::userId, Function.identity()));
