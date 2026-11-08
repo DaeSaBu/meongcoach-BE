@@ -47,7 +47,7 @@ public class Comment extends BaseEntity {
 	@Embedded
 	private CommentContent content;
 
-	@OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+	@OneToMany(cascade = CascadeType.PERSIST)
 	@JoinColumn(name = "comment_id", nullable = false, updatable = false)
 	@OrderBy("sortOrder ASC")
 	private List<CommentMedia> media = new ArrayList<>();
@@ -74,16 +74,6 @@ public class Comment extends BaseEntity {
 		this.content = new CommentContent(content);
 	}
 
-	public void update(String content, List<PostMediaCommand> media) {
-		if (media == null) {
-			update(content);
-			return;
-		}
-		PostMediaType.validateCount(media);
-		update(content);
-		this.media.clear();
-		this.media.addAll(createMedia(media));
-	}
 
 	public void delete() {
 		this.deletedAt = LocalDateTime.now();
