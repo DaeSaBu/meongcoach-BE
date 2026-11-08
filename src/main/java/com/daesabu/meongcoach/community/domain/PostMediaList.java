@@ -11,8 +11,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
@@ -28,12 +26,9 @@ public class PostMediaList {
 	private List<PostMedia> items = new ArrayList<>();
 
 	static PostMediaList of(List<PostMediaCommand> commands) {
-		validate(commands);
-		PostMediaList list = new PostMediaList();
-		list.items = IntStream.range(0, commands.size())
-				.mapToObj(index -> PostMedia.create(commands.get(index), index))
-				.collect(Collectors.toCollection(ArrayList::new));
-		return list;
+		PostMediaList mediaList = new PostMediaList();
+		mediaList.update(commands);
+		return mediaList;
 	}
 
 	List<PostMedia> active() {
@@ -45,22 +40,29 @@ public class PostMediaList {
 
 	void update(List<PostMediaCommand> commands) {
 		validate(commands);
-		deleteNotIn(commands);
-		IntStream.range(0, commands.size())
-				.forEach(index -> reuseOrCreate(commands.get(index), index));
+		List<PostMedia> activeMedia = active();
+		deleteNotIn(commands, activeMedia);
+		for (int index = 0; index < commands.size(); index++) {
+			reuseOrCreate(commands.get(index), index, activeMedia);
+		}
 	}
 
-	private void deleteNotIn(List<PostMediaCommand> commands) {
-		active().stream()
+	private void deleteNotIn(List<PostMediaCommand> commands, List<PostMedia> activeMedia) {
+		activeMedia.stream()
 				.filter(existing -> commands.stream().noneMatch(existing::matches))
 				.forEach(PostMedia::delete);
 	}
 
-	private void reuseOrCreate(PostMediaCommand command, int sortOrder) {
-		active().stream()
-				.filter(existing -> existing.matches(command))
+	private void reuseOrCreate(PostMediaCommand command, int sortOrder, List<PostMedia> activeMedia) {
+		PostMedia existing = activeMedia.stream()
+				.filter(media -> media.matches(command))
 				.findFirst()
-				.ifPresentOrElse(existing -> existing.moveTo(sortOrder), () -> items.add(PostMedia.create(command, sortOrder)));
+				.orElse(null);
+		if (existing != null) {
+			existing.moveTo(sortOrder);
+			return;
+		}
+		items.add(PostMedia.create(command, sortOrder));
 	}
 
 	private static void validate(List<PostMediaCommand> commands) {

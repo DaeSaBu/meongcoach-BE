@@ -9,8 +9,6 @@ import jakarta.persistence.OrderBy;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
@@ -27,11 +25,11 @@ public class CommentMediaList {
 
 	static CommentMediaList of(List<PostMediaCommand> commands) {
 		validateCount(commands);
-		CommentMediaList list = new CommentMediaList();
-		list.items = IntStream.range(0, commands.size())
-				.mapToObj(index -> CommentMedia.create(commands.get(index), index))
-				.collect(Collectors.toCollection(ArrayList::new));
-		return list;
+		CommentMediaList mediaList = new CommentMediaList();
+		for (int index = 0; index < commands.size(); index++) {
+			mediaList.items.add(CommentMedia.create(commands.get(index), index));
+		}
+		return mediaList;
 	}
 
 	List<CommentMedia> list() {
