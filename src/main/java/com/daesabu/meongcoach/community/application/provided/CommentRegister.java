@@ -15,11 +15,14 @@ public interface CommentRegister {
 	 * 게시글의 댓글 수를 1 늘린다.
 	 * 게시글이 없거나 삭제됐으면 PostNotFoundException, parentId의 댓글이 없거나 삭제됐거나 다른 게시글의 댓글이면
 	 * CommentNotFoundException, 본문이 비어 있거나 150자를 넘으면 InvalidCommentContentException을 던진다.
+	 * 첨부한 사진·영상을 요청 순서대로 저장한다. 사진이 3개, 영상이 2개를 넘으면 PostMediaCountExceededException,
+	 * 본인이 게시글 용도로 올린 파일이 아니면 InvalidMediaUrlException을 던진다.
 	 */
 	Comment register(Long userId, Long postId, @Valid CommentRegisterRequest request);
 
 	/**
 	 * 사용자가 작성한 댓글의 본문을 요청 값으로 교체하고 수정된 댓글을 반환한다.
+	 * 첨부 목록을 넘기면 첨부를 그 목록으로 교체하고, 생략하면 기존 첨부를 유지한다. 첨부 한도와 파일 소유 검증은 작성과 같다.
 	 * 댓글이 없거나 삭제됐거나 본인이 작성한 댓글이 아니거나 게시글이 삭제됐으면 CommentNotFoundException,
 	 * 본문이 비어 있거나 150자를 넘으면 InvalidCommentContentException을 던진다.
 	 */

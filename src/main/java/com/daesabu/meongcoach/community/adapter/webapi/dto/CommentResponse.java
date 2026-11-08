@@ -3,9 +3,10 @@ package com.daesabu.meongcoach.community.adapter.webapi.dto;
 import com.daesabu.meongcoach.community.application.provided.dto.CommentResult;
 import com.daesabu.meongcoach.community.domain.Comment;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
-public record CommentResponse(Long commentId, String content, AuthorResponse author, long replyCount,
+public record CommentResponse(Long commentId, String content, List<PostMediaResponse> media, AuthorResponse author, long replyCount,
 		LocalDateTime createdAt) {
 
 	public static CommentResponse from(CommentResult result) {
@@ -13,7 +14,7 @@ public record CommentResponse(Long commentId, String content, AuthorResponse aut
 		AuthorResponse author = Optional.ofNullable(result.author())
 				.map(AuthorResponse::from)
 				.orElse(null);
-		return new CommentResponse(comment.getId(), comment.getContent().value(), author, result.replyCount(),
+		return new CommentResponse(comment.getId(), comment.getContent().value(), PostMediaResponse.listOf(comment), author, result.replyCount(),
 				comment.getCreatedAt());
 	}
 }
