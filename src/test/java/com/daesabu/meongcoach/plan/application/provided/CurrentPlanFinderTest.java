@@ -127,6 +127,35 @@ class CurrentPlanFinderTest {
 	}
 
 	@Test
+	void 강아지의_활성_플랜에_든_토픽_ID를_반환한다() {
+		Long dogId = saveDog(42L);
+		Long curriculumId = saveCurriculum();
+		savePlan(42L, dogId, curriculumId);
+		flushAndClear();
+		Long topicId = entityManager.find(Curriculum.class, curriculumId).getTopic().getId();
+
+		assertThat(finder.findActiveTopicIds(42L, dogId)).containsExactly(topicId);
+	}
+
+	@Test
+	void 활성_플랜이_없으면_완료한_플랜이_있어도_빈_토픽_목록을_반환한다() {
+		Long dogId = saveDog(42L);
+		savePlan(42L, dogId, saveCurriculum()).complete(Instant.now());
+		Long otherDog = saveDog(42L);
+		savePlan(42L, otherDog, saveCurriculum());
+		flushAndClear();
+
+		assertThat(finder.findActiveTopicIds(42L, dogId)).isEmpty();
+	}
+
+	@Test
+	void 다른_사용자의_강아지로_활성_플랜_토픽을_조회할_수_없다() {
+		Long dogId = saveDog(43L);
+
+		assertThatThrownBy(() -> finder.findActiveTopicIds(42L, dogId)).isInstanceOf(DogNotFoundException.class);
+	}
+
+	@Test
 	void 생성_순서가_아닌_완료_시각이_가장_최근인_플랜을_반환한다() {
 		Long curriculumId = saveCurriculum();
 		Plan latest = savePlan(42L, curriculumId);
