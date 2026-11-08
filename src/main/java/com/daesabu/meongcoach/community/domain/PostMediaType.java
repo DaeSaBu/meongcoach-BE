@@ -1,11 +1,9 @@
 package com.daesabu.meongcoach.community.domain;
 
 import com.daesabu.meongcoach.community.domain.exception.InvalidPostMediaTypeException;
-import com.daesabu.meongcoach.community.domain.exception.PostMediaCountExceededException;
 import com.daesabu.meongcoach.media.domain.shared.MediaKind;
 import com.daesabu.meongcoach.media.domain.shared.MediaScope;
 import java.util.Arrays;
-import java.util.List;
 import lombok.Getter;
 
 @Getter
@@ -32,18 +30,4 @@ public enum PostMediaType {
 				.orElseThrow(() -> new InvalidPostMediaTypeException(code));
 	}
 
-	public static void validateCount(List<PostMediaCommand> media) {
-		Arrays.stream(values())
-				.filter(type -> type.countIn(media) > type.maxCount)
-				.findFirst()
-				.ifPresent(type -> {
-					throw new PostMediaCountExceededException(type);
-				});
-	}
-
-	private long countIn(List<PostMediaCommand> media) {
-		return media.stream()
-				.filter(command -> command.type() == this)
-				.count();
-	}
 }

@@ -4,7 +4,6 @@ import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
 
 import com.daesabu.meongcoach.shared.domain.BaseEntity;
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
@@ -14,15 +13,9 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -47,10 +40,8 @@ public class Comment extends BaseEntity {
 	@Embedded
 	private CommentContent content;
 
-	@OneToMany(cascade = CascadeType.PERSIST)
-	@JoinColumn(name = "comment_id", nullable = false, updatable = false)
-	@OrderBy("sortOrder ASC")
-	private List<CommentMedia> media = new ArrayList<>();
+	@Embedded
+	private CommentMediaList media = new CommentMediaList();
 
 	private LocalDateTime deletedAt;
 
@@ -59,14 +50,11 @@ public class Comment extends BaseEntity {
 	}
 
 	public static Comment register(Post post, Long userId, String content, List<PostMediaCommand> media) {
-		List<PostMediaCommand> commands = requireNonNullElse(media, List.of());
-		PostMediaType.validateCount(commands);
-
 		Comment comment = new Comment();
 		comment.post = requireNonNull(post);
 		comment.userId = requireNonNull(userId);
 		comment.content = new CommentContent(content);
-		comment.media = createMedia(commands);
+		comment.media = CommentMediaList.of(requireNonNullElse(media, List.of()));
 		return comment;
 	}
 
@@ -80,12 +68,7 @@ public class Comment extends BaseEntity {
 	}
 
 	public List<CommentMedia> getMedia() {
-		return Collections.unmodifiableList(media);
+		return media.list();
 	}
 
-	private static List<CommentMedia> createMedia(List<PostMediaCommand> media) {
-		return IntStream.range(0, media.size())
-				.mapToObj(index -> CommentMedia.create(media.get(index), index))
-				.collect(Collectors.toCollection(ArrayList::new));
-	}
 }

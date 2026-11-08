@@ -1,11 +1,13 @@
 package com.daesabu.meongcoach.community.domain;
 
+import com.daesabu.meongcoach.community.domain.exception.PostMediaCountExceededException;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Embeddable;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -23,7 +25,7 @@ public class PostMediaList {
 	private List<PostMedia> items = new ArrayList<>();
 
 	static PostMediaList of(List<PostMediaCommand> commands) {
-		PostMediaType.validateCount(commands);
+		validateCount(commands);
 		PostMediaList list = new PostMediaList();
 		list.items = IntStream.range(0, commands.size())
 				.mapToObj(index -> PostMedia.create(commands.get(index), index))
@@ -39,7 +41,7 @@ public class PostMediaList {
 	}
 
 	void update(List<PostMediaCommand> commands) {
-		PostMediaType.validateCount(commands);
+		validateCount(commands);
 		deleteNotIn(commands);
 		IntStream.range(0, commands.size())
 				.forEach(index -> place(commands.get(index), index));
@@ -56,5 +58,20 @@ public class PostMediaList {
 				.filter(existing -> existing.matches(command))
 				.findFirst()
 				.ifPresentOrElse(existing -> existing.moveTo(sortOrder), () -> items.add(PostMedia.create(command, sortOrder)));
+	}
+
+	private static void validateCount(List<PostMediaCommand> commands) {
+		Arrays.stream(PostMediaType.values())
+				.filter(type -> countOf(commands, type) > type.getMaxCount())
+				.findFirst()
+				.ifPresent(type -> {
+					throw new PostMediaCountExceededException(type);
+				});
+	}
+
+	private static long countOf(List<PostMediaCommand> commands, PostMediaType type) {
+		return commands.stream()
+				.filter(command -> command.type() == type)
+				.count();
 	}
 }
