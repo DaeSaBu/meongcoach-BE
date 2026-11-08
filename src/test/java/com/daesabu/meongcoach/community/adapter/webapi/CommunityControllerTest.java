@@ -882,9 +882,7 @@ class CommunityControllerTest {
 	void 댓글을_수정하면_200과_수정한_댓글을_반환한다() throws Exception {
 		Post post = PostFixture.create(30L, 7L, "이 레슨 따라해봤어요", LocalDateTime.of(2026, 10, 20, 10, 30, 0));
 		String videoUrl = "https://media.meongcoach.com/videos/community-post/42/clip.mp4";
-		CommentUpdateRequest request = new CommentUpdateRequest("저희 강아지도 두 번째에 성공했어요!",
-				List.of(new PostMediaRequest("VIDEO", videoUrl)));
-		given(commentRegister.update(42L, 101L, request))
+		given(commentRegister.update(42L, 101L, new CommentUpdateRequest("저희 강아지도 두 번째에 성공했어요!")))
 				.willReturn(CommentFixture.create(101L, post, 42L, "저희 강아지도 두 번째에 성공했어요!",
 						List.of(new PostMediaCommand(PostMediaType.VIDEO, videoUrl)), LocalDateTime.of(2026, 10, 21, 9, 0, 0)));
 
@@ -893,10 +891,7 @@ class CommunityControllerTest {
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
-								{
-								  "content": "저희 강아지도 두 번째에 성공했어요!",
-								  "media": [{"type": "VIDEO", "url": "https://media.meongcoach.com/videos/community-post/42/clip.mp4"}]
-								}
+								{"content": "저희 강아지도 두 번째에 성공했어요!"}
 								"""))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.commentId").value(101))
@@ -909,19 +904,14 @@ class CommunityControllerTest {
 				.andDo(document("community/comment-update",
 						pathParameters(parameterWithName("commentId").description("수정할 댓글 ID. 본인이 작성한 댓글·답글만 수정할 수 있다")),
 						requestFields(
-								fieldWithPath("content").description("필수 입력. 댓글 본문. 공백만으로 채울 수 없고 150자 이하"),
-								fieldWithPath("media").optional()
-										.description("바꿀 사진·영상 전체. 배열 순서가 표시 순서이고, 사진 3개·영상 2개까지. 생략하면 기존 첨부를 그대로 두고, 빈 배열이면 모두 지운다"),
-								fieldWithPath("media[].type").description("미디어 종류. IMAGE(사진), VIDEO(영상)"),
-								fieldWithPath("media[].url")
-										.description("게시글 미디어 업로드 URL 발급 응답의 공개 URL. 본인이 게시글 용도로 올린 파일만 받는다")
+								fieldWithPath("content").description("필수 입력. 댓글 본문. 공백만으로 채울 수 없고 150자 이하. 첨부한 사진·영상은 바꿀 수 없다")
 						),
 						responseFields(
 								fieldWithPath("commentId").description("수정한 댓글 ID"),
 								fieldWithPath("postId").description("게시글 ID"),
 								fieldWithPath("userId").description("작성자 회원 ID"),
 								fieldWithPath("content").description("댓글 본문"),
-								fieldWithPath("media[]").description("수정 후 첨부된 사진·영상 목록. 첨부가 없으면 빈 배열"),
+								fieldWithPath("media[]").description("작성할 때 첨부한 사진·영상 목록. 첨부가 없으면 빈 배열"),
 								fieldWithPath("media[].type").description("미디어 종류. IMAGE(사진), VIDEO(영상)"),
 								fieldWithPath("media[].url").description("미디어 공개 URL"),
 								fieldWithPath("createdAt").description("댓글 작성 시각(ISO-8601, 초 단위)")

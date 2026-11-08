@@ -431,22 +431,7 @@ class CommentRegisterTest {
 	}
 
 	@Test
-	void 첨부를_넘겨_수정하면_첨부가_교체된다() {
-		Comment comment = saveRootComment(savePost(), USER_ID,
-				List.of(new PostMediaCommand(PostMediaType.IMAGE, IMAGE_URL)));
-
-		commentRegister.update(USER_ID, comment.getId(),
-				new CommentUpdateRequest("수정한 댓글", List.of(new PostMediaRequest("VIDEO", VIDEO_URL))));
-		flushAndClear();
-
-		Comment found = commentRepository.findById(comment.getId()).orElseThrow();
-		assertThat(found.getMedia())
-				.extracting(CommentMedia::getType, CommentMedia::getUrl)
-				.containsExactly(tuple(PostMediaType.VIDEO, VIDEO_URL));
-	}
-
-	@Test
-	void 첨부를_생략하고_수정하면_기존_첨부를_유지한다() {
+	void 댓글을_수정해도_첨부는_그대로_남는다() {
 		Comment comment = saveRootComment(savePost(), USER_ID,
 				List.of(new PostMediaCommand(PostMediaType.IMAGE, IMAGE_URL)));
 
@@ -456,16 +441,6 @@ class CommentRegisterTest {
 		Comment found = commentRepository.findById(comment.getId()).orElseThrow();
 		assertThat(found.getContent().value()).isEqualTo("수정한 댓글");
 		assertThat(found.getMedia()).extracting(CommentMedia::getUrl).containsExactly(IMAGE_URL);
-	}
-
-	@Test
-	void 다른_사용자가_올린_파일로_수정하면_예외를_던진다() {
-		Comment comment = saveRootComment(savePost(), USER_ID);
-		CommentUpdateRequest request = new CommentUpdateRequest("수정한 댓글",
-				List.of(new PostMediaRequest("IMAGE", OTHER_USER_IMAGE_URL)));
-
-		assertThatThrownBy(() -> commentRegister.update(USER_ID, comment.getId(), request))
-				.isInstanceOf(InvalidMediaUrlException.class);
 	}
 
 	private Post savePost() {
