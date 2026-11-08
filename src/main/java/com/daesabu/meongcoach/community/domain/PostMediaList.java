@@ -2,33 +2,19 @@ package com.daesabu.meongcoach.community.domain;
 
 import com.daesabu.meongcoach.community.domain.exception.DuplicatePostMediaException;
 import com.daesabu.meongcoach.community.domain.exception.PostMediaCountExceededException;
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Embeddable;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.OrderBy;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 
-@Embeddable
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class PostMediaList {
 
 	private static final int MAX_IMAGE_COUNT = 3;
 	private static final int MAX_VIDEO_COUNT = 2;
 
-	@OneToMany(cascade = CascadeType.PERSIST)
-	@JoinColumn(name = "post_id", nullable = false, updatable = false)
-	@OrderBy("sortOrder ASC")
-	private List<PostMedia> items = new ArrayList<>();
+	private final List<PostMedia> items;
 
-	static PostMediaList of(List<PostMediaCommand> commands) {
-		PostMediaList mediaList = new PostMediaList();
-		mediaList.update(commands);
-		return mediaList;
+	PostMediaList(List<PostMedia> items) {
+		this.items = List.copyOf(items);
 	}
 
 	List<PostMedia> active() {
@@ -38,13 +24,11 @@ public class PostMediaList {
 				.toList();
 	}
 
-	void update(List<PostMediaCommand> commands) {
+	List<PostMedia> update(List<PostMediaCommand> commands) {
 		validate(commands);
 		List<PostMedia> activeMedia = active();
 		deleteNotIn(commands, activeMedia);
-		for (int index = 0; index < commands.size(); index++) {
-			reuseOrCreate(commands.get(index), index, activeMedia);
-		}
+		return reuseOrCreate(commands, activeMedia);
 	}
 
 	private void deleteNotIn(List<PostMediaCommand> commands, List<PostMedia> activeMedia) {
@@ -53,16 +37,21 @@ public class PostMediaList {
 				.forEach(PostMedia::delete);
 	}
 
-	private void reuseOrCreate(PostMediaCommand command, int sortOrder, List<PostMedia> activeMedia) {
-		PostMedia existing = activeMedia.stream()
-				.filter(media -> media.matches(command))
-				.findFirst()
-				.orElse(null);
-		if (existing != null) {
-			existing.moveTo(sortOrder);
-			return;
+	private List<PostMedia> reuseOrCreate(List<PostMediaCommand> commands, List<PostMedia> activeMedia) {
+		List<PostMedia> created = new ArrayList<>();
+		for (int index = 0; index < commands.size(); index++) {
+			PostMediaCommand command = commands.get(index);
+			PostMedia existing = activeMedia.stream()
+					.filter(media -> media.matches(command))
+					.findFirst()
+					.orElse(null);
+			if (existing != null) {
+				existing.moveTo(index);
+				continue;
+			}
+			created.add(PostMedia.create(command, index));
 		}
-		items.add(PostMedia.create(command, sortOrder));
+		return created;
 	}
 
 	private static void validate(List<PostMediaCommand> commands) {
