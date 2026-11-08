@@ -57,10 +57,10 @@ public class PostMediaList {
 	}
 
 	private void reuseOrCreate(PostMediaCommand command, int sortOrder) {
-		items.stream()
+		active().stream()
 				.filter(existing -> existing.matches(command))
 				.findFirst()
-				.ifPresentOrElse(existing -> existing.restoreAt(sortOrder), () -> items.add(PostMedia.create(command, sortOrder)));
+				.ifPresentOrElse(existing -> existing.moveTo(sortOrder), () -> items.add(PostMedia.create(command, sortOrder)));
 	}
 
 	private static void validate(List<PostMediaCommand> commands) {

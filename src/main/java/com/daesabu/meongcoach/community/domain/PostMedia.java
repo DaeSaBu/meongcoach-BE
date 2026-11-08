@@ -54,8 +54,7 @@ public class PostMedia extends BaseTimeEntity {
 		return type == command.type() && url.equals(command.url());
 	}
 
-	void restoreAt(int sortOrder) {
-		this.deletedAt = null;
+	void moveTo(int sortOrder) {
 		this.sortOrder = sortOrder;
 	}
 
