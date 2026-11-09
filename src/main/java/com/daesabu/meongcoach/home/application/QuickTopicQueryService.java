@@ -10,7 +10,6 @@ import com.daesabu.meongcoach.training.application.provided.TopicProgressFinder;
 import com.daesabu.meongcoach.training.application.provided.dto.TopicProgressResult;
 import com.daesabu.meongcoach.training.domain.shared.ProgressStatus;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -32,8 +31,6 @@ public class QuickTopicQueryService implements QuickTopicFinder {
 
 	private static final int LIMIT = 5;
 	private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
-	private static final Comparator<TopicProgressResult> LATEST_FIRST = Comparator.comparing(
-			TopicProgressResult::lastStudiedAt, Comparator.nullsLast(Comparator.<LocalDateTime>reverseOrder()));
 
 	private final DogProfileFinder dogProfileFinder;
 	private final CurrentPlanFinder currentPlanFinder;
@@ -44,45 +41,48 @@ public class QuickTopicQueryService implements QuickTopicFinder {
 	public List<QuickTopicResult> find(Long userId, Long dogId) {
 		DogProfileResult dog = dogProfileFinder.findDogProfile(userId, dogId);
 		LocalDate today = LocalDate.now(SEOUL);
-		boolean older = isOlder(dog.birthDate(), today);
-		List<TopicProgressResult> visible = topicProgressFinder.findAll(userId).stream()
-				.filter(this::hasThumbnail)
-				.filter(topic -> !older || topic.categorySortOrder() >= properties.minCategoryOrder())
+		int minCategoryOrder = isOverMonths(dog.birthDate(), today) ? properties.minCategoryOrder() : 0;
+		List<TopicProgressResult> candidates = topicProgressFinder.findAll(userId).stream()
+				.filter(TopicProgressResult::hasThumbnail)
+				.filter(topic -> topic.categorySortOrder() >= minCategoryOrder)
 				.toList();
 		Set<Long> planTopicIds = Set.copyOf(currentPlanFinder.findActiveTopicIds(userId, dogId));
+
 		List<QuickTopicResult> result = new ArrayList<>();
-		findContinue(visible, planTopicIds)
+		findInProgressTopic(candidates, planTopicIds)
 				.ifPresent(topic -> result.add(new QuickTopicResult(topic, QuickTopicRole.IN_PROGRESS)));
-		List<TopicProgressResult> fresh = new ArrayList<>(visible.stream()
-				.filter(topic -> topic.status() == ProgressStatus.NOT_STARTED)
-				.filter(topic -> !planTopicIds.contains(topic.id()))
-				.toList());
-		Collections.shuffle(fresh, new Random(Objects.hash(userId, today)));
-		fresh.stream()
+		findNotStartedTopics(candidates, planTopicIds, dailySeed(userId, today)).stream()
 				.limit(LIMIT - result.size())
 				.forEach(topic -> result.add(new QuickTopicResult(topic, QuickTopicRole.NOT_STARTED)));
 		return result;
 	}
 
-	private boolean hasThumbnail(TopicProgressResult topic) {
-		return topic.thumbnailUrl() != null && !topic.thumbnailUrl().isBlank();
-	}
-
-	private boolean isOlder(LocalDate birthDate, LocalDate today) {
+	private boolean isOverMonths(LocalDate birthDate, LocalDate today) {
 		if (birthDate == null) {
 			return false;
 		}
 		return ChronoUnit.MONTHS.between(birthDate, today) >= properties.months();
 	}
 
-	private Optional<TopicProgressResult> findContinue(List<TopicProgressResult> topics, Set<Long> planTopicIds) {
-		List<TopicProgressResult> inProgress = topics.stream()
+	private Optional<TopicProgressResult> findInProgressTopic(List<TopicProgressResult> topics, Set<Long> planTopicIds) {
+		Comparator<TopicProgressResult> outsidePlanFirst = Comparator.comparing(topic -> planTopicIds.contains(topic.id()));
+		Comparator<TopicProgressResult> latestFirst = Comparator.comparing(TopicProgressResult::lastStudiedAt).reversed();
+		return topics.stream()
 				.filter(topic -> topic.status() == ProgressStatus.IN_PROGRESS)
-				.sorted(LATEST_FIRST)
-				.toList();
-		return inProgress.stream()
+				.min(outsidePlanFirst.thenComparing(latestFirst));
+	}
+
+	private List<TopicProgressResult> findNotStartedTopics(List<TopicProgressResult> topics, Set<Long> planTopicIds,
+			long seed) {
+		List<TopicProgressResult> notStarted = new ArrayList<>(topics.stream()
+				.filter(topic -> topic.status() == ProgressStatus.NOT_STARTED)
 				.filter(topic -> !planTopicIds.contains(topic.id()))
-				.findFirst()
-				.or(() -> inProgress.stream().findFirst());
+				.toList());
+		Collections.shuffle(notStarted, new Random(seed));
+		return notStarted;
+	}
+
+	private long dailySeed(Long userId, LocalDate today) {
+		return Objects.hash(userId, today);
 	}
 }

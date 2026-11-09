@@ -45,7 +45,7 @@ public class TopicProgressQueryService implements TopicProgressFinder {
 		Long nextCurriculumId = findNextCurriculumId(topic, progresses);
 		TrainingCategory category = topic.getTrainingCategory();
 		return new TopicProgressResult(topic.getId(), topic.getTitle(), topic.getDescription(), topic.getIconUrl(),
-				topic.getThumbnailUrl(), category.getId(), category.getTitle(), category.getSortOrder(), lessonIds.size(),
+				topic.getThumbnailUrl(), topic.hasThumbnail(), category.getId(), category.getTitle(), category.getSortOrder(), lessonIds.size(),
 				completion.completedLessons(), completion.status(), nextCurriculumId, lastStudiedAt);
 	}
 
