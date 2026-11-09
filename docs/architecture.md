@@ -20,6 +20,7 @@ com.daesabu.meongcoach
 ├── entitlement  ← 이용권 동기화. RevenueCat 활성 이용권의 사본을 둠
 ├── community    ← 게시글·댓글. 훈련 카드 등 다른 모듈의 대상을 멘션할 수 있고, 댓글 알림을 notification에 요청
 ├── graduation   ← 토픽 수료(실습 인증) 제출·조회. 수료 사실의 유일한 출처
+├── home         ← 홈 화면 조합. 「바로 훈련해볼까요?」 토픽 추천 (training·plan·dog 조합)
 ├── notification ← 푸시 알림 FID·시각별 수신 설정·FCM 발송
 ├── alert        ← 개발자 모니터링용 Slack 알림. 각 모듈이 Alerter로 호출
 ├── health       ← 서비스 상태 확인
