@@ -85,6 +85,17 @@ class AiAnalysisRegisterTest {
 	}
 
 	@Test
+	void 맥락_길이는_앞뒤_공백을_지운_뒤_센다() {
+		String context = "  " + "가".repeat(AiAnalysis.CONTEXT_MAX_LENGTH) + "\n";
+		AiAnalysisRegisterRequest request = new AiAnalysisRegisterRequest("video/mp4", 10485760L, 60L, context);
+
+		AiAnalysisRegisterResult result = aiAnalysisRegister.register(USER_ID, request);
+
+		AiAnalysis saved = aiAnalysisRepository.findById(result.analysisId()).orElseThrow();
+		assertThat(saved.getContext()).isEqualTo("가".repeat(AiAnalysis.CONTEXT_MAX_LENGTH));
+	}
+
+	@Test
 	void 맥락이_500자를_넘으면_검증에_실패한다() {
 		AiAnalysisRegisterRequest request = new AiAnalysisRegisterRequest("video/mp4", 10485760L, 60L,
 				"가".repeat(AiAnalysis.CONTEXT_MAX_LENGTH + 1));

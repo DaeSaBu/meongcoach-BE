@@ -473,6 +473,21 @@ class AiControllerTest {
 	}
 
 	@Test
+	void 맥락_길이는_앞뒤_공백을_지운_뒤_센다() throws Exception {
+		String context = "가".repeat(500);
+		String request = ANALYSIS_REGISTER_REQUEST.replace(ANALYSIS_CONTEXT, "  " + context + "\\n");
+		given(aiAnalysisRegister.register(42L, new AiAnalysisRegisterRequest("video/mp4", 10485760L, 60L, context)))
+				.willReturn(ANALYSIS_RESULT);
+
+		mockMvc.perform(post("/api/ai/analyses")
+						.principal(CURRENT_USER)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(request))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.analysisId").value(10));
+	}
+
+	@Test
 	void 맥락이_500자를_넘으면_검증에_실패한다() throws Exception {
 		String request = ANALYSIS_REGISTER_REQUEST.replace(ANALYSIS_CONTEXT, "가".repeat(501));
 
