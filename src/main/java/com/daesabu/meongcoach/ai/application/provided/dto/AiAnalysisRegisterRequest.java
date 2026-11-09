@@ -10,4 +10,10 @@ public record AiAnalysisRegisterRequest(
 		@NotNull Long fileSizeBytes,
 		@NotNull Long durationSeconds,
 		@Size(max = AiAnalysis.CONTEXT_MAX_LENGTH) String context) {
+
+	public AiAnalysisRegisterRequest {
+		if (context != null) {
+			context = context.strip();
+		}
+	}
 }
