@@ -211,7 +211,7 @@ sequenceDiagram
 
 ### 개발·운영 채널 설정
 
-채널톡에 `멍코치 개발` 채널을 별도로 만듭니다.
+개발 채널은 [멍코치-개발](https://e601x.channel.io), 운영 채널은 [멍코치](https://w637y.channel.io)입니다.
 기존 운영 채널의 플러그인 키·회원 해시 키·웹훅 토큰을 개발 채널에 재사용하지 않습니다.
 
 - EAS `development`·`preview`의 `EXPO_PUBLIC_CHANNEL_TALK_PLUGIN_KEY`: 개발 채널의 공개 플러그인 키입니다.
