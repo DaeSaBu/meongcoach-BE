@@ -83,8 +83,8 @@ meongcoach:
       model: ${GEMINI_MODEL:gemini-3.8-flash}
       # 영상 분석·플랜 생성은 수십 초가 걸려 전역 read-timeout(3초)으로는 응답 전에 끊긴다
       response-timeout: PT5M
-      # 상한에 닿으면 응답이 문장 중간에서 잘린다. 리포트는 2천 토큰 안팎이지만 여유를 둔다
-      max-output-tokens: 4096
+      # 상한에 닿으면 응답이 문장 중간에서 잘린다. 영상 분석은 내부 근거 필드까지 최대 2천 토큰 남짓이지만 여유를 둔다
+      max-output-tokens: 8192
       # 영상 분석·플랜 생성은 창의성보다 일관성이 중요해 0으로 고정한다
       temperature: 0
       # 사고 수준(low·medium·high). 비용·지연 예측을 위해 가장 낮게 둔다. Gemini 3 이후 모델은 사고를 완전히 끌 수 없다
