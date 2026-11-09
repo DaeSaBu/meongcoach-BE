@@ -14,7 +14,7 @@ public class SupportChatSessionService implements SupportChatSessionFinder {
 
 	@Override
 	public SupportChatSessionResult find(Long userId) {
-		String memberId = properties.memberIdPrefix() + userId;
+		String memberId = userId.toString();
 		String memberHash = properties.memberHash(memberId);
 		return new SupportChatSessionResult(memberId, memberHash);
 	}

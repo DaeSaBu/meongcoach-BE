@@ -1184,7 +1184,7 @@ operation::notification/internal-event-dispatch[snippets='http-request,request-f
 `POST /webhooks/channel-talk`은 앱이 아니라 채널톡이 호출합니다. JWT와 앱 헤더 대신 쿼리 파라미터 `token`이 서버 설정값(`CHANNEL_TALK_WEBHOOK_TOKEN`)과 같아야 하며,
 없거나 값이 다르면 401(`UNAUTHORIZED`)을 반환합니다.
 
-상담 채팅(`userChat`)에서 운영자(`manager`)가 보낸 메시지이고 고객의 `memberId`가 이 환경의 접두어(`development-`·`production-`)로 시작하면,
+상담 채팅(`userChat`)에서 운영자(`manager`)가 보낸 메시지이고 고객의 `memberId`가 양의 정수인 회원 ID 문자열이면,
 그 회원에게 문의 답변(`SUPPORT_REPLY`) 알림을 보냅니다. 그 밖의 이벤트는 아무것도 하지 않고 200을 반환합니다.
 
 operation::notification/channel-talk-webhook[snippets='http-request,query-parameters,request-fields,http-response']

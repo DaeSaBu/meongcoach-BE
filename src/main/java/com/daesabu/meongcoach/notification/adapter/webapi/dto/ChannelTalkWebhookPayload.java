@@ -16,19 +16,18 @@ public record ChannelTalkWebhookPayload(String event, String type, Entity entity
 	private static final int MAX_BODY_LENGTH = 100;
 	private static final String ELLIPSIS = "…";
 
-	public Optional<Long> recipientUserId(String memberIdPrefix) {
+	public Optional<Long> recipientUserId() {
 		if (!isManagerReply()) {
 			return Optional.empty();
 		}
 		String memberId = memberId();
-		if (memberId == null || !memberId.startsWith(memberIdPrefix)) {
+		if (memberId == null) {
 			return Optional.empty();
 		}
-		String userId = memberId.substring(memberIdPrefix.length());
-		if (!USER_ID.matcher(userId).matches()) {
+		if (!USER_ID.matcher(memberId).matches()) {
 			return Optional.empty();
 		}
-		Long recipientId = Long.valueOf(userId);
+		Long recipientId = Long.valueOf(memberId);
 		return Optional.of(recipientId);
 	}
 

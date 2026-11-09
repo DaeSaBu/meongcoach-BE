@@ -29,7 +29,7 @@ public class ChannelTalkWebhookController {
 		if (!properties.matches(token)) {
 			throw new BadCredentialsException("채널톡 웹훅 토큰이 일치하지 않습니다.");
 		}
-		payload.recipientUserId(properties.memberIdPrefix())
+		payload.recipientUserId()
 				.ifPresent(userId -> eventDispatcher.dispatch(new EventNotificationDispatchRequest(EVENT_TYPE, TARGET_KIND,
 						List.of(userId), TITLE, payload.notificationBody(), DEEP_LINK)));
 	}

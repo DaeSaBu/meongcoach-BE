@@ -14,7 +14,7 @@ import org.springframework.validation.annotation.Validated;
 
 @Validated
 @ConfigurationProperties("meongcoach.channel-talk")
-public record ChannelTalkProperties(@NotBlank String webhookToken, @NotBlank String memberIdPrefix, @Pattern(regexp = "(?:[0-9a-fA-F]{64})?") String memberHashKey) {
+public record ChannelTalkProperties(@NotBlank String webhookToken, @Pattern(regexp = "(?:[0-9a-fA-F]{64})?") String memberHashKey) {
 
 	public boolean matches(String presented) {
 		if (presented == null) {

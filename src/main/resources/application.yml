@@ -126,8 +126,6 @@ meongcoach:
   channel-talk:
     # 채널톡 데스크에 등록한 웹훅 주소(/webhooks/channel-talk?token=...)의 token 값. 기본값을 두지 않아 미주입 시 기동에 실패한다
     webhook-token: ${CHANNEL_TALK_WEBHOOK_TOKEN}
-    # 앱이 채널톡을 부팅할 때 넘기는 회원 ID 접두어. 채널 분리와 함께 다른 환경의 회원을 걸러낸다
-    member-id-prefix: development-
     member-hash-key: ${CHANNEL_TALK_MEMBER_HASH_KEY:}
   revenuecat:
     base-url: ${REVENUECAT_BASE_URL:https://api.revenuecat.com/v2}

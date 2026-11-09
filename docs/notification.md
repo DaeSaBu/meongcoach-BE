@@ -140,24 +140,24 @@ CommentModifyService.register (@Transactional)
 ### 문의 답변 알림 (채널톡 웹훅)
 
 개발·운영은 별도 채널톡 채널을 사용합니다. 개발·로컬·preview 앱은 개발 채널, production 앱은 운영 채널로 연결합니다.
-앱의 문의 화면은 채널별 플러그인 키와 서명된 `memberId = {환경}-{회원 ID}`로 웹 SDK를 실행합니다.
-회원 접두어는 다른 환경의 요청을 걸러내는 보조 검증입니다.
+앱의 문의 화면은 채널별 플러그인 키와 서명된 `memberId = {회원 ID}`로 웹 SDK를 실행합니다.
+채널별 플러그인 키·회원 해시 키·웹훅 토큰으로 환경을 구분합니다.
 각 채널의 데스크에 해당 환경의 웹훅만 등록합니다(스코프: 메시지). 주소는 `https://{API 호스트}/webhooks/channel-talk?token={CHANNEL_TALK_WEBHOOK_TOKEN}`입니다.
 
 ```
 채널톡 → POST /webhooks/channel-talk?token=…
-  → ChannelTalkWebhookController (토큰 확인, 운영자 답변인지·이 환경 회원인지 판별)
+  → ChannelTalkWebhookController (토큰 확인, 운영자 답변인지·회원 ID가 유효한지 판별)
   → EventNotificationDispatcher.dispatch(SUPPORT_REPLY, USERS, [회원 ID], 문구, 딥링크)
 ```
 
 | 항목 | 규칙 |
 |---|---|
-| 발송 조건 | `event=push`, `type=message`, `entity.chatType=userChat`, `entity.personType=manager`, `refers.user.memberId`가 `meongcoach.channel-talk.member-id-prefix`(local·dev `development-`, prod `production-`)로 시작 |
+| 발송 조건 | `event=push`, `type=message`, `entity.chatType=userChat`, `entity.personType=manager`, `refers.user.memberId`가 양의 정수인 회원 ID 문자열 |
 | 제목 | `문의하신 내용에 답변이 왔어요` |
 | 본문 | 메시지 본문(`plainText`)의 앞뒤 공백을 지운 앞 100자. 넘으면 `…`를 붙이고, 글이 없으면 `새 메시지가 도착했어요.` |
 | 딥링크 | `meongcoach://support-chat` |
 
-- 조건에 맞지 않는 이벤트(고객·봇 메시지, 내부 메모·알림 억제 메시지·마케팅, 팀 채팅, 다른 환경이나 익명 고객)는 발송하지 않고 200을 반환합니다.
+- 조건에 맞지 않는 이벤트(고객·봇 메시지, 내부 메모·알림 억제 메시지·마케팅, 팀 채팅, 유효하지 않은 회원 ID나 익명 고객)는 발송하지 않고 200을 반환합니다.
 - 웹훅 요청 안에서 동기로 발송합니다. FCM이 실패하면 502를 반환하며, 중복을 막지 않으므로 채널톡이 같은 이벤트를 다시 보내면 다시 발송합니다.
 - 판별과 본문 자르기는 `adapter/webapi/dto`의 `ChannelTalkWebhookPayload`가 합니다.
 - 경로는 `SecurityConfig`의 `PERMIT_ALL_PATHS`에 있고, 컨트롤러가 토큰을 `ChannelTalkProperties.matches`(`MessageDigest.isEqual`)로 비교해 틀리면 401을 반환합니다. 채널톡은 요청 헤더를 지정할 수 없어 쿼리 파라미터를 씁니다.
@@ -185,7 +185,7 @@ Android는 HIGH 우선순위와 TTL 1시간을 사용합니다. APNs는 우선�
 ### 회원 상담 식별
 
 앱은 `GET /api/notifications/support-session`으로 로그인한 회원의 `memberId`와 `memberHash`를 받습니다.
-회원 식별자는 개발·로컬 `development-{회원 ID}`, 운영 `production-{회원 ID}`입니다.
+회원 식별자는 모든 채널에서 회원 ID를 문자열로 바꾼 값입니다.
 서버는 채널톡의 64자리 16진수 키를 바이트로 풀어 회원 식별자를 HMAC-SHA256으로 서명합니다.
 회원 해시 키가 없으면 503을 반환하며 응답은 캐시하지 않습니다.
 
