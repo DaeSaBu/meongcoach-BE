@@ -53,8 +53,7 @@ public class SecurityConfig {
 			"/api/auth/login/social",
 			"/api/auth/login/email",
 			"/api/auth/token/refresh",
-			"/api/auth/logout",
-			"/webhooks/channel-talk"
+			"/api/auth/logout"
 	};
 
 	private static final String[] ONBOARDING_ALLOWED_PATHS = {
