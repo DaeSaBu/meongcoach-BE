@@ -139,8 +139,10 @@ CommentModifyService.register (@Transactional)
 
 ### 문의 답변 알림 (채널톡 웹훅)
 
-앱의 문의 화면은 채널톡 웹 SDK를 `memberId = {환경}-{회원 ID}`로 부팅합니다. 개발·운영 앱이 같은 채널톡 채널을 쓰므로 환경 접두어로 두 환경의 회원을 나눕니다.
-채널톡 데스크에는 환경마다 웹훅을 하나씩 등록하고(스코프: 메시지), 주소는 `https://{API 호스트}/webhooks/channel-talk?token={CHANNEL_TALK_WEBHOOK_TOKEN}`입니다.
+개발·운영은 별도 채널톡 채널을 사용합니다. 개발·로컬·preview 앱은 개발 채널, production 앱은 운영 채널로 연결합니다.
+앱의 문의 화면은 채널별 플러그인 키와 서명된 `memberId = {환경}-{회원 ID}`로 웹 SDK를 실행합니다.
+회원 접두어는 다른 환경의 요청을 걸러내는 보조 검증입니다.
+각 채널의 데스크에 해당 환경의 웹훅만 등록합니다(스코프: 메시지). 주소는 `https://{API 호스트}/webhooks/channel-talk?token={CHANNEL_TALK_WEBHOOK_TOKEN}`입니다.
 
 ```
 채널톡 → POST /webhooks/channel-talk?token=…
@@ -205,3 +207,19 @@ sequenceDiagram
 백엔드와 비밀값을 먼저 배포하고 채널톡 회원 해시 검증을 켠 뒤 앱을 배포합니다.
 기존 익명 상담 기록은 회원 상담으로 자동 합쳐지지 않습니다.
 웹훅 토큰이 담긴 쿼리는 접근 로그에 남기지 않습니다.
+
+
+### 개발·운영 채널 설정
+
+채널톡에 `멍코치 개발` 채널을 별도로 만듭니다.
+기존 운영 채널의 플러그인 키·회원 해시 키·웹훅 토큰을 개발 채널에 재사용하지 않습니다.
+
+- EAS `development`·`preview`의 `EXPO_PUBLIC_CHANNEL_TALK_PLUGIN_KEY`: 개발 채널의 공개 플러그인 키입니다.
+- EAS `production`의 `EXPO_PUBLIC_CHANNEL_TALK_PLUGIN_KEY`: 운영 채널의 공개 플러그인 키입니다.
+- GitHub `DEV_CHANNEL_TALK_MEMBER_HASH_KEY`·`DEV_CHANNEL_TALK_WEBHOOK_TOKEN`: 개발 채널의 비밀값입니다.
+- GitHub `PROD_CHANNEL_TALK_MEMBER_HASH_KEY`·`PROD_CHANNEL_TALK_WEBHOOK_TOKEN`: 운영 채널의 비밀값입니다.
+
+개발 채널 웹훅은 개발 API 서버에만 연결하고 운영 채널 웹훅은 운영 API 서버에만 연결합니다.
+각 채널에서 회원 해시 검증을 켭니다.
+앱에 플러그인 키가 없으면 SDK를 로드하지 않고 문의 화면 오류를 표시합니다.
+운영 키로 자동 대체하지 않습니다.
