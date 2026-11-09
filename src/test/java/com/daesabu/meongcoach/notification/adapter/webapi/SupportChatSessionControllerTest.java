@@ -8,6 +8,7 @@ import static org.springframework.restdocs.payload.PayloadDocumentation.response
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import com.daesabu.meongcoach.notification.application.provided.SupportChatSessionFinder;
 import com.daesabu.meongcoach.notification.application.provided.dto.SupportChatSessionResult;
 import com.daesabu.meongcoach.notification.domain.exception.ChannelTalkUnavailableException;

@@ -51,7 +51,7 @@ class ChannelTalkWebhookControllerTest {
 				.andExpect(status().isOk())
 				.andDo(document("notification/channel-talk-webhook",
 						queryParameters(parameterWithName("token").description("채널톡 데스크에 등록한 웹훅 주소의 토큰")),
-						relaxedRequestFields(fieldWithPath("type").description("이벤트 종류. message만 처리"),
+						relaxedRequestFields(fieldWithPath("event").description("이벤트 동작. push만 처리"), fieldWithPath("type").description("이벤트 종류. message만 처리"),
 								fieldWithPath("entity.chatType").description("채팅 종류. userChat만 처리"),
 								fieldWithPath("entity.personType").description("보낸 사람 종류. manager만 처리"),
 								fieldWithPath("entity.plainText").description("메시지 본문. 알림 본문에 앞 100자까지 쓴다"),
