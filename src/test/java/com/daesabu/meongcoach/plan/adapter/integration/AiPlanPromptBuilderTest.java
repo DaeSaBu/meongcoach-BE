@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.daesabu.meongcoach.dog.application.provided.dto.DogProfileResult;
 import com.daesabu.meongcoach.dog.domain.shared.Breed;
+import com.daesabu.meongcoach.dog.domain.shared.DogSex;
 import com.daesabu.meongcoach.plan.application.required.dto.AiPlanGenerateRequest;
 import com.daesabu.meongcoach.training.application.provided.dto.AiPlanCurriculumResult;
 import java.math.BigDecimal;
@@ -24,7 +25,7 @@ class AiPlanPromptBuilderTest {
 		String template = new ClassPathResource("prompts/plan-generation/user.md")
 				.getContentAsString(StandardCharsets.UTF_8);
 		AiPlanPromptBuilder builder = new AiPlanPromptBuilder(objectMapper, template);
-		DogProfileResult dog = new DogProfileResult(1L, "초코", new Breed("푸들"),
+		DogProfileResult dog = new DogProfileResult(1L, "초코", new Breed("푸들"), DogSex.MALE,
 				LocalDate.of(2025, 1, 31), null);
 		AiPlanCurriculumResult curriculum = new AiPlanCurriculumResult(10L, 2L, "기다리기", "짧게 기다리기",
 				"제자리에서 기다려요", 3, 1, 15);
@@ -39,6 +40,7 @@ class AiPlanPromptBuilderTest {
 		assertThat(input.at("/dog/breed").asString()).isEqualTo("푸들");
 		assertThat(input.at("/dog/birthDate").asString()).isEqualTo("2025-01-31");
 		assertThat(input.at("/dog/weightKg").isNull()).isTrue();
+		assertThat(input.get("dog").has("sex")).isFalse();
 		assertThat(input.get("generationDate").asString()).isEqualTo("2026-10-26");
 		assertThat(input.get("dailyMinutes").asInt()).isEqualTo(10);
 		assertThat(input.get("daysPerWeek").asInt()).isEqualTo(3);
@@ -51,7 +53,7 @@ class AiPlanPromptBuilderTest {
 	@Test
 	void 직접_입력한_견종과_몸무게를_그대로_보낸다() {
 		AiPlanPromptBuilder builder = new AiPlanPromptBuilder(objectMapper, "{{input}}");
-		DogProfileResult dog = new DogProfileResult(1L, "초코", new Breed("직접 입력한 견종"),
+		DogProfileResult dog = new DogProfileResult(1L, "초코", new Breed("직접 입력한 견종"), DogSex.MALE,
 				LocalDate.of(2025, 1, 31), new BigDecimal("4.5"));
 		AiPlanGenerateRequest request = new AiPlanGenerateRequest(dog, LocalDate.of(2026, 10, 26),
 				10, 3, "기다리기", List.of());
