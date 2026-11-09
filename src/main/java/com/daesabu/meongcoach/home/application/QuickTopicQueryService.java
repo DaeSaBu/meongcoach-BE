@@ -41,7 +41,7 @@ public class QuickTopicQueryService implements QuickTopicFinder {
 	public List<QuickTopicResult> find(Long userId, Long dogId) {
 		DogProfileResult dog = dogProfileFinder.findDogProfile(userId, dogId);
 		LocalDate today = LocalDate.now(SEOUL);
-		int minCategoryOrder = isOverMonths(dog.birthDate(), today) ? properties.minCategoryOrder() : 0;
+		int minCategoryOrder = minCategoryOrder(dog.birthDate(), today);
 		List<TopicProgressResult> candidates = topicProgressFinder.findAll(userId).stream()
 				.filter(TopicProgressResult::hasThumbnail)
 				.filter(topic -> topic.categorySortOrder() >= minCategoryOrder)
@@ -55,6 +55,13 @@ public class QuickTopicQueryService implements QuickTopicFinder {
 				.limit(LIMIT - result.size())
 				.forEach(topic -> result.add(new QuickTopicResult(topic, QuickTopicRole.NOT_STARTED)));
 		return result;
+	}
+
+	private int minCategoryOrder(LocalDate birthDate, LocalDate today) {
+		if (isOverMonths(birthDate, today)) {
+			return properties.minCategoryOrder();
+		}
+		return 0;
 	}
 
 	private boolean isOverMonths(LocalDate birthDate, LocalDate today) {
