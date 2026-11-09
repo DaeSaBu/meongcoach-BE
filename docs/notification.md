@@ -150,12 +150,12 @@ CommentModifyService.register (@Transactional)
 
 | 항목 | 규칙 |
 |---|---|
-| 발송 조건 | `type=message`, `entity.chatType=userChat`, `entity.personType=manager`, `refers.user.memberId`가 `meongcoach.channel-talk.member-id-prefix`(local·dev `development-`, prod `production-`)로 시작 |
+| 발송 조건 | `event=push`, `type=message`, `entity.chatType=userChat`, `entity.personType=manager`, `refers.user.memberId`가 `meongcoach.channel-talk.member-id-prefix`(local·dev `development-`, prod `production-`)로 시작 |
 | 제목 | `문의하신 내용에 답변이 왔어요` |
 | 본문 | 메시지 본문(`plainText`)의 앞뒤 공백을 지운 앞 100자. 넘으면 `…`를 붙이고, 글이 없으면 `새 메시지가 도착했어요.` |
 | 딥링크 | `meongcoach://support-chat` |
 
-- 조건에 맞지 않는 이벤트(고객·봇 메시지, 팀 채팅, 다른 환경이나 익명 고객)는 발송하지 않고 200을 반환합니다.
+- 조건에 맞지 않는 이벤트(고객·봇 메시지, 내부 메모·알림 억제 메시지·마케팅, 팀 채팅, 다른 환경이나 익명 고객)는 발송하지 않고 200을 반환합니다.
 - 웹훅 요청 안에서 동기로 발송합니다. FCM이 실패하면 502를 반환하며, 중복을 막지 않으므로 채널톡이 같은 이벤트를 다시 보내면 다시 발송합니다.
 - 판별과 본문 자르기는 `adapter/webapi/dto`의 `ChannelTalkWebhookPayload`가 합니다.
 - 경로는 `SecurityConfig`의 `PERMIT_ALL_PATHS`에 있고, 컨트롤러가 토큰을 `ChannelTalkProperties.matches`(`MessageDigest.isEqual`)로 비교해 틀리면 401을 반환합니다. 채널톡은 요청 헤더를 지정할 수 없어 쿼리 파라미터를 씁니다.
@@ -178,3 +178,30 @@ Android는 HIGH 우선순위와 TTL 1시간을 사용합니다. APNs는 우선�
 
 `V37`은 기존 `device_tokens` 테이블과 등록 토큰을 삭제하고 FID 전용 `device_installations` 테이블을 만듭니다. 수신 설정은 유지합니다.
 기존 앱은 FID 지원 앱으로 업데이트해야 새 발송 대상에 포함됩니다. 백엔드의 새 API와 마이그레이션을 먼저 배포하고 앱을 배포합니다.
+
+
+### 회원 상담 식별
+
+앱은 `GET /api/notifications/support-session`으로 로그인한 회원의 `memberId`와 `memberHash`를 받습니다.
+회원 식별자는 개발·로컬 `development-{회원 ID}`, 운영 `production-{회원 ID}`입니다.
+서버는 채널톡의 64자리 16진수 키를 바이트로 풀어 회원 식별자를 HMAC-SHA256으로 서명합니다.
+회원 해시 키가 없으면 503을 반환하며 응답은 캐시하지 않습니다.
+
+```mermaid
+sequenceDiagram
+    participant App as 앱
+    participant API as 백엔드
+    participant Channel as 채널톡
+    App->>API: 로그인한 회원의 상담 식별값 조회
+    API-->>App: memberId, memberHash
+    App->>Channel: 서명된 회원 상담 열기
+    Channel->>API: 운영자 답변 웹훅과 token
+    API-->>App: SUPPORT_REPLY 푸시
+```
+
+`CHANNEL_TALK_MEMBER_HASH_KEY`는 서버에서만 사용합니다.
+개발·운영 배포는 GitHub Secrets `DEV_CHANNEL_TALK_MEMBER_HASH_KEY`, `PROD_CHANNEL_TALK_MEMBER_HASH_KEY`를 태스크 정의에 주입합니다.
+웹훅 토큰은 `DEV_CHANNEL_TALK_WEBHOOK_TOKEN`, `PROD_CHANNEL_TALK_WEBHOOK_TOKEN`입니다.
+백엔드와 비밀값을 먼저 배포하고 채널톡 회원 해시 검증을 켠 뒤 앱을 배포합니다.
+기존 익명 상담 기록은 회원 상담으로 자동 합쳐지지 않습니다.
+웹훅 토큰이 담긴 쿼리는 접근 로그에 남기지 않습니다.

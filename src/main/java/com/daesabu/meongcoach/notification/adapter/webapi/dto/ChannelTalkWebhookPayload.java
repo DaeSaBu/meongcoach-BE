@@ -1,9 +1,12 @@
 package com.daesabu.meongcoach.notification.adapter.webapi.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
-public record ChannelTalkWebhookPayload(String type, Entity entity, Refers refers) {
+@JsonIgnoreProperties(ignoreUnknown = true)
+public record ChannelTalkWebhookPayload(String event, String type, Entity entity, Refers refers) {
 
 	private static final String MESSAGE_TYPE = "message";
 	private static final String USER_CHAT = "userChat";
@@ -25,7 +28,8 @@ public record ChannelTalkWebhookPayload(String type, Entity entity, Refers refer
 		if (!USER_ID.matcher(userId).matches()) {
 			return Optional.empty();
 		}
-		return Optional.of(Long.parseLong(userId));
+		Long recipientId = Long.valueOf(userId);
+		return Optional.of(recipientId);
 	}
 
 	public String notificationBody() {
@@ -40,8 +44,8 @@ public record ChannelTalkWebhookPayload(String type, Entity entity, Refers refer
 	}
 
 	private boolean isManagerReply() {
-		return MESSAGE_TYPE.equals(type) && entity != null
-				&& USER_CHAT.equals(entity.chatType()) && MANAGER.equals(entity.personType());
+		return "push".equals(event) && MESSAGE_TYPE.equals(type) && entity != null
+				&& USER_CHAT.equals(entity.chatType()) && MANAGER.equals(entity.personType()) && !entity.isSuppressed();
 	}
 
 	private String memberId() {
@@ -51,12 +55,26 @@ public record ChannelTalkWebhookPayload(String type, Entity entity, Refers refer
 		return refers.user().memberId();
 	}
 
-	public record Entity(String chatType, String personType, String plainText) {
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	public record Entity(String chatType, String personType, String plainText, List<String> options, Boolean broadcastedMsg, Object marketing) {
+		private static final List<String> SUPPRESSED_OPTIONS = List.of("private", "silent", "silentToUser", "doNotSendApp", "doNotPost");
+
+		public boolean isSuppressed() {
+			if (Boolean.TRUE.equals(broadcastedMsg) || marketing != null) {
+				return true;
+			}
+			if (options == null) {
+				return false;
+			}
+			return options.stream().anyMatch(SUPPRESSED_OPTIONS::contains);
+		}
 	}
 
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record Refers(User user) {
 	}
 
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record User(String memberId) {
 	}
 }

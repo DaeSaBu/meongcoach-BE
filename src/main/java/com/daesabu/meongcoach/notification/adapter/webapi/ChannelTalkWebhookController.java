@@ -1,7 +1,7 @@
 package com.daesabu.meongcoach.notification.adapter.webapi;
 
-import com.daesabu.meongcoach.notification.adapter.security.ChannelTalkProperties;
 import com.daesabu.meongcoach.notification.adapter.webapi.dto.ChannelTalkWebhookPayload;
+import com.daesabu.meongcoach.notification.application.ChannelTalkProperties;
 import com.daesabu.meongcoach.notification.application.provided.EventNotificationDispatcher;
 import com.daesabu.meongcoach.notification.application.provided.dto.EventNotificationDispatchRequest;
 import java.util.List;

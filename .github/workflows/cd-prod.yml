@@ -128,6 +128,7 @@ jobs:
           IMAGE_URI: ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
           NOTIFICATION_INTERNAL_SECRET: ${{ secrets.PROD_NOTIFICATION_INTERNAL_SECRET }}
           CHANNEL_TALK_WEBHOOK_TOKEN: ${{ secrets.PROD_CHANNEL_TALK_WEBHOOK_TOKEN }}
+          CHANNEL_TALK_MEMBER_HASH_KEY: ${{ secrets.PROD_CHANNEL_TALK_MEMBER_HASH_KEY }}
           JWT_SECRET: ${{ secrets.PROD_JWT_SECRET }}
           KAKAO_NATIVE_APP_KEY: ${{ secrets.PROD_KAKAO_NATIVE_APP_KEY }}
           KAKAO_REST_API_KEY: ${{ secrets.PROD_KAKAO_REST_API_KEY }}

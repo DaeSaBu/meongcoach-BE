@@ -1194,3 +1194,14 @@ operation::notification/channel-talk-webhook[snippets='http-request,query-parame
 본문이 JSON이 아니면 400을 반환합니다. 알림 발송이 실패하면 502(`NOTIFICATION_DELIVERY_FAILED`)를 반환합니다.
 
 operation::notification/channel-talk-webhook-error[snippets='http-response,response-fields']
+
+
+=== 채널톡 상담 식별값
+
+link:{swagger-ui}#/Notification/notification-support-session[▶ Swagger에서 Try it out,window=swagger]
+
+로그인한 회원의 채널톡 식별자와 회원 해시를 반환합니다.
+
+operation::notification/support-session[snippets='http-request,http-response,response-fields']
+
+operation::notification/support-session-error[snippets='http-response,response-fields']
