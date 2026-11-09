@@ -158,6 +158,47 @@ class PlanPreparationFinderTest {
 				.isInstanceOf(TopicNotFoundException.class);
 	}
 
+	@Test
+	void 요청한_토픽_순서대로_커리큘럼을_합쳐_반환한다() {
+		TrainingCategory firstCategory = saveCategory(1);
+		Topic first = saveTopic(firstCategory, 1);
+		Curriculum firstCurriculum = saveCurriculum(first, 1, false);
+		saveLesson(firstCurriculum);
+		TrainingCategory laterCategory = saveCategory(2);
+		Topic later = saveTopic(laterCategory, 1);
+		Curriculum laterSecond = saveCurriculum(later, 2, false);
+		saveLesson(laterSecond);
+		Curriculum laterFirst = saveCurriculum(later, 1, false);
+		saveLesson(laterFirst);
+		flushAndClear();
+
+		PlanPreparationResult result = finder.findInRequestOrder(List.of(later.getId(), first.getId()));
+
+		assertThat(result.curriculumIds())
+				.containsExactly(laterFirst.getId(), laterSecond.getId(), firstCurriculum.getId());
+	}
+
+	@Test
+	void 요청_순서로_조회할_때_없는_토픽이_있으면_거절한다() {
+		Topic topic = saveTopic(saveCategory(1), 1);
+		saveLesson(saveCurriculum(topic, 1, false));
+		flushAndClear();
+
+		assertThatThrownBy(() -> finder.findInRequestOrder(List.of(topic.getId(), Long.MAX_VALUE)))
+				.isInstanceOf(TopicNotFoundException.class);
+	}
+
+	@Test
+	void 요청_순서로_조회할_때_레슨이_없는_커리큘럼이_있으면_거절한다() {
+		Topic topic = saveTopic(saveCategory(1), 1);
+		saveLesson(saveCurriculum(topic, 1, false));
+		saveCurriculum(topic, 2, false);
+		flushAndClear();
+
+		assertThatThrownBy(() -> finder.findInRequestOrder(List.of(topic.getId())))
+				.isInstanceOf(IllegalStateException.class);
+	}
+
 	private TrainingCategory saveCategory(int order) {
 		return categoryRepository.save(TrainingCategoryFixture.create("교육 " + order, order, null, null));
 	}
