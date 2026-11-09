@@ -86,7 +86,7 @@ public class PlanRegisterService implements PlanRegister {
 		AiPlanGenerateRequest generateRequest = new AiPlanGenerateRequest(dog, generationDate,
 				request.dailyMinutes(), request.daysPerWeek(), request.expectation(), candidates.curriculums());
 		AiPlanGenerateResult generated = aiPlanGenerator.generate(generateRequest);
-		PlanPreparationResult preparation = preparationFinder.find(generated.topicIds());
+		PlanPreparationResult preparation = preparationFinder.findInRequestOrder(generated.topicIds());
 		AiPlanCreateCommand command = new AiPlanCreateCommand(userId, dog.id(), dog.name(), generated.goal(),
 				request.dailyMinutes(), request.daysPerWeek(), request.expectation());
 		Plan plan = Plan.createAiPlan(command, preparation.curriculumIds());

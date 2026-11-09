@@ -110,9 +110,11 @@ class PlanRegisterAiTest {
 		jdbc.update("DELETE FROM plan_curriculums WHERE plan_id IN (SELECT id FROM plans WHERE user_id = ?)", USER_ID);
 		jdbc.update("DELETE FROM plans WHERE user_id = ?", USER_ID);
 		jdbc.update("DELETE FROM lesson_progress WHERE user_id = ?", USER_ID);
-		jdbc.update("DELETE FROM lessons WHERE curriculum_id IN (SELECT id FROM curriculums WHERE topic_id = ?)", topicId);
-		jdbc.update("DELETE FROM curriculums WHERE topic_id = ?", topicId);
-		jdbc.update("DELETE FROM topics WHERE id = ?", topicId);
+		jdbc.update("DELETE FROM lessons WHERE curriculum_id IN (SELECT c.id FROM curriculums c JOIN topics t "
+				+ "ON c.topic_id = t.id WHERE t.training_category_id = ?)", categoryId);
+		jdbc.update("DELETE FROM curriculums WHERE topic_id IN (SELECT id FROM topics WHERE training_category_id = ?)",
+				categoryId);
+		jdbc.update("DELETE FROM topics WHERE training_category_id = ?", categoryId);
 		jdbc.update("DELETE FROM training_categories WHERE id = ?", categoryId);
 		jdbc.update("DELETE FROM dogs WHERE user_id = ?", USER_ID);
 	}
@@ -154,6 +156,31 @@ class PlanRegisterAiTest {
 		assertActivePlan(created.getId());
 		assertThat(jdbc.queryForObject("SELECT sum(completed_count) FROM lesson_progress WHERE user_id = ?", Long.class, USER_ID))
 				.isEqualTo(2L);
+	}
+
+	@Test
+	void AI가_반환한_토픽_순서대로_커리큘럼을_저장한다() {
+		Curriculum earlierCurriculum = new TransactionTemplate(transactionManager).execute(status -> {
+			TrainingCategory category = entityManager.find(TrainingCategory.class, categoryId);
+			Topic earlierTopic = TopicFixture.create(category, "앉아", 0, "", "", "");
+			entityManager.persist(earlierTopic);
+			Curriculum curriculum = CurriculumFixture.create(earlierTopic, "앉아 1", 1, "", "연습");
+			entityManager.persist(curriculum);
+			entityManager.persist(LessonFixture.create(curriculum, "레슨", 1, 5));
+			return curriculum;
+		});
+		Long earlierTopicId = earlierCurriculum.getTopic().getId();
+		given(generator.generate(any())).willReturn(
+				new AiPlanGenerateResult(List.of(topicId, earlierTopicId), "차분히 기다리는 습관을 길러요"));
+
+		Plan created = register.createAiPlan(USER_ID, dogId, request);
+
+		List<Long> expected = new ArrayList<>(curriculumIds);
+		expected.add(earlierCurriculum.getId());
+		List<Long> saved = jdbc.queryForList(
+				"SELECT curriculum_id FROM plan_curriculums WHERE plan_id = ? ORDER BY sort_order", Long.class,
+				created.getId());
+		assertThat(saved).containsExactlyElementsOf(expected);
 	}
 
 	@Test
