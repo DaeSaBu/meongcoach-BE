@@ -79,7 +79,7 @@ class QuickTopicFinderTest {
 		List<QuickTopicResult> result = finder.find(USER_ID, dogId);
 
 		assertThat(result).hasSize(5);
-		assertThat(result).extracting(QuickTopicResult::role).containsOnly(QuickTopicRole.NEW);
+		assertThat(result).extracting(QuickTopicResult::role).containsOnly(QuickTopicRole.NOT_STARTED);
 	}
 
 	@Test
@@ -122,7 +122,7 @@ class QuickTopicFinderTest {
 
 		List<QuickTopicResult> result = finder.find(USER_ID, dogId);
 
-		assertThat(result).extracting(QuickTopicResult::role).containsOnly(QuickTopicRole.NEW);
+		assertThat(result).extracting(QuickTopicResult::role).containsOnly(QuickTopicRole.NOT_STARTED);
 		assertThat(topicIds(result)).doesNotContainAnyElementsOf(EARLY_TOPIC_IDS);
 	}
 
@@ -149,7 +149,7 @@ class QuickTopicFinderTest {
 		List<QuickTopicResult> result = finder.find(USER_ID, dogId);
 
 		assertThat(result.getFirst().topic().id()).isEqualTo(1101L);
-		assertThat(result.getFirst().role()).isEqualTo(QuickTopicRole.CONTINUE);
+		assertThat(result.getFirst().role()).isEqualTo(QuickTopicRole.IN_PROGRESS);
 		assertThat(topicIds(result)).doesNotContain(1102L, 1201L, 1303L);
 		assertThat(result).allSatisfy(item -> assertThat(item.topic().thumbnailUrl()).isNotBlank());
 	}
@@ -162,7 +162,7 @@ class QuickTopicFinderTest {
 		List<QuickTopicResult> result = finder.find(USER_ID, dogId);
 
 		assertThat(result).hasSize(5);
-		assertThat(result).extracting(QuickTopicResult::role).containsOnly(QuickTopicRole.NEW);
+		assertThat(result).extracting(QuickTopicResult::role).containsOnly(QuickTopicRole.NOT_STARTED);
 	}
 
 	@Test
@@ -176,10 +176,10 @@ class QuickTopicFinderTest {
 		List<QuickTopicResult> result = finder.find(USER_ID, dogId);
 
 		assertThat(result.getFirst().topic().id()).isEqualTo(1102L);
-		assertThat(result.getFirst().role()).isEqualTo(QuickTopicRole.CONTINUE);
+		assertThat(result.getFirst().role()).isEqualTo(QuickTopicRole.IN_PROGRESS);
 		assertThat(result.getFirst().topic().completedLessons()).isEqualTo(1);
 		assertThat(result.subList(1, result.size())).extracting(QuickTopicResult::role)
-				.containsOnly(QuickTopicRole.NEW);
+				.containsOnly(QuickTopicRole.NOT_STARTED);
 		assertThat(topicIds(result)).doesNotContain(1101L, 1104L);
 		assertThat(result).hasSize(5);
 	}
@@ -194,7 +194,7 @@ class QuickTopicFinderTest {
 		List<QuickTopicResult> result = finder.find(USER_ID, dogId);
 
 		assertThat(result.getFirst().topic().id()).isEqualTo(1101L);
-		assertThat(result.getFirst().role()).isEqualTo(QuickTopicRole.CONTINUE);
+		assertThat(result.getFirst().role()).isEqualTo(QuickTopicRole.IN_PROGRESS);
 	}
 
 	@Test
@@ -206,7 +206,7 @@ class QuickTopicFinderTest {
 		List<QuickTopicResult> result = finder.find(USER_ID, dogId);
 
 		assertThat(result).hasSize(5);
-		assertThat(result).extracting(QuickTopicResult::role).containsOnly(QuickTopicRole.NEW);
+		assertThat(result).extracting(QuickTopicResult::role).containsOnly(QuickTopicRole.NOT_STARTED);
 		assertThat(topicIds(result)).doesNotContain(1101L, 1102L);
 		assertThat(result).allSatisfy(item -> assertThat(item.topic().completedLessons()).isZero());
 	}

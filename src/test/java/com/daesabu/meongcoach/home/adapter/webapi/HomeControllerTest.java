@@ -46,17 +46,17 @@ class HomeControllerTest {
 				"https://cdn.test/1102.jpg", 2L, "주니어 교육", 3, 6, 3, 110202L, LocalDateTime.of(2026, 11, 7, 21, 30));
 		TopicProgressResult fresh = new TopicProgressResult(1303L, "사람 사회화", "낯선 사람과 친해져요", "https://cdn.test/icon.png",
 				null, 15L, "퍼피 교육", 2, 4, 0, 130301L, null);
-		given(quickTopicFinder.find(42L, 7L)).willReturn(List.of(new QuickTopicResult(continued, QuickTopicRole.CONTINUE),
-				new QuickTopicResult(fresh, QuickTopicRole.NEW)));
+		given(quickTopicFinder.find(42L, 7L)).willReturn(List.of(new QuickTopicResult(continued, QuickTopicRole.IN_PROGRESS),
+				new QuickTopicResult(fresh, QuickTopicRole.NOT_STARTED)));
 
 		mockMvc.perform(get("/api/home/quick-topics").queryParam("dogId", "7").principal(CURRENT_USER)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.topics[0].topicId").value(1102))
-				.andExpect(jsonPath("$.topics[0].role").value("CONTINUE"))
+				.andExpect(jsonPath("$.topics[0].role").value("IN_PROGRESS"))
 				.andExpect(jsonPath("$.topics[0].nextCurriculumId").value(110202))
 				.andExpect(jsonPath("$.topics[1].thumbnailUrl").value(nullValue()))
-				.andExpect(jsonPath("$.topics[1].role").value("NEW"))
+				.andExpect(jsonPath("$.topics[1].role").value("NOT_STARTED"))
 				.andDo(document("home/quick-topics",
 						queryParameters(parameterWithName("dogId").description("본인 소유 강아지 ID")),
 						responseFields(
@@ -69,7 +69,7 @@ class HomeControllerTest {
 								fieldWithPath("topics[].thumbnailUrl").type(JsonFieldType.STRING).optional()
 										.description("카드 전면 사진 URL. 등록 전이면 null"),
 								fieldWithPath("topics[].role").description(
-										"CONTINUE(진행 중인 토픽 이어서), NEW(시작하지 않은 토픽)"),
+										"IN_PROGRESS(진행 중인 토픽, 첫 칸 이어서), NOT_STARTED(시작하지 않은 토픽, 새로 도전)"),
 								fieldWithPath("topics[].totalLessons").description("토픽 전체 레슨 수"),
 								fieldWithPath("topics[].completedLessons").description("회원이 완료한 레슨 수"),
 								fieldWithPath("topics[].nextCurriculumId").description(

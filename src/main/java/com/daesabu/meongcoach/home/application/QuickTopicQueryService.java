@@ -46,12 +46,12 @@ public class QuickTopicQueryService implements QuickTopicFinder {
 		boolean older = isOlder(dog.birthDate(), today);
 		List<TopicProgressResult> visible = topicProgressFinder.findAll(userId).stream()
 				.filter(this::hasThumbnail)
-				.filter(topic -> !older || topic.categorySortOrder() >= properties.olderDogMinCategoryOrder())
+				.filter(topic -> !older || topic.categorySortOrder() >= properties.minOrder())
 				.toList();
 		Set<Long> planTopicIds = Set.copyOf(currentPlanFinder.findActiveTopicIds(userId, dogId));
 		List<QuickTopicResult> result = new ArrayList<>();
 		findContinue(visible, planTopicIds)
-				.ifPresent(topic -> result.add(new QuickTopicResult(topic, QuickTopicRole.CONTINUE)));
+				.ifPresent(topic -> result.add(new QuickTopicResult(topic, QuickTopicRole.IN_PROGRESS)));
 		List<TopicProgressResult> fresh = new ArrayList<>(visible.stream()
 				.filter(topic -> !topic.isStarted())
 				.filter(topic -> !planTopicIds.contains(topic.id()))
@@ -59,7 +59,7 @@ public class QuickTopicQueryService implements QuickTopicFinder {
 		Collections.shuffle(fresh, new Random(Objects.hash(userId, today)));
 		fresh.stream()
 				.limit(LIMIT - result.size())
-				.forEach(topic -> result.add(new QuickTopicResult(topic, QuickTopicRole.NEW)));
+				.forEach(topic -> result.add(new QuickTopicResult(topic, QuickTopicRole.NOT_STARTED)));
 		return result;
 	}
 
@@ -71,7 +71,7 @@ public class QuickTopicQueryService implements QuickTopicFinder {
 		if (birthDate == null) {
 			return false;
 		}
-		return ChronoUnit.MONTHS.between(birthDate, today) >= properties.olderDogMonths();
+		return ChronoUnit.MONTHS.between(birthDate, today) >= properties.months();
 	}
 
 	private Optional<TopicProgressResult> findContinue(List<TopicProgressResult> topics, Set<Long> planTopicIds) {

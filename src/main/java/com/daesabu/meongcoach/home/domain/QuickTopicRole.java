@@ -1,6 +1,6 @@
 package com.daesabu.meongcoach.home.domain;
 
 public enum QuickTopicRole {
-	CONTINUE,
-	NEW
+	IN_PROGRESS,
+	NOT_STARTED
 }
