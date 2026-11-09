@@ -43,9 +43,9 @@ class HomeControllerTest {
 	@Test
 	void 강아지에게_보여_줄_바로_훈련_토픽을_반환한다() throws Exception {
 		TopicProgressResult continued = new TopicProgressResult(1102L, "이리와", "부르면 달려와요", "https://cdn.test/icon.png",
-				"https://cdn.test/1102.jpg", 11L, "기본 훈련", 6, 3, 110202L, LocalDateTime.of(2026, 11, 7, 21, 30));
+				"https://cdn.test/1102.jpg", 2L, "주니어 교육", 3, 6, 3, 110202L, LocalDateTime.of(2026, 11, 7, 21, 30));
 		TopicProgressResult fresh = new TopicProgressResult(1303L, "사람 사회화", "낯선 사람과 친해져요", "https://cdn.test/icon.png",
-				null, 13L, "사회화", 4, 0, 130301L, null);
+				null, 15L, "퍼피 교육", 2, 4, 0, 130301L, null);
 		given(quickTopicFinder.find(42L, 7L)).willReturn(List.of(new QuickTopicResult(continued, QuickTopicRole.CONTINUE),
 				new QuickTopicResult(fresh, QuickTopicRole.NEW)));
 
@@ -69,7 +69,7 @@ class HomeControllerTest {
 								fieldWithPath("topics[].thumbnailUrl").type(JsonFieldType.STRING).optional()
 										.description("카드 전면 사진 URL. 등록 전이면 null"),
 								fieldWithPath("topics[].role").description(
-										"CONTINUE(진행 중인 토픽 이어서), NEW(시작하지 않은 토픽), STARTER(학습 기록이 없는 회원의 기본 토픽)"),
+										"CONTINUE(진행 중인 토픽 이어서), NEW(시작하지 않은 토픽)"),
 								fieldWithPath("topics[].totalLessons").description("토픽 전체 레슨 수"),
 								fieldWithPath("topics[].completedLessons").description("회원이 완료한 레슨 수"),
 								fieldWithPath("topics[].nextCurriculumId").description(

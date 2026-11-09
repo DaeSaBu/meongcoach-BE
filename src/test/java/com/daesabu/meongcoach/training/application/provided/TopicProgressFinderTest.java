@@ -52,6 +52,8 @@ class TopicProgressFinderTest {
 		TopicProgressResult head = result.getFirst();
 		assertThat(head.categoryId()).isEqualTo(first.getId());
 		assertThat(head.categoryTitle()).isEqualTo("기본기");
+		assertThat(head.categorySortOrder()).isEqualTo(1);
+		assertThat(result.getLast().categorySortOrder()).isEqualTo(2);
 		assertThat(head.thumbnailUrl()).isEqualTo("https://cdn.test/1601.jpg");
 		assertThat(result.get(1).thumbnailUrl()).isNull();
 	}
