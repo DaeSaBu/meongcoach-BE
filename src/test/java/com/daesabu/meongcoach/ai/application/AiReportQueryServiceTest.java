@@ -211,7 +211,7 @@ class AiReportQueryServiceTest {
 	}
 
 	private static AiAnalysis uploadingAnalysis(Long userId, String videoObjectKey, Instant uploadExpiresAt) {
-		return AiAnalysis.uploading(new AiAnalysisUploadCommand(userId, videoObjectKey, uploadExpiresAt));
+		return AiAnalysis.uploading(new AiAnalysisUploadCommand(userId, videoObjectKey, uploadExpiresAt, null));
 	}
 
 	private static AiAnalysis startedAnalysis(Long userId, String videoObjectKey) {

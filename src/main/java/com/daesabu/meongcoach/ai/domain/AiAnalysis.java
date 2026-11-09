@@ -24,6 +24,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class AiAnalysis extends BaseTimeEntity {
 
+	public static final int CONTEXT_MAX_LENGTH = 500;
+
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
@@ -40,6 +42,9 @@ public class AiAnalysis extends BaseTimeEntity {
 
 	private Instant uploadExpiresAt;
 
+	@Column(length = CONTEXT_MAX_LENGTH)
+	private String context;
+
 	@OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
 	@JoinColumn(name = "report_id", unique = true)
 	private AiReport report;
@@ -49,8 +54,16 @@ public class AiAnalysis extends BaseTimeEntity {
 		analysis.userId = command.userId();
 		analysis.videoObjectKey = command.videoObjectKey();
 		analysis.uploadExpiresAt = command.uploadExpiresAt();
+		analysis.context = normalizeContext(command.context());
 		analysis.status = AiAnalysisStatus.UPLOADING;
 		return analysis;
+	}
+
+	private static String normalizeContext(String context) {
+		if (context == null || context.isBlank()) {
+			return null;
+		}
+		return context.strip();
 	}
 
 	public boolean isUploading() {

@@ -4,10 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 
+import com.daesabu.meongcoach.community.domain.exception.DuplicatePostMediaException;
 import com.daesabu.meongcoach.community.domain.exception.InvalidPostContentException;
 import com.daesabu.meongcoach.community.domain.exception.PostMediaCountExceededException;
-import java.util.Collections;
 import java.util.List;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
@@ -17,6 +18,69 @@ class PostTest {
 	private static final String CONTENT = "오늘 앉아 훈련 성공!";
 	private static final String IMAGE_URL = "https://media.meongcoach.com/images/community/42/photo.jpg";
 	private static final String VIDEO_URL = "https://media.meongcoach.com/videos/community/42/clip.mp4";
+
+	@Test
+	void 같은_미디어를_중복해서_등록할_수_없다() {
+		PostMediaCommand command = new PostMediaCommand(PostMediaType.IMAGE, IMAGE_URL);
+
+		assertThatThrownBy(() -> Post.register(USER_ID,
+				new PostRegisterCommand(CONTENT, null, List.of(command, command))))
+				.isInstanceOf(DuplicatePostMediaException.class);
+	}
+
+	@Test
+	void 중복_미디어로_수정에_실패하면_기존_상태가_유지된다() {
+		Post post = Post.register(USER_ID, new PostRegisterCommand(CONTENT, null, images(1)));
+		List<PostMedia> original = post.getMedia();
+		PostMediaCommand command = new PostMediaCommand(PostMediaType.VIDEO, VIDEO_URL);
+
+		assertThatThrownBy(() -> post.update(new PostUpdateCommand("수정", null, List.of(command, command))))
+				.isInstanceOf(DuplicatePostMediaException.class);
+
+		assertThat(post.getMedia()).containsExactlyElementsOf(original);
+		assertThat(original.getFirst().getDeletedAt()).isNull();
+		assertThat(post.getContent()).isEqualTo(new PostContent(CONTENT));
+	}
+
+	@Test
+	void 잘못된_본문으로_수정에_실패하면_미디어가_유지된다() {
+		Post post = Post.register(USER_ID, new PostRegisterCommand(CONTENT, null, images(1)));
+		List<PostMedia> original = post.getMedia();
+
+		assertThatThrownBy(() -> post.update(new PostUpdateCommand(" ", null, List.of())))
+				.isInstanceOf(InvalidPostContentException.class);
+
+		assertThat(post.getMedia()).containsExactlyElementsOf(original);
+		assertThat(original.getFirst().getDeletedAt()).isNull();
+	}
+
+	@Test
+	void 미디어_URL이_null이면_수정에_실패하고_기존_상태가_유지된다() {
+		Post post = Post.register(USER_ID, new PostRegisterCommand(CONTENT, null, images(1)));
+		List<PostMedia> original = post.getMedia();
+
+		assertThatThrownBy(() -> post.update(new PostUpdateCommand("수정", null,
+				List.of(new PostMediaCommand(PostMediaType.VIDEO, null)))))
+				.isInstanceOf(NullPointerException.class);
+
+		assertThat(post.getMedia()).containsExactlyElementsOf(original);
+		assertThat(original.getFirst().getDeletedAt()).isNull();
+		assertThat(post.getContent()).isEqualTo(new PostContent(CONTENT));
+	}
+
+	@Test
+	void 미디어_종류가_null이면_수정에_실패하고_기존_상태가_유지된다() {
+		Post post = Post.register(USER_ID, new PostRegisterCommand(CONTENT, null, images(1)));
+		List<PostMedia> original = post.getMedia();
+
+		assertThatThrownBy(() -> post.update(new PostUpdateCommand("수정", null,
+				List.of(new PostMediaCommand(null, VIDEO_URL)))))
+				.isInstanceOf(NullPointerException.class);
+
+		assertThat(post.getMedia()).containsExactlyElementsOf(original);
+		assertThat(original.getFirst().getDeletedAt()).isNull();
+		assertThat(post.getContent()).isEqualTo(new PostContent(CONTENT));
+	}
 
 	@Test
 	void 작성하면_작성자와_본문이_채워진다() {
@@ -112,7 +176,7 @@ class PostTest {
 		Post post = Post.register(USER_ID, new PostRegisterCommand(CONTENT, null, images(2)));
 		MentionCommand mention = new MentionCommand(MentionTargetType.LESSON, 10L);
 
-		post.update(new PostUpdateCommand("수정한 본문", mention, videos(1)));
+		post.update(new PostUpdateCommand("수정한 본문", mention, List.of(new PostMediaCommand(PostMediaType.VIDEO, VIDEO_URL))));
 
 		assertThat(post.getContent()).isEqualTo(new PostContent("수정한 본문"));
 		assertThat(post.getMention().getTargetType()).isEqualTo(MentionTargetType.LESSON);
@@ -155,6 +219,77 @@ class PostTest {
 				.containsExactly(
 						tuple(PostMediaType.VIDEO, 0),
 						tuple(PostMediaType.IMAGE, 1));
+	}
+
+	@Test
+	void 수정에서_빠진_미디어는_조회에서_빠지고_삭제_시각이_기록된다() {
+		Post post = Post.register(USER_ID, new PostRegisterCommand(CONTENT, null, List.of(
+				new PostMediaCommand(PostMediaType.IMAGE, IMAGE_URL),
+				new PostMediaCommand(PostMediaType.VIDEO, VIDEO_URL))));
+		PostMedia image = post.getMedia().getFirst();
+
+		post.update(new PostUpdateCommand(CONTENT, null, List.of(new PostMediaCommand(PostMediaType.VIDEO, VIDEO_URL))));
+
+		assertThat(post.getMedia()).extracting(PostMedia::getUrl).containsExactly(VIDEO_URL);
+		assertThat(image.getDeletedAt()).isNotNull();
+	}
+
+	@Test
+	void 수정에서_다시_보낸_미디어는_같은_행을_유지하고_순서만_바뀐다() {
+		Post post = Post.register(USER_ID, new PostRegisterCommand(CONTENT, null, List.of(
+				new PostMediaCommand(PostMediaType.IMAGE, IMAGE_URL),
+				new PostMediaCommand(PostMediaType.VIDEO, VIDEO_URL))));
+		PostMedia image = post.getMedia().get(0);
+		PostMedia video = post.getMedia().get(1);
+
+		post.update(new PostUpdateCommand(CONTENT, null, List.of(
+				new PostMediaCommand(PostMediaType.VIDEO, VIDEO_URL),
+				new PostMediaCommand(PostMediaType.IMAGE, IMAGE_URL))));
+
+		assertThat(post.getMedia()).containsExactly(video, image);
+		assertThat(post.getMedia()).extracting(PostMedia::getSortOrder).containsExactly(0, 1);
+		assertThat(post.getMedia()).extracting(PostMedia::getDeletedAt).containsOnlyNulls();
+	}
+
+	@Test
+	void 삭제한_미디어를_다시_첨부하면_삭제_기록을_유지하고_새로_생성한다() {
+		PostMediaCommand command = new PostMediaCommand(PostMediaType.IMAGE, IMAGE_URL);
+		Post post = Post.register(USER_ID, new PostRegisterCommand(CONTENT, null, List.of(command)));
+		PostMedia deleted = post.getMedia().getFirst();
+		post.update(new PostUpdateCommand(CONTENT, null, List.of()));
+		var deletedAt = deleted.getDeletedAt();
+
+		post.update(new PostUpdateCommand(CONTENT, null, List.of(command)));
+		PostMedia added = post.getMedia().getFirst();
+		post.update(new PostUpdateCommand(CONTENT, null, List.of(command)));
+
+		assertThat(post.getMedia()).containsExactly(added);
+		assertThat(added).isNotSameAs(deleted);
+		assertThat(added.getUrl()).isEqualTo(IMAGE_URL);
+		assertThat(added.getDeletedAt()).isNull();
+		assertThat(deletedAt).isNotNull();
+		assertThat(deleted.getDeletedAt()).isEqualTo(deletedAt);
+	}
+
+	@Test
+	void 미디어를_추가하고_순서를_바꾸면_남은_미디어의_행과_삭제_기록이_유지된다() {
+		List<PostMediaCommand> images = images(3);
+		PostMediaCommand video = new PostMediaCommand(PostMediaType.VIDEO, VIDEO_URL);
+		Post post = Post.register(USER_ID, new PostRegisterCommand(CONTENT, null, images.subList(0, 2)));
+		PostMedia deleted = post.getMedia().get(0);
+		PostMedia retained = post.getMedia().get(1);
+
+		post.update(new PostUpdateCommand(CONTENT, null, List.of(video, images.get(1), images.get(2))));
+		PostMedia addedVideo = post.getMedia().get(0);
+		PostMedia addedImage = post.getMedia().get(2);
+		var deletedAt = deleted.getDeletedAt();
+		post.update(new PostUpdateCommand(CONTENT, null, List.of(images.get(2), images.get(1), video)));
+
+		assertThat(post.getMedia()).containsExactly(addedImage, retained, addedVideo);
+		assertThat(post.getMedia()).extracting(PostMedia::getSortOrder).containsExactly(0, 1, 2);
+		assertThat(post.getMedia()).extracting(PostMedia::getDeletedAt).containsOnlyNulls();
+		assertThat(deletedAt).isNotNull();
+		assertThat(deleted.getDeletedAt()).isEqualTo(deletedAt);
 	}
 
 	@Test
@@ -222,10 +357,14 @@ class PostTest {
 	}
 
 	private List<PostMediaCommand> images(int count) {
-		return Collections.nCopies(count, new PostMediaCommand(PostMediaType.IMAGE, IMAGE_URL));
+		return IntStream.range(0, count)
+				.mapToObj(index -> new PostMediaCommand(PostMediaType.IMAGE, IMAGE_URL.replace("photo", "photo-" + index)))
+				.toList();
 	}
 
 	private List<PostMediaCommand> videos(int count) {
-		return Collections.nCopies(count, new PostMediaCommand(PostMediaType.VIDEO, VIDEO_URL));
+		return IntStream.range(0, count)
+				.mapToObj(index -> new PostMediaCommand(PostMediaType.VIDEO, VIDEO_URL.replace("clip", "clip-" + index)))
+				.toList();
 	}
 }

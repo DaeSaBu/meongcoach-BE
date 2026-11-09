@@ -22,6 +22,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.daesabu.meongcoach.dog.application.provided.DogProfileDeleter;
 import com.daesabu.meongcoach.dog.application.provided.DogProfileFinder;
+import com.daesabu.meongcoach.dog.application.provided.DogProfileImageUploadUrlIssuer;
 import com.daesabu.meongcoach.dog.application.provided.DogRegister;
 import com.daesabu.meongcoach.dog.application.provided.dto.DogProfileUpdateRequest;
 import com.daesabu.meongcoach.dog.application.provided.dto.DogRegisterRequest;
@@ -35,6 +36,8 @@ import com.daesabu.meongcoach.dog.domain.exception.SelectedDogNotDeletableExcept
 import com.daesabu.meongcoach.dog.domain.shared.Breed;
 import com.daesabu.meongcoach.dog.domain.shared.Personality;
 import com.daesabu.meongcoach.dog.domain.shared.RegisteredBreed;
+import com.daesabu.meongcoach.media.application.provided.dto.MediaUploadUrlResult;
+import com.daesabu.meongcoach.media.domain.exception.UnsupportedImageTypeException;
 import java.math.BigDecimal;
 import java.security.Principal;
 import java.time.LocalDate;
@@ -61,6 +64,12 @@ class DogControllerTest {
 	private static final String EXPECTATION = "보호자와 즐겁게 교육받고 싶어요.";
 
 	private static final String NEW_IMAGE_URL = "https://images.test.meongcoach.com/images/dog-profile/42/b.jpg";
+	private static final String UPLOAD_URL = "https://upload.test.meongcoach.com/images/dog-profile/42/b.jpg?signature=x";
+	private static final String IMAGE_UPLOAD_URL_BODY = """
+			{
+			  "contentType": "image/jpeg"
+			}
+			""";
 	private static final String NEW_EXPECTATION = "산책 예절을 배우고 싶어요.";
 	private static final String REGISTER_BODY = """
 			{
@@ -98,6 +107,9 @@ class DogControllerTest {
 
 	@MockitoBean
 	private DogProfileDeleter dogProfileDeleter;
+
+	@MockitoBean
+	private DogProfileImageUploadUrlIssuer dogProfileImageUploadUrlIssuer;
 
 	@Test
 	void 강아지를_등록하면_201과_등록된_프로필을_반환한다() throws Exception {
@@ -554,6 +566,70 @@ class DogControllerTest {
 		mockMvc.perform(get("/api/dogs/profile/image"))
 				.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+	}
+
+	@Test
+	void 강아지_프로필_이미지_업로드_URL을_발급한다() throws Exception {
+		given(dogProfileImageUploadUrlIssuer.issue(42L, "image/jpeg"))
+				.willReturn(new MediaUploadUrlResult(UPLOAD_URL, NEW_IMAGE_URL, "images/dog-profile/42/b.jpg", 600L));
+
+		mockMvc.perform(post("/api/dogs/profile/image/presigned-urls")
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(IMAGE_UPLOAD_URL_BODY))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.uploadUrl").value(UPLOAD_URL))
+				.andExpect(jsonPath("$.publicUrl").value(NEW_IMAGE_URL))
+				.andExpect(jsonPath("$.expiresInSeconds").value(600))
+				.andExpect(jsonPath("$.objectKey").doesNotExist())
+				.andDo(document("dog/profile-image-upload-url",
+						requestFields(
+								fieldWithPath("contentType").description(
+										"필수 입력. 업로드할 이미지의 Content-Type. `image/jpeg`, `image/png`, `image/webp`만 지원")
+						),
+						responseFields(
+								fieldWithPath("uploadUrl").description(
+										"이미지를 PUT할 presigned URL. 요청한 Content-Type과 동일하게 업로드해야 한다"),
+								fieldWithPath("publicUrl").description(
+										"업로드 완료 후 이미지가 공개되는 URL. 강아지 등록·수정, 온보딩 완료 요청에 이 값을 담는다"),
+								fieldWithPath("expiresInSeconds").description("uploadUrl의 유효 시간(초)")
+						)
+				));
+	}
+
+	@Test
+	void 지원하지_않는_이미지_형식이면_업로드_URL_발급은_400을_반환한다() throws Exception {
+		given(dogProfileImageUploadUrlIssuer.issue(42L, "image/gif")).willThrow(new UnsupportedImageTypeException("image/gif"));
+
+		mockMvc.perform(post("/api/dogs/profile/image/presigned-urls")
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(IMAGE_UPLOAD_URL_BODY.replace("image/jpeg", "image/gif")))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("MEDIA_UNSUPPORTED_IMAGE_TYPE"))
+				.andDo(document("dog/profile-image-upload-url-error",
+						responseFields(
+								fieldWithPath("title").description("HTTP 상태 이름"),
+								fieldWithPath("status").description("HTTP 상태 코드"),
+								fieldWithPath("detail").description("사람이 읽을 수 있는 에러 설명"),
+								fieldWithPath("instance").description("에러가 발생한 요청 경로"),
+								fieldWithPath("code").description("클라이언트 분기용 에러 코드"),
+								fieldWithPath("timestamp").description("에러 발생 시각(UTC)")
+						)
+				));
+	}
+
+	@Test
+	void 이미지_contentType이_비어_있으면_업로드_URL_발급은_검증에_실패한다() throws Exception {
+		mockMvc.perform(post("/api/dogs/profile/image/presigned-urls")
+						.principal(CURRENT_USER)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(IMAGE_UPLOAD_URL_BODY.replace("image/jpeg", "")))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
+				.andExpect(jsonPath("$.errors[0].field").value("contentType"));
 	}
 
 	@Test

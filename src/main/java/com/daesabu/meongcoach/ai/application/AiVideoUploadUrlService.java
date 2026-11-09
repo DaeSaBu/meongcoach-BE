@@ -1,8 +1,11 @@
 package com.daesabu.meongcoach.ai.application;
 
+import com.daesabu.meongcoach.ai.application.provided.AiAnalysisRegister;
+import com.daesabu.meongcoach.ai.application.provided.AiAnalysisRegisterResult;
 import com.daesabu.meongcoach.ai.application.provided.AiTrialFinder;
 import com.daesabu.meongcoach.ai.application.provided.AiVideoUploadUrlIssuer;
 import com.daesabu.meongcoach.ai.application.provided.AiVideoUploadUrlResult;
+import com.daesabu.meongcoach.ai.application.provided.dto.AiAnalysisRegisterRequest;
 import com.daesabu.meongcoach.ai.application.provided.dto.AiVideoUploadUrlRequest;
 import com.daesabu.meongcoach.ai.application.required.AiAnalysisRepository;
 import com.daesabu.meongcoach.ai.domain.AiAnalysis;
@@ -23,7 +26,7 @@ import org.springframework.validation.annotation.Validated;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 @Validated
-public class AiVideoUploadUrlService implements AiVideoUploadUrlIssuer {
+public class AiVideoUploadUrlService implements AiVideoUploadUrlIssuer, AiAnalysisRegister {
 
 	private final MediaUploadUrlIssuer mediaUploadUrlIssuer;
 	private final AiTrialFinder aiTrialFinder;
@@ -32,19 +35,41 @@ public class AiVideoUploadUrlService implements AiVideoUploadUrlIssuer {
 	@Override
 	@Transactional
 	public AiVideoUploadUrlResult issue(Long userId, AiVideoUploadUrlRequest request) {
+		IssuedUpload issued = issueUpload(userId, request.contentType(), request.fileSizeBytes(),
+				request.durationSeconds(), null);
+		MediaUploadUrlResult upload = issued.upload();
+		return new AiVideoUploadUrlResult(issued.analysis().getId(), upload.uploadUrl(), upload.publicUrl(),
+				upload.objectKey(), upload.expiresInSeconds());
+	}
+
+	@Override
+	@Transactional
+	public AiAnalysisRegisterResult register(Long userId, AiAnalysisRegisterRequest request) {
+		IssuedUpload issued = issueUpload(userId, request.contentType(), request.fileSizeBytes(),
+				request.durationSeconds(), request.context());
+		MediaUploadUrlResult upload = issued.upload();
+		return new AiAnalysisRegisterResult(issued.analysis().getId(), upload.uploadUrl(), upload.objectKey(),
+				upload.expiresInSeconds());
+	}
+
+	private IssuedUpload issueUpload(Long userId, String contentType, Long fileSizeBytes, Long durationSeconds,
+			String context) {
 		AiTrial trial = aiTrialFinder.findTrial(userId);
 		if (!trial.isAvailable()) {
 			throw new AiReportTrialExceededException();
 		}
-		AiVideo.validateDuration(request.durationSeconds());
+		AiVideo.validateDuration(durationSeconds);
 
-		MediaUploadRequest uploadRequest = MediaUploadRequest.video(AiVideo.SCOPE, userId, request.contentType(),
-				request.fileSizeBytes(), AiVideo.MAX_FILE_SIZE_BYTES);
-		MediaUploadUrlResult result = mediaUploadUrlIssuer.issueToGcs(uploadRequest);
-		Instant uploadExpiresAt = Instant.now().plusSeconds(result.expiresInSeconds());
-		AiAnalysis analysis = aiAnalysisRepository.save(
-				AiAnalysis.uploading(new AiAnalysisUploadCommand(userId, result.objectKey(), uploadExpiresAt)));
-		return new AiVideoUploadUrlResult(analysis.getId(), result.uploadUrl(), result.publicUrl(), result.objectKey(),
-				result.expiresInSeconds());
+		MediaUploadRequest uploadRequest = MediaUploadRequest.video(AiVideo.SCOPE, userId, contentType,
+				fileSizeBytes, AiVideo.MAX_FILE_SIZE_BYTES);
+		MediaUploadUrlResult upload = mediaUploadUrlIssuer.issueToGcs(uploadRequest);
+		Instant uploadExpiresAt = Instant.now().plusSeconds(upload.expiresInSeconds());
+		AiAnalysisUploadCommand command =
+				new AiAnalysisUploadCommand(userId, upload.objectKey(), uploadExpiresAt, context);
+		AiAnalysis analysis = aiAnalysisRepository.save(AiAnalysis.uploading(command));
+		return new IssuedUpload(analysis, upload);
+	}
+
+	private record IssuedUpload(AiAnalysis analysis, MediaUploadUrlResult upload) {
 	}
 }

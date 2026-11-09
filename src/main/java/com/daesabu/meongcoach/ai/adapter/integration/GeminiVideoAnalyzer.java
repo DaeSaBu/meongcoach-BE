@@ -39,6 +39,8 @@ public class GeminiVideoAnalyzer implements VideoAnalyzer {
 	private static final String USER_PROMPT_PATH = "prompts/video-analysis/user.md";
 	private static final String SCHEMA_PATH = "prompts/video-analysis/schema.json";
 	private static final String TOPICS_PLACEHOLDER = "{{topics}}";
+	private static final String CONTEXT_PLACEHOLDER = "{{context}}";
+	private static final String EMPTY_CONTEXT = "없음";
 	private static final String JSON_MIME_TYPE = "application/json";
 	private static final int CANDIDATE_COUNT = 1;
 
@@ -67,17 +69,22 @@ public class GeminiVideoAnalyzer implements VideoAnalyzer {
 				.temperature(properties.temperature())
 				.thinkingConfig(ThinkingConfig.builder().thinkingLevel(properties.thinkingLevel()))
 				.build();
-		if (!userPrompt.contains(TOPICS_PLACEHOLDER)) {
-			throw new IllegalStateException(
-					"사용자 프롬프트에 " + TOPICS_PLACEHOLDER + " 자리가 없습니다: " + USER_PROMPT_PATH);
+		requirePlaceholder(TOPICS_PLACEHOLDER);
+		requirePlaceholder(CONTEXT_PLACEHOLDER);
+	}
+
+	private void requirePlaceholder(String placeholder) {
+		if (!userPrompt.contains(placeholder)) {
+			throw new IllegalStateException("사용자 프롬프트에 " + placeholder + " 자리가 없습니다: " + USER_PROMPT_PATH);
 		}
 	}
 
 	@Override
-	public VideoAnalysisResult analyze(String videoUri) {
+	public VideoAnalysisResult analyze(String videoUri, String context) {
 		List<TopicResult> topics = topicFinder.findAllOrdered();
 		File video = registerOrThrow(videoUri);
-		String content = generateOrThrow(video, topics, videoUri);
+		String prompt = renderUserPrompt(topics, context);
+		String content = generateOrThrow(video, prompt, videoUri);
 
 		GeneratedReport generated = parseGenerated(content, videoUri);
 		AiReportContent reportContent = validateContent(generated.toContent(), topics, videoUri);
@@ -100,10 +107,10 @@ public class GeminiVideoAnalyzer implements VideoAnalyzer {
 		return files.getFirst();
 	}
 
-	private String generateOrThrow(File video, List<TopicResult> topics, String videoUri) {
+	private String generateOrThrow(File video, String prompt, String videoUri) {
 		GenerateContentResponse response;
 		try {
-			response = client.models.generateContent(properties.model(), userContent(video, topics), generateConfig);
+			response = client.models.generateContent(properties.model(), userContent(video, prompt), generateConfig);
 		}
 		catch (ApiException | GenAiIOException e) {
 			throw new VideoAnalysisFailedException("영상 분석 모델 호출에 실패했습니다: " + videoUri, e);
@@ -111,14 +118,14 @@ public class GeminiVideoAnalyzer implements VideoAnalyzer {
 		return extractText(response, videoUri);
 	}
 
-	private Content userContent(File video, List<TopicResult> topics) {
+	private Content userContent(File video, String prompt) {
 		Part videoPart = Part.builder()
 				.fileData(FileData.builder()
 						.fileUri(video.uri().orElseThrow())
 						.mimeType(video.mimeType().orElse(null)))
 				.videoMetadata(VideoMetadata.builder().fps(properties.videoFps()))
 				.build();
-		return Content.fromParts(videoPart, Part.fromText(renderUserPrompt(topics)));
+		return Content.fromParts(videoPart, Part.fromText(prompt));
 	}
 
 	private static String extractText(GenerateContentResponse response, String videoUri) {
@@ -168,11 +175,19 @@ public class GeminiVideoAnalyzer implements VideoAnalyzer {
 				"영상 분석 응답의 추천 교육 topicId가 교육 목록에 없습니다: " + unknownIds + ", " + videoUri);
 	}
 
-	private String renderUserPrompt(List<TopicResult> topics) {
+	private String renderUserPrompt(List<TopicResult> topics, String context) {
 		String topicLines = topics.stream()
 				.map(GeminiVideoAnalyzer::renderTopicLine)
 				.collect(Collectors.joining("\n"));
-		return userPrompt.replace(TOPICS_PLACEHOLDER, topicLines);
+		return userPrompt.replace(TOPICS_PLACEHOLDER, topicLines)
+				.replace(CONTEXT_PLACEHOLDER, renderContext(context));
+	}
+
+	private static String renderContext(String context) {
+		if (context == null || context.isBlank()) {
+			return EMPTY_CONTEXT;
+		}
+		return context.strip();
 	}
 
 	private static String renderTopicLine(TopicResult topic) {

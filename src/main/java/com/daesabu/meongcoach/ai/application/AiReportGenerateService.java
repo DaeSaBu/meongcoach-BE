@@ -58,7 +58,7 @@ public class AiReportGenerateService implements AiReportGenerator {
 
 		VideoAnalysisResult result;
 		try {
-			result = videoAnalyzer.analyze(videoUri);
+			result = videoAnalyzer.analyze(videoUri, analysis.getContext());
 		}
 		catch (VideoAnalysisFailedException e) {
 			log.error("영상 분석에 실패해 리포트 생성을 건너뛴다: {}", analysis.getVideoObjectKey(), e);
