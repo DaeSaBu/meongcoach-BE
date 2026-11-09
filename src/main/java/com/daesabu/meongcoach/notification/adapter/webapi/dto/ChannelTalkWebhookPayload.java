@@ -36,10 +36,11 @@ public record ChannelTalkWebhookPayload(String event, String type, Entity entity
 			return EMPTY_MESSAGE_BODY;
 		}
 		String message = entity.plainText().strip();
-		if (message.length() <= MAX_BODY_LENGTH) {
+		if (message.codePointCount(0, message.length()) <= MAX_BODY_LENGTH) {
 			return message;
 		}
-		return message.substring(0, MAX_BODY_LENGTH) + ELLIPSIS;
+		int endIndex = message.offsetByCodePoints(0, MAX_BODY_LENGTH);
+		return message.substring(0, endIndex) + ELLIPSIS;
 	}
 
 	private boolean isManagerReply() {
