@@ -16,6 +16,7 @@ import com.daesabu.meongcoach.home.application.provided.QuickTopicFinder;
 import com.daesabu.meongcoach.home.application.provided.dto.QuickTopicResult;
 import com.daesabu.meongcoach.home.domain.QuickTopicRole;
 import com.daesabu.meongcoach.training.application.provided.dto.TopicProgressResult;
+import com.daesabu.meongcoach.training.domain.shared.ProgressStatus;
 import java.security.Principal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -43,9 +44,9 @@ class HomeControllerTest {
 	@Test
 	void 강아지에게_보여_줄_바로_훈련_토픽을_반환한다() throws Exception {
 		TopicProgressResult continued = new TopicProgressResult(1102L, "이리와", "부르면 달려와요", "https://cdn.test/icon.png",
-				"https://cdn.test/1102.jpg", 2L, "주니어 교육", 3, 6, 3, 110202L, LocalDateTime.of(2026, 11, 7, 21, 30));
+				"https://cdn.test/1102.jpg", 2L, "주니어 교육", 3, 6, 3, ProgressStatus.IN_PROGRESS, 110202L, LocalDateTime.of(2026, 11, 7, 21, 30));
 		TopicProgressResult fresh = new TopicProgressResult(1303L, "사람 사회화", "낯선 사람과 친해져요", "https://cdn.test/icon.png",
-				null, 15L, "퍼피 교육", 2, 4, 0, 130301L, null);
+				null, 15L, "퍼피 교육", 2, 4, 0, ProgressStatus.NOT_STARTED, 130301L, null);
 		given(quickTopicFinder.find(42L, 7L)).willReturn(List.of(new QuickTopicResult(continued, QuickTopicRole.IN_PROGRESS),
 				new QuickTopicResult(fresh, QuickTopicRole.NOT_STARTED)));
 

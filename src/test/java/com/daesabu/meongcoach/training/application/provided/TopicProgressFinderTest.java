@@ -13,6 +13,7 @@ import com.daesabu.meongcoach.training.domain.Topic;
 import com.daesabu.meongcoach.training.domain.TopicFixture;
 import com.daesabu.meongcoach.training.domain.TrainingCategory;
 import com.daesabu.meongcoach.training.domain.TrainingCategoryFixture;
+import com.daesabu.meongcoach.training.domain.shared.ProgressStatus;
 import jakarta.persistence.EntityManager;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -75,6 +76,7 @@ class TopicProgressFinderTest {
 
 		assertThat(result.totalLessons()).isEqualTo(4);
 		assertThat(result.completedLessons()).isEqualTo(3);
+		assertThat(result.status()).isEqualTo(ProgressStatus.IN_PROGRESS);
 		assertThat(result.nextCurriculumId()).isEqualTo(next.getId());
 	}
 
