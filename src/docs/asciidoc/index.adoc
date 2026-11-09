@@ -1179,29 +1179,31 @@ operation::notification/internal-scheduled-dispatch-error[snippets='http-respons
 
 operation::notification/internal-event-dispatch[snippets='http-request,request-fields,http-response,response-fields']
 
+== 상담 (Support)
+
 === 채널톡 웹훅 — 채널톡 전용
 
-`POST /webhooks/channel-talk`은 앱이 아니라 채널톡이 호출합니다. JWT와 앱 헤더 대신 쿼리 파라미터 `token`이 서버 설정값(`CHANNEL_TALK_WEBHOOK_TOKEN`)과 같아야 하며,
+`POST /webhooks/channel-talk/support-replies`은 앱이 아니라 채널톡이 호출합니다. JWT와 앱 헤더 대신 쿼리 파라미터 `token`이 서버 설정값(`CHANNEL_TALK_WEBHOOK_TOKEN`)과 같아야 하며,
 없거나 값이 다르면 401(`UNAUTHORIZED`)을 반환합니다.
 
 상담 채팅(`userChat`)에서 운영자(`manager`)가 보낸 메시지이고 고객의 `memberId`가 양의 정수인 회원 ID 문자열이면,
 그 회원에게 문의 답변(`SUPPORT_REPLY`) 알림을 보냅니다. 그 밖의 이벤트는 아무것도 하지 않고 200을 반환합니다.
 
-operation::notification/channel-talk-webhook[snippets='http-request,query-parameters,request-fields,http-response']
+operation::support/channel-talk-webhook[snippets='http-request,query-parameters,request-fields,http-response']
 
 ==== 실패 응답
 
 본문이 JSON이 아니면 400을 반환합니다. 알림 발송이 실패하면 502(`NOTIFICATION_DELIVERY_FAILED`)를 반환합니다.
 
-operation::notification/channel-talk-webhook-error[snippets='http-response,response-fields']
+operation::support/channel-talk-webhook-error[snippets='http-response,response-fields']
 
 
 === 채널톡 상담 식별값
 
-link:{swagger-ui}#/Notification/notification-support-session[▶ Swagger에서 Try it out,window=swagger]
+link:{swagger-ui}#/Support/support-session[▶ Swagger에서 Try it out,window=swagger]
 
 로그인한 회원의 채널톡 식별자와 회원 해시를 반환합니다.
 
-operation::notification/support-session[snippets='http-request,http-response,response-fields']
+operation::support/session[snippets='http-request,http-response,response-fields']
 
-operation::notification/support-session-error[snippets='http-response,response-fields']
+operation::support/session-error[snippets='http-response,response-fields']

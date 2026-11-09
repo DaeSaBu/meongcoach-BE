@@ -98,8 +98,7 @@ SHA-1 검증용이라 id_token의 `aud`가 되지 않습니다), 애플은 **iOS
 
 `/internal/**`는 이 체인이 아니라 notification 모듈이 정의한 별도 체인(`@Order(0)`, `securityMatcher("/internal/**")`)이 먼저 잡습니다.
 JWT 대신 `X-Internal-Secret` 헤더를 검사하며, 앱 버전 게이트도 `/api/` 경로만 보므로 걸리지 않습니다. ([notification.md](notification.md) "인증")
-`/webhooks/channel-talk`은 이 체인에서 인증 없이 열고, 컨트롤러가 웹훅 주소의 쿼리 파라미터 `token`을 `CHANNEL_TALK_WEBHOOK_TOKEN`과 `MessageDigest.isEqual`로 비교합니다.
-채널톡은 요청 헤더를 지정할 수 없어 쿼리 파라미터를 씁니다. ([notification.md](notification.md) "문의 답변 알림")
+채널톡 웹훅 인증은 [상담 모듈](support.md)이 소유합니다.
 
 3번은 온보딩 화면에 필요한 경로입니다 — 온보딩 완료 요청에 프로필 이미지 URL이 들어가므로
 기본 프로필 이미지 조회는 온보딩 중에도 열려 있어야 합니다. 이미지 업로드 presigned URL 발급은
@@ -184,7 +183,7 @@ XSS 한 번으로 리프레시 토큰이 새어 나갑니다. 그래서 `X-App-P
 
 ## 필터 체인 구성
 
-앱 요청은 기본 무상태 체인에서 처리합니다. 내부 알림과 채널톡 웹훅은 [알림 모듈](notification.md)의 전용 인증 체인에서 처리합니다.
+앱 요청은 기본 무상태 체인에서 처리합니다. 내부 알림은 [알림 모듈](notification.md), 채널톡 웹훅은 [상담 모듈](support.md)의 전용 인증 체인에서 처리합니다.
 
 - 앱 버전 게이트 — `CorsFilter` 바로 뒤에 `shared/security/AppVersionFilter`를 두어 인증보다 먼저 검사합니다.
   - CORS 뒤에 두어야 브라우저 preflight(앱 헤더 값이 없음)를 `CorsFilter`가 먼저 응답하고, 426·400 응답에도 CORS 헤더가 붙습니다.
