@@ -78,7 +78,7 @@ class AiReportTrialFinderServiceTest {
 	}
 
 	private static AiAnalysis uploadingAnalysis(Long userId, String videoObjectKey) {
-		return AiAnalysis.uploading(new AiAnalysisUploadCommand(userId, videoObjectKey, Instant.now().plusSeconds(900)));
+		return AiAnalysis.uploading(new AiAnalysisUploadCommand(userId, videoObjectKey, Instant.now().plusSeconds(900), null));
 	}
 
 	private static AiAnalysis startedAnalysis(Long userId, String videoObjectKey) {

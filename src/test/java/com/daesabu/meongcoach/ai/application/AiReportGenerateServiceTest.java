@@ -39,6 +39,7 @@ class AiReportGenerateServiceTest {
 	private static final String ANALYZED_CONTENT = "{\"recommend\":[],\"report\":[{\"subTitle\":\"영상에서 이런 행동이 보여요\","
 			+ "\"description\":\"분리불안 징후가 관찰됩니다.\"}],\"solution\":[]}";
 	private static final String GENERATED_TITLE = "분리불안 징후 행동 분석";
+	private static final String CONTEXT = "퇴근하고 집에 오면 매번 이렇게 짖어요";
 	private static final IllegalStateException SAVE_FAILURE = new IllegalStateException("DB 저장 실패");
 
 	private MediaStorageUriResolver storageUriResolver;
@@ -66,19 +67,19 @@ class AiReportGenerateServiceTest {
 		service = new AiReportGenerateService(storageUriResolver, videoAnalyzer, aiAnalysisRepository, aiTrialFinder);
 
 		issuedAnalysis = AiAnalysis.uploading(
-				new AiAnalysisUploadCommand(USER_ID, OBJECT_KEY, Instant.now().plusSeconds(900)));
+				new AiAnalysisUploadCommand(USER_ID, OBJECT_KEY, Instant.now().plusSeconds(900), CONTEXT));
 		when(aiAnalysisRepository.findByVideoObjectKey(OBJECT_KEY)).thenReturn(Optional.of(issuedAnalysis));
 		when(storageUriResolver.resolve(AiVideo.SCOPE, OBJECT_KEY)).thenReturn(VIDEO_URI);
 		when(aiTrialFinder.findTrial(USER_ID)).thenReturn(new AiTrial(0));
-		when(videoAnalyzer.analyze(VIDEO_URI)).thenReturn(new VideoAnalysisResult(GENERATED_TITLE, ANALYZED_CONTENT));
+		when(videoAnalyzer.analyze(VIDEO_URI, CONTEXT)).thenReturn(new VideoAnalysisResult(GENERATED_TITLE, ANALYZED_CONTENT));
 		doAnswer(recordSave).when(aiAnalysisRepository).save(any());
 	}
 
 	@Test
-	void 발급받은_presigned_URL로_분석한_결과를_제목과_함께_발급_시_만든_row에_COMPLETED로_저장한다() {
+	void 발급_시_저장한_맥락으로_분석한_결과를_제목과_함께_같은_row에_COMPLETED로_저장한다() {
 		service.generate(OBJECT_KEY);
 
-		verify(videoAnalyzer).analyze(VIDEO_URI);
+		verify(videoAnalyzer).analyze(VIDEO_URI, CONTEXT);
 		assertThat(savedAnalysis).isSameAs(issuedAnalysis);
 		assertThat(savedAnalysis.getUserId()).isEqualTo(USER_ID);
 		assertThat(savedAnalysis.getVideoObjectKey()).isEqualTo(OBJECT_KEY);
@@ -130,13 +131,13 @@ class AiReportGenerateServiceTest {
 
 		service.generate(OBJECT_KEY);
 
-		verify(videoAnalyzer, never()).analyze(any());
+		verify(videoAnalyzer, never()).analyze(any(), any());
 		assertThat(savedStatuses).containsExactly(AiAnalysisStatus.ANALYZING, AiAnalysisStatus.FAILED_TRIAL_EXCEEDED);
 	}
 
 	@Test
 	void 분석이_실패하면_예외를_던지지_않고_FAILED_ANALYSIS로_기록한다() {
-		when(videoAnalyzer.analyze(VIDEO_URI)).thenThrow(new VideoAnalysisFailedException("분석 실패"));
+		when(videoAnalyzer.analyze(VIDEO_URI, CONTEXT)).thenThrow(new VideoAnalysisFailedException("분석 실패"));
 
 		assertThatCode(() -> service.generate(OBJECT_KEY)).doesNotThrowAnyException();
 
@@ -146,7 +147,7 @@ class AiReportGenerateServiceTest {
 
 	@Test
 	void 분석_결과에_제목이_없으면_제목_없이_COMPLETED로_저장한다() {
-		when(videoAnalyzer.analyze(VIDEO_URI)).thenReturn(new VideoAnalysisResult(null, ANALYZED_CONTENT));
+		when(videoAnalyzer.analyze(VIDEO_URI, CONTEXT)).thenReturn(new VideoAnalysisResult(null, ANALYZED_CONTENT));
 
 		assertThatCode(() -> service.generate(OBJECT_KEY)).doesNotThrowAnyException();
 
@@ -157,7 +158,7 @@ class AiReportGenerateServiceTest {
 
 	@Test
 	void 분석기가_선언되지_않은_예외를_던지면_FAILED_ANALYSIS가_아니라_FAILED_UNEXPECTED로_기록한다() {
-		when(videoAnalyzer.analyze(VIDEO_URI)).thenThrow(new IllegalStateException("어댑터 버그"));
+		when(videoAnalyzer.analyze(VIDEO_URI, CONTEXT)).thenThrow(new IllegalStateException("어댑터 버그"));
 
 		assertThatCode(() -> service.generate(OBJECT_KEY)).doesNotThrowAnyException();
 
@@ -185,7 +186,7 @@ class AiReportGenerateServiceTest {
 
 	@Test
 	void 실패_상태_기록이_실패하면_FAILED_UNEXPECTED로_다시_기록을_시도한다() {
-		when(videoAnalyzer.analyze(VIDEO_URI)).thenThrow(new VideoAnalysisFailedException("분석 실패"));
+		when(videoAnalyzer.analyze(VIDEO_URI, CONTEXT)).thenThrow(new VideoAnalysisFailedException("분석 실패"));
 		doAnswer(recordSave).doThrow(SAVE_FAILURE).doAnswer(recordSave).when(aiAnalysisRepository).save(any());
 
 		assertThatCode(() -> service.generate(OBJECT_KEY)).doesNotThrowAnyException();
@@ -195,7 +196,7 @@ class AiReportGenerateServiceTest {
 
 	@Test
 	void 실패_기록이_계속_실패하면_예외를_그대로_전파한다() {
-		when(videoAnalyzer.analyze(VIDEO_URI)).thenThrow(new VideoAnalysisFailedException("분석 실패"));
+		when(videoAnalyzer.analyze(VIDEO_URI, CONTEXT)).thenThrow(new VideoAnalysisFailedException("분석 실패"));
 		doAnswer(recordSave).doThrow(SAVE_FAILURE).when(aiAnalysisRepository).save(any());
 
 		assertThatThrownBy(() -> service.generate(OBJECT_KEY))
