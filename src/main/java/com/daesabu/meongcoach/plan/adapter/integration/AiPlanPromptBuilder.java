@@ -17,6 +17,7 @@ final class AiPlanPromptBuilder {
 
 		String breedLabel = request.dog().breed().label();
 		dog.put("breed", breedLabel);
+		dog.remove("sex");
 
 		String inputJson = objectMapper.writeValueAsString(input);
 		return userPromptTemplate.replace("{{input}}", inputJson);
