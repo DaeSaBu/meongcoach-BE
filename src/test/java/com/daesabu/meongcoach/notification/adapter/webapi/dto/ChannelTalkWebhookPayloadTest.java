@@ -12,7 +12,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 class ChannelTalkWebhookPayloadTest {
 
-
 	private ChannelTalkWebhookPayload payload(String type, String chatType, String personType, String memberId) {
 		return new ChannelTalkWebhookPayload("push", type, new Entity(chatType, personType, "답변", null, null, null), new Refers(new User(memberId)));
 	}
@@ -75,6 +74,14 @@ class ChannelTalkWebhookPayloadTest {
 	void 백_자를_넘는_메시지는_백_자까지_자르고_말줄임표를_붙인다() {
 		assertThat(message("가".repeat(100)).notificationBody()).isEqualTo("가".repeat(100));
 		assertThat(message("가".repeat(101)).notificationBody()).isEqualTo("가".repeat(100) + "…");
+	}
+
+	@Test
+	void 이모지도_한_글자로_세고_중간에서_자르지_않는다() {
+		String hundredCharacters = "가".repeat(99) + "🐶";
+
+		assertThat(message(hundredCharacters).notificationBody()).isEqualTo(hundredCharacters);
+		assertThat(message(hundredCharacters + "답변").notificationBody()).isEqualTo(hundredCharacters + "…");
 	}
 
 	@ParameterizedTest
