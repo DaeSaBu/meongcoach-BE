@@ -1,6 +1,6 @@
-package com.daesabu.meongcoach.notification.adapter.security;
+package com.daesabu.meongcoach.support.adapter.security;
 
-import com.daesabu.meongcoach.notification.application.ChannelTalkProperties;
+import com.daesabu.meongcoach.support.application.ChannelTalkProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -14,7 +14,7 @@ import org.springframework.security.web.access.intercept.AuthorizationFilter;
 @Configuration
 class ChannelTalkSecurityConfig {
 
-	private static final String WEBHOOK_PATH = "/webhooks/channel-talk";
+	private static final String WEBHOOK_PATH = "/webhooks/channel-talk/support-replies";
 
 	@Bean
 	@Order(1)

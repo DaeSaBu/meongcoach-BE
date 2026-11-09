@@ -1,11 +1,11 @@
-package com.daesabu.meongcoach.notification.application;
+package com.daesabu.meongcoach.support.application;
 
 import com.daesabu.meongcoach.notification.application.provided.EventNotificationDispatcher;
-import com.daesabu.meongcoach.notification.application.provided.SupportReplyNotifier;
-import com.daesabu.meongcoach.notification.application.provided.dto.ChannelTalkWebhookRequest;
 import com.daesabu.meongcoach.notification.application.provided.dto.EventNotificationDispatchRequest;
-import com.daesabu.meongcoach.notification.domain.SupportReply;
-import com.daesabu.meongcoach.notification.domain.SupportReplyCommand;
+import com.daesabu.meongcoach.support.application.provided.SupportReplyNotifier;
+import com.daesabu.meongcoach.support.application.provided.dto.ChannelTalkWebhookRequest;
+import com.daesabu.meongcoach.support.domain.SupportReply;
+import com.daesabu.meongcoach.support.domain.SupportReplyCommand;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;

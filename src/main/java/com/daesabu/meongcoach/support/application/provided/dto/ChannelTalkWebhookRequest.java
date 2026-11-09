@@ -1,6 +1,6 @@
-package com.daesabu.meongcoach.notification.application.provided.dto;
+package com.daesabu.meongcoach.support.application.provided.dto;
 
-import com.daesabu.meongcoach.notification.domain.SupportReplyCommand;
+import com.daesabu.meongcoach.support.domain.SupportReplyCommand;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.List;
 

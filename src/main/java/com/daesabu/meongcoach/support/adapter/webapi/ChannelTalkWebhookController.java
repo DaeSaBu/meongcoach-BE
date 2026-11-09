@@ -1,7 +1,7 @@
-package com.daesabu.meongcoach.notification.adapter.webapi;
+package com.daesabu.meongcoach.support.adapter.webapi;
 
-import com.daesabu.meongcoach.notification.application.provided.SupportReplyNotifier;
-import com.daesabu.meongcoach.notification.application.provided.dto.ChannelTalkWebhookRequest;
+import com.daesabu.meongcoach.support.application.provided.SupportReplyNotifier;
+import com.daesabu.meongcoach.support.application.provided.dto.ChannelTalkWebhookRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -13,7 +13,7 @@ public class ChannelTalkWebhookController {
 
 	private final SupportReplyNotifier supportReplyNotifier;
 
-	@PostMapping("/webhooks/channel-talk")
+	@PostMapping("/webhooks/channel-talk/support-replies")
 	public void receive(@RequestBody ChannelTalkWebhookRequest request) {
 		supportReplyNotifier.notifyReply(request);
 	}

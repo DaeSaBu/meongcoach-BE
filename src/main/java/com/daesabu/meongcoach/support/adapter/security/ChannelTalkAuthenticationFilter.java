@@ -1,6 +1,6 @@
-package com.daesabu.meongcoach.notification.adapter.security;
+package com.daesabu.meongcoach.support.adapter.security;
 
-import com.daesabu.meongcoach.notification.application.ChannelTalkProperties;
+import com.daesabu.meongcoach.support.application.ChannelTalkProperties;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

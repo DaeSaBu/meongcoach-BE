@@ -1,4 +1,4 @@
-package com.daesabu.meongcoach.notification.domain;
+package com.daesabu.meongcoach.support.domain;
 
 import java.util.List;
 

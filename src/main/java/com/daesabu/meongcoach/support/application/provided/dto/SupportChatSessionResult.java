@@ -1,4 +1,4 @@
-package com.daesabu.meongcoach.notification.application.provided.dto;
+package com.daesabu.meongcoach.support.application.provided.dto;
 
 public record SupportChatSessionResult(String memberId, String memberHash) {
 }

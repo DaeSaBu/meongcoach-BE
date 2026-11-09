@@ -1,6 +1,6 @@
-package com.daesabu.meongcoach.notification.adapter.webapi.dto;
+package com.daesabu.meongcoach.support.adapter.webapi.dto;
 
-import com.daesabu.meongcoach.notification.application.provided.dto.SupportChatSessionResult;
+import com.daesabu.meongcoach.support.application.provided.dto.SupportChatSessionResult;
 
 public record SupportChatSessionResponse(String memberId, String memberHash) {
 

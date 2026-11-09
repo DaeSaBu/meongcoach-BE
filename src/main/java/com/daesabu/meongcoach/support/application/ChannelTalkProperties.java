@@ -1,6 +1,6 @@
-package com.daesabu.meongcoach.notification.application;
+package com.daesabu.meongcoach.support.application;
 
-import com.daesabu.meongcoach.notification.domain.exception.ChannelTalkUnavailableException;
+import com.daesabu.meongcoach.support.domain.exception.ChannelTalkUnavailableException;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import java.nio.charset.StandardCharsets;
