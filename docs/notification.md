@@ -146,7 +146,8 @@ CommentModifyService.register (@Transactional)
 
 ```
 채널톡 → POST /webhooks/channel-talk?token=…
-  → ChannelTalkWebhookController (토큰 확인, 운영자 답변인지·회원 ID가 유효한지 판별)
+  → ChannelTalkAuthenticationFilter (웹훅 토큰 인증)
+  → ChannelTalkWebhookController (운영자 답변인지·회원 ID가 유효한지 판별)
   → EventNotificationDispatcher.dispatch(SUPPORT_REPLY, USERS, [회원 ID], 문구, 딥링크)
 ```
 
@@ -160,7 +161,8 @@ CommentModifyService.register (@Transactional)
 - 조건에 맞지 않는 이벤트(고객·봇 메시지, 내부 메모·알림 억제 메시지·마케팅, 팀 채팅, 유효하지 않은 회원 ID나 익명 고객)는 발송하지 않고 200을 반환합니다.
 - 웹훅 요청 안에서 동기로 발송합니다. FCM이 실패하면 502를 반환하며, 중복을 막지 않으므로 채널톡이 같은 이벤트를 다시 보내면 다시 발송합니다.
 - 판별과 본문 자르기는 `adapter/webapi/dto`의 `ChannelTalkWebhookPayload`가 합니다.
-- 경로는 `SecurityConfig`의 `PERMIT_ALL_PATHS`에 있고, 컨트롤러가 토큰을 `ChannelTalkProperties.matches`(`MessageDigest.isEqual`)로 비교해 틀리면 401을 반환합니다. 채널톡은 요청 헤더를 지정할 수 없어 쿼리 파라미터를 씁니다.
+- `ChannelTalkSecurityConfig`의 전용 무상태 체인이 `/webhooks/channel-talk`를 처리합니다. `ChannelTalkAuthenticationFilter`가 쿼리 토큰을 `ChannelTalkProperties.matches`(`MessageDigest.isEqual`)로 검증합니다. 토큰이 없거나 다르면 본문 해석 전에 401 Problem Details를 반환합니다.
+- 웹훅 인증에는 앱 JWT와 앱 버전 헤더를 사용하지 않습니다. 채널톡은 요청 헤더를 지정할 수 없어 쿼리 파라미터를 씁니다.
 
 ### FCM 전송
 

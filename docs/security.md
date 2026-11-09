@@ -88,7 +88,7 @@ SHA-1 검증용이라 id_token의 `aud`가 되지 않습니다), 애플은 **iOS
 
 | 순서 | 경로 | 접근 |
 |---|---|---|
-| 1 | `/api/health`, `/api/auth/login/social`, `/api/auth/login/email`, `/api/auth/token/refresh`, `/api/auth/logout`, `/webhooks/channel-talk` | permitAll |
+| 1 | `/api/health`, `/api/auth/login/social`, `/api/auth/login/email`, `/api/auth/token/refresh`, `/api/auth/logout` | permitAll |
 | 2 | `/swagger-ui/**` | 문서 활성 환경 permitAll, 그 외 denyAll |
 | 3 | `/api/onboarding/**` | `USER`, `ONBOARDING_USER` |
 | 3-1 | `/api/dogs/profile/image` | `USER`, `ONBOARDING_USER`, `EXPERT`, `ADMIN` |
@@ -184,7 +184,7 @@ XSS 한 번으로 리프레시 토큰이 새어 나갑니다. 그래서 `X-App-P
 
 ## 필터 체인 구성
 
-리다이렉트 흐름이 없어 세션이 필요 없으므로 **무상태 체인 하나**를 기본으로 둡니다.
+앱 요청은 기본 무상태 체인에서 처리합니다. 내부 알림과 채널톡 웹훅은 [알림 모듈](notification.md)의 전용 인증 체인에서 처리합니다.
 
 - 앱 버전 게이트 — `CorsFilter` 바로 뒤에 `shared/security/AppVersionFilter`를 두어 인증보다 먼저 검사합니다.
   - CORS 뒤에 두어야 브라우저 preflight(앱 헤더 값이 없음)를 `CorsFilter`가 먼저 응답하고, 426·400 응답에도 CORS 헤더가 붙습니다.
@@ -198,7 +198,7 @@ XSS 한 번으로 리프레시 토큰이 새어 나갑니다. 그래서 `X-App-P
   - 옛 API를 쓰는 앱을 막으려면 새 앱이 스토어에 출시된 뒤에 `PROD_` Secret을 그 버전으로 올리고, 그 API를 바꾼 서버를 main에 반영합니다. 최소 버전 상향과 API 변경이 같은 배포로 나갑니다.
 - `csrf` / `formLogin` / `httpBasic` / `logout` 비활성화 (`logout`은 Spring의 세션 로그아웃. 앱 로그아웃은 `POST /api/auth/logout`)
 - `SessionCreationPolicy.STATELESS`
-- permitAll: `/api/health`, `/api/auth/login/social`, `/api/auth/login/email`, `/api/auth/token/refresh`, `/api/auth/logout`, `/webhooks/channel-talk`
+- permitAll: `/api/health`, `/api/auth/login/social`, `/api/auth/login/email`, `/api/auth/token/refresh`, `/api/auth/logout`
   (인증 엔드포인트만 개별 경로로 열고 `/api/auth/**`로 넓히지 않습니다. 이후 추가되는 인증 관련 API가 자동으로 공개되는 것을 막기 위함입니다)
 - 그 외 요청은 역할 기반 인가 (위 "URL 인가 규칙" 참고)
 - `oauth2ResourceServer.jwt()` — Bearer 토큰 파싱·검증은 프레임워크가 담당하므로 인증용 커스텀 필터가 없습니다.
