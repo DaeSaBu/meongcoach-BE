@@ -174,6 +174,10 @@ link:{swagger-ui}#/Onboarding/onboarding-image-upload-url[▶ Swagger에서 Try 
 온보딩에서 등록할 강아지의 프로필 이미지 업로드 URL을 발급합니다.
 요청에는 `contentType`만 보내며, 업로드 대상은 강아지 프로필로 고정됩니다.
 
+NOTE: 이 API는 정회원과 온보딩 미완료 회원만 호출할 수 있어 전문가·관리자는 403을 받습니다.
+신규 클라이언트는 역할과 관계없이 쓸 수 있는 <<_강아지_프로필_이미지_업로드_url_발급,강아지 프로필 이미지 업로드 URL 발급>>을 사용합니다.
+이 API는 이미 배포된 앱 버전과의 호환을 위해 유지합니다.
+
 operation::onboarding/image-upload-url[snippets='http-request,request-fields,http-response,response-fields']
 
 ==== 실패 응답
@@ -539,6 +543,23 @@ operation::dog/profile-image[snippets='http-request,http-response,response-field
 요청한 강아지가 없거나 본인 소유가 아니면 404(`DOG_NOT_FOUND`)를 반환합니다. 온보딩을 마치지 않은 사용자가 여기에 해당합니다.
 
 operation::dog/profile-image-error[snippets='http-response,response-fields']
+
+=== 강아지 프로필 이미지 업로드 URL 발급
+
+link:{swagger-ui}#/Dog/dog-profile-image-upload-url[▶ Swagger에서 Try it out,window=swagger]
+
+강아지 프로필 이미지를 올릴 presigned PUT URL을 발급합니다. 온보딩, 강아지 등록, 강아지 프로필 수정에서 함께 사용합니다.
+정회원, 온보딩 미완료 회원, 전문가, 관리자 모두 호출할 수 있습니다.
+요청에는 `contentType`만 보내며, 업로드 대상은 요청한 사용자의 강아지 프로필 경로로 고정됩니다.
+업로드가 끝나면 `publicUrl`을 강아지 등록·수정 또는 온보딩 완료 요청의 `profileImageUrl`에 담습니다.
+
+operation::dog/profile-image-upload-url[snippets='http-request,request-fields,http-response,response-fields']
+
+==== 실패 응답
+
+`image/jpeg`, `image/png`, `image/webp` 외의 형식이면 400(`MEDIA_UNSUPPORTED_IMAGE_TYPE`)을 반환합니다.
+
+operation::dog/profile-image-upload-url-error[snippets='http-response,response-fields']
 
 == Entitlement API
 
