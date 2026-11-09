@@ -4,8 +4,11 @@ import static com.daesabu.meongcoach.support.AppClientRequests.appDelete;
 import static com.daesabu.meongcoach.support.AppClientRequests.appGet;
 import static com.daesabu.meongcoach.support.AppClientRequests.appPost;
 import static com.daesabu.meongcoach.support.AppClientRequests.appPut;
+import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -86,6 +89,69 @@ class SecurityFilterChainTest {
 		mockMvc.perform(appPost("/api/auth/logout")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"refreshToken\": \"\"}"))
+				.andExpect(status().isBadRequest());
+	}
+
+	@Test
+	void 상담_인증_응답은_캐시하지_않는다() throws Exception {
+		AuthToken token = tokenProvider.issue(userId);
+
+		mockMvc.perform(appGet("/api/support/session")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.memberId").value(userId.toString()))
+				.andExpect(header().string(HttpHeaders.CACHE_CONTROL, containsString("no-store")));
+	}
+
+	@Test
+	void 채널톡_웹훅은_앱_헤더와_액세스_토큰_없이_웹훅_토큰으로_호출할_수_있다() throws Exception {
+		mockMvc.perform(post("/webhooks/channel-talk/support-replies").queryParam("token", "test-channel-talk-webhook-token")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"type\":\"message\"}"))
+				.andExpect(status().isOk());
+	}
+
+	@Test
+	void 채널톡_웹훅_토큰이_없으면_Problem_Details로_401을_반환한다() throws Exception {
+		mockMvc.perform(post("/webhooks/channel-talk/support-replies")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"type\":\"message\"}"))
+				.andExpect(status().isUnauthorized())
+				.andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = {"", "wrong-token"})
+	void 채널톡_인증이_실패하면_JSON_해석_전에_401을_반환한다(String token) throws Exception {
+		mockMvc.perform(post("/webhooks/channel-talk/support-replies").queryParam("token", token)
+						.contentType(MediaType.APPLICATION_JSON).content("not-json"))
+				.andExpect(status().isUnauthorized())
+				.andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+	}
+
+	@Test
+	void 액세스_토큰으로_채널톡_웹훅_인증을_대체할_수_없다() throws Exception {
+		AuthToken token = tokenProvider.issue(userId);
+
+		mockMvc.perform(post("/webhooks/channel-talk/support-replies")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken())
+						.contentType(MediaType.APPLICATION_JSON).content("{}"))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+	}
+
+	@Test
+	void 채널톡_토큰으로_앱_API_인증을_대체할_수_없다() throws Exception {
+		mockMvc.perform(appGet(PROTECTED_PATH).queryParam("token", "test-channel-talk-webhook-token"))
+				.andExpect(status().isUnauthorized());
+	}
+
+	@Test
+	void 채널톡_인증을_통과한_잘못된_JSON은_400을_반환한다() throws Exception {
+		mockMvc.perform(post("/webhooks/channel-talk/support-replies").queryParam("token", "test-channel-talk-webhook-token")
+						.contentType(MediaType.APPLICATION_JSON).content("not-json"))
 				.andExpect(status().isBadRequest());
 	}
 
