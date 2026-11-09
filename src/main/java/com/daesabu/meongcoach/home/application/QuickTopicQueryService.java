@@ -46,7 +46,7 @@ public class QuickTopicQueryService implements QuickTopicFinder {
 		boolean older = isOlder(dog.birthDate(), today);
 		List<TopicProgressResult> visible = topicProgressFinder.findAll(userId).stream()
 				.filter(this::hasThumbnail)
-				.filter(topic -> !older || topic.categorySortOrder() >= properties.minOrder())
+				.filter(topic -> !older || topic.categorySortOrder() >= properties.minCategoryOrder())
 				.toList();
 		Set<Long> planTopicIds = Set.copyOf(currentPlanFinder.findActiveTopicIds(userId, dogId));
 		List<QuickTopicResult> result = new ArrayList<>();

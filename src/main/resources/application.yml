@@ -37,7 +37,7 @@ meongcoach:
   home:
     quick-topic:
       months: ${HOME_QUICK_TOPIC_MONTHS:24}
-      min-order: ${HOME_QUICK_TOPIC_MIN_ORDER:3}
+      min-category-order: ${HOME_QUICK_TOPIC_MIN_CATEGORY_ORDER:3}
   # 이보다 낮은 앱 버전의 요청은 426으로 거절해 강제 업데이트를 유도한다. 스토어 출시 후 환경 변수로 올린다
   app-version:
     minimum:
