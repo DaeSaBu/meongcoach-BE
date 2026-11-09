@@ -4,9 +4,11 @@ import static com.daesabu.meongcoach.support.AppClientRequests.appDelete;
 import static com.daesabu.meongcoach.support.AppClientRequests.appGet;
 import static com.daesabu.meongcoach.support.AppClientRequests.appPost;
 import static com.daesabu.meongcoach.support.AppClientRequests.appPut;
+import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -88,6 +90,17 @@ class SecurityFilterChainTest {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"refreshToken\": \"\"}"))
 				.andExpect(status().isBadRequest());
+	}
+
+	@Test
+	void 상담_인증_응답은_캐시하지_않는다() throws Exception {
+		AuthToken token = tokenProvider.issue(userId);
+
+		mockMvc.perform(appGet("/api/notifications/support-session")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.memberId").value(userId.toString()))
+				.andExpect(header().string(HttpHeaders.CACHE_CONTROL, containsString("no-store")));
 	}
 
 	@Test
