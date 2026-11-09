@@ -1,9 +1,7 @@
 package com.daesabu.meongcoach.notification.adapter.webapi;
 
-import com.daesabu.meongcoach.notification.adapter.webapi.dto.ChannelTalkWebhookPayload;
-import com.daesabu.meongcoach.notification.application.provided.EventNotificationDispatcher;
-import com.daesabu.meongcoach.notification.application.provided.dto.EventNotificationDispatchRequest;
-import java.util.List;
+import com.daesabu.meongcoach.notification.application.provided.SupportReplyNotifier;
+import com.daesabu.meongcoach.notification.application.provided.dto.ChannelTalkWebhookRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -13,17 +11,10 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class ChannelTalkWebhookController {
 
-	private static final String EVENT_TYPE = "SUPPORT_REPLY";
-	private static final String TARGET_KIND = "USERS";
-	private static final String TITLE = "문의하신 내용에 답변이 왔어요";
-	private static final String DEEP_LINK = "meongcoach://support-chat";
-
-	private final EventNotificationDispatcher eventDispatcher;
+	private final SupportReplyNotifier supportReplyNotifier;
 
 	@PostMapping("/webhooks/channel-talk")
-	public void receive(@RequestBody ChannelTalkWebhookPayload payload) {
-		payload.recipientUserId()
-				.ifPresent(userId -> eventDispatcher.dispatch(new EventNotificationDispatchRequest(EVENT_TYPE, TARGET_KIND,
-						List.of(userId), TITLE, payload.notificationBody(), DEEP_LINK)));
+	public void receive(@RequestBody ChannelTalkWebhookRequest request) {
+		supportReplyNotifier.notifyReply(request);
 	}
 }
