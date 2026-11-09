@@ -34,6 +34,7 @@ IMAGE_URI=${3}
 : "${GCS_BUCKET:?GCS_BUCKET이 필요합니다.}"
 : "${AI_VIDEO_SUBSCRIPTION:?AI_VIDEO_SUBSCRIPTION이 필요합니다.}"
 # GEMINI_MODEL은 application.yml에 기본값이 있어 선택 사항이다.
+# HOME_QUICK_TOPIC_MONTHS·HOME_QUICK_TOPIC_MIN_CATEGORY_ORDER도 기본값이 있어 선택 사항이다.
 : "${GEMINI_API_KEY:?GEMINI_API_KEY가 필요합니다.}"
 # REVENUECAT_BASE_URL은 application.yml에 기본값이 있어 주입하지 않는다.
 : "${REVENUECAT_API_KEY:?REVENUECAT_API_KEY가 필요합니다.}"
@@ -80,7 +81,9 @@ jq \
 	--arg sentry_dsn "${SENTRY_DSN:-}" \
 	--arg sentry_release "${SENTRY_RELEASE:-}" \
 	--arg app_minimum_version_ios "${APP_MINIMUM_VERSION_IOS:-}" \
-	--arg app_minimum_version_android "${APP_MINIMUM_VERSION_ANDROID:-}" '
+	--arg app_minimum_version_android "${APP_MINIMUM_VERSION_ANDROID:-}" \
+	--arg home_quick_topic_months "${HOME_QUICK_TOPIC_MONTHS:-}" \
+	--arg home_quick_topic_min_category_order "${HOME_QUICK_TOPIC_MIN_CATEGORY_ORDER:-}" '
 	if ([.containerDefinitions[] | select(.name == $container)] | length) != 1 then
 		error("배포 대상 컨테이너는 정확히 하나여야 합니다.")
 	else
@@ -159,7 +162,9 @@ jq \
 								.name != "SENTRY_DSN" and
 								.name != "SENTRY_RELEASE" and
 								.name != "APP_MINIMUM_VERSION_IOS" and
-								.name != "APP_MINIMUM_VERSION_ANDROID"
+								.name != "APP_MINIMUM_VERSION_ANDROID" and
+								.name != "HOME_QUICK_TOPIC_MONTHS" and
+								.name != "HOME_QUICK_TOPIC_MIN_CATEGORY_ORDER"
 							))) +
 						[
 							{"name": "NOTIFICATION_INTERNAL_SECRET", "value": $notification_internal_secret},
@@ -216,6 +221,17 @@ jq \
 							[]
 						 else
 							[{"name": "APP_MINIMUM_VERSION_ANDROID", "value": $app_minimum_version_android}]
+						 end) +
+						# 홈 바로 훈련 카드의 나이 기준은 선택 사항이다. 미설정 시 application.yml의 기본값(24개월, 정렬 3)을 쓴다
+						(if $home_quick_topic_months == "" then
+							[]
+						 else
+							[{"name": "HOME_QUICK_TOPIC_MONTHS", "value": $home_quick_topic_months}]
+						 end) +
+						(if $home_quick_topic_min_category_order == "" then
+							[]
+						 else
+							[{"name": "HOME_QUICK_TOPIC_MIN_CATEGORY_ORDER", "value": $home_quick_topic_min_category_order}]
 						 end)
 					)
 					| .image = $image

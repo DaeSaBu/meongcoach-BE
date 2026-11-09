@@ -8,17 +8,15 @@ import lombok.Getter;
 
 @Getter
 public enum PostMediaType {
-	IMAGE("사진", 3, MediaScope.of(MediaKind.IMAGE, "community-post"), null),
-	VIDEO("영상", 2, MediaScope.of(MediaKind.VIDEO, "community-post"), 512L * 1024 * 1024);
+	IMAGE("사진", MediaScope.of(MediaKind.IMAGE, "community-post"), null),
+	VIDEO("영상", MediaScope.of(MediaKind.VIDEO, "community-post"), 512L * 1024 * 1024);
 
 	private final String displayName;
-	private final int maxCount;
 	private final MediaScope mediaScope;
 	private final Long maxFileSizeBytes;
 
-	PostMediaType(String displayName, int maxCount, MediaScope mediaScope, Long maxFileSizeBytes) {
+	PostMediaType(String displayName, MediaScope mediaScope, Long maxFileSizeBytes) {
 		this.displayName = displayName;
-		this.maxCount = maxCount;
 		this.mediaScope = mediaScope;
 		this.maxFileSizeBytes = maxFileSizeBytes;
 	}
@@ -29,4 +27,5 @@ public enum PostMediaType {
 				.findFirst()
 				.orElseThrow(() -> new InvalidPostMediaTypeException(code));
 	}
+
 }

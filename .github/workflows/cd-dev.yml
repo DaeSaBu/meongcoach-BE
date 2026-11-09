@@ -113,6 +113,8 @@ jobs:
           SENTRY_RELEASE: ${{ github.sha }}
           APP_MINIMUM_VERSION_IOS: ${{ secrets.DEV_APP_MINIMUM_VERSION_IOS }}
           APP_MINIMUM_VERSION_ANDROID: ${{ secrets.DEV_APP_MINIMUM_VERSION_ANDROID }}
+          HOME_QUICK_TOPIC_MONTHS: ${{ secrets.DEV_HOME_QUICK_TOPIC_MONTHS }}
+          HOME_QUICK_TOPIC_MIN_CATEGORY_ORDER: ${{ secrets.DEV_HOME_QUICK_TOPIC_MIN_CATEGORY_ORDER }}
         run: |
           # 최신 인프라 설정을 읽고 GitHub Secrets·이미지를 반영한 등록용 JSON을 만든다.
           aws ecs describe-task-definition \

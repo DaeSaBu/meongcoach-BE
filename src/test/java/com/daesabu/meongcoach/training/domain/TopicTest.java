@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;
+import com.daesabu.meongcoach.training.domain.shared.ProgressStatus;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -79,6 +80,58 @@ class TopicTest {
 		assertThat(topic.isCompleted(progresses)).isTrue();
 		LessonFixture.create(curriculum, 1002L);
 		assertThat(topic.isCompleted(progresses)).isFalse();
+	}
+
+	@Test
+	void 완료한_레슨이_없으면_토픽은_시작_전이다() {
+		Topic topic = TopicFixture.create(10L);
+		Curriculum curriculum = CurriculumFixture.create(topic, 100L);
+		LessonFixture.create(curriculum, 1001L);
+		LessonFixture.create(curriculum, 1002L);
+
+		TopicCompletion completion = topic.completion(LessonProgresses.from(List.of()));
+
+		assertThat(completion.completedLessons()).isZero();
+		assertThat(completion.status()).isEqualTo(ProgressStatus.NOT_STARTED);
+	}
+
+	@Test
+	void 모든_커리큘럼의_레슨_가운데_일부만_완료하면_토픽은_진행_중이다() {
+		Topic topic = TopicFixture.create(10L);
+		Curriculum first = CurriculumFixture.create(topic, 100L);
+		Curriculum second = CurriculumFixture.create(topic, 200L);
+		Lesson firstLesson = LessonFixture.create(first, 1001L);
+		LessonFixture.create(first, 1002L);
+		Lesson thirdLesson = LessonFixture.create(second, 2001L);
+
+		TopicCompletion completion = topic.completion(progresses(firstLesson, thirdLesson));
+
+		assertThat(completion.completedLessons()).isEqualTo(2);
+		assertThat(completion.status()).isEqualTo(ProgressStatus.IN_PROGRESS);
+	}
+
+	@Test
+	void 모든_레슨을_완료하면_토픽은_완료_상태다() {
+		Topic topic = TopicFixture.create(10L);
+		Curriculum curriculum = CurriculumFixture.create(topic, 100L);
+		Lesson firstLesson = LessonFixture.create(curriculum, 1001L);
+		Lesson secondLesson = LessonFixture.create(curriculum, 1002L);
+
+		TopicCompletion completion = topic.completion(progresses(firstLesson, secondLesson));
+
+		assertThat(completion.completedLessons()).isEqualTo(2);
+		assertThat(completion.status()).isEqualTo(ProgressStatus.COMPLETED);
+	}
+
+	@Test
+	void 사진_주소가_있어야_사진이_있는_토픽이다() {
+		Topic topic = TopicFixture.create(10L);
+
+		assertThat(topic.hasThumbnail()).isFalse();
+		ReflectionTestUtils.setField(topic, "thumbnailUrl", "  ");
+		assertThat(topic.hasThumbnail()).isFalse();
+		ReflectionTestUtils.setField(topic, "thumbnailUrl", "https://cdn.test/1101.jpg");
+		assertThat(topic.hasThumbnail()).isTrue();
 	}
 
 	private void attachLesson(Curriculum curriculum, Long lessonId) {

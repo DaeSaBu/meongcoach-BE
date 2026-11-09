@@ -58,8 +58,12 @@ public class SecurityConfig {
 	};
 
 	private static final String[] ONBOARDING_ALLOWED_PATHS = {
-			"/api/onboarding/**",
-			"/api/dogs/profile/image"
+			"/api/onboarding/**"
+	};
+
+	private static final String[] DOG_PROFILE_IMAGE_PATHS = {
+			"/api/dogs/profile/image",
+			"/api/dogs/profile/image/presigned-urls"
 	};
 
 	private static final String WITHDRAW_PATH = "/api/auth/me";
@@ -97,11 +101,16 @@ public class SecurityConfig {
 					configureApiDocsAccess(auth, apiDocsEnabled);
 					auth.requestMatchers(ONBOARDING_ALLOWED_PATHS)
 							.hasAnyRole(AuthorityRole.USER.name(), AuthorityRole.ONBOARDING_USER.name());
+					auth.requestMatchers(DOG_PROFILE_IMAGE_PATHS)
+							.hasAnyRole(AuthorityRole.USER.name(), AuthorityRole.ONBOARDING_USER.name(),
+									AuthorityRole.EXPERT.name(), AuthorityRole.ADMIN.name());
 					auth.requestMatchers(HttpMethod.DELETE, WITHDRAW_PATH)
 							.hasAnyRole(AuthorityRole.USER.name(), AuthorityRole.ONBOARDING_USER.name());
 					auth.requestMatchers(HttpMethod.GET, MY_INFO_PATH)
-							.hasAnyRole(AuthorityRole.USER.name(), AuthorityRole.ONBOARDING_USER.name());
-					auth.anyRequest().hasRole(AuthorityRole.USER.name());
+							.hasAnyRole(AuthorityRole.USER.name(), AuthorityRole.ONBOARDING_USER.name(),
+									AuthorityRole.EXPERT.name(), AuthorityRole.ADMIN.name());
+					auth.anyRequest().hasAnyRole(AuthorityRole.USER.name(), AuthorityRole.EXPERT.name(),
+							AuthorityRole.ADMIN.name());
 				})
 				.oauth2ResourceServer(oauth2 -> oauth2
 						.jwt(jwt -> jwt.decoder(accessTokenDecoder)

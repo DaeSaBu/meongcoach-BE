@@ -60,7 +60,7 @@ class PlanRegisterCustomTest {
 	void 준비한다() {
 		jdbc.execute("CREATE UNIQUE INDEX IF NOT EXISTS uk_plans_active_user_dog ON plans (user_id, dog_id) WHERE status = 'ACTIVE'");
 		when(dogProfileFinder.findDogProfile(USER_ID, 7L)).thenReturn(new DogProfileResult(7L, "초코", null, null, null));
-		when(preparationFinder.find(USER_ID, REQUEST.topicIds())).thenReturn(
+		when(preparationFinder.find(REQUEST.topicIds())).thenReturn(
 				new PlanPreparationResult(List.of(9L, 4L)));
 	}
 
@@ -118,7 +118,7 @@ class PlanRegisterCustomTest {
 	@Test
 	void 남은_커리큘럼이_없으면_기존_활성_플랜을_유지한다() {
 		Plan first = creator.createCustom(USER_ID, 7L, REQUEST);
-		when(preparationFinder.find(USER_ID, REQUEST.topicIds())).thenReturn(
+		when(preparationFinder.find(REQUEST.topicIds())).thenReturn(
 				new PlanPreparationResult(List.of()));
 
 		assertThatThrownBy(() -> creator.createCustom(USER_ID, 7L, REQUEST)).isInstanceOf(EmptyPlanCurriculumsException.class);

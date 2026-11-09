@@ -5,8 +5,8 @@ import com.daesabu.meongcoach.shared.exception.DomainException;
 
 public class PostMediaCountExceededException extends DomainException {
 
-	public PostMediaCountExceededException(PostMediaType type) {
+	public PostMediaCountExceededException(PostMediaType type, int maxCount) {
 		super(CommunityErrorCode.COMMUNITY_POST_MEDIA_COUNT_EXCEEDED,
-				type.getDisplayName() + "은 최대 " + type.getMaxCount() + "개까지 첨부할 수 있습니다.");
+				type.getDisplayName() + "은 최대 " + maxCount + "개까지 첨부할 수 있습니다.");
 	}
 }

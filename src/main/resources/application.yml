@@ -33,6 +33,11 @@ sentry:
   send-default-pii: false
 
 meongcoach:
+  # 홈 바로 훈련 카드: 이 개월 수 이상인 강아지에게는 정렬 값이 최솟값 미만인 카테고리(prod 훈련 기본기·퍼피 교육)를 숨긴다
+  home:
+    quick-topic:
+      months: ${HOME_QUICK_TOPIC_MONTHS:24}
+      min-category-order: ${HOME_QUICK_TOPIC_MIN_CATEGORY_ORDER:3}
   # 이보다 낮은 앱 버전의 요청은 426으로 거절해 강제 업데이트를 유도한다. 스토어 출시 후 환경 변수로 올린다
   app-version:
     minimum:

@@ -365,7 +365,7 @@ class PlanControllerTest {
 		Plan plan = Plan.create(command, List.of(7L));
 		ReflectionTestUtils.setField(plan, "id", 21L);
 		ReflectionTestUtils.setField(plan, "createdAt", LocalDateTime.of(2026, 10, 23, 12, 0));
-		PlanCurriculumProgressResult curriculum = new PlanCurriculumProgressResult(7L, "현관 매너", "현관에서 차분하게 기다리는 훈련", 2, 1,
+		PlanCurriculumProgressResult curriculum = new PlanCurriculumProgressResult(7L, 3L, "현관 예절", "현관 매너", "현관에서 차분하게 기다리는 훈련", 2, 1,
 				ProgressStatus.IN_PROGRESS, true, List.of(new PlanLessonProgressResult(11L, "앉아서 기다리기", true),
 				new PlanLessonProgressResult(12L, "문을 열어도 기다리기", false)));
 		given(currentPlanFinder.find(42L, 3L)).willReturn(Optional.of(new CurrentPlanResult(plan, List.of(curriculum))));
@@ -377,6 +377,8 @@ class PlanControllerTest {
 				.andExpect(jsonPath("$.plan.completedAt").value(nullValue()))
 				.andExpect(jsonPath("$.plan.outcome").value(nullValue()))
 				.andExpect(jsonPath("$.plan.expectation").value(nullValue()))
+				.andExpect(jsonPath("$.plan.curriculums[0].topicId").value(3))
+				.andExpect(jsonPath("$.plan.curriculums[0].topicTitle").value("현관 예절"))
 				.andExpect(jsonPath("$.plan.curriculums[0].locked").value(true))
 				.andExpect(jsonPath("$.plan.curriculums[0].status").value("IN_PROGRESS"))
 				.andExpect(jsonPath("$.plan.curriculums[0].lessons[0].completed").value(true))
@@ -397,6 +399,8 @@ class PlanControllerTest {
 						fieldWithPath("plan.outcome").type(JsonFieldType.STRING).optional().description("회고 결과(ACHIEVED, PARTIAL, NOT_YET), 회고 전이면 null"),
 						fieldWithPath("plan.curriculums").description("플랜에 저장한 순서의 커리큘럼 목록, 배열 순번이 카드 번호. COMPLETED이면 빈 배열"),
 						fieldWithPath("plan.curriculums[].curriculumId").description("커리큘럼 ID"),
+						fieldWithPath("plan.curriculums[].topicId").description("커리큘럼이 속한 토픽 ID"),
+						fieldWithPath("plan.curriculums[].topicTitle").description("커리큘럼이 속한 토픽 제목"),
 						fieldWithPath("plan.curriculums[].title").description("커리큘럼 제목"),
 						fieldWithPath("plan.curriculums[].description").description("커리큘럼 설명"),
 						fieldWithPath("plan.curriculums[].totalLessons").description("전체 레슨 수"),
@@ -415,7 +419,7 @@ class PlanControllerTest {
 		Plan plan = Plan.create(command, List.of(7L));
 		ReflectionTestUtils.setField(plan, "id", 21L);
 		ReflectionTestUtils.setField(plan, "createdAt", LocalDateTime.of(2026, 10, 23, 12, 0));
-		PlanCurriculumProgressResult curriculum = new PlanCurriculumProgressResult(7L, "현관 매너", "현관에서 차분하게 기다리는 훈련", 2, 1,
+		PlanCurriculumProgressResult curriculum = new PlanCurriculumProgressResult(7L, 3L, "현관 예절", "현관 매너", "현관에서 차분하게 기다리는 훈련", 2, 1,
 				ProgressStatus.IN_PROGRESS, true, List.of(new PlanLessonProgressResult(11L, "앉아서 기다리기", true),
 				new PlanLessonProgressResult(12L, "문을 열어도 기다리기", false)));
 		given(currentPlanFinder.find(42L)).willReturn(Optional.of(new CurrentPlanResult(plan, List.of(curriculum))));
@@ -446,6 +450,8 @@ class PlanControllerTest {
 						fieldWithPath("plan.outcome").type(JsonFieldType.STRING).optional().description("회고 결과(ACHIEVED, PARTIAL, NOT_YET), 회고 전이면 null"),
 						fieldWithPath("plan.curriculums").description("플랜에 저장한 순서의 커리큘럼 목록, 배열 순번이 카드 번호. COMPLETED이면 빈 배열"),
 						fieldWithPath("plan.curriculums[].curriculumId").description("커리큘럼 ID"),
+						fieldWithPath("plan.curriculums[].topicId").description("커리큘럼이 속한 토픽 ID"),
+						fieldWithPath("plan.curriculums[].topicTitle").description("커리큘럼이 속한 토픽 제목"),
 						fieldWithPath("plan.curriculums[].title").description("커리큘럼 제목"),
 						fieldWithPath("plan.curriculums[].description").description("커리큘럼 설명"),
 						fieldWithPath("plan.curriculums[].totalLessons").description("전체 레슨 수"),
@@ -522,7 +528,7 @@ class PlanControllerTest {
 				.andDo(document("plan/custom-create",
 						queryParameters(parameterWithName("dogId").description("플랜을 생성할 본인 소유 강아지 ID")),
 						requestFields(
-								fieldWithPath("topicIds").description("선택한 토픽 ID 목록, 1~3개. 교육 순서의 첫 미완료 커리큘럼부터 이후 전체 포함"),
+								fieldWithPath("topicIds").description("선택한 토픽 ID 목록, 1~3개. 완료 여부와 관계없이 교육 순서의 커리큘럼 전체 포함"),
 
 								fieldWithPath("dailyMinutes").description("하루 훈련 시간, 5, 10, 20 중 하나. 20은 20분 이상"),
 								fieldWithPath("daysPerWeek").description("주당 훈련 일수, 3, 5, 7 중 하나")),
@@ -530,7 +536,7 @@ class PlanControllerTest {
 	}
 
 	@Test
-	void 미완료_커리큘럼이_없으면_400을_반환한다() throws Exception {
+	void 커리큘럼이_없으면_400을_반환한다() throws Exception {
 		given(planRegister.createCustom(42L, 7L, REQUEST)).willThrow(new EmptyPlanCurriculumsException());
 
 		mockMvc.perform(post("/api/plans/custom").queryParam("dogId", "7").principal(CURRENT_USER)

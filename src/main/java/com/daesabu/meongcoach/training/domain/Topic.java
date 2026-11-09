@@ -43,6 +43,9 @@ public class Topic extends BaseEntity {
 	@Column(nullable = false, length = 512)
 	private String iconUrl;
 
+	@Column(length = 512)
+	private String thumbnailUrl;
+
 	@Column(nullable = false)
 	private int sortOrder;
 
@@ -61,6 +64,16 @@ public class Topic extends BaseEntity {
 	public boolean isCompleted(LessonProgresses progresses) {
 		return !curriculums.isEmpty()
 				&& curriculums.stream().allMatch(curriculum -> curriculum.isCompleted(progresses));
+	}
+
+	public boolean hasThumbnail() {
+		return thumbnailUrl != null && !thumbnailUrl.isBlank();
+	}
+
+	public TopicCompletion completion(LessonProgresses progresses) {
+		List<Long> lessonIds = getAllLessonIds();
+		int completed = progresses.countCompletedIn(lessonIds);
+		return TopicCompletion.of(lessonIds.size(), completed);
 	}
 
 	public List<Long> getAllLessonIds() {

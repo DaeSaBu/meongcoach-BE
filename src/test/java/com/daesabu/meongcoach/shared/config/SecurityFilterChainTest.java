@@ -235,6 +235,18 @@ class SecurityFilterChainTest {
 	}
 
 	@Test
+	void 온보딩_미완료_회원도_강아지_프로필_이미지_업로드_URL_발급_경로에_접근할_수_있다() throws Exception {
+		AuthToken token = tokenProvider.issue(onboardingUserId);
+
+		mockMvc.perform(appPost("/api/dogs/profile/image/presigned-urls")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"contentType\": \"\"}"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("BAD_REQUEST"));
+	}
+
+	@Test
 	void 온보딩_미완료_회원도_탈퇴할_수_있고_탈퇴_후_같은_토큰은_거부된다() throws Exception {
 		AuthToken token = tokenProvider.issue(onboardingUserId);
 
@@ -297,13 +309,50 @@ class SecurityFilterChainTest {
 
 	@ParameterizedTest
 	@ValueSource(strings = {"ADMIN", "EXPERT"})
-	void 관리자와_전문가는_앱_회원_경로에_접근할_수_없다(String role) throws Exception {
-		Long staffUserId = userRepository.save(User.registerUser()).getId();
-		jdbcTemplate.update("UPDATE users SET role = ? WHERE id = ?", role, staffUserId);
-		AuthToken token = tokenProvider.issue(staffUserId);
+	void 관리자와_전문가는_앱_회원_경로에_접근할_수_있다(String role) throws Exception {
+		AuthToken token = tokenProvider.issue(staffUserId(role));
 
 		mockMvc.perform(appGet(PROTECTED_PATH)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))
+				.andExpect(status().isOk());
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = {"ADMIN", "EXPERT"})
+	void 관리자와_전문가도_강아지_프로필_이미지_경로에_접근할_수_있다(String role) throws Exception {
+		AuthToken token = tokenProvider.issue(staffUserId(role));
+
+		mockMvc.perform(appGet("/api/dogs/profile/image")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))
+				.andExpect(status().isNotFound());
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = {"ADMIN", "EXPERT"})
+	void 관리자와_전문가도_강아지_프로필_이미지_업로드_URL_발급_경로에_접근할_수_있다(String role) throws Exception {
+		AuthToken token = tokenProvider.issue(staffUserId(role));
+
+		mockMvc.perform(appPost("/api/dogs/profile/image/presigned-urls")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"contentType\": \"\"}"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("BAD_REQUEST"));
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = {"ADMIN", "EXPERT"})
+	void 관리자와_전문가는_온보딩_경로에_접근할_수_없다(String role) throws Exception {
+		AuthToken token = tokenProvider.issue(staffUserId(role));
+
+		mockMvc.perform(appGet("/api/onboarding/metadata")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))
 				.andExpect(status().isForbidden());
+	}
+
+	private Long staffUserId(String role) {
+		Long staffUserId = userRepository.save(User.registerUser()).getId();
+		jdbcTemplate.update("UPDATE users SET role = ? WHERE id = ?", role, staffUserId);
+		return staffUserId;
 	}
 }

@@ -14,6 +14,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -38,13 +39,21 @@ public class Comment extends BaseEntity {
 	@Embedded
 	private CommentContent content;
 
+	@Embedded
+	private CommentMediaList media = new CommentMediaList();
+
 	private LocalDateTime deletedAt;
 
 	public static Comment register(Post post, Long userId, String content) {
+		return register(post, userId, content, List.of());
+	}
+
+	public static Comment register(Post post, Long userId, String content, List<PostMediaCommand> media) {
 		Comment comment = new Comment();
 		comment.post = requireNonNull(post);
 		comment.userId = requireNonNull(userId);
 		comment.content = new CommentContent(content);
+		comment.media.register(media);
 		return comment;
 	}
 
@@ -55,4 +64,9 @@ public class Comment extends BaseEntity {
 	public void delete() {
 		this.deletedAt = LocalDateTime.now();
 	}
+
+	public List<CommentMedia> getMedia() {
+		return media.list();
+	}
+
 }
