@@ -15,7 +15,7 @@ class ChannelTalkWebhookPayloadTest {
 	private static final String PREFIX = "development-";
 
 	private ChannelTalkWebhookPayload payload(String type, String chatType, String personType, String memberId) {
-		return new ChannelTalkWebhookPayload(type, new Entity(chatType, personType, "답변"), new Refers(new User(memberId)));
+		return new ChannelTalkWebhookPayload("push", type, new Entity(chatType, personType, "답변", null, null, null), new Refers(new User(memberId)));
 	}
 
 	@Test
@@ -58,13 +58,13 @@ class ChannelTalkWebhookPayloadTest {
 
 	@Test
 	void 메시지나_고객_정보가_빠지면_대상이_아니다() {
-		assertThat(new ChannelTalkWebhookPayload("message", null, new Refers(new User("development-42"))).recipientUserId(PREFIX)).isEmpty();
-		assertThat(new ChannelTalkWebhookPayload("message", new Entity("userChat", "manager", "답변"), null).recipientUserId(PREFIX)).isEmpty();
-		assertThat(new ChannelTalkWebhookPayload("message", new Entity("userChat", "manager", "답변"), new Refers(null)).recipientUserId(PREFIX)).isEmpty();
+		assertThat(new ChannelTalkWebhookPayload("push", "message", null, new Refers(new User("development-42"))).recipientUserId(PREFIX)).isEmpty();
+		assertThat(new ChannelTalkWebhookPayload("push", "message", new Entity("userChat", "manager", "답변", null, null, null), null).recipientUserId(PREFIX)).isEmpty();
+		assertThat(new ChannelTalkWebhookPayload("push", "message", new Entity("userChat", "manager", "답변", null, null, null), new Refers(null)).recipientUserId(PREFIX)).isEmpty();
 	}
 
 	private ChannelTalkWebhookPayload message(String plainText) {
-		return new ChannelTalkWebhookPayload("message", new Entity("userChat", "manager", plainText), null);
+		return new ChannelTalkWebhookPayload("push", "message", new Entity("userChat", "manager", plainText, null, null, null), null);
 	}
 
 	@Test
@@ -83,6 +83,26 @@ class ChannelTalkWebhookPayloadTest {
 	@ValueSource(strings = {"  ", "\n"})
 	void 글이_없는_메시지는_기본_문구를_쓴다(String plainText) {
 		assertThat(message(plainText).notificationBody()).isEqualTo("새 메시지가 도착했어요.");
-		assertThat(new ChannelTalkWebhookPayload("message", null, null).notificationBody()).isEqualTo("새 메시지가 도착했어요.");
+		assertThat(new ChannelTalkWebhookPayload("push", "message", null, null).notificationBody()).isEqualTo("새 메시지가 도착했어요.");
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = {"private", "silent", "silentToUser", "doNotSendApp", "doNotPost"})
+	void 내부_메모와_알림_억제_메시지는_보내지_않는다(String option) {
+		Entity entity = new Entity("userChat", "manager", "내부 메모", java.util.List.of(option), null, null);
+		var payload = new ChannelTalkWebhookPayload("push", "message", entity, new Refers(new User("development-42")));
+
+		assertThat(payload.recipientUserId(PREFIX)).isEmpty();
+	}
+
+	@Test
+	void 수정_이벤트와_마케팅_메시지는_보내지_않는다() {
+		Entity entity = new Entity("userChat", "manager", "답변", null, null, null);
+		Refers refers = new Refers(new User("development-42"));
+		assertThat(new ChannelTalkWebhookPayload("upsert", "message", entity, refers).recipientUserId(PREFIX)).isEmpty();
+		Entity broadcast = new Entity("userChat", "manager", "답변", null, true, null);
+		assertThat(new ChannelTalkWebhookPayload("push", "message", broadcast, refers).recipientUserId(PREFIX)).isEmpty();
+		Entity marketing = new Entity("userChat", "manager", "답변", null, null, new Object());
+		assertThat(new ChannelTalkWebhookPayload("push", "message", marketing, refers).recipientUserId(PREFIX)).isEmpty();
 	}
 }

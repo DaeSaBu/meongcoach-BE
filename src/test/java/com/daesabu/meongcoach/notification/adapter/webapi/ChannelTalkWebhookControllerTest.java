@@ -11,7 +11,7 @@ import static org.springframework.restdocs.request.RequestDocumentation.queryPar
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.daesabu.meongcoach.notification.adapter.security.ChannelTalkProperties;
+import com.daesabu.meongcoach.notification.application.ChannelTalkProperties;
 import com.daesabu.meongcoach.notification.application.provided.EventNotificationDispatcher;
 import com.daesabu.meongcoach.notification.application.provided.dto.EventNotificationDispatchRequest;
 import java.util.List;
@@ -44,7 +44,7 @@ class ChannelTalkWebhookControllerTest {
 						.queryParam("token", TOKEN)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
-								{"type":"message",
+								{"event":"push","type":"message",
 								"entity":{"chatType":"userChat","personType":"manager","plainText":"안녕하세요, 훈련사입니다."},
 								"refers":{"user":{"memberId":"development-42"}}}
 								"""))
@@ -67,7 +67,7 @@ class ChannelTalkWebhookControllerTest {
 						.queryParam("token", TOKEN)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
-								{"type":"message","entity":{"chatType":"userChat","personType":"user","plainText":"문의드려요"},
+								{"event":"push","type":"message","entity":{"chatType":"userChat","personType":"user","plainText":"문의드려요"},
 								"refers":{"user":{"memberId":"development-42"}}}
 								"""))
 				.andExpect(status().isOk());
@@ -81,7 +81,7 @@ class ChannelTalkWebhookControllerTest {
 						.queryParam("token", TOKEN)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
-								{"type":"message","entity":{"chatType":"userChat","personType":"manager","plainText":"답변"},
+								{"event":"push","type":"message","entity":{"chatType":"userChat","personType":"manager","plainText":"답변"},
 								"refers":{"user":{"memberId":"production-42"}}}
 								"""))
 				.andExpect(status().isOk());
@@ -95,7 +95,7 @@ class ChannelTalkWebhookControllerTest {
 						.queryParam("token", "wrong-token")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
-								{"type":"message","entity":{"chatType":"userChat","personType":"manager","plainText":"답변"},
+								{"event":"push","type":"message","entity":{"chatType":"userChat","personType":"manager","plainText":"답변"},
 								"refers":{"user":{"memberId":"development-42"}}}
 								"""))
 				.andExpect(status().isUnauthorized())
