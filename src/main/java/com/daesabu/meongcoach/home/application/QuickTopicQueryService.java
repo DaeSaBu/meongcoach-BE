@@ -16,13 +16,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,32 +30,23 @@ import org.springframework.transaction.annotation.Transactional;
 public class QuickTopicQueryService implements QuickTopicFinder {
 
 	private static final int LIMIT = 5;
-	private static final long TWO_YEARS_IN_MONTHS = 24;
 	private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
-	private static final List<Long> STARTER_UNDER_TWO = List.of(1601L, 1204L, 1303L, 1201L, 1602L);
-	private static final List<Long> STARTER_OVER_TWO = List.of(1101L, 1104L, 1102L, 1406L, 1411L);
-	private static final Set<Long> EARLY_CATEGORY_IDS = Set.of(16L, 15L);
 	private static final Comparator<TopicProgressResult> LATEST_FIRST = Comparator.comparing(
 			TopicProgressResult::lastStudiedAt, Comparator.nullsLast(Comparator.<LocalDateTime>reverseOrder()));
 
 	private final DogProfileFinder dogProfileFinder;
 	private final CurrentPlanFinder currentPlanFinder;
 	private final TopicProgressFinder topicProgressFinder;
+	private final QuickTopicProperties properties;
 
 	@Override
 	public List<QuickTopicResult> find(Long userId, Long dogId) {
 		DogProfileResult dog = dogProfileFinder.findDogProfile(userId, dogId);
 		LocalDate today = LocalDate.now(SEOUL);
-		boolean overTwo = isOverTwo(dog.birthDate(), today);
-		List<TopicProgressResult> topics = topicProgressFinder.findAll(userId);
-		List<TopicProgressResult> pictured = topics.stream()
+		boolean older = isOlder(dog.birthDate(), today);
+		List<TopicProgressResult> visible = topicProgressFinder.findAll(userId).stream()
 				.filter(this::hasThumbnail)
-				.toList();
-		if (topics.stream().noneMatch(TopicProgressResult::isStarted)) {
-			return findStarters(pictured, overTwo);
-		}
-		List<TopicProgressResult> visible = pictured.stream()
-				.filter(topic -> !overTwo || !EARLY_CATEGORY_IDS.contains(topic.categoryId()))
+				.filter(topic -> !older || topic.categorySortOrder() >= properties.olderDogMinCategoryOrder())
 				.toList();
 		Set<Long> planTopicIds = Set.copyOf(currentPlanFinder.findActiveTopicIds(userId, dogId));
 		List<QuickTopicResult> result = new ArrayList<>();
@@ -79,25 +67,11 @@ public class QuickTopicQueryService implements QuickTopicFinder {
 		return topic.thumbnailUrl() != null && !topic.thumbnailUrl().isBlank();
 	}
 
-	private boolean isOverTwo(LocalDate birthDate, LocalDate today) {
+	private boolean isOlder(LocalDate birthDate, LocalDate today) {
 		if (birthDate == null) {
 			return false;
 		}
-		return ChronoUnit.MONTHS.between(birthDate, today) >= TWO_YEARS_IN_MONTHS;
-	}
-
-	private List<QuickTopicResult> findStarters(List<TopicProgressResult> topics, boolean overTwo) {
-		Map<Long, TopicProgressResult> byId = topics.stream()
-				.collect(Collectors.toMap(TopicProgressResult::id, Function.identity()));
-		List<Long> starterIds = STARTER_UNDER_TWO;
-		if (overTwo) {
-			starterIds = STARTER_OVER_TWO;
-		}
-		return starterIds.stream()
-				.map(byId::get)
-				.filter(Objects::nonNull)
-				.map(topic -> new QuickTopicResult(topic, QuickTopicRole.STARTER))
-				.toList();
+		return ChronoUnit.MONTHS.between(birthDate, today) >= properties.olderDogMonths();
 	}
 
 	private Optional<TopicProgressResult> findContinue(List<TopicProgressResult> topics, Set<Long> planTopicIds) {
