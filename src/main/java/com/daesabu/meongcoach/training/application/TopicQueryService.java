@@ -19,7 +19,9 @@ import com.daesabu.meongcoach.training.domain.Topic;
 import com.daesabu.meongcoach.training.domain.exception.TopicNotFoundException;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -66,7 +68,23 @@ public class TopicQueryService implements TopicFinder, TopicCompletionChecker, P
 	public PlanPreparationResult find(Collection<Long> topicIds) {
 		List<Topic> topics = topicRepository.findAllByIdIn(topicIds, TopicRepository.EDUCATION_ORDER);
 		validateTopicsExist(topicIds, topics);
-		List<Curriculum> orderedCurriculums = topics.stream()
+		return toPlanPreparationResult(topics);
+	}
+
+	@Override
+	public PlanPreparationResult findInRequestOrder(List<Long> topicIds) {
+		List<Topic> topics = topicRepository.findAllById(topicIds);
+		validateTopicsExist(topicIds, topics);
+		Map<Long, Topic> topicsById = topics.stream()
+				.collect(Collectors.toMap(Topic::getId, Function.identity()));
+		List<Topic> orderedTopics = topicIds.stream()
+				.map(topicsById::get)
+				.toList();
+		return toPlanPreparationResult(orderedTopics);
+	}
+
+	private PlanPreparationResult toPlanPreparationResult(List<Topic> orderedTopics) {
+		List<Curriculum> orderedCurriculums = orderedTopics.stream()
 				.flatMap(topic -> topic.getCurriculums().stream())
 				.toList();
 		orderedCurriculums.forEach(Curriculum::validateHasLessons);

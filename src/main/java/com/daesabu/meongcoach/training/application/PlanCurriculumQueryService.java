@@ -8,6 +8,7 @@ import com.daesabu.meongcoach.training.application.provided.dto.PlanLessonResult
 import com.daesabu.meongcoach.training.application.provided.dto.TopicResult;
 import com.daesabu.meongcoach.training.application.required.CurriculumRepository;
 import com.daesabu.meongcoach.training.domain.Curriculum;
+import com.daesabu.meongcoach.training.domain.Topic;
 import com.daesabu.meongcoach.training.domain.exception.CurriculumNotFoundException;
 import java.util.List;
 import java.util.Map;
@@ -81,8 +82,9 @@ public class PlanCurriculumQueryService implements PlanCurriculumFinder {
 		boolean hasEntitlement = curriculum.findRequiredEntitlementType()
 				.map(activeTypes::contains)
 				.orElse(true);
-		return new PlanCurriculumResult(curriculum.getId(), curriculum.getTitle(), curriculum.getDescription(),
-				curriculum.isLocked(hasEntitlement), planLessons);
+		Topic topic = curriculum.getTopic();
+		return new PlanCurriculumResult(curriculum.getId(), topic.getId(), topic.getTitle(), curriculum.getTitle(),
+				curriculum.getDescription(), curriculum.isLocked(hasEntitlement), planLessons);
 	}
 
 	private Curriculum findCurriculumOrThrow(Map<Long, Curriculum> curriculumMap, Long curriculumId) {

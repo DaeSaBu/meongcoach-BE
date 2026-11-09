@@ -16,6 +16,7 @@ import com.daesabu.meongcoach.ai.application.required.AiAnalysisRepository;
 import com.daesabu.meongcoach.ai.application.required.VideoAnalyzer;
 import com.daesabu.meongcoach.ai.application.required.dto.VideoAnalysisResult;
 import com.daesabu.meongcoach.ai.domain.AiAnalysis;
+import com.daesabu.meongcoach.ai.domain.AiAnalysisCompletedEvent;
 import com.daesabu.meongcoach.ai.domain.AiAnalysisStatus;
 import com.daesabu.meongcoach.ai.domain.AiAnalysisUploadCommand;
 import com.daesabu.meongcoach.ai.domain.AiTrial;
@@ -30,6 +31,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.Answer;
+import org.springframework.context.ApplicationEventPublisher;
 
 class AiReportGenerateServiceTest {
 
@@ -47,6 +49,7 @@ class AiReportGenerateServiceTest {
 	private AiAnalysisRepository aiAnalysisRepository;
 	private AiTrialFinder aiTrialFinder;
 	private AiReportGenerateService service;
+	private ApplicationEventPublisher events;
 
 	private AiAnalysis issuedAnalysis;
 
@@ -64,7 +67,8 @@ class AiReportGenerateServiceTest {
 		videoAnalyzer = mock(VideoAnalyzer.class);
 		aiAnalysisRepository = mock(AiAnalysisRepository.class);
 		aiTrialFinder = mock(AiTrialFinder.class);
-		service = new AiReportGenerateService(storageUriResolver, videoAnalyzer, aiAnalysisRepository, aiTrialFinder);
+		events = mock(ApplicationEventPublisher.class);
+		service = new AiReportGenerateService(storageUriResolver, videoAnalyzer, aiAnalysisRepository, aiTrialFinder, events);
 
 		issuedAnalysis = AiAnalysis.uploading(
 				new AiAnalysisUploadCommand(USER_ID, OBJECT_KEY, Instant.now().plusSeconds(900), CONTEXT));
@@ -86,6 +90,17 @@ class AiReportGenerateServiceTest {
 		assertThat(savedAnalysis.getTitle()).isEqualTo(GENERATED_TITLE);
 		assertThat(savedAnalysis.getContent()).isEqualTo(ANALYZED_CONTENT);
 		assertThat(savedAnalysis.getStatus()).isEqualTo(AiAnalysisStatus.COMPLETED);
+	}
+
+	@Test
+	void 완료_저장_후_소유자의_알림_이벤트를_한번만_발행한다() {
+		service.generate(OBJECT_KEY);
+		service.generate(OBJECT_KEY);
+
+		var order = org.mockito.Mockito.inOrder(aiAnalysisRepository, events);
+		order.verify(aiAnalysisRepository, org.mockito.Mockito.times(2)).save(issuedAnalysis);
+		order.verify(events).publishEvent(new AiAnalysisCompletedEvent(USER_ID));
+		verify(events).publishEvent(any(AiAnalysisCompletedEvent.class));
 	}
 
 	@Test
@@ -132,6 +147,7 @@ class AiReportGenerateServiceTest {
 		service.generate(OBJECT_KEY);
 
 		verify(videoAnalyzer, never()).analyze(any(), any());
+		verifyNoInteractions(events);
 		assertThat(savedStatuses).containsExactly(AiAnalysisStatus.ANALYZING, AiAnalysisStatus.FAILED_TRIAL_EXCEEDED);
 	}
 
@@ -143,6 +159,7 @@ class AiReportGenerateServiceTest {
 
 		assertThat(savedStatuses).containsExactly(AiAnalysisStatus.ANALYZING, AiAnalysisStatus.FAILED_ANALYSIS);
 		assertThat(savedAnalysis.getContent()).isNull();
+		verifyNoInteractions(events);
 	}
 
 	@Test
@@ -182,6 +199,7 @@ class AiReportGenerateServiceTest {
 
 		assertThat(savedStatuses).containsExactly(AiAnalysisStatus.ANALYZING, AiAnalysisStatus.FAILED_UNEXPECTED);
 		assertThat(savedAnalysis.getReport()).isNull();
+		verifyNoInteractions(events);
 	}
 
 	@Test

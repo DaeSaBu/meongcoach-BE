@@ -6,6 +6,8 @@ import com.daesabu.meongcoach.ai.application.required.AiAnalysisRepository;
 import com.daesabu.meongcoach.ai.application.required.VideoAnalyzer;
 import com.daesabu.meongcoach.ai.application.required.dto.VideoAnalysisResult;
 import com.daesabu.meongcoach.ai.domain.AiAnalysis;
+import com.daesabu.meongcoach.ai.domain.AiAnalysisCompletedEvent;
+import com.daesabu.meongcoach.ai.domain.AiAnalysisStatus;
 import com.daesabu.meongcoach.ai.domain.AiTrial;
 import com.daesabu.meongcoach.ai.domain.AiVideo;
 import com.daesabu.meongcoach.ai.domain.exception.VideoAnalysisFailedException;
@@ -13,6 +15,7 @@ import com.daesabu.meongcoach.media.application.provided.MediaStorageUriResolver
 import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -24,6 +27,7 @@ public class AiReportGenerateService implements AiReportGenerator {
 	private final VideoAnalyzer videoAnalyzer;
 	private final AiAnalysisRepository aiAnalysisRepository;
 	private final AiTrialFinder aiTrialFinder;
+	private final ApplicationEventPublisher events;
 
 	@Override
 	public void generate(String objectKey) {
@@ -47,6 +51,10 @@ public class AiReportGenerateService implements AiReportGenerator {
 		catch (Exception e) {
 			log.error("예상하지 못한 오류로 리포트 생성에 실패했다: {}", objectKey, e);
 			recordFailure(analysis, AiAnalysis::failUnexpectedly);
+			return;
+		}
+		if (analysis.getStatus() == AiAnalysisStatus.COMPLETED) {
+			events.publishEvent(new AiAnalysisCompletedEvent(analysis.getUserId()));
 		}
 	}
 
