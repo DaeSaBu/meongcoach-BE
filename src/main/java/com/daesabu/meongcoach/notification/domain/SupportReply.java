@@ -4,8 +4,19 @@ import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
-public record SupportReply(String event, String type, String chatType, String senderType, String text,
-                           List<String> options, boolean broadcast, boolean marketing, String memberId) {
+public final class SupportReply {
+	private final Long recipientUserId;
+	private final String text;
+
+	private SupportReply(Long recipientUserId, String text) {
+		this.recipientUserId = recipientUserId;
+		this.text = text;
+	}
+
+	public Long recipientUserId() {
+		return recipientUserId;
+	}
+
 	private static final List<String> SUPPRESSED_OPTIONS = List.of("private", "silent", "silentToUser", "doNotSendApp", "doNotPost");
 
 	private static final String MESSAGE_TYPE = "message";
@@ -16,18 +27,17 @@ public record SupportReply(String event, String type, String chatType, String se
 	private static final int MAX_BODY_LENGTH = 100;
 	private static final String ELLIPSIS = "…";
 
-	public Optional<Long> recipientUserId() {
-		if (!isManagerReply()) {
+	public static Optional<SupportReply> from(SupportReplyCommand command) {
+		if (!isManagerReply(command)) {
 			return Optional.empty();
 		}
-		if (memberId == null) {
+		String memberId = command.memberId();
+		if (memberId == null || !USER_ID.matcher(memberId).matches()) {
 			return Optional.empty();
 		}
-		if (!USER_ID.matcher(memberId).matches()) {
-			return Optional.empty();
-		}
-		Long recipientId = Long.valueOf(memberId);
-		return Optional.of(recipientId);
+		Long recipientUserId = Long.valueOf(memberId);
+		SupportReply reply = new SupportReply(recipientUserId, command.text());
+		return Optional.of(reply);
 	}
 
 	public String notificationBody() {
@@ -42,15 +52,16 @@ public record SupportReply(String event, String type, String chatType, String se
 		return message.substring(0, endIndex) + ELLIPSIS;
 	}
 
-	private boolean isManagerReply() {
-		return "push".equals(event) && MESSAGE_TYPE.equals(type)
-				&& USER_CHAT.equals(chatType) && MANAGER.equals(senderType) && !isSuppressed();
+	private static boolean isManagerReply(SupportReplyCommand command) {
+		return "push".equals(command.event()) && MESSAGE_TYPE.equals(command.type())
+				&& USER_CHAT.equals(command.chatType()) && MANAGER.equals(command.senderType()) && !isSuppressed(command);
 	}
 
-	private boolean isSuppressed() {
-		if (broadcast || marketing) {
+	private static boolean isSuppressed(SupportReplyCommand command) {
+		if (command.broadcast() || command.marketing()) {
 			return true;
 		}
+		List<String> options = command.options();
 		if (options == null) {
 			return false;
 		}

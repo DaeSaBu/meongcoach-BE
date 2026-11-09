@@ -5,7 +5,9 @@ import com.daesabu.meongcoach.notification.application.provided.SupportReplyNoti
 import com.daesabu.meongcoach.notification.application.provided.dto.ChannelTalkWebhookRequest;
 import com.daesabu.meongcoach.notification.application.provided.dto.EventNotificationDispatchRequest;
 import com.daesabu.meongcoach.notification.domain.SupportReply;
+import com.daesabu.meongcoach.notification.domain.SupportReplyCommand;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -24,12 +26,17 @@ public class SupportReplyNotificationService implements SupportReplyNotifier {
 	@Override
 	@Transactional(propagation = Propagation.SUPPORTS)
 	public void notifyReply(ChannelTalkWebhookRequest request) {
-		SupportReply reply = request.toReply();
-		reply.recipientUserId().ifPresent(userId -> {
-			String body = reply.notificationBody();
-			EventNotificationDispatchRequest dispatch = new EventNotificationDispatchRequest("SUPPORT_REPLY", "USERS",
-					List.of(userId), TITLE, body, DEEP_LINK);
-			eventDispatcher.dispatch(dispatch);
-		});
+		SupportReplyCommand command = request.toCommand();
+		Optional<SupportReply> result = SupportReply.from(command);
+		if (result.isEmpty()) {
+			return;
+		}
+
+		SupportReply reply = result.get();
+		Long userId = reply.recipientUserId();
+		String body = reply.notificationBody();
+		EventNotificationDispatchRequest dispatch = new EventNotificationDispatchRequest("SUPPORT_REPLY", "USERS",
+				List.of(userId), TITLE, body, DEEP_LINK);
+		eventDispatcher.dispatch(dispatch);
 	}
 }

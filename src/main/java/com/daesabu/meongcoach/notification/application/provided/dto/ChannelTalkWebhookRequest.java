@@ -1,16 +1,16 @@
 package com.daesabu.meongcoach.notification.application.provided.dto;
 
-import com.daesabu.meongcoach.notification.domain.SupportReply;
+import com.daesabu.meongcoach.notification.domain.SupportReplyCommand;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record ChannelTalkWebhookRequest(String event, String type, Entity entity, Refers refers) {
 
-	public SupportReply toReply() {
+	public SupportReplyCommand toCommand() {
 		String memberId = memberId();
 		if (entity == null) {
-			return new SupportReply(event, type, null, null, null, null, false, false, memberId);
+			return new SupportReplyCommand(event, type, null, null, null, null, false, false, memberId);
 		}
 		String chatType = entity.chatType();
 		String senderType = entity.personType();
@@ -18,7 +18,7 @@ public record ChannelTalkWebhookRequest(String event, String type, Entity entity
 		List<String> options = entity.options();
 		boolean broadcast = Boolean.TRUE.equals(entity.broadcastedMsg());
 		boolean marketing = entity.marketing() != null;
-		return new SupportReply(event, type, chatType, senderType, text, options, broadcast, marketing, memberId);
+		return new SupportReplyCommand(event, type, chatType, senderType, text, options, broadcast, marketing, memberId);
 	}
 
 	private String memberId() {
