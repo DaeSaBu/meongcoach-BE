@@ -6,7 +6,8 @@ import java.util.Arrays;
 public enum NotificationEventType {
 	AI_ANALYSIS,
 	OPERATOR_MESSAGE,
-	COMMENT;
+	COMMENT,
+	SUPPORT_REPLY;
 
 	public static NotificationEventType from(String value) {
 		return Arrays.stream(values())

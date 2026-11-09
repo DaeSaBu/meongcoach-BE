@@ -33,6 +33,10 @@ sentry:
   send-default-pii: false
 
 meongcoach:
+  channel-talk:
+    environment: local
+    webhook-token: ${CHANNEL_TALK_WEBHOOK_TOKEN:}
+    member-hash-key: ${CHANNEL_TALK_MEMBER_HASH_KEY:}
   # 이보다 낮은 앱 버전의 요청은 426으로 거절해 강제 업데이트를 유도한다. 스토어 출시 후 환경 변수로 올린다
   app-version:
     minimum:

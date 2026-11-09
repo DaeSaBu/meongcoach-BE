@@ -18,15 +18,15 @@ flowchart LR
 
 | 항목 | 스케줄 알림 | 이벤트 알림 |
 |---|---|---|
-| 해당 알림 | 훈련 | AI 분석, 운영 알림, 댓글 |
+| 해당 알림 | 훈련 | AI 분석, 운영 알림, 댓글, 문의 답변 |
 | 회원 설정 | `NotificationSchedule` | `NotificationEventSetting` |
 | 발송 대상 | 그 시각을 켠 회원 | 지정한 회원 중 그 종류를 켠 회원 |
 | 문구 | 서버가 정함 | 호출자가 정함 |
-| 중복 방지 | 잠금과 완료 이력 | 없음 |
+| 중복 방지 | 잠금과 완료 이력 | 호출자가 처리 |
 | 유스케이스 | `ScheduledNotificationDispatcher` | `EventNotificationDispatcher` |
 
 `NotificationDispatchService`가 두 유스케이스를 구현하고 FID 조회, FCM 전송, 무효 FID 삭제를 공유합니다.
-알림 이력 테이블과 발송 로그는 두지 않습니다.
+정기 발송 완료와 채널톡 웹훅 수신 기록으로 중복을 판별합니다.
 
 ## 애그리거트
 
@@ -34,8 +34,9 @@ flowchart LR
 |---|---|---|
 | `DeviceInstallation` | FID당 한 행 | 회원 ID, Firebase Installation ID(FID), 플랫폼(`IOS`·`ANDROID`), 마지막 확인 시각 |
 | `NotificationSchedule` | 회원·시·분당 한 행 | 시(Asia/Seoul 기준 0~23), 분(0~59), 수신 여부 |
-| `NotificationEventSetting` | 회원·종류당 한 행 | 종류(`AI_ANALYSIS`·`OPERATOR_MESSAGE`·`COMMENT`), 수신 여부 |
+| `NotificationEventSetting` | 회원·종류당 한 행 | 종류(`AI_ANALYSIS`·`OPERATOR_MESSAGE`·`COMMENT`·`SUPPORT_REPLY`), 수신 여부 |
 | `ScheduledNotificationDispatch` | 예약 시각당 한 행 | 완료한 예약 시각 |
+| `SupportReplyReceipt` | 메시지 ID당 한 행 | 처리한 채널톡 답변과 수신 시각 |
 
 - 회원은 ID로만 참조합니다. 다른 모듈의 엔티티를 연관으로 잡지 않습니다.
 - FID는 전체에서 유니크입니다. 같은 FID가 다시 들어오면 회원 ID와 마지막 확인 시각을 덮어씁니다.
@@ -110,7 +111,7 @@ FCM 호출 중에는 DB 트랜잭션을 열지 않습니다. 수신자는 별도
 전송 호출이 실패하면 502를 반환하며 재시도하지 않습니다. 그 호출 앞 배치의 수신 불가 FID는 다음 발송이 성공할 때 삭제됩니다.
 제목은 100자, 본문은 500자까지입니다. 딥링크는 선택이며 `meongcoach://`로 시작해야 합니다.
 대상 `ALL`은 `userIds` 없이, `USERS`는 1~1,000명으로 보냅니다.
-다른 모듈은 HTTP 대신 `EventNotificationDispatcher`를 호출합니다. 지금 호출하는 모듈은 `community`(댓글 알림)입니다.
+다른 모듈은 HTTP 대신 `EventNotificationDispatcher`를 호출합니다. `community`(댓글 알림), `ai`(분석 완료 알림)와 채널톡 웹훅이 호출합니다.
 
 ### 댓글 알림 (community 모듈 호출)
 
@@ -155,3 +156,58 @@ Android는 HIGH 우선순위와 TTL 1시간을 사용합니다. APNs는 우선�
 
 `V37`은 기존 `device_tokens` 테이블과 등록 토큰을 삭제하고 FID 전용 `device_installations` 테이블을 만듭니다. 수신 설정은 유지합니다.
 기존 앱은 FID 지원 앱으로 업데이트해야 새 발송 대상에 포함됩니다. 백엔드의 새 API와 마이그레이션을 먼저 배포하고 앱을 배포합니다.
+
+
+## 채널톡 문의 답변
+
+앱은 `GET /api/notifications/support-session`으로 `memberId`와 `memberHash`를 받아 Web SDK를 실행합니다.
+회원 식별자는 `dev-{회원 ID}`, `prod-{회원 ID}`, `local-{회원 ID}`입니다.
+회원 해시는 채널톡의 16진수 비밀 키를 바이트로 풀어 HMAC-SHA256으로 생성합니다.
+로그인한 회원의 식별값만 반환하며 키가 없으면 503으로 응답합니다.
+
+채널톡의 회원 해시 검증을 켜야 다른 회원 ID로 상담 기록에 접근하는 것을 막을 수 있습니다.
+이전 익명 상담 기록은 새 회원 상담에 자동으로 합쳐지지 않습니다.
+
+```mermaid
+sequenceDiagram
+    participant App as 앱
+    participant API as 백엔드
+    participant Channel as 채널톡
+    participant FCM as Firebase
+    App->>API: 로그인한 회원의 상담 식별값 조회
+    API-->>App: memberId, memberHash
+    App->>Channel: 회원 상담 열기
+    Channel->>API: 상담원 답변 웹훅 + token
+    API->>API: 환경·답변·수신 설정·중복 확인
+    API->>FCM: SUPPORT_REPLY 발송
+    FCM-->>App: 문의 답변 알림
+    App->>Channel: 알림을 누르면 문의 화면 열기
+```
+
+`POST /webhooks/channel-talk?token={토큰}`은 채널톡 웹훅 토큰으로 인증합니다.
+토큰이 없거나 다르면 401을 반환합니다.
+`event=push`, `type=message`, `entity.chatType=userChat`, `entity.personType=manager`인 메시지만 받습니다.
+`refers.user.memberId`의 환경이 서버와 같고 회원 ID가 양의 정수여야 합니다.
+고객·봇 메시지, 내부 메모, 알림 억제 옵션, 마케팅·일괄 발송 메시지는 제외합니다.
+답변 내용은 푸시 본문에 싣지 않습니다.
+
+`SUPPORT_REPLY`는 기본으로 켜져 있습니다.
+기존 FID 소유 회원의 설정은 `V48`에서 만들고 새 FID 등록 때 빠진 기본 설정을 채웁니다.
+활성 회원·수신 설정·FID 필터는 이벤트 발송 규칙을 따릅니다.
+딥링크는 `meongcoach://support-chat`이며 문의 화면을 엽니다.
+
+같은 메시지 ID는 트랜잭션 잠금과 `support_reply_receipts`로 중복을 막습니다.
+전송이 실패하면 수신 기록을 롤백하고 502를 반환합니다.
+FCM 전송 뒤 DB 커밋 전에 서버가 종료되거나 일부 기기만 전송에 성공하면 재수신 때 중복이 생길 수 있습니다.
+
+### 설정
+
+- `CHANNEL_TALK_WEBHOOK_TOKEN`: 채널톡 웹훅이 URL의 `token` 쿼리로 보내는 값입니다. 환경별 웹훅에 서로 다른 토큰을 씁니다.
+- `CHANNEL_TALK_MEMBER_HASH_KEY`: 채널톡 보안 설정의 회원 해시 키입니다. 64자리 16진수이며 서버에만 둡니다.
+- `meongcoach.channel-talk.environment`: 프로파일이 `dev`·`prod`를 지정하며 로컬 기본값은 `local`입니다.
+
+채널톡 관리자에서 환경별 API 서버의 `/webhooks/channel-talk` URL을 등록하고 고객 상담 메시지 이벤트를 켭니다.
+웹훅 토큰이 포함된 쿼리는 접근 로그에 남기지 않습니다.
+백엔드와 비밀값을 먼저 배포한 뒤 앱을 배포합니다.
+
+공급자 계약은 [웹훅 시작하기](https://developers.channel.io/en/articles/Getting-started-f2a30b58), [웹훅 이벤트](https://developers.channel.io/en/articles/Webhook-events-7bd9b8e2), [회원 해시](https://developers.channel.io/en/articles/cca4bd14)를 따릅니다.

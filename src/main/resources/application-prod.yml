@@ -10,6 +10,8 @@ spring:
       ddl-auto: validate
 
 meongcoach:
+  channel-talk:
+    environment: prod
   # 기본값이 이미 false지만 운영에서 문서를 차단한다는 의도를 명시한다
   api-docs:
     enabled: false

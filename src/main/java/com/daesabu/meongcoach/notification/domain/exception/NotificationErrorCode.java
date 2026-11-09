@@ -12,6 +12,8 @@ public enum NotificationErrorCode implements ErrorCode {
 	NOTIFICATION_DISPATCH_TIME_INVALID(400, "예약 시각은 현재부터 1시간 전 사이여야 합니다."),
 	NOTIFICATION_TARGET_INVALID(400, "알림 대상은 ALL 또는 1명 이상 1,000명 이하의 USERS여야 합니다."),
 	NOTIFICATION_DEEP_LINK_INVALID(400, "딥링크는 meongcoach:// 로 시작해야 합니다."),
+	NOTIFICATION_CHANNEL_TALK_TOKEN_INVALID(401, "채널톡 웹훅 인증에 실패했습니다."),
+	NOTIFICATION_CHANNEL_TALK_UNAVAILABLE(503, "문의 상담을 준비하고 있습니다."),
 	NOTIFICATION_DELIVERY_FAILED(502, "알림 발송에 실패했습니다."),
 	;
 

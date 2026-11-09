@@ -49,6 +49,7 @@ import org.springframework.web.servlet.HandlerExceptionResolver;
 public class SecurityConfig {
 
 	private static final String[] PERMIT_ALL_PATHS = {
+			"/webhooks/channel-talk",
 			"/api/health",
 			"/api/auth/login/social",
 			"/api/auth/login/email",
