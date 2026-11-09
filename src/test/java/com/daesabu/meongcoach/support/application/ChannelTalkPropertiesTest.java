@@ -1,9 +1,9 @@
-package com.daesabu.meongcoach.notification.application;
+package com.daesabu.meongcoach.support.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.daesabu.meongcoach.notification.domain.exception.ChannelTalkUnavailableException;
+import com.daesabu.meongcoach.support.domain.exception.ChannelTalkUnavailableException;
 import org.junit.jupiter.api.Test;
 
 class ChannelTalkPropertiesTest {

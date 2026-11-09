@@ -1,4 +1,4 @@
-package com.daesabu.meongcoach.notification.application.provided;
+package com.daesabu.meongcoach.support.application.provided;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

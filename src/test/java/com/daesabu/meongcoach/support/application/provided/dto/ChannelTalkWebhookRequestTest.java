@@ -1,8 +1,8 @@
-package com.daesabu.meongcoach.notification.application.provided.dto;
+package com.daesabu.meongcoach.support.application.provided.dto;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.daesabu.meongcoach.notification.domain.SupportReplyCommand;
+import com.daesabu.meongcoach.support.domain.SupportReplyCommand;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 

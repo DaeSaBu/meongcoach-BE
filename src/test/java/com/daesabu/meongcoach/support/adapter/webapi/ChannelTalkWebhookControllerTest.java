@@ -1,4 +1,4 @@
-package com.daesabu.meongcoach.notification.adapter.webapi;
+package com.daesabu.meongcoach.support.adapter.webapi;
 
 import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.document;
 import static org.mockito.BDDMockito.then;
@@ -10,8 +10,8 @@ import static org.springframework.restdocs.request.RequestDocumentation.paramete
 import static org.springframework.restdocs.request.RequestDocumentation.queryParameters;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.daesabu.meongcoach.notification.application.provided.SupportReplyNotifier;
-import com.daesabu.meongcoach.notification.application.provided.dto.ChannelTalkWebhookRequest;
+import com.daesabu.meongcoach.support.application.provided.SupportReplyNotifier;
+import com.daesabu.meongcoach.support.application.provided.dto.ChannelTalkWebhookRequest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
@@ -24,7 +24,7 @@ import org.springframework.test.web.servlet.MockMvc;
 @AutoConfigureRestDocs
 class ChannelTalkWebhookControllerTest {
 
-	private static final String WEBHOOK_PATH = "/webhooks/channel-talk";
+	private static final String WEBHOOK_PATH = "/webhooks/channel-talk/support-replies";
 	private static final String TOKEN = "test-channel-talk-webhook-token";
 
 	@Autowired
@@ -44,7 +44,7 @@ class ChannelTalkWebhookControllerTest {
 								"refers":{"user":{"memberId":"42"}}}
 								"""))
 				.andExpect(status().isOk())
-				.andDo(document("notification/channel-talk-webhook",
+				.andDo(document("support/channel-talk-webhook",
 						queryParameters(parameterWithName("token").description("채널톡 데스크에 등록한 웹훅 주소의 토큰")),
 						relaxedRequestFields(fieldWithPath("event").description("이벤트 동작. push만 처리"), fieldWithPath("type").description("이벤트 종류. message만 처리"),
 								fieldWithPath("entity.chatType").description("채팅 종류. userChat만 처리"),
@@ -64,7 +64,7 @@ class ChannelTalkWebhookControllerTest {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("not-json"))
 				.andExpect(status().isBadRequest())
-				.andDo(document("notification/channel-talk-webhook-error",
+				.andDo(document("support/channel-talk-webhook-error",
 						responseFields(
 								fieldWithPath("title").description("HTTP 상태 이름"),
 								fieldWithPath("status").description("HTTP 상태 코드"),

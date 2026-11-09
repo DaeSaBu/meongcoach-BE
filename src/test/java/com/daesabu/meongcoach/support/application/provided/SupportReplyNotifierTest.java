@@ -1,4 +1,4 @@
-package com.daesabu.meongcoach.notification.application.provided;
+package com.daesabu.meongcoach.support.application.provided;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -6,7 +6,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
-import com.daesabu.meongcoach.notification.application.provided.dto.ChannelTalkWebhookRequest;
 import com.daesabu.meongcoach.notification.application.required.DeviceInstallationRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationEventSettingRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationSender;
@@ -18,6 +17,7 @@ import com.daesabu.meongcoach.notification.domain.NotificationEventSetting;
 import com.daesabu.meongcoach.notification.domain.NotificationEventType;
 import com.daesabu.meongcoach.notification.domain.PushNotification;
 import com.daesabu.meongcoach.support.ApplicationTest;
+import com.daesabu.meongcoach.support.application.provided.dto.ChannelTalkWebhookRequest;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.User;
 import java.time.Instant;
