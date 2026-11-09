@@ -8,6 +8,7 @@ import com.daesabu.meongcoach.home.domain.QuickTopicRole;
 import com.daesabu.meongcoach.plan.application.provided.CurrentPlanFinder;
 import com.daesabu.meongcoach.training.application.provided.TopicProgressFinder;
 import com.daesabu.meongcoach.training.application.provided.dto.TopicProgressResult;
+import com.daesabu.meongcoach.training.domain.shared.ProgressStatus;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -53,7 +54,7 @@ public class QuickTopicQueryService implements QuickTopicFinder {
 		findContinue(visible, planTopicIds)
 				.ifPresent(topic -> result.add(new QuickTopicResult(topic, QuickTopicRole.IN_PROGRESS)));
 		List<TopicProgressResult> fresh = new ArrayList<>(visible.stream()
-				.filter(topic -> !topic.isStarted())
+				.filter(topic -> topic.status() == ProgressStatus.NOT_STARTED)
 				.filter(topic -> !planTopicIds.contains(topic.id()))
 				.toList());
 		Collections.shuffle(fresh, new Random(Objects.hash(userId, today)));
@@ -76,7 +77,7 @@ public class QuickTopicQueryService implements QuickTopicFinder {
 
 	private Optional<TopicProgressResult> findContinue(List<TopicProgressResult> topics, Set<Long> planTopicIds) {
 		List<TopicProgressResult> inProgress = topics.stream()
-				.filter(TopicProgressResult::isInProgress)
+				.filter(topic -> topic.status() == ProgressStatus.IN_PROGRESS)
 				.sorted(LATEST_FIRST)
 				.toList();
 		return inProgress.stream()

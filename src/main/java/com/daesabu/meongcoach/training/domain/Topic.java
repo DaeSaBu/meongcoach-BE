@@ -66,6 +66,12 @@ public class Topic extends BaseEntity {
 				&& curriculums.stream().allMatch(curriculum -> curriculum.isCompleted(progresses));
 	}
 
+	public TopicCompletion completion(LessonProgresses progresses) {
+		List<Long> lessonIds = getAllLessonIds();
+		int completed = progresses.countCompletedIn(lessonIds);
+		return TopicCompletion.of(lessonIds.size(), completed);
+	}
+
 	public List<Long> getAllLessonIds() {
 		return curriculums.stream()
 				.flatMap(curriculum -> curriculum.getLessonIds().stream())
