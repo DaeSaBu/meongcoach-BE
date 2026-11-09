@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.daesabu.meongcoach.dog.application.required.DogRepository;
 import com.daesabu.meongcoach.dog.domain.Dog;
-import com.daesabu.meongcoach.dog.domain.DogSex;
 import com.daesabu.meongcoach.dog.domain.DogStatus;
 import com.daesabu.meongcoach.dog.domain.Dogs;
 import com.daesabu.meongcoach.dog.domain.exception.BreedRequiredException;
@@ -13,6 +12,7 @@ import com.daesabu.meongcoach.dog.domain.exception.DogLimitExceededException;
 import com.daesabu.meongcoach.dog.domain.exception.InvalidDogSexException;
 import com.daesabu.meongcoach.dog.domain.exception.InvalidPersonalityException;
 import com.daesabu.meongcoach.dog.domain.shared.Breed;
+import com.daesabu.meongcoach.dog.domain.shared.DogSex;
 import com.daesabu.meongcoach.dog.domain.shared.Personality;
 import com.daesabu.meongcoach.dog.domain.shared.RegisteredBreed;
 import com.daesabu.meongcoach.media.domain.exception.InvalidMediaUrlException;

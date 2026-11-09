@@ -5,9 +5,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.daesabu.meongcoach.dog.domain.Dog;
 import com.daesabu.meongcoach.dog.domain.DogRegisterCommand;
-import com.daesabu.meongcoach.dog.domain.DogSex;
 import com.daesabu.meongcoach.dog.domain.exception.DogNotFoundException;
 import com.daesabu.meongcoach.dog.domain.shared.Breed;
+import com.daesabu.meongcoach.dog.domain.shared.DogSex;
 import com.daesabu.meongcoach.home.application.provided.dto.QuickTopicResult;
 import com.daesabu.meongcoach.home.domain.QuickTopicRole;
 import com.daesabu.meongcoach.plan.domain.Plan;
