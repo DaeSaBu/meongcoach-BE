@@ -3,8 +3,8 @@ package com.daesabu.meongcoach.notification.application;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.daesabu.meongcoach.notification.domain.exception.InvalidChannelTalkTokenException;
 import com.daesabu.meongcoach.notification.domain.exception.ChannelTalkUnavailableException;
+import com.daesabu.meongcoach.notification.domain.exception.InvalidChannelTalkTokenException;
 import org.junit.jupiter.api.Test;
 
 class ChannelTalkPropertiesTest {

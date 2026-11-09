@@ -7,13 +7,13 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.daesabu.meongcoach.notification.application.provided.dto.ChannelTalkWebhookRequest;
+import com.daesabu.meongcoach.notification.application.provided.dto.DeviceInstallationRegisterRequest;
+import com.daesabu.meongcoach.notification.application.provided.dto.NotificationEventSettingUpdateRequest;
 import com.daesabu.meongcoach.notification.application.required.NotificationSender;
 import com.daesabu.meongcoach.notification.domain.NotificationDelivery;
 import com.daesabu.meongcoach.notification.domain.PushNotification;
 import com.daesabu.meongcoach.notification.domain.exception.InvalidChannelTalkTokenException;
 import com.daesabu.meongcoach.notification.domain.exception.NotificationDeliveryException;
-import com.daesabu.meongcoach.notification.application.provided.dto.DeviceInstallationRegisterRequest;
-import com.daesabu.meongcoach.notification.application.provided.dto.NotificationEventSettingUpdateRequest;
 import com.daesabu.meongcoach.support.ApplicationTest;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.User;

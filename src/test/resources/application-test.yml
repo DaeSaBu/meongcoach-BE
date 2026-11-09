@@ -25,6 +25,10 @@ spring:
       mode: never
 
 meongcoach:
+  channel-talk:
+    environment: local
+    webhook-token: test-channel-talk-token
+    member-hash-key: 4629de5def93d6a2abea6afa9bd5476d9c6cbc04223f9a2f7e517b535dde3e25
   google-cloud:
     project-id: test-gcp-project
     # 테스트 전용으로 생성한 RSA 키를 담은 가짜 서비스 계정 JSON(base64). 서명은 로컬 연산이라 Google에 등록된 키가 아니어도 URL이 만들어진다

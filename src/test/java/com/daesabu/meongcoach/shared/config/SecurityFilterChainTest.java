@@ -5,6 +5,7 @@ import static com.daesabu.meongcoach.support.AppClientRequests.appGet;
 import static com.daesabu.meongcoach.support.AppClientRequests.appPost;
 import static com.daesabu.meongcoach.support.AppClientRequests.appPut;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -65,6 +66,18 @@ class SecurityFilterChainTest {
 		User user = User.registerUser();
 		user.completeOnboarding(new UserProfileCreateCommand("멍멍이집사", null, "INFP", Set.of(), Set.of()));
 		return user;
+	}
+
+	@Test
+	void 채널톡_웹훅은_JWT와_앱_헤더_없이_토큰으로_인증한다() throws Exception {
+		mockMvc.perform(post("/webhooks/channel-talk").queryParam("token", "test-channel-talk-token")
+						.contentType(MediaType.APPLICATION_JSON).content("{\"event\":\"ping\"}"))
+				.andExpect(status().isNoContent());
+
+		mockMvc.perform(post("/webhooks/channel-talk")
+						.contentType(MediaType.APPLICATION_JSON).content("{\"event\":\"ping\"}"))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.code").value("NOTIFICATION_CHANNEL_TALK_TOKEN_INVALID"));
 	}
 
 	@Test
