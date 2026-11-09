@@ -2,7 +2,7 @@ package com.daesabu.meongcoach.notification.application.provided.dto;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.daesabu.meongcoach.notification.domain.SupportReply;
+import com.daesabu.meongcoach.notification.domain.SupportReplyCommand;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -13,7 +13,7 @@ class ChannelTalkWebhookRequestTest {
 		var refers = new ChannelTalkWebhookRequest.Refers(new ChannelTalkWebhookRequest.User("42"));
 		var request = new ChannelTalkWebhookRequest("push", "message", entity, refers);
 
-		assertThat(request.toReply()).isEqualTo(new SupportReply("push", "message", "userChat", "manager", "답변",
+		assertThat(request.toCommand()).isEqualTo(new SupportReplyCommand("push", "message", "userChat", "manager", "답변",
 				List.of("private"), true, true, "42"));
 	}
 
@@ -21,8 +21,7 @@ class ChannelTalkWebhookRequestTest {
 	void 메시지가_빠져도_판별할_수_있는_객체로_변환한다() {
 		var request = new ChannelTalkWebhookRequest("push", "message", null, null);
 
-		assertThat(request.toReply()).isEqualTo(new SupportReply("push", "message", null, null, null, null, false, false, null));
-		assertThat(request.toReply().recipientUserId()).isEmpty();
+		assertThat(request.toCommand()).isEqualTo(new SupportReplyCommand("push", "message", null, null, null, null, false, false, null));
 	}
 
 	@Test
@@ -30,7 +29,7 @@ class ChannelTalkWebhookRequestTest {
 		var entity = new ChannelTalkWebhookRequest.Entity("userChat", "manager", "답변", null, null, null);
 		var request = new ChannelTalkWebhookRequest("push", "message", entity, new ChannelTalkWebhookRequest.Refers(null));
 
-		assertThat(request.toReply()).isEqualTo(new SupportReply("push", "message", "userChat", "manager", "답변",
+		assertThat(request.toCommand()).isEqualTo(new SupportReplyCommand("push", "message", "userChat", "manager", "답변",
 				null, false, false, null));
 	}
 }
