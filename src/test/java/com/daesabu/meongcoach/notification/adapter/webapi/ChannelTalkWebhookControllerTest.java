@@ -10,9 +10,8 @@ import static org.springframework.restdocs.request.RequestDocumentation.paramete
 import static org.springframework.restdocs.request.RequestDocumentation.queryParameters;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.daesabu.meongcoach.notification.application.provided.EventNotificationDispatcher;
-import com.daesabu.meongcoach.notification.application.provided.dto.EventNotificationDispatchRequest;
-import java.util.List;
+import com.daesabu.meongcoach.notification.application.provided.SupportReplyNotifier;
+import com.daesabu.meongcoach.notification.application.provided.dto.ChannelTalkWebhookRequest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
@@ -32,10 +31,10 @@ class ChannelTalkWebhookControllerTest {
 	private MockMvc mockMvc;
 
 	@MockitoBean
-	private EventNotificationDispatcher dispatcher;
+	private SupportReplyNotifier notifier;
 
 	@Test
-	void 운영자가_답하면_답변을_받은_회원에게_알림을_요청한다() throws Exception {
+	void 웹훅_JSON을_요청_객체로_변환해_알림_서비스에_전달한다() throws Exception {
 		mockMvc.perform(post(WEBHOOK_PATH)
 						.queryParam("token", TOKEN)
 						.contentType(MediaType.APPLICATION_JSON)
@@ -53,36 +52,9 @@ class ChannelTalkWebhookControllerTest {
 								fieldWithPath("entity.plainText").description("메시지 본문. 알림 본문에 앞 100자까지 쓴다"),
 								fieldWithPath("refers.user.memberId").description("앱이 채널톡을 부팅할 때 넘긴 회원 ID 문자열"))));
 
-		then(dispatcher).should().dispatch(new EventNotificationDispatchRequest("SUPPORT_REPLY", "USERS", List.of(42L),
-				"문의하신 내용에 답변이 왔어요", "안녕하세요, 훈련사입니다.", "meongcoach://support-chat"));
-	}
-
-	@Test
-	void 고객이_보낸_메시지면_알림을_요청하지_않고_200을_반환한다() throws Exception {
-		mockMvc.perform(post(WEBHOOK_PATH)
-						.queryParam("token", TOKEN)
-						.contentType(MediaType.APPLICATION_JSON)
-						.content("""
-								{"event":"push","type":"message","entity":{"chatType":"userChat","personType":"user","plainText":"문의드려요"},
-								"refers":{"user":{"memberId":"42"}}}
-								"""))
-				.andExpect(status().isOk());
-
-		then(dispatcher).shouldHaveNoInteractions();
-	}
-
-	@Test
-	void 회원_ID가_숫자가_아니면_알림을_요청하지_않고_200을_반환한다() throws Exception {
-		mockMvc.perform(post(WEBHOOK_PATH)
-						.queryParam("token", TOKEN)
-						.contentType(MediaType.APPLICATION_JSON)
-						.content("""
-								{"event":"push","type":"message","entity":{"chatType":"userChat","personType":"manager","plainText":"답변"},
-								"refers":{"user":{"memberId":"invalid-member-id"}}}
-								"""))
-				.andExpect(status().isOk());
-
-		then(dispatcher).shouldHaveNoInteractions();
+		then(notifier).should().notifyReply(new ChannelTalkWebhookRequest("push", "message",
+				new ChannelTalkWebhookRequest.Entity("userChat", "manager", "안녕하세요, 훈련사입니다.", null, null, null),
+				new ChannelTalkWebhookRequest.Refers(new ChannelTalkWebhookRequest.User("42"))));
 	}
 
 	@Test
@@ -101,6 +73,6 @@ class ChannelTalkWebhookControllerTest {
 								fieldWithPath("code").description("에러 코드"),
 								fieldWithPath("timestamp").description("발생 시각"))));
 
-		then(dispatcher).shouldHaveNoInteractions();
+		then(notifier).shouldHaveNoInteractions();
 	}
 }
