@@ -1,0 +1,36 @@
+package com.daesabu.meongcoach.support.application.required;
+
+import com.daesabu.meongcoach.support.domain.ChatAccess;
+import com.daesabu.meongcoach.support.domain.ChatConversation;
+import com.daesabu.meongcoach.support.domain.ChatMessage;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+public interface ChatRepository {
+	ChatConversation open(long userId);
+
+	List<ChatConversation> conversations(long before, int limit);
+
+	boolean exists(long conversationId);
+
+	void lock(long conversationId);
+
+	List<ChatMessage> messages(long conversationId, long after, long before, int limit);
+
+	Optional<ChatMessage> find(long conversationId, long senderId, UUID clientMessageId);
+
+	ChatMessage save(
+			long conversationId,
+			long senderId,
+			boolean operator,
+			UUID clientMessageId,
+			String body);
+
+	void notifyChanged(long conversationId);
+
+	UUID issueTicket(ChatAccess access);
+
+	Optional<ChatAccess> consumeTicket(UUID ticket);
+}

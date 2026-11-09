@@ -50,6 +50,7 @@ public class SecurityConfig {
 
 	private static final String[] PERMIT_ALL_PATHS = {
 			"/api/health",
+			"/ws/support",
 			"/api/auth/login/social",
 			"/api/auth/login/email",
 			"/api/auth/token/refresh",
