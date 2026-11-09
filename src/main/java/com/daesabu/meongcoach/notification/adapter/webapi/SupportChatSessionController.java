@@ -11,12 +11,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 public class SupportChatSessionController {
-	private final SupportChatSessionFinder sessions;
+	private final SupportChatSessionFinder supportChatSessionFinder;
 
 	@GetMapping("/api/notifications/support-session")
 	public SupportChatSessionResponse session(@CurrentUserId Long userId) {
-		SupportChatSessionResult session = sessions.find(userId);
-		SupportChatSessionResponse response = new SupportChatSessionResponse(session.memberId(), session.memberHash());
-		return response;
+		SupportChatSessionResult session = supportChatSessionFinder.find(userId);
+		return SupportChatSessionResponse.from(session);
 	}
 }

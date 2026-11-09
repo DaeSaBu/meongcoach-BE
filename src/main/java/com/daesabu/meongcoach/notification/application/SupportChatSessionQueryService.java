@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class SupportChatSessionService implements SupportChatSessionFinder {
+public class SupportChatSessionQueryService implements SupportChatSessionFinder {
 	private final ChannelTalkProperties properties;
 
 	@Override
