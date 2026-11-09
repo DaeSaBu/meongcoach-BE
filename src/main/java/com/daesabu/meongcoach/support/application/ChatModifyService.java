@@ -3,17 +3,16 @@ package com.daesabu.meongcoach.support.application;
 import com.daesabu.meongcoach.support.application.provided.ChatFinder;
 import com.daesabu.meongcoach.support.application.provided.ChatRegister;
 import com.daesabu.meongcoach.support.application.provided.dto.ChatMessageRequest;
+import com.daesabu.meongcoach.support.application.required.ChatPushRepository;
 import com.daesabu.meongcoach.support.application.required.ChatRepository;
 import com.daesabu.meongcoach.support.domain.ChatAccess;
 import com.daesabu.meongcoach.support.domain.ChatConversation;
 import com.daesabu.meongcoach.support.domain.ChatMessage;
-import com.daesabu.meongcoach.support.domain.ChatReplyCreated;
 import com.daesabu.meongcoach.support.domain.exception.ChatAccessDeniedException;
 import com.daesabu.meongcoach.user.application.provided.RegisteredUserChecker;
 import java.time.Clock;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -26,7 +25,7 @@ public class ChatModifyService implements ChatRegister {
 	private final ChatRepository repository;
 	private final ChatFinder finder;
 	private final RegisteredUserChecker users;
-	private final ApplicationEventPublisher events;
+	private final ChatPushRepository pushJobs;
 	private final Clock clock;
 
 	@Transactional
@@ -51,7 +50,7 @@ public class ChatModifyService implements ChatRegister {
 				repository.save(conversationId, userId, operator, request.clientMessageId(), body);
 		repository.notifyChanged(conversationId);
 		if (operator && userId != conversationId) {
-			events.publishEvent(new ChatReplyCreated(conversationId, message.id()));
+			pushJobs.enqueue(message.id(), conversationId);
 		}
 		return message;
 	}
