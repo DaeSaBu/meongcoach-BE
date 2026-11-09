@@ -56,7 +56,9 @@ class TopicProgressFinderTest {
 		assertThat(head.categorySortOrder()).isEqualTo(1);
 		assertThat(result.getLast().categorySortOrder()).isEqualTo(2);
 		assertThat(head.thumbnailUrl()).isEqualTo("https://cdn.test/1601.jpg");
+		assertThat(head.hasThumbnail()).isTrue();
 		assertThat(result.get(1).thumbnailUrl()).isNull();
+		assertThat(result.get(1).hasThumbnail()).isFalse();
 	}
 
 	@Test

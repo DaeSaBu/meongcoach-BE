@@ -123,6 +123,17 @@ class TopicTest {
 		assertThat(completion.status()).isEqualTo(ProgressStatus.COMPLETED);
 	}
 
+	@Test
+	void 사진_주소가_있어야_사진이_있는_토픽이다() {
+		Topic topic = TopicFixture.create(10L);
+
+		assertThat(topic.hasThumbnail()).isFalse();
+		ReflectionTestUtils.setField(topic, "thumbnailUrl", "  ");
+		assertThat(topic.hasThumbnail()).isFalse();
+		ReflectionTestUtils.setField(topic, "thumbnailUrl", "https://cdn.test/1101.jpg");
+		assertThat(topic.hasThumbnail()).isTrue();
+	}
+
 	private void attachLesson(Curriculum curriculum, Long lessonId) {
 		Lesson lesson = LessonFixture.create(curriculum, "레슨", 1, 5);
 		ReflectionTestUtils.setField(lesson, "id", lessonId);
