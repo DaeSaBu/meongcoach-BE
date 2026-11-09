@@ -1,7 +1,6 @@
 package com.daesabu.meongcoach.support.application;
 
 import com.daesabu.meongcoach.support.domain.exception.ChannelTalkUnavailableException;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
@@ -14,10 +13,10 @@ import org.springframework.validation.annotation.Validated;
 
 @Validated
 @ConfigurationProperties("meongcoach.channel-talk")
-public record ChannelTalkProperties(@NotBlank String webhookToken, @Pattern(regexp = "(?:[0-9a-fA-F]{64})?") String memberHashKey) {
+public record ChannelTalkProperties(String webhookToken, @Pattern(regexp = "(?:[0-9a-fA-F]{64})?") String memberHashKey) {
 
 	public boolean matches(String presented) {
-		if (presented == null) {
+		if (presented == null || webhookToken == null || webhookToken.isBlank()) {
 			return false;
 		}
 		byte[] expected = webhookToken.getBytes(StandardCharsets.UTF_8);
