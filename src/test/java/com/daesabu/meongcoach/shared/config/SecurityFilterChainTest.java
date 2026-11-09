@@ -121,6 +121,40 @@ class SecurityFilterChainTest {
 				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
 	}
 
+	@ParameterizedTest
+	@ValueSource(strings = {"", "wrong-token"})
+	void 채널톡_인증이_실패하면_JSON_해석_전에_401을_반환한다(String token) throws Exception {
+		mockMvc.perform(post("/webhooks/channel-talk").queryParam("token", token)
+						.contentType(MediaType.APPLICATION_JSON).content("not-json"))
+				.andExpect(status().isUnauthorized())
+				.andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+	}
+
+	@Test
+	void 액세스_토큰으로_채널톡_웹훅_인증을_대체할_수_없다() throws Exception {
+		AuthToken token = tokenProvider.issue(userId);
+
+		mockMvc.perform(post("/webhooks/channel-talk")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken())
+						.contentType(MediaType.APPLICATION_JSON).content("{}"))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+	}
+
+	@Test
+	void 채널톡_토큰으로_앱_API_인증을_대체할_수_없다() throws Exception {
+		mockMvc.perform(appGet(PROTECTED_PATH).queryParam("token", "test-channel-talk-webhook-token"))
+				.andExpect(status().isUnauthorized());
+	}
+
+	@Test
+	void 채널톡_인증을_통과한_잘못된_JSON은_400을_반환한다() throws Exception {
+		mockMvc.perform(post("/webhooks/channel-talk").queryParam("token", "test-channel-talk-webhook-token")
+						.contentType(MediaType.APPLICATION_JSON).content("not-json"))
+				.andExpect(status().isBadRequest());
+	}
+
 	@Test
 	void 잘못된_소셜_토큰을_제출하면_401을_반환한다() throws Exception {
 		AuthToken token = tokenProvider.issue(userId);

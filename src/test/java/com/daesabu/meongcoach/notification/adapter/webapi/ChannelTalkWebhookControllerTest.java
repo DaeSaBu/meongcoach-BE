@@ -8,16 +8,13 @@ import static org.springframework.restdocs.payload.PayloadDocumentation.relaxedR
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
 import static org.springframework.restdocs.request.RequestDocumentation.queryParameters;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.daesabu.meongcoach.notification.application.ChannelTalkProperties;
 import com.daesabu.meongcoach.notification.application.provided.EventNotificationDispatcher;
 import com.daesabu.meongcoach.notification.application.provided.dto.EventNotificationDispatchRequest;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
@@ -26,7 +23,6 @@ import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(ChannelTalkWebhookController.class)
 @AutoConfigureRestDocs
-@EnableConfigurationProperties(ChannelTalkProperties.class)
 class ChannelTalkWebhookControllerTest {
 
 	private static final String WEBHOOK_PATH = "/webhooks/channel-talk";
@@ -85,21 +81,6 @@ class ChannelTalkWebhookControllerTest {
 								"refers":{"user":{"memberId":"invalid-member-id"}}}
 								"""))
 				.andExpect(status().isOk());
-
-		then(dispatcher).shouldHaveNoInteractions();
-	}
-
-	@Test
-	void 토큰이_다르면_401을_반환한다() throws Exception {
-		mockMvc.perform(post(WEBHOOK_PATH)
-						.queryParam("token", "wrong-token")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content("""
-								{"event":"push","type":"message","entity":{"chatType":"userChat","personType":"manager","plainText":"답변"},
-								"refers":{"user":{"memberId":"42"}}}
-								"""))
-				.andExpect(status().isUnauthorized())
-				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
 
 		then(dispatcher).shouldHaveNoInteractions();
 	}
