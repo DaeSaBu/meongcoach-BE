@@ -12,55 +12,54 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 class ChannelTalkWebhookPayloadTest {
 
-	private static final String PREFIX = "development-";
 
 	private ChannelTalkWebhookPayload payload(String type, String chatType, String personType, String memberId) {
 		return new ChannelTalkWebhookPayload("push", type, new Entity(chatType, personType, "답변", null, null, null), new Refers(new User(memberId)));
 	}
 
 	@Test
-	void 상담_채팅의_매니저_메시지면_접두어를_뗀_회원_ID를_돌려준다() {
-		ChannelTalkWebhookPayload payload = payload("message", "userChat", "manager", "development-42");
+	void 상담_채팅의_매니저_메시지면_회원_ID를_돌려준다() {
+		ChannelTalkWebhookPayload payload = payload("message", "userChat", "manager", "42");
 
-		assertThat(payload.recipientUserId(PREFIX)).hasValue(42L);
+		assertThat(payload.recipientUserId()).hasValue(42L);
 	}
 
 	@ParameterizedTest
 	@ValueSource(strings = {"user", "bot"})
 	void 고객이나_봇이_보낸_메시지는_대상이_아니다(String personType) {
-		ChannelTalkWebhookPayload payload = payload("message", "userChat", personType, "development-42");
+		ChannelTalkWebhookPayload payload = payload("message", "userChat", personType, "42");
 
-		assertThat(payload.recipientUserId(PREFIX)).isEmpty();
+		assertThat(payload.recipientUserId()).isEmpty();
 	}
 
 	@Test
 	void 팀_채팅_메시지는_대상이_아니다() {
-		ChannelTalkWebhookPayload payload = payload("message", "group", "manager", "development-42");
+		ChannelTalkWebhookPayload payload = payload("message", "group", "manager", "42");
 
-		assertThat(payload.recipientUserId(PREFIX)).isEmpty();
+		assertThat(payload.recipientUserId()).isEmpty();
 	}
 
 	@Test
 	void 메시지_이벤트가_아니면_대상이_아니다() {
-		ChannelTalkWebhookPayload payload = payload("userChat", "userChat", "manager", "development-42");
+		ChannelTalkWebhookPayload payload = payload("userChat", "userChat", "manager", "42");
 
-		assertThat(payload.recipientUserId(PREFIX)).isEmpty();
+		assertThat(payload.recipientUserId()).isEmpty();
 	}
 
 	@ParameterizedTest
 	@NullAndEmptySource
-	@ValueSource(strings = {"production-42", "42", "development-", "development-abc", "development--1", "development-12345678901234567890"})
-	void 이_환경의_회원_ID가_아니면_대상이_아니다(String memberId) {
+	@ValueSource(strings = {"abc", "0", "-1", "01", "1.5", "12345678901234567890"})
+	void 양의_정수_회원_ID가_아니면_대상이_아니다(String memberId) {
 		ChannelTalkWebhookPayload payload = payload("message", "userChat", "manager", memberId);
 
-		assertThat(payload.recipientUserId(PREFIX)).isEmpty();
+		assertThat(payload.recipientUserId()).isEmpty();
 	}
 
 	@Test
 	void 메시지나_고객_정보가_빠지면_대상이_아니다() {
-		assertThat(new ChannelTalkWebhookPayload("push", "message", null, new Refers(new User("development-42"))).recipientUserId(PREFIX)).isEmpty();
-		assertThat(new ChannelTalkWebhookPayload("push", "message", new Entity("userChat", "manager", "답변", null, null, null), null).recipientUserId(PREFIX)).isEmpty();
-		assertThat(new ChannelTalkWebhookPayload("push", "message", new Entity("userChat", "manager", "답변", null, null, null), new Refers(null)).recipientUserId(PREFIX)).isEmpty();
+		assertThat(new ChannelTalkWebhookPayload("push", "message", null, new Refers(new User("42"))).recipientUserId()).isEmpty();
+		assertThat(new ChannelTalkWebhookPayload("push", "message", new Entity("userChat", "manager", "답변", null, null, null), null).recipientUserId()).isEmpty();
+		assertThat(new ChannelTalkWebhookPayload("push", "message", new Entity("userChat", "manager", "답변", null, null, null), new Refers(null)).recipientUserId()).isEmpty();
 	}
 
 	private ChannelTalkWebhookPayload message(String plainText) {
@@ -90,19 +89,19 @@ class ChannelTalkWebhookPayloadTest {
 	@ValueSource(strings = {"private", "silent", "silentToUser", "doNotSendApp", "doNotPost"})
 	void 내부_메모와_알림_억제_메시지는_보내지_않는다(String option) {
 		Entity entity = new Entity("userChat", "manager", "내부 메모", java.util.List.of(option), null, null);
-		var payload = new ChannelTalkWebhookPayload("push", "message", entity, new Refers(new User("development-42")));
+		var payload = new ChannelTalkWebhookPayload("push", "message", entity, new Refers(new User("42")));
 
-		assertThat(payload.recipientUserId(PREFIX)).isEmpty();
+		assertThat(payload.recipientUserId()).isEmpty();
 	}
 
 	@Test
 	void 수정_이벤트와_마케팅_메시지는_보내지_않는다() {
 		Entity entity = new Entity("userChat", "manager", "답변", null, null, null);
-		Refers refers = new Refers(new User("development-42"));
-		assertThat(new ChannelTalkWebhookPayload("upsert", "message", entity, refers).recipientUserId(PREFIX)).isEmpty();
+		Refers refers = new Refers(new User("42"));
+		assertThat(new ChannelTalkWebhookPayload("upsert", "message", entity, refers).recipientUserId()).isEmpty();
 		Entity broadcast = new Entity("userChat", "manager", "답변", null, true, null);
-		assertThat(new ChannelTalkWebhookPayload("push", "message", broadcast, refers).recipientUserId(PREFIX)).isEmpty();
+		assertThat(new ChannelTalkWebhookPayload("push", "message", broadcast, refers).recipientUserId()).isEmpty();
 		Entity marketing = new Entity("userChat", "manager", "답변", null, null, new Object());
-		assertThat(new ChannelTalkWebhookPayload("push", "message", marketing, refers).recipientUserId(PREFIX)).isEmpty();
+		assertThat(new ChannelTalkWebhookPayload("push", "message", marketing, refers).recipientUserId()).isEmpty();
 	}
 }

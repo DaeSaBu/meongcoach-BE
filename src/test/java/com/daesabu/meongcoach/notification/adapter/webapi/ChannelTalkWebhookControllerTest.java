@@ -46,7 +46,7 @@ class ChannelTalkWebhookControllerTest {
 						.content("""
 								{"event":"push","type":"message",
 								"entity":{"chatType":"userChat","personType":"manager","plainText":"안녕하세요, 훈련사입니다."},
-								"refers":{"user":{"memberId":"development-42"}}}
+								"refers":{"user":{"memberId":"42"}}}
 								"""))
 				.andExpect(status().isOk())
 				.andDo(document("notification/channel-talk-webhook",
@@ -55,7 +55,7 @@ class ChannelTalkWebhookControllerTest {
 								fieldWithPath("entity.chatType").description("채팅 종류. userChat만 처리"),
 								fieldWithPath("entity.personType").description("보낸 사람 종류. manager만 처리"),
 								fieldWithPath("entity.plainText").description("메시지 본문. 알림 본문에 앞 100자까지 쓴다"),
-								fieldWithPath("refers.user.memberId").description("앱이 채널톡을 부팅할 때 넘긴 {환경}-{회원 ID}"))));
+								fieldWithPath("refers.user.memberId").description("앱이 채널톡을 부팅할 때 넘긴 회원 ID 문자열"))));
 
 		then(dispatcher).should().dispatch(new EventNotificationDispatchRequest("SUPPORT_REPLY", "USERS", List.of(42L),
 				"문의하신 내용에 답변이 왔어요", "안녕하세요, 훈련사입니다.", "meongcoach://support-chat"));
@@ -68,7 +68,7 @@ class ChannelTalkWebhookControllerTest {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
 								{"event":"push","type":"message","entity":{"chatType":"userChat","personType":"user","plainText":"문의드려요"},
-								"refers":{"user":{"memberId":"development-42"}}}
+								"refers":{"user":{"memberId":"42"}}}
 								"""))
 				.andExpect(status().isOk());
 
@@ -76,13 +76,13 @@ class ChannelTalkWebhookControllerTest {
 	}
 
 	@Test
-	void 다른_환경의_고객이면_알림을_요청하지_않고_200을_반환한다() throws Exception {
+	void 회원_ID가_숫자가_아니면_알림을_요청하지_않고_200을_반환한다() throws Exception {
 		mockMvc.perform(post(WEBHOOK_PATH)
 						.queryParam("token", TOKEN)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
 								{"event":"push","type":"message","entity":{"chatType":"userChat","personType":"manager","plainText":"답변"},
-								"refers":{"user":{"memberId":"production-42"}}}
+								"refers":{"user":{"memberId":"invalid-member-id"}}}
 								"""))
 				.andExpect(status().isOk());
 
@@ -96,7 +96,7 @@ class ChannelTalkWebhookControllerTest {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
 								{"event":"push","type":"message","entity":{"chatType":"userChat","personType":"manager","plainText":"답변"},
-								"refers":{"user":{"memberId":"development-42"}}}
+								"refers":{"user":{"memberId":"42"}}}
 								"""))
 				.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));

@@ -27,15 +27,15 @@ class SupportChatSessionControllerTest {
 	@MockitoBean SupportChatSessionFinder sessions;
 	@Test
 	void 로그인_주체의_상담_식별값만_반환한다() throws Exception {
-		given(sessions.find(42L)).willReturn(new SupportChatSessionResult("development-42", "signed-member-hash"));
+		given(sessions.find(42L)).willReturn(new SupportChatSessionResult("42", "signed-member-hash"));
 
 		mvc.perform(get("/api/notifications/support-session").principal(() -> "42")
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.memberId").value("development-42"))
+				.andExpect(jsonPath("$.memberId").value("42"))
 				.andExpect(jsonPath("$.memberHash").value("signed-member-hash"))
 				.andDo(document("notification/support-session", responseFields(
-						fieldWithPath("memberId").description("환경-회원 ID. dev·prod·local 구분"),
+						fieldWithPath("memberId").description("회원 ID 문자열"),
 						fieldWithPath("memberHash").description("채널톡 회원 해시. 서버의 16진수 비밀 키로 HMAC-SHA256 서명"))));
 	}
 
