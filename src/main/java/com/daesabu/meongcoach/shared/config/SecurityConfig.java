@@ -60,7 +60,10 @@ public class SecurityConfig {
 			"/api/onboarding/**"
 	};
 
-	private static final String DOG_PROFILE_IMAGE_PATH = "/api/dogs/profile/image";
+	private static final String[] DOG_PROFILE_IMAGE_PATHS = {
+			"/api/dogs/profile/image",
+			"/api/dogs/profile/image/presigned-urls"
+	};
 
 	private static final String WITHDRAW_PATH = "/api/auth/me";
 
@@ -97,7 +100,7 @@ public class SecurityConfig {
 					configureApiDocsAccess(auth, apiDocsEnabled);
 					auth.requestMatchers(ONBOARDING_ALLOWED_PATHS)
 							.hasAnyRole(AuthorityRole.USER.name(), AuthorityRole.ONBOARDING_USER.name());
-					auth.requestMatchers(DOG_PROFILE_IMAGE_PATH)
+					auth.requestMatchers(DOG_PROFILE_IMAGE_PATHS)
 							.hasAnyRole(AuthorityRole.USER.name(), AuthorityRole.ONBOARDING_USER.name(),
 									AuthorityRole.EXPERT.name(), AuthorityRole.ADMIN.name());
 					auth.requestMatchers(HttpMethod.DELETE, WITHDRAW_PATH)

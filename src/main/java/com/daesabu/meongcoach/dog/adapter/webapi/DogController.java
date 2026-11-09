@@ -2,10 +2,13 @@ package com.daesabu.meongcoach.dog.adapter.webapi;
 
 import com.daesabu.meongcoach.dog.adapter.webapi.dto.DogListResponse;
 import com.daesabu.meongcoach.dog.adapter.webapi.dto.DogProfileImageResponse;
+import com.daesabu.meongcoach.dog.adapter.webapi.dto.DogProfileImageUploadUrlResponse;
 import com.daesabu.meongcoach.dog.adapter.webapi.dto.DogResponse;
 import com.daesabu.meongcoach.dog.application.provided.DogProfileDeleter;
 import com.daesabu.meongcoach.dog.application.provided.DogProfileFinder;
+import com.daesabu.meongcoach.dog.application.provided.DogProfileImageUploadUrlIssuer;
 import com.daesabu.meongcoach.dog.application.provided.DogRegister;
+import com.daesabu.meongcoach.dog.application.provided.dto.DogProfileImageUploadUrlRequest;
 import com.daesabu.meongcoach.dog.application.provided.dto.DogProfileUpdateRequest;
 import com.daesabu.meongcoach.dog.application.provided.dto.DogRegisterRequest;
 import com.daesabu.meongcoach.dog.domain.Dog;
@@ -32,6 +35,7 @@ public class DogController {
 	private final DogRegister dogRegister;
 	private final DogProfileFinder dogProfileFinder;
 	private final DogProfileDeleter dogProfileDeleter;
+	private final DogProfileImageUploadUrlIssuer dogProfileImageUploadUrlIssuer;
 
 	@PostMapping
 	@ResponseStatus(HttpStatus.CREATED)
@@ -72,5 +76,11 @@ public class DogController {
 	public DogProfileImageResponse findProfileImage(@CurrentUserId Long userId) {
 		Dog dog = dogProfileFinder.findSelectedDog(userId);
 		return DogProfileImageResponse.from(dog);
+	}
+
+	@PostMapping("/profile/image/presigned-urls")
+	public DogProfileImageUploadUrlResponse issueProfileImageUploadUrl(@CurrentUserId Long userId,
+	                                                                   @Valid @RequestBody DogProfileImageUploadUrlRequest request) {
+		return DogProfileImageUploadUrlResponse.from(dogProfileImageUploadUrlIssuer.issue(userId, request.contentType()));
 	}
 }
