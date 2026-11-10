@@ -5,8 +5,6 @@ import static org.springframework.util.Assert.state;
 
 import com.daesabu.meongcoach.plan.domain.exception.DuplicatePlanCurriculumException;
 import com.daesabu.meongcoach.plan.domain.exception.EmptyPlanCurriculumsException;
-import com.daesabu.meongcoach.plan.domain.exception.InvalidDailyMinutesException;
-import com.daesabu.meongcoach.plan.domain.exception.InvalidDaysPerWeekException;
 import com.daesabu.meongcoach.plan.domain.exception.InvalidPlanCurriculumException;
 import com.daesabu.meongcoach.plan.domain.exception.PlanLessonOrderException;
 import com.daesabu.meongcoach.plan.domain.exception.PlanNotActiveException;
@@ -47,10 +45,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Plan extends BaseTimeEntity {
 
-	private static final Set<Integer> ALLOWED_DAILY_MINUTES = Set.of(5, 10, 20);
-
-	private static final Set<Integer> ALLOWED_DAYS_PER_WEEK = Set.of(3, 5, 7);
-
 	private static final String TITLE_SUFFIX = "의 2주 훈련 플랜";
 
 	private static final String CUSTOM_GOAL = "선택한 훈련을 차근차근 익혀요";
@@ -71,15 +65,8 @@ public class Plan extends BaseTimeEntity {
 	@Column(nullable = false, columnDefinition = "TEXT")
 	private String goal;
 
-	// AI 플랜을 만들 때 보호자가 적은 고민. 직접 만든 플랜은 null이다.
 	@Column(length = 500)
 	private String expectation;
-
-	@Column(nullable = false)
-	private int dailyMinutes;
-
-	@Column(nullable = false)
-	private int daysPerWeek;
 
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, length = 20)
@@ -103,7 +90,6 @@ public class Plan extends BaseTimeEntity {
 	private Set<Long> completedLessonIds = new HashSet<>();
 
 	public static Plan create(PlanCreateCommand command, List<Long> curriculumIds) {
-		validatePracticeSettings(command.dailyMinutes(), command.daysPerWeek());
 		validateCurriculumIds(curriculumIds);
 
 		Plan plan = new Plan();
@@ -111,8 +97,6 @@ public class Plan extends BaseTimeEntity {
 		plan.dogId = requireNonNull(command.dogId());
 		plan.title = requireNonNull(command.title());
 		plan.goal = requireNonNull(command.goal());
-		plan.dailyMinutes = command.dailyMinutes();
-		plan.daysPerWeek = command.daysPerWeek();
 		plan.status = PlanStatus.ACTIVE;
 		plan.curriculumIds = new ArrayList<>(curriculumIds);
 		return plan;
@@ -121,14 +105,14 @@ public class Plan extends BaseTimeEntity {
 	public static Plan createCustom(CustomPlanCreateCommand command, List<Long> curriculumIds) {
 		String title = requireNonNull(command.dogName()) + TITLE_SUFFIX;
 		PlanCreateCommand createCommand = new PlanCreateCommand(command.userId(), command.dogId(), title,
-				CUSTOM_GOAL, command.dailyMinutes(), command.daysPerWeek());
+				CUSTOM_GOAL);
 		return create(createCommand, curriculumIds);
 	}
 
 	public static Plan createAiPlan(AiPlanCreateCommand command, List<Long> curriculumIds) {
 		String title = requireNonNull(command.dogName()) + TITLE_SUFFIX;
 		PlanCreateCommand createCommand = new PlanCreateCommand(command.userId(), command.dogId(), title,
-				command.goal(), command.dailyMinutes(), command.daysPerWeek());
+				command.goal());
 
 		Plan plan = create(createCommand, curriculumIds);
 		plan.expectation = requireNonNull(command.expectation());
@@ -220,17 +204,6 @@ public class Plan extends BaseTimeEntity {
 		return (int) ChronoUnit.DAYS.between(startDate, endDate) + 1;
 	}
 
-	public static void validatePracticeSettings(int dailyMinutes, int daysPerWeek) {
-		validateDailyMinutes(dailyMinutes);
-		validateDaysPerWeek(daysPerWeek);
-	}
-
-	private static void validateDailyMinutes(int dailyMinutes) {
-		if (!ALLOWED_DAILY_MINUTES.contains(dailyMinutes)) {
-			throw new InvalidDailyMinutesException();
-		}
-	}
-
 	private static void validateCurriculumIds(List<Long> curriculumIds) {
 		requireNonNull(curriculumIds);
 		if (curriculumIds.isEmpty()) {
@@ -242,12 +215,6 @@ public class Plan extends BaseTimeEntity {
 		Set<Long> uniqueCurriculumIds = new HashSet<>(curriculumIds);
 		if (uniqueCurriculumIds.size() != curriculumIds.size()) {
 			throw new DuplicatePlanCurriculumException();
-		}
-	}
-
-	private static void validateDaysPerWeek(int daysPerWeek) {
-		if (!ALLOWED_DAYS_PER_WEEK.contains(daysPerWeek)) {
-			throw new InvalidDaysPerWeekException();
 		}
 	}
 }
