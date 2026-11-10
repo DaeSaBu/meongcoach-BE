@@ -3,6 +3,7 @@ package com.daesabu.meongcoach.support.application;
 import com.daesabu.meongcoach.support.application.provided.ChatFinder;
 import com.daesabu.meongcoach.support.application.provided.ChatRegister;
 import com.daesabu.meongcoach.support.application.provided.dto.ChatMessageRequest;
+import com.daesabu.meongcoach.support.application.required.ChatPushRepository;
 import com.daesabu.meongcoach.support.application.required.ChatRepository;
 import com.daesabu.meongcoach.support.domain.ChatConversation;
 import com.daesabu.meongcoach.support.domain.ChatMessage;
@@ -21,6 +22,7 @@ public class ChatModifyService implements ChatRegister {
 	private final ChatRepository repository;
 	private final ChatFinder finder;
 	private final RegisteredUserChecker users;
+	private final ChatPushRepository pushJobs;
 
 	@Transactional
 	public ChatConversation open(Long userId) {
@@ -43,6 +45,9 @@ public class ChatModifyService implements ChatRegister {
 		ChatMessage message =
 				repository.save(conversationId, userId, operator, request.clientMessageId(), body);
 		repository.notifyChanged(conversationId);
+		if (operator && userId != conversationId) {
+			pushJobs.enqueue(message.id(), conversationId);
+		}
 		return message;
 	}
 

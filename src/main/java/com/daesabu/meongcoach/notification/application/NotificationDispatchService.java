@@ -63,18 +63,20 @@ public class NotificationDispatchService implements ScheduledNotificationDispatc
 
 		List<String> fids = recipients.findEventFids(type, target);
 		List<PushNotification> notifications = PushNotificationFactory.event(fids, type, request.title(), request.body(), deepLink);
-		deliver(notifications);
+		NotificationDelivery delivery = deliver(notifications);
 		int count = fids.size();
-		return new EventNotificationDispatchResult(count);
+		int failures = delivery.failedCount();
+		return new EventNotificationDispatchResult(count, failures);
 	}
 
-	private void deliver(List<PushNotification> notifications) {
+	private NotificationDelivery deliver(List<PushNotification> notifications) {
 		if (notifications.isEmpty()) {
-			return;
+			return NotificationDelivery.none();
 		}
 		NotificationDelivery delivery = sender.send(notifications);
 		retireUnreachable(delivery);
 		delivery.requireDelivered();
+		return delivery;
 	}
 
 	private void retireUnreachable(NotificationDelivery delivery) {
