@@ -32,6 +32,18 @@ React Native `WebSocket`은 세 번째 인자 `{ headers }`로 업그레이드 �
 소켓은 본문 없는 신호만 보내며 `ping` 외의 클라이언트 메시지는 연결을 닫습니다.
 토큰이 만료된 연결은 다음 송신 시점에 닫습니다.
 
+## 자체 실시간 상담 변경 신호
+
+메시지를 저장한 트랜잭션은 `pg_notify('support_chat', 대화 ID)`를 함께 실행하므로 커밋된 메시지만 신호가 되고 롤백되면 신호가 나가지 않습니다.
+[PostgresChatListener](../src/main/java/com/daesabu/meongcoach/support/adapter/integration/PostgresChatListener.java)는 Hikari 풀과 별도인 전용 연결 1개로 `LISTEN support_chat`을 유지합니다.
+알림을 받으면 해당 회원과 ADMIN 연결에 `changed`를 보냅니다.
+여러 연결에 보내는 신호는 가상 스레드에서 송신하므로 느린 연결 하나가 리스너를 막지 않습니다.
+
+연결이 끊기면 2초 후 다시 연결하고 연결 직후 모든 소켓에 `sync`를 보내 끊긴 동안의 알림을 보정합니다.
+알림 유실에 대비해 60초마다 `sync`를 보내며 이때 만료된 소켓도 닫습니다.
+Redis 같은 별도 메시지 브로커는 쓰지 않으며 여러 인스턴스는 같은 PostgreSQL 채널을 구독합니다.
+테스트 프로파일에서는 리스너를 시작하지 않습니다.
+
 ## 회원 상담 식별
 
 앱은 `GET /api/support/session`으로 로그인한 회원의 `memberId`와 `memberHash`를 받습니다.

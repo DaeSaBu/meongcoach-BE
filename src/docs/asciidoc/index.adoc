@@ -1223,6 +1223,8 @@ operation::support/chat-messages-error[snippets='http-response,response-fields']
 WebSocket은 `/ws/support`에 서브프로토콜 `support.v1`과 `Authorization: Bearer {accessToken}` 헤더로 연결합니다.
 인증은 일반 API와 같은 액세스 토큰 검증을 거치며 실패하면 업그레이드 전에 401로 거절합니다.
 연결 직후 서버는 `sync`를 보냅니다.
+메시지가 커밋되면 해당 회원과 ADMIN 연결에 `changed`를 보냅니다.
+PostgreSQL 연결 복구와 60초 주기 보정 시 `sync`를 보냅니다.
 소켓은 본문을 전달하지 않으며 클라이언트는 신호를 받으면 REST API로 메시지를 다시 읽습니다.
 클라이언트는 25초마다 `ping`을 보내고 서버는 `pong`으로 응답합니다.
 액세스 토큰이 만료되면 서버가 연결을 닫으므로 클라이언트는 토큰을 갱신해 다시 연결합니다.
