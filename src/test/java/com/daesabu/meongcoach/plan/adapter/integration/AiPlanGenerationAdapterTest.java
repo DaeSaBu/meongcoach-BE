@@ -45,7 +45,7 @@ class AiPlanGenerationAdapterTest {
 		ArgumentCaptor<AiContentGenerateRequest> captor = ArgumentCaptor.forClass(AiContentGenerateRequest.class);
 		verify(contentGenerator).generate(captor.capture());
 		AiContentGenerateRequest contentRequest = captor.getValue();
-		assertThat(contentRequest.systemPrompt()).contains("50%", "토픽");
+		assertThat(contentRequest.systemPrompt()).contains("토픽").doesNotContain("50%", "dailyMinutes");
 		assertThat(objectMapper.readTree(contentRequest.responseSchema()).path("required"))
 				.isEqualTo(objectMapper.readTree("[\"topicIds\",\"goal\"]"));
 		String userPrompt = contentRequest.userPrompt();
@@ -153,6 +153,6 @@ class AiPlanGenerationAdapterTest {
 				new AiPlanCurriculumResult(10L, 1L, "기다리기", "짧게 기다리기", "기다리는 연습", 2, 0, 10),
 				new AiPlanCurriculumResult(11L, 1L, "기다리기", "길게 기다리기", "기다리는 연습", 2, 0, 15),
 				new AiPlanCurriculumResult(20L, 2L, "이리 와", "다가오기", "다가오는 연습", 2, 0, 20));
-		return new AiPlanGenerateRequest(dog, LocalDate.of(2026, 10, 26), 10, 3, "차분하게 기다리기", curriculums);
+		return new AiPlanGenerateRequest(dog, LocalDate.of(2026, 10, 26), "차분하게 기다리기", curriculums);
 	}
 }

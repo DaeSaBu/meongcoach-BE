@@ -84,7 +84,7 @@ class PlanRegisterAiTest {
 			Dog dog = Dog.register(dogCommand);
 			entityManager.persist(dog);
 			dogId = dog.getId();
-			request = new AiPlanCreateRequest(10, 3, "  차분하게 기다렸으면 해요  ");
+			request = new AiPlanCreateRequest("  차분하게 기다렸으면 해요  ");
 			TrainingCategory category = TrainingCategoryFixture.create("AI 플랜 테스트", 1, "", "");
 			entityManager.persist(category);
 			categoryId = category.getId();
@@ -267,14 +267,12 @@ class PlanRegisterAiTest {
 	}
 
 	private static Stream<AiPlanCreateRequest> invalidRequests() {
-		return Stream.of(new AiPlanCreateRequest(15, 3, "목표"), new AiPlanCreateRequest(10, 4, "목표"),
-				new AiPlanCreateRequest(null, 3, "목표"), new AiPlanCreateRequest(10, null, "목표"),
-				new AiPlanCreateRequest(10, 3, null), new AiPlanCreateRequest(10, 3, "  "),
-				new AiPlanCreateRequest(10, 3, "가".repeat(501)));
+		return Stream.of(new AiPlanCreateRequest(null), new AiPlanCreateRequest("  "),
+				new AiPlanCreateRequest("가".repeat(501)));
 	}
 
 	private Plan saveExistingPlan() {
-		PlanCreateCommand command = new PlanCreateCommand(USER_ID, dogId, "기존 플랜", "기존 목표", 10, 3);
+		PlanCreateCommand command = new PlanCreateCommand(USER_ID, dogId, "기존 플랜", "기존 목표");
 		Plan plan = Plan.create(command, List.of(curriculumIds.getFirst()));
 		return planRepository.saveAndFlush(plan);
 	}

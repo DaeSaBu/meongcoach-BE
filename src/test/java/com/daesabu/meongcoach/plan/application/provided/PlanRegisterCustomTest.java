@@ -41,7 +41,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 class PlanRegisterCustomTest {
 
 	private static final Long USER_ID = 597001L;
-	private static final CustomPlanCreateRequest REQUEST = new CustomPlanCreateRequest(List.of(11L), 10, 3);
+	private static final CustomPlanCreateRequest REQUEST = new CustomPlanCreateRequest(List.of(11L));
 
 	@Autowired
 	private PlanRegister creator;
@@ -95,7 +95,7 @@ class PlanRegisterCustomTest {
 	void 소유하지_않은_강아지는_플랜을_생성하지_않는다() {
 		when(dogProfileFinder.findDogProfile(USER_ID, 999L)).thenThrow(new DogNotFoundException(999L));
 
-		assertThatThrownBy(() -> creator.createCustom(USER_ID, 999L, new CustomPlanCreateRequest(List.of(11L), 10, 3)))
+		assertThatThrownBy(() -> creator.createCustom(USER_ID, 999L, new CustomPlanCreateRequest(List.of(11L))))
 				.isInstanceOf(DogNotFoundException.class);
 		assertThat(planRepository.count()).isZero();
 	}
