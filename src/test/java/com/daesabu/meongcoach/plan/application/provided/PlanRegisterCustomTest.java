@@ -58,7 +58,6 @@ class PlanRegisterCustomTest {
 
 	@BeforeEach
 	void 준비한다() {
-		jdbc.execute("CREATE UNIQUE INDEX IF NOT EXISTS uk_plans_active_user_dog ON plans (user_id, dog_id) WHERE status = 'ACTIVE'");
 		when(dogProfileFinder.findDogProfile(USER_ID, 7L)).thenReturn(new DogProfileResult(7L, "초코", null, null, null, null));
 		when(preparationFinder.find(REQUEST.topicIds())).thenReturn(
 				new PlanPreparationResult(List.of(9L, 4L)));
