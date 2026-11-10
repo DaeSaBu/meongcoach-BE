@@ -84,7 +84,9 @@ Java 소스(`src/main/java`, `src/test/java`)의 주석은 interface에만 두�
 - 인덱스와 유니크 제약은 Flyway 마이그레이션에만 두지 않고 `@Entity`의 `@Table(indexes = …, uniqueConstraints = …)`에도 선언한다. 컬렉션 테이블은 `@CollectionTable`에 선언한다. 이름과 컬럼은 마이그레이션과 똑같이 쓴다. (살아있는 예시: `notification/domain/DeviceInstallation`)
 	- `ddl-auto: validate`는 인덱스·제약 불일치를 잡지 못하고, 테스트 스키마는 엔티티만으로 만들어진다. 엔티티에 선언이 없으면 테스트에서는 그 제약이 없는 채로 통과한다.
 	- 인덱스를 추가·변경·삭제하는 마이그레이션에는 같은 커밋에서 엔티티 선언을 맞춘다. 기존 엔티티에 빠진 선언은 그 엔티티를 수정할 때 채운다.
-- 부분 유니크 인덱스(`CREATE UNIQUE INDEX … WHERE …`)는 엔티티에 선언하지 않는다. `@Index(unique = true, options = "WHERE …")`로 쓰면 Hibernate가 `CREATE TABLE` 안의 `constraint … unique (…) WHERE …`로 만들어 테이블 생성이 실패한다. 마이그레이션에만 두고, 그 제약에 기대는 테스트는 같은 인덱스를 JDBC로 직접 만든다. (살아있는 예시: `plans`의 `uk_plans_active_user_dog`와 `PlanRegisterCustomTest`)
+- 부분 유니크 인덱스(`CREATE UNIQUE INDEX … WHERE …`)는 `@Index(unique = true, options = "WHERE …")`로 선언하되, `columnList`의 컬럼 하나를 `(dog_id)`처럼 괄호로 감싼다. (살아있는 예시: `plan/domain/Plan`의 `uk_plans_active_user_dog`)
+	- 괄호가 없으면 Hibernate가 유니크 제약으로 바꿔 `CREATE TABLE` 안에 `constraint … unique (…) WHERE …`를 만들고 테이블 생성이 실패한다. 괄호로 감싼 항목은 SQL 수식으로 취급되어 `create unique index … WHERE …`로 만들어진다.
+	- 마이그레이션에는 괄호 없이 평소대로 쓴다.
 
 ---
 
