@@ -11,6 +11,8 @@ import com.daesabu.meongcoach.ai.domain.AiAnalysisStatus;
 import com.daesabu.meongcoach.ai.domain.AiTrial;
 import com.daesabu.meongcoach.ai.domain.AiVideo;
 import com.daesabu.meongcoach.ai.domain.exception.VideoAnalysisFailedException;
+import com.daesabu.meongcoach.dog.application.provided.DogProfileFinder;
+import com.daesabu.meongcoach.dog.application.provided.dto.DogProfileResult;
 import com.daesabu.meongcoach.media.application.provided.MediaStorageUriResolver;
 import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +29,7 @@ public class AiReportGenerateService implements AiReportGenerator {
 	private final VideoAnalyzer videoAnalyzer;
 	private final AiAnalysisRepository aiAnalysisRepository;
 	private final AiTrialFinder aiTrialFinder;
+	private final DogProfileFinder dogProfileFinder;
 	private final ApplicationEventPublisher events;
 
 	@Override
@@ -64,9 +67,10 @@ public class AiReportGenerateService implements AiReportGenerator {
 			return;
 		}
 
+		DogProfileResult dog = dogProfileFinder.findSelectedDogProfile(analysis.getUserId());
 		VideoAnalysisResult result;
 		try {
-			result = videoAnalyzer.analyze(videoUri, analysis.getContext());
+			result = videoAnalyzer.analyze(videoUri, analysis.getContext(), dog);
 		}
 		catch (VideoAnalysisFailedException e) {
 			log.error("영상 분석에 실패해 리포트 생성을 건너뛴다: {}", analysis.getVideoObjectKey(), e);

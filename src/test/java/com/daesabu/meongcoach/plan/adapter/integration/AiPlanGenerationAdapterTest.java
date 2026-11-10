@@ -11,6 +11,7 @@ import com.daesabu.meongcoach.ai.application.provided.AiContentGenerateRequest;
 import com.daesabu.meongcoach.ai.application.provided.AiContentGenerator;
 import com.daesabu.meongcoach.dog.application.provided.dto.DogProfileResult;
 import com.daesabu.meongcoach.dog.domain.shared.Breed;
+import com.daesabu.meongcoach.dog.domain.shared.DogSex;
 import com.daesabu.meongcoach.plan.application.required.dto.AiPlanGenerateRequest;
 import com.daesabu.meongcoach.plan.application.required.dto.AiPlanGenerateResult;
 import com.daesabu.meongcoach.plan.domain.exception.InvalidAiPlanResponseException;
@@ -146,7 +147,7 @@ class AiPlanGenerationAdapterTest {
 	}
 
 	private AiPlanGenerateRequest createRequest() {
-		DogProfileResult dog = new DogProfileResult(1L, "초코", new Breed("푸들"),
+		DogProfileResult dog = new DogProfileResult(1L, "초코", new Breed("푸들"), DogSex.MALE,
 				LocalDate.of(2025, 1, 31), null);
 		List<AiPlanCurriculumResult> curriculums = List.of(
 				new AiPlanCurriculumResult(10L, 1L, "기다리기", "짧게 기다리기", "기다리는 연습", 2, 0, 10),
