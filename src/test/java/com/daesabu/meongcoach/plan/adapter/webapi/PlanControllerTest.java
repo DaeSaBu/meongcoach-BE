@@ -249,7 +249,7 @@ class PlanControllerTest {
 	@Test
 	void 완료된_플랜에_회고를_기록하고_마무리_요약을_반환한다() throws Exception {
 		PlanOutcomeRecordRequest request = new PlanOutcomeRecordRequest("PARTIAL");
-		PlanCreateCommand command = new PlanCreateCommand(42L, 3L, "초코의 2주 훈련 플랜", "선택한 훈련을 차근차근 익혀요");
+		PlanCreateCommand command = new PlanCreateCommand(42L, 3L, "초코의 훈련 플랜", "선택한 훈련을 차근차근 익혀요");
 		Plan plan = Plan.create(command, List.of(7L, 8L, 9L));
 		ReflectionTestUtils.setField(plan, "id", 21L);
 		plan.complete(Instant.parse("2026-10-25T12:00:00Z"));
@@ -357,7 +357,7 @@ class PlanControllerTest {
 
 	@Test
 	void 강아지별_현재_플랜과_진도를_반환한다() throws Exception {
-		PlanCreateCommand command = new PlanCreateCommand(42L, 3L, "초코의 2주 훈련 플랜", "선택한 훈련을 차근차근 익혀요");
+		PlanCreateCommand command = new PlanCreateCommand(42L, 3L, "초코의 훈련 플랜", "선택한 훈련을 차근차근 익혀요");
 		Plan plan = Plan.create(command, List.of(7L));
 		ReflectionTestUtils.setField(plan, "id", 21L);
 		ReflectionTestUtils.setField(plan, "createdAt", LocalDateTime.of(2026, 10, 23, 12, 0));
@@ -409,7 +409,7 @@ class PlanControllerTest {
 
 	@Test
 	void 현재_플랜과_순서가_있는_커리큘럼_레슨을_반환한다() throws Exception {
-		PlanCreateCommand command = new PlanCreateCommand(42L, 3L, "초코의 2주 훈련 플랜", "선택한 훈련을 차근차근 익혀요");
+		PlanCreateCommand command = new PlanCreateCommand(42L, 3L, "초코의 훈련 플랜", "선택한 훈련을 차근차근 익혀요");
 		Plan plan = Plan.create(command, List.of(7L));
 		ReflectionTestUtils.setField(plan, "id", 21L);
 		ReflectionTestUtils.setField(plan, "createdAt", LocalDateTime.of(2026, 10, 23, 12, 0));

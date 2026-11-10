@@ -302,7 +302,7 @@ class CurrentPlanFinderTest {
 	}
 
 	private Plan savePlan(Long userId, Long dogId, Long curriculumId) {
-		PlanCreateCommand command = new PlanCreateCommand(userId, dogId, "초코의 2주 훈련 플랜", "목표");
+		PlanCreateCommand command = new PlanCreateCommand(userId, dogId, "초코의 훈련 플랜", "목표");
 		Plan plan = Plan.create(command, List.of(curriculumId));
 		planRepository.flush();
 		return planRepository.save(plan);

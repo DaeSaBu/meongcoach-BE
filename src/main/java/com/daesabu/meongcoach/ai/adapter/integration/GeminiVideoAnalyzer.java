@@ -4,6 +4,7 @@ import com.daesabu.meongcoach.ai.application.provided.AiReportContent;
 import com.daesabu.meongcoach.ai.application.provided.AiReportContent.Recommend;
 import com.daesabu.meongcoach.ai.application.provided.AiReportContent.ReportSection;
 import com.daesabu.meongcoach.ai.application.provided.AiReportContent.Solution;
+import com.daesabu.meongcoach.ai.application.provided.PromptTemplateLoader;
 import com.daesabu.meongcoach.ai.application.required.VideoAnalyzer;
 import com.daesabu.meongcoach.ai.application.required.dto.VideoAnalysisResult;
 import com.daesabu.meongcoach.ai.domain.exception.VideoAnalysisFailedException;
@@ -69,17 +70,17 @@ public class GeminiVideoAnalyzer implements VideoAnalyzer {
 	private final GenerateContentConfig generateConfig;
 
 	public GeminiVideoAnalyzer(Client client, GeminiProperties properties, GoogleCredentials credentials,
-			TopicFinder topicFinder, ObjectMapper objectMapper) {
+			TopicFinder topicFinder, ObjectMapper objectMapper, PromptTemplateLoader promptTemplateLoader) {
 		this.client = client;
 		this.properties = properties;
 		this.credentials = credentials;
 		this.topicFinder = topicFinder;
 		this.objectMapper = objectMapper;
-		this.userPrompt = PromptLoader.load(USER_PROMPT_PATH);
+		this.userPrompt = promptTemplateLoader.load(USER_PROMPT_PATH);
 		this.generateConfig = GenerateContentConfig.builder()
-				.systemInstruction(Content.fromParts(Part.fromText(PromptLoader.load(SYSTEM_PROMPT_PATH))))
+				.systemInstruction(Content.fromParts(Part.fromText(promptTemplateLoader.load(SYSTEM_PROMPT_PATH))))
 				.responseMimeType(JSON_MIME_TYPE)
-				.responseJsonSchema(objectMapper.readValue(PromptLoader.load(SCHEMA_PATH), Map.class))
+				.responseJsonSchema(objectMapper.readValue(promptTemplateLoader.load(SCHEMA_PATH), Map.class))
 				.candidateCount(CANDIDATE_COUNT)
 				.maxOutputTokens(properties.maxOutputTokens())
 				.temperature(properties.temperature())
