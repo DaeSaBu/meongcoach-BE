@@ -20,6 +20,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OrderColumn;
 import jakarta.persistence.Table;
@@ -41,7 +42,8 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @Entity
-@Table(name = "plans")
+@Table(name = "plans", indexes = @Index(name = "uk_plans_active_user_dog",
+		columnList = "user_id, (dog_id)", unique = true, options = "WHERE status = 'ACTIVE'"))
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Plan extends BaseTimeEntity {
 
