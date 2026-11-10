@@ -17,7 +17,10 @@ import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ApplicationTest
-@Sql("/db/migration/V51__create_support_conversations.sql")
+@Sql({
+	"/db/migration/V51__create_support_conversations.sql",
+	"/db/migration/V52__create_support_push_jobs.sql"
+})
 class ChatRegisterTest {
 	@Autowired ChatRegister register;
 	@Autowired ChatFinder finder;
