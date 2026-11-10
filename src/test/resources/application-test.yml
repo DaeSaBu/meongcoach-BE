@@ -106,6 +106,9 @@ meongcoach:
       download-url-validity: PT1H
   notification:
     internal-secret: test-internal-secret
+  channel-talk:
+    webhook-token: test-channel-talk-webhook-token
+    member-hash-key: 4629de5def93d6a2abea6afa9bd5476d9c6cbc04223f9a2f7e517b535dde3e25
   revenuecat:
     base-url: https://api.revenuecat.test/v2
     api-key: test-revenuecat-api-key

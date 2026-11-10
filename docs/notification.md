@@ -18,7 +18,7 @@ flowchart LR
 
 | 항목 | 스케줄 알림 | 이벤트 알림 |
 |---|---|---|
-| 해당 알림 | 훈련 | AI 분석, 운영 알림, 댓글 |
+| 해당 알림 | 훈련 | AI 분석, 운영 알림, 댓글, 문의 답변 |
 | 회원 설정 | `NotificationSchedule` | `NotificationEventSetting` |
 | 발송 대상 | 그 시각을 켠 회원 | 지정한 회원 중 그 종류를 켠 회원 |
 | 문구 | 서버가 정함 | 호출자가 정함 |
@@ -34,7 +34,7 @@ flowchart LR
 |---|---|---|
 | `DeviceInstallation` | FID당 한 행 | 회원 ID, Firebase Installation ID(FID), 플랫폼(`IOS`·`ANDROID`), 마지막 확인 시각 |
 | `NotificationSchedule` | 회원·시·분당 한 행 | 시(Asia/Seoul 기준 0~23), 분(0~59), 수신 여부 |
-| `NotificationEventSetting` | 회원·종류당 한 행 | 종류(`AI_ANALYSIS`·`OPERATOR_MESSAGE`·`COMMENT`), 수신 여부 |
+| `NotificationEventSetting` | 회원·종류당 한 행 | 종류(`AI_ANALYSIS`·`OPERATOR_MESSAGE`·`COMMENT`·`SUPPORT_REPLY`), 수신 여부 |
 | `ScheduledNotificationDispatch` | 예약 시각당 한 행 | 완료한 예약 시각 |
 
 - 회원은 ID로만 참조합니다. 다른 모듈의 엔티티를 연관으로 잡지 않습니다.

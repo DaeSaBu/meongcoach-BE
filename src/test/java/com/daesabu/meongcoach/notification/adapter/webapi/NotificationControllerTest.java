@@ -227,7 +227,7 @@ class NotificationControllerTest {
 				.andDo(document("notification/event-settings",
 						responseFields(
 								fieldWithPath("settings").description("이벤트 알림 종류별 설정"),
-								fieldWithPath("settings[].type").description("알림 종류. AI_ANALYSIS·OPERATOR_MESSAGE·COMMENT"),
+								fieldWithPath("settings[].type").description("알림 종류. AI_ANALYSIS·OPERATOR_MESSAGE·COMMENT·SUPPORT_REPLY"),
 								fieldWithPath("settings[].enabled").description("해당 종류 수신 여부")
 						)
 				));
@@ -242,7 +242,7 @@ class NotificationControllerTest {
 						.content("{\"type\": \"COMMENT\", \"enabled\": false}"))
 				.andExpect(status().isNoContent())
 				.andDo(document("notification/event-setting-update",
-						requestFields(fieldWithPath("type").description("알림 종류. AI_ANALYSIS·OPERATOR_MESSAGE·COMMENT"),
+						requestFields(fieldWithPath("type").description("알림 종류. AI_ANALYSIS·OPERATOR_MESSAGE·COMMENT·SUPPORT_REPLY"),
 								fieldWithPath("enabled").description("해당 종류 수신 여부"))
 				));
 
