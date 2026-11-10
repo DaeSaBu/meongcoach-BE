@@ -67,15 +67,13 @@ public class PlanRegisterService implements PlanRegister {
 	public Plan createCustom(Long userId, Long dogId, CustomPlanCreateRequest request) {
 		DogProfileResult dog = dogProfileFinder.findDogProfile(userId, dogId);
 		PlanPreparationResult preparation = preparationFinder.find(request.topicIds());
-		CustomPlanCreateCommand command = new CustomPlanCreateCommand(userId, dog.id(), dog.name(),
-				request.dailyMinutes(), request.daysPerWeek());
+		CustomPlanCreateCommand command = new CustomPlanCreateCommand(userId, dog.id(), dog.name());
 		Plan plan = Plan.createCustom(command, preparation.curriculumIds());
 		return planSaveService.save(plan);
 	}
 
 	@Override
 	public Plan createAiPlan(Long userId, Long dogId, AiPlanCreateRequest request) {
-		Plan.validatePracticeSettings(request.dailyMinutes(), request.daysPerWeek());
 		DogProfileResult dog = dogProfileFinder.findDogProfile(userId, dogId);
 		AiPlanPreparationResult candidates = aiPreparationFinder.find(userId);
 		if (candidates.curriculums().isEmpty()) {
@@ -84,11 +82,11 @@ public class PlanRegisterService implements PlanRegister {
 
 		LocalDate generationDate = LocalDate.now(GENERATION_ZONE);
 		AiPlanGenerateRequest generateRequest = new AiPlanGenerateRequest(dog, generationDate,
-				request.dailyMinutes(), request.daysPerWeek(), request.expectation(), candidates.curriculums());
+				request.expectation(), candidates.curriculums());
 		AiPlanGenerateResult generated = aiPlanGenerator.generate(generateRequest);
 		PlanPreparationResult preparation = preparationFinder.findInRequestOrder(generated.topicIds());
 		AiPlanCreateCommand command = new AiPlanCreateCommand(userId, dog.id(), dog.name(), generated.goal(),
-				request.dailyMinutes(), request.daysPerWeek(), request.expectation());
+				request.expectation());
 		Plan plan = Plan.createAiPlan(command, preparation.curriculumIds());
 		return planSaveService.save(plan);
 	}

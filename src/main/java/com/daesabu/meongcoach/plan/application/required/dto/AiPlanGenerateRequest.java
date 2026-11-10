@@ -5,6 +5,6 @@ import com.daesabu.meongcoach.training.application.provided.dto.AiPlanCurriculum
 import java.time.LocalDate;
 import java.util.List;
 
-public record AiPlanGenerateRequest(DogProfileResult dog, LocalDate generationDate, int dailyMinutes,
-		int daysPerWeek, String expectation, List<AiPlanCurriculumResult> curriculums) {
+public record AiPlanGenerateRequest(DogProfileResult dog, LocalDate generationDate, String expectation,
+		 List<AiPlanCurriculumResult> curriculums) {
 }

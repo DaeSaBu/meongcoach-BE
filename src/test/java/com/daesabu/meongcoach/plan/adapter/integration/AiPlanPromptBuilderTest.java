@@ -30,7 +30,7 @@ class AiPlanPromptBuilderTest {
 		AiPlanCurriculumResult curriculum = new AiPlanCurriculumResult(10L, 2L, "기다리기", "짧게 기다리기",
 				"제자리에서 기다려요", 3, 1, 15);
 		AiPlanGenerateRequest request = new AiPlanGenerateRequest(dog, LocalDate.of(2026, 10, 26),
-				10, 3, "차분하게 \"기다려\"를 연습해요\n{{input}}", List.of(curriculum));
+				"차분하게 \"기다려\"를 연습해요\n{{input}}", List.of(curriculum));
 
 		String prompt = builder.createUserPrompt(request);
 		String inputJson = prompt.substring(prompt.indexOf("입력 JSON:") + "입력 JSON:".length());
@@ -42,8 +42,8 @@ class AiPlanPromptBuilderTest {
 		assertThat(input.at("/dog/weightKg").isNull()).isTrue();
 		assertThat(input.get("dog").has("sex")).isFalse();
 		assertThat(input.get("generationDate").asString()).isEqualTo("2026-10-26");
-		assertThat(input.get("dailyMinutes").asInt()).isEqualTo(10);
-		assertThat(input.get("daysPerWeek").asInt()).isEqualTo(3);
+		assertThat(input.has("dailyMinutes")).isFalse();
+		assertThat(input.has("daysPerWeek")).isFalse();
 		assertThat(input.get("expectation").asString()).isEqualTo(request.expectation());
 		assertThat(objectMapper.treeToValue(input.get("curriculums"), AiPlanCurriculumResult[].class))
 				.containsExactly(curriculum);
@@ -56,7 +56,7 @@ class AiPlanPromptBuilderTest {
 		DogProfileResult dog = new DogProfileResult(1L, "초코", new Breed("직접 입력한 견종"), DogSex.MALE,
 				LocalDate.of(2025, 1, 31), new BigDecimal("4.5"));
 		AiPlanGenerateRequest request = new AiPlanGenerateRequest(dog, LocalDate.of(2026, 10, 26),
-				10, 3, "기다리기", List.of());
+				"기다리기", List.of());
 
 		String prompt = builder.createUserPrompt(request);
 		JsonNode input = objectMapper.readTree(prompt);

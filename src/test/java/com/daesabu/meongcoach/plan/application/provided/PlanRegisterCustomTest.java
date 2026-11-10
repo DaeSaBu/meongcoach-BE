@@ -41,7 +41,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 class PlanRegisterCustomTest {
 
 	private static final Long USER_ID = 597001L;
-	private static final CustomPlanCreateRequest REQUEST = new CustomPlanCreateRequest(List.of(11L), 10, 3);
+	private static final CustomPlanCreateRequest REQUEST = new CustomPlanCreateRequest(List.of(11L));
 
 	@Autowired
 	private PlanRegister creator;
@@ -58,7 +58,6 @@ class PlanRegisterCustomTest {
 
 	@BeforeEach
 	void 준비한다() {
-		jdbc.execute("CREATE UNIQUE INDEX IF NOT EXISTS uk_plans_active_user_dog ON plans (user_id, dog_id) WHERE status = 'ACTIVE'");
 		when(dogProfileFinder.findDogProfile(USER_ID, 7L)).thenReturn(new DogProfileResult(7L, "초코", null, null, null, null));
 		when(preparationFinder.find(REQUEST.topicIds())).thenReturn(
 				new PlanPreparationResult(List.of(9L, 4L)));
@@ -95,7 +94,7 @@ class PlanRegisterCustomTest {
 	void 소유하지_않은_강아지는_플랜을_생성하지_않는다() {
 		when(dogProfileFinder.findDogProfile(USER_ID, 999L)).thenThrow(new DogNotFoundException(999L));
 
-		assertThatThrownBy(() -> creator.createCustom(USER_ID, 999L, new CustomPlanCreateRequest(List.of(11L), 10, 3)))
+		assertThatThrownBy(() -> creator.createCustom(USER_ID, 999L, new CustomPlanCreateRequest(List.of(11L))))
 				.isInstanceOf(DogNotFoundException.class);
 		assertThat(planRepository.count()).isZero();
 	}
