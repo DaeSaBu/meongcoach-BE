@@ -11,6 +11,16 @@ flowchart LR
     Notification --> FCM
 ```
 
+## 자체 실시간 상담 연결
+
+앱은 `/ws/support`에 `Authorization: Bearer {accessToken}` 헤더로 연결합니다.
+React Native `WebSocket`은 세 번째 인자 `{ headers }`로 업그레이드 요청 헤더를 보낼 수 있습니다.
+`/ws/support`는 일반 API와 같은 보안 필터 체인을 거치므로 토큰 검증과 회원 역할 확인이 업그레이드 전에 끝납니다.
+
+[ChatWebSocketHandler](../src/main/java/com/daesabu/meongcoach/support/adapter/websocket/ChatWebSocketHandler.java)는 인증 주체에서 회원 ID, ADMIN 여부, 토큰 만료 시각을 읽습니다.
+소켓은 본문 없는 신호만 보내며 `ping` 외의 클라이언트 메시지는 연결을 닫습니다.
+토큰이 만료된 연결은 다음 송신 시점에 닫습니다.
+
 ## 회원 상담 식별
 
 앱은 `GET /api/support/session`으로 로그인한 회원의 `memberId`와 `memberHash`를 받습니다.
