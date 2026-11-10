@@ -11,6 +11,17 @@ flowchart LR
     Notification --> FCM
 ```
 
+## 자체 실시간 상담 대화와 메시지
+
+[ChatController](../src/main/java/com/daesabu/meongcoach/support/adapter/webapi/ChatController.java)는 본인 대화와 ADMIN 답변 API를 제공합니다.
+대화 ID는 회원 ID와 같으며 `POST /api/support/conversations/me`가 처음 호출될 때 대화를 만듭니다.
+회원은 본인 대화만, ADMIN은 모든 대화를 조회하고 답변합니다.
+
+메시지 조회는 `after=-1`이면 최근 50건, `after>=0`이면 그 ID 이후 최대 50건, `before>0`이면 그 ID 이전 최대 50건을 오름차순으로 돌려줍니다.
+`after>=0`과 `before>0`을 함께 쓰면 400입니다.
+발송은 대화 행을 잠그고 같은 발신자의 `clientMessageId`가 이미 있으면 기존 메시지를 돌려주므로 재시도해도 중복 저장되지 않습니다.
+ADMIN 상담 목록은 최근 활동 순이며 `before`는 대화 ID입니다.
+
 ## 자체 실시간 상담 연결
 
 앱은 `/ws/support`에 `Authorization: Bearer {accessToken}` 헤더로 연결합니다.
