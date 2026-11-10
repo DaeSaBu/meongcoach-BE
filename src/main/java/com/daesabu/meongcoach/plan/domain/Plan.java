@@ -47,7 +47,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Plan extends BaseTimeEntity {
 
-	private static final String TITLE_SUFFIX = "의 2주 훈련 플랜";
+	private static final String TITLE_SUFFIX = "의 훈련 플랜";
 
 	private static final String CUSTOM_GOAL = "선택한 훈련을 차근차근 익혀요";
 

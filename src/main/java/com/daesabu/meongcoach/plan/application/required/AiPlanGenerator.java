@@ -6,12 +6,10 @@ import com.daesabu.meongcoach.plan.application.required.dto.AiPlanGenerateResult
 public interface AiPlanGenerator {
 
 	/**
-	 * 강아지 프로필, 생성일, 연습 설정, 사용자 기대사항과 커리큘럼 후보로 AI 플랜 구성을 생성한다.
-	 * 선택한 토픽 ID 목록과 목표 문장을 반환한다.
-	 * 토픽 ID 목록은 기대사항과 가장 관련된 토픽을 첫 번째로 두며, 목록의 순서가 플랜 진행 순서가 된다.
-	 * 새 훈련 분량은 2주 총 연습 시간의 50%에 더 가까운 구성을 선택하고, 차이가 같으면 적은 분량을 선택한다.
-	 * 미완료 훈련이 있으면 목표 시간을 초과하더라도 미완료 커리큘럼을 포함한 토픽을 최소 하나 선택한다.
-	 * 첫 번째 토픽이 미완료 커리큘럼을 포함하면 이 조건을 충족한 것으로 보고 토픽을 추가하지 않는다.
+	 * 강아지 프로필, 생성일, 사용자 기대사항과 커리큘럼 후보로 AI 플랜 구성을 생성한다.
+	 * 기대사항에 직접 맞는 토픽 ID 목록과 목표 문장을 반환한다.
+	 * 토픽 ID 목록은 후보에 있는 서로 다른 토픽으로 이루어지며, 목록의 순서가 플랜 진행 순서가 된다.
+	 * 응답을 해석할 수 없거나 토픽 ID 목록 또는 목표 문장을 쓸 수 없으면 InvalidAiPlanResponseException을 던진다.
 	 */
 	AiPlanGenerateResult generate(AiPlanGenerateRequest request);
 }
