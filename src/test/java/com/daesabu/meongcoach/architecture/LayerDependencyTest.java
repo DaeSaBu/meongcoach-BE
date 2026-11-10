@@ -1,5 +1,6 @@
 package com.daesabu.meongcoach.architecture;
 
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static com.tngtech.archunit.library.Architectures.layeredArchitecture;
 import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.slices;
 
@@ -8,9 +9,7 @@ import com.tngtech.archunit.core.importer.ClassFileImporter;
 import com.tngtech.archunit.core.importer.ImportOption;
 import org.junit.jupiter.api.Test;
 
-/**
- * 모듈 내부 계층 의존 방향 검증. 의존은 항상 adapter → application → domain 이어야 한다.
- */
+
 class LayerDependencyTest {
 
 	private static final JavaClasses CLASSES = new ClassFileImporter()
@@ -35,6 +34,12 @@ class LayerDependencyTest {
 		slices()
 				.matching("com.daesabu.meongcoach.(*)..")
 				.should().beFreeOfCycles()
+				.check(CLASSES);
+	}
+	@Test
+	void 알림_모듈은_상담_모듈에_의존하지_않는다() {
+		noClasses().that().resideInAPackage("com.daesabu.meongcoach.notification..")
+				.should().dependOnClassesThat().resideInAPackage("com.daesabu.meongcoach.support..")
 				.check(CLASSES);
 	}
 }

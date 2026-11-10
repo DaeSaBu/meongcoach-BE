@@ -9,9 +9,9 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.daesabu.meongcoach.dog.domain.Dog;
 import com.daesabu.meongcoach.dog.domain.DogRegisterCommand;
-import com.daesabu.meongcoach.dog.domain.DogSex;
 import com.daesabu.meongcoach.dog.domain.exception.DogNotFoundException;
 import com.daesabu.meongcoach.dog.domain.shared.Breed;
+import com.daesabu.meongcoach.dog.domain.shared.DogSex;
 import com.daesabu.meongcoach.plan.application.provided.dto.AiPlanCreateRequest;
 import com.daesabu.meongcoach.plan.application.required.AiPlanGenerator;
 import com.daesabu.meongcoach.plan.application.required.PlanRepository;

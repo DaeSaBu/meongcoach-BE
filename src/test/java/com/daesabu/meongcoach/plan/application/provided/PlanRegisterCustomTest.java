@@ -59,7 +59,7 @@ class PlanRegisterCustomTest {
 	@BeforeEach
 	void 준비한다() {
 		jdbc.execute("CREATE UNIQUE INDEX IF NOT EXISTS uk_plans_active_user_dog ON plans (user_id, dog_id) WHERE status = 'ACTIVE'");
-		when(dogProfileFinder.findDogProfile(USER_ID, 7L)).thenReturn(new DogProfileResult(7L, "초코", null, null, null));
+		when(dogProfileFinder.findDogProfile(USER_ID, 7L)).thenReturn(new DogProfileResult(7L, "초코", null, null, null, null));
 		when(preparationFinder.find(REQUEST.topicIds())).thenReturn(
 				new PlanPreparationResult(List.of(9L, 4L)));
 	}
@@ -72,7 +72,7 @@ class PlanRegisterCustomTest {
 
 	@Test
 	void 다른_강아지의_플랜을_유지하고_같은_강아지의_플랜만_교체한다() {
-		when(dogProfileFinder.findDogProfile(USER_ID, 8L)).thenReturn(new DogProfileResult(8L, "보리", null, null, null));
+		when(dogProfileFinder.findDogProfile(USER_ID, 8L)).thenReturn(new DogProfileResult(8L, "보리", null, null, null, null));
 		Plan firstDogPlan = creator.createCustom(USER_ID, 7L, REQUEST);
 		Plan secondDogPlan = creator.createCustom(USER_ID, 8L, REQUEST);
 		Plan replacement = creator.createCustom(USER_ID, 7L, REQUEST);

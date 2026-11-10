@@ -32,6 +32,7 @@
 | [docs/media.md](docs/media.md)                                             | R2/GCS 서명 URL 발급, 객체 키 소유권 규칙 |
 | [docs/training.md](docs/training.md)                                       | 훈련 콘텐츠·사용자 진행 애그리거트, 완료 판단, 레슨 완료 잠금 |
 | [docs/notification.md](docs/notification.md)                               | 푸시 알림 토큰·수신 설정 애그리거트, 내부 API 인증, 발송 대상 규칙 |
+| [docs/support.md](docs/support.md) | 채널톡 상담 세션·웹훅 인증·답변 선별 |
 | [docs/alert.md](docs/alert.md)                                             | 개발자 Slack 알림 호출 방법, 메시지 형식, 설정, 비동기·실패 처리 |
 | [docs/profiles.md](docs/profiles.md)                                       | local/dev/prod 프로파일 구성, DB·ddl-auto 정책 |
 
