@@ -317,7 +317,7 @@ class QuickTopicFinderTest {
 
 	private Plan savePlan(Long dogId, Long topicId) {
 		Long curriculumId = lessonsByTopic.get(topicId).getFirst().getCurriculum().getId();
-		PlanCreateCommand command = new PlanCreateCommand(USER_ID, dogId, "보리의 2주 훈련 플랜", "목표");
+		PlanCreateCommand command = new PlanCreateCommand(USER_ID, dogId, "보리의 훈련 플랜", "목표");
 		Plan plan = Plan.create(command, List.of(curriculumId));
 		entityManager.persist(plan);
 		flushAndClear();

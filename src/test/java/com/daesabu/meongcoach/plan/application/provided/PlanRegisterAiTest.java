@@ -149,7 +149,7 @@ class PlanRegisterAiTest {
 
 		Plan created = register.createAiPlan(USER_ID, dogId, request);
 
-		assertThat(created.getTitle()).isEqualTo("초코의 2주 훈련 플랜");
+		assertThat(created.getTitle()).isEqualTo("초코의 훈련 플랜");
 		assertThat(created.getCurriculumIds()).containsExactlyElementsOf(curriculumIds);
 		assertThat(planRepository.findById(created.getId()).orElseThrow().getExpectation()).isEqualTo(request.expectation());
 		assertThat(planRepository.findById(existing.getId()).orElseThrow().getStatus()).isEqualTo(PlanStatus.REPLACED);

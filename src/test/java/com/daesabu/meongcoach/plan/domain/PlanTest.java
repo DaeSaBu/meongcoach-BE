@@ -374,7 +374,7 @@ class PlanTest {
 
 	@Test
 	void 새_플랜은_완료_시각이_없는_활성_상태로_생성된다() {
-		PlanCreateCommand command = new PlanCreateCommand(1L, 2L, "초코의 2주 훈련 플랜", "기초 훈련을 익혀요");
+		PlanCreateCommand command = new PlanCreateCommand(1L, 2L, "초코의 훈련 플랜", "기초 훈련을 익혀요");
 
 		Plan plan = Plan.create(command, List.of(7L, 4L));
 
@@ -394,7 +394,7 @@ class PlanTest {
 
 		assertThat(plan.getUserId()).isEqualTo(1L);
 		assertThat(plan.getDogId()).isEqualTo(2L);
-		assertThat(plan.getTitle()).isEqualTo("초코의 2주 훈련 플랜");
+		assertThat(plan.getTitle()).isEqualTo("초코의 훈련 플랜");
 		assertThat(plan.getGoal()).isEqualTo("선택한 훈련을 차근차근 익혀요");
 		assertThat(plan.getStatus()).isEqualTo(PlanStatus.ACTIVE);
 		assertThat(plan.getCurriculumIds()).containsExactly(7L, 4L);

@@ -133,7 +133,7 @@ class PlanRegisterOutcomeTest {
 
 	private Plan createPlan(Curriculum... curriculums) {
 		List<Long> curriculumIds = List.of(curriculums).stream().map(Curriculum::getId).toList();
-		PlanCreateCommand command = new PlanCreateCommand(USER_ID, 1L, "초코의 2주 훈련 플랜", "목표");
+		PlanCreateCommand command = new PlanCreateCommand(USER_ID, 1L, "초코의 훈련 플랜", "목표");
 		return Plan.create(command, curriculumIds);
 	}
 

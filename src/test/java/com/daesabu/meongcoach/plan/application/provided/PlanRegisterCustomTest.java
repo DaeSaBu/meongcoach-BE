@@ -106,7 +106,7 @@ class PlanRegisterCustomTest {
 		Plan second = creator.createCustom(USER_ID, 7L, REQUEST);
 
 		assertThat(second.getDogId()).isEqualTo(7L);
-		assertThat(second.getTitle()).isEqualTo("초코의 2주 훈련 플랜");
+		assertThat(second.getTitle()).isEqualTo("초코의 훈련 플랜");
 		assertThat(second.getGoal()).isEqualTo("선택한 훈련을 차근차근 익혀요");
 		assertThat(second.getCurriculumIds()).containsExactly(9L, 4L);
 		assertThat(planRepository.findById(first.getId()).orElseThrow().getStatus()).isEqualTo(PlanStatus.REPLACED);
