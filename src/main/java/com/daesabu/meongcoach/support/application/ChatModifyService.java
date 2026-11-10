@@ -40,7 +40,10 @@ public class ChatModifyService implements ChatRegister {
 		}
 		boolean operator = finder.isOperator(userId);
 		String body = request.body().strip();
-		return repository.save(conversationId, userId, operator, request.clientMessageId(), body);
+		ChatMessage message =
+				repository.save(conversationId, userId, operator, request.clientMessageId(), body);
+		repository.notifyChanged(conversationId);
+		return message;
 	}
 
 }

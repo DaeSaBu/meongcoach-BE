@@ -16,6 +16,8 @@ public interface ChatRepository {
 
 	void lock(long conversationId);
 
+	void notifyChanged(long conversationId);
+
 	List<ChatMessage> messages(long conversationId, long after, long before, int limit);
 
 	Optional<ChatMessage> find(long conversationId, long senderId, UUID clientMessageId);

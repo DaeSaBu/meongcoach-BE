@@ -70,7 +70,7 @@ dependencies {
 	implementation("io.sentry:sentry-logback")
 	testImplementation("org.springframework.security:spring-security-test")
 	compileOnly("org.projectlombok:lombok")
-	runtimeOnly("org.postgresql:postgresql")
+	implementation("org.postgresql:postgresql")
 	implementation("org.springframework.boot:spring-boot-starter-websocket")
 	// 테스트 DB. application-test.yml의 jdbc:tc: URL을 Testcontainers JDBC 드라이버가 해석해 PostgreSQL 컨테이너를 띄운다
 	testRuntimeOnly("org.testcontainers:testcontainers-postgresql")

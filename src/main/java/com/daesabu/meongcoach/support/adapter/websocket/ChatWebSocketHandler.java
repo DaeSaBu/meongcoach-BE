@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
@@ -22,6 +24,7 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 @Component
 public class ChatWebSocketHandler extends TextWebSocketHandler implements SubProtocolCapable {
 	private final Map<String, Client> clients = new ConcurrentHashMap<>();
+	private final ExecutorService broadcast = Executors.newVirtualThreadPerTaskExecutor();
 
 	public List<String> getSubProtocols() {
 		return List.of("support.v1");
@@ -59,6 +62,19 @@ public class ChatWebSocketHandler extends TextWebSocketHandler implements SubPro
 		close(session.getId());
 	}
 
+	public void changed(long conversationId) {
+		clients.forEach(
+				(id, client) -> {
+					if (client.access().operator() || client.access().userId() == conversationId) {
+						broadcast.execute(() -> send(id, "changed"));
+					}
+				});
+	}
+
+	public void synchronizeAll() {
+		clients.keySet().forEach(id -> broadcast.execute(() -> send(id, "sync")));
+	}
+
 	private void send(String id, String text) {
 		Client client = clients.get(id);
 		if (client == null) {
@@ -89,6 +105,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler implements SubPro
 	@PreDestroy
 	public void shutdown() {
 		clients.keySet().forEach(this::close);
+		broadcast.shutdownNow();
 	}
 
 	private static Optional<ChatAccess> access(Principal principal) {

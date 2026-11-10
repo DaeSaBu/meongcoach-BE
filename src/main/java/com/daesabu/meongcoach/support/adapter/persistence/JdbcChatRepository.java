@@ -112,6 +112,10 @@ public class JdbcChatRepository implements ChatRepository {
 				body);
 	}
 
+	public void notifyChanged(long id) {
+		jdbc.queryForObject("SELECT pg_notify('support_chat', ?)", String.class, Long.toString(id));
+	}
+
 	private ChatConversation conversation(ResultSet rs, int n) throws SQLException {
 		long id = rs.getLong("id");
 		var updatedAt = rs.getTimestamp("updated_at").toInstant();
