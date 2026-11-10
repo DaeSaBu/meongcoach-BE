@@ -23,6 +23,10 @@ class ChatWebSocketHandlerTest {
 	}
 
 	private Principal principal(long user, Instant expiresAt) {
+		return principal(user, expiresAt, "ROLE_USER");
+	}
+
+	private Principal principal(long user, Instant expiresAt, String role) {
 		Jwt jwt =
 				Jwt.withTokenValue("access-token")
 						.header("alg", "HS256")
@@ -30,7 +34,7 @@ class ChatWebSocketHandlerTest {
 						.issuedAt(expiresAt.minusSeconds(3600))
 						.expiresAt(expiresAt)
 						.build();
-		return new JwtAuthenticationToken(jwt, List.of(new SimpleGrantedAuthority("ROLE_USER")));
+		return new JwtAuthenticationToken(jwt, List.of(new SimpleGrantedAuthority(role)));
 	}
 
 	private WebSocketSession session(String id, Principal principal) {
@@ -84,6 +88,21 @@ class ChatWebSocketHandlerTest {
 		doThrow(new java.io.IOException("전송 실패")).when(session).sendMessage(any());
 		handler.afterConnectionEstablished(session);
 		verify(session).close(CloseStatus.GOING_AWAY);
+	}
+
+	@Test
+	void 변경_신호는_대화_당사자와_상담원에게만_보낸다() throws Exception {
+		Instant expiresAt = Instant.now().plusSeconds(3600);
+		var owner = session("1", principal(42, expiresAt));
+		var other = session("2", principal(43, expiresAt));
+		var admin = session("3", principal(7, expiresAt, "ROLE_ADMIN"));
+		handler.afterConnectionEstablished(owner);
+		handler.afterConnectionEstablished(other);
+		handler.afterConnectionEstablished(admin);
+		handler.changed(42);
+		verify(owner, timeout(1000)).sendMessage(new TextMessage("changed"));
+		verify(admin, timeout(1000)).sendMessage(new TextMessage("changed"));
+		verify(other, after(300).never()).sendMessage(new TextMessage("changed"));
 	}
 
 	@Test

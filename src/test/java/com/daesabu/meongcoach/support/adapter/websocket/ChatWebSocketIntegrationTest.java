@@ -4,31 +4,51 @@ import static org.assertj.core.api.Assertions.*;
 
 import com.daesabu.meongcoach.auth.application.required.TokenProvider;
 import com.daesabu.meongcoach.support.NonTransactionalApplicationTest;
+import com.daesabu.meongcoach.support.adapter.integration.PostgresChatListener;
+import com.daesabu.meongcoach.support.application.provided.ChatRegister;
+import com.daesabu.meongcoach.support.application.provided.dto.ChatMessageRequest;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.User;
 import com.daesabu.meongcoach.user.domain.UserRole;
+import com.zaxxer.hikari.HikariDataSource;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.WebSocket;
+import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import javax.sql.DataSource;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @NonTransactionalApplicationTest
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@Sql("/db/migration/V51__create_support_conversations.sql")
+@Sql(
+		statements = {"DROP TABLE support_messages", "DROP TABLE support_conversations"},
+		executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
 class ChatWebSocketIntegrationTest {
 	@Autowired UserRepository users;
 	@Autowired TokenProvider tokens;
+	@Autowired ChatRegister register;
+	@Autowired ChatWebSocketHandler handler;
+	@Autowired DataSource dataSource;
+	@Autowired JdbcTemplate jdbc;
+	@Autowired PlatformTransactionManager transactions;
 	@LocalServerPort int port;
 
 	private Long member(UserRole role) {
@@ -93,6 +113,64 @@ class ChatWebSocketIntegrationTest {
 		} finally {
 			http.shutdownNow();
 			users.deleteById(onboarding);
+		}
+	}
+
+	@Test
+	void 커밋한_메시지만_알리고_LISTEN_연결이_끊기면_sync로_복구한다() throws Exception {
+		Long owner = member(UserRole.USER);
+		Long other = member(UserRole.USER);
+		var listener = new PostgresChatListener(dataSource, handler);
+		var http = HttpClient.newHttpClient();
+		List<WebSocket> sockets = new ArrayList<>();
+		try {
+			register.open(owner);
+			var ownerInbox = new Inbox();
+			var otherInbox = new Inbox();
+			sockets.add(
+					connect(http, tokens.issue(owner).accessToken(), ownerInbox)
+							.get(10, TimeUnit.SECONDS));
+			sockets.add(
+					connect(http, tokens.issue(other).accessToken(), otherInbox)
+							.get(10, TimeUnit.SECONDS));
+			assertThat(ownerInbox.messages.poll(10, TimeUnit.SECONDS)).isEqualTo("sync");
+			assertThat(otherInbox.messages.poll(10, TimeUnit.SECONDS)).isEqualTo("sync");
+			listener.start();
+			assertThat(ownerInbox.messages.poll(10, TimeUnit.SECONDS)).isEqualTo("sync");
+			assertThat(otherInbox.messages.poll(10, TimeUnit.SECONDS)).isEqualTo("sync");
+
+			new TransactionTemplate(transactions)
+					.executeWithoutResult(
+							status -> {
+								register.send(
+										owner, owner, new ChatMessageRequest(UUID.randomUUID(), "롤백"));
+								status.setRollbackOnly();
+							});
+			assertThat(ownerInbox.messages.poll(300, TimeUnit.MILLISECONDS)).isNull();
+
+			register.send(owner, owner, new ChatMessageRequest(UUID.randomUUID(), "커밋"));
+			assertThat(ownerInbox.messages.poll(10, TimeUnit.SECONDS)).isEqualTo("changed");
+			assertThat(otherInbox.messages.poll(300, TimeUnit.MILLISECONDS)).isNull();
+
+			var pool = dataSource.unwrap(HikariDataSource.class);
+			assertThat(pool.getHikariPoolMXBean().getActiveConnections()).isZero();
+			Connection connection = (Connection) ReflectionTestUtils.getField(listener, "connection");
+			int pid;
+			try (var statement = connection.createStatement();
+					var result = statement.executeQuery("SELECT pg_backend_pid()")) {
+				result.next();
+				pid = result.getInt(1);
+			}
+			jdbc.queryForObject("SELECT pg_terminate_backend(?)", Boolean.class, pid);
+			assertThat(ownerInbox.messages.poll(15, TimeUnit.SECONDS)).isEqualTo("sync");
+		} finally {
+			sockets.forEach(WebSocket::abort);
+			http.shutdownNow();
+			listener.stop();
+			jdbc.update("DELETE FROM support_messages");
+			jdbc.update("DELETE FROM support_conversations");
+			users.deleteById(owner);
+			users.deleteById(other);
 		}
 	}
 
