@@ -895,7 +895,6 @@ link:{swagger-ui}#/Plan/plan-custom-create[▶ Swagger에서 Try it out,window=s
 이미 완료한 커리큘럼도 처음부터 다시 학습합니다. 새 플랜의 진도는 0부터 시작하며 일반 학습 기록은 유지합니다.
 제목은 `{강아지 이름}의 2주 훈련 플랜`, 목표는 `선택한 훈련을 차근차근 익혀요`입니다.
 기존 활성 플랜은 새 플랜 생성에 성공할 때 교체하며, 실패하면 유지됩니다.
-하루 훈련 시간과 주당 훈련 일수는 저장하며, 훈련량 제한이나 자동 만료에 사용하지 않습니다.
 
 쿼리 파라미터 `dogId`는 대상 강아지 ID이며 필수입니다. 본인 소유 강아지만 지정할 수 있습니다.
 
@@ -904,8 +903,6 @@ operation::plan/custom-create[snippets='http-request,request-fields,http-respons
 ==== 실패 응답
 
 필수 값 누락이나 토픽 개수 범위 위반은 400(`BAD_REQUEST`)을 반환합니다.
-하루 훈련 시간은 5, 10, 20만 허용하며, 그 외 값은 400(`PLAN_INVALID_DAILY_MINUTES`)을 반환합니다. 20은 20분 이상을 뜻합니다.
-주당 훈련 일수는 3, 5, 7만 허용하며, 그 외 값은 400(`PLAN_INVALID_DAYS_PER_WEEK`)을 반환합니다.
 요청한 강아지가 없거나 본인 소유가 아니면 404(`DOG_NOT_FOUND`), 요청한 토픽이 없으면 404(`TRAINING_TOPIC_NOT_FOUND`)를 반환합니다.
 선택한 토픽에 커리큘럼이 없으면 400(`PLAN_EMPTY_CURRICULUMS`)을 반환합니다.
 
@@ -964,8 +961,6 @@ operation::plan/ai-create[snippets='http-request,request-fields,http-response,re
 
 인증 정보가 없으면 401(`UNAUTHORIZED`)을 반환합니다.
 필수 값 누락, 공백 기대사항, 500자 초과는 400(`BAD_REQUEST`)을 반환합니다.
-하루 훈련 시간은 5, 10, 20만 허용하며 그 외 값은 400(`PLAN_INVALID_DAILY_MINUTES`)을 반환합니다. 20은 20분 이상을 뜻합니다.
-주당 훈련 일수는 3, 5, 7만 허용하며 그 외 값은 400(`PLAN_INVALID_DAYS_PER_WEEK`)을 반환합니다.
 이 입력값은 AI 호출 전에 검증합니다.
 요청한 강아지가 없거나 본인 소유가 아니면 404(`DOG_NOT_FOUND`)를 반환합니다.
 커리큘럼 후보가 없으면 AI를 호출하지 않고 400(`PLAN_EMPTY_CURRICULUMS`)을 반환합니다.
