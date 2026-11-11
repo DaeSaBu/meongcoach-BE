@@ -9,7 +9,6 @@ import static org.mockito.Mockito.when;
 
 import com.daesabu.meongcoach.dog.application.provided.DogProfileFinder;
 import com.daesabu.meongcoach.dog.application.provided.dto.DogProfileResult;
-import com.daesabu.meongcoach.dog.application.provided.dto.DogSummaryResult;
 import com.daesabu.meongcoach.dog.domain.exception.DogNotFoundException;
 import com.daesabu.meongcoach.plan.application.provided.dto.CustomPlanCreateRequest;
 import com.daesabu.meongcoach.plan.application.required.PlanRepository;
@@ -79,15 +78,6 @@ class PlanRegisterCustomTest {
 		assertThat(planRepository.findById(firstDogPlan.getId()).orElseThrow().getStatus()).isEqualTo(PlanStatus.REPLACED);
 		assertThat(planRepository.findById(secondDogPlan.getId()).orElseThrow().getStatus()).isEqualTo(PlanStatus.ACTIVE);
 		assertThat(planRepository.findById(replacement.getId()).orElseThrow().getStatus()).isEqualTo(PlanStatus.ACTIVE);
-	}
-
-	@Test
-	void 이전_API는_대표_강아지로_플랜을_생성한다() {
-		when(dogProfileFinder.findSelectedDogSummary(USER_ID)).thenReturn(new DogSummaryResult(7L, "초코"));
-
-		Plan plan = creator.createCustom(USER_ID, REQUEST);
-
-		assertThat(plan.getDogId()).isEqualTo(7L);
 	}
 
 	@Test
