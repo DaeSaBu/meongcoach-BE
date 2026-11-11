@@ -29,16 +29,9 @@ public class CurrentPlanQueryService implements CurrentPlanFinder {
 	private final PlanCurriculumFinder planCurriculumFinder;
 
 	@Override
-	@Deprecated(forRemoval = true)
-	public Optional<CurrentPlanResult> find(Long userId) {
-		return planRepository.findFirstByUserIdAndStatusOrderByIdDesc(userId, PlanStatus.ACTIVE)
-				.or(() -> planRepository.findFirstByUserIdAndStatusOrderByCompletedAtDescIdDesc(userId, PlanStatus.COMPLETED))
-				.map(plan -> toResult(userId, plan));
-	}
-
-	@Override
 	public Optional<CurrentPlanResult> find(Long userId, Long dogId) {
 		dogProfileFinder.findDogProfile(userId, dogId);
+
 		return planRepository.findByUserIdAndDogIdAndStatus(userId, dogId, PlanStatus.ACTIVE)
 				.or(() -> planRepository.findFirstByUserIdAndDogIdAndStatusOrderByCompletedAtDescIdDesc(userId, dogId, PlanStatus.COMPLETED))
 				.map(plan -> toResult(userId, plan));

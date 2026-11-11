@@ -30,8 +30,8 @@ class FlywaySchemaValidationTest {
 
 	@Test
 	void 강아지별_활성_플랜_제약을_변경해도_기존_플랜_상태는_유지한다() throws Exception {
-		String insert = "INSERT INTO plans (user_id, dog_id, title, goal, daily_minutes, days_per_week, status, created_at) "
-				+ "VALUES (955636, ?, ?, '검증', 10, 3, ?, CURRENT_TIMESTAMP)";
+		String insert = "INSERT INTO plans (user_id, dog_id, title, goal, status, created_at) "
+				+ "VALUES (955636, ?, ?, '검증', ?, CURRENT_TIMESTAMP)";
 		try {
 			for (long dogId = 95563601L; dogId <= 95563604L; dogId++) {
 				jdbc.sql("INSERT INTO dogs (id, user_id, name, breed, sex, status, profile_image_url, expectation, created_at, updated_at) "
@@ -68,8 +68,8 @@ class FlywaySchemaValidationTest {
 
 	@Test
 	void 활성_플랜은_사용자별_강아지별로_하나만_허용한다() {
-		String insert = "INSERT INTO plans (user_id, dog_id, title, goal, daily_minutes, days_per_week, status, created_at) "
-				+ "VALUES (955635, ?, '검증', '검증', 10, 3, 'ACTIVE', CURRENT_TIMESTAMP)";
+		String insert = "INSERT INTO plans (user_id, dog_id, title, goal, status, created_at) "
+				+ "VALUES (955635, ?, '검증', '검증', 'ACTIVE', CURRENT_TIMESTAMP)";
 		try {
 			jdbc.sql(insert).param(1L).update();
 			jdbc.sql(insert).param(2L).update();

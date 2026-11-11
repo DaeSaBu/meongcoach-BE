@@ -91,7 +91,8 @@ class GeminiVideoAnalyzerTest {
 				.httpOptions(HttpOptions.builder().baseUrl(server.url("/").toString()).build())
 				.build();
 		GoogleCredentials credentials = GoogleCredentials.create(new AccessToken("test-access-token", null));
-		analyzer = new GeminiVideoAnalyzer(client, properties, credentials, topicFinder, objectMapper);
+		analyzer = new GeminiVideoAnalyzer(client, properties, credentials, topicFinder, objectMapper,
+				new ClassPathPromptTemplateLoader());
 	}
 
 	@AfterEach

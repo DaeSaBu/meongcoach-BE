@@ -1,12 +1,72 @@
 {
   "type": "object",
   "properties": {
+    "interpretation": {
+      "type": "object",
+      "description": "내부 근거. 기대사항 해석",
+      "properties": {
+        "needs": {
+          "type": "array",
+          "description": "기대사항의 요구 최대 3개. 요구 → 종류(문제 행동, 생활 적응, 배우기)",
+          "items": { "type": "string" }
+        },
+        "hypotheses": {
+          "type": "array",
+          "description": "문제 행동·생활 적응 요구의 기능 가설, 가능성 높은 순. 배우기 요구뿐이면 빈 배열",
+          "items": {
+            "type": "object",
+            "properties": {
+              "function": { "type": "string" },
+              "reason": {
+                "type": "string",
+                "description": "글에서 찾은 단서. 없으면 글에 단서 없음"
+              }
+            },
+            "required": ["function", "reason"],
+            "additionalProperties": false
+          }
+        },
+        "redFlags": {
+          "type": "object",
+          "properties": {
+            "medical": {
+              "type": "string",
+              "description": "몸의 불편을 시사하는 표현. 없으면 없음"
+            },
+            "biteRisk": {
+              "type": "string",
+              "enum": ["none", "low", "high"]
+            }
+          },
+          "required": ["medical", "biteRisk"],
+          "additionalProperties": false
+        }
+      },
+      "required": ["needs", "hypotheses", "redFlags"],
+      "additionalProperties": false
+    },
+    "decision": {
+      "type": "object",
+      "description": "내부 근거. 교육 선택",
+      "properties": {
+        "topicChoice": {
+          "type": "string",
+          "description": "고른 교육 이름과 고른 이유, 뺀 교육과 이유, 빈 부분"
+        }
+      },
+      "required": ["topicChoice"],
+      "additionalProperties": false
+    },
     "topicIds": {
       "type": "array",
+      "description": "고른 교육의 topicId 1~3개, 플랜 진행 순서",
       "items": { "type": "integer" }
     },
-    "goal": { "type": "string" }
+    "goal": {
+      "type": "string",
+      "description": "플랜 목표 한 문장"
+    }
   },
-  "required": ["topicIds", "goal"],
+  "required": ["interpretation", "decision", "topicIds", "goal"],
   "additionalProperties": false
 }

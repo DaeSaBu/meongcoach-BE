@@ -2,25 +2,35 @@ package com.daesabu.meongcoach.plan.adapter.integration;
 
 import com.daesabu.meongcoach.ai.application.provided.AiContentGenerateRequest;
 import com.daesabu.meongcoach.ai.application.provided.AiContentGenerator;
+import com.daesabu.meongcoach.ai.application.provided.PromptTemplateLoader;
 import com.daesabu.meongcoach.plan.application.required.AiPlanGenerator;
 import com.daesabu.meongcoach.plan.application.required.dto.AiPlanGenerateRequest;
 import com.daesabu.meongcoach.plan.application.required.dto.AiPlanGenerateResult;
 import com.daesabu.meongcoach.plan.domain.exception.InvalidAiPlanResponseException;
 import com.daesabu.meongcoach.training.application.provided.dto.AiPlanCurriculumResult;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.springframework.core.io.ClassPathResource;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 
+@Slf4j
 @Component
 final class AiPlanGenerationAdapter implements AiPlanGenerator {
+
+	private static final String SYSTEM_PROMPT_PATH = "prompts/plan-generation/system.md";
+	private static final String USER_PROMPT_PATH = "prompts/plan-generation/user.md";
+	private static final String SCHEMA_PATH = "prompts/plan-generation/schema.json";
+	private static final String TOPIC_IDS_FIELD = "topicIds";
+	private static final String GOAL_FIELD = "goal";
+	private static final List<String> REASONING_FIELDS = List.of("interpretation", "decision");
+	private static final Set<String> RESPONSE_FIELDS = Set.of("interpretation", "decision", TOPIC_IDS_FIELD, GOAL_FIELD);
 
 	private final AiPlanPromptBuilder promptBuilder;
 	private final AiContentGenerator contentGenerator;
@@ -28,36 +38,27 @@ final class AiPlanGenerationAdapter implements AiPlanGenerator {
 	private final String responseSchema;
 	private final ObjectMapper objectMapper;
 
-	AiPlanGenerationAdapter(AiContentGenerator contentGenerator, ObjectMapper objectMapper) {
+	AiPlanGenerationAdapter(AiContentGenerator contentGenerator, ObjectMapper objectMapper,
+			PromptTemplateLoader promptTemplateLoader) {
 		this.contentGenerator = contentGenerator;
 		this.objectMapper = objectMapper;
-		this.systemPrompt = loadPrompt("prompts/plan-generation/system.md");
-		this.responseSchema = loadPrompt("prompts/plan-generation/schema.json");
-		String userPromptTemplate = loadPrompt("prompts/plan-generation/user.md");
+		this.systemPrompt = promptTemplateLoader.load(SYSTEM_PROMPT_PATH);
+		this.responseSchema = promptTemplateLoader.load(SCHEMA_PATH);
+		String userPromptTemplate = promptTemplateLoader.load(USER_PROMPT_PATH);
 		this.promptBuilder = new AiPlanPromptBuilder(objectMapper, userPromptTemplate);
-	}
-
-	private String loadPrompt(String path) {
-		try {
-			String prompt = new ClassPathResource(path).getContentAsString(StandardCharsets.UTF_8);
-			if (prompt.isBlank()) {
-				throw new IllegalStateException("플랜 프롬프트 파일이 비어 있습니다: " + path);
-			}
-			return prompt.strip();
-		} catch (IOException exception) {
-			throw new IllegalStateException("플랜 프롬프트 파일을 읽을 수 없습니다: " + path, exception);
-		}
 	}
 
 	@Override
 	public AiPlanGenerateResult generate(AiPlanGenerateRequest request) {
 		String content = generateContent(request);
-		AiPlanGenerateResult result = parseResult(content);
+		JsonNode response = readResponse(content);
+		logReasoning(response, request);
+		AiPlanGenerateResult result = parseResult(response);
 		validateResult(result, request);
 		return result;
 	}
 
-	private AiPlanGenerateResult parseResult(String content) {
+	private JsonNode readResponse(String content) {
 		if (content == null || content.isBlank()) {
 			throw new InvalidAiPlanResponseException();
 		}
@@ -66,17 +67,43 @@ final class AiPlanGenerationAdapter implements AiPlanGenerator {
 					.with(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
 					.with(DeserializationFeature.FAIL_ON_READING_DUP_TREE_KEY)
 					.readTree(content);
-			if (!response.isObject() || response.size() != 2
-					|| !response.path("topicIds").isArray()
-					|| !response.path("goal").isString()) {
+			validateShape(response);
+			return response;
+		} catch (JacksonException exception) {
+			throw new InvalidAiPlanResponseException(exception);
+		}
+	}
+
+	private void validateShape(JsonNode response) {
+		if (!response.isObject()
+				|| !RESPONSE_FIELDS.containsAll(response.propertyNames())
+				|| !response.path(TOPIC_IDS_FIELD).isArray()
+				|| !response.path(GOAL_FIELD).isString()) {
+			throw new InvalidAiPlanResponseException();
+		}
+		for (JsonNode topicId : response.get(TOPIC_IDS_FIELD)) {
+			if (!topicId.isIntegralNumber() || !topicId.canConvertToLong()) {
 				throw new InvalidAiPlanResponseException();
 			}
-			for (JsonNode topicId : response.get("topicIds")) {
-				if (!topicId.isIntegralNumber() || !topicId.canConvertToLong()) {
-					throw new InvalidAiPlanResponseException();
-				}
-			}
-			return objectMapper.treeToValue(response, AiPlanGenerateResult.class);
+		}
+	}
+
+	private void logReasoning(JsonNode response, AiPlanGenerateRequest request) {
+		ObjectNode reasoning = objectMapper.createObjectNode();
+		reasoning.put("expectation", request.expectation());
+		REASONING_FIELDS.stream()
+				.filter(response::has)
+				.forEach(field -> reasoning.set(field, response.get(field)));
+		reasoning.set(TOPIC_IDS_FIELD, response.get(TOPIC_IDS_FIELD));
+		log.info("플랜 생성 근거: {} {}", request.dog().id(), reasoning);
+	}
+
+	private AiPlanGenerateResult parseResult(JsonNode response) {
+		ObjectNode generated = objectMapper.createObjectNode();
+		generated.set(TOPIC_IDS_FIELD, response.get(TOPIC_IDS_FIELD));
+		generated.set(GOAL_FIELD, response.get(GOAL_FIELD));
+		try {
+			return objectMapper.treeToValue(generated, AiPlanGenerateResult.class);
 		} catch (JacksonException exception) {
 			throw new InvalidAiPlanResponseException(exception);
 		}

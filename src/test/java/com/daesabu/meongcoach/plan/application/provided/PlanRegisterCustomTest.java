@@ -9,7 +9,6 @@ import static org.mockito.Mockito.when;
 
 import com.daesabu.meongcoach.dog.application.provided.DogProfileFinder;
 import com.daesabu.meongcoach.dog.application.provided.dto.DogProfileResult;
-import com.daesabu.meongcoach.dog.application.provided.dto.DogSummaryResult;
 import com.daesabu.meongcoach.dog.domain.exception.DogNotFoundException;
 import com.daesabu.meongcoach.plan.application.provided.dto.CustomPlanCreateRequest;
 import com.daesabu.meongcoach.plan.application.required.PlanRepository;
@@ -41,7 +40,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 class PlanRegisterCustomTest {
 
 	private static final Long USER_ID = 597001L;
-	private static final CustomPlanCreateRequest REQUEST = new CustomPlanCreateRequest(List.of(11L), 10, 3);
+	private static final CustomPlanCreateRequest REQUEST = new CustomPlanCreateRequest(List.of(11L));
 
 	@Autowired
 	private PlanRegister creator;
@@ -58,7 +57,6 @@ class PlanRegisterCustomTest {
 
 	@BeforeEach
 	void 준비한다() {
-		jdbc.execute("CREATE UNIQUE INDEX IF NOT EXISTS uk_plans_active_user_dog ON plans (user_id, dog_id) WHERE status = 'ACTIVE'");
 		when(dogProfileFinder.findDogProfile(USER_ID, 7L)).thenReturn(new DogProfileResult(7L, "초코", null, null, null, null));
 		when(preparationFinder.find(REQUEST.topicIds())).thenReturn(
 				new PlanPreparationResult(List.of(9L, 4L)));
@@ -83,19 +81,10 @@ class PlanRegisterCustomTest {
 	}
 
 	@Test
-	void 이전_API는_대표_강아지로_플랜을_생성한다() {
-		when(dogProfileFinder.findSelectedDogSummary(USER_ID)).thenReturn(new DogSummaryResult(7L, "초코"));
-
-		Plan plan = creator.createCustom(USER_ID, REQUEST);
-
-		assertThat(plan.getDogId()).isEqualTo(7L);
-	}
-
-	@Test
 	void 소유하지_않은_강아지는_플랜을_생성하지_않는다() {
 		when(dogProfileFinder.findDogProfile(USER_ID, 999L)).thenThrow(new DogNotFoundException(999L));
 
-		assertThatThrownBy(() -> creator.createCustom(USER_ID, 999L, new CustomPlanCreateRequest(List.of(11L), 10, 3)))
+		assertThatThrownBy(() -> creator.createCustom(USER_ID, 999L, new CustomPlanCreateRequest(List.of(11L))))
 				.isInstanceOf(DogNotFoundException.class);
 		assertThat(planRepository.count()).isZero();
 	}
@@ -107,7 +96,7 @@ class PlanRegisterCustomTest {
 		Plan second = creator.createCustom(USER_ID, 7L, REQUEST);
 
 		assertThat(second.getDogId()).isEqualTo(7L);
-		assertThat(second.getTitle()).isEqualTo("초코의 2주 훈련 플랜");
+		assertThat(second.getTitle()).isEqualTo("초코의 훈련 플랜");
 		assertThat(second.getGoal()).isEqualTo("선택한 훈련을 차근차근 익혀요");
 		assertThat(second.getCurriculumIds()).containsExactly(9L, 4L);
 		assertThat(planRepository.findById(first.getId()).orElseThrow().getStatus()).isEqualTo(PlanStatus.REPLACED);

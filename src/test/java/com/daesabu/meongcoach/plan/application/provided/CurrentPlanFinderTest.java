@@ -51,7 +51,6 @@ class CurrentPlanFinderTest {
 
 		assertThat(finder.find(42L, firstDog).orElseThrow().plan().getId()).isEqualTo(first.getId());
 		assertThat(finder.find(42L, secondDog).orElseThrow().plan().getId()).isEqualTo(second.getId());
-		assertThat(finder.find(42L).orElseThrow().plan().getId()).isEqualTo(second.getId());
 	}
 
 	@Test
@@ -100,13 +99,14 @@ class CurrentPlanFinderTest {
 
 	@Test
 	void 완료한_플랜보다_활성_플랜을_우선_반환한다() {
+		Long dogId = saveDog(42L);
 		Long curriculumId = saveCurriculum();
-		Plan completed = savePlan(42L, curriculumId);
+		Plan completed = savePlan(42L, dogId, curriculumId);
 		completed.complete(Instant.now());
-		Plan active = savePlan(42L, curriculumId);
+		Plan active = savePlan(42L, dogId, curriculumId);
 		flushAndClear();
 
-		var result = finder.find(42L).orElseThrow();
+		var result = finder.find(42L, dogId).orElseThrow();
 
 		assertThat(result.plan().getId()).isEqualTo(active.getId());
 		assertThat(result.curriculums()).hasSize(1);
@@ -115,12 +115,13 @@ class CurrentPlanFinderTest {
 
 	@Test
 	void 커리큘럼마다_속한_토픽의_ID와_제목을_반환한다() {
+		Long dogId = saveDog(42L);
 		Long curriculumId = saveCurriculum();
-		savePlan(42L, curriculumId);
+		savePlan(42L, dogId, curriculumId);
 		flushAndClear();
 		Topic topic = entityManager.find(Curriculum.class, curriculumId).getTopic();
 
-		var result = finder.find(42L).orElseThrow().curriculums().getFirst();
+		var result = finder.find(42L, dogId).orElseThrow().curriculums().getFirst();
 
 		assertThat(result.topicId()).isEqualTo(topic.getId());
 		assertThat(result.topicTitle()).isEqualTo("토픽");
@@ -157,32 +158,34 @@ class CurrentPlanFinderTest {
 
 	@Test
 	void 생성_순서가_아닌_완료_시각이_가장_최근인_플랜을_반환한다() {
+		Long dogId = saveDog(42L);
 		Long curriculumId = saveCurriculum();
-		Plan latest = savePlan(42L, curriculumId);
+		Plan latest = savePlan(42L, dogId, curriculumId);
 		latest.complete(Instant.parse("2026-10-23T12:00:00Z"));
-		Plan older = savePlan(42L, curriculumId);
+		Plan older = savePlan(42L, dogId, curriculumId);
 		older.complete(Instant.parse("2026-10-22T12:00:00Z"));
-		savePlan(42L, curriculumId).replace();
+		savePlan(42L, dogId, curriculumId).replace();
 		savePlan(43L, curriculumId);
 		flushAndClear();
 
-		assertThat(finder.find(42L).orElseThrow().plan().getId()).isEqualTo(latest.getId());
+		assertThat(finder.find(42L, dogId).orElseThrow().plan().getId()).isEqualTo(latest.getId());
 	}
 
 	@Test
 	void 완료_후_레슨이_추가되어도_완료_정보만_반환하고_저장된_진도는_유지한다() {
+		Long dogId = saveDog(42L);
 		Long curriculumId = saveCurriculum();
 		flushAndClear();
 		Curriculum curriculum = entityManager.find(Curriculum.class, curriculumId);
 		Long completedLessonId = curriculum.getLessonIds().getFirst();
-		Plan plan = savePlan(42L, curriculumId);
+		Plan plan = savePlan(42L, dogId, curriculumId);
 		plan.completeLesson(completedLessonId);
 		Instant completedAt = Instant.parse("2026-10-23T12:00:00Z");
 		plan.complete(completedAt);
 		entityManager.persist(LessonFixture.create(curriculum, "추가 레슨", 2, 5));
 		flushAndClear();
 
-		var result = finder.find(42L).orElseThrow();
+		var result = finder.find(42L, dogId).orElseThrow();
 
 		assertThat(result.curriculums()).isEmpty();
 		assertThat(result.plan().getStatus()).isEqualTo(PlanStatus.COMPLETED);
@@ -193,11 +196,12 @@ class CurrentPlanFinderTest {
 
 	@Test
 	void 완료된_플랜은_기존_커리큘럼이_없어도_조회할_수_있다() {
-		Plan plan = savePlan(42L, Long.MAX_VALUE);
+		Long dogId = saveDog(42L);
+		Plan plan = savePlan(42L, dogId, Long.MAX_VALUE);
 		plan.complete(Instant.parse("2026-10-23T12:00:00Z"));
 		flushAndClear();
 
-		var result = finder.find(42L).orElseThrow();
+		var result = finder.find(42L, dogId).orElseThrow();
 
 		assertThat(result.plan().getId()).isEqualTo(plan.getId());
 		assertThat(result.curriculums()).isEmpty();
@@ -205,29 +209,31 @@ class CurrentPlanFinderTest {
 
 	@Test
 	void 완료_시각이_같으면_ID가_큰_플랜을_반환한다() {
+		Long dogId = saveDog(42L);
 		Long curriculumId = saveCurriculum();
 		Instant time = Instant.parse("2026-10-23T12:00:00Z");
-		savePlan(42L, curriculumId).complete(time);
-		Plan latest = savePlan(42L, curriculumId);
+		savePlan(42L, dogId, curriculumId).complete(time);
+		Plan latest = savePlan(42L, dogId, curriculumId);
 		latest.complete(time);
 		flushAndClear();
 
-		assertThat(finder.find(42L).orElseThrow().plan().getId()).isEqualTo(latest.getId());
+		assertThat(finder.find(42L, dogId).orElseThrow().plan().getId()).isEqualTo(latest.getId());
 	}
 
 	@Test
 	void 다른_사용자_플랜과_교체된_플랜은_현재_플랜으로_반환하지_않는다() {
+		Long dogId = saveDog(42L);
 		Long curriculumId = saveCurriculum();
-		savePlan(42L, curriculumId).replace();
-		savePlan(43L, curriculumId);
+		savePlan(42L, dogId, curriculumId).replace();
+		savePlan(43L, dogId, curriculumId);
 		flushAndClear();
 
-		assertThat(finder.find(42L)).isEmpty();
-		assertThat(finder.find(99L)).isEmpty();
+		assertThat(finder.find(42L, dogId)).isEmpty();
 	}
 
 	@Test
 	void 일반_학습과_이전_플랜의_완료는_현재_플랜_진도에_반영하지_않는다() {
+		Long dogId = saveDog(42L);
 		Long curriculumId = saveCurriculum();
 		flushAndClear();
 		Curriculum curriculum = entityManager.find(Curriculum.class, curriculumId);
@@ -235,13 +241,13 @@ class CurrentPlanFinderTest {
 		LessonProgress progress = LessonProgress.start(42L, lessonId);
 		progress.complete();
 		entityManager.persist(progress);
-		Plan previous = savePlan(42L, curriculumId);
+		Plan previous = savePlan(42L, dogId, curriculumId);
 		previous.completeLesson(lessonId);
 		previous.replace();
-		savePlan(42L, curriculumId);
+		savePlan(42L, dogId, curriculumId);
 		flushAndClear();
 
-		var result = finder.find(42L).orElseThrow().curriculums().getFirst();
+		var result = finder.find(42L, dogId).orElseThrow().curriculums().getFirst();
 
 		assertThat(result.completedLessons()).isZero();
 		assertThat(result.status()).isEqualTo(ProgressStatus.NOT_STARTED);
@@ -250,17 +256,18 @@ class CurrentPlanFinderTest {
 
 	@Test
 	void 현재_플랜의_완료_기록으로_부분_완료와_전체_완료를_계산한다() {
+		Long dogId = saveDog(42L);
 		Long curriculumId = saveCurriculum();
 		flushAndClear();
 		Curriculum curriculum = entityManager.find(Curriculum.class, curriculumId);
 		Long firstLessonId = curriculum.getLessonIds().getFirst();
 		Lesson second = LessonFixture.create(curriculum, "두 번째", 2, 5);
 		entityManager.persist(second);
-		Plan plan = savePlan(42L, curriculumId);
+		Plan plan = savePlan(42L, dogId, curriculumId);
 		plan.completeLesson(firstLessonId);
 		flushAndClear();
 
-		var partial = finder.find(42L).orElseThrow().curriculums().getFirst();
+		var partial = finder.find(42L, dogId).orElseThrow().curriculums().getFirst();
 
 		assertThat(partial.totalLessons()).isEqualTo(2);
 		assertThat(partial.completedLessons()).isEqualTo(1);
@@ -269,7 +276,7 @@ class CurrentPlanFinderTest {
 		entityManager.find(Plan.class, plan.getId()).completeLesson(second.getId());
 		flushAndClear();
 
-		var completed = finder.find(42L).orElseThrow().curriculums().getFirst();
+		var completed = finder.find(42L, dogId).orElseThrow().curriculums().getFirst();
 
 		assertThat(completed.completedLessons()).isEqualTo(2);
 		assertThat(completed.status()).isEqualTo(ProgressStatus.COMPLETED);
@@ -277,18 +284,19 @@ class CurrentPlanFinderTest {
 
 	@Test
 	void 현재_목록에서_빠진_레슨은_완료_수에서_제외하고_추가된_레슨은_미완료로_표시한다() {
+		Long dogId = saveDog(42L);
 		Long curriculumId = saveCurriculum();
 		flushAndClear();
 		Curriculum curriculum = entityManager.find(Curriculum.class, curriculumId);
 		Long removedLessonId = curriculum.getLessonIds().getFirst();
-		Plan plan = savePlan(42L, curriculumId);
+		Plan plan = savePlan(42L, dogId, curriculumId);
 		plan.completeLesson(removedLessonId);
 		entityManager.remove(entityManager.find(Lesson.class, removedLessonId));
 		Lesson added = LessonFixture.create(curriculum, "새 레슨", 1, 5);
 		entityManager.persist(added);
 		flushAndClear();
 
-		var result = finder.find(42L).orElseThrow().curriculums().getFirst();
+		var result = finder.find(42L, dogId).orElseThrow().curriculums().getFirst();
 
 		assertThat(result.totalLessons()).isEqualTo(1);
 		assertThat(result.completedLessons()).isZero();
@@ -302,7 +310,7 @@ class CurrentPlanFinderTest {
 	}
 
 	private Plan savePlan(Long userId, Long dogId, Long curriculumId) {
-		PlanCreateCommand command = new PlanCreateCommand(userId, dogId, "초코의 2주 훈련 플랜", "목표", 10, 3);
+		PlanCreateCommand command = new PlanCreateCommand(userId, dogId, "초코의 훈련 플랜", "목표");
 		Plan plan = Plan.create(command, List.of(curriculumId));
 		planRepository.flush();
 		return planRepository.save(plan);

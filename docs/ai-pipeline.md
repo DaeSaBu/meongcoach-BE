@@ -70,9 +70,12 @@ VideoUploadSubscriber                       (ai/adapter/consumer — streaming p
 
 ## 프롬프트 템플릿 (src/main/resources/prompts/)
 
-`{video-analysis,plan-generation}/{system.md, user.md, schema.json}` 구조입니다.
+`{video-analysis,plan-generation}/{system.md, user.md, schema.json}`과 두 기능이 함께 참조하는 조각 `behavior-analysis/*.md` 구조입니다.
 
-- `PromptLoader`가 기동 시점에 읽어 검증합니다 — 파일이 없거나 비어 있으면 **애플리케이션이 기동하지 않습니다.**
+- `ai/application/provided`의 `PromptTemplateLoader`가 기동 시점에 읽어 검증합니다 — 파일이 없거나 비어 있으면 **애플리케이션이 기동하지 않습니다.** 다른 모듈도 이 로더로 프롬프트를 읽습니다. (호출 예시: `plan/adapter/integration/AiPlanGenerationAdapter`)
+- 템플릿의 `{{include:behavior-analysis/이름}}`은 `prompts/behavior-analysis/이름.md`의 내용으로 바뀝니다. 조각 안에는 include를 쓸 수 없고, 풀리지 않은 지시문이 남으면 기동하지 않습니다. include는 기동 시점에 템플릿에만 적용되므로 사용자 입력에 같은 문자열이 있어도 풀리지 않습니다.
+- **`behavior-analysis/` 조각(안전 원칙, 행동 기능 후보, 문제 우선순위, 교육 매핑)을 고치면 영상 분석과 플랜 생성 프롬프트가 함께 바뀝니다.** 영상 분석 프롬프트는 조각을 합친 결과가 PoC 검증 문구와 같아야 하므로, 조각 수정도 PoC에서 새 세트로 검증한 뒤 옮깁니다. 한 기능에만 필요한 문장은 조각이 아니라 그 기능의 템플릿에 씁니다.
+- 플랜 생성도 영상 분석처럼 내부 근거 필드(`interpretation`, `decision`)를 먼저 채우게 하고, 기대사항과 함께 info 로그(`플랜 생성 근거:`)에 남깁니다. 근거 필드는 플랜에 저장하지 않습니다.
 - `schema.json`은 응답 형태를 강제하므로, 프롬프트에서 출력 형식을 바꾸려면 스키마를 함께 수정해야 합니다. Gemini `responseJsonSchema`는 JSON Schema 부분집합만 받으므로(`minLength` 같은 일부 키워드 무시) 길이 규칙은 도메인에서 검증합니다.
 
 ## 필요 설정

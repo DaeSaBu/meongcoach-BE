@@ -5,8 +5,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.daesabu.meongcoach.plan.domain.exception.DuplicatePlanCurriculumException;
 import com.daesabu.meongcoach.plan.domain.exception.EmptyPlanCurriculumsException;
-import com.daesabu.meongcoach.plan.domain.exception.InvalidDailyMinutesException;
-import com.daesabu.meongcoach.plan.domain.exception.InvalidDaysPerWeekException;
 import com.daesabu.meongcoach.plan.domain.exception.InvalidPlanCurriculumException;
 import com.daesabu.meongcoach.plan.domain.exception.PlanLessonOrderException;
 import com.daesabu.meongcoach.plan.domain.exception.PlanNotActiveException;
@@ -22,7 +20,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.test.util.ReflectionTestUtils;
 
 class PlanTest {
@@ -344,13 +341,13 @@ class PlanTest {
 	}
 
 	private Plan createPlan() {
-		PlanCreateCommand command = new PlanCreateCommand(1L, 2L, "제목", "목표", 10, 3);
+		PlanCreateCommand command = new PlanCreateCommand(1L, 2L, "제목", "목표");
 		return Plan.create(command, List.of(7L, 4L));
 	}
 
 	@Test
 	void 커리큘럼_목록이_비어_있으면_생성을_거절한다() {
-		PlanCreateCommand command = new PlanCreateCommand(1L, 2L, "제목", "목표", 10, 3);
+		PlanCreateCommand command = new PlanCreateCommand(1L, 2L, "제목", "목표");
 
 		assertThatThrownBy(() -> Plan.create(command, List.of()))
 				.isInstanceOf(EmptyPlanCurriculumsException.class);
@@ -358,7 +355,7 @@ class PlanTest {
 
 	@Test
 	void 중복_커리큘럼이_있으면_제거하지_않고_생성을_거절한다() {
-		PlanCreateCommand command = new PlanCreateCommand(1L, 2L, "제목", "목표", 10, 3);
+		PlanCreateCommand command = new PlanCreateCommand(1L, 2L, "제목", "목표");
 		List<Long> curriculumIds = new ArrayList<>(List.of(7L, 4L, 7L));
 
 		assertThatThrownBy(() -> Plan.create(command, curriculumIds))
@@ -368,45 +365,16 @@ class PlanTest {
 
 	@Test
 	void 커리큘럼_ID에_null이_있으면_생성을_거절한다() {
-		PlanCreateCommand command = new PlanCreateCommand(1L, 2L, "제목", "목표", 10, 3);
+		PlanCreateCommand command = new PlanCreateCommand(1L, 2L, "제목", "목표");
 		List<Long> curriculumIds = Arrays.asList(7L, null);
 
 		assertThatThrownBy(() -> Plan.create(command, curriculumIds))
 				.isInstanceOf(InvalidPlanCurriculumException.class);
 	}
 
-	@ParameterizedTest
-	@CsvSource({"5, 3", "5, 5", "5, 7", "10, 3", "10, 5", "10, 7", "20, 3", "20, 5", "20, 7"})
-	void 허용된_실천_약속으로_플랜을_생성한다(int dailyMinutes, int daysPerWeek) {
-		PlanCreateCommand command = new PlanCreateCommand(1L, 2L, "제목", "목표", dailyMinutes, daysPerWeek);
-
-		Plan plan = Plan.create(command, List.of(7L));
-
-		assertThat(plan.getDailyMinutes()).isEqualTo(dailyMinutes);
-		assertThat(plan.getDaysPerWeek()).isEqualTo(daysPerWeek);
-	}
-
-	@ParameterizedTest
-	@ValueSource(ints = {-1, 0, 1, 15, 21, 30})
-	void 선택지에_없는_하루_훈련_시간은_거절한다(int dailyMinutes) {
-		PlanCreateCommand command = new PlanCreateCommand(1L, 2L, "제목", "목표", dailyMinutes, 3);
-
-		assertThatThrownBy(() -> Plan.create(command, List.of(7L)))
-				.isInstanceOf(InvalidDailyMinutesException.class);
-	}
-
-	@ParameterizedTest
-	@ValueSource(ints = {-1, 0, 1, 2, 4, 6, 8})
-	void 선택지에_없는_주당_훈련_일수는_거절한다(int daysPerWeek) {
-		PlanCreateCommand command = new PlanCreateCommand(1L, 2L, "제목", "목표", 10, daysPerWeek);
-
-		assertThatThrownBy(() -> Plan.create(command, List.of(7L)))
-				.isInstanceOf(InvalidDaysPerWeekException.class);
-	}
-
 	@Test
 	void 새_플랜은_완료_시각이_없는_활성_상태로_생성된다() {
-		PlanCreateCommand command = new PlanCreateCommand(1L, 2L, "초코의 2주 훈련 플랜", "기초 훈련을 익혀요", 10, 3);
+		PlanCreateCommand command = new PlanCreateCommand(1L, 2L, "초코의 훈련 플랜", "기초 훈련을 익혀요");
 
 		Plan plan = Plan.create(command, List.of(7L, 4L));
 
@@ -414,41 +382,33 @@ class PlanTest {
 		assertThat(plan.getDogId()).isEqualTo(2L);
 		assertThat(plan.getTitle()).isEqualTo(command.title());
 		assertThat(plan.getGoal()).isEqualTo(command.goal());
-		assertThat(plan.getDailyMinutes()).isEqualTo(10);
-		assertThat(plan.getDaysPerWeek()).isEqualTo(3);
 		assertThat(plan.getStatus()).isEqualTo(PlanStatus.ACTIVE);
 		assertThat(plan.getCompletedAt()).isNull();
 	}
 
 	@Test
 	void 커스텀_플랜은_강아지_이름으로_제목을_짓고_고정된_목표를_가진다() {
-		CustomPlanCreateCommand command = new CustomPlanCreateCommand(1L, 2L, "초코", 10, 3);
+		CustomPlanCreateCommand command = new CustomPlanCreateCommand(1L, 2L, "초코");
 
 		Plan plan = Plan.createCustom(command, List.of(7L, 4L));
 
 		assertThat(plan.getUserId()).isEqualTo(1L);
 		assertThat(plan.getDogId()).isEqualTo(2L);
-		assertThat(plan.getTitle()).isEqualTo("초코의 2주 훈련 플랜");
+		assertThat(plan.getTitle()).isEqualTo("초코의 훈련 플랜");
 		assertThat(plan.getGoal()).isEqualTo("선택한 훈련을 차근차근 익혀요");
-		assertThat(plan.getDailyMinutes()).isEqualTo(10);
-		assertThat(plan.getDaysPerWeek()).isEqualTo(3);
 		assertThat(plan.getStatus()).isEqualTo(PlanStatus.ACTIVE);
 		assertThat(plan.getCurriculumIds()).containsExactly(7L, 4L);
 	}
 
 	@Test
-	void 커스텀_플랜도_실천_약속과_커리큘럼_규칙을_검증한다() {
-		CustomPlanCreateCommand command = new CustomPlanCreateCommand(1L, 2L, "초코", 15, 3);
-
-		assertThatThrownBy(() -> Plan.createCustom(command, List.of(7L)))
-				.isInstanceOf(InvalidDailyMinutesException.class);
-		assertThatThrownBy(() -> Plan.createCustom(new CustomPlanCreateCommand(1L, 2L, "초코", 10, 3), List.of()))
+	void 커스텀_플랜도_커리큘럼_규칙을_검증한다() {
+		assertThatThrownBy(() -> Plan.createCustom(new CustomPlanCreateCommand(1L, 2L, "초코"), List.of()))
 				.isInstanceOf(EmptyPlanCurriculumsException.class);
 	}
 
 	@Test
 	void 전달받은_커리큘럼_순서를_저장하고_입력_목록의_변경에_영향받지_않는다() {
-		PlanCreateCommand command = new PlanCreateCommand(1L, 2L, "제목", "목표", 10, 3);
+		PlanCreateCommand command = new PlanCreateCommand(1L, 2L, "제목", "목표");
 		List<Long> curriculumIds = new ArrayList<>(List.of(7L, 4L));
 
 		Plan plan = Plan.create(command, curriculumIds);
@@ -459,16 +419,16 @@ class PlanTest {
 
 	@Test
 	void 외부에서_플랜의_커리큘럼_목록을_직접_변경할_수_없다() {
-		PlanCreateCommand command = new PlanCreateCommand(1L, 2L, "제목", "목표", 10, 3);
+		PlanCreateCommand command = new PlanCreateCommand(1L, 2L, "제목", "목표");
 		Plan plan = Plan.create(command, List.of(7L));
 
 		assertThatThrownBy(() -> plan.getCurriculumIds().clear()).isInstanceOf(UnsupportedOperationException.class);
 	}
 	@Test
 	void AI_플랜은_공통_제목과_AI_목표와_사용자_기대사항을_가진다() {
-		AiPlanCreateCommand command = new AiPlanCreateCommand(1L, 2L, "초코", "차분히 기다려요", 10, 3,
+		AiPlanCreateCommand command = new AiPlanCreateCommand(1L, 2L, "초코", "차분히 기다려요",
 				"  외출 전에 차분히 기다렸으면 해요  ");
-		CustomPlanCreateCommand customCommand = new CustomPlanCreateCommand(1L, 2L, "초코", 10, 3);
+		CustomPlanCreateCommand customCommand = new CustomPlanCreateCommand(1L, 2L, "초코");
 
 		Plan plan = Plan.createAiPlan(command, List.of(7L, 4L));
 		Plan customPlan = Plan.createCustom(customCommand, List.of(7L, 4L));
@@ -479,23 +439,15 @@ class PlanTest {
 		assertThat(plan.getGoal()).isEqualTo(command.goal());
 		assertThat(plan.getExpectation()).isEqualTo(command.expectation());
 		assertThat(customPlan.getExpectation()).isNull();
-		assertThat(plan.getDailyMinutes()).isEqualTo(10);
-		assertThat(plan.getDaysPerWeek()).isEqualTo(3);
 		assertThat(plan.getStatus()).isEqualTo(PlanStatus.ACTIVE);
 		assertThat(plan.getCurriculumIds()).containsExactly(7L, 4L);
 		assertThat(plan.getCompletedLessonIds()).isEmpty();
 	}
 
 	@Test
-	void AI_플랜도_실천_약속과_커리큘럼_규칙을_검증한다() {
-		AiPlanCreateCommand invalidMinutes = new AiPlanCreateCommand(1L, 2L, "초코", "목표", 15, 3, "기대사항");
-		AiPlanCreateCommand invalidDays = new AiPlanCreateCommand(1L, 2L, "초코", "목표", 10, 4, "기대사항");
-		AiPlanCreateCommand valid = new AiPlanCreateCommand(1L, 2L, "초코", "목표", 10, 3, "기대사항");
+	void AI_플랜도_커리큘럼_규칙을_검증한다() {
+		AiPlanCreateCommand valid = new AiPlanCreateCommand(1L, 2L, "초코", "목표", "기대사항");
 
-		assertThatThrownBy(() -> Plan.createAiPlan(invalidMinutes, List.of(7L)))
-				.isInstanceOf(InvalidDailyMinutesException.class);
-		assertThatThrownBy(() -> Plan.createAiPlan(invalidDays, List.of(7L)))
-				.isInstanceOf(InvalidDaysPerWeekException.class);
 		assertThatThrownBy(() -> Plan.createAiPlan(valid, List.of()))
 				.isInstanceOf(EmptyPlanCurriculumsException.class);
 		assertThatThrownBy(() -> Plan.createAiPlan(valid, List.of(7L, 7L)))
@@ -504,7 +456,7 @@ class PlanTest {
 
 	@Test
 	void AI_플랜의_기대사항은_null일_수_없다() {
-		AiPlanCreateCommand command = new AiPlanCreateCommand(1L, 2L, "초코", "목표", 10, 3, null);
+		AiPlanCreateCommand command = new AiPlanCreateCommand(1L, 2L, "초코", "목표", null);
 
 		assertThatThrownBy(() -> Plan.createAiPlan(command, List.of(7L))).isInstanceOf(NullPointerException.class);
 	}

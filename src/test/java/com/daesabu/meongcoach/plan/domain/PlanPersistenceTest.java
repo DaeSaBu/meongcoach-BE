@@ -17,7 +17,7 @@ class PlanPersistenceTest {
 
 	@Test
 	void 완료_시각을_저장하고_같은_순간으로_조회한다() {
-		PlanCreateCommand command = new PlanCreateCommand(1L, 2L, "제목", "목표", 10, 3);
+		PlanCreateCommand command = new PlanCreateCommand(1L, 2L, "제목", "목표");
 		Plan plan = Plan.create(command, List.of(7L));
 		Instant completedAt = Instant.parse("2026-10-25T12:00:00.123456Z");
 		plan.complete(completedAt);
@@ -32,7 +32,7 @@ class PlanPersistenceTest {
 
 	@Test
 	void 플랜만_저장해도_커리큘럼_ID와_순서가_보존된다() {
-		PlanCreateCommand command = new PlanCreateCommand(1L, 2L, "제목", "목표", 10, 3);
+		PlanCreateCommand command = new PlanCreateCommand(1L, 2L, "제목", "목표");
 		Plan plan = Plan.create(command, List.of(7L, 4L, 12L));
 		entityManager.persistAndFlush(plan);
 		Long planId = plan.getId();
@@ -45,7 +45,7 @@ class PlanPersistenceTest {
 
 	@Test
 	void 같은_커리큘럼을_포함한_플랜들의_목록은_서로_섞이지_않는다() {
-		PlanCreateCommand command = new PlanCreateCommand(1L, 2L, "제목", "목표", 10, 3);
+		PlanCreateCommand command = new PlanCreateCommand(1L, 2L, "제목", "목표");
 		Plan first = Plan.create(command, List.of(7L, 4L));
 		Plan second = Plan.create(command, List.of(4L, 12L));
 		first.replace();
@@ -64,7 +64,7 @@ class PlanPersistenceTest {
 
 	@Test
 	void 새_플랜의_완료_레슨은_빈_배열로_저장된다() {
-		PlanCreateCommand command = new PlanCreateCommand(1L, 2L, "제목", "목표", 10, 3);
+		PlanCreateCommand command = new PlanCreateCommand(1L, 2L, "제목", "목표");
 		Plan plan = Plan.create(command, List.of(7L));
 		entityManager.persistAndFlush(plan);
 		Long planId = plan.getId();
@@ -81,7 +81,7 @@ class PlanPersistenceTest {
 
 	@Test
 	void 완료_레슨_ID를_배열로_저장하고_Set_변경을_반영한다() {
-		PlanCreateCommand command = new PlanCreateCommand(1L, 2L, "제목", "목표", 10, 3);
+		PlanCreateCommand command = new PlanCreateCommand(1L, 2L, "제목", "목표");
 		Plan plan = Plan.create(command, List.of(7L));
 		plan.completeLesson(101L);
 		plan.completeLesson(102L);
@@ -107,7 +107,7 @@ class PlanPersistenceTest {
 	@Test
 	void AI_플랜의_500자_기대사항을_저장하고_조회한다() {
 		String expectation = "가".repeat(500);
-		AiPlanCreateCommand command = new AiPlanCreateCommand(1L, 2L, "초코", "차분히 기다려요", 10, 3, expectation);
+		AiPlanCreateCommand command = new AiPlanCreateCommand(1L, 2L, "초코", "차분히 기다려요", expectation);
 		Plan plan = Plan.createAiPlan(command, List.of(7L, 4L));
 		entityManager.persistAndFlush(plan);
 		Long planId = plan.getId();
@@ -121,7 +121,7 @@ class PlanPersistenceTest {
 
 	@Test
 	void 커스텀_플랜은_기대사항_없이_저장하고_조회한다() {
-		CustomPlanCreateCommand command = new CustomPlanCreateCommand(1L, 2L, "초코", 10, 3);
+		CustomPlanCreateCommand command = new CustomPlanCreateCommand(1L, 2L, "초코");
 		Plan plan = Plan.createCustom(command, List.of(7L));
 		entityManager.persistAndFlush(plan);
 		Long planId = plan.getId();

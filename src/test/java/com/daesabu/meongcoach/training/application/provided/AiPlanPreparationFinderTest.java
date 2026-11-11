@@ -94,9 +94,9 @@ class AiPlanPreparationFinderTest {
 
 		assertThat(result.curriculums()).containsExactly(
 				new AiPlanCurriculumResult(completed.getId(), topic.getId(), topic.getTitle(), completed.getTitle(),
-						completed.getDescription(), 1, 1, 5),
+						completed.getDescription(), 1, 1),
 				new AiPlanCurriculumResult(partial.getId(), topic.getId(), topic.getTitle(), partial.getTitle(),
-						partial.getDescription(), 2, 1, 12));
+						partial.getDescription(), 2, 1));
 	}
 
 	@Test

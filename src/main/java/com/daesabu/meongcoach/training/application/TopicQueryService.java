@@ -12,7 +12,6 @@ import com.daesabu.meongcoach.training.application.required.LessonProgressReposi
 import com.daesabu.meongcoach.training.application.required.TopicRepository;
 import com.daesabu.meongcoach.training.domain.Curriculum;
 import com.daesabu.meongcoach.training.domain.CurriculumCompletion;
-import com.daesabu.meongcoach.training.domain.Lesson;
 import com.daesabu.meongcoach.training.domain.LessonProgress;
 import com.daesabu.meongcoach.training.domain.LessonProgresses;
 import com.daesabu.meongcoach.training.domain.Topic;
@@ -57,11 +56,8 @@ public class TopicQueryService implements TopicFinder, TopicCompletionChecker, P
 		String description = curriculum.getDescription();
 		int totalLessons = curriculum.getLessonsSize();
 		int completedLessons = completion.completedLessons();
-		int estimatedMinutes = curriculum.getLessons().stream()
-				.mapToInt(Lesson::getEstimatedMinutes)
-				.sum();
 		return new AiPlanCurriculumResult(id, topicId, topicTitle, title, description,
-				totalLessons, completedLessons, estimatedMinutes);
+				totalLessons, completedLessons);
 	}
 
 	@Override
