@@ -120,18 +120,6 @@ class PlanRegisterAiTest {
 	}
 
 	@Test
-	void 이전_AI_API는_대표_강아지로_플랜을_생성한다() {
-		new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
-			Dog dog = entityManager.find(Dog.class, dogId);
-			dog.select();
-		});
-
-		Plan created = register.createAiPlan(USER_ID, request);
-
-		assertThat(created.getDogId()).isEqualTo(dogId);
-	}
-
-	@Test
 	void AI는_트랜잭션_밖에서_호출하고_선택한_토픽의_커리큘럼을_모두_저장한다() {
 		Plan existing = saveExistingPlan();
 		LocalDate before = LocalDate.now(ZoneId.of("Asia/Seoul"));
@@ -254,8 +242,8 @@ class PlanRegisterAiTest {
 	}
 
 	@Test
-	void 선택된_강아지가_없으면_AI를_호출하지_않는다() {
-		assertThatThrownBy(() -> register.createAiPlan(USER_ID + 1, request)).isInstanceOf(DogNotFoundException.class);
+	void 소유하지_않은_강아지면_AI를_호출하지_않는다() {
+		assertThatThrownBy(() -> register.createAiPlan(USER_ID + 1, dogId, request)).isInstanceOf(DogNotFoundException.class);
 		verifyNoInteractions(generator);
 	}
 
