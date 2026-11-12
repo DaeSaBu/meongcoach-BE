@@ -682,6 +682,16 @@ link:{swagger-ui}#/Community/community-my-author[▶ Swagger에서 Try it out,wi
 
 operation::community/my-author[snippets='http-request,http-response,response-fields']
 
+=== 회원 강아지 정보 조회
+
+link:{swagger-ui}#/Community/community-author-dog[▶ Swagger에서 Try it out,window=swagger]
+
+게시글·댓글 작성자 사진을 눌렀을 때 보여 줄, 그 회원이 선택한 강아지의 공개 정보를 조회합니다. `userId`에는 `author.userId`를 넣습니다.
+이름, 견종, 성별, 만 나이, 프로필 이미지만 공개하고 생일·몸무게·성격·기대하는 점은 내려가지 않습니다.
+훈련사(EXPERT) 계정이거나 선택된 강아지가 없으면 `dog`가 null입니다.
+
+operation::community/author-dog[snippets='http-request,path-parameters,http-response,response-fields']
+
 === 게시글 단건 조회
 
 link:{swagger-ui}#/Community/community-post-detail[▶ Swagger에서 Try it out,window=swagger]
