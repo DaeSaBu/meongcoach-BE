@@ -97,6 +97,39 @@ class PlanLessonCompleterTest {
 	}
 
 	@Test
+	void 다른_토픽의_첫_레슨은_앞_토픽을_마치지_않아도_완료한다() {
+		Curriculum walk = saveCurriculum(false);
+		saveLesson(walk, 1);
+		Curriculum calm = saveCurriculum(false);
+		Lesson calmLesson = saveLesson(calm, 1);
+		saveLesson(calm, 2);
+		Plan plan = savePlan(walk, calm);
+		flushAndClear();
+
+		completer.complete(USER_ID, plan.getId(), calmLesson.getId());
+		flushAndClear();
+
+		Plan found = findPlan(plan);
+		assertThat(found.getCompletedLessonIds()).containsExactly(calmLesson.getId());
+		assertThat(found.getStatus()).isEqualTo(PlanStatus.ACTIVE);
+		assertThat(completedCount(calmLesson)).isOne();
+	}
+
+	@Test
+	void 같은_토픽의_뒤_커리큘럼은_앞_커리큘럼을_마쳐야_완료한다() {
+		Curriculum first = saveCurriculum(false);
+		saveLesson(first, 1);
+		Curriculum second = saveCurriculum(first.getTopic(), 2);
+		Lesson secondLesson = saveLesson(second, 1);
+		Plan plan = savePlan(first, second);
+		flushAndClear();
+
+		assertThatThrownBy(() -> completer.complete(USER_ID, plan.getId(), secondLesson.getId()))
+				.isInstanceOf(PlanLessonOrderException.class);
+		assertThat(findPlan(plan).getCompletedLessonIds()).isEmpty();
+	}
+
+	@Test
 	void 활성_플랜의_이미_완료한_레슨은_횟수를_다시_늘리지_않는다() {
 		Curriculum curriculum = saveCurriculum(false);
 		Lesson first = saveLesson(curriculum, 1);
@@ -264,6 +297,12 @@ class PlanLessonCompleterTest {
 		Topic topic = TopicFixture.create(category, "토픽", 1, null, null, null);
 		entityManager.persist(topic);
 		Curriculum curriculum = CurriculumFixture.create(topic, "커리큘럼", 1, null, null, premium);
+		entityManager.persist(curriculum);
+		return curriculum;
+	}
+
+	private Curriculum saveCurriculum(Topic topic, int order) {
+		Curriculum curriculum = CurriculumFixture.create(topic, "커리큘럼", order, null, null, false);
 		entityManager.persist(curriculum);
 		return curriculum;
 	}
