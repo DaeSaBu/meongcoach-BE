@@ -132,6 +132,45 @@ class AiReportFinderTest {
 	}
 
 	@Test
+	void 리포트_상세는_영상_객체_키로_서명한_재생_URL을_담는다() {
+		AiAnalysis saved = persistCompletedAnalysis(USER_ID, "videos/training/42/key.mp4", "분리불안 징후 행동 분석");
+
+		AiReportDetailResult detail = aiReportFinder.findReport(USER_ID, saved.getId());
+
+		assertThat(detail.videoUrl()).contains("videos/training/42/key.mp4").contains("X-Goog-Signature=");
+	}
+
+	@Test
+	void 분석에_실패한_리포트_상세도_업로드된_영상의_재생_URL을_담는다() {
+		persistFailedAnalysis(USER_ID, "videos/training/42/failed.mp4");
+		Long reportId = aiReportFinder.findReports(USER_ID).getFirst().id();
+
+		AiReportDetailResult detail = aiReportFinder.findReport(USER_ID, reportId);
+
+		assertThat(detail.videoUrl()).contains("videos/training/42/failed.mp4");
+	}
+
+	@Test
+	void 업로드_중인_리포트_상세는_재생_URL이_null이다() {
+		AiAnalysis saved = aiAnalysisRepository.saveAndFlush(uploadingAnalysis(USER_ID, "videos/training/42/uploading.mp4",
+				Instant.now().plusSeconds(900)));
+
+		AiReportDetailResult detail = aiReportFinder.findReport(USER_ID, saved.getId());
+
+		assertThat(detail.videoUrl()).isNull();
+	}
+
+	@Test
+	void 업로드가_만료된_리포트_상세는_재생_URL이_null이다() {
+		AiAnalysis saved = aiAnalysisRepository.saveAndFlush(uploadingAnalysis(USER_ID, "videos/training/42/expired.mp4",
+				Instant.now().minusSeconds(1)));
+
+		AiReportDetailResult detail = aiReportFinder.findReport(USER_ID, saved.getId());
+
+		assertThat(detail.videoUrl()).isNull();
+	}
+
+	@Test
 	void 존재하지_않는_리포트면_예외를_던진다() {
 		assertThatThrownBy(() -> aiReportFinder.findReport(USER_ID, 999L))
 				.isInstanceOf(AiReportNotFoundException.class);
