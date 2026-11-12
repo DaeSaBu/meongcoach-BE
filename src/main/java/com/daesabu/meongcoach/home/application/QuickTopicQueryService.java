@@ -2,7 +2,6 @@ package com.daesabu.meongcoach.home.application;
 
 import com.daesabu.meongcoach.home.application.provided.QuickTopicFinder;
 import com.daesabu.meongcoach.home.application.provided.dto.QuickTopicResult;
-import com.daesabu.meongcoach.home.domain.QuickTopicRole;
 import com.daesabu.meongcoach.plan.application.provided.CurrentPlanFinder;
 import com.daesabu.meongcoach.training.application.provided.TopicProgressFinder;
 import com.daesabu.meongcoach.training.application.provided.dto.TopicProgressResult;
@@ -45,22 +44,15 @@ public class QuickTopicQueryService implements QuickTopicFinder {
 				.map(topicsById::get)
 				.filter(Objects::nonNull)
 				.limit(LIMIT)
-				.map(topic -> new QuickTopicResult(topic, planTopicRole(topic)))
+				.map(QuickTopicResult::from)
 				.toList();
-	}
-
-	private QuickTopicRole planTopicRole(TopicProgressResult topic) {
-		if (topic.status() == ProgressStatus.IN_PROGRESS) {
-			return QuickTopicRole.IN_PROGRESS;
-		}
-		return QuickTopicRole.NOT_STARTED;
 	}
 
 	private List<QuickTopicResult> findRecommendedTopics(List<TopicProgressResult> topics) {
 		return topics.stream()
 				.filter(topic -> topic.status() == ProgressStatus.NOT_STARTED)
 				.limit(LIMIT)
-				.map(topic -> new QuickTopicResult(topic, QuickTopicRole.NOT_STARTED))
+				.map(QuickTopicResult::from)
 				.toList();
 	}
 }
