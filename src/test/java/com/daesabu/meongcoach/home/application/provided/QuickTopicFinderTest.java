@@ -267,13 +267,12 @@ class QuickTopicFinderTest {
 	}
 
 	@Test
-	void 같은_날_같은_회원에게는_같은_순서로_반환한다() {
+	void 미시작_토픽은_교육_순서대로_반환한다() {
 		Long dogId = saveDog(USER_ID, TODAY.minusMonths(6));
 
-		List<Long> first = topicIds(finder.find(USER_ID, dogId));
-		List<Long> second = topicIds(finder.find(USER_ID, dogId));
+		List<QuickTopicResult> result = finder.find(USER_ID, dogId);
 
-		assertThat(first).isEqualTo(second);
+		assertThat(topicIds(result)).containsExactly(1601L, 1602L, 1201L, 1204L, 1303L);
 	}
 
 	@Test
