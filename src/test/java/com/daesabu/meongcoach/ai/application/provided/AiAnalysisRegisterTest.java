@@ -5,10 +5,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.daesabu.meongcoach.ai.application.provided.dto.AiAnalysisRegisterRequest;
 import com.daesabu.meongcoach.ai.application.required.AiAnalysisRepository;
+import com.daesabu.meongcoach.ai.application.required.AiTrialRepository;
 import com.daesabu.meongcoach.ai.domain.AiAnalysis;
 import com.daesabu.meongcoach.ai.domain.AiAnalysisStatus;
-import com.daesabu.meongcoach.ai.domain.AiAnalysisUploadCommand;
 import com.daesabu.meongcoach.ai.domain.AiTrial;
+import com.daesabu.meongcoach.ai.domain.AiTrialFixture;
 import com.daesabu.meongcoach.ai.domain.exception.AiReportTrialExceededException;
 import com.daesabu.meongcoach.ai.domain.exception.AiVideoDurationOutOfRangeException;
 import com.daesabu.meongcoach.support.ApplicationTest;
@@ -34,6 +35,9 @@ class AiAnalysisRegisterTest {
 
 	@Autowired
 	private AiAnalysisRepository aiAnalysisRepository;
+
+	@Autowired
+	private AiTrialRepository aiTrialRepository;
 
 	@Test
 	void 맥락을_담은_UPLOADING_분석_건을_저장하고_그_ID와_업로드_URL을_돌려준다() {
@@ -107,13 +111,11 @@ class AiAnalysisRegisterTest {
 
 	@Test
 	void 체험_횟수를_소진했으면_분석_건_저장_없이_예외를_던진다() {
-		for (int i = 0; i < AiTrial.MAX_COUNT; i++) {
-			persistCompletedAnalysis("videos/training/7/" + i + ".mp4");
-		}
+		aiTrialRepository.saveAndFlush(AiTrialFixture.used(USER_ID, AiTrial.DEFAULT_GRANTED_COUNT));
 
 		assertThatThrownBy(() -> aiAnalysisRegister.register(USER_ID, REQUEST))
 				.isInstanceOf(AiReportTrialExceededException.class);
-		assertThat(aiAnalysisRepository.findAllByUserIdOrderByCreatedAtDescIdDesc(USER_ID)).hasSize(AiTrial.MAX_COUNT);
+		assertThat(aiAnalysisRepository.findAllByUserIdOrderByCreatedAtDescIdDesc(USER_ID)).isEmpty();
 	}
 
 	@ParameterizedTest
@@ -125,13 +127,5 @@ class AiAnalysisRegisterTest {
 		assertThatThrownBy(() -> aiAnalysisRegister.register(USER_ID, request))
 				.isInstanceOf(AiVideoDurationOutOfRangeException.class);
 		assertThat(aiAnalysisRepository.findAllByUserIdOrderByCreatedAtDescIdDesc(USER_ID)).isEmpty();
-	}
-
-	private void persistCompletedAnalysis(String videoObjectKey) {
-		AiAnalysis analysis = AiAnalysis.uploading(
-				new AiAnalysisUploadCommand(USER_ID, videoObjectKey, Instant.now().plusSeconds(900), null));
-		analysis.startAnalysis();
-		analysis.complete("제목", "본문");
-		aiAnalysisRepository.saveAndFlush(analysis);
 	}
 }
