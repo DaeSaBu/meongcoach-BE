@@ -1,6 +1,5 @@
 package com.daesabu.meongcoach.home.application;
 
-import com.daesabu.meongcoach.dog.application.provided.DogProfileFinder;
 import com.daesabu.meongcoach.home.application.provided.QuickTopicFinder;
 import com.daesabu.meongcoach.home.application.provided.dto.QuickTopicResult;
 import com.daesabu.meongcoach.home.domain.QuickTopicRole;
@@ -33,34 +32,19 @@ public class QuickTopicQueryService implements QuickTopicFinder {
 	private static final int LIMIT = 5;
 	private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
 
-	private final DogProfileFinder dogProfileFinder;
 	private final CurrentPlanFinder currentPlanFinder;
 	private final TopicProgressFinder topicProgressFinder;
 
 	@Override
 	public List<QuickTopicResult> find(Long userId, Long dogId) {
-		dogProfileFinder.findDogProfile(userId, dogId);
-		LocalDate today = LocalDate.now(SEOUL);
+		List<Long> planTopicIds = currentPlanFinder.findActiveTopicIds(userId, dogId);
 		List<TopicProgressResult> topics = topicProgressFinder.findAll(userId).stream()
 				.filter(TopicProgressResult::hasThumbnail)
 				.toList();
-		List<Long> planTopicIds = currentPlanFinder.findActiveTopicIds(userId, dogId);
 		if (!planTopicIds.isEmpty()) {
-			List<QuickTopicResult> planTopics = findPlanTopics(topics, planTopicIds);
-			return planTopics.stream().limit(LIMIT).toList();
+			return findPlanTopics(topics, planTopicIds);
 		}
-
-		Optional<QuickTopicResult> inProgressTopic = findInProgressTopic(topics)
-				.map(topic -> new QuickTopicResult(topic, QuickTopicRole.IN_PROGRESS));
-		List<QuickTopicResult> notStartedTopics = findNotStartedTopics(topics, dailySeed(userId, today))
-				.stream()
-				.map(topic -> new QuickTopicResult(topic, QuickTopicRole.NOT_STARTED))
-				.toList();
-
-		Stream<QuickTopicResult> results = Stream.concat(inProgressTopic.stream(), notStartedTopics.stream());
-		return results
-				.limit(LIMIT)
-				.toList();
+		return findRecommendedTopics(topics, userId);
 	}
 
 	private List<QuickTopicResult> findPlanTopics(List<TopicProgressResult> topics, List<Long> planTopicIds) {
@@ -69,6 +53,7 @@ public class QuickTopicQueryService implements QuickTopicFinder {
 		return planTopicIds.stream()
 				.map(topicsById::get)
 				.filter(Objects::nonNull)
+				.limit(LIMIT)
 				.map(topic -> new QuickTopicResult(topic, planTopicRole(topic)))
 				.toList();
 	}
@@ -80,11 +65,23 @@ public class QuickTopicQueryService implements QuickTopicFinder {
 		return QuickTopicRole.NOT_STARTED;
 	}
 
-	private Optional<TopicProgressResult> findInProgressTopic(List<TopicProgressResult> topics) {
-		Comparator<TopicProgressResult> latestFirst = Comparator.comparing(TopicProgressResult::lastStudiedAt).reversed();
+	private List<QuickTopicResult> findRecommendedTopics(List<TopicProgressResult> topics, Long userId) {
+		LocalDate today = LocalDate.now(SEOUL);
+		long seed = dailySeed(userId, today);
+		Stream<QuickTopicResult> inProgress = findMostRecentInProgressTopic(topics).stream()
+				.map(topic -> new QuickTopicResult(topic, QuickTopicRole.IN_PROGRESS));
+		Stream<QuickTopicResult> notStarted = findNotStartedTopics(topics, seed).stream()
+				.map(topic -> new QuickTopicResult(topic, QuickTopicRole.NOT_STARTED));
+		return Stream.concat(inProgress, notStarted)
+				.limit(LIMIT)
+				.toList();
+	}
+
+	private Optional<TopicProgressResult> findMostRecentInProgressTopic(List<TopicProgressResult> topics) {
+		Comparator<TopicProgressResult> byLastStudiedAt = Comparator.comparing(TopicProgressResult::lastStudiedAt);
 		return topics.stream()
 				.filter(topic -> topic.status() == ProgressStatus.IN_PROGRESS)
-				.min(latestFirst);
+				.max(byLastStudiedAt);
 	}
 
 	private List<TopicProgressResult> findNotStartedTopics(List<TopicProgressResult> topics, long seed) {
