@@ -23,6 +23,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -54,12 +55,16 @@ public class QuickTopicQueryService implements QuickTopicFinder {
 		List<Long> planTopicIds = currentPlanFinder.findActiveTopicIds(userId, dogId);
 		Set<Long> planTopicIdSet = Set.copyOf(planTopicIds);
 
-		List<QuickTopicResult> result = new ArrayList<>(findPlanTopics(topics, planTopicIds));
-		findInProgressTopic(candidates, planTopicIdSet)
-				.ifPresent(topic -> result.add(new QuickTopicResult(topic, QuickTopicRole.IN_PROGRESS)));
-		findNotStartedTopics(candidates, planTopicIdSet, dailySeed(userId, today))
-				.forEach(topic -> result.add(new QuickTopicResult(topic, QuickTopicRole.NOT_STARTED)));
-		return result.stream()
+		List<QuickTopicResult> planTopics = findPlanTopics(topics, planTopicIds);
+		Optional<QuickTopicResult> inProgressTopic = findInProgressTopic(candidates, planTopicIdSet)
+				.map(topic -> new QuickTopicResult(topic, QuickTopicRole.IN_PROGRESS));
+		List<QuickTopicResult> notStartedTopics = findNotStartedTopics(candidates, planTopicIdSet, dailySeed(userId, today))
+				.stream()
+				.map(topic -> new QuickTopicResult(topic, QuickTopicRole.NOT_STARTED))
+				.toList();
+		Stream<QuickTopicResult> results = Stream.of(planTopics.stream(), inProgressTopic.stream(), notStartedTopics.stream())
+				.flatMap(Function.identity());
+		return results
 				.limit(LIMIT)
 				.toList();
 	}
