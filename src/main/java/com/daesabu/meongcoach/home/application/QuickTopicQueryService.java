@@ -1,7 +1,6 @@
 package com.daesabu.meongcoach.home.application;
 
 import com.daesabu.meongcoach.dog.application.provided.DogProfileFinder;
-import com.daesabu.meongcoach.dog.application.provided.dto.DogProfileResult;
 import com.daesabu.meongcoach.home.application.provided.QuickTopicFinder;
 import com.daesabu.meongcoach.home.application.provided.dto.QuickTopicResult;
 import com.daesabu.meongcoach.home.domain.QuickTopicRole;
@@ -11,7 +10,6 @@ import com.daesabu.meongcoach.training.application.provided.dto.TopicProgressRes
 import com.daesabu.meongcoach.training.domain.shared.ProgressStatus;
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -38,11 +36,10 @@ public class QuickTopicQueryService implements QuickTopicFinder {
 	private final DogProfileFinder dogProfileFinder;
 	private final CurrentPlanFinder currentPlanFinder;
 	private final TopicProgressFinder topicProgressFinder;
-	private final QuickTopicProperties properties;
 
 	@Override
 	public List<QuickTopicResult> find(Long userId, Long dogId) {
-		DogProfileResult dog = dogProfileFinder.findDogProfile(userId, dogId);
+		dogProfileFinder.findDogProfile(userId, dogId);
 		LocalDate today = LocalDate.now(SEOUL);
 		List<TopicProgressResult> topics = topicProgressFinder.findAll(userId).stream()
 				.filter(TopicProgressResult::hasThumbnail)
@@ -53,14 +50,9 @@ public class QuickTopicQueryService implements QuickTopicFinder {
 			return planTopics.stream().limit(LIMIT).toList();
 		}
 
-		int minCategoryOrder = minCategoryOrder(dog.birthDate(), today);
-		List<TopicProgressResult> candidates = topics.stream()
-				.filter(topic -> topic.categorySortOrder() >= minCategoryOrder)
-				.toList();
-
-		Optional<QuickTopicResult> inProgressTopic = findInProgressTopic(candidates)
+		Optional<QuickTopicResult> inProgressTopic = findInProgressTopic(topics)
 				.map(topic -> new QuickTopicResult(topic, QuickTopicRole.IN_PROGRESS));
-		List<QuickTopicResult> notStartedTopics = findNotStartedTopics(candidates, dailySeed(userId, today))
+		List<QuickTopicResult> notStartedTopics = findNotStartedTopics(topics, dailySeed(userId, today))
 				.stream()
 				.map(topic -> new QuickTopicResult(topic, QuickTopicRole.NOT_STARTED))
 				.toList();
@@ -86,20 +78,6 @@ public class QuickTopicQueryService implements QuickTopicFinder {
 			return QuickTopicRole.IN_PROGRESS;
 		}
 		return QuickTopicRole.NOT_STARTED;
-	}
-
-	private int minCategoryOrder(LocalDate birthDate, LocalDate today) {
-		if (isOverMonths(birthDate, today)) {
-			return properties.minCategoryOrder();
-		}
-		return 0;
-	}
-
-	private boolean isOverMonths(LocalDate birthDate, LocalDate today) {
-		if (birthDate == null) {
-			return false;
-		}
-		return ChronoUnit.MONTHS.between(birthDate, today) >= properties.months();
 	}
 
 	private Optional<TopicProgressResult> findInProgressTopic(List<TopicProgressResult> topics) {
