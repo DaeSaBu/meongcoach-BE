@@ -1,30 +1,21 @@
-package com.daesabu.meongcoach.ai.application;
+package com.daesabu.meongcoach.ai.application.provided;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.daesabu.meongcoach.ai.application.provided.AiReportContent;
-import com.daesabu.meongcoach.ai.application.provided.AiReportDetailResult;
-import com.daesabu.meongcoach.ai.application.provided.AiReportFinder;
-import com.daesabu.meongcoach.ai.application.provided.AiReportResult;
 import com.daesabu.meongcoach.ai.application.required.AiAnalysisRepository;
 import com.daesabu.meongcoach.ai.domain.AiAnalysis;
 import com.daesabu.meongcoach.ai.domain.AiAnalysisStatus;
 import com.daesabu.meongcoach.ai.domain.AiAnalysisUploadCommand;
 import com.daesabu.meongcoach.ai.domain.exception.AiReportNotFoundException;
+import com.daesabu.meongcoach.support.ApplicationTest;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
-import tools.jackson.databind.ObjectMapper;
 
-@DataJpaTest
-@Import(AiReportQueryService.class)
-class AiReportQueryServiceTest {
+@ApplicationTest
+class AiReportFinderTest {
 
 	private static final Long USER_ID = 42L;
 
@@ -45,15 +36,6 @@ class AiReportQueryServiceTest {
 
 	@Autowired
 	private AiAnalysisRepository aiAnalysisRepository;
-
-	@TestConfiguration
-	static class ObjectMapperTestConfig {
-
-		@Bean
-		ObjectMapper objectMapper() {
-			return new ObjectMapper();
-		}
-	}
 
 	@Test
 	void 내_리포트만_최신순으로_반환한다() {
