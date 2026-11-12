@@ -95,7 +95,7 @@ class QuickTopicFinderTest {
 	}
 
 	@Test
-	void 생일이_없는_강아지는_두_살_전으로_본다() {
+	void 생일이_없는_강아지에게도_토픽을_추천한다() {
 		JUNIOR_OR_LATER_TOPIC_IDS.forEach(this::completeAll);
 		Long dogId = saveDog(USER_ID, null);
 
@@ -106,24 +106,27 @@ class QuickTopicFinderTest {
 	}
 
 	@Test
-	void 두_살_이후_강아지에게는_주니어보다_앞선_카테고리의_토픽을_보여_주지_않는다() {
+	void 두_살_이후_강아지에게도_모든_카테고리의_새_토픽을_보여_준다() {
+		JUNIOR_OR_LATER_TOPIC_IDS.stream().filter(id -> id != 404L).forEach(this::completeAll);
+		completeAll(1303L);
+		completeAll(1105L);
 		Long dogId = saveDog(USER_ID, TODAY.minusMonths(24));
 
 		List<QuickTopicResult> result = finder.find(USER_ID, dogId);
 
 		assertThat(result).hasSize(5);
-		assertThat(JUNIOR_OR_LATER_TOPIC_IDS).containsAll(topicIds(result));
+		assertThat(topicIds(result)).containsExactlyInAnyOrder(1601L, 1602L, 1201L, 1204L, 404L);
 	}
 
 	@Test
-	void 두_살_이후_강아지가_앞선_카테고리_토픽을_진행_중이어도_이어서로_보여_주지_않는다() {
+	void 두_살_이후_강아지도_앞선_카테고리의_진행_중_토픽을_이어서로_보여_준다() {
 		complete(USER_ID, 1601L, 0, LocalDateTime.of(2026, 11, 7, 9, 0));
 		Long dogId = saveDog(USER_ID, TODAY.minusYears(3));
 
 		List<QuickTopicResult> result = finder.find(USER_ID, dogId);
 
-		assertThat(result).extracting(QuickTopicResult::role).containsOnly(QuickTopicRole.NOT_STARTED);
-		assertThat(topicIds(result)).doesNotContainAnyElementsOf(EARLY_TOPIC_IDS);
+		assertThat(result.getFirst().topic().id()).isEqualTo(1601L);
+		assertThat(result.getFirst().role()).isEqualTo(QuickTopicRole.IN_PROGRESS);
 	}
 
 	@Test
