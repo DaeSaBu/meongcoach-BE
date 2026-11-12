@@ -49,7 +49,6 @@ class QuickTopicFinderTest {
 
 	private final Map<Long, List<Lesson>> lessonsByTopic = new HashMap<>();
 
-	// prod 카테고리 구조와 정렬을 따른다. 훈련 기본기 1, 퍼피 교육 2, 주니어 3, 어덜트 4, 시니어 5.
 	@BeforeEach
 	void setUp() {
 		saveCategory(16L, "훈련 기본기", 1);
@@ -128,7 +127,7 @@ class QuickTopicFinderTest {
 	}
 
 	@Test
-	void 학습_기록이_없는_활성_플랜의_토픽은_첫_칸에_새_토픽으로_두고_뒤에서_다시_넣지_않는다() {
+	void 학습_기록이_없는_활성_플랜의_토픽만_새_토픽으로_반환한다() {
 		JUNIOR_OR_LATER_TOPIC_IDS.forEach(this::completeAll);
 		Long dogId = saveDog(USER_ID, TODAY.minusMonths(6));
 		savePlan(dogId, 1601L);
@@ -137,9 +136,7 @@ class QuickTopicFinderTest {
 
 		assertThat(result.getFirst().topic().id()).isEqualTo(1601L);
 		assertThat(result.getFirst().role()).isEqualTo(QuickTopicRole.NOT_STARTED);
-		assertThat(topicIds(result).subList(1, result.size())).hasSize(4)
-				.doesNotContain(1601L)
-				.isSubsetOf(1602L, 1201L, 1204L, 1303L, 1105L);
+		assertThat(topicIds(result)).containsExactly(1601L);
 	}
 
 	@Test
@@ -151,11 +148,10 @@ class QuickTopicFinderTest {
 
 		List<QuickTopicResult> result = finder.find(USER_ID, dogId);
 
-		assertThat(topicIds(result).subList(0, 3)).containsExactly(1201L, 1104L, 1102L);
-		assertThat(result.subList(0, 3)).extracting(QuickTopicResult::role)
+		assertThat(topicIds(result)).containsExactly(1201L, 1104L, 1102L);
+		assertThat(result).extracting(QuickTopicResult::role)
 				.containsExactly(QuickTopicRole.NOT_STARTED, QuickTopicRole.NOT_STARTED, QuickTopicRole.IN_PROGRESS);
-		assertThat(result).hasSize(5);
-		assertThat(topicIds(result).subList(3, 5)).doesNotContain(1201L, 1104L, 1102L);
+		assertThat(result).hasSize(3);
 	}
 
 	@Test
@@ -168,7 +164,18 @@ class QuickTopicFinderTest {
 
 		assertThat(result.getFirst().topic().id()).isEqualTo(1601L);
 		assertThat(topicIds(result)).doesNotContain(1602L);
-		assertThat(topicIds(result).subList(1, result.size())).isSubsetOf(JUNIOR_OR_LATER_TOPIC_IDS);
+		assertThat(topicIds(result)).containsExactly(1601L);
+	}
+
+	@Test
+	void 활성_플랜의_토픽에_사진이_모두_없어도_추천으로_채우지_않는다() {
+		Long dogId = saveDog(USER_ID, TODAY.minusMonths(6));
+		clearThumbnail(1601L);
+		savePlan(dogId, 1601L);
+
+		List<QuickTopicResult> result = finder.find(USER_ID, dogId);
+
+		assertThat(result).isEmpty();
 	}
 
 	@Test
@@ -200,7 +207,7 @@ class QuickTopicFinderTest {
 	}
 
 	@Test
-	void 플랜_토픽_뒤에_플랜_밖에서_가장_최근에_학습한_진행_중_토픽을_이어서로_반환한다() {
+	void 플랜이_있으면_플랜_밖의_진행_중_토픽으로_채우지_않는다() {
 		Long dogId = saveDog(USER_ID, TODAY.minusMonths(6));
 		complete(USER_ID, 1101L, 0, LocalDateTime.of(2026, 11, 7, 9, 0));
 		complete(USER_ID, 1102L, 0, LocalDateTime.of(2026, 11, 5, 9, 0));
@@ -209,14 +216,8 @@ class QuickTopicFinderTest {
 
 		List<QuickTopicResult> result = finder.find(USER_ID, dogId);
 
-		assertThat(topicIds(result).subList(0, 2)).containsExactly(1101L, 1102L);
-		assertThat(result.subList(0, 2)).extracting(QuickTopicResult::role)
-				.containsOnly(QuickTopicRole.IN_PROGRESS);
-		assertThat(result.get(1).topic().completedLessons()).isEqualTo(1);
-		assertThat(result.subList(2, result.size())).extracting(QuickTopicResult::role)
-				.containsOnly(QuickTopicRole.NOT_STARTED);
-		assertThat(topicIds(result)).doesNotContain(1104L);
-		assertThat(result).hasSize(5);
+		assertThat(topicIds(result)).containsExactly(1101L);
+		assertThat(result).extracting(QuickTopicResult::role).containsOnly(QuickTopicRole.IN_PROGRESS);
 	}
 
 	@Test
@@ -233,14 +234,14 @@ class QuickTopicFinderTest {
 	}
 
 	@Test
-	void 진행_중인_토픽이_없으면_플랜_토픽_뒤를_새_토픽으로_채우고_시작한_토픽은_뺀다() {
+	void 플랜이_있으면_플랜_밖의_새_토픽으로_채우지_않는다() {
 		Long dogId = saveDog(USER_ID, TODAY.minusMonths(6));
 		completeAll(1101L);
 		savePlan(dogId, 1102L);
 
 		List<QuickTopicResult> result = finder.find(USER_ID, dogId);
 
-		assertThat(result).hasSize(5);
+		assertThat(result).hasSize(1);
 		assertThat(result.getFirst().topic().id()).isEqualTo(1102L);
 		assertThat(result).extracting(QuickTopicResult::role).containsOnly(QuickTopicRole.NOT_STARTED);
 		assertThat(topicIds(result)).doesNotContain(1101L).containsOnlyOnce(1102L);
