@@ -1008,7 +1008,7 @@ operation::plan/lesson-complete-not-found-error[snippets='http-response,response
 
 operation::plan/lesson-complete-inactive-error[snippets='http-response,response-fields']
 
-현재 진행할 레슨이 아니거나 현재 목록에 없는 레슨이면 409(`PLAN_LESSON_ORDER`)를 반환합니다.
+레슨이 속한 토픽에서 지금 진행할 레슨이 아니거나 현재 목록에 없는 레슨이면 409(`PLAN_LESSON_ORDER`)를 반환합니다. 토픽끼리는 순서 없이 각각 진행합니다.
 
 operation::plan/lesson-complete-order-error[snippets='http-response,response-fields']
 

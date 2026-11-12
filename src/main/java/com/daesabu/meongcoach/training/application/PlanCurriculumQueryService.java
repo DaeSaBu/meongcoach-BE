@@ -10,6 +10,8 @@ import com.daesabu.meongcoach.training.application.required.CurriculumRepository
 import com.daesabu.meongcoach.training.domain.Curriculum;
 import com.daesabu.meongcoach.training.domain.Topic;
 import com.daesabu.meongcoach.training.domain.exception.CurriculumNotFoundException;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -39,16 +41,19 @@ public class PlanCurriculumQueryService implements PlanCurriculumFinder {
 	}
 
 	@Override
-	public List<Long> findLessonIds(List<Long> curriculumIds) {
+	public List<List<Long>> findTopicLessonIds(List<Long> curriculumIds) {
 		if (curriculumIds.isEmpty()) {
 			return List.of();
 		}
 		List<Curriculum> orderedCurriculums = findOrderedCurriculums(curriculumIds);
+		Map<Long, List<Long>> lessonIdsByTopic = new LinkedHashMap<>();
 		for (Curriculum curriculum : orderedCurriculums) {
 			curriculum.validateHasLessons();
+			lessonIdsByTopic.computeIfAbsent(curriculum.getTopic().getId(), topicId -> new ArrayList<>())
+					.addAll(curriculum.getLessonIds());
 		}
-		return orderedCurriculums.stream()
-				.flatMap(curriculum -> curriculum.getLessonIds().stream())
+		return lessonIdsByTopic.values().stream()
+				.map(List::copyOf)
 				.toList();
 	}
 
