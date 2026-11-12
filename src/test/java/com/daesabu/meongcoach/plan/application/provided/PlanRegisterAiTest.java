@@ -172,6 +172,30 @@ class PlanRegisterAiTest {
 	}
 
 	@Test
+	void 보호자가_선택한_토픽을_AI에_전달하고_플랜에_보존한다() {
+		AiPlanCreateRequest selected = new AiPlanCreateRequest("차분하게 기다려요", List.of(topicId));
+		given(generator.generate(any())).willAnswer(invocation -> {
+			AiPlanGenerateRequest input = invocation.getArgument(0);
+			assertThat(input.selectedTopicIds()).containsExactly(topicId);
+			assertThat(input.curriculums()).allMatch(item -> item.topicId().equals(topicId));
+			return new AiPlanGenerateResult(List.of(topicId), "차분히 기다려요");
+		});
+
+		Plan created = register.createAiPlan(USER_ID, dogId, selected);
+
+		assertThat(created.getCurriculumIds()).containsExactlyElementsOf(curriculumIds);
+	}
+
+	@Test
+	void 없는_토픽을_선택하면_AI를_호출하지_않는다() {
+		AiPlanCreateRequest selected = new AiPlanCreateRequest("차분하게 기다려요", List.of(Long.MAX_VALUE));
+
+		assertThatThrownBy(() -> register.createAiPlan(USER_ID, dogId, selected)).isInstanceOf(RuntimeException.class);
+
+		verifyNoInteractions(generator);
+	}
+
+	@Test
 	void AI_실패이면_기존_플랜을_유지한다() {
 		Plan existing = saveExistingPlan();
 		InvalidAiPlanResponseException failure = new InvalidAiPlanResponseException();
