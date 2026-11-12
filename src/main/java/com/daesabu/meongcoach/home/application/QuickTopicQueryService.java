@@ -62,7 +62,8 @@ public class QuickTopicQueryService implements QuickTopicFinder {
 	private List<QuickTopicResult> findRecommendedTopics(List<TopicProgressResult> topics) {
 		Stream<QuickTopicResult> inProgress = findMostRecentInProgressTopic(topics).stream()
 				.map(topic -> new QuickTopicResult(topic, QuickTopicRole.IN_PROGRESS));
-		Stream<QuickTopicResult> notStarted = findNotStartedTopics(topics).stream()
+		Stream<QuickTopicResult> notStarted = topics.stream()
+				.filter(topic -> topic.status() == ProgressStatus.NOT_STARTED)
 				.map(topic -> new QuickTopicResult(topic, QuickTopicRole.NOT_STARTED));
 		return Stream.concat(inProgress, notStarted)
 				.limit(LIMIT)
@@ -74,11 +75,5 @@ public class QuickTopicQueryService implements QuickTopicFinder {
 		return topics.stream()
 				.filter(topic -> topic.status() == ProgressStatus.IN_PROGRESS)
 				.max(byLastStudiedAt);
-	}
-
-	private List<TopicProgressResult> findNotStartedTopics(List<TopicProgressResult> topics) {
-		return topics.stream()
-				.filter(topic -> topic.status() == ProgressStatus.NOT_STARTED)
-				.toList();
 	}
 }
