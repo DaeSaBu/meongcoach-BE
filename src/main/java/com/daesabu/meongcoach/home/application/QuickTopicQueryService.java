@@ -7,14 +7,11 @@ import com.daesabu.meongcoach.plan.application.provided.CurrentPlanFinder;
 import com.daesabu.meongcoach.training.application.provided.TopicProgressFinder;
 import com.daesabu.meongcoach.training.application.provided.dto.TopicProgressResult;
 import com.daesabu.meongcoach.training.domain.shared.ProgressStatus;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -60,20 +57,10 @@ public class QuickTopicQueryService implements QuickTopicFinder {
 	}
 
 	private List<QuickTopicResult> findRecommendedTopics(List<TopicProgressResult> topics) {
-		Stream<QuickTopicResult> inProgress = findMostRecentInProgressTopic(topics).stream()
-				.map(topic -> new QuickTopicResult(topic, QuickTopicRole.IN_PROGRESS));
-		Stream<QuickTopicResult> notStarted = topics.stream()
-				.filter(topic -> topic.status() == ProgressStatus.NOT_STARTED)
-				.map(topic -> new QuickTopicResult(topic, QuickTopicRole.NOT_STARTED));
-		return Stream.concat(inProgress, notStarted)
-				.limit(LIMIT)
-				.toList();
-	}
-
-	private Optional<TopicProgressResult> findMostRecentInProgressTopic(List<TopicProgressResult> topics) {
-		Comparator<TopicProgressResult> byLastStudiedAt = Comparator.comparing(TopicProgressResult::lastStudiedAt);
 		return topics.stream()
-				.filter(topic -> topic.status() == ProgressStatus.IN_PROGRESS)
-				.max(byLastStudiedAt);
+				.filter(topic -> topic.status() == ProgressStatus.NOT_STARTED)
+				.limit(LIMIT)
+				.map(topic -> new QuickTopicResult(topic, QuickTopicRole.NOT_STARTED))
+				.toList();
 	}
 }
