@@ -20,7 +20,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -45,25 +44,28 @@ public class QuickTopicQueryService implements QuickTopicFinder {
 	public List<QuickTopicResult> find(Long userId, Long dogId) {
 		DogProfileResult dog = dogProfileFinder.findDogProfile(userId, dogId);
 		LocalDate today = LocalDate.now(SEOUL);
-		int minCategoryOrder = minCategoryOrder(dog.birthDate(), today);
 		List<TopicProgressResult> topics = topicProgressFinder.findAll(userId).stream()
 				.filter(TopicProgressResult::hasThumbnail)
 				.toList();
+		List<Long> planTopicIds = currentPlanFinder.findActiveTopicIds(userId, dogId);
+		if (!planTopicIds.isEmpty()) {
+			List<QuickTopicResult> planTopics = findPlanTopics(topics, planTopicIds);
+			return planTopics.stream().limit(LIMIT).toList();
+		}
+
+		int minCategoryOrder = minCategoryOrder(dog.birthDate(), today);
 		List<TopicProgressResult> candidates = topics.stream()
 				.filter(topic -> topic.categorySortOrder() >= minCategoryOrder)
 				.toList();
-		List<Long> planTopicIds = currentPlanFinder.findActiveTopicIds(userId, dogId);
-		Set<Long> planTopicIdSet = Set.copyOf(planTopicIds);
 
-		List<QuickTopicResult> planTopics = findPlanTopics(topics, planTopicIds);
-		Optional<QuickTopicResult> inProgressTopic = findInProgressTopic(candidates, planTopicIdSet)
+		Optional<QuickTopicResult> inProgressTopic = findInProgressTopic(candidates)
 				.map(topic -> new QuickTopicResult(topic, QuickTopicRole.IN_PROGRESS));
-		List<QuickTopicResult> notStartedTopics = findNotStartedTopics(candidates, planTopicIdSet, dailySeed(userId, today))
+		List<QuickTopicResult> notStartedTopics = findNotStartedTopics(candidates, dailySeed(userId, today))
 				.stream()
 				.map(topic -> new QuickTopicResult(topic, QuickTopicRole.NOT_STARTED))
 				.toList();
-		Stream<QuickTopicResult> results = Stream.of(planTopics.stream(), inProgressTopic.stream(), notStartedTopics.stream())
-				.flatMap(Function.identity());
+
+		Stream<QuickTopicResult> results = Stream.concat(inProgressTopic.stream(), notStartedTopics.stream());
 		return results
 				.limit(LIMIT)
 				.toList();
@@ -100,19 +102,16 @@ public class QuickTopicQueryService implements QuickTopicFinder {
 		return ChronoUnit.MONTHS.between(birthDate, today) >= properties.months();
 	}
 
-	private Optional<TopicProgressResult> findInProgressTopic(List<TopicProgressResult> topics, Set<Long> planTopicIds) {
+	private Optional<TopicProgressResult> findInProgressTopic(List<TopicProgressResult> topics) {
 		Comparator<TopicProgressResult> latestFirst = Comparator.comparing(TopicProgressResult::lastStudiedAt).reversed();
 		return topics.stream()
 				.filter(topic -> topic.status() == ProgressStatus.IN_PROGRESS)
-				.filter(topic -> !planTopicIds.contains(topic.id()))
 				.min(latestFirst);
 	}
 
-	private List<TopicProgressResult> findNotStartedTopics(List<TopicProgressResult> topics, Set<Long> planTopicIds,
-			long seed) {
+	private List<TopicProgressResult> findNotStartedTopics(List<TopicProgressResult> topics, long seed) {
 		List<TopicProgressResult> notStarted = new ArrayList<>(topics.stream()
 				.filter(topic -> topic.status() == ProgressStatus.NOT_STARTED)
-				.filter(topic -> !planTopicIds.contains(topic.id()))
 				.toList());
 		Collections.shuffle(notStarted, new Random(seed));
 		return notStarted;
