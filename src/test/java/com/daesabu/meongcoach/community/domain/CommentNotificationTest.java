@@ -2,6 +2,7 @@ package com.daesabu.meongcoach.community.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class CommentNotificationTest {
@@ -32,6 +33,6 @@ class CommentNotificationTest {
 	}
 
 	private CommentRegisteredEvent event(Long rootCommentAuthorId) {
-		return new CommentRegisteredEvent(10L, POST_ID, 1L, 3L, rootCommentAuthorId, "축하해요!");
+		return new CommentRegisteredEvent(10L, POST_ID, 1L, 3L, rootCommentAuthorId, List.of(), "축하해요!");
 	}
 }
