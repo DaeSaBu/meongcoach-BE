@@ -1,5 +1,7 @@
 package com.daesabu.meongcoach.plan.application;
 
+import static java.util.Objects.requireNonNullElse;
+
 import com.daesabu.meongcoach.dog.application.provided.DogProfileFinder;
 import com.daesabu.meongcoach.dog.application.provided.dto.DogProfileResult;
 import com.daesabu.meongcoach.plan.application.provided.PlanRegister;
@@ -64,7 +66,10 @@ public class PlanRegisterService implements PlanRegister {
 			throw new EmptyPlanCurriculumsException();
 		}
 
-		List<Long> selectedTopicIds = prepareSelectedTopicIds(request.topicIds());
+		List<Long> selectedTopicIds = requireNonNullElse(request.topicIds(), List.of());
+		if (!selectedTopicIds.isEmpty()) {
+			preparationFinder.validate(selectedTopicIds);
+		}
 		LocalDate generationDate = LocalDate.now(GENERATION_ZONE);
 		AiPlanGenerateRequest generateRequest = new AiPlanGenerateRequest(dog, generationDate,
 				request.expectation(), candidates.curriculums(), selectedTopicIds);
@@ -74,14 +79,6 @@ public class PlanRegisterService implements PlanRegister {
 				request.expectation());
 		Plan plan = Plan.createAiPlan(command, preparation.curriculumIds());
 		return planSaveService.save(plan);
-	}
-
-	private List<Long> prepareSelectedTopicIds(List<Long> topicIds) {
-		if (topicIds == null) {
-			return List.of();
-		}
-		preparationFinder.validate(topicIds);
-		return topicIds;
 	}
 
 	@Override
