@@ -12,14 +12,19 @@ public record CommentRegisteredEvent(
 		Long postAuthorId,
 		Long commenterId,
 		Long rootCommentAuthorId,
+		List<Long> participantIds,
 		String content
 ) {
 
-	public static CommentRegisteredEvent from(Comment comment, Comment root) {
+	public CommentRegisteredEvent {
+		participantIds = List.copyOf(participantIds);
+	}
+
+	public static CommentRegisteredEvent from(Comment comment, Comment root, List<Long> participantIds) {
 		Post post = comment.getPost();
 		Long rootCommentAuthorId = ofNullable(root).map(Comment::getUserId).orElse(null);
 		return new CommentRegisteredEvent(comment.getId(), post.getId(), post.getUserId(), comment.getUserId(),
-				rootCommentAuthorId, comment.getContent().value());
+				rootCommentAuthorId, participantIds, comment.getContent().value());
 	}
 
 	public boolean isReply() {
@@ -27,7 +32,7 @@ public record CommentRegisteredEvent(
 	}
 
 	public List<Long> recipientIds() {
-		return Stream.of(postAuthorId, rootCommentAuthorId)
+		return Stream.concat(Stream.of(postAuthorId, rootCommentAuthorId), participantIds.stream())
 				.filter(Objects::nonNull)
 				.filter(recipientId -> !recipientId.equals(commenterId))
 				.distinct()
