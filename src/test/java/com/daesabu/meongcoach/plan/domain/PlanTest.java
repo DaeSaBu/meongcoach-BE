@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.daesabu.meongcoach.plan.domain.exception.DuplicatePlanCurriculumException;
 import com.daesabu.meongcoach.plan.domain.exception.EmptyPlanCurriculumsException;
 import com.daesabu.meongcoach.plan.domain.exception.InvalidPlanCurriculumException;
+import com.daesabu.meongcoach.plan.domain.exception.PlanLessonOrderException;
 import com.daesabu.meongcoach.plan.domain.exception.PlanNotActiveException;
 import com.daesabu.meongcoach.plan.domain.exception.PlanNotCompletedException;
 import com.daesabu.meongcoach.plan.domain.exception.PlanOutcomeAlreadyRecordedException;
@@ -100,7 +101,7 @@ class PlanTest {
 	@Test
 	void 이미_완료한_레슨은_플랜이_완료되어도_완료_처리가_필요_없다() {
 		Plan plan = createPlan();
-		plan.completeLesson(101L, List.of(101L), Instant.parse("2026-10-25T12:00:00Z"));
+		plan.completeCurrentLesson(101L, List.of(List.of(101L)), Instant.parse("2026-10-25T12:00:00Z"));
 
 		assertThat(plan.needsLessonCompletion(101L)).isFalse();
 	}
@@ -123,16 +124,48 @@ class PlanTest {
 	}
 
 	@Test
-	void 마지막_레슨을_완료해야_플랜이_완료된다() {
+	void 토픽_안에서_현재_차례가_아닌_레슨은_거절하고_기록하지_않는다() {
 		Plan plan = createPlan();
-		List<Long> lessonIds = List.of(101L, 102L);
 		Instant completedAt = Instant.parse("2026-10-25T12:00:00Z");
 
-		plan.completeLesson(101L, lessonIds, completedAt);
+		assertThatThrownBy(() -> plan.completeCurrentLesson(102L, List.of(List.of(101L, 102L)), completedAt))
+				.isInstanceOf(PlanLessonOrderException.class);
+		assertThat(plan.getCompletedLessonIds()).isEmpty();
+	}
+
+	@Test
+	void 남은_레슨이_없으면_어떤_레슨도_현재_레슨으로_완료할_수_없다() {
+		Plan plan = createPlan();
+		plan.completeLesson(101L);
+		Instant completedAt = Instant.parse("2026-10-25T12:00:00Z");
+
+		assertThatThrownBy(() -> plan.completeCurrentLesson(102L, List.of(List.of(101L)), completedAt))
+				.isInstanceOf(PlanLessonOrderException.class);
+	}
+
+	@Test
+	void 다른_토픽의_첫_미완료_레슨은_앞_토픽을_마치지_않아도_완료한다() {
+		Plan plan = createPlan();
+		List<List<Long>> topicLessonIds = List.of(List.of(101L, 102L), List.of(201L, 202L));
+		Instant completedAt = Instant.parse("2026-10-25T12:00:00Z");
+
+		plan.completeCurrentLesson(201L, topicLessonIds, completedAt);
+
+		assertThat(plan.getCompletedLessonIds()).containsExactly(201L);
+		assertThat(plan.getStatus()).isEqualTo(PlanStatus.ACTIVE);
+	}
+
+	@Test
+	void 마지막_레슨을_완료해야_플랜이_완료된다() {
+		Plan plan = createPlan();
+		List<List<Long>> orderedLessonIds = List.of(List.of(101L), List.of(102L));
+		Instant completedAt = Instant.parse("2026-10-25T12:00:00Z");
+
+		plan.completeCurrentLesson(101L, orderedLessonIds, completedAt);
 		assertThat(plan.getStatus()).isEqualTo(PlanStatus.ACTIVE);
 		assertThat(plan.getCompletedAt()).isNull();
 
-		plan.completeLesson(102L, lessonIds, completedAt);
+		plan.completeCurrentLesson(102L, orderedLessonIds, completedAt);
 		assertThat(plan.getStatus()).isEqualTo(PlanStatus.COMPLETED);
 		assertThat(plan.getCompletedAt()).isEqualTo(completedAt);
 	}
@@ -203,6 +236,39 @@ class PlanTest {
 		Plan plan = createPlan();
 
 		assertThatThrownBy(() -> plan.hasCompletedAllLessons(List.of()))
+				.isInstanceOf(IllegalStateException.class);
+	}
+
+	@Test
+	void 토픽마다_교육_순서의_첫_미완료_레슨을_찾는다() {
+		Plan plan = createPlan();
+		List<List<Long>> topicLessonIds = List.of(List.of(103L, 101L), List.of(102L));
+
+		assertThat(plan.findCurrentLessonIds(topicLessonIds)).containsExactly(103L, 102L);
+		plan.completeLesson(103L);
+		assertThat(plan.findCurrentLessonIds(topicLessonIds)).containsExactly(101L, 102L);
+		plan.completeLesson(102L);
+		assertThat(plan.findCurrentLessonIds(topicLessonIds)).containsExactly(101L);
+		plan.completeLesson(101L);
+		assertThat(plan.findCurrentLessonIds(topicLessonIds)).isEmpty();
+	}
+
+	@Test
+	void 교육_목록_앞에_새_레슨이_추가되면_그_레슨부터_진행한다() {
+		Plan plan = createPlan();
+		plan.completeLesson(101L);
+		plan.completeLesson(102L);
+
+		assertThat(plan.findCurrentLessonIds(List.of(List.of(104L, 102L, 103L)))).containsExactly(104L);
+		plan.completeLesson(104L);
+		assertThat(plan.findCurrentLessonIds(List.of(List.of(104L, 102L, 103L)))).containsExactly(103L);
+	}
+
+	@Test
+	void 레슨_목록이_비어_있으면_현재_레슨_탐색을_거절한다() {
+		Plan plan = createPlan();
+
+		assertThatThrownBy(() -> plan.findCurrentLessonIds(List.of()))
 				.isInstanceOf(IllegalStateException.class);
 	}
 

@@ -170,7 +170,7 @@ class QuickTopicFinderTest {
 	}
 
 	@Test
-	void 활성_플랜의_토픽은_강아지_나이와_사진_유무에_관계없이_보인다() {
+	void 활성_플랜의_토픽은_강아지_나이_기준과_관계없이_보이고_사진이_없으면_뺀다() {
 		Long dogId = saveDog(USER_ID, TODAY.minusYears(3));
 		clearThumbnail(1602L);
 		savePlan(dogId, 1601L, 1602L);
@@ -178,34 +178,19 @@ class QuickTopicFinderTest {
 		List<QuickTopicResult> result = finder.find(USER_ID, dogId);
 
 		assertThat(result.getFirst().topic().id()).isEqualTo(1601L);
-		assertThat(topicIds(result)).containsExactly(1601L, 1602L);
-		assertThat(result.get(1).topic().thumbnailUrl()).isNull();
+		assertThat(topicIds(result)).doesNotContain(1602L);
+		assertThat(topicIds(result)).containsExactly(1601L);
 	}
 
 	@Test
-	void 활성_플랜의_토픽에_사진이_모두_없어도_플랜_토픽을_반환한다() {
+	void 활성_플랜의_토픽에_사진이_모두_없어도_추천으로_채우지_않는다() {
 		Long dogId = saveDog(USER_ID, TODAY.minusMonths(6));
 		clearThumbnail(1601L);
-		clearBlankThumbnail(1602L);
-		savePlan(dogId, 1602L, 1601L);
+		savePlan(dogId, 1601L);
 
 		List<QuickTopicResult> result = finder.find(USER_ID, dogId);
 
-		assertThat(topicIds(result)).containsExactly(1602L, 1601L);
-	}
-
-	@Test
-	void 일곱_개월_강아지의_사진_없는_피트니스_토픽도_퀵메뉴에_보인다() {
-		saveCategory(5L, "피트니스", 6);
-		saveTopic(501L, 5L, 1);
-		clearThumbnail(501L);
-		Long dogId = saveDog(USER_ID, TODAY.minusMonths(7));
-		savePlan(dogId, 1601L, 501L);
-
-		List<QuickTopicResult> result = finder.find(USER_ID, dogId);
-
-		assertThat(topicIds(result)).containsExactly(1601L, 501L);
-		assertThat(result.get(1).topic().thumbnailUrl()).isNull();
+		assertThat(result).isEmpty();
 	}
 
 	@Test
