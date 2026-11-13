@@ -1,6 +1,7 @@
 package com.daesabu.meongcoach.community.application.required;
 
 import com.daesabu.meongcoach.community.domain.Comment;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -30,4 +31,15 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
 				and c.post.deletedAt is null
 			""")
 	Optional<Comment> findActiveByIdAndUserId(Long id, Long userId);
+
+	/**
+	 * 게시글에 삭제되지 않은 댓글을 단 작성자 ID를 중복 없이 조회한다.
+	 */
+	@Query("""
+			select distinct c.userId
+			from Comment c
+			where c.post.id = :postId
+				and c.deletedAt is null
+			""")
+	List<Long> findActiveCommenterIdsByPostId(Long postId);
 }
