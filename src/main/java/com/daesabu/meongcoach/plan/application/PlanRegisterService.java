@@ -16,7 +16,6 @@ import com.daesabu.meongcoach.plan.domain.CustomPlanCreateCommand;
 import com.daesabu.meongcoach.plan.domain.Plan;
 import com.daesabu.meongcoach.plan.domain.PlanOutcome;
 import com.daesabu.meongcoach.plan.domain.exception.EmptyPlanCurriculumsException;
-import com.daesabu.meongcoach.plan.domain.exception.InvalidAiPlanResponseException;
 import com.daesabu.meongcoach.plan.domain.exception.PlanNotFoundException;
 import com.daesabu.meongcoach.training.application.provided.AiPlanPreparationFinder;
 import com.daesabu.meongcoach.training.application.provided.PlanCurriculumFinder;
@@ -74,9 +73,6 @@ public class PlanRegisterService implements PlanRegister {
 		AiPlanGenerateRequest generateRequest = new AiPlanGenerateRequest(dog, generationDate,
 				request.expectation(), candidates.curriculums(), selectedTopicIds);
 		AiPlanGenerateResult generated = aiPlanGenerator.generate(generateRequest);
-		if (!generated.topicIds().containsAll(selectedTopicIds)) {
-			throw new InvalidAiPlanResponseException();
-		}
 		PlanPreparationResult preparation = preparationFinder.findInRequestOrder(generated.topicIds());
 		AiPlanCreateCommand command = new AiPlanCreateCommand(userId, dog.id(), dog.name(), generated.goal(),
 				request.expectation());
