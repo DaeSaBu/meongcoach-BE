@@ -19,7 +19,7 @@ VideoUploadSubscriber                       (ai/adapter/consumer — streaming p
      → AiTrialFinder                        (무료 체험 횟수 확인, 초과 시 FAILED_TRIAL_EXCEEDED)
      → DogProfileFinder                     (dog — 선택된 강아지 프로필, 없으면 FAILED_UNEXPECTED)
      → VideoAnalyzer → Gemini 영상 분석·제목  (ai/adapter/integration — files:register로 gs:// 등록 후 저장된 맥락·프로필과 함께 generateContent 한 번에 본문과 제목, 실패 시 FAILED_ANALYSIS)
-     → AiAnalysis COMPLETED 전이 + AiReport 저장 (save 한 번에 함께 저장. 그 외 예외는 FAILED_UNEXPECTED)
+     → AiAnalysis COMPLETED 전이 + AiReport 저장 + AiTrial 사용 횟수 증가 (AiAnalysisModifyService.complete의 한 트랜잭션. 그 외 예외는 FAILED_UNEXPECTED)
 ```
 
 앱은 `GET /api/ai/reports`를 폴링하다가 `UPLOADING`·`ANALYZING`인 리포트가 없으면 멈춥니다. 사용자 ID만으로 묻는 조회라 앱이 재시작돼 객체 키·리포트 ID를 잃어도 폴링을 이어갈 수 있습니다 — 그래서 row를 업로드 완료가 아니라 **발급 시점**에 만듭니다.
@@ -40,9 +40,10 @@ VideoUploadSubscriber                       (ai/adapter/consumer — streaming p
 - **프롬프트 문구는 PoC(v2-ctx.1)에서 검증한 그대로 둡니다.** 서버에서 문구를 고치면 검증 결과가 맞지 않게 되므로, 고칠 때는 PoC에서 새 세트로 검증한 뒤 옮깁니다. 응답 스키마는 내부 근거 필드(`observation`·`interpretation`·`decision`)를 앱 필드보다 먼저 채우게 합니다. 내부 필드는 앱에 보내지 않고, 입력한 프로필·메모와 함께 info 로그(`영상 분석 근거:`)에 남겨 오판 신고 때 `interpretation.ownerInfoCheck`로 원인을 확인합니다. 그래서 분석 시간은 평균 15~21초, 최대 약 32초(업로드 제외)이고, 출력 토큰 상한은 8192입니다.
 - **발급 기록이 없는 업로드 이벤트는 분석하지 않습니다.** 우리가 발급한 키만 소유자 row가 있습니다. 배포 직전에 발급돼 배포 뒤 업로드된 영상도 row가 없어 스킵되므로(warn 로그), 배포 시 URL 유효 시간만큼의 공백을 감수합니다.
 - **어댑터는 연동 실패를 도메인 예외로 번역해 던지고, 서비스는 그것만 잡습니다.** 영상 분석은 `VideoAnalysisFailedException`(→ `FAILED_ANALYSIS`)이고, 그 외 예외는 버그로 보고 `FAILED_UNEXPECTED`로 남깁니다. 어댑터에서 `catch (Exception)`으로 넓게 잡으면 두 실패 상태의 구분이 무너지므로 유지하지 않습니다.
-- **`AiReportGenerateService`는 의도적으로 트랜잭션이 없습니다.** 영상 분석이 수십 초 걸려 클래스 기본 `@Transactional(readOnly = true)` 패턴을 따르면 분석 내내 DB 커넥션을 점유합니다. 저장과 상태 전이는 리포지토리 `save`(준영속 엔티티는 merge → UPDATE)의 자체 트랜잭션에 맡깁니다. "서비스 클래스에 readOnly 기본" 규칙의 의도적 예외이므로 일괄 정리 대상이 아닙니다.
-- **무료 체험 횟수는 `COMPLETED` 리포트만 셉니다.** (`countByUserIdAndStatus`) 실패·진행 중 row는 체험을 소모하지 않으므로, 분석이 실패한 사용자는 다시 업로드할 수 있습니다.
-- **상태는 `AiAnalysis`, 결과는 `AiReport`가 가집니다.** 결과가 있는 건 `COMPLETED`뿐이고, `AiAnalysis`가 단방향 `@OneToOne`으로 소유합니다(`ai_analyses.report_id`). 서비스에 트랜잭션이 없으므로 `complete` 후 `save` 한 번(merge cascade)으로 상태와 결과를 함께 저장합니다. API의 `reportId`는 진행 중 건도 가리켜야 하므로 `AiReport.id`가 아니라 `AiAnalysis.id`입니다.
+- **`AiReportGenerateService`는 의도적으로 트랜잭션이 없습니다.** 영상 분석이 수십 초 걸려 클래스 기본 `@Transactional(readOnly = true)` 패턴을 따르면 분석 내내 DB 커넥션을 점유합니다. 상태 전이 저장은 리포지토리 `save`(준영속 엔티티는 merge → UPDATE)의 자체 트랜잭션에 맡기고, 완료 기록만 분석이 끝난 뒤 `AiAnalysisModifyService.complete`의 짧은 트랜잭션으로 처리합니다. "서비스 클래스에 readOnly 기본" 규칙의 의도적 예외이므로 일괄 정리 대상이 아닙니다.
+- **무료 체험 횟수는 사용자별 `AiTrial` row(`ai_trials`)에 저장합니다.** `granted_count`(기본 30)가 그 사용자의 상한이고 `used_count`가 사용한 횟수입니다. 특정 사용자의 횟수를 늘리려면 그 row의 `granted_count`를 올립니다. row가 없는 사용자는 부여 30·사용 0으로 조회되고(`AiReportTrialFinderService`), row는 첫 분석이 완료될 때 생깁니다 — row가 없는 사용자에게 횟수를 더 주려면 row를 INSERT합니다.
+- **사용 횟수는 분석이 완료될 때만 늘어납니다.** `AiAnalysisModifyService.complete`가 COMPLETED 전이와 `used_count` 증가를 한 트랜잭션으로 묶으므로, 실패·진행 중 row는 체험을 소모하지 않고 분석이 실패한 사용자는 다시 업로드할 수 있습니다. 같은 사용자의 완료가 겹쳐도 증가가 유실되거나 첫 row가 중복 생성되지 않도록 회원 ID로 advisory lock(`AiTrialRepository.lockByUserId`)을 잡습니다. 발급 시점 검사는 진행 중인 건을 세지 않으므로 상한 직전에 여러 건을 발급받을 수 있고, 분석 직전 재검사가 `FAILED_TRIAL_EXCEEDED`로 걸러냅니다.
+- **상태는 `AiAnalysis`, 결과는 `AiReport`가 가집니다.** 결과가 있는 건 `COMPLETED`뿐이고, `AiAnalysis`가 단방향 `@OneToOne`으로 소유합니다(`ai_analyses.report_id`). `complete` 후 `save` 한 번(merge cascade)으로 상태와 결과를 함께 저장합니다. API의 `reportId`는 진행 중 건도 가리켜야 하므로 `AiReport.id`가 아니라 `AiAnalysis.id`입니다.
 - **중복 분석은 발급 row의 상태로 막습니다.** Pub/Sub은 at-least-once 전달이라 같은 이벤트가 두 번 올 수 있습니다(GCS 알림 자체도 중복될 수 있음). 컨슈머는 `findByVideoObjectKey`로 찾은 row가 UPLOADING일 때만 분석을 시작하므로 ANALYZING·COMPLETED·FAILED row는 재분석되지 않습니다. 따라서 분석 도중 서버가 죽으면 row가 ANALYZING으로 남고 재전달 메시지는 스킵됩니다 — 재시도를 도입할 때 함께 풀어야 할 한계입니다.
 - **제목 200자 규칙은 `AiReport` 도메인이 단일 소유합니다** (`TITLE_MAX_LENGTH`). 프롬프트나 어댑터에서 길이를 중복 강제하지 않습니다. 제목은 부가 정보라 모델이 비워 보내도 분석 실패로 보지 않고 제목 없이 `COMPLETED`로 저장합니다.
 - **추천 교육은 모델이 `topicId`를 돌려주고 서버가 교육 목록에 있는 id인지 검증합니다.** 교육 이름은 카테고리 간에 중복되므로("앉아"가 101·1101) 이름→id 역매핑이 불가능합니다. 그래서 프롬프트의 교육 목록에 id를 함께 넣고 응답 스키마에 `topicId`를 required로 둡니다. 목록에 없는 id는 `VideoAnalysisFailedException`(→ `FAILED_ANALYSIS`)이고, 도입 전에 저장된 리포트의 `topicId`는 null입니다.

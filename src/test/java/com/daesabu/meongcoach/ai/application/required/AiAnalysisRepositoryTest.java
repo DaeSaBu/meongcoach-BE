@@ -121,22 +121,6 @@ class AiAnalysisRepositoryTest {
 	}
 
 	@Test
-	void 분석이_없는_사용자의_완료_분석_수는_0이다() {
-		assertThat(aiAnalysisRepository.countByUserIdAndStatus(7L, AiAnalysisStatus.COMPLETED)).isZero();
-	}
-
-	@Test
-	void 사용자의_분석_중_주어진_상태인_것만_센다() {
-		aiAnalysisRepository.saveAndFlush(completedAnalysis(7L, "videos/training/7/first.mp4", "첫 제목", "첫 리포트"));
-		aiAnalysisRepository.saveAndFlush(completedAnalysis(7L, "videos/training/7/second.mp4", "둘째 제목", "둘째 리포트"));
-		aiAnalysisRepository.saveAndFlush(failedAnalysis(7L, "videos/training/7/failed.mp4"));
-		aiAnalysisRepository.saveAndFlush(startedAnalysis(7L, "videos/training/7/pending.mp4"));
-		aiAnalysisRepository.saveAndFlush(completedAnalysis(8L, "videos/training/8/other.mp4", "남의 제목", "남의 리포트"));
-
-		assertThat(aiAnalysisRepository.countByUserIdAndStatus(7L, AiAnalysisStatus.COMPLETED)).isEqualTo(2);
-	}
-
-	@Test
 	void 분석_ID와_소유자가_모두_일치할_때만_조회된다() {
 		AiAnalysis saved = aiAnalysisRepository.saveAndFlush(completedAnalysis(7L, VIDEO_OBJECT_KEY, TITLE, CONTENT));
 
@@ -157,12 +141,6 @@ class AiAnalysisRepositoryTest {
 	private static AiAnalysis completedAnalysis(Long userId, String videoObjectKey, String title, String content) {
 		AiAnalysis analysis = startedAnalysis(userId, videoObjectKey);
 		analysis.complete(title, content);
-		return analysis;
-	}
-
-	private static AiAnalysis failedAnalysis(Long userId, String videoObjectKey) {
-		AiAnalysis analysis = startedAnalysis(userId, videoObjectKey);
-		analysis.failByAnalysis();
 		return analysis;
 	}
 }

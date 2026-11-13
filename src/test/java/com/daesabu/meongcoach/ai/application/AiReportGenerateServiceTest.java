@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 
 import com.daesabu.meongcoach.ai.application.provided.AiTrialFinder;
 import com.daesabu.meongcoach.ai.application.required.AiAnalysisRepository;
+import com.daesabu.meongcoach.ai.application.required.AiTrialRepository;
 import com.daesabu.meongcoach.ai.application.required.VideoAnalyzer;
 import com.daesabu.meongcoach.ai.application.required.dto.VideoAnalysisResult;
 import com.daesabu.meongcoach.ai.domain.AiAnalysis;
@@ -20,6 +21,7 @@ import com.daesabu.meongcoach.ai.domain.AiAnalysisCompletedEvent;
 import com.daesabu.meongcoach.ai.domain.AiAnalysisStatus;
 import com.daesabu.meongcoach.ai.domain.AiAnalysisUploadCommand;
 import com.daesabu.meongcoach.ai.domain.AiTrial;
+import com.daesabu.meongcoach.ai.domain.AiTrialFixture;
 import com.daesabu.meongcoach.ai.domain.AiVideo;
 import com.daesabu.meongcoach.ai.domain.exception.VideoAnalysisFailedException;
 import com.daesabu.meongcoach.dog.application.provided.DogProfileFinder;
@@ -56,6 +58,7 @@ class AiReportGenerateServiceTest {
 	private VideoAnalyzer videoAnalyzer;
 	private AiAnalysisRepository aiAnalysisRepository;
 	private AiTrialFinder aiTrialFinder;
+	private AiTrialRepository aiTrialRepository;
 	private DogProfileFinder dogProfileFinder;
 	private AiReportGenerateService service;
 	private ApplicationEventPublisher events;
@@ -76,17 +79,18 @@ class AiReportGenerateServiceTest {
 		videoAnalyzer = mock(VideoAnalyzer.class);
 		aiAnalysisRepository = mock(AiAnalysisRepository.class);
 		aiTrialFinder = mock(AiTrialFinder.class);
+		aiTrialRepository = mock(AiTrialRepository.class);
 		dogProfileFinder = mock(DogProfileFinder.class);
 		events = mock(ApplicationEventPublisher.class);
 		service = new AiReportGenerateService(storageUriResolver, videoAnalyzer, aiAnalysisRepository, aiTrialFinder,
-				dogProfileFinder, events);
+				new AiAnalysisModifyService(aiAnalysisRepository, aiTrialRepository), dogProfileFinder, events);
 
 		issuedAnalysis = AiAnalysis.uploading(
 				new AiAnalysisUploadCommand(USER_ID, OBJECT_KEY, Instant.now().plusSeconds(900), CONTEXT));
 		when(aiAnalysisRepository.findByVideoObjectKey(OBJECT_KEY)).thenReturn(Optional.of(issuedAnalysis));
 		when(storageUriResolver.resolve(AiVideo.SCOPE, OBJECT_KEY)).thenReturn(VIDEO_URI);
 		when(dogProfileFinder.findSelectedDogProfile(USER_ID)).thenReturn(DOG);
-		when(aiTrialFinder.findTrial(USER_ID)).thenReturn(new AiTrial(0));
+		when(aiTrialFinder.findTrial(USER_ID)).thenReturn(AiTrial.start(USER_ID));
 		when(videoAnalyzer.analyze(VIDEO_URI, CONTEXT, DOG)).thenReturn(new VideoAnalysisResult(GENERATED_TITLE, ANALYZED_CONTENT));
 		doAnswer(recordSave).when(aiAnalysisRepository).save(any());
 	}
@@ -154,7 +158,7 @@ class AiReportGenerateServiceTest {
 
 	@Test
 	void 영상_소유자가_체험_횟수를_소진했으면_분석_없이_FAILED_TRIAL_EXCEEDED로_기록한다() {
-		when(aiTrialFinder.findTrial(USER_ID)).thenReturn(new AiTrial(AiTrial.MAX_COUNT));
+		when(aiTrialFinder.findTrial(USER_ID)).thenReturn(AiTrialFixture.used(USER_ID, AiTrial.DEFAULT_GRANTED_COUNT));
 
 		service.generate(OBJECT_KEY);
 

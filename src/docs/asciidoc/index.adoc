@@ -333,7 +333,7 @@ operation::training/topic-select-error[snippets='http-response,response-fields']
 `videoObjectKey`는 분석한 영상을 가리키는 GCS 객체 키입니다.
 영상 재생 URL(`videoUrl`)은 리포트 상세 조회에서만 1시간 유효 서명 URL로 내려가며, 영상이 아직 업로드되지 않은 리포트(`UPLOADING`·`FAILED_UPLOAD`)는 `null`입니다.
 
-AI 리포트 생성은 무료 체험으로 사용자당 총 30회까지 가능합니다.
+AI 리포트 생성은 무료 체험으로 사용자에게 부여된 횟수(기본 30회)까지 가능합니다.
 횟수를 소진하면 분석 건 생성과 영상 업로드 URL 발급이 403으로 거부됩니다.
 
 === AI 영상 분석 건 생성
@@ -393,7 +393,7 @@ operation::ai/video-upload-url[snippets='http-request,request-fields,http-respon
 
 ==== 실패 응답
 
-무료 체험 횟수(30회)를 소진하면 403(`AI_REPORT_TRIAL_EXCEEDED`)을 반환합니다.
+부여된 무료 체험 횟수(기본 30회)를 소진하면 403(`AI_REPORT_TRIAL_EXCEEDED`)을 반환합니다.
 영상 길이가 허용 범위를 벗어나면 `AI_VIDEO_DURATION_OUT_OF_RANGE`, 파일 크기가 상한을 넘으면 `MEDIA_VIDEO_FILE_SIZE_EXCEEDED`, 0 이하면 `MEDIA_INVALID_VIDEO_FILE_SIZE`,
 지원하지 않는 형식이면 `MEDIA_UNSUPPORTED_VIDEO_TYPE`을 400으로 반환합니다.
 
@@ -407,7 +407,8 @@ NOTE: 업로드한 영상의 재생 URL 발급 API는 아직 없습니다. 비�
 link:{swagger-ui}#/AI/ai-trial[▶ Swagger에서 Try it out,window=swagger]
 
 액세스 토큰으로 식별한 사용자의 무료 체험 사용 현황을 조회합니다.
-분석이 완료된(`COMPLETED`) 리포트만 사용 횟수로 세며, 없으면 사용 0회로 내려갑니다.
+사용 횟수는 분석이 완료될(`COMPLETED`) 때 1씩 늘고, 실패하거나 진행 중인 리포트는 세지 않습니다.
+`maxCount`는 사용자마다 다를 수 있으며 기본값은 30입니다.
 
 operation::ai/trial[snippets='http-request,http-response,response-fields']
 
