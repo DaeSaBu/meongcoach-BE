@@ -64,11 +64,7 @@ public class PlanRegisterService implements PlanRegister {
 			throw new EmptyPlanCurriculumsException();
 		}
 
-		List<Long> selectedTopicIds = List.of();
-		if (request.topicIds() != null) {
-			preparationFinder.find(request.topicIds());
-			selectedTopicIds = request.topicIds();
-		}
+		List<Long> selectedTopicIds = prepareSelectedTopicIds(request.topicIds());
 		LocalDate generationDate = LocalDate.now(GENERATION_ZONE);
 		AiPlanGenerateRequest generateRequest = new AiPlanGenerateRequest(dog, generationDate,
 				request.expectation(), candidates.curriculums(), selectedTopicIds);
@@ -78,6 +74,14 @@ public class PlanRegisterService implements PlanRegister {
 				request.expectation());
 		Plan plan = Plan.createAiPlan(command, preparation.curriculumIds());
 		return planSaveService.save(plan);
+	}
+
+	private List<Long> prepareSelectedTopicIds(List<Long> topicIds) {
+		if (topicIds == null) {
+			return List.of();
+		}
+		preparationFinder.find(topicIds);
+		return topicIds;
 	}
 
 	@Override
