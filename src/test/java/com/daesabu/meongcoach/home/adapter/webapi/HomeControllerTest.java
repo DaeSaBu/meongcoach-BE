@@ -70,7 +70,7 @@ class HomeControllerTest {
 								fieldWithPath("topics[].thumbnailUrl").type(JsonFieldType.STRING).optional()
 										.description("카드 전면 사진 URL. 등록 전이면 null"),
 								fieldWithPath("topics[].role").description(
-										"IN_PROGRESS(진행 중인 토픽, 첫 칸 이어서), NOT_STARTED(시작하지 않은 토픽, 새로 도전)"),
+										"IN_PROGRESS(진행 중인 토픽, 이어서), NOT_STARTED(시작하지 않았거나 진행 중이 아닌 플랜 토픽, 새로 도전)"),
 								fieldWithPath("topics[].totalLessons").description("토픽 전체 레슨 수"),
 								fieldWithPath("topics[].completedLessons").description("회원이 완료한 레슨 수"),
 								fieldWithPath("topics[].nextCurriculumId").description(

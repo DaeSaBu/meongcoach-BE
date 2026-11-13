@@ -68,6 +68,40 @@ class AuthorFinderTest {
 		assertThat(authorFinder.findAuthor(user.getId())).isEmpty();
 	}
 
+	@Test
+	void 회원이_선택한_강아지의_공개_정보를_반환한다() {
+		User user = saveUserWithSelectedDog("보리");
+		flushAndClear();
+
+		assertThat(authorFinder.findAuthorDog(user.getId()))
+				.hasValueSatisfying(dog -> {
+					assertThat(dog.name()).isEqualTo("보리");
+					assertThat(dog.breed()).isEqualTo(Breed.of(RegisteredBreed.POODLE));
+					assertThat(dog.sex()).isEqualTo(DogSex.MALE);
+					assertThat(dog.age()).isNotNull();
+					assertThat(dog.profileImageUrl()).isEqualTo(DOG_IMAGE_URL);
+				});
+	}
+
+	@Test
+	void 전문가_회원의_강아지_정보는_빈_값을_반환한다() {
+		User user = saveUserWithSelectedDog("보리");
+		entityManager.createNativeQuery("UPDATE users SET role = 'EXPERT' WHERE id = :id")
+				.setParameter("id", user.getId())
+				.executeUpdate();
+		flushAndClear();
+
+		assertThat(authorFinder.findAuthorDog(user.getId())).isEmpty();
+	}
+
+	@Test
+	void 선택된_강아지가_없으면_강아지_정보는_빈_값을_반환한다() {
+		User user = saveUser("멍멍이집사");
+		flushAndClear();
+
+		assertThat(authorFinder.findAuthorDog(user.getId())).isEmpty();
+	}
+
 	private User saveUserWithSelectedDog(String dogName) {
 		User user = saveUser("멍멍이집사");
 		Dog dog = Dog.register(new DogRegisterCommand(user.getId(), dogName, Breed.of(RegisteredBreed.POODLE),

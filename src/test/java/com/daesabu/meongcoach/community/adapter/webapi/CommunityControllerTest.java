@@ -26,6 +26,7 @@ import com.daesabu.meongcoach.community.application.provided.CommentRegister;
 import com.daesabu.meongcoach.community.application.provided.PostFinder;
 import com.daesabu.meongcoach.community.application.provided.PostMediaUploadUrlIssuer;
 import com.daesabu.meongcoach.community.application.provided.PostRegister;
+import com.daesabu.meongcoach.community.application.provided.dto.AuthorDogResult;
 import com.daesabu.meongcoach.community.application.provided.dto.AuthorResult;
 import com.daesabu.meongcoach.community.application.provided.dto.CommentListRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.CommentListResult;
@@ -57,6 +58,9 @@ import com.daesabu.meongcoach.community.domain.exception.InvalidCommentContentEx
 import com.daesabu.meongcoach.community.domain.exception.MentionTargetNotFoundException;
 import com.daesabu.meongcoach.community.domain.exception.PostMediaCountExceededException;
 import com.daesabu.meongcoach.community.domain.exception.PostNotFoundException;
+import com.daesabu.meongcoach.dog.domain.shared.Breed;
+import com.daesabu.meongcoach.dog.domain.shared.DogSex;
+import com.daesabu.meongcoach.dog.domain.shared.RegisteredBreed;
 import com.daesabu.meongcoach.media.application.provided.dto.MediaUploadUrlResult;
 import com.daesabu.meongcoach.media.domain.exception.VideoFileSizeExceededException;
 import java.security.Principal;
@@ -142,6 +146,45 @@ class CommunityControllerTest {
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.author").value(nullValue()));
+	}
+
+	@Test
+	void 회원이_선택한_강아지_정보를_반환한다() throws Exception {
+		given(authorFinder.findAuthorDog(7L)).willReturn(Optional.of(new AuthorDogResult("초코",
+				Breed.of(RegisteredBreed.POODLE), DogSex.FEMALE, 3,
+				"https://media.meongcoach.com/images/dog-profile/7/choco.jpg")));
+
+		mockMvc.perform(get("/api/community/users/{userId}/dog", 7L)
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.dog.name").value("초코"))
+				.andExpect(jsonPath("$.dog.breed.code").value("POODLE"))
+				.andExpect(jsonPath("$.dog.breed.label").value(RegisteredBreed.POODLE.getLabel()))
+				.andExpect(jsonPath("$.dog.sex").value("FEMALE"))
+				.andExpect(jsonPath("$.dog.age").value(3))
+				.andDo(document("community/author-dog",
+						pathParameters(parameterWithName("userId").description("강아지 정보를 볼 회원 ID. 게시글·댓글의 author.userId")),
+						responseFields(
+								fieldWithPath("dog").optional()
+										.description("회원이 선택한 강아지의 공개 정보. 훈련사(EXPERT) 계정이거나 선택된 강아지가 없으면 null"),
+								fieldWithPath("dog.name").description("강아지 이름"),
+								fieldWithPath("dog.breed.code").description("견종 코드. 등록 견종이 아니면 입력한 이름"),
+								fieldWithPath("dog.breed.label").description("견종 표시 이름"),
+								fieldWithPath("dog.sex").description("성별. MALE(수컷) 또는 FEMALE(암컷)"),
+								fieldWithPath("dog.age").optional().description("만 나이(살). 생일을 등록하지 않았으면 null"),
+								fieldWithPath("dog.profileImageUrl").description("강아지 프로필 이미지 URL. 이미지를 등록하지 않았으면 빈 문자열"))));
+	}
+
+	@Test
+	void 강아지_정보가_없으면_dog가_null이다() throws Exception {
+		given(authorFinder.findAuthorDog(7L)).willReturn(Optional.empty());
+
+		mockMvc.perform(get("/api/community/users/{userId}/dog", 7L)
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.dog").value(nullValue()));
 	}
 
 	@Test

@@ -61,6 +61,15 @@ public class TopicQueryService implements TopicFinder, TopicCompletionChecker, P
 	}
 
 	@Override
+	public void validate(Collection<Long> topicIds) {
+		List<Topic> topics = topicRepository.findAllById(topicIds);
+		validateTopicsExist(topicIds, topics);
+		topics.stream()
+				.flatMap(topic -> topic.getCurriculums().stream())
+				.forEach(Curriculum::validateHasLessons);
+	}
+
+	@Override
 	public PlanPreparationResult find(Collection<Long> topicIds) {
 		List<Topic> topics = topicRepository.findAllByIdIn(topicIds, TopicRepository.EDUCATION_ORDER);
 		validateTopicsExist(topicIds, topics);
