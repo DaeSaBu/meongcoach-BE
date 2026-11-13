@@ -31,9 +31,9 @@ public class PlanLessonCompletionService implements PlanLessonCompleter {
 			return;
 		}
 
-		List<Long> orderedLessonIds = planCurriculumFinder.findLessonIds(plan.getCurriculumIds());
-		plan.verifyCurrentLesson(lessonId, orderedLessonIds);
+		List<List<Long>> topicLessonIds = planCurriculumFinder.findTopicLessonIds(plan.getCurriculumIds());
+		plan.verifyCurrentLesson(lessonId, topicLessonIds);
 		lessonCompleter.completeLesson(userId, lessonId);
-		plan.completeCurrentLesson(lessonId, orderedLessonIds, Instant.now());
+		plan.completeCurrentLesson(lessonId, topicLessonIds, Instant.now());
 	}
 }
