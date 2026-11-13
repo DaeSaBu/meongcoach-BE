@@ -129,9 +129,7 @@ final class AiPlanGenerationAdapter implements AiPlanGenerator {
 			throw new InvalidAiPlanResponseException();
 		}
 
-		if (!request.selectedTopicIds().isEmpty()
-				&& (result.topicIds().size() != request.selectedTopicIds().size()
-				|| !result.topicIds().containsAll(request.selectedTopicIds()))) {
+		if (!result.topicIds().containsAll(request.selectedTopicIds())) {
 			throw new InvalidAiPlanResponseException();
 		}
 

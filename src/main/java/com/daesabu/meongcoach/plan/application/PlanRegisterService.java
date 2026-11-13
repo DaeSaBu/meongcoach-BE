@@ -21,7 +21,6 @@ import com.daesabu.meongcoach.plan.domain.exception.PlanNotFoundException;
 import com.daesabu.meongcoach.training.application.provided.AiPlanPreparationFinder;
 import com.daesabu.meongcoach.training.application.provided.PlanCurriculumFinder;
 import com.daesabu.meongcoach.training.application.provided.PlanPreparationFinder;
-import com.daesabu.meongcoach.training.application.provided.dto.AiPlanCurriculumResult;
 import com.daesabu.meongcoach.training.application.provided.dto.AiPlanPreparationResult;
 import com.daesabu.meongcoach.training.application.provided.dto.PlanPreparationResult;
 import com.daesabu.meongcoach.training.application.provided.dto.TopicResult;
@@ -67,19 +66,15 @@ public class PlanRegisterService implements PlanRegister {
 		}
 
 		List<Long> selectedTopicIds = List.of();
-		List<AiPlanCurriculumResult> curriculums = candidates.curriculums();
 		if (request.topicIds() != null) {
 			preparationFinder.find(request.topicIds());
 			selectedTopicIds = request.topicIds();
-			curriculums = curriculums.stream().filter(item -> request.topicIds().contains(item.topicId())).toList();
 		}
 		LocalDate generationDate = LocalDate.now(GENERATION_ZONE);
 		AiPlanGenerateRequest generateRequest = new AiPlanGenerateRequest(dog, generationDate,
-				request.expectation(), curriculums, selectedTopicIds);
+				request.expectation(), candidates.curriculums(), selectedTopicIds);
 		AiPlanGenerateResult generated = aiPlanGenerator.generate(generateRequest);
-		if (!selectedTopicIds.isEmpty()
-				&& (generated.topicIds().size() != selectedTopicIds.size()
-				|| !generated.topicIds().containsAll(selectedTopicIds))) {
+		if (!generated.topicIds().containsAll(selectedTopicIds)) {
 			throw new InvalidAiPlanResponseException();
 		}
 		PlanPreparationResult preparation = preparationFinder.findInRequestOrder(generated.topicIds());
