@@ -80,7 +80,7 @@ public class PlanRegisterService implements PlanRegister {
 		if (topicIds == null) {
 			return List.of();
 		}
-		preparationFinder.find(topicIds);
+		preparationFinder.validate(topicIds);
 		return topicIds;
 	}
 
