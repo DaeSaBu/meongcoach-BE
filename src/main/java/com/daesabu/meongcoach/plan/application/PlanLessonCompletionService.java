@@ -3,9 +3,11 @@ package com.daesabu.meongcoach.plan.application;
 import com.daesabu.meongcoach.plan.application.provided.PlanLessonCompleter;
 import com.daesabu.meongcoach.plan.application.required.PlanRepository;
 import com.daesabu.meongcoach.plan.domain.Plan;
+import com.daesabu.meongcoach.plan.domain.exception.PlanLessonOrderException;
 import com.daesabu.meongcoach.plan.domain.exception.PlanNotFoundException;
 import com.daesabu.meongcoach.training.application.provided.LessonCompleter;
 import com.daesabu.meongcoach.training.application.provided.PlanCurriculumFinder;
+import com.daesabu.meongcoach.training.domain.shared.LessonSequence;
 import java.time.Instant;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -31,9 +33,12 @@ public class PlanLessonCompletionService implements PlanLessonCompleter {
 			return;
 		}
 
-		List<List<Long>> topicLessonIds = planCurriculumFinder.findTopicLessonIds(plan.getCurriculumIds());
-		plan.verifyCurrentLesson(lessonId, topicLessonIds);
+		LessonSequence sequence = planCurriculumFinder.findLessonSequence(plan.getCurriculumIds());
+		if (!sequence.canComplete(lessonId, plan.getCompletedLessonIds())) {
+			throw new PlanLessonOrderException();
+		}
 		lessonCompleter.completeLesson(userId, lessonId);
-		plan.completeCurrentLesson(lessonId, topicLessonIds, Instant.now());
+		List<Long> lessonIds = sequence.lessonIds();
+		plan.completeLesson(lessonId, lessonIds, Instant.now());
 	}
 }

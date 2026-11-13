@@ -6,7 +6,6 @@ import static org.springframework.util.Assert.state;
 import com.daesabu.meongcoach.plan.domain.exception.DuplicatePlanCurriculumException;
 import com.daesabu.meongcoach.plan.domain.exception.EmptyPlanCurriculumsException;
 import com.daesabu.meongcoach.plan.domain.exception.InvalidPlanCurriculumException;
-import com.daesabu.meongcoach.plan.domain.exception.PlanLessonOrderException;
 import com.daesabu.meongcoach.plan.domain.exception.PlanNotActiveException;
 import com.daesabu.meongcoach.plan.domain.exception.PlanNotCompletedException;
 import com.daesabu.meongcoach.plan.domain.exception.PlanOutcomeAlreadyRecordedException;
@@ -34,7 +33,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -142,18 +140,8 @@ public class Plan extends BaseTimeEntity {
 		return true;
 	}
 
-	public void verifyCurrentLesson(Long lessonId, List<List<Long>> topicLessonIds) {
-		if (!findCurrentLessonIds(topicLessonIds).contains(lessonId)) {
-			throw new PlanLessonOrderException();
-		}
-	}
-
-	public void completeCurrentLesson(Long lessonId, List<List<Long>> topicLessonIds, Instant completedAt) {
-		verifyCurrentLesson(lessonId, topicLessonIds);
+	public void completeLesson(Long lessonId, List<Long> lessonIds, Instant completedAt) {
 		completeLesson(lessonId);
-		List<Long> lessonIds = topicLessonIds.stream()
-				.flatMap(List::stream)
-				.toList();
 		if (hasCompletedAllLessons(lessonIds)) {
 			complete(completedAt);
 		}
@@ -162,14 +150,6 @@ public class Plan extends BaseTimeEntity {
 	public void completeLesson(Long lessonId) {
 		state(status == PlanStatus.ACTIVE, "활성 플랜만 레슨을 완료할 수 있습니다.");
 		completedLessonIds.add(requireNonNull(lessonId));
-	}
-
-	public List<Long> findCurrentLessonIds(List<List<Long>> topicLessonIds) {
-		state(!topicLessonIds.isEmpty(), "플랜에는 레슨이 하나 이상 있어야 합니다.");
-		return topicLessonIds.stream()
-				.map(this::findFirstIncompleteLessonId)
-				.flatMap(Optional::stream)
-				.toList();
 	}
 
 	public boolean hasCompletedAllLessons(List<Long> currentLessonIds) {
@@ -206,12 +186,6 @@ public class Plan extends BaseTimeEntity {
 				.toLocalDate();
 		LocalDate endDate = LocalDate.ofInstant(completedAt, zone);
 		return (int) ChronoUnit.DAYS.between(startDate, endDate) + 1;
-	}
-
-	private Optional<Long> findFirstIncompleteLessonId(List<Long> lessonIds) {
-		return lessonIds.stream()
-				.filter(lessonId -> !completedLessonIds.contains(lessonId))
-				.findFirst();
 	}
 
 	private static void validateCurriculumIds(List<Long> curriculumIds) {

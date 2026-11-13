@@ -24,8 +24,10 @@ import com.daesabu.meongcoach.training.domain.TopicFixture;
 import com.daesabu.meongcoach.training.domain.TrainingCategory;
 import com.daesabu.meongcoach.training.domain.TrainingCategoryFixture;
 import com.daesabu.meongcoach.training.domain.exception.CurriculumNotFoundException;
+import com.daesabu.meongcoach.training.domain.shared.LessonSequence;
 import jakarta.persistence.EntityManager;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -99,7 +101,7 @@ class PlanCurriculumFinderTest {
 	@Test
 	void 빈_목록이면_빈_결과를_반환한다() {
 		assertThat(finder.find(USER_ID, List.of())).isEmpty();
-		assertThat(finder.findTopicLessonIds(List.of())).isEmpty();
+		assertThat(finder.findLessonSequence(List.of()).lessonIds()).isEmpty();
 		assertThat(finder.findTopics(List.of())).isEmpty();
 	}
 
@@ -107,7 +109,7 @@ class PlanCurriculumFinderTest {
 	void 존재하지_않는_커리큘럼은_거절한다() {
 		assertThatThrownBy(() -> finder.find(USER_ID, List.of(Long.MAX_VALUE)))
 				.isInstanceOf(CurriculumNotFoundException.class);
-		assertThatThrownBy(() -> finder.findTopicLessonIds(List.of(Long.MAX_VALUE)))
+		assertThatThrownBy(() -> finder.findLessonSequence(List.of(Long.MAX_VALUE)))
 				.isInstanceOf(CurriculumNotFoundException.class);
 		assertThatThrownBy(() -> finder.findTopics(List.of(Long.MAX_VALUE)))
 				.isInstanceOf(CurriculumNotFoundException.class);
@@ -154,14 +156,17 @@ class PlanCurriculumFinderTest {
 		complete(USER_ID, earlier);
 		flushAndClear();
 
-		List<List<Long>> lessonIds = finder.findTopicLessonIds(List.of(second.getId(), first.getId()));
+		LessonSequence sequence = finder.findLessonSequence(List.of(second.getId(), first.getId()));
 
-		assertThat(lessonIds).containsExactly(
-				List.of(earlier.getId(), sameOrder.getId(), later.getId(), firstLesson.getId()));
+		assertThat(sequence.lessonIds()).containsExactly(
+				earlier.getId(), sameOrder.getId(), later.getId(), firstLesson.getId());
+		assertThat(sequence.canComplete(earlier.getId(), Set.of())).isTrue();
+		assertThat(sequence.canComplete(sameOrder.getId(), Set.of())).isFalse();
+		assertThat(sequence.canComplete(sameOrder.getId(), Set.of(earlier.getId()))).isTrue();
 	}
 
 	@Test
-	void 레슨_ID를_토픽별로_묶어_토픽의_첫_등장_순서로_반환한다() {
+	void 토픽이_섞인_플랜도_각_토픽의_첫_미완료_레슨만_허용한다() {
 		TrainingCategory category = saveCategory(1);
 		Topic walk = saveTopic(category, 1);
 		Topic calm = saveTopic(category, 2);
@@ -173,12 +178,15 @@ class PlanCurriculumFinderTest {
 		Lesson walkSecondLesson = saveLesson(walkSecond);
 		flushAndClear();
 
-		List<List<Long>> lessonIds = finder.findTopicLessonIds(
+		LessonSequence sequence = finder.findLessonSequence(
 				List.of(walkFirst.getId(), calmFirst.getId(), walkSecond.getId()));
 
-		assertThat(lessonIds).containsExactly(
-				List.of(walkFirstLesson.getId(), walkSecondLesson.getId()),
-				List.of(calmLesson.getId()));
+		assertThat(sequence.lessonIds()).containsExactly(
+				walkFirstLesson.getId(), walkSecondLesson.getId(), calmLesson.getId());
+		assertThat(sequence.canComplete(walkFirstLesson.getId(), Set.of())).isTrue();
+		assertThat(sequence.canComplete(calmLesson.getId(), Set.of())).isTrue();
+		assertThat(sequence.canComplete(walkSecondLesson.getId(), Set.of())).isFalse();
+		assertThat(sequence.canComplete(walkSecondLesson.getId(), Set.of(walkFirstLesson.getId()))).isTrue();
 	}
 
 	@Test
@@ -189,7 +197,7 @@ class PlanCurriculumFinderTest {
 		Curriculum empty = saveCurriculum(topic, 2, false);
 		flushAndClear();
 
-		assertThatThrownBy(() -> finder.findTopicLessonIds(List.of(first.getId(), empty.getId())))
+		assertThatThrownBy(() -> finder.findLessonSequence(List.of(first.getId(), empty.getId())))
 				.isInstanceOf(IllegalStateException.class)
 				.hasMessage("커리큘럼에는 레슨이 하나 이상 있어야 합니다.");
 	}
