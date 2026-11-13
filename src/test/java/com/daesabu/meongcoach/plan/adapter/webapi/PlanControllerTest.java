@@ -466,7 +466,7 @@ class PlanControllerTest {
 	}
 	@Test
 	void AI_플랜을_생성하고_ID를_반환한다() throws Exception {
-		AiPlanCreateRequest request = new AiPlanCreateRequest("차분히 기다렸으면 해요");
+		AiPlanCreateRequest request = new AiPlanCreateRequest("차분히 기다렸으면 해요", List.of(1L, 2L));
 		Plan plan = mock(Plan.class);
 		given(plan.getId()).willReturn(22L);
 		given(planRegister.createAiPlan(42L, 7L, request)).willReturn(plan);
@@ -474,12 +474,13 @@ class PlanControllerTest {
 		mockMvc.perform(post("/api/plans/ai").queryParam("dogId", "7").principal(CURRENT_USER)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"expectation\":\"차분히 기다렸으면 해요\"}"))
+						.content("{\"expectation\":\"차분히 기다렸으면 해요\",\"topicIds\":[1,2]}"))
 				.andExpect(status().isCreated())
 				.andExpect(jsonPath("$.planId").value(22))
 				.andDo(document("plan/ai-create",
 						queryParameters(parameterWithName("dogId").description("플랜을 생성할 본인 소유 강아지 ID")), requestFields(
-						fieldWithPath("expectation").description("훈련 기대사항, 공백을 제외한 내용 필수, 최대 500자, 입력 그대로 저장")),
+						fieldWithPath("expectation").description("훈련 기대사항, 공백을 제외한 내용 필수, 최대 500자, 입력 그대로 저장"),
+						fieldWithPath("topicIds").optional().description("보호자가 선택한 토픽 ID 1~3개, 생략하면 AI가 선택")),
 						responseFields(fieldWithPath("planId").description("생성된 플랜 ID"))));
 		verify(planRegister).createAiPlan(42L, 7L, request);
 	}

@@ -172,6 +172,60 @@ class PlanRegisterAiTest {
 	}
 
 	@Test
+	void 선택_토픽_밖의_후보도_AI에_전달하고_추가한_토픽을_함께_저장한다() {
+		Curriculum earlierCurriculum = new TransactionTemplate(transactionManager).execute(status -> {
+			TrainingCategory category = entityManager.find(TrainingCategory.class, categoryId);
+			Topic earlierTopic = TopicFixture.create(category, "앉아", 0, "", "", "");
+			entityManager.persist(earlierTopic);
+			Curriculum curriculum = CurriculumFixture.create(earlierTopic, "앉아 1", 1, "", "연습");
+			entityManager.persist(curriculum);
+			entityManager.persist(LessonFixture.create(curriculum, "레슨", 1, 5));
+			return curriculum;
+		});
+		Long earlierTopicId = earlierCurriculum.getTopic().getId();
+		AiPlanCreateRequest selected = new AiPlanCreateRequest("앉아서 기다렸으면 해요", List.of(topicId));
+		given(generator.generate(any())).willAnswer(invocation -> {
+			AiPlanGenerateRequest input = invocation.getArgument(0);
+			assertThat(input.selectedTopicIds()).containsExactly(topicId);
+			assertThat(input.curriculums()).extracting(item -> item.topicId()).contains(topicId, earlierTopicId);
+			return new AiPlanGenerateResult(List.of(topicId, earlierTopicId), "차분히 기다리는 습관을 길러요");
+		});
+
+		Plan created = register.createAiPlan(USER_ID, dogId, selected);
+
+		List<Long> expected = new ArrayList<>(curriculumIds);
+		expected.add(earlierCurriculum.getId());
+		List<Long> saved = jdbc.queryForList(
+				"SELECT curriculum_id FROM plan_curriculums WHERE plan_id = ? ORDER BY sort_order", Long.class,
+				created.getId());
+		assertThat(saved).containsExactlyElementsOf(expected);
+	}
+
+	@Test
+	void 보호자가_선택한_토픽을_AI에_전달하고_플랜에_보존한다() {
+		AiPlanCreateRequest selected = new AiPlanCreateRequest("차분하게 기다려요", List.of(topicId));
+		given(generator.generate(any())).willAnswer(invocation -> {
+			AiPlanGenerateRequest input = invocation.getArgument(0);
+			assertThat(input.selectedTopicIds()).containsExactly(topicId);
+			assertThat(input.curriculums()).extracting(item -> item.topicId()).contains(topicId);
+			return new AiPlanGenerateResult(List.of(topicId), "차분히 기다려요");
+		});
+
+		Plan created = register.createAiPlan(USER_ID, dogId, selected);
+
+		assertThat(created.getCurriculumIds()).containsExactlyElementsOf(curriculumIds);
+	}
+
+	@Test
+	void 없는_토픽을_선택하면_AI를_호출하지_않는다() {
+		AiPlanCreateRequest selected = new AiPlanCreateRequest("차분하게 기다려요", List.of(Long.MAX_VALUE));
+
+		assertThatThrownBy(() -> register.createAiPlan(USER_ID, dogId, selected)).isInstanceOf(RuntimeException.class);
+
+		verifyNoInteractions(generator);
+	}
+
+	@Test
 	void AI_실패이면_기존_플랜을_유지한다() {
 		Plan existing = saveExistingPlan();
 		InvalidAiPlanResponseException failure = new InvalidAiPlanResponseException();

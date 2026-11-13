@@ -10,6 +10,7 @@ class CommentRegisteredEventTest {
 	private static final Long POST_AUTHOR_ID = 1L;
 	private static final Long ROOT_AUTHOR_ID = 2L;
 	private static final Long COMMENTER_ID = 3L;
+	private static final Long PARTICIPANT_ID = 4L;
 
 	@Test
 	void 루트_댓글이면_게시글_작성자에게만_알린다() {
@@ -44,13 +45,29 @@ class CommentRegisteredEventTest {
 	}
 
 	@Test
+	void 게시글에_댓글을_단_참여자에게도_알린다() {
+		CommentRegisteredEvent event = event(POST_AUTHOR_ID, COMMENTER_ID, null,
+				List.of(PARTICIPANT_ID, ROOT_AUTHOR_ID));
+
+		assertThat(event.recipientIds()).containsExactly(POST_AUTHOR_ID, PARTICIPANT_ID, ROOT_AUTHOR_ID);
+	}
+
+	@Test
+	void 참여자_중_댓글_작성자_본인과_중복은_뺀다() {
+		CommentRegisteredEvent event = event(POST_AUTHOR_ID, COMMENTER_ID, ROOT_AUTHOR_ID,
+				List.of(COMMENTER_ID, ROOT_AUTHOR_ID, POST_AUTHOR_ID, PARTICIPANT_ID));
+
+		assertThat(event.recipientIds()).containsExactly(POST_AUTHOR_ID, ROOT_AUTHOR_ID, PARTICIPANT_ID);
+	}
+
+	@Test
 	void 댓글과_게시글에서_작성자와_본문을_옮긴다() {
 		Post post = Post.register(POST_AUTHOR_ID, new PostRegisterCommand("오늘 앉아 훈련 성공!", null, List.of()));
 		Comment root = Comment.register(post, ROOT_AUTHOR_ID, "축하해요!");
 		Comment reply = Comment.register(post, COMMENTER_ID, "저도 축하해요!");
 
-		CommentRegisteredEvent rootEvent = CommentRegisteredEvent.from(root, null);
-		CommentRegisteredEvent replyEvent = CommentRegisteredEvent.from(reply, root);
+		CommentRegisteredEvent rootEvent = CommentRegisteredEvent.from(root, null, List.of());
+		CommentRegisteredEvent replyEvent = CommentRegisteredEvent.from(reply, root, List.of(ROOT_AUTHOR_ID));
 
 		assertThat(rootEvent.postAuthorId()).isEqualTo(POST_AUTHOR_ID);
 		assertThat(rootEvent.commenterId()).isEqualTo(ROOT_AUTHOR_ID);
@@ -59,9 +76,16 @@ class CommentRegisteredEventTest {
 		assertThat(replyEvent.commenterId()).isEqualTo(COMMENTER_ID);
 		assertThat(replyEvent.rootCommentAuthorId()).isEqualTo(ROOT_AUTHOR_ID);
 		assertThat(replyEvent.content()).isEqualTo("저도 축하해요!");
+		assertThat(replyEvent.participantIds()).containsExactly(ROOT_AUTHOR_ID);
 	}
 
 	private CommentRegisteredEvent event(Long postAuthorId, Long commenterId, Long rootCommentAuthorId) {
-		return new CommentRegisteredEvent(10L, 20L, postAuthorId, commenterId, rootCommentAuthorId, "축하해요!");
+		return event(postAuthorId, commenterId, rootCommentAuthorId, List.of());
+	}
+
+	private CommentRegisteredEvent event(Long postAuthorId, Long commenterId, Long rootCommentAuthorId,
+			List<Long> participantIds) {
+		return new CommentRegisteredEvent(10L, 20L, postAuthorId, commenterId, rootCommentAuthorId, participantIds,
+				"축하해요!");
 	}
 }

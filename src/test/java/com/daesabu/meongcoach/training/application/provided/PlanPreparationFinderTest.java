@@ -1,6 +1,7 @@
 package com.daesabu.meongcoach.training.application.provided;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;
@@ -196,6 +197,42 @@ class PlanPreparationFinderTest {
 		flushAndClear();
 
 		assertThatThrownBy(() -> finder.findInRequestOrder(List.of(topic.getId())))
+				.isInstanceOf(IllegalStateException.class);
+	}
+
+	@Test
+	void 선택_토픽의_모든_커리큘럼에_레슨이_있으면_검증을_통과한다() {
+		TrainingCategory category = saveCategory(1);
+		Topic topic = saveTopic(category, 1);
+		Curriculum curriculum = saveCurriculum(topic, 1, false);
+		saveLesson(curriculum);
+		flushAndClear();
+
+		assertThatCode(() -> finder.validate(List.of(topic.getId()))).doesNotThrowAnyException();
+	}
+
+	@Test
+	void 선택_토픽_검증은_없는_토픽을_거절한다() {
+		TrainingCategory category = saveCategory(1);
+		Topic topic = saveTopic(category, 1);
+		Curriculum curriculum = saveCurriculum(topic, 1, false);
+		saveLesson(curriculum);
+		flushAndClear();
+
+		assertThatThrownBy(() -> finder.validate(List.of(topic.getId(), Long.MAX_VALUE)))
+				.isInstanceOf(TopicNotFoundException.class);
+	}
+
+	@Test
+	void 선택_토픽_검증은_레슨이_없는_커리큘럼을_거절한다() {
+		TrainingCategory category = saveCategory(1);
+		Topic topic = saveTopic(category, 1);
+		Curriculum curriculum = saveCurriculum(topic, 1, false);
+		saveLesson(curriculum);
+		saveCurriculum(topic, 2, false);
+		flushAndClear();
+
+		assertThatThrownBy(() -> finder.validate(List.of(topic.getId())))
 				.isInstanceOf(IllegalStateException.class);
 	}
 

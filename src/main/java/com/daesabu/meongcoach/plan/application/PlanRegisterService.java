@@ -1,5 +1,7 @@
 package com.daesabu.meongcoach.plan.application;
 
+import static java.util.Objects.requireNonNullElse;
+
 import com.daesabu.meongcoach.dog.application.provided.DogProfileFinder;
 import com.daesabu.meongcoach.dog.application.provided.dto.DogProfileResult;
 import com.daesabu.meongcoach.plan.application.provided.PlanRegister;
@@ -64,9 +66,13 @@ public class PlanRegisterService implements PlanRegister {
 			throw new EmptyPlanCurriculumsException();
 		}
 
+		List<Long> selectedTopicIds = requireNonNullElse(request.topicIds(), List.of());
+		if (!selectedTopicIds.isEmpty()) {
+			preparationFinder.validate(selectedTopicIds);
+		}
 		LocalDate generationDate = LocalDate.now(GENERATION_ZONE);
 		AiPlanGenerateRequest generateRequest = new AiPlanGenerateRequest(dog, generationDate,
-				request.expectation(), candidates.curriculums());
+				request.expectation(), candidates.curriculums(), selectedTopicIds);
 		AiPlanGenerateResult generated = aiPlanGenerator.generate(generateRequest);
 		PlanPreparationResult preparation = preparationFinder.findInRequestOrder(generated.topicIds());
 		AiPlanCreateCommand command = new AiPlanCreateCommand(userId, dog.id(), dog.name(), generated.goal(),

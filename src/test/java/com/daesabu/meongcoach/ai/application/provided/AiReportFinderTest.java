@@ -1,30 +1,21 @@
-package com.daesabu.meongcoach.ai.application;
+package com.daesabu.meongcoach.ai.application.provided;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.daesabu.meongcoach.ai.application.provided.AiReportContent;
-import com.daesabu.meongcoach.ai.application.provided.AiReportDetailResult;
-import com.daesabu.meongcoach.ai.application.provided.AiReportFinder;
-import com.daesabu.meongcoach.ai.application.provided.AiReportResult;
 import com.daesabu.meongcoach.ai.application.required.AiAnalysisRepository;
 import com.daesabu.meongcoach.ai.domain.AiAnalysis;
 import com.daesabu.meongcoach.ai.domain.AiAnalysisStatus;
 import com.daesabu.meongcoach.ai.domain.AiAnalysisUploadCommand;
 import com.daesabu.meongcoach.ai.domain.exception.AiReportNotFoundException;
+import com.daesabu.meongcoach.support.ApplicationTest;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
-import tools.jackson.databind.ObjectMapper;
 
-@DataJpaTest
-@Import(AiReportQueryService.class)
-class AiReportQueryServiceTest {
+@ApplicationTest
+class AiReportFinderTest {
 
 	private static final Long USER_ID = 42L;
 
@@ -45,15 +36,6 @@ class AiReportQueryServiceTest {
 
 	@Autowired
 	private AiAnalysisRepository aiAnalysisRepository;
-
-	@TestConfiguration
-	static class ObjectMapperTestConfig {
-
-		@Bean
-		ObjectMapper objectMapper() {
-			return new ObjectMapper();
-		}
-	}
 
 	@Test
 	void 내_리포트만_최신순으로_반환한다() {
@@ -147,6 +129,45 @@ class AiReportQueryServiceTest {
 		assertThat(detail.status()).isEqualTo(AiAnalysisStatus.ANALYZING);
 		assertThat(detail.title()).isNull();
 		assertThat(detail.content()).isNull();
+	}
+
+	@Test
+	void 리포트_상세는_영상_객체_키로_서명한_재생_URL을_담는다() {
+		AiAnalysis saved = persistCompletedAnalysis(USER_ID, "videos/training/42/key.mp4", "분리불안 징후 행동 분석");
+
+		AiReportDetailResult detail = aiReportFinder.findReport(USER_ID, saved.getId());
+
+		assertThat(detail.videoUrl()).contains("videos/training/42/key.mp4").contains("X-Goog-Signature=");
+	}
+
+	@Test
+	void 분석에_실패한_리포트_상세도_업로드된_영상의_재생_URL을_담는다() {
+		persistFailedAnalysis(USER_ID, "videos/training/42/failed.mp4");
+		Long reportId = aiReportFinder.findReports(USER_ID).getFirst().id();
+
+		AiReportDetailResult detail = aiReportFinder.findReport(USER_ID, reportId);
+
+		assertThat(detail.videoUrl()).contains("videos/training/42/failed.mp4");
+	}
+
+	@Test
+	void 업로드_중인_리포트_상세는_재생_URL이_null이다() {
+		AiAnalysis saved = aiAnalysisRepository.saveAndFlush(uploadingAnalysis(USER_ID, "videos/training/42/uploading.mp4",
+				Instant.now().plusSeconds(900)));
+
+		AiReportDetailResult detail = aiReportFinder.findReport(USER_ID, saved.getId());
+
+		assertThat(detail.videoUrl()).isNull();
+	}
+
+	@Test
+	void 업로드가_만료된_리포트_상세는_재생_URL이_null이다() {
+		AiAnalysis saved = aiAnalysisRepository.saveAndFlush(uploadingAnalysis(USER_ID, "videos/training/42/expired.mp4",
+				Instant.now().minusSeconds(1)));
+
+		AiReportDetailResult detail = aiReportFinder.findReport(USER_ID, saved.getId());
+
+		assertThat(detail.videoUrl()).isNull();
 	}
 
 	@Test

@@ -48,6 +48,7 @@ class CommentRegisterNotificationTest {
 	private static final String POST_AUTHOR_FID = "comment-notification-post-author-fid";
 	private static final String ROOT_AUTHOR_FID = "comment-notification-root-author-fid";
 	private static final String COMMENTER_FID = "comment-notification-commenter-fid";
+	private static final String PARTICIPANT_FID = "comment-notification-participant-fid";
 
 	@Autowired
 	private CommentRegister commentRegister;
@@ -80,6 +81,7 @@ class CommentRegisterNotificationTest {
 	private Long postAuthorId;
 	private Long rootAuthorId;
 	private Long commenterId;
+	private Long participantId;
 	private Long postId;
 
 	@BeforeEach
@@ -89,6 +91,7 @@ class CommentRegisterNotificationTest {
 			postAuthorId = saveUser("게시글주인", POST_AUTHOR_FID);
 			rootAuthorId = saveUser("댓글주인", ROOT_AUTHOR_FID);
 			commenterId = saveUser("멍멍이집사", COMMENTER_FID);
+			participantId = saveUser("산책러", PARTICIPANT_FID);
 			postId = posts.save(Post.register(postAuthorId, new PostRegisterCommand("오늘 앉아 훈련 성공!", null, List.of()))).getId();
 		});
 		given(sender.send(anyList())).willAnswer(invocation -> {
@@ -141,6 +144,30 @@ class CommentRegisterNotificationTest {
 		assertThat(replyBatch).extracting(PushNotification::fid).containsExactlyInAnyOrder(POST_AUTHOR_FID, ROOT_AUTHOR_FID);
 		assertThat(replyBatch).extracting(PushNotification::title).containsOnly((String) null);
 		assertThat(replyBatch).extracting(PushNotification::body).containsOnly("답글이 달렸어요: 저도 축하해요!");
+	}
+
+	@Test
+	void 댓글이_커밋되면_게시글에_댓글을_단_참여자에게도_알린다() {
+		commentRegister.register(participantId, postId, new CommentRegisterRequest("축하해요!", null));
+		verify(sender, timeout(ASYNC_TIMEOUT_MILLIS)).send(anyList());
+
+		commentRegister.register(commenterId, postId, new CommentRegisterRequest("저도 축하해요!", null));
+
+		verify(sender, timeout(ASYNC_TIMEOUT_MILLIS).times(2)).send(anyList());
+		assertThat(batches.get(1)).extracting(PushNotification::fid)
+				.containsExactlyInAnyOrder(POST_AUTHOR_FID, PARTICIPANT_FID);
+	}
+
+	@Test
+	void 삭제된_댓글의_작성자에게는_알리지_않는다() {
+		Comment deleted = commentRegister.register(participantId, postId, new CommentRegisterRequest("축하해요!", null));
+		verify(sender, timeout(ASYNC_TIMEOUT_MILLIS)).send(anyList());
+		commentRegister.delete(participantId, deleted.getId());
+
+		commentRegister.register(commenterId, postId, new CommentRegisterRequest("저도 축하해요!", null));
+
+		verify(sender, timeout(ASYNC_TIMEOUT_MILLIS).times(2)).send(anyList());
+		assertThat(batches.get(1)).extracting(PushNotification::fid).containsExactly(POST_AUTHOR_FID);
 	}
 
 	@Test

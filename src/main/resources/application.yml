@@ -61,7 +61,7 @@ meongcoach:
       bucket: ${GCS_BUCKET}
       # 영상은 파일 선택·압축 시간이 있어 이미지(PT10M)보다 여유를 둔다
       upload-url-validity: PT15M
-      # 앱이 실습 인증 영상을 다시 볼 때 쓰는 URL이라 재생 시간을 감안해 넉넉히 둔다. 분석 영상은 gs:// URI로 읽어 점검용이다
+      # 앱이 실습 인증 영상과 분석 리포트 영상을 다시 볼 때 쓰는 URL이라 재생 시간을 감안해 넉넉히 둔다. 분석기(Gemini)는 이 URL이 아니라 gs:// URI로 읽는다
       download-url-validity: PT1H
   google-cloud:
     # GCS 서명·Pub/Sub 구독·Gemini 파일 등록에 함께 쓰는 서비스 계정. 키 JSON을 base64로 넣는다. 값 미주입 시 기동에 실패한다
