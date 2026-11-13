@@ -129,6 +129,10 @@ final class AiPlanGenerationAdapter implements AiPlanGenerator {
 			throw new InvalidAiPlanResponseException();
 		}
 
+		if (!result.topicIds().containsAll(request.selectedTopicIds())) {
+			throw new InvalidAiPlanResponseException();
+		}
+
 		Set<Long> candidateTopicIds = request.curriculums().stream()
 				.map(AiPlanCurriculumResult::topicId)
 				.collect(Collectors.toSet());

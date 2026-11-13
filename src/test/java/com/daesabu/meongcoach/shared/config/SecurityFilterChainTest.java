@@ -264,6 +264,15 @@ class SecurityFilterChainTest {
 	}
 
 	@Test
+	void 온보딩_미완료_회원도_플랜_토픽_목록을_조회할_수_있다() throws Exception {
+		AuthToken token = tokenProvider.issue(onboardingUserId);
+
+		mockMvc.perform(appGet("/api/training/categories")
+				.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken()))
+				.andExpect(status().isOk());
+	}
+
+	@Test
 	void 온보딩_미완료_회원도_온보딩_메타데이터를_조회할_수_있다() throws Exception {
 		AuthToken token = tokenProvider.issue(onboardingUserId);
 

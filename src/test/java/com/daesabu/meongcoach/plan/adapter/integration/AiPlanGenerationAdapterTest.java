@@ -68,6 +68,33 @@ class AiPlanGenerationAdapterTest {
 		assertThat(result.goal()).isEqualTo("차분하게 기다려요");
 	}
 
+	@ParameterizedTest
+	@MethodSource("missingSelections")
+	void 보호자가_선택한_토픽을_누락한_AI_응답은_거절한다(List<Long> topics) {
+		AiPlanGenerateRequest base = createRequest();
+		AiPlanGenerateRequest request = new AiPlanGenerateRequest(base.dog(), base.generationDate(),
+				base.expectation(), base.curriculums(), List.of(1L));
+		given(contentGenerator.generate(any())).willReturn(
+				objectMapper.writeValueAsString(new AiPlanGenerateResult(topics, "차분하게 기다려요")));
+
+		assertThatThrownBy(() -> adapter.generate(request)).isInstanceOf(InvalidAiPlanResponseException.class);
+	}
+
+	private static Stream<List<Long>> missingSelections() {
+		return Stream.of(List.of(2L));
+	}
+
+	@Test
+	void 선택_토픽을_유지하면서_다른_후보_토픽을_추가할_수_있다() {
+		AiPlanGenerateRequest base = createRequest();
+		AiPlanGenerateRequest request = new AiPlanGenerateRequest(base.dog(), base.generationDate(),
+				base.expectation(), base.curriculums(), List.of(1L));
+		AiPlanGenerateResult result = new AiPlanGenerateResult(List.of(2L, 1L), "차분하게 기다리고 다가와요");
+		given(contentGenerator.generate(any())).willReturn(objectMapper.writeValueAsString(result));
+
+		assertThat(adapter.generate(request)).isEqualTo(result);
+	}
+
 	@Test
 	void AI_모듈의_호출_실패를_그대로_전달한다() {
 		AiPlanGenerateRequest request = createRequest();
