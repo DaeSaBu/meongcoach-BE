@@ -142,18 +142,19 @@ public class Plan extends BaseTimeEntity {
 		return true;
 	}
 
-	public void verifyCurrentLesson(Long lessonId, List<Long> orderedLessonIds) {
-		Long currentLessonId = findCurrentLessonId(orderedLessonIds)
-				.orElseThrow(PlanLessonOrderException::new);
-		if (!currentLessonId.equals(lessonId)) {
+	public void verifyCurrentLesson(Long lessonId, List<List<Long>> topicLessonIds) {
+		if (!findCurrentLessonIds(topicLessonIds).contains(lessonId)) {
 			throw new PlanLessonOrderException();
 		}
 	}
 
-	public void completeCurrentLesson(Long lessonId, List<Long> orderedLessonIds, Instant completedAt) {
-		verifyCurrentLesson(lessonId, orderedLessonIds);
+	public void completeCurrentLesson(Long lessonId, List<List<Long>> topicLessonIds, Instant completedAt) {
+		verifyCurrentLesson(lessonId, topicLessonIds);
 		completeLesson(lessonId);
-		if (hasCompletedAllLessons(orderedLessonIds)) {
+		List<Long> lessonIds = topicLessonIds.stream()
+				.flatMap(List::stream)
+				.toList();
+		if (hasCompletedAllLessons(lessonIds)) {
 			complete(completedAt);
 		}
 	}
@@ -163,11 +164,12 @@ public class Plan extends BaseTimeEntity {
 		completedLessonIds.add(requireNonNull(lessonId));
 	}
 
-	public Optional<Long> findCurrentLessonId(List<Long> orderedLessonIds) {
-		state(!orderedLessonIds.isEmpty(), "플랜에는 레슨이 하나 이상 있어야 합니다.");
-		return orderedLessonIds.stream()
-				.filter(lessonId -> !completedLessonIds.contains(lessonId))
-				.findFirst();
+	public List<Long> findCurrentLessonIds(List<List<Long>> topicLessonIds) {
+		state(!topicLessonIds.isEmpty(), "플랜에는 레슨이 하나 이상 있어야 합니다.");
+		return topicLessonIds.stream()
+				.map(this::findFirstIncompleteLessonId)
+				.flatMap(Optional::stream)
+				.toList();
 	}
 
 	public boolean hasCompletedAllLessons(List<Long> currentLessonIds) {
@@ -204,6 +206,12 @@ public class Plan extends BaseTimeEntity {
 				.toLocalDate();
 		LocalDate endDate = LocalDate.ofInstant(completedAt, zone);
 		return (int) ChronoUnit.DAYS.between(startDate, endDate) + 1;
+	}
+
+	private Optional<Long> findFirstIncompleteLessonId(List<Long> lessonIds) {
+		return lessonIds.stream()
+				.filter(lessonId -> !completedLessonIds.contains(lessonId))
+				.findFirst();
 	}
 
 	private static void validateCurriculumIds(List<Long> curriculumIds) {

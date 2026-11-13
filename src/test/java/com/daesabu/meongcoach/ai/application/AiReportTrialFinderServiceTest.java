@@ -3,12 +3,9 @@ package com.daesabu.meongcoach.ai.application;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.daesabu.meongcoach.ai.application.provided.AiTrialFinder;
-import com.daesabu.meongcoach.ai.application.required.AiAnalysisRepository;
-import com.daesabu.meongcoach.ai.domain.AiAnalysis;
-import com.daesabu.meongcoach.ai.domain.AiAnalysisUploadCommand;
+import com.daesabu.meongcoach.ai.application.required.AiTrialRepository;
 import com.daesabu.meongcoach.ai.domain.AiTrial;
-import java.time.Instant;
-import java.util.function.Consumer;
+import com.daesabu.meongcoach.ai.domain.AiTrialFixture;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -26,64 +23,42 @@ class AiReportTrialFinderServiceTest {
 	private AiTrialFinder aiTrialFinder;
 
 	@Autowired
-	private AiAnalysisRepository aiAnalysisRepository;
+	private AiTrialRepository aiTrialRepository;
 
 	@Test
-	void 리포트가_없으면_사용_0회로_조회된다() {
-		assertThat(aiTrialFinder.findTrial(USER_ID)).isEqualTo(new AiTrial(0));
-	}
+	void 저장된_현황이_없으면_기본_부여_횟수에_사용_0회로_조회된다() {
+		AiTrial trial = aiTrialFinder.findTrial(USER_ID);
 
-	@Test
-	void 완료한_리포트_수가_그대로_사용_횟수가_된다() {
-		persistCompletedAnalysis(USER_ID, "videos/training/42/first.mp4");
-		persistCompletedAnalysis(USER_ID, "videos/training/42/second.mp4");
-
-		assertThat(aiTrialFinder.findTrial(USER_ID)).isEqualTo(new AiTrial(2));
+		assertThat(trial.getUserId()).isEqualTo(USER_ID);
+		assertThat(trial.maxCount()).isEqualTo(AiTrial.DEFAULT_GRANTED_COUNT);
+		assertThat(trial.getUsedCount()).isZero();
 	}
 
 	@Test
-	void 실패한_리포트는_사용_횟수에_세지_않는다() {
-		persistCompletedAnalysis(USER_ID, "videos/training/42/first.mp4");
-		persistFailedAnalysis(USER_ID, "videos/training/42/failed.mp4", AiAnalysis::failByAnalysis);
-		persistFailedAnalysis(USER_ID, "videos/training/42/exceeded.mp4", AiAnalysis::failByTrialExceeded);
+	void 조회만으로는_현황을_저장하지_않는다() {
+		aiTrialFinder.findTrial(USER_ID);
 
-		assertThat(aiTrialFinder.findTrial(USER_ID)).isEqualTo(new AiTrial(1));
+		assertThat(aiTrialRepository.findByUserId(USER_ID)).isEmpty();
 	}
 
 	@Test
-	void 업로드_대기_중이거나_분석_중인_리포트는_사용_횟수에_세지_않는다() {
-		aiAnalysisRepository.saveAndFlush(uploadingAnalysis(USER_ID, "videos/training/42/uploading.mp4"));
-		aiAnalysisRepository.saveAndFlush(startedAnalysis(USER_ID, "videos/training/42/pending.mp4"));
+	void 저장된_부여_횟수와_사용_횟수를_그대로_조회한다() {
+		aiTrialRepository.saveAndFlush(AiTrialFixture.create(USER_ID, 35, 12));
 
-		assertThat(aiTrialFinder.findTrial(USER_ID)).isEqualTo(new AiTrial(0));
+		AiTrial trial = aiTrialFinder.findTrial(USER_ID);
+
+		assertThat(trial.maxCount()).isEqualTo(35);
+		assertThat(trial.getUsedCount()).isEqualTo(12);
+		assertThat(trial.remainingCount()).isEqualTo(23);
 	}
 
 	@Test
-	void 다른_사용자의_리포트는_사용_횟수에_세지_않는다() {
-		persistCompletedAnalysis(OTHER_USER_ID, "videos/training/99/other.mp4");
+	void 다른_사용자의_현황은_조회하지_않는다() {
+		aiTrialRepository.saveAndFlush(AiTrialFixture.used(OTHER_USER_ID, 30));
 
-		assertThat(aiTrialFinder.findTrial(USER_ID)).isEqualTo(new AiTrial(0));
-	}
+		AiTrial trial = aiTrialFinder.findTrial(USER_ID);
 
-	private void persistCompletedAnalysis(Long userId, String videoObjectKey) {
-		AiAnalysis analysis = startedAnalysis(userId, videoObjectKey);
-		analysis.complete("분리불안 징후 행동 분석", "분리불안 징후가 관찰됩니다.");
-		aiAnalysisRepository.saveAndFlush(analysis);
-	}
-
-	private void persistFailedAnalysis(Long userId, String videoObjectKey, Consumer<AiAnalysis> failure) {
-		AiAnalysis analysis = startedAnalysis(userId, videoObjectKey);
-		failure.accept(analysis);
-		aiAnalysisRepository.saveAndFlush(analysis);
-	}
-
-	private static AiAnalysis uploadingAnalysis(Long userId, String videoObjectKey) {
-		return AiAnalysis.uploading(new AiAnalysisUploadCommand(userId, videoObjectKey, Instant.now().plusSeconds(900), null));
-	}
-
-	private static AiAnalysis startedAnalysis(Long userId, String videoObjectKey) {
-		AiAnalysis analysis = uploadingAnalysis(userId, videoObjectKey);
-		analysis.startAnalysis();
-		return analysis;
+		assertThat(trial.getUsedCount()).isZero();
+		assertThat(trial.isAvailable()).isTrue();
 	}
 }

@@ -29,6 +29,7 @@ public class AiReportGenerateService implements AiReportGenerator {
 	private final VideoAnalyzer videoAnalyzer;
 	private final AiAnalysisRepository aiAnalysisRepository;
 	private final AiTrialFinder aiTrialFinder;
+	private final AiAnalysisModifyService aiAnalysisModifyService;
 	private final DogProfileFinder dogProfileFinder;
 	private final ApplicationEventPublisher events;
 
@@ -78,17 +79,12 @@ public class AiReportGenerateService implements AiReportGenerator {
 			return;
 		}
 
-		recordCompletion(analysis, result);
+		aiAnalysisModifyService.complete(analysis, result);
 	}
 
 	private boolean isTrialExhausted(Long userId) {
 		AiTrial trial = aiTrialFinder.findTrial(userId);
 		return !trial.isAvailable();
-	}
-
-	private void recordCompletion(AiAnalysis analysis, VideoAnalysisResult result) {
-		analysis.complete(result.title(), result.content());
-		aiAnalysisRepository.save(analysis);
 	}
 
 	private void recordFailure(AiAnalysis analysis, Consumer<AiAnalysis> transition) {

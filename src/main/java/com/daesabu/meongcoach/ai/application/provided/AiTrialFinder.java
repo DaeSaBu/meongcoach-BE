@@ -8,7 +8,7 @@ import com.daesabu.meongcoach.ai.domain.AiTrial;
 public interface AiTrialFinder {
 
 	/**
-	 * 사용자의 무료 체험 사용 현황을 조회한다. 완료된 리포트만 세며, 없으면 사용 횟수 0으로 내려간다.
+	 * 사용자의 무료 체험 사용 현황을 조회한다. 저장된 현황이 없으면 기본 부여 횟수에 사용 횟수 0인 현황을 저장하지 않고 반환한다.
 	 */
 	AiTrial findTrial(Long userId);
 }

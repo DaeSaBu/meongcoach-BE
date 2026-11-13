@@ -27,6 +27,7 @@ import com.daesabu.meongcoach.ai.application.provided.dto.AiAnalysisRegisterRequ
 import com.daesabu.meongcoach.ai.application.provided.dto.AiVideoUploadUrlRequest;
 import com.daesabu.meongcoach.ai.domain.AiAnalysisStatus;
 import com.daesabu.meongcoach.ai.domain.AiTrial;
+import com.daesabu.meongcoach.ai.domain.AiTrialFixture;
 import com.daesabu.meongcoach.ai.domain.exception.AiReportNotFoundException;
 import com.daesabu.meongcoach.ai.domain.exception.AiReportTrialExceededException;
 import com.daesabu.meongcoach.ai.domain.exception.AiVideoDurationOutOfRangeException;
@@ -541,7 +542,7 @@ class AiControllerTest {
 
 	@Test
 	void 체험_횟수_사용_현황을_반환한다() throws Exception {
-		given(aiTrialFinder.findTrial(42L)).willReturn(new AiTrial(1));
+		given(aiTrialFinder.findTrial(42L)).willReturn(AiTrialFixture.used(42L, 1));
 
 		mockMvc.perform(get("/api/ai/trial")
 						.principal(CURRENT_USER)
@@ -552,8 +553,8 @@ class AiControllerTest {
 				.andExpect(jsonPath("$.remainingCount").value(29))
 				.andDo(document("ai/trial",
 						responseFields(
-								fieldWithPath("usedCount").description("분석이 완료된 AI 리포트 수. 실패·진행 중은 세지 않는다"),
-								fieldWithPath("maxCount").description("무료 체험 최대 횟수"),
+								fieldWithPath("usedCount").description("사용한 횟수. 분석이 완료될 때 1씩 늘고 실패·진행 중은 세지 않는다"),
+								fieldWithPath("maxCount").description("이 사용자에게 부여된 무료 체험 횟수. 기본 30"),
 								fieldWithPath("remainingCount").description("남은 횟수. 소진했으면 0")
 						)
 				));
@@ -561,7 +562,7 @@ class AiControllerTest {
 
 	@Test
 	void 인증_주체에서_읽은_사용자로_체험_횟수_조회를_위임한다() throws Exception {
-		given(aiTrialFinder.findTrial(42L)).willReturn(new AiTrial(0));
+		given(aiTrialFinder.findTrial(42L)).willReturn(AiTrial.start(42L));
 
 		mockMvc.perform(get("/api/ai/trial").principal(CURRENT_USER))
 				.andExpect(status().isOk());
