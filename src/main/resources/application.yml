@@ -46,7 +46,7 @@ meongcoach:
       web: ${APP_MINIMUM_VERSION_WEB:1.0.0}
   jwt:
     issuer: meongcoach
-    # 미주입 시 구버전 웹훅 인증을 거절한다 — 커밋된 키가 배포로 흘러가는 것을 막는다
+    # 기본값을 두지 않아 미주입 시 기동에 실패한다 — 커밋된 키가 배포로 흘러가는 것을 막는다
     secret: ${JWT_SECRET}
     access-token-validity: PT1H
     refresh-token-validity: P14D
@@ -78,7 +78,7 @@ meongcoach:
       video-subscription: ${AI_VIDEO_SUBSCRIPTION}
     # 영상 분석과 플랜 생성에 쓰는 Gemini Developer API 연동 설정. 영상은 GCS 객체를 files:register로 등록해 gs:// URI로 전달한다
     gemini:
-      # 미주입 시 구버전 웹훅 인증을 거절한다 — 커밋된 키가 배포로 흘러가는 것을 막는다
+      # 기본값을 두지 않아 미주입 시 기동에 실패한다 — 커밋된 키가 배포로 흘러가는 것을 막는다
       api-key: ${GEMINI_API_KEY}
       model: ${GEMINI_MODEL:gemini-3.8-flash}
       # 영상 분석·플랜 생성은 수십 초가 걸려 전역 read-timeout(3초)으로는 응답 전에 끊긴다
@@ -119,7 +119,7 @@ meongcoach:
       # 다른 앱에서 발급된 토큰을 걸러내는 값이므로 반드시 우리 앱의 클라이언트 ID만 넣는다
       audiences: ${GOOGLE_WEB_CLIENT_ID},${GOOGLE_IOS_CLIENT_ID}
   notification:
-    # 운영진이 /internal/notifications/** 를 부를 때 X-Internal-Secret 헤더로 제시하는 값. 미주입 시 구버전 웹훅 인증을 거절한다
+    # 운영진이 /internal/notifications/** 를 부를 때 X-Internal-Secret 헤더로 제시하는 값. 기본값을 두지 않아 미주입 시 기동에 실패한다
     internal-secret: ${NOTIFICATION_INTERNAL_SECRET}
     comment:
       enabled: true
@@ -142,5 +142,5 @@ meongcoach:
     slack:
       # 신규 가입·영상 업로드 같은 운영 이벤트를 개발자 채널로 보낸다. false면 Slack 대신 info 로그로만 남긴다
       enabled: true
-      # Incoming Webhook URL. 미주입 시 구버전 웹훅 인증을 거절한다. 배포 CI용 SLACK_WEBHOOK_URL과는 다른 값이다
+      # Incoming Webhook URL. 기본값을 두지 않아 미주입 시 기동에 실패한다. 배포 CI용 SLACK_WEBHOOK_URL과는 다른 값이다
       graduation-webhook-url: ${ALERT_SLACK_GRADUATION_WEBHOOK_URL}
