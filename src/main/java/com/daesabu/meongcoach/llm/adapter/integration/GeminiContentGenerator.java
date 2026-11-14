@@ -1,8 +1,8 @@
-package com.daesabu.meongcoach.ai.adapter.integration;
+package com.daesabu.meongcoach.llm.adapter.integration;
 
-import com.daesabu.meongcoach.ai.application.provided.AiContentGenerateRequest;
-import com.daesabu.meongcoach.ai.application.provided.AiContentGenerator;
-import com.daesabu.meongcoach.ai.domain.exception.AiContentGenerationFailedException;
+import com.daesabu.meongcoach.llm.application.provided.AiContentGenerateRequest;
+import com.daesabu.meongcoach.llm.application.provided.AiContentGenerator;
+import com.daesabu.meongcoach.llm.domain.exception.AiContentGenerationFailedException;
 import com.google.genai.Client;
 import com.google.genai.errors.ApiException;
 import com.google.genai.errors.GenAiIOException;

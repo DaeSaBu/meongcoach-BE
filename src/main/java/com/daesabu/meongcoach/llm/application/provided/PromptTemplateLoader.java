@@ -1,4 +1,4 @@
-package com.daesabu.meongcoach.ai.application.provided;
+package com.daesabu.meongcoach.llm.application.provided;
 
 public interface PromptTemplateLoader {
 

@@ -1,4 +1,4 @@
-package com.daesabu.meongcoach.ai.adapter.integration;
+package com.daesabu.meongcoach.llm.adapter.integration;
 
 import com.google.genai.Client;
 import com.google.genai.types.HttpOptions;

@@ -1,16 +1,16 @@
-package com.daesabu.meongcoach.ai.adapter.integration;
+package com.daesabu.meongcoach.llm.adapter.integration;
 
 import com.google.genai.types.Candidate;
 import com.google.genai.types.FinishReason;
 import com.google.genai.types.GenerateContentResponse;
 import java.util.List;
 
-final class GeminiResponses {
+public final class GeminiResponses {
 
 	private GeminiResponses() {
 	}
 
-	static String extractText(GenerateContentResponse response) {
+	public static String extractText(GenerateContentResponse response) {
 		List<Candidate> candidates = response.candidates().orElse(List.of());
 		if (candidates.isEmpty()) {
 			throw new GeminiResponseException("응답에 candidates가 없습니다");

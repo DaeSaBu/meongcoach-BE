@@ -7,13 +7,13 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-import com.daesabu.meongcoach.ai.adapter.integration.ClassPathPromptTemplateLoader;
-import com.daesabu.meongcoach.ai.application.provided.AiContentGenerateRequest;
-import com.daesabu.meongcoach.ai.application.provided.AiContentGenerator;
-import com.daesabu.meongcoach.ai.application.provided.PromptTemplateLoader;
 import com.daesabu.meongcoach.dog.application.provided.dto.DogProfileResult;
 import com.daesabu.meongcoach.dog.domain.shared.Breed;
 import com.daesabu.meongcoach.dog.domain.shared.DogSex;
+import com.daesabu.meongcoach.llm.adapter.integration.ClassPathPromptTemplateLoader;
+import com.daesabu.meongcoach.llm.application.provided.AiContentGenerateRequest;
+import com.daesabu.meongcoach.llm.application.provided.AiContentGenerator;
+import com.daesabu.meongcoach.llm.application.provided.PromptTemplateLoader;
 import com.daesabu.meongcoach.plan.application.required.dto.AiPlanGenerateRequest;
 import com.daesabu.meongcoach.plan.application.required.dto.AiPlanGenerateResult;
 import com.daesabu.meongcoach.plan.domain.exception.InvalidAiPlanResponseException;

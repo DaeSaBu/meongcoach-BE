@@ -10,6 +10,8 @@ import com.daesabu.meongcoach.ai.domain.exception.VideoAnalysisFailedException;
 import com.daesabu.meongcoach.dog.application.provided.dto.DogProfileResult;
 import com.daesabu.meongcoach.dog.domain.shared.Breed;
 import com.daesabu.meongcoach.dog.domain.shared.DogSex;
+import com.daesabu.meongcoach.llm.adapter.integration.ClassPathPromptTemplateLoader;
+import com.daesabu.meongcoach.llm.adapter.integration.GeminiProperties;
 import com.daesabu.meongcoach.training.application.provided.TopicFinder;
 import com.daesabu.meongcoach.training.application.provided.dto.TopicResult;
 import com.google.auth.oauth2.AccessToken;

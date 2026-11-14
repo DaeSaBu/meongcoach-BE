@@ -1,8 +1,8 @@
 package com.daesabu.meongcoach.plan.adapter.integration;
 
-import com.daesabu.meongcoach.ai.application.provided.AiContentGenerateRequest;
-import com.daesabu.meongcoach.ai.application.provided.AiContentGenerator;
-import com.daesabu.meongcoach.ai.application.provided.PromptTemplateLoader;
+import com.daesabu.meongcoach.llm.application.provided.AiContentGenerateRequest;
+import com.daesabu.meongcoach.llm.application.provided.AiContentGenerator;
+import com.daesabu.meongcoach.llm.application.provided.PromptTemplateLoader;
 import com.daesabu.meongcoach.plan.application.required.AiPlanGenerator;
 import com.daesabu.meongcoach.plan.application.required.dto.AiPlanGenerateRequest;
 import com.daesabu.meongcoach.plan.application.required.dto.AiPlanGenerateResult;

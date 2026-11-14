@@ -1,9 +1,9 @@
-package com.daesabu.meongcoach.ai.adapter.integration;
+package com.daesabu.meongcoach.llm.adapter.integration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.daesabu.meongcoach.ai.application.provided.PromptTemplateLoader;
+import com.daesabu.meongcoach.llm.application.provided.PromptTemplateLoader;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;

@@ -1,4 +1,4 @@
-package com.daesabu.meongcoach.ai.adapter.integration;
+package com.daesabu.meongcoach.llm.adapter.integration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -16,13 +16,13 @@ class GeminiConfigurationTest {
 		new ApplicationContextRunner()
 				.withUserConfiguration(TestConfiguration.class)
 				.withPropertyValues(
-						"meongcoach.ai.gemini.api-key=test-key",
-						"meongcoach.ai.gemini.model=gemini-test",
-						"meongcoach.ai.gemini.response-timeout=5m",
-						"meongcoach.ai.gemini.max-output-tokens=4096",
-						"meongcoach.ai.gemini.temperature=0",
-						"meongcoach.ai.gemini.thinking-level=low",
-						"meongcoach.ai.gemini.video-fps=1")
+						"meongcoach.llm.gemini.api-key=test-key",
+						"meongcoach.llm.gemini.model=gemini-test",
+						"meongcoach.llm.gemini.response-timeout=5m",
+						"meongcoach.llm.gemini.max-output-tokens=4096",
+						"meongcoach.llm.gemini.temperature=0",
+						"meongcoach.llm.gemini.thinking-level=low",
+						"meongcoach.llm.gemini.video-fps=1")
 				.run(context -> {
 					assertThat(context).hasNotFailed();
 					GeminiProperties properties = context.getBean(GeminiProperties.class);
@@ -36,13 +36,13 @@ class GeminiConfigurationTest {
 		new ApplicationContextRunner()
 				.withUserConfiguration(TestConfiguration.class)
 				.withPropertyValues(
-						"meongcoach.ai.gemini.api-key=test-key",
-						"meongcoach.ai.gemini.model=gemini-test",
-						"meongcoach.ai.gemini.response-timeout=5m",
-						"meongcoach.ai.gemini.max-output-tokens=4096",
-						"meongcoach.ai.gemini.temperature=0",
-						"meongcoach.ai.gemini.thinking-level=low",
-						"meongcoach.ai.gemini.video-fps=6")
+						"meongcoach.llm.gemini.api-key=test-key",
+						"meongcoach.llm.gemini.model=gemini-test",
+						"meongcoach.llm.gemini.response-timeout=5m",
+						"meongcoach.llm.gemini.max-output-tokens=4096",
+						"meongcoach.llm.gemini.temperature=0",
+						"meongcoach.llm.gemini.thinking-level=low",
+						"meongcoach.llm.gemini.video-fps=6")
 				.run(context -> assertThat(context).hasFailed());
 	}
 
@@ -51,13 +51,13 @@ class GeminiConfigurationTest {
 		new ApplicationContextRunner()
 				.withUserConfiguration(TestConfiguration.class, GeminiClientConfiguration.class)
 				.withPropertyValues(
-						"meongcoach.ai.gemini.api-key=test-key",
-						"meongcoach.ai.gemini.model=gemini-test",
-						"meongcoach.ai.gemini.response-timeout=5m",
-						"meongcoach.ai.gemini.max-output-tokens=4096",
-						"meongcoach.ai.gemini.temperature=0",
-						"meongcoach.ai.gemini.thinking-level=low",
-						"meongcoach.ai.gemini.video-fps=1")
+						"meongcoach.llm.gemini.api-key=test-key",
+						"meongcoach.llm.gemini.model=gemini-test",
+						"meongcoach.llm.gemini.response-timeout=5m",
+						"meongcoach.llm.gemini.max-output-tokens=4096",
+						"meongcoach.llm.gemini.temperature=0",
+						"meongcoach.llm.gemini.thinking-level=low",
+						"meongcoach.llm.gemini.video-fps=1")
 				.run(context -> assertThat(context).hasNotFailed().hasSingleBean(Client.class));
 	}
 

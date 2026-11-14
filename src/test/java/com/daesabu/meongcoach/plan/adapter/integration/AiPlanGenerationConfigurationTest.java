@@ -4,9 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 
-import com.daesabu.meongcoach.ai.adapter.integration.ClassPathPromptTemplateLoader;
-import com.daesabu.meongcoach.ai.application.provided.AiContentGenerator;
-import com.daesabu.meongcoach.ai.application.provided.PromptTemplateLoader;
+import com.daesabu.meongcoach.llm.adapter.integration.ClassPathPromptTemplateLoader;
+import com.daesabu.meongcoach.llm.application.provided.AiContentGenerator;
+import com.daesabu.meongcoach.llm.application.provided.PromptTemplateLoader;
 import com.daesabu.meongcoach.plan.application.required.AiPlanGenerator;
 import java.net.URL;
 import org.junit.jupiter.api.Test;

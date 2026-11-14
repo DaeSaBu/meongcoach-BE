@@ -1,4 +1,4 @@
-package com.daesabu.meongcoach.ai.adapter.integration;
+package com.daesabu.meongcoach.llm.adapter.integration;
 
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
@@ -11,7 +11,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
 @Validated
-@ConfigurationProperties("meongcoach.ai.gemini")
+@ConfigurationProperties("meongcoach.llm.gemini")
 public record GeminiProperties(
 		@NotBlank String apiKey,
 		@NotBlank String model,

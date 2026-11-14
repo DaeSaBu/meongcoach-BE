@@ -1,6 +1,6 @@
-package com.daesabu.meongcoach.ai.adapter.integration;
+package com.daesabu.meongcoach.llm.adapter.integration;
 
-import com.daesabu.meongcoach.ai.application.provided.PromptTemplateLoader;
+import com.daesabu.meongcoach.llm.application.provided.PromptTemplateLoader;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.regex.MatchResult;
