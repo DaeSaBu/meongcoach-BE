@@ -7,6 +7,7 @@ import com.daesabu.meongcoach.support.domain.ChatConversation;
 import com.daesabu.meongcoach.support.domain.ChatMessage;
 import com.daesabu.meongcoach.support.domain.exception.ChatAccessDeniedException;
 import com.daesabu.meongcoach.support.domain.exception.ChatCursorInvalidException;
+import java.time.Instant;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -32,8 +33,11 @@ public class ChatQueryService implements ChatFinder {
 		}
 	}
 
-	public List<ChatConversation> conversations(long before) {
-		return repository.conversations(before, 50);
+	public List<ChatConversation> conversations(long before, Instant beforeUpdatedAt) {
+		if ((before == 0) != (beforeUpdatedAt == null)) {
+			throw new ChatCursorInvalidException();
+		}
+		return repository.conversations(before, beforeUpdatedAt, 50);
 	}
 
 	public List<ChatMessage> messages(long id, long after, long before) {

@@ -11,6 +11,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
+import java.time.Instant;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -42,8 +43,9 @@ public class ChatController {
 
 	@GetMapping
 	public List<ChatConversationResponse> conversations(
-			@RequestParam(defaultValue = "0") @PositiveOrZero long before) {
-		return finder.conversations(before).stream()
+			@RequestParam(defaultValue = "0") @PositiveOrZero long before,
+			@RequestParam(required = false) Instant beforeUpdatedAt) {
+		return finder.conversations(before, beforeUpdatedAt).stream()
 				.map(ChatConversationResponse::from)
 				.toList();
 	}

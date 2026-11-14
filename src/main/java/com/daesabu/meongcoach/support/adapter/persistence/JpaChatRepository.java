@@ -3,6 +3,7 @@ package com.daesabu.meongcoach.support.adapter.persistence;
 import com.daesabu.meongcoach.support.application.required.ChatRepository;
 import com.daesabu.meongcoach.support.domain.ChatConversation;
 import com.daesabu.meongcoach.support.domain.ChatMessage;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -21,18 +22,13 @@ public class JpaChatRepository implements ChatRepository {
 		return conversations.findById(userId).orElseThrow().toDomain();
 	}
 
-	public List<ChatConversation> conversations(long before, int limit) {
+	public List<ChatConversation> conversations(long before, Instant beforeUpdatedAt, int limit) {
 		var page = PageRequest.of(0, limit);
 		if (before == 0) {
 			return conversations.findAllByOrderByUpdatedAtDescIdDesc(page).stream()
 					.map(ChatConversationEntity::toDomain).toList();
 		}
-		var previous = conversations.findById(before);
-		if (previous.isEmpty()) {
-			return List.of();
-		}
-		var cursor = previous.get().toDomain();
-		return conversations.findPrevious(cursor.updatedAt(), cursor.id(), page).stream()
+		return conversations.findPrevious(beforeUpdatedAt, before, page).stream()
 				.map(ChatConversationEntity::toDomain).toList();
 	}
 

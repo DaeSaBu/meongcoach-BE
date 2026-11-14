@@ -3,10 +3,11 @@ package com.daesabu.meongcoach.support.application.provided;
 import com.daesabu.meongcoach.support.domain.ChatConversation;
 import com.daesabu.meongcoach.support.domain.ChatMessage;
 
+import java.time.Instant;
 import java.util.List;
 
 public interface ChatFinder {
-	List<ChatConversation> conversations(long before);
+	List<ChatConversation> conversations(long before, Instant beforeUpdatedAt);
 
 	List<ChatMessage> messages(long conversationId, long after, long before);
 
