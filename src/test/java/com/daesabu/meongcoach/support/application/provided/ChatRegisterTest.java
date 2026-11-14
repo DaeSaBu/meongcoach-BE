@@ -17,7 +17,7 @@ import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ApplicationTest
-@Sql({"/db/migration/V50__create_support_chat.sql", "/db/migration/V51__create_support_push_jobs.sql"})
+@Sql({"/db/migration/V50__create_support_chat.sql", "/db/migration/V51__create_support_push_jobs.sql", "/db/migration/V52__drop_support_socket_tickets.sql"})
 class ChatRegisterTest {
 	@Autowired ChatRegister register;
 	@Autowired ChatFinder finder;
@@ -97,33 +97,22 @@ class ChatRegisterTest {
 	}
 
 	@Test
-	void 티켓은_한번만_소비한다() {
+	void 새_메시지가_없으면_빈_목록을_반환하고_다음_조회에서_새_메시지만_받는다() {
 		Long owner = member();
-		var ticket = register.issueTicket(owner);
-		assertThat(register.consumeTicket(ticket).userId()).isEqualTo(owner);
-		assertThatThrownBy(() -> register.consumeTicket(ticket))
-				.isInstanceOf(ChatAccessDeniedException.class);
+		register.open(owner);
+		var first = register.send(owner, owner, new ChatMessageRequest(UUID.randomUUID(), "첫 문의"));
+		assertThat(finder.messages(owner, owner, first.id(), 0)).isEmpty();
+		var next = register.send(owner, owner, new ChatMessageRequest(UUID.randomUUID(), "추가 문의"));
+		assertThat(finder.messages(owner, owner, first.id(), 0)).containsExactly(next);
 	}
 
 	@Test
-	void 만료한_티켓은_거절한다() {
+	void 탈퇴한_회원은_메시지를_조회할_수_없다() {
 		Long owner = member();
-		var ticket = register.issueTicket(owner);
-		jdbc.update(
-				"UPDATE support_socket_tickets SET expires_at=now()-interval '1 second' WHERE"
-						+ " ticket=?",
-				ticket);
-		assertThatThrownBy(() -> register.consumeTicket(ticket))
-				.isInstanceOf(ChatAccessDeniedException.class);
-	}
-
-	@Test
-	void 탈퇴한_회원의_티켓은_거절한다() {
-		Long owner = member();
-		var ticket = register.issueTicket(owner);
+		register.open(owner);
 		users.findById(owner).orElseThrow().withdraw();
 		em.flush();
-		assertThatThrownBy(() -> register.consumeTicket(ticket))
+		assertThatThrownBy(() -> finder.messages(owner, owner, 0, 0))
 				.isInstanceOf(ChatAccessDeniedException.class);
 	}
 
@@ -135,15 +124,6 @@ class ChatRegisterTest {
 				.isInstanceOf(
 						com.daesabu.meongcoach.support.domain.exception.ChatCursorInvalidException
 								.class);
-	}
-
-	@Test
-	void 다른_기기에서_발급한_티켓을_취소하지_않는다() {
-		Long owner = member();
-		var first = register.issueTicket(owner);
-		var second = register.issueTicket(owner);
-		assertThat(register.consumeTicket(first).userId()).isEqualTo(owner);
-		assertThat(register.consumeTicket(second).userId()).isEqualTo(owner);
 	}
 
 	@Test

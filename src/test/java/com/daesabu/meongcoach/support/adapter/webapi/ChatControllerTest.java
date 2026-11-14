@@ -154,24 +154,6 @@ class ChatControllerTest {
 	}
 
 	@Test
-	void 소켓_티켓을_발급한다() throws Exception {
-		given(register.issueTicket(42L)).willReturn(clientId);
-		mvc.perform(
-						post("/api/support/conversations/socket-ticket")
-								.principal(() -> "42")
-								.header("Authorization", "Bearer access-token"))
-				.andExpect(status().isOk())
-				.andDo(
-						document(
-								"support/chat-ticket",
-								responseFields(
-										fieldWithPath("ticket")
-												.description(
-														"30초 유효 단회 UUID; WebSocket 서브프로토콜"
-																+ " ticket.UUID"))));
-	}
-
-	@Test
 	void 다른_회원의_대화는_403이다() throws Exception {
 		given(finder.messages(42L, 43, -1, 0)).willThrow(new ChatAccessDeniedException());
 		mvc.perform(

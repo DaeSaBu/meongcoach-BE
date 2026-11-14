@@ -39,12 +39,11 @@ import org.springframework.transaction.support.TransactionTemplate;
 @NonTransactionalApplicationTest
 @Sql({
 	"/db/migration/V50__create_support_chat.sql",
-	"/db/migration/V51__create_support_push_jobs.sql"
+	"/db/migration/V51__create_support_push_jobs.sql", "/db/migration/V52__drop_support_socket_tickets.sql"
 })
 @Sql(
 		statements = {
 			"DROP TABLE support_push_jobs",
-			"DROP TABLE support_socket_tickets",
 			"DROP TABLE support_messages",
 			"DROP TABLE support_conversations"
 		},
@@ -106,7 +105,6 @@ class ChatPushDispatcherTest {
 	void 정리한다() {
 		jdbc.update("DELETE FROM support_push_jobs");
 		jdbc.update("DELETE FROM support_messages");
-		jdbc.update("DELETE FROM support_socket_tickets");
 		jdbc.update("DELETE FROM support_conversations");
 		new TransactionTemplate(transactions)
 				.executeWithoutResult(
