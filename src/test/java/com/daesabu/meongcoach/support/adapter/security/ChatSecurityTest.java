@@ -59,10 +59,9 @@ class ChatSecurityTest {
 		return "{\"clientMessageId\":\"" + UUID.randomUUID() + "\",\"body\":\"문의\"}";
 	}
 
-	@ParameterizedTest
-	@EnumSource(value = UserRole.class, names = {"USER", "EXPERT"})
-	void 회원은_자기_대화를_열고_조회하고_전송할_수_있다(UserRole role) throws Exception {
-		Long owner = member(role);
+	@Test
+	void 회원은_자기_대화를_열고_조회하고_전송할_수_있다() throws Exception {
+		Long owner = member(UserRole.USER);
 		String token = bearer(owner);
 		mvc.perform(appPost("/api/support/conversations/me").header("Authorization", token))
 				.andExpect(status().isOk()).andExpect(jsonPath("$.id").value(owner));
@@ -79,12 +78,11 @@ class ChatSecurityTest {
 				.andExpect(status().isOk()).andExpect(jsonPath("$.operator").value(false));
 	}
 
-	@ParameterizedTest
-	@EnumSource(value = UserRole.class, names = {"USER", "EXPERT"})
-	void 다른_회원의_대화와_관리자_목록은_거절한다(UserRole role) throws Exception {
+	@Test
+	void 다른_회원의_대화와_관리자_목록은_거절한다() throws Exception {
 		Long owner = member(UserRole.USER);
 		chats.open(owner);
-		String token = bearer(member(role));
+		String token = bearer(member(UserRole.USER));
 		mvc.perform(appGet(messages(owner)).header("Authorization", token))
 				.andExpect(status().isForbidden()).andExpect(jsonPath("$.code").value("FORBIDDEN"));
 		mvc.perform(appGet(messages(owner) + "/new").param("after", "0").header("Authorization", token))
@@ -99,11 +97,12 @@ class ChatSecurityTest {
 		assertThat(finder.latestMessages(owner)).isEmpty();
 	}
 
-	@Test
-	void 관리자는_다른_회원에게_답변하고_목록을_조회한다() throws Exception {
+	@ParameterizedTest
+	@EnumSource(value = UserRole.class, names = {"ADMIN", "EXPERT"})
+	void 상담원는_다른_회원에게_답변하고_목록을_조회한다(UserRole role) throws Exception {
 		Long owner = member(UserRole.USER);
 		chats.open(owner);
-		String token = bearer(member(UserRole.ADMIN));
+		String token = bearer(member(role));
 		mvc.perform(appGet(messages(owner)).header("Authorization", token))
 				.andExpect(status().isOk());
 		mvc.perform(appPost(messages(owner)).header("Authorization", token)
@@ -111,15 +110,20 @@ class ChatSecurityTest {
 				.andExpect(status().isOk()).andExpect(jsonPath("$.operator").value(true));
 		mvc.perform(appGet("/api/support/conversations").header("Authorization", token))
 				.andExpect(status().isOk());
+		mvc.perform(appGet(messages(owner) + "/new").param("after", "0").header("Authorization", token))
+				.andExpect(status().isOk());
+		mvc.perform(appGet(messages(owner) + "/previous").param("before", "1").header("Authorization", token))
+				.andExpect(status().isOk());
 		mvc.perform(appGet("/api/support/conversations/capabilities").header("Authorization", token))
 				.andExpect(status().isOk()).andExpect(jsonPath("$.operator").value(true));
 	}
 
-	@Test
-	void 관리자_권한을_잃으면_기존_토큰으로도_다른_대화에_접근할_수_없다() throws Exception {
+	@ParameterizedTest
+	@EnumSource(value = UserRole.class, names = {"ADMIN", "EXPERT"})
+	void 상담원_권한을_잃으면_기존_토큰으로도_다른_대화에_접근할_수_없다(UserRole role) throws Exception {
 		Long owner = member(UserRole.USER);
 		chats.open(owner);
-		Long adminId = member(UserRole.ADMIN);
+		Long adminId = member(role);
 		String token = bearer(adminId);
 		mvc.perform(appGet(messages(owner)).header("Authorization", token)).andExpect(status().isOk());
 		ReflectionTestUtils.setField(users.findById(adminId).orElseThrow(), "role", UserRole.USER);
@@ -170,20 +174,22 @@ class ChatSecurityTest {
 		mvc.perform(appPost("/api/support/conversations/me").header("Authorization", token))
 				.andExpect(status().isForbidden());
 	}
-	@Test
-	void 관리자_조회는_인증_단계의_권한을_재사용한다() throws Exception {
-		Long adminId = member(UserRole.ADMIN);
+	@ParameterizedTest
+	@EnumSource(value = UserRole.class, names = {"ADMIN", "EXPERT"})
+	void 상담원_조회는_인증_단계의_권한을_재사용한다(UserRole role) throws Exception {
+		Long adminId = member(role);
 		String token = bearer(adminId);
 		mvc.perform(appGet("/api/support/conversations/capabilities").header("Authorization", token))
 				.andExpect(status().isOk()).andExpect(jsonPath("$.operator").value(true));
 		verify(registeredUsers, times(1)).findRole(adminId);
 	}
 
-	@Test
-	void 메시지_작성도_인증_단계의_권한을_재사용한다() throws Exception {
+	@ParameterizedTest
+	@EnumSource(value = UserRole.class, names = {"ADMIN", "EXPERT"})
+	void 메시지_작성도_인증_단계의_권한을_재사용한다(UserRole role) throws Exception {
 		Long owner = member(UserRole.USER);
 		chats.open(owner);
-		Long adminId = member(UserRole.ADMIN);
+		Long adminId = member(role);
 		String token = bearer(adminId);
 		mvc.perform(appPost(messages(owner)).header("Authorization", token)
 				.contentType(MediaType.APPLICATION_JSON).content(body()))

@@ -95,8 +95,8 @@ SHA-1 검증용이라 id_token의 `aud`가 되지 않습니다), 애플은 **iOS
 | 3-1 | `/api/dogs/profile/image` | `USER`, `ONBOARDING_USER`, `EXPERT`, `ADMIN` |
 | 4 | `DELETE /api/auth/me` | `USER`, `ONBOARDING_USER` |
 | 4-1 | `GET /api/users/me` | `USER`, `ONBOARDING_USER`, `EXPERT`, `ADMIN` |
-| 4-2 | `GET /api/support/conversations` | `ADMIN` |
-| 4-3 | `/api/support/conversations/{id}/messages`, `/api/support/conversations/{id}/messages/new`, `/api/support/conversations/{id}/messages/previous` | `ADMIN` 또는 `id`가 인증 이름과 같은 `USER`, `EXPERT` |
+| 4-2 | `GET /api/support/conversations` | `ADMIN`, `EXPERT` |
+| 4-3 | `/api/support/conversations/{id}/messages`, `/api/support/conversations/{id}/messages/new`, `/api/support/conversations/{id}/messages/previous` | `ADMIN`, `EXPERT` 또는 `id`가 인증 이름과 같은 `USER` |
 | 5 | 그 외 전부 | `USER`, `EXPERT`, `ADMIN` |
 
 `/internal/**`는 이 체인이 아니라 notification 모듈이 정의한 별도 체인(`@Order(0)`, `securityMatcher("/internal/**")`)이 먼저 잡습니다.

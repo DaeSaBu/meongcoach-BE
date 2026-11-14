@@ -113,12 +113,12 @@ public class SecurityConfig {
 							.hasAnyRole(AuthorityRole.USER.name(), AuthorityRole.ONBOARDING_USER.name(),
 									AuthorityRole.EXPERT.name(), AuthorityRole.ADMIN.name());
 					auth.requestMatchers(HttpMethod.GET, "/api/support/conversations", "/api/support/conversations/")
-							.hasRole(AuthorityRole.ADMIN.name());
+							.hasAnyRole(AuthorityRole.ADMIN.name(), AuthorityRole.EXPERT.name());
 					auth.requestMatchers("/api/support/conversations/{id}/messages",
 							"/api/support/conversations/{id}/messages/new",
 							"/api/support/conversations/{id}/messages/previous")
 							.access(new WebExpressionAuthorizationManager(
-									"hasRole('ADMIN') or (hasAnyRole('USER', 'EXPERT') and #id == authentication.name)"));
+									"hasAnyRole('ADMIN', 'EXPERT') or (hasRole('USER') and #id == authentication.name)"));
 					auth.anyRequest().hasAnyRole(AuthorityRole.USER.name(), AuthorityRole.EXPERT.name(),
 							AuthorityRole.ADMIN.name());
 				})
