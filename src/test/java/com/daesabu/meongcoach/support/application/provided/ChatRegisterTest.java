@@ -25,15 +25,6 @@ class ChatRegisterTest {
 	@Autowired EntityManager em;
 	@Autowired JdbcTemplate jdbc;
 
-	@Test
-	void 양방향_메시지_커서를_동시에_사용하면_거절한다() {
-		Long owner = member();
-		register.open(owner);
-
-		assertThatThrownBy(() -> finder.messages(owner, 0, 2))
-				.isInstanceOf(ChatCursorInvalidException.class);
-	}
-
 	private Long member() {
 		var user = users.save(User.registerUser());
 		em.flush();
@@ -58,14 +49,14 @@ class ChatRegisterTest {
 		for (int n = 0; n < 61; n++) {
 			register.send(owner, owner, new ChatMessageRequest(UUID.randomUUID(), "문의" + n));
 		}
-		var first = finder.messages(owner, 0, 0);
+		var first = finder.newMessages(owner, 0);
 		var next = finder.newMessages(owner, first.getLast().id());
 		assertThat(first).hasSize(50);
 		assertThat(first.getFirst().body()).isEqualTo("문의0");
 		assertThat(next).hasSize(11);
-		var latest = finder.messages(owner, -1, 0);
+		var latest = finder.latestMessages(owner);
 		assertThat(latest.getFirst().body()).isEqualTo("문의11");
-		assertThat(finder.messages(owner, -1, latest.getFirst().id())).hasSize(11);
+		assertThat(finder.previousMessages(owner, latest.getFirst().id())).hasSize(11);
 	}
 
 	@Test

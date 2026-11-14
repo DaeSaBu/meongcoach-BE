@@ -71,9 +71,9 @@ class ChatSecurityTest {
 				.andExpect(status().isOk()).andExpect(jsonPath("$.operator").value(false));
 		mvc.perform(appGet(messages(owner)).header("Authorization", token))
 				.andExpect(status().isOk());
-		mvc.perform(appGet(messages(owner)).param("after", "0").header("Authorization", token))
+		mvc.perform(appGet(messages(owner) + "/new").param("after", "0").header("Authorization", token))
 				.andExpect(status().isOk());
-		mvc.perform(appGet(messages(owner)).param("before", "1").header("Authorization", token))
+		mvc.perform(appGet(messages(owner) + "/previous").param("before", "1").header("Authorization", token))
 				.andExpect(status().isOk());
 		mvc.perform(appGet("/api/support/conversations/capabilities").header("Authorization", token))
 				.andExpect(status().isOk()).andExpect(jsonPath("$.operator").value(false));
@@ -87,9 +87,9 @@ class ChatSecurityTest {
 		String token = bearer(member(role));
 		mvc.perform(appGet(messages(owner)).header("Authorization", token))
 				.andExpect(status().isForbidden()).andExpect(jsonPath("$.code").value("FORBIDDEN"));
-		mvc.perform(appGet(messages(owner)).param("after", "0").header("Authorization", token))
+		mvc.perform(appGet(messages(owner) + "/new").param("after", "0").header("Authorization", token))
 				.andExpect(status().isForbidden());
-		mvc.perform(appGet(messages(owner)).param("before", "1").header("Authorization", token))
+		mvc.perform(appGet(messages(owner) + "/previous").param("before", "1").header("Authorization", token))
 				.andExpect(status().isForbidden());
 		mvc.perform(appPost(messages(owner)).header("Authorization", token)
 				.contentType(MediaType.APPLICATION_JSON).content(body()))

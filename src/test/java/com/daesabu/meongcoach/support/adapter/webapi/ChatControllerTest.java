@@ -14,7 +14,6 @@ import com.daesabu.meongcoach.support.application.provided.ChatRegister;
 import com.daesabu.meongcoach.support.domain.ChatConversation;
 import com.daesabu.meongcoach.support.domain.ChatMessage;
 import com.daesabu.meongcoach.support.domain.exception.ChatAccessDeniedException;
-import com.daesabu.meongcoach.support.domain.exception.ChatCursorInvalidException;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -90,7 +89,6 @@ class ChatControllerTest {
 						List.of(new ChatConversation(42, Instant.parse("2026-11-01T00:00:00Z"))));
 		mvc.perform(
 						get("/api/support/conversations")
-								.param("before", "0")
 								.principal(() -> "42")
 								.header("Authorization", "Bearer access-token"))
 				.andExpect(status().isOk())
@@ -109,11 +107,9 @@ class ChatControllerTest {
 
 	@Test
 	void 메시지를_커서로_조회한다() throws Exception {
-		given(finder.messages(42, -1, 0)).willReturn(List.of(message()));
+		given(finder.latestMessages(42)).willReturn(List.of(message()));
 		mvc.perform(
 						get("/api/support/conversations/{id}/messages", 42)
-								.param("after", "-1")
-								.param("before", "0")
 								.principal(() -> "42")
 								.header("Authorization", "Bearer access-token"))
 				.andExpect(status().isOk())
@@ -121,53 +117,36 @@ class ChatControllerTest {
 						document(
 								"support/chat-messages",
 								pathParameters(parameterWithName("id").description("대화 ID")),
-								queryParameters(
-										parameterWithName("after")
-												.description(
-														"최초·과거 -1, 누락 복구는 마지막 ID 이상 0; 최대 50건"
-																+ " 오름차순"),
-										parameterWithName("before")
-												.description(
-														"과거 조회 커서, 없으면 0; after>=0과 동시 사용 불가")),
 								responseFields(fields("[]."))));
 	}
 
 	@Test
 	void 커서가_없으면_최신_메시지를_조회한다() throws Exception {
-		given(finder.messages(42, -1, 0)).willReturn(List.of(message()));
+		given(finder.latestMessages(42)).willReturn(List.of(message()));
 		mvc.perform(get("/api/support/conversations/42/messages").principal(() -> "42"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$[0].id").value(1));
-		verify(finder).messages(42, -1, 0);
+		verify(finder).latestMessages(42);
 	}
 
 	@Test
 	void after로_새_메시지를_조회한다() throws Exception {
-		given(finder.messages(42, 0, 0)).willReturn(List.of(message()));
-		mvc.perform(get("/api/support/conversations/42/messages")
+		given(finder.newMessages(42, 0)).willReturn(List.of(message()));
+		mvc.perform(get("/api/support/conversations/42/messages/new")
 				.param("after", "0").principal(() -> "42"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$[0].id").value(1));
-		verify(finder).messages(42, 0, 0);
+		verify(finder).newMessages(42, 0);
 	}
 
 	@Test
 	void before로_이전_메시지를_조회한다() throws Exception {
-		given(finder.messages(42, -1, 2)).willReturn(List.of(message()));
-		mvc.perform(get("/api/support/conversations/42/messages")
+		given(finder.previousMessages(42, 2)).willReturn(List.of(message()));
+		mvc.perform(get("/api/support/conversations/42/messages/previous")
 				.param("before", "2").principal(() -> "42"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$[0].id").value(1));
-		verify(finder).messages(42, -1, 2);
-	}
-
-	@Test
-	void 양방향_커서를_동시에_사용하면_거절한다() throws Exception {
-		given(finder.messages(42, 0, 2)).willThrow(new ChatCursorInvalidException());
-		mvc.perform(get("/api/support/conversations/42/messages")
-				.param("after", "0").param("before", "2").principal(() -> "42"))
-				.andExpect(status().isBadRequest());
-		verify(finder).messages(42, 0, 2);
+		verify(finder).previousMessages(42, 2);
 	}
 
 	@Test
@@ -196,7 +175,7 @@ class ChatControllerTest {
 
 	@Test
 	void 존재하지_않는_대화는_403이다() throws Exception {
-		given(finder.messages(43, -1, 0)).willThrow(new ChatAccessDeniedException());
+		given(finder.latestMessages(43)).willThrow(new ChatAccessDeniedException());
 		mvc.perform(
 						get("/api/support/conversations/{id}/messages", 43)
 								.principal(() -> "42")
