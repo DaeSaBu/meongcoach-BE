@@ -1245,6 +1245,19 @@ operation::support/chat-leave[snippets='http-request,path-parameters,http-respon
 
 operation::support/chat-leave-error[snippets='http-request,path-parameters,http-response,response-fields']
 
+=== 사진·영상 첨부
+
+진행 중인 대화에 접근 가능한 회원·상담원은 업로드 URL을 발급받아 파일을 PUT으로 전송합니다.
+메시지 전송 본문에 `attachment: {type: "IMAGE" 또는 "VIDEO", objectKey: "발급받은 객체 키"}`를 포함합니다.
+메시지당 첨부 하나를 지원하며 첨부가 있으면 `body`를 비울 수 있습니다. 사진은 20MiB, 영상은 512MiB까지 지원합니다.
+메시지 응답에는 첨부 종류만 포함합니다. 파일을 열 때 다운로드 API가 대화 접근 권한과 메시지 소속을 확인하고 임시 URL을 발급합니다.
+
+operation::support/chat-media-upload[snippets='http-request,path-parameters,request-fields,http-response,response-fields']
+
+operation::support/chat-media-download[snippets='http-request,path-parameters,http-response,response-fields']
+
+operation::support/chat-media-error[snippets='http-response,response-fields']
+
 채팅 화면이 활성화된 동안 조회 완료 2초 뒤 마지막 메시지 ID를 `after`로 보내 새 메시지를 조회합니다.
 빈 목록이면 같은 커서를 유지하고, 50건이면 다음 페이지를 즉시 조회합니다.
 화면 복귀 시 마지막 커서부터 누락 메시지를 조회합니다.
