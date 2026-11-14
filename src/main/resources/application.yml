@@ -67,10 +67,11 @@ meongcoach:
     # GCS 서명·Pub/Sub 구독·Gemini 파일 등록에 함께 쓰는 서비스 계정. 키 JSON을 base64로 넣는다. 값 미주입 시 기동에 실패한다
     project-id: ${GCP_PROJECT_ID}
     service-account-key: ${GCP_SERVICE_ACCOUNT_KEY}
-  ai:
+  analysis:
     pubsub:
       # GCS 업로드 완료(OBJECT_FINALIZE) 알림을 받는 pull 구독의 전체 이름(projects/{프로젝트}/subscriptions/{구독})
       video-subscription: ${AI_VIDEO_SUBSCRIPTION}
+  llm:
     # 영상 분석과 플랜 생성에 쓰는 Gemini Developer API 연동 설정. 영상은 GCS 객체를 files:register로 등록해 gs:// URI로 전달한다
     gemini:
       # 기본값을 두지 않아 미주입 시 기동에 실패한다 — 커밋된 키가 배포로 흘러가는 것을 막는다

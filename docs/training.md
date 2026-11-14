@@ -1,6 +1,6 @@
 # 훈련 콘텐츠와 사용자 진행 (training 모듈)
 
-training 모듈은 모든 사용자가 공유하는 훈련 콘텐츠와 사용자별 토픽 선택·레슨 진행을 소유합니다.
+training 모듈은 모든 사용자가 공유하는 훈련 콘텐츠와 사용자별 토픽 선택·레슨 진행, 반려견별 훈련 플랜을 소유합니다.
 진행은 레슨 단위로만 저장합니다.
 커리큘럼과 토픽의 완료 상태는 저장하지 않고 조회할 때마다 현재 콘텐츠 구성으로 계산합니다.
 
@@ -9,6 +9,7 @@ flowchart LR
     TrainingCategory --> Topic --> Curriculum --> Lesson --> Card
     LessonProgress -. 레슨 ID .-> Lesson
     TopicSelection -. 토픽 ID .-> Topic
+    Plan -. 커리큘럼 ID .-> Curriculum
 ```
 
 ## 애그리거트
@@ -18,6 +19,7 @@ flowchart LR
 | 콘텐츠(`TrainingCategory`·`Topic`·`Curriculum`·`Lesson`·`Card`) | 전체 사용자 공용 | 구성, 정렬 순서, 이용권 요구 조건 |
 | `LessonProgress` | 사용자·레슨당 한 행 | 완료 횟수 |
 | `TopicSelection` | 사용자당 한 행 | 마지막으로 선택한 토픽 |
+| `Plan` | 사용자·반려견당 활성 한 행 | 커리큘럼 순서, 플랜 안에서 완료한 레슨 ID, 상태, 회고 |
 
 - 사용자 기록은 콘텐츠를 ID로만 참조하고 FK를 두지 않습니다.
 - 레슨이 삭제돼도 그 레슨의 진행 기록은 남습니다.
@@ -55,3 +57,11 @@ flowchart LR
 - 같은 사용자·레슨의 동시 완료는 낙관적 잠금으로 감지합니다. 먼저 커밋한 완료만 반영하고 나머지는 409(`TRAINING_LESSON_COMPLETION_CONFLICT`)로 응답합니다.
 - 반복 완료의 갱신 유실은 `LessonProgress`의 `@Version`이, 동시 첫 완료의 중복 생성은 사용자·레슨 유니크 제약이 막습니다.
 - 충돌 판단 단위는 사용자·레슨 진행 행입니다. 같은 커리큘럼이나 토픽의 다른 레슨 완료와는 충돌하지 않습니다.
+
+## 플랜
+
+- 플랜은 진행을 `LessonProgress`와 따로 기록합니다. 플랜 안에서 완료한 레슨 ID(`plans.completed_lesson_ids`)만 플랜 진도로 세므로, 이미 배운 토픽으로 만든 복습 플랜도 진도가 처음부터 시작합니다.
+- 플랜에서 레슨을 완료하면 같은 트랜잭션에서 `LessonCompleter`로 일반 학습 완료 횟수도 1 늘립니다. 플랜에서 이미 완료한 레슨을 다시 요청하면 둘 다 바꾸지 않습니다.
+- 플랜의 커리큘럼 상태도 `ProgressStatus`로 표현하지만, 완료 레슨 수는 플랜 기록 기준입니다. 일반 학습 화면과 플랜 화면의 상태가 다를 수 있습니다.
+- 레슨 순서는 토픽별로 따로 봅니다. 각 토픽의 첫 미완료 레슨만 완료할 수 있고, 다른 토픽의 진행은 영향을 주지 않습니다.
+- 활성 플랜은 사용자·반려견당 하나입니다. 새 플랜을 만들면 기존 활성 플랜은 `REPLACED`가 되고, 동시 생성은 부분 유니크 인덱스(`uk_plans_active_user_dog`)가 막아 409(`PLAN_CREATION_CONFLICT`)로 응답합니다.

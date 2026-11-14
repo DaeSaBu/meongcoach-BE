@@ -16,7 +16,7 @@ import com.daesabu.meongcoach.home.application.provided.QuickTopicFinder;
 import com.daesabu.meongcoach.home.application.provided.dto.QuickTopicResult;
 import com.daesabu.meongcoach.home.domain.QuickTopicRole;
 import com.daesabu.meongcoach.training.application.provided.dto.TopicProgressResult;
-import com.daesabu.meongcoach.training.domain.shared.ProgressStatus;
+import com.daesabu.meongcoach.training.domain.ProgressStatus;
 import java.security.Principal;
 import java.time.LocalDateTime;
 import java.util.List;
