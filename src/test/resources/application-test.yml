@@ -58,7 +58,7 @@ meongcoach:
         MDAwMDAwMDAwMDAwIiwgImF1dGhfdXJpIjogImh0dHBzOi8vYWNjb3VudHMuZ29vZ2xlLmNvbS9vL29hdXRoMi9hdXRoIiwgInRv
         a2VuX3VyaSI6ICJodHRwczovL29hdXRoMi5nb29nbGVhcGlzLmNvbS90b2tlbiIsICJ1bml2ZXJzZV9kb21haW4iOiAiZ29vZ2xl
         YXBpcy5jb20ifQ==
-  ai:
+  analysis:
     pubsub:
       # 테스트에서는 실제 구독 연결 없이 컨텍스트만 떠야 하므로 구독을 끈다
       enabled: false
