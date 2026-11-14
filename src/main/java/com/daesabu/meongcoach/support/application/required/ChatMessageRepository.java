@@ -6,8 +6,15 @@ import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> {
+	@Modifying
+	@Query("DELETE FROM SupportMessage m WHERE m.conversationId = :conversationId")
+	void deleteByConversationId(@Param("conversationId") long conversationId);
+
 	List<ChatMessage> findByConversationIdOrderByIdDesc(long conversationId, Pageable pageable);
 
 	List<ChatMessage> findByConversationIdAndIdGreaterThanOrderByIdAsc(
