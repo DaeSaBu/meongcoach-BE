@@ -6,8 +6,6 @@ import com.daesabu.meongcoach.support.application.provided.dto.ChatMessageReques
 import com.daesabu.meongcoach.support.application.required.ChatRepository;
 import com.daesabu.meongcoach.support.domain.ChatConversation;
 import com.daesabu.meongcoach.support.domain.ChatMessage;
-import com.daesabu.meongcoach.support.domain.exception.ChatAccessDeniedException;
-import com.daesabu.meongcoach.user.application.provided.RegisteredUserChecker;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -21,20 +19,16 @@ import org.springframework.validation.annotation.Validated;
 public class ChatModifyService implements ChatRegister {
 	private final ChatRepository repository;
 	private final ChatFinder finder;
-	private final RegisteredUserChecker users;
 	private final ApplicationEventPublisher events;
 
 	@Transactional
 	public ChatConversation open(Long userId) {
-		if (users.findRole(userId).isEmpty()) {
-			throw new ChatAccessDeniedException();
-		}
 		return repository.open(userId);
 	}
 
 	@Transactional
 	public ChatMessage send(Long userId, long conversationId, ChatMessageRequest request) {
-		finder.verifyAccess(userId, conversationId);
+		finder.verifyExists(conversationId);
 		repository.lock(conversationId);
 		var previous = repository.find(conversationId, userId, request.clientMessageId());
 		if (previous.isPresent()) {

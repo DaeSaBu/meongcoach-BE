@@ -24,43 +24,34 @@ public class ChatQueryService implements ChatFinder {
 		return users.findRole(userId).filter(role -> role == AuthorityRole.ADMIN).isPresent();
 	}
 
-	public void verifyAccess(Long userId, long conversationId) {
-		if (users.findRole(userId).isEmpty()) {
-			throw new ChatAccessDeniedException();
-		}
-		if (userId != conversationId && !isOperator(userId)) {
-			throw new ChatAccessDeniedException();
-		}
+	public void verifyExists(long conversationId) {
 		if (!repository.exists(conversationId)) {
 			throw new ChatAccessDeniedException();
 		}
 	}
 
-	public List<ChatConversation> conversations(Long userId, long before) {
-		if (!isOperator(userId)) {
-			throw new ChatAccessDeniedException();
-		}
+	public List<ChatConversation> conversations(long before) {
 		return repository.conversations(before, 50);
 	}
 
-	public List<ChatMessage> latestMessages(Long userId, long conversationId) {
-		verifyAccess(userId, conversationId);
+	public List<ChatMessage> latestMessages(long conversationId) {
+		verifyExists(conversationId);
 		return repository.latestMessages(conversationId, 50);
 	}
 
-	public List<ChatMessage> newMessages(Long userId, long conversationId, long after) {
+	public List<ChatMessage> newMessages(long conversationId, long after) {
 		if (after < 0) {
 			throw new ChatCursorInvalidException();
 		}
-		verifyAccess(userId, conversationId);
+		verifyExists(conversationId);
 		return repository.newMessages(conversationId, after, 50);
 	}
 
-	public List<ChatMessage> previousMessages(Long userId, long conversationId, long before) {
+	public List<ChatMessage> previousMessages(long conversationId, long before) {
 		if (before <= 0) {
 			throw new ChatCursorInvalidException();
 		}
-		verifyAccess(userId, conversationId);
+		verifyExists(conversationId);
 		return repository.previousMessages(conversationId, before, 50);
 	}
 }

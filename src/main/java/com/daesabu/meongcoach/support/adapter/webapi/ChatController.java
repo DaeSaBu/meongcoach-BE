@@ -71,35 +71,33 @@ public class ChatController {
 
 	@GetMapping
 	public List<ConversationResponse> conversations(
-			@CurrentUserId Long userId,
 			@RequestParam(defaultValue = "0") @PositiveOrZero long before) {
-		return finder.conversations(userId, before).stream()
+		return finder.conversations(before).stream()
 				.map(ConversationResponse::from)
 				.toList();
 	}
 
 	@GetMapping("/{id}/messages")
 	public List<MessageResponse> messages(
-			@CurrentUserId Long userId,
 			@PathVariable @Positive long id,
 			@RequestParam(defaultValue = "-1") @Min(-1) long after,
 			@RequestParam(defaultValue = "0") @PositiveOrZero long before) {
-		return findMessages(userId, id, after, before).stream()
+		return findMessages(id, after, before).stream()
 				.map(MessageResponse::from)
 				.toList();
 	}
 
-	private List<ChatMessage> findMessages(Long userId, long id, long after, long before) {
+	private List<ChatMessage> findMessages(long id, long after, long before) {
 		if (after >= 0 && before > 0) {
 			throw new ChatCursorInvalidException();
 		}
 		if (after >= 0) {
-			return finder.newMessages(userId, id, after);
+			return finder.newMessages(id, after);
 		}
 		if (before > 0) {
-			return finder.previousMessages(userId, id, before);
+			return finder.previousMessages(id, before);
 		}
-		return finder.latestMessages(userId, id);
+		return finder.latestMessages(id);
 	}
 
 	@PostMapping("/{id}/messages")
