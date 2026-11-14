@@ -53,10 +53,13 @@ flowchart LR
 다시 상담을 열면 새 ID의 빈 대화를 만듭니다.
 
 대화는 `BaseEntity`, 메시지는 `BaseTimeEntity`의 `LocalDateTime` 시각을 사용합니다.
-대화 생성·메시지 전송 시 대화의 시각은 DB의 UTC 기준 SQL 실행 시각으로 기록합니다.
+생성·수정 시각은 공통 엔티티의 콜백으로 기록합니다.
+동시 개설을 처리하는 INSERT는 애플리케이션 시각을 전달합니다.
+목록 정렬과 커서는 별도 `lastMessageAt`을 사용하며 API의 `updatedAt` 필드로 반환합니다.
+빈 대화는 개설 시각으로 시작하고 메시지 전송 시 엔티티에서 갱신합니다.
 종료 시각은 `LocalDateTime`으로 기록합니다.
 기존 TIMESTAMPTZ 데이터는 UTC 기준 TIMESTAMP로 이관합니다.
-API 응답과 목록 커서는 다른 도메인과 같은 시간대 표기 없는 UTC 시각을 사용합니다.
+API 응답과 목록 커서는 다른 도메인과 같은 시간대 표기 없는 시각을 사용합니다.
 
 ## 메시지 푸시
 
