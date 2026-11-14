@@ -160,4 +160,30 @@ class ChatRegisterTest {
 				.extracting(com.daesabu.meongcoach.support.domain.ChatConversation::id)
 				.containsExactly(other);
 	}
+	@Test
+	void 활동_시각이_같으면_대화_ID로_이전_목록을_구분한다() {
+		Long first = member();
+		Long second = member();
+		Long third = member();
+		var admin = User.registerUser();
+		ReflectionTestUtils.setField(admin, "role", UserRole.ADMIN);
+		users.save(admin);
+		em.flush();
+		Long adminId = admin.getId();
+		register.open(first);
+		register.open(second);
+		register.open(third);
+		jdbc.update("UPDATE support_conversations SET updated_at=now()");
+		em.clear();
+
+		assertThat(finder.conversations(adminId, 0))
+				.extracting(com.daesabu.meongcoach.support.domain.ChatConversation::id)
+				.containsExactly(third, second, first);
+		assertThat(finder.conversations(adminId, second))
+				.extracting(com.daesabu.meongcoach.support.domain.ChatConversation::id)
+				.containsExactly(first);
+		assertThat(finder.conversations(adminId, first)).isEmpty();
+		assertThat(finder.conversations(adminId, adminId)).isEmpty();
+	}
+
 }

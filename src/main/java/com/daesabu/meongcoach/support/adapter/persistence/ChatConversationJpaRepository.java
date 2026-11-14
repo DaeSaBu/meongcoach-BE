@@ -1,6 +1,7 @@
 package com.daesabu.meongcoach.support.adapter.persistence;
 
 import jakarta.persistence.LockModeType;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Pageable;
@@ -22,11 +23,12 @@ interface ChatConversationJpaRepository extends JpaRepository<ChatConversationEn
 
 	@Query("""
 			SELECT c FROM SupportConversation c
-			WHERE c.updatedAt < (SELECT p.updatedAt FROM SupportConversation p WHERE p.id = :before)
-			OR (c.updatedAt = (SELECT p.updatedAt FROM SupportConversation p WHERE p.id = :before) AND c.id < :before)
+			WHERE c.updatedAt < :updatedAt
+			OR (c.updatedAt = :updatedAt AND c.id < :id)
 			ORDER BY c.updatedAt DESC, c.id DESC
 			""")
-	List<ChatConversationEntity> findPrevious(@Param("before") long before, Pageable pageable);
+	List<ChatConversationEntity> findPrevious(
+			@Param("updatedAt") Instant updatedAt, @Param("id") long id, Pageable pageable);
 
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	Optional<ChatConversationEntity> findLockedById(long id);

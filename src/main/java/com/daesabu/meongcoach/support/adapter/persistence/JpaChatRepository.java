@@ -27,7 +27,12 @@ public class JpaChatRepository implements ChatRepository {
 			return conversations.findAllByOrderByUpdatedAtDescIdDesc(page).stream()
 					.map(ChatConversationEntity::toDomain).toList();
 		}
-		return conversations.findPrevious(before, page).stream()
+		var previous = conversations.findById(before);
+		if (previous.isEmpty()) {
+			return List.of();
+		}
+		var cursor = previous.get().toDomain();
+		return conversations.findPrevious(cursor.updatedAt(), cursor.id(), page).stream()
 				.map(ChatConversationEntity::toDomain).toList();
 	}
 
