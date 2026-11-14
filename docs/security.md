@@ -91,6 +91,7 @@ SHA-1 검증용이라 id_token의 `aud`가 되지 않습니다), 애플은 **iOS
 | 1 | `/api/health`, `/api/auth/login/social`, `/api/auth/login/email`, `/api/auth/token/refresh`, `/api/auth/logout` | permitAll |
 | 2 | `/swagger-ui/**` | 문서 활성 환경 permitAll, 그 외 denyAll |
 | 3 | `/api/onboarding/**` | `USER`, `ONBOARDING_USER` |
+| 3-0 | `GET /api/training/categories` | `USER`, `ONBOARDING_USER`, `EXPERT`, `ADMIN` |
 | 3-1 | `/api/dogs/profile/image` | `USER`, `ONBOARDING_USER`, `EXPERT`, `ADMIN` |
 | 4 | `DELETE /api/auth/me` | `USER`, `ONBOARDING_USER` |
 | 4-1 | `GET /api/users/me` | `USER`, `ONBOARDING_USER`, `EXPERT`, `ADMIN` |

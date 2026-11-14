@@ -101,6 +101,9 @@ public class SecurityConfig {
 					configureApiDocsAccess(auth, apiDocsEnabled);
 					auth.requestMatchers(ONBOARDING_ALLOWED_PATHS)
 							.hasAnyRole(AuthorityRole.USER.name(), AuthorityRole.ONBOARDING_USER.name());
+					auth.requestMatchers(HttpMethod.GET, "/api/training/categories")
+							.hasAnyRole(AuthorityRole.USER.name(), AuthorityRole.ONBOARDING_USER.name(),
+									AuthorityRole.EXPERT.name(), AuthorityRole.ADMIN.name());
 					auth.requestMatchers(DOG_PROFILE_IMAGE_PATHS)
 							.hasAnyRole(AuthorityRole.USER.name(), AuthorityRole.ONBOARDING_USER.name(),
 									AuthorityRole.EXPERT.name(), AuthorityRole.ADMIN.name());

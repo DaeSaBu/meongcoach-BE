@@ -4,7 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 
+import com.daesabu.meongcoach.ai.adapter.integration.ClassPathPromptTemplateLoader;
 import com.daesabu.meongcoach.ai.application.provided.AiContentGenerator;
+import com.daesabu.meongcoach.ai.application.provided.PromptTemplateLoader;
 import com.daesabu.meongcoach.plan.application.required.AiPlanGenerator;
 import java.net.URL;
 import org.junit.jupiter.api.Test;
@@ -19,6 +21,7 @@ class AiPlanGenerationConfigurationTest {
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 			.withUserConfiguration(TestConfiguration.class)
 			.withBean(AiContentGenerator.class, () -> contentGenerator)
+			.withBean(PromptTemplateLoader.class, ClassPathPromptTemplateLoader::new)
 			.withBean(ObjectMapper.class, ObjectMapper::new);
 
 	@Test

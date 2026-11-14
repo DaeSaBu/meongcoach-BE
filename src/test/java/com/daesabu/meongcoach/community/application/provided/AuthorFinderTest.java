@@ -6,8 +6,8 @@ import com.daesabu.meongcoach.community.application.provided.dto.AuthorResult;
 import com.daesabu.meongcoach.dog.application.required.DogRepository;
 import com.daesabu.meongcoach.dog.domain.Dog;
 import com.daesabu.meongcoach.dog.domain.DogRegisterCommand;
-import com.daesabu.meongcoach.dog.domain.DogSex;
 import com.daesabu.meongcoach.dog.domain.shared.Breed;
+import com.daesabu.meongcoach.dog.domain.shared.DogSex;
 import com.daesabu.meongcoach.dog.domain.shared.RegisteredBreed;
 import com.daesabu.meongcoach.support.ApplicationTest;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
@@ -66,6 +66,40 @@ class AuthorFinderTest {
 		flushAndClear();
 
 		assertThat(authorFinder.findAuthor(user.getId())).isEmpty();
+	}
+
+	@Test
+	void 회원이_선택한_강아지의_공개_정보를_반환한다() {
+		User user = saveUserWithSelectedDog("보리");
+		flushAndClear();
+
+		assertThat(authorFinder.findAuthorDog(user.getId()))
+				.hasValueSatisfying(dog -> {
+					assertThat(dog.name()).isEqualTo("보리");
+					assertThat(dog.breed()).isEqualTo(Breed.of(RegisteredBreed.POODLE));
+					assertThat(dog.sex()).isEqualTo(DogSex.MALE);
+					assertThat(dog.age()).isNotNull();
+					assertThat(dog.profileImageUrl()).isEqualTo(DOG_IMAGE_URL);
+				});
+	}
+
+	@Test
+	void 전문가_회원의_강아지_정보는_빈_값을_반환한다() {
+		User user = saveUserWithSelectedDog("보리");
+		entityManager.createNativeQuery("UPDATE users SET role = 'EXPERT' WHERE id = :id")
+				.setParameter("id", user.getId())
+				.executeUpdate();
+		flushAndClear();
+
+		assertThat(authorFinder.findAuthorDog(user.getId())).isEmpty();
+	}
+
+	@Test
+	void 선택된_강아지가_없으면_강아지_정보는_빈_값을_반환한다() {
+		User user = saveUser("멍멍이집사");
+		flushAndClear();
+
+		assertThat(authorFinder.findAuthorDog(user.getId())).isEmpty();
 	}
 
 	private User saveUserWithSelectedDog(String dogName) {

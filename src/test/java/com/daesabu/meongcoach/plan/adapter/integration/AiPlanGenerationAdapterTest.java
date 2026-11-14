@@ -7,10 +7,13 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import com.daesabu.meongcoach.ai.adapter.integration.ClassPathPromptTemplateLoader;
 import com.daesabu.meongcoach.ai.application.provided.AiContentGenerateRequest;
 import com.daesabu.meongcoach.ai.application.provided.AiContentGenerator;
+import com.daesabu.meongcoach.ai.application.provided.PromptTemplateLoader;
 import com.daesabu.meongcoach.dog.application.provided.dto.DogProfileResult;
 import com.daesabu.meongcoach.dog.domain.shared.Breed;
+import com.daesabu.meongcoach.dog.domain.shared.DogSex;
 import com.daesabu.meongcoach.plan.application.required.dto.AiPlanGenerateRequest;
 import com.daesabu.meongcoach.plan.application.required.dto.AiPlanGenerateResult;
 import com.daesabu.meongcoach.plan.domain.exception.InvalidAiPlanResponseException;
@@ -30,8 +33,9 @@ class AiPlanGenerationAdapterTest {
 
 	private final ObjectMapper objectMapper = new ObjectMapper();
 	private final AiContentGenerator contentGenerator = mock(AiContentGenerator.class);
+	private final PromptTemplateLoader promptTemplateLoader = new ClassPathPromptTemplateLoader();
 	private final AiPlanGenerationAdapter adapter = new AiPlanGenerationAdapter(
-			contentGenerator, objectMapper);
+			contentGenerator, objectMapper, promptTemplateLoader);
 
 	@Test
 	void 프롬프트와_스키마를_AI_모듈에_전달하고_생성된_문자열을_반환한다() {
@@ -44,16 +48,51 @@ class AiPlanGenerationAdapterTest {
 		ArgumentCaptor<AiContentGenerateRequest> captor = ArgumentCaptor.forClass(AiContentGenerateRequest.class);
 		verify(contentGenerator).generate(captor.capture());
 		AiContentGenerateRequest contentRequest = captor.getValue();
-		assertThat(contentRequest.systemPrompt()).contains("50%", "토픽");
+		assertThat(contentRequest.systemPrompt())
+				.contains(promptTemplateLoader.load("prompts/behavior-analysis/safety-principles.md"))
+				.doesNotContain("50%", "dailyMinutes", "미완료");
 		assertThat(objectMapper.readTree(contentRequest.responseSchema()).path("required"))
-				.isEqualTo(objectMapper.readTree("[\"topicIds\",\"goal\"]"));
+				.isEqualTo(objectMapper.readTree("[\"interpretation\",\"decision\",\"topicIds\",\"goal\"]"));
 		String userPrompt = contentRequest.userPrompt();
+		assertThat(userPrompt)
+				.contains(promptTemplateLoader.load("prompts/behavior-analysis/behavior-functions.md"))
+				.contains(promptTemplateLoader.load("prompts/behavior-analysis/topic-matching-core.md"))
+				.contains(promptTemplateLoader.load("prompts/behavior-analysis/topic-matching-social.md"))
+				.contains(promptTemplateLoader.load("prompts/behavior-analysis/problem-priority.md"))
+				.doesNotContain("{{include:", "미완료");
 		String inputJson = userPrompt.substring(userPrompt.indexOf("입력 JSON:") + "입력 JSON:".length());
 		JsonNode input = objectMapper.readTree(inputJson);
 		assertThat(input.at("/dog/breed").asString()).isEqualTo("푸들");
 		assertThat(input.get("expectation").asString()).isEqualTo(request.expectation());
 		assertThat(result.topicIds()).containsExactly(1L);
 		assertThat(result.goal()).isEqualTo("차분하게 기다려요");
+	}
+
+	@ParameterizedTest
+	@MethodSource("missingSelections")
+	void 보호자가_선택한_토픽을_누락한_AI_응답은_거절한다(List<Long> topics) {
+		AiPlanGenerateRequest base = createRequest();
+		AiPlanGenerateRequest request = new AiPlanGenerateRequest(base.dog(), base.generationDate(),
+				base.expectation(), base.curriculums(), List.of(1L));
+		given(contentGenerator.generate(any())).willReturn(
+				objectMapper.writeValueAsString(new AiPlanGenerateResult(topics, "차분하게 기다려요")));
+
+		assertThatThrownBy(() -> adapter.generate(request)).isInstanceOf(InvalidAiPlanResponseException.class);
+	}
+
+	private static Stream<List<Long>> missingSelections() {
+		return Stream.of(List.of(2L));
+	}
+
+	@Test
+	void 선택_토픽을_유지하면서_다른_후보_토픽을_추가할_수_있다() {
+		AiPlanGenerateRequest base = createRequest();
+		AiPlanGenerateRequest request = new AiPlanGenerateRequest(base.dog(), base.generationDate(),
+				base.expectation(), base.curriculums(), List.of(1L));
+		AiPlanGenerateResult result = new AiPlanGenerateResult(List.of(2L, 1L), "차분하게 기다리고 다가와요");
+		given(contentGenerator.generate(any())).willReturn(objectMapper.writeValueAsString(result));
+
+		assertThat(adapter.generate(request)).isEqualTo(result);
 	}
 
 	@Test
@@ -76,6 +115,23 @@ class AiPlanGenerationAdapterTest {
 		AiPlanGenerateResult actual = adapter.generate(request);
 
 		assertThat(actual).isEqualTo(result);
+	}
+
+	@Test
+	void 내부_근거_필드가_있는_응답에서_토픽과_목표만_반환한다() {
+		AiPlanGenerateRequest request = createRequest();
+		String generatedContent = """
+				{"interpretation":{"needs":["초인종 소리에 짖음 → 문제 행동"],
+				"hypotheses":[{"function":"소리·바깥 자극에 대한 경계","reason":"초인종 직후 짖음"}],
+				"redFlags":{"medical":"없음","biteRisk":"none"}},
+				"decision":{"topicChoice":"기다리기: 자극 앞에서 멈추는 연습"},
+				"topicIds":[1],"goal":"초인종이 울려도 차분하게 기다려요"}
+				""";
+		given(contentGenerator.generate(any())).willReturn(generatedContent);
+
+		AiPlanGenerateResult result = adapter.generate(request);
+
+		assertThat(result).isEqualTo(new AiPlanGenerateResult(List.of(1L), "초인종이 울려도 차분하게 기다려요"));
 	}
 
 	@ParameterizedTest
@@ -146,12 +202,12 @@ class AiPlanGenerationAdapterTest {
 	}
 
 	private AiPlanGenerateRequest createRequest() {
-		DogProfileResult dog = new DogProfileResult(1L, "초코", new Breed("푸들"),
+		DogProfileResult dog = new DogProfileResult(1L, "초코", new Breed("푸들"), DogSex.MALE,
 				LocalDate.of(2025, 1, 31), null);
 		List<AiPlanCurriculumResult> curriculums = List.of(
-				new AiPlanCurriculumResult(10L, 1L, "기다리기", "짧게 기다리기", "기다리는 연습", 2, 0, 10),
-				new AiPlanCurriculumResult(11L, 1L, "기다리기", "길게 기다리기", "기다리는 연습", 2, 0, 15),
-				new AiPlanCurriculumResult(20L, 2L, "이리 와", "다가오기", "다가오는 연습", 2, 0, 20));
-		return new AiPlanGenerateRequest(dog, LocalDate.of(2026, 10, 26), 10, 3, "차분하게 기다리기", curriculums);
+				new AiPlanCurriculumResult(10L, 1L, "기다리기", "짧게 기다리기", "기다리는 연습", 2, 0),
+				new AiPlanCurriculumResult(11L, 1L, "기다리기", "길게 기다리기", "기다리는 연습", 2, 0),
+				new AiPlanCurriculumResult(20L, 2L, "이리 와", "다가오기", "다가오는 연습", 2, 0));
+		return new AiPlanGenerateRequest(dog, LocalDate.of(2026, 10, 26), "차분하게 기다리기", curriculums);
 	}
 }

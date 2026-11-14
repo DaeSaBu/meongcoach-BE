@@ -17,7 +17,7 @@ class PlanRepositoryTest {
 
 	@Test
 	void 플랜_ID와_소유자가_모두_일치할_때만_조회한다() {
-		PlanCreateCommand command = new PlanCreateCommand(1L, 2L, "제목", "목표", 10, 3);
+		PlanCreateCommand command = new PlanCreateCommand(1L, 2L, "제목", "목표");
 		Plan plan = Plan.create(command, List.of(7L));
 		planRepository.saveAndFlush(plan);
 

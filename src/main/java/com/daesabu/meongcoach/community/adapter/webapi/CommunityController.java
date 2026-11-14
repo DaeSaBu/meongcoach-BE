@@ -1,5 +1,6 @@
 package com.daesabu.meongcoach.community.adapter.webapi;
 
+import com.daesabu.meongcoach.community.adapter.webapi.dto.AuthorDogResponse;
 import com.daesabu.meongcoach.community.adapter.webapi.dto.CommentListResponse;
 import com.daesabu.meongcoach.community.adapter.webapi.dto.CommentRegisterResponse;
 import com.daesabu.meongcoach.community.adapter.webapi.dto.CommentUpdateResponse;
@@ -16,6 +17,7 @@ import com.daesabu.meongcoach.community.application.provided.CommentRegister;
 import com.daesabu.meongcoach.community.application.provided.PostFinder;
 import com.daesabu.meongcoach.community.application.provided.PostMediaUploadUrlIssuer;
 import com.daesabu.meongcoach.community.application.provided.PostRegister;
+import com.daesabu.meongcoach.community.application.provided.dto.AuthorDogResult;
 import com.daesabu.meongcoach.community.application.provided.dto.AuthorResult;
 import com.daesabu.meongcoach.community.application.provided.dto.CommentListRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.CommentListResult;
@@ -63,6 +65,12 @@ public class CommunityController {
 	public MyAuthorResponse findMyAuthor(@CurrentUserId Long userId) {
 		Optional<AuthorResult> author = authorFinder.findAuthor(userId);
 		return MyAuthorResponse.from(author);
+	}
+
+	@GetMapping("/users/{userId}/dog")
+	public AuthorDogResponse findAuthorDog(@PathVariable Long userId) {
+		Optional<AuthorDogResult> dog = authorFinder.findAuthorDog(userId);
+		return AuthorDogResponse.from(dog);
 	}
 
 	@GetMapping("/posts")

@@ -5,10 +5,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.daesabu.meongcoach.ai.application.provided.dto.AiVideoUploadUrlRequest;
 import com.daesabu.meongcoach.ai.application.required.AiAnalysisRepository;
+import com.daesabu.meongcoach.ai.application.required.AiTrialRepository;
 import com.daesabu.meongcoach.ai.domain.AiAnalysis;
 import com.daesabu.meongcoach.ai.domain.AiAnalysisStatus;
-import com.daesabu.meongcoach.ai.domain.AiAnalysisUploadCommand;
 import com.daesabu.meongcoach.ai.domain.AiTrial;
+import com.daesabu.meongcoach.ai.domain.AiTrialFixture;
 import com.daesabu.meongcoach.ai.domain.exception.AiReportTrialExceededException;
 import com.daesabu.meongcoach.ai.domain.exception.AiVideoDurationOutOfRangeException;
 import com.daesabu.meongcoach.support.ApplicationTest;
@@ -33,10 +34,13 @@ class AiVideoUploadUrlIssuerTest {
 	@Autowired
 	private AiAnalysisRepository aiAnalysisRepository;
 
+	@Autowired
+	private AiTrialRepository aiTrialRepository;
+
 	@ParameterizedTest
 	@ValueSource(ints = {0, 1, 29})
 	void 체험_횟수가_남아_있으면_분석_저장소의_훈련_영상_업로드_URL_발급을_위임한다(int usedCount) {
-		persistCompletedAnalyses(usedCount);
+		aiTrialRepository.saveAndFlush(AiTrialFixture.used(USER_ID, usedCount));
 
 		AiVideoUploadUrlResult result = service.issue(USER_ID, REQUEST);
 
@@ -72,11 +76,28 @@ class AiVideoUploadUrlIssuerTest {
 
 	@Test
 	void 체험_횟수를_소진했으면_URL_발급과_리포트_저장_없이_예외를_던진다() {
-		persistCompletedAnalyses(AiTrial.MAX_COUNT);
+		aiTrialRepository.saveAndFlush(AiTrialFixture.used(USER_ID, AiTrial.DEFAULT_GRANTED_COUNT));
 
 		assertThatThrownBy(() -> service.issue(USER_ID, REQUEST))
 				.isInstanceOf(AiReportTrialExceededException.class);
-		assertThat(aiAnalysisRepository.findAllByUserIdOrderByCreatedAtDescIdDesc(USER_ID)).hasSize(AiTrial.MAX_COUNT);
+		assertThat(aiAnalysisRepository.findAllByUserIdOrderByCreatedAtDescIdDesc(USER_ID)).isEmpty();
+	}
+
+	@Test
+	void 저장된_현황이_없는_사용자는_체험이_남아_있어_URL을_발급받는다() {
+		AiVideoUploadUrlResult result = service.issue(USER_ID, REQUEST);
+
+		assertThat(result.reportId()).isNotNull();
+	}
+
+	@Test
+	void 부여_횟수가_늘어난_사용자는_기본_횟수를_다_써도_URL을_발급받는다() {
+		aiTrialRepository.saveAndFlush(
+				AiTrialFixture.create(USER_ID, AiTrial.DEFAULT_GRANTED_COUNT + 1, AiTrial.DEFAULT_GRANTED_COUNT));
+
+		AiVideoUploadUrlResult result = service.issue(USER_ID, REQUEST);
+
+		assertThat(result.reportId()).isNotNull();
 	}
 
 	@ParameterizedTest
@@ -98,28 +119,12 @@ class AiVideoUploadUrlIssuerTest {
 	}
 
 	@Test
-	void 체험_현황은_요청한_사용자_기준으로_조회하므로_다른_사용자의_완료_리포트는_세지_않는다() {
-		for (int i = 0; i < AiTrial.MAX_COUNT; i++) {
-			persistCompletedAnalysis(99L, "videos/training/99/" + i + ".mp4");
-		}
+	void 체험_현황은_요청한_사용자_기준으로_조회하므로_다른_사용자가_소진해도_발급한다() {
+		aiTrialRepository.saveAndFlush(AiTrialFixture.used(99L, AiTrial.DEFAULT_GRANTED_COUNT));
 
 		AiVideoUploadUrlResult result = service.issue(USER_ID, REQUEST);
 
 		assertThat(result.reportId()).isNotNull();
-	}
-
-	private void persistCompletedAnalyses(int count) {
-		for (int i = 0; i < count; i++) {
-			persistCompletedAnalysis(USER_ID, "videos/training/7/" + i + ".mp4");
-		}
-	}
-
-	private void persistCompletedAnalysis(Long userId, String videoObjectKey) {
-		AiAnalysis analysis = AiAnalysis.uploading(
-				new AiAnalysisUploadCommand(userId, videoObjectKey, Instant.now().plusSeconds(900), null));
-		analysis.startAnalysis();
-		analysis.complete("제목", "본문");
-		aiAnalysisRepository.saveAndFlush(analysis);
 	}
 
 }

@@ -1,8 +1,9 @@
 package com.daesabu.meongcoach.plan.application;
 
+import static java.util.Objects.requireNonNullElse;
+
 import com.daesabu.meongcoach.dog.application.provided.DogProfileFinder;
 import com.daesabu.meongcoach.dog.application.provided.dto.DogProfileResult;
-import com.daesabu.meongcoach.dog.application.provided.dto.DogSummaryResult;
 import com.daesabu.meongcoach.plan.application.provided.PlanRegister;
 import com.daesabu.meongcoach.plan.application.provided.dto.AiPlanCreateRequest;
 import com.daesabu.meongcoach.plan.application.provided.dto.CustomPlanCreateRequest;
@@ -48,47 +49,34 @@ public class PlanRegisterService implements PlanRegister {
 	private final PlanCurriculumFinder planCurriculumFinder;
 
 	@Override
-	@Deprecated(forRemoval = true)
-	@Transactional
-	public Plan createCustom(Long userId, CustomPlanCreateRequest request) {
-		DogSummaryResult dog = dogProfileFinder.findSelectedDogSummary(userId);
-		return createCustom(userId, dog.id(), request);
-	}
-
-	@Override
-	@Deprecated(forRemoval = true)
-	public Plan createAiPlan(Long userId, AiPlanCreateRequest request) {
-		DogSummaryResult dog = dogProfileFinder.findSelectedDogSummary(userId);
-		return createAiPlan(userId, dog.id(), request);
-	}
-
-	@Override
 	@Transactional
 	public Plan createCustom(Long userId, Long dogId, CustomPlanCreateRequest request) {
 		DogProfileResult dog = dogProfileFinder.findDogProfile(userId, dogId);
 		PlanPreparationResult preparation = preparationFinder.find(request.topicIds());
-		CustomPlanCreateCommand command = new CustomPlanCreateCommand(userId, dog.id(), dog.name(),
-				request.dailyMinutes(), request.daysPerWeek());
+		CustomPlanCreateCommand command = new CustomPlanCreateCommand(userId, dog.id(), dog.name());
 		Plan plan = Plan.createCustom(command, preparation.curriculumIds());
 		return planSaveService.save(plan);
 	}
 
 	@Override
 	public Plan createAiPlan(Long userId, Long dogId, AiPlanCreateRequest request) {
-		Plan.validatePracticeSettings(request.dailyMinutes(), request.daysPerWeek());
 		DogProfileResult dog = dogProfileFinder.findDogProfile(userId, dogId);
 		AiPlanPreparationResult candidates = aiPreparationFinder.find(userId);
 		if (candidates.curriculums().isEmpty()) {
 			throw new EmptyPlanCurriculumsException();
 		}
 
+		List<Long> selectedTopicIds = requireNonNullElse(request.topicIds(), List.of());
+		if (!selectedTopicIds.isEmpty()) {
+			preparationFinder.validate(selectedTopicIds);
+		}
 		LocalDate generationDate = LocalDate.now(GENERATION_ZONE);
 		AiPlanGenerateRequest generateRequest = new AiPlanGenerateRequest(dog, generationDate,
-				request.dailyMinutes(), request.daysPerWeek(), request.expectation(), candidates.curriculums());
+				request.expectation(), candidates.curriculums(), selectedTopicIds);
 		AiPlanGenerateResult generated = aiPlanGenerator.generate(generateRequest);
 		PlanPreparationResult preparation = preparationFinder.findInRequestOrder(generated.topicIds());
 		AiPlanCreateCommand command = new AiPlanCreateCommand(userId, dog.id(), dog.name(), generated.goal(),
-				request.dailyMinutes(), request.daysPerWeek(), request.expectation());
+				request.expectation());
 		Plan plan = Plan.createAiPlan(command, preparation.curriculumIds());
 		return planSaveService.save(plan);
 	}

@@ -50,7 +50,8 @@ public class CommentModifyService implements CommentRegister {
 		commentClosureRepository.save(CommentClosure.self(comment));
 		root.ifPresent(it -> commentClosureRepository.save(CommentClosure.reply(it, comment)));
 		post.increaseCommentCount();
-		eventPublisher.publishEvent(CommentRegisteredEvent.from(comment, root.orElse(null)));
+		List<Long> participantIds = commentRepository.findActiveCommenterIdsByPostId(postId);
+		eventPublisher.publishEvent(CommentRegisteredEvent.from(comment, root.orElse(null), participantIds));
 
 		return comment;
 	}

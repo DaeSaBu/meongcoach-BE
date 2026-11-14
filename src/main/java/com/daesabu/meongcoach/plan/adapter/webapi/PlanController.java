@@ -48,35 +48,13 @@ public class PlanController {
 		return PlanOutcomeResponse.from(result);
 	}
 
-	/**
-	 * @deprecated 사용 중단 예정. GET /api/plans/current?dogId={dogId}로 이전한다.
-	 */
-	@Deprecated(forRemoval = true)
-	@GetMapping(path = "/current", params = "!dogId")
-	public CurrentPlanResponse findCurrent(@CurrentUserId Long userId) {
-		Optional<CurrentPlanResult> result = currentPlanFinder.find(userId);
-		return CurrentPlanResponse.from(result);
-	}
-
-	@GetMapping(path = "/current", params = "dogId")
+	@GetMapping("/current")
 	public CurrentPlanResponse findCurrent(@CurrentUserId Long userId, @RequestParam Long dogId) {
 		Optional<CurrentPlanResult> result = currentPlanFinder.find(userId, dogId);
 		return CurrentPlanResponse.from(result);
 	}
 
-	/**
-	 * @deprecated 사용 중단 예정. POST /api/plans/custom?dogId={dogId}로 이전한다.
-	 */
-	@Deprecated(forRemoval = true)
-	@PostMapping(path = "/custom", params = "!dogId")
-	@ResponseStatus(HttpStatus.CREATED)
-	public PlanCreateResponse createCustom(@CurrentUserId Long userId,
-	                                      @Valid @RequestBody CustomPlanCreateRequest request) {
-		Plan plan = planRegister.createCustom(userId, request);
-		return PlanCreateResponse.from(plan);
-	}
-
-	@PostMapping(path = "/custom", params = "dogId")
+	@PostMapping("/custom")
 	@ResponseStatus(HttpStatus.CREATED)
 	public PlanCreateResponse createCustom(@CurrentUserId Long userId, @RequestParam Long dogId,
 			@Valid @RequestBody CustomPlanCreateRequest request) {
@@ -84,19 +62,7 @@ public class PlanController {
 		return PlanCreateResponse.from(plan);
 	}
 
-	/**
-	 * @deprecated 사용 중단 예정. POST /api/plans/ai?dogId={dogId}로 이전한다.
-	 */
-	@Deprecated(forRemoval = true)
-	@PostMapping(path = "/ai", params = "!dogId")
-	@ResponseStatus(HttpStatus.CREATED)
-	public PlanCreateResponse createAiPlan(@CurrentUserId Long userId,
-			@Valid @RequestBody AiPlanCreateRequest request) {
-		Plan plan = planRegister.createAiPlan(userId, request);
-		return PlanCreateResponse.from(plan);
-	}
-
-	@PostMapping(path = "/ai", params = "dogId")
+	@PostMapping("/ai")
 	@ResponseStatus(HttpStatus.CREATED)
 	public PlanCreateResponse createAiPlan(@CurrentUserId Long userId, @RequestParam Long dogId,
 			@Valid @RequestBody AiPlanCreateRequest request) {

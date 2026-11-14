@@ -27,6 +27,7 @@ import com.daesabu.meongcoach.ai.application.provided.dto.AiAnalysisRegisterRequ
 import com.daesabu.meongcoach.ai.application.provided.dto.AiVideoUploadUrlRequest;
 import com.daesabu.meongcoach.ai.domain.AiAnalysisStatus;
 import com.daesabu.meongcoach.ai.domain.AiTrial;
+import com.daesabu.meongcoach.ai.domain.AiTrialFixture;
 import com.daesabu.meongcoach.ai.domain.exception.AiReportNotFoundException;
 import com.daesabu.meongcoach.ai.domain.exception.AiReportTrialExceededException;
 import com.daesabu.meongcoach.ai.domain.exception.AiVideoDurationOutOfRangeException;
@@ -53,6 +54,9 @@ class AiControllerTest {
 			"https://storage.googleapis.com/test-ai-video-bucket/" + VIDEO_OBJECT_KEY
 					+ "?X-Goog-Expires=900&X-Goog-Signature=example";
 	private static final String VIDEO_PUBLIC_URL = "https://storage.googleapis.com/test-ai-video-bucket/" + VIDEO_OBJECT_KEY;
+	private static final String VIDEO_URL =
+			"https://storage.googleapis.com/test-ai-video-bucket/videos/training/42/first.mp4"
+					+ "?X-Goog-Expires=3600&X-Goog-Signature=example";
 
 	private static final String VIDEO_ISSUE_REQUEST = """
 			{
@@ -168,7 +172,7 @@ class AiControllerTest {
 	@Test
 	void 리포트_하나를_본문과_함께_반환한다() throws Exception {
 		given(aiReportFinder.findReport(42L, 10L)).willReturn(new AiReportDetailResult(10L,
-				"videos/training/42/first.mp4", "분리불안 징후 행동 분석", AiAnalysisStatus.COMPLETED, REPORT_CONTENT,
+				"videos/training/42/first.mp4", VIDEO_URL, "분리불안 징후 행동 분석", AiAnalysisStatus.COMPLETED, REPORT_CONTENT,
 				LocalDateTime.of(2026, 8, 1, 9, 0, 0)));
 
 		mockMvc.perform(get("/api/ai/reports/{reportId}", 10L)
@@ -177,6 +181,7 @@ class AiControllerTest {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.reportId").value(10))
 				.andExpect(jsonPath("$.videoObjectKey").value("videos/training/42/first.mp4"))
+				.andExpect(jsonPath("$.videoUrl").value(VIDEO_URL))
 				.andExpect(jsonPath("$.title").value("분리불안 징후 행동 분석"))
 				.andExpect(jsonPath("$.status").value("COMPLETED"))
 				.andExpect(jsonPath("$.content.recommend[0].topicId").value(106))
@@ -195,6 +200,8 @@ class AiControllerTest {
 						responseFields(
 								fieldWithPath("reportId").description("리포트 ID"),
 								fieldWithPath("videoObjectKey").description("분석한 영상의 GCS 객체 키"),
+								fieldWithPath("videoUrl").optional().description(
+										"분석한 영상을 재생할 수 있는 1시간 유효 presigned URL. 영상이 아직 업로드되지 않은 UPLOADING·FAILED_UPLOAD는 null"),
 								fieldWithPath("title").optional()
 										.description("AI가 요약한 리포트 제목. COMPLETED가 아니거나 제목 생성에 실패한 리포트는 null"),
 								fieldWithPath("status").description(
@@ -225,7 +232,7 @@ class AiControllerTest {
 	@Test
 	void 완료되지_않은_리포트_상세는_상태와_함께_본문을_null로_내린다() throws Exception {
 		given(aiReportFinder.findReport(42L, 10L)).willReturn(new AiReportDetailResult(10L,
-				"videos/training/42/first.mp4", null, AiAnalysisStatus.ANALYZING, null,
+				"videos/training/42/first.mp4", VIDEO_URL, null, AiAnalysisStatus.ANALYZING, null,
 				LocalDateTime.of(2026, 8, 1, 9, 0, 0)));
 
 		mockMvc.perform(get("/api/ai/reports/{reportId}", 10L).principal(CURRENT_USER))
@@ -238,7 +245,7 @@ class AiControllerTest {
 	@Test
 	void 인증_주체에서_읽은_사용자로_리포트_상세_조회를_위임한다() throws Exception {
 		given(aiReportFinder.findReport(42L, 10L)).willReturn(new AiReportDetailResult(10L,
-				"videos/training/42/first.mp4", "분리불안 징후 행동 분석", AiAnalysisStatus.COMPLETED, REPORT_CONTENT,
+				"videos/training/42/first.mp4", VIDEO_URL, "분리불안 징후 행동 분석", AiAnalysisStatus.COMPLETED, REPORT_CONTENT,
 				LocalDateTime.of(2026, 8, 1, 9, 0, 0)));
 
 		mockMvc.perform(get("/api/ai/reports/{reportId}", 10L).principal(CURRENT_USER))
@@ -535,7 +542,7 @@ class AiControllerTest {
 
 	@Test
 	void 체험_횟수_사용_현황을_반환한다() throws Exception {
-		given(aiTrialFinder.findTrial(42L)).willReturn(new AiTrial(1));
+		given(aiTrialFinder.findTrial(42L)).willReturn(AiTrialFixture.used(42L, 1));
 
 		mockMvc.perform(get("/api/ai/trial")
 						.principal(CURRENT_USER)
@@ -546,8 +553,8 @@ class AiControllerTest {
 				.andExpect(jsonPath("$.remainingCount").value(29))
 				.andDo(document("ai/trial",
 						responseFields(
-								fieldWithPath("usedCount").description("분석이 완료된 AI 리포트 수. 실패·진행 중은 세지 않는다"),
-								fieldWithPath("maxCount").description("무료 체험 최대 횟수"),
+								fieldWithPath("usedCount").description("사용한 횟수. 분석이 완료될 때 1씩 늘고 실패·진행 중은 세지 않는다"),
+								fieldWithPath("maxCount").description("이 사용자에게 부여된 무료 체험 횟수. 기본 30"),
 								fieldWithPath("remainingCount").description("남은 횟수. 소진했으면 0")
 						)
 				));
@@ -555,7 +562,7 @@ class AiControllerTest {
 
 	@Test
 	void 인증_주체에서_읽은_사용자로_체험_횟수_조회를_위임한다() throws Exception {
-		given(aiTrialFinder.findTrial(42L)).willReturn(new AiTrial(0));
+		given(aiTrialFinder.findTrial(42L)).willReturn(AiTrial.start(42L));
 
 		mockMvc.perform(get("/api/ai/trial").principal(CURRENT_USER))
 				.andExpect(status().isOk());

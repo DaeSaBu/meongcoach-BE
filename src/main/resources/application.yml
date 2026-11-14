@@ -33,11 +33,6 @@ sentry:
   send-default-pii: false
 
 meongcoach:
-  # 홈 바로 훈련 카드: 이 개월 수 이상인 강아지에게는 정렬 값이 최솟값 미만인 카테고리(prod 훈련 기본기·퍼피 교육)를 숨긴다
-  home:
-    quick-topic:
-      months: ${HOME_QUICK_TOPIC_MONTHS:24}
-      min-category-order: ${HOME_QUICK_TOPIC_MIN_CATEGORY_ORDER:3}
   # 이보다 낮은 앱 버전의 요청은 426으로 거절해 강제 업데이트를 유도한다. 스토어 출시 후 환경 변수로 올린다
   app-version:
     minimum:
@@ -66,7 +61,7 @@ meongcoach:
       bucket: ${GCS_BUCKET}
       # 영상은 파일 선택·압축 시간이 있어 이미지(PT10M)보다 여유를 둔다
       upload-url-validity: PT15M
-      # 앱이 실습 인증 영상을 다시 볼 때 쓰는 URL이라 재생 시간을 감안해 넉넉히 둔다. 분석 영상은 gs:// URI로 읽어 점검용이다
+      # 앱이 실습 인증 영상과 분석 리포트 영상을 다시 볼 때 쓰는 URL이라 재생 시간을 감안해 넉넉히 둔다. 분석기(Gemini)는 이 URL이 아니라 gs:// URI로 읽는다
       download-url-validity: PT1H
   google-cloud:
     # GCS 서명·Pub/Sub 구독·Gemini 파일 등록에 함께 쓰는 서비스 계정. 키 JSON을 base64로 넣는다. 값 미주입 시 기동에 실패한다
@@ -83,8 +78,8 @@ meongcoach:
       model: ${GEMINI_MODEL:gemini-3.8-flash}
       # 영상 분석·플랜 생성은 수십 초가 걸려 전역 read-timeout(3초)으로는 응답 전에 끊긴다
       response-timeout: PT5M
-      # 상한에 닿으면 응답이 문장 중간에서 잘린다. 리포트는 2천 토큰 안팎이지만 여유를 둔다
-      max-output-tokens: 4096
+      # 상한에 닿으면 응답이 문장 중간에서 잘린다. 영상 분석은 내부 근거 필드까지 최대 2천 토큰 남짓이지만 여유를 둔다
+      max-output-tokens: 8192
       # 영상 분석·플랜 생성은 창의성보다 일관성이 중요해 0으로 고정한다
       temperature: 0
       # 사고 수준(low·medium·high). 비용·지연 예측을 위해 가장 낮게 둔다. Gemini 3 이후 모델은 사고를 완전히 끌 수 없다

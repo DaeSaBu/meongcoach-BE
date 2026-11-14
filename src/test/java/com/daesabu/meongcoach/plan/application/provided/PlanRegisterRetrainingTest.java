@@ -6,8 +6,8 @@ import static org.mockito.BDDMockito.given;
 
 import com.daesabu.meongcoach.dog.domain.Dog;
 import com.daesabu.meongcoach.dog.domain.DogRegisterCommand;
-import com.daesabu.meongcoach.dog.domain.DogSex;
 import com.daesabu.meongcoach.dog.domain.shared.Breed;
+import com.daesabu.meongcoach.dog.domain.shared.DogSex;
 import com.daesabu.meongcoach.plan.application.provided.dto.AiPlanCreateRequest;
 import com.daesabu.meongcoach.plan.application.provided.dto.CustomPlanCreateRequest;
 import com.daesabu.meongcoach.plan.application.required.AiPlanGenerator;
@@ -73,7 +73,7 @@ class PlanRegisterRetrainingTest {
 
 	@Test
 	void 이미_배운_토픽으로_수동_플랜을_생성하고_진도를_처음부터_반환한다() {
-		CustomPlanCreateRequest request = new CustomPlanCreateRequest(List.of(topic.getId()), 10, 3);
+		CustomPlanCreateRequest request = new CustomPlanCreateRequest(List.of(topic.getId()));
 
 		Plan created = register.createCustom(USER_ID, dog.getId(), request);
 
@@ -92,7 +92,7 @@ class PlanRegisterRetrainingTest {
 		entityManager.clear();
 		given(generator.generate(any())).willReturn(new AiPlanGenerateResult(List.of(topic.getId()), "기다리기를 복습해요"));
 
-		Plan created = register.createAiPlan(USER_ID, dog.getId(), new AiPlanCreateRequest(10, 3, "기다리기 복습"));
+		Plan created = register.createAiPlan(USER_ID, dog.getId(), new AiPlanCreateRequest("기다리기 복습"));
 
 		assertRetrainingPlan(created);
 	}

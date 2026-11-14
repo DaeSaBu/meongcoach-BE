@@ -1,9 +1,9 @@
 package com.daesabu.meongcoach.dog.application;
 
 import com.daesabu.meongcoach.dog.application.provided.DogProfileFinder;
+import com.daesabu.meongcoach.dog.application.provided.PublicDogResult;
 import com.daesabu.meongcoach.dog.application.provided.SelectedDogResult;
 import com.daesabu.meongcoach.dog.application.provided.dto.DogProfileResult;
-import com.daesabu.meongcoach.dog.application.provided.dto.DogSummaryResult;
 import com.daesabu.meongcoach.dog.application.required.DogRepository;
 import com.daesabu.meongcoach.dog.domain.Dog;
 import com.daesabu.meongcoach.dog.domain.DogStatus;
@@ -12,6 +12,7 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -49,16 +50,15 @@ public class DogProfileFinderService implements DogProfileFinder {
 	}
 
 	@Override
-	@Deprecated(forRemoval = true)
-	public DogSummaryResult findSelectedDogSummary(Long userId) {
-		Dog dog = findSelectedDog(userId);
-		return DogSummaryResult.from(dog);
-	}
-
-	@Override
 	public DogProfileResult findSelectedDogProfile(Long userId) {
 		Dog dog = findSelectedDog(userId);
 		return DogProfileResult.from(dog);
+	}
+
+	@Override
+	public Optional<PublicDogResult> findSelectedPublicDog(Long userId) {
+		return dogRepository.findFirstByUserIdAndStatusOrderByIdAsc(userId, DogStatus.SELECTED)
+				.map(PublicDogResult::from);
 	}
 
 	@Override

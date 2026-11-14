@@ -9,9 +9,9 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.daesabu.meongcoach.dog.domain.Dog;
 import com.daesabu.meongcoach.dog.domain.DogRegisterCommand;
-import com.daesabu.meongcoach.dog.domain.DogSex;
 import com.daesabu.meongcoach.dog.domain.exception.DogNotFoundException;
 import com.daesabu.meongcoach.dog.domain.shared.Breed;
+import com.daesabu.meongcoach.dog.domain.shared.DogSex;
 import com.daesabu.meongcoach.plan.application.provided.dto.AiPlanCreateRequest;
 import com.daesabu.meongcoach.plan.application.required.AiPlanGenerator;
 import com.daesabu.meongcoach.plan.application.required.PlanRepository;
@@ -84,7 +84,7 @@ class PlanRegisterAiTest {
 			Dog dog = Dog.register(dogCommand);
 			entityManager.persist(dog);
 			dogId = dog.getId();
-			request = new AiPlanCreateRequest(10, 3, "  차분하게 기다렸으면 해요  ");
+			request = new AiPlanCreateRequest("  차분하게 기다렸으면 해요  ");
 			TrainingCategory category = TrainingCategoryFixture.create("AI 플랜 테스트", 1, "", "");
 			entityManager.persist(category);
 			categoryId = category.getId();
@@ -120,18 +120,6 @@ class PlanRegisterAiTest {
 	}
 
 	@Test
-	void 이전_AI_API는_대표_강아지로_플랜을_생성한다() {
-		new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
-			Dog dog = entityManager.find(Dog.class, dogId);
-			dog.select();
-		});
-
-		Plan created = register.createAiPlan(USER_ID, request);
-
-		assertThat(created.getDogId()).isEqualTo(dogId);
-	}
-
-	@Test
 	void AI는_트랜잭션_밖에서_호출하고_선택한_토픽의_커리큘럼을_모두_저장한다() {
 		Plan existing = saveExistingPlan();
 		LocalDate before = LocalDate.now(ZoneId.of("Asia/Seoul"));
@@ -149,7 +137,7 @@ class PlanRegisterAiTest {
 
 		Plan created = register.createAiPlan(USER_ID, dogId, request);
 
-		assertThat(created.getTitle()).isEqualTo("초코의 2주 훈련 플랜");
+		assertThat(created.getTitle()).isEqualTo("초코의 훈련 플랜");
 		assertThat(created.getCurriculumIds()).containsExactlyElementsOf(curriculumIds);
 		assertThat(planRepository.findById(created.getId()).orElseThrow().getExpectation()).isEqualTo(request.expectation());
 		assertThat(planRepository.findById(existing.getId()).orElseThrow().getStatus()).isEqualTo(PlanStatus.REPLACED);
@@ -181,6 +169,60 @@ class PlanRegisterAiTest {
 				"SELECT curriculum_id FROM plan_curriculums WHERE plan_id = ? ORDER BY sort_order", Long.class,
 				created.getId());
 		assertThat(saved).containsExactlyElementsOf(expected);
+	}
+
+	@Test
+	void 선택_토픽_밖의_후보도_AI에_전달하고_추가한_토픽을_함께_저장한다() {
+		Curriculum earlierCurriculum = new TransactionTemplate(transactionManager).execute(status -> {
+			TrainingCategory category = entityManager.find(TrainingCategory.class, categoryId);
+			Topic earlierTopic = TopicFixture.create(category, "앉아", 0, "", "", "");
+			entityManager.persist(earlierTopic);
+			Curriculum curriculum = CurriculumFixture.create(earlierTopic, "앉아 1", 1, "", "연습");
+			entityManager.persist(curriculum);
+			entityManager.persist(LessonFixture.create(curriculum, "레슨", 1, 5));
+			return curriculum;
+		});
+		Long earlierTopicId = earlierCurriculum.getTopic().getId();
+		AiPlanCreateRequest selected = new AiPlanCreateRequest("앉아서 기다렸으면 해요", List.of(topicId));
+		given(generator.generate(any())).willAnswer(invocation -> {
+			AiPlanGenerateRequest input = invocation.getArgument(0);
+			assertThat(input.selectedTopicIds()).containsExactly(topicId);
+			assertThat(input.curriculums()).extracting(item -> item.topicId()).contains(topicId, earlierTopicId);
+			return new AiPlanGenerateResult(List.of(topicId, earlierTopicId), "차분히 기다리는 습관을 길러요");
+		});
+
+		Plan created = register.createAiPlan(USER_ID, dogId, selected);
+
+		List<Long> expected = new ArrayList<>(curriculumIds);
+		expected.add(earlierCurriculum.getId());
+		List<Long> saved = jdbc.queryForList(
+				"SELECT curriculum_id FROM plan_curriculums WHERE plan_id = ? ORDER BY sort_order", Long.class,
+				created.getId());
+		assertThat(saved).containsExactlyElementsOf(expected);
+	}
+
+	@Test
+	void 보호자가_선택한_토픽을_AI에_전달하고_플랜에_보존한다() {
+		AiPlanCreateRequest selected = new AiPlanCreateRequest("차분하게 기다려요", List.of(topicId));
+		given(generator.generate(any())).willAnswer(invocation -> {
+			AiPlanGenerateRequest input = invocation.getArgument(0);
+			assertThat(input.selectedTopicIds()).containsExactly(topicId);
+			assertThat(input.curriculums()).extracting(item -> item.topicId()).contains(topicId);
+			return new AiPlanGenerateResult(List.of(topicId), "차분히 기다려요");
+		});
+
+		Plan created = register.createAiPlan(USER_ID, dogId, selected);
+
+		assertThat(created.getCurriculumIds()).containsExactlyElementsOf(curriculumIds);
+	}
+
+	@Test
+	void 없는_토픽을_선택하면_AI를_호출하지_않는다() {
+		AiPlanCreateRequest selected = new AiPlanCreateRequest("차분하게 기다려요", List.of(Long.MAX_VALUE));
+
+		assertThatThrownBy(() -> register.createAiPlan(USER_ID, dogId, selected)).isInstanceOf(RuntimeException.class);
+
+		verifyNoInteractions(generator);
 	}
 
 	@Test
@@ -254,8 +296,8 @@ class PlanRegisterAiTest {
 	}
 
 	@Test
-	void 선택된_강아지가_없으면_AI를_호출하지_않는다() {
-		assertThatThrownBy(() -> register.createAiPlan(USER_ID + 1, request)).isInstanceOf(DogNotFoundException.class);
+	void 소유하지_않은_강아지면_AI를_호출하지_않는다() {
+		assertThatThrownBy(() -> register.createAiPlan(USER_ID + 1, dogId, request)).isInstanceOf(DogNotFoundException.class);
 		verifyNoInteractions(generator);
 	}
 
@@ -267,14 +309,12 @@ class PlanRegisterAiTest {
 	}
 
 	private static Stream<AiPlanCreateRequest> invalidRequests() {
-		return Stream.of(new AiPlanCreateRequest(15, 3, "목표"), new AiPlanCreateRequest(10, 4, "목표"),
-				new AiPlanCreateRequest(null, 3, "목표"), new AiPlanCreateRequest(10, null, "목표"),
-				new AiPlanCreateRequest(10, 3, null), new AiPlanCreateRequest(10, 3, "  "),
-				new AiPlanCreateRequest(10, 3, "가".repeat(501)));
+		return Stream.of(new AiPlanCreateRequest(null), new AiPlanCreateRequest("  "),
+				new AiPlanCreateRequest("가".repeat(501)));
 	}
 
 	private Plan saveExistingPlan() {
-		PlanCreateCommand command = new PlanCreateCommand(USER_ID, dogId, "기존 플랜", "기존 목표", 10, 3);
+		PlanCreateCommand command = new PlanCreateCommand(USER_ID, dogId, "기존 플랜", "기존 목표");
 		Plan plan = Plan.create(command, List.of(curriculumIds.getFirst()));
 		return planRepository.saveAndFlush(plan);
 	}

@@ -15,12 +15,13 @@ public interface PlanCurriculumFinder {
 	List<PlanCurriculumResult> find(Long userId, List<Long> curriculumIds);
 
 	/**
-	 * 요청한 커리큘럼 순서와 각 커리큘럼의 현재 교육 순서로 레슨 ID를 반환한다.
+	 * 레슨 ID를 커리큘럼이 속한 토픽별로 묶어 반환한다.
+	 * 토픽은 요청한 커리큘럼 순서의 첫 등장 순서로, 토픽 안의 레슨은 요청한 커리큘럼 순서와 각 커리큘럼의 현재 교육 순서로 둔다.
 	 * 이용권과 학습 기록은 조회하지 않는다. 빈 목록이면 빈 결과를 반환한다.
 	 * 존재하지 않는 커리큘럼은 {@code CurriculumNotFoundException}을 던진다.
 	 * 레슨이 없는 커리큘럼은 {@code IllegalStateException}을 던진다.
 	 */
-	List<Long> findLessonIds(List<Long> curriculumIds);
+	List<List<Long>> findTopicLessonIds(List<Long> curriculumIds);
 
 	/**
 	 * 요청한 커리큘럼 순서대로 각 커리큘럼이 속한 토픽을 첫 등장 순서로 중복 없이 반환한다.

@@ -5,8 +5,6 @@ public record AiPlanCreateCommand(
 		Long dogId,
 		String dogName,
 		String goal,
-		int dailyMinutes,
-		int daysPerWeek,
 		String expectation
 ) {
 }
