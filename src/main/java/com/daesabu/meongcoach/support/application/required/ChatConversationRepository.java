@@ -16,14 +16,18 @@ public interface ChatConversationRepository extends JpaRepository<ChatConversati
 	@Modifying
 	@Query(value = """
 			INSERT INTO support_conversations (member_id, created_at, updated_at)
-			VALUES (:memberId, :now, :now)
+			VALUES (:memberId, statement_timestamp() AT TIME ZONE 'UTC', statement_timestamp() AT TIME ZONE 'UTC')
 			ON CONFLICT (member_id) WHERE deleted_at IS NULL DO NOTHING
 			""", nativeQuery = true)
-	void insertIfAbsent(@Param("memberId") long memberId, @Param("now") LocalDateTime now);
+	void insertIfAbsent(@Param("memberId") long memberId);
 
 	@Modifying
-	@Query("UPDATE SupportConversation c SET c.updatedAt = :now WHERE c.id = :id")
-	void recordMessage(@Param("id") long id, @Param("now") LocalDateTime now);
+	@Query(value = """
+			UPDATE support_conversations
+			SET updated_at = statement_timestamp() AT TIME ZONE 'UTC'
+			WHERE id = :id AND deleted_at IS NULL
+			""", nativeQuery = true)
+	void recordMessage(@Param("id") long id);
 
 	Optional<ChatConversation> findByMemberId(long memberId);
 
