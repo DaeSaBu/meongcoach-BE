@@ -2,7 +2,7 @@ package com.daesabu.meongcoach.home.application;
 
 import com.daesabu.meongcoach.home.application.provided.QuickTopicFinder;
 import com.daesabu.meongcoach.home.application.provided.dto.QuickTopicResult;
-import com.daesabu.meongcoach.plan.application.provided.CurrentPlanFinder;
+import com.daesabu.meongcoach.training.application.provided.CurrentPlanFinder;
 import com.daesabu.meongcoach.training.application.provided.TopicProgressFinder;
 import com.daesabu.meongcoach.training.application.provided.dto.TopicProgressResult;
 import com.daesabu.meongcoach.training.domain.shared.ProgressStatus;
