@@ -25,6 +25,29 @@ class ChatRegisterTest {
 	@Autowired EntityManager em;
 	@Autowired JdbcTemplate jdbc;
 
+	@Test
+	void 공통_감사_시각은_생성_시각을_보존하고_메시지_전송_시_수정_시각을_갱신한다() {
+		Long owner = member();
+		long id = register.open(owner).getId();
+		jdbc.update("UPDATE support_conversations SET created_at = ?, updated_at = ? WHERE id = ?",
+				java.sql.Timestamp.from(java.time.Instant.parse("2026-01-01T00:00:00Z")),
+				java.sql.Timestamp.from(java.time.Instant.parse("2026-01-01T00:00:00Z")), id);
+		em.clear();
+		var before = finder.findConversation(owner, id);
+		var createdAt = before.getCreatedAt();
+		var updatedAt = before.getUpdatedAt();
+
+		var message = register.send(owner, id, new ChatMessageRequest(UUID.randomUUID(), "시각 검증"));
+		em.flush();
+		var messageCreatedAt = message.getCreatedAt();
+		em.clear();
+
+		var after = finder.findConversation(owner, id);
+		assertThat(after.getCreatedAt()).isEqualTo(createdAt);
+		assertThat(after.getUpdatedAt()).isAfter(updatedAt);
+		assertThat(finder.latestMessages(owner, id).getFirst().getCreatedAt()).isEqualTo(messageCreatedAt);
+	}
+
 	private long conversationId(Long memberId) {
 		return register.open(memberId).getId();
 	}

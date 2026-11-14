@@ -12,6 +12,8 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
+import jakarta.persistence.EntityManager;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,29 +34,11 @@ class ChatRemoverTest {
 	@Autowired ChatConversationRepository conversations;
 	@Autowired ChatMessageRepository messages;
 	@Autowired UserRepository users;
+	@Autowired JdbcTemplate jdbc;
+	@Autowired EntityManager em;
 
 	@Test
-	void 대화만_삭제해도_DB가_해당_메시지를_모두_삭제한다() {
-		Long owner = users.save(User.registerUser()).getId();
-		Long other = users.save(User.registerUser()).getId();
-		var conversation = register.open(owner);
-		long id = conversation.getId();
-		long otherId = register.open(other).getId();
-		var first = register.send(owner, id, new ChatMessageRequest(UUID.randomUUID(), "첫 문의"));
-		var second = register.send(owner, id, new ChatMessageRequest(UUID.randomUUID(), "다음 문의"));
-		register.send(other, otherId, new ChatMessageRequest(UUID.randomUUID(), "유지할 문의"));
-
-		conversations.delete(conversation);
-		conversations.flush();
-
-		assertThat(messages.existsById(first.getId())).isFalse();
-		assertThat(messages.existsById(second.getId())).isFalse();
-		assertThat(finder.latestMessages(other, otherId)).hasSize(1);
-		assertThat(users.existsById(owner)).isTrue();
-	}
-
-	@Test
-	void 나가면_본인_대화와_메시지만_삭제하고_다시_열면_새_대화를_만든다() {
+	void 나가면_대화와_메시지를_보관하고_다시_열면_새_대화를_만든다() {
 		Long owner = users.save(User.registerUser()).getId();
 		Long other = users.save(User.registerUser()).getId();
 		long id = register.open(owner).getId();
@@ -64,9 +48,13 @@ class ChatRemoverTest {
 
 		remover.leave(owner, id);
 		conversations.flush();
+		em.clear();
 
 		assertThat(conversations.existsById(id)).isFalse();
-		assertThat(messages.existsById(message.getId())).isFalse();
+		assertThat(messages.existsById(message.getId())).isTrue();
+		assertThat(jdbc.queryForObject("SELECT deleted_at IS NOT NULL FROM support_conversations WHERE id = ?", Boolean.class, id)).isTrue();
+		assertThat(finder.conversations(0, null)).extracting(com.daesabu.meongcoach.support.domain.ChatConversation::getId).doesNotContain(id);
+		assertThatThrownBy(() -> finder.latestMessages(owner, id)).isInstanceOf(ChatAccessDeniedException.class);
 		assertThat(finder.latestMessages(other, otherId)).hasSize(1);
 		long reopenedId = register.open(owner).getId();
 		assertThat(reopenedId).isNotEqualTo(id);
