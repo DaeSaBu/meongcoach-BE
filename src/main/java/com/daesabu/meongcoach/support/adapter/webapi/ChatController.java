@@ -8,7 +8,6 @@ import com.daesabu.meongcoach.support.application.provided.ChatFinder;
 import com.daesabu.meongcoach.support.application.provided.ChatRegister;
 import com.daesabu.meongcoach.support.application.provided.dto.ChatMessageRequest;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 import java.time.Instant;
@@ -51,13 +50,20 @@ public class ChatController {
 	}
 
 	@GetMapping("/{id}/messages")
-	public List<ChatMessageResponse> messages(
-			@PathVariable @Positive long id,
-			@RequestParam(defaultValue = "-1") @Min(-1) long after,
-			@RequestParam(defaultValue = "0") @PositiveOrZero long before) {
-		return finder.messages(id, after, before).stream()
-				.map(ChatMessageResponse::from)
-				.toList();
+	public List<ChatMessageResponse> latestMessages(@PathVariable @Positive long id) {
+		return finder.latestMessages(id).stream().map(ChatMessageResponse::from).toList();
+	}
+
+	@GetMapping("/{id}/messages/new")
+	public List<ChatMessageResponse> newMessages(
+			@PathVariable @Positive long id, @RequestParam @PositiveOrZero long after) {
+		return finder.newMessages(id, after).stream().map(ChatMessageResponse::from).toList();
+	}
+
+	@GetMapping("/{id}/messages/previous")
+	public List<ChatMessageResponse> previousMessages(
+			@PathVariable @Positive long id, @RequestParam @Positive long before) {
+		return finder.previousMessages(id, before).stream().map(ChatMessageResponse::from).toList();
 	}
 
 	@PostMapping("/{id}/messages")

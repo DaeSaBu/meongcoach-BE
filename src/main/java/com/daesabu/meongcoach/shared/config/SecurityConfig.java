@@ -114,7 +114,9 @@ public class SecurityConfig {
 									AuthorityRole.EXPERT.name(), AuthorityRole.ADMIN.name());
 					auth.requestMatchers(HttpMethod.GET, "/api/support/conversations", "/api/support/conversations/")
 							.hasRole(AuthorityRole.ADMIN.name());
-					auth.requestMatchers("/api/support/conversations/{id}/messages")
+					auth.requestMatchers("/api/support/conversations/{id}/messages",
+							"/api/support/conversations/{id}/messages/new",
+							"/api/support/conversations/{id}/messages/previous")
 							.access(new WebExpressionAuthorizationManager(
 									"hasRole('ADMIN') or (hasAnyRole('USER', 'EXPERT') and #id == authentication.name)"));
 					auth.anyRequest().hasAnyRole(AuthorityRole.USER.name(), AuthorityRole.EXPERT.name(),
