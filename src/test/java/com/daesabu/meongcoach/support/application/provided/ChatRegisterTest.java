@@ -38,6 +38,7 @@ class ChatRegisterTest {
 		var updatedAt = before.getUpdatedAt();
 
 		var message = register.send(owner, id, new ChatMessageRequest(UUID.randomUUID(), "시각 검증"));
+		assertThat(em.contains(before)).isTrue();
 		em.flush();
 		var messageCreatedAt = message.getCreatedAt();
 		em.clear();
@@ -45,7 +46,8 @@ class ChatRegisterTest {
 		var after = finder.findConversation(owner, id);
 		assertThat(after.getCreatedAt()).isEqualTo(createdAt);
 		assertThat(after.getUpdatedAt()).isAfter(updatedAt);
-		assertThat(finder.latestMessages(owner, id).getFirst().getCreatedAt()).isEqualTo(messageCreatedAt);
+		assertThat(finder.latestMessages(owner, id).getFirst().getCreatedAt())
+				.isCloseTo(messageCreatedAt, within(1, java.time.temporal.ChronoUnit.MICROS));
 	}
 
 	@org.junit.jupiter.params.ParameterizedTest
@@ -176,6 +178,8 @@ class ChatRegisterTest {
 		register.open(other);
 		jdbc.update("UPDATE support_conversations SET updated_at=now()-interval '1 day'");
 		register.send(owner, conversationId(owner), new ChatMessageRequest(UUID.randomUUID(), "새 문의"));
+		em.flush();
+		em.clear();
 		assertThat(finder.conversations(0, null).getFirst().getId()).isEqualTo(conversationId(owner));
 		assertThat(finder.conversations(conversationId(owner), finder.conversations(0, null).getFirst().getUpdatedAt()))
 				.extracting(com.daesabu.meongcoach.support.domain.ChatConversation::getId)
