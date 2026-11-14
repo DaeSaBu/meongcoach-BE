@@ -30,7 +30,7 @@
 | [docs/security.md](docs/security.md)                                       | JWT 토큰 정책·검증 체인, 필터 체인 제약, 인증 환경 변수 |
 | [docs/ai-pipeline.md](docs/ai-pipeline.md)                                 | 영상 업로드→Pub/Sub→Gemini 분석→리포트 저장 비동기 흐름 |
 | [docs/media.md](docs/media.md)                                             | R2/GCS 서명 URL 발급, 객체 키 소유권 규칙 |
-| [docs/training.md](docs/training.md)                                       | 훈련 콘텐츠·사용자 진행 애그리거트, 완료 판단, 레슨 완료 잠금 |
+| [docs/training.md](docs/training.md)                                       | 훈련 콘텐츠·사용자 진행 애그리거트, 완료 판단, 레슨 완료 잠금, 플랜 진행 기록 |
 | [docs/notification.md](docs/notification.md)                               | 푸시 알림 토큰·수신 설정 애그리거트, 내부 API 인증, 발송 대상 규칙 |
 | [docs/support.md](docs/support.md) | 채널톡 상담 세션·웹훅 인증·답변 선별 |
 | [docs/alert.md](docs/alert.md)                                             | 개발자 Slack 알림 호출 방법, 메시지 형식, 설정, 비동기·실패 처리 |

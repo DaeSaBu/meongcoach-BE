@@ -84,7 +84,7 @@ Java 소스(`src/main/java`, `src/test/java`)의 주석은 interface에만 두�
 - 인덱스와 유니크 제약은 Flyway 마이그레이션에만 두지 않고 `@Entity`의 `@Table(indexes = …, uniqueConstraints = …)`에도 선언한다. 컬렉션 테이블은 `@CollectionTable`에 선언한다. 이름과 컬럼은 마이그레이션과 똑같이 쓴다. (살아있는 예시: `notification/domain/DeviceInstallation`)
 	- `ddl-auto: validate`는 인덱스·제약 불일치를 잡지 못하고, 테스트 스키마는 엔티티만으로 만들어진다. 엔티티에 선언이 없으면 테스트에서는 그 제약이 없는 채로 통과한다.
 	- 인덱스를 추가·변경·삭제하는 마이그레이션에는 같은 커밋에서 엔티티 선언을 맞춘다. 기존 엔티티에 빠진 선언은 그 엔티티를 수정할 때 채운다.
-- 부분 유니크 인덱스(`CREATE UNIQUE INDEX … WHERE …`)는 `@Index(unique = true, options = "WHERE …")`로 선언하되, `columnList`의 컬럼 하나를 `(dog_id)`처럼 괄호로 감싼다. (살아있는 예시: `plan/domain/Plan`의 `uk_plans_active_user_dog`)
+- 부분 유니크 인덱스(`CREATE UNIQUE INDEX … WHERE …`)는 `@Index(unique = true, options = "WHERE …")`로 선언하되, `columnList`의 컬럼 하나를 `(dog_id)`처럼 괄호로 감싼다. (살아있는 예시: `training/domain/Plan`의 `uk_plans_active_user_dog`)
 	- 괄호가 없으면 Hibernate가 유니크 제약으로 바꿔 `CREATE TABLE` 안에 `constraint … unique (…) WHERE …`를 만들고 테이블 생성이 실패한다. 괄호로 감싼 항목은 SQL 수식으로 취급되어 `create unique index … WHERE …`로 만들어진다.
 	- 마이그레이션에는 괄호 없이 평소대로 쓴다.
 
@@ -99,7 +99,7 @@ Java 소스(`src/main/java`, `src/test/java`)의 주석은 interface에만 두�
 	- **컨트롤러가 `@RequestBody`로 받는** `~Request`의 필드는 JSON에서 바로 역직렬화되는 타입(문자열·숫자·날짜)으로 두고, 값 객체·enum 변환(`new Email(...)`, `SocialProvider.from(...)`)은 서비스·도메인에서 한다. enum을 필드 타입으로 두면 Jackson이 대소문자를 구분하고, 잘못된 값이 우리 에러 코드 없이 일반 400으로 끝난다. 단일 컴포넌트 record 값 객체를 필드로 두면 JSON이 `{"email": {"address": "..."}}` 형태를 요구한다.
 	- 서비스끼리 주고받는 `~Request`(컨트롤러를 거치지 않는 입력)는 이 제약을 받지 않는다. 역직렬화가 없고 이미 검증된 값을 넘기는 것이므로 값 객체·enum을 그대로 필드 타입으로 쓴다. (예: `EmailAccountFindRequest(Email)`, `SocialAccountRegisterRequest(SocialProvider, …, Email)`) 응답 DTO도 enum을 그대로 써도 된다 — 상수명 문자열로 직렬화된다.
 	- 도메인 입력이 필요하면 `toCommand()`로 `~Command`를 만든다. `domain`의 Command는 모듈 밖에 노출하지 않는다. (예: `SocialAccountRegisterRequest.toCommand()`)
-	- 이 규칙 이전에 만든 모듈(`dog`, `onboarding`, `training`, `ai`)의 요청 DTO는 아직 `adapter/webapi/dto`에 있다. 일괄 이동하지 않고 해당 API를 수정할 때 옮긴다.
+	- 이 규칙 이전에 만든 모듈(`dog`, `onboarding`, `training`, `analysis`)의 요청 DTO는 아직 `adapter/webapi/dto`에 있다. 일괄 이동하지 않고 해당 API를 수정할 때 옮긴다.
 - 응답 DTO(`~Response`)는 `adapter/webapi/dto`에 둔다. 웹 노출 형태는 `adapter`의 관심사다. (예: `TokenResponse`)
 - 외부 API 응답 DTO는 `adapter/integration/dto`에 `~Response` record로 두고, 필드 매핑은 `@JsonProperty`로 지정한다. 전역 네이밍 전략(`spring.jackson.property-naming-strategy`)을 바꾸면 우리 API 응답까지 영향을 받으므로 쓰지 않는다.
 - 도메인 입력 모델은 `~Command` 접미사의 record로 `domain`에 두며, 웹 DTO와 별개로 유지한다. (예: `DogRegisterCommand`)
