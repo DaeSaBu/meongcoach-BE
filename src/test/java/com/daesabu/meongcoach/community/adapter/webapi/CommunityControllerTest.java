@@ -23,6 +23,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.daesabu.meongcoach.community.application.provided.AuthorFinder;
 import com.daesabu.meongcoach.community.application.provided.CommentFinder;
 import com.daesabu.meongcoach.community.application.provided.CommentRegister;
+import com.daesabu.meongcoach.community.application.provided.LikeRegister;
 import com.daesabu.meongcoach.community.application.provided.PostFinder;
 import com.daesabu.meongcoach.community.application.provided.PostMediaUploadUrlIssuer;
 import com.daesabu.meongcoach.community.application.provided.PostRegister;
@@ -46,6 +47,7 @@ import com.daesabu.meongcoach.community.application.provided.dto.PostUpdateReque
 import com.daesabu.meongcoach.community.application.provided.dto.ReplyListResult;
 import com.daesabu.meongcoach.community.application.provided.dto.ReplyResult;
 import com.daesabu.meongcoach.community.domain.CommentFixture;
+import com.daesabu.meongcoach.community.domain.LikeSummary;
 import com.daesabu.meongcoach.community.domain.MentionCommand;
 import com.daesabu.meongcoach.community.domain.MentionTargetType;
 import com.daesabu.meongcoach.community.domain.Post;
@@ -90,6 +92,9 @@ class CommunityControllerTest {
 	private PostFinder postFinder;
 
 	@MockitoBean
+	private LikeRegister likeRegister;
+
+	@MockitoBean
 	private AuthorFinder authorFinder;
 
 	@MockitoBean
@@ -109,8 +114,7 @@ class CommunityControllerTest {
 		given(authorFinder.findAuthor(42L)).willReturn(Optional.of(
 				new AuthorResult(42L, "보리", "https://media.meongcoach.com/images/dog-profile/42/bori.jpg", false)));
 
-		mockMvc.perform(get("/api/community/me")
-						.principal(CURRENT_USER)
+		mockMvc.perform(get("/api/community/me").principal(CURRENT_USER)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.author.userId").value(42))
@@ -130,8 +134,7 @@ class CommunityControllerTest {
 	void 전문가의_작성자_정보에는_보호자를_붙이지_않는다() throws Exception {
 		given(authorFinder.findAuthor(42L)).willReturn(Optional.of(new AuthorResult(42L, "멍코치 훈련사", "", true)));
 
-		mockMvc.perform(get("/api/community/me")
-						.principal(CURRENT_USER)
+		mockMvc.perform(get("/api/community/me").principal(CURRENT_USER)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.author.nickname").value("멍코치 훈련사"));
@@ -141,8 +144,7 @@ class CommunityControllerTest {
 	void 선택된_강아지가_없으면_내_작성자_정보가_null이다() throws Exception {
 		given(authorFinder.findAuthor(42L)).willReturn(Optional.empty());
 
-		mockMvc.perform(get("/api/community/me")
-						.principal(CURRENT_USER)
+		mockMvc.perform(get("/api/community/me").principal(CURRENT_USER)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.author").value(nullValue()));
@@ -154,8 +156,7 @@ class CommunityControllerTest {
 				Breed.of(RegisteredBreed.POODLE), DogSex.FEMALE, 3,
 				"https://media.meongcoach.com/images/dog-profile/7/choco.jpg")));
 
-		mockMvc.perform(get("/api/community/users/{userId}/dog", 7L)
-						.principal(CURRENT_USER)
+		mockMvc.perform(get("/api/community/users/{userId}/dog", 7L).principal(CURRENT_USER)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.dog.name").value("초코"))
@@ -180,8 +181,7 @@ class CommunityControllerTest {
 	void 강아지_정보가_없으면_dog가_null이다() throws Exception {
 		given(authorFinder.findAuthorDog(7L)).willReturn(Optional.empty());
 
-		mockMvc.perform(get("/api/community/users/{userId}/dog", 7L)
-						.principal(CURRENT_USER)
+		mockMvc.perform(get("/api/community/users/{userId}/dog", 7L).principal(CURRENT_USER)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.dog").value(nullValue()));
@@ -202,15 +202,15 @@ class CommunityControllerTest {
 						new MentionLevelResult(1L, "기본 예절"),
 						new MentionLevelResult(3L, "앉아"),
 						new MentionLevelResult(7L, "앉아 기초"),
-						new MentionLevelResult(101L, "손 신호로 앉기")));
+						new MentionLevelResult(101L, "손 신호로 앉기")), 0L, false);
 		PostResult withoutMention = new PostResult(
 				PostFixture.create(29L, 8L, "오늘 산책 성공!", LocalDateTime.of(2026, 10, 19, 9, 0, 0)),
 				new AuthorResult(8L, "콩이", "https://media.meongcoach.com/images/dog-profile/8/kong.jpg"),
-				null);
-		given(postFinder.findPosts(new PostListRequest(31L, 2, 12L)))
+				null, 0L, false);
+		given(postFinder.findPosts(42L, new PostListRequest(31L, 2, 12L)))
 				.willReturn(new PostListResult(List.of(withMention, withoutMention), 29L));
 
-		mockMvc.perform(get("/api/community/posts")
+		mockMvc.perform(get("/api/community/posts").principal(CURRENT_USER)
 						.param("cursor", "31")
 						.param("size", "2")
 						.param("lessonId", "12")
@@ -279,7 +279,9 @@ class CommunityControllerTest {
 								fieldWithPath("posts[].media[].type").description("미디어 종류. IMAGE(사진), VIDEO(영상)"),
 								fieldWithPath("posts[].media[].url").description("미디어 공개 URL"),
 								fieldWithPath("posts[].commentCount").description("삭제되지 않은 댓글·답글 수. 댓글이 없으면 0"),
-								fieldWithPath("posts[].createdAt").description("게시글 작성 시각(ISO-8601, 초 단위)"),
+								fieldWithPath("posts[].likeCount").description("좋아요 수"),
+						fieldWithPath("posts[].likedByMe").description("내 좋아요 여부"),
+						fieldWithPath("posts[].createdAt").description("게시글 작성 시각(ISO-8601, 초 단위)"),
 								fieldWithPath("nextCursor").optional()
 										.description("다음 페이지 요청에 cursor로 보낼 값. 마지막 페이지면 null")
 						)
@@ -288,21 +290,21 @@ class CommunityControllerTest {
 
 	@Test
 	void 커서와_size를_생략하면_첫_페이지를_기본_크기로_조회한다() throws Exception {
-		given(postFinder.findPosts(any(PostListRequest.class))).willReturn(new PostListResult(List.of(), null));
+		given(postFinder.findPosts(eq(42L), any(PostListRequest.class))).willReturn(new PostListResult(List.of(), null));
 
 		mockMvc.perform(get("/api/community/posts").principal(CURRENT_USER))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.posts").isEmpty())
 				.andExpect(jsonPath("$.nextCursor").value(nullValue()));
 
-		then(postFinder).should().findPosts(new PostListRequest(null, PostListRequest.DEFAULT_SIZE, null));
+		then(postFinder).should().findPosts(42L, new PostListRequest(null, PostListRequest.DEFAULT_SIZE, null));
 	}
 
 	@Test
 	void 작성자_프로필이나_멘션_대상이_없으면_null로_반환한다() throws Exception {
 		PostResult orphan = new PostResult(
-				PostFixture.create(1L, 7L, "본문", LocalDateTime.of(2026, 10, 19, 9, 0, 0)), null, null);
-		given(postFinder.findPosts(any(PostListRequest.class))).willReturn(new PostListResult(List.of(orphan), null));
+				PostFixture.create(1L, 7L, "본문", LocalDateTime.of(2026, 10, 19, 9, 0, 0)), null, null, 0L, false);
+		given(postFinder.findPosts(eq(42L), any(PostListRequest.class))).willReturn(new PostListResult(List.of(orphan), null));
 
 		mockMvc.perform(get("/api/community/posts").principal(CURRENT_USER))
 				.andExpect(status().isOk())
@@ -313,7 +315,7 @@ class CommunityControllerTest {
 
 	@Test
 	void size가_허용_범위를_벗어나면_400을_반환한다() throws Exception {
-		mockMvc.perform(get("/api/community/posts")
+		mockMvc.perform(get("/api/community/posts").principal(CURRENT_USER)
 						.param("size", "51")
 						.principal(CURRENT_USER)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
@@ -338,7 +340,7 @@ class CommunityControllerTest {
 
 	@Test
 	void cursor가_숫자가_아니면_400을_반환한다() throws Exception {
-		mockMvc.perform(get("/api/community/posts")
+		mockMvc.perform(get("/api/community/posts").principal(CURRENT_USER)
 						.param("cursor", "abc")
 						.principal(CURRENT_USER))
 				.andExpect(status().isBadRequest())
@@ -349,7 +351,7 @@ class CommunityControllerTest {
 
 	@Test
 	void lessonId가_숫자가_아니면_400을_반환한다() throws Exception {
-		mockMvc.perform(get("/api/community/posts")
+		mockMvc.perform(get("/api/community/posts").principal(CURRENT_USER)
 						.param("lessonId", "abc")
 						.principal(CURRENT_USER))
 				.andExpect(status().isBadRequest())
@@ -372,11 +374,10 @@ class CommunityControllerTest {
 						new MentionLevelResult(1L, "기본 예절"),
 						new MentionLevelResult(3L, "앉아"),
 						new MentionLevelResult(7L, "앉아 기초"),
-						new MentionLevelResult(101L, "손 신호로 앉기")));
-		given(postFinder.findPostDetail(30L)).willReturn(result);
+						new MentionLevelResult(101L, "손 신호로 앉기")), 0L, false);
+		given(postFinder.findPostDetail(42L, 30L)).willReturn(result);
 
-		mockMvc.perform(get("/api/community/posts/{postId}", 30L)
-						.principal(CURRENT_USER)
+		mockMvc.perform(get("/api/community/posts/{postId}", 30L).principal(CURRENT_USER)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.postId").value(30))
@@ -425,17 +426,18 @@ class CommunityControllerTest {
 								fieldWithPath("media[].type").description("미디어 종류. IMAGE(사진), VIDEO(영상)"),
 								fieldWithPath("media[].url").description("미디어 공개 URL"),
 								fieldWithPath("commentCount").description("삭제되지 않은 댓글·답글 수. 댓글이 없으면 0"),
-								fieldWithPath("createdAt").description("게시글 작성 시각(ISO-8601, 초 단위)")
+								fieldWithPath("likeCount").description("좋아요 수"),
+						fieldWithPath("likedByMe").description("내 좋아요 여부"),
+						fieldWithPath("createdAt").description("게시글 작성 시각(ISO-8601, 초 단위)")
 						)
 				));
 	}
 
 	@Test
 	void 게시글이_없으면_404를_반환한다() throws Exception {
-		given(postFinder.findPostDetail(999L)).willThrow(new PostNotFoundException(999L));
+		given(postFinder.findPostDetail(42L, 999L)).willThrow(new PostNotFoundException(999L));
 
-		mockMvc.perform(get("/api/community/posts/{postId}", 999L)
-						.principal(CURRENT_USER)
+		mockMvc.perform(get("/api/community/posts/{postId}", 999L).principal(CURRENT_USER)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isNotFound())
 				.andExpect(jsonPath("$.code").value("COMMUNITY_POST_NOT_FOUND"))
@@ -510,7 +512,7 @@ class CommunityControllerTest {
 								fieldWithPath("media[]").description("첨부한 사진·영상 목록. 요청 순서대로이고, 첨부 없이 작성했으면 빈 배열"),
 								fieldWithPath("media[].type").description("미디어 종류. IMAGE(사진), VIDEO(영상)"),
 								fieldWithPath("media[].url").description("미디어 공개 URL"),
-								fieldWithPath("createdAt").description("게시글 작성 시각(ISO-8601, 초 단위)")
+						fieldWithPath("createdAt").description("게시글 작성 시각(ISO-8601, 초 단위)")
 						)
 				));
 	}
@@ -666,7 +668,7 @@ class CommunityControllerTest {
 								fieldWithPath("media[]").description("사진·영상 목록. 요청 순서대로이고, 미디어 없이 수정했으면 빈 배열"),
 								fieldWithPath("media[].type").description("미디어 종류. IMAGE(사진), VIDEO(영상)"),
 								fieldWithPath("media[].url").description("미디어 공개 URL"),
-								fieldWithPath("createdAt").description("게시글 작성 시각(ISO-8601, 초 단위)")
+						fieldWithPath("createdAt").description("게시글 작성 시각(ISO-8601, 초 단위)")
 						)
 				));
 	}
@@ -818,7 +820,7 @@ class CommunityControllerTest {
 								fieldWithPath("media[]").description("첨부한 사진·영상 목록. 요청 순서대로이고, 첨부 없이 작성했으면 빈 배열"),
 								fieldWithPath("media[].type").description("미디어 종류. IMAGE(사진), VIDEO(영상)"),
 								fieldWithPath("media[].url").description("미디어 공개 URL"),
-								fieldWithPath("createdAt").description("댓글 작성 시각(ISO-8601, 초 단위)")
+						fieldWithPath("createdAt").description("댓글 작성 시각(ISO-8601, 초 단위)")
 						)
 				));
 	}
@@ -949,7 +951,7 @@ class CommunityControllerTest {
 								fieldWithPath("media[]").description("작성할 때 첨부한 사진·영상 목록. 첨부가 없으면 빈 배열"),
 								fieldWithPath("media[].type").description("미디어 종류. IMAGE(사진), VIDEO(영상)"),
 								fieldWithPath("media[].url").description("미디어 공개 URL"),
-								fieldWithPath("createdAt").description("댓글 작성 시각(ISO-8601, 초 단위)")
+						fieldWithPath("createdAt").description("댓글 작성 시각(ISO-8601, 초 단위)")
 						)
 				));
 	}
@@ -1042,13 +1044,13 @@ class CommunityControllerTest {
 				CommentFixture.create(100L, post, 7L, "저희 강아지도 성공했어요!",
 						List.of(new PostMediaCommand(PostMediaType.IMAGE, "https://media.meongcoach.com/images/community-post/42/shot.jpg")),
 						LocalDateTime.of(2026, 10, 19, 11, 0, 0)),
-				new AuthorResult(7L, "초코", "https://media.meongcoach.com/images/dog-profile/7/choco.jpg"), 3L);
+				new AuthorResult(7L, "초코", "https://media.meongcoach.com/images/dog-profile/7/choco.jpg"), 3L, 0L, false);
 		CommentResult withoutProfile = new CommentResult(
-				CommentFixture.create(101L, post, 8L, "축하해요!", LocalDateTime.of(2026, 10, 19, 12, 0, 0)), null, 0L);
-		given(commentFinder.findComments(30L, new CommentListRequest(99L, 2)))
+				CommentFixture.create(101L, post, 8L, "축하해요!", LocalDateTime.of(2026, 10, 19, 12, 0, 0)), null, 0L, 0L, false);
+		given(commentFinder.findComments(42L, 30L, new CommentListRequest(99L, 2)))
 				.willReturn(new CommentListResult(List.of(withProfile, withoutProfile), 101L));
 
-		mockMvc.perform(get("/api/community/posts/{postId}/comments", 30L)
+		mockMvc.perform(get("/api/community/posts/{postId}/comments", 30L).principal(CURRENT_USER)
 						.param("cursor", "99")
 						.param("size", "2")
 						.principal(CURRENT_USER)
@@ -1088,7 +1090,9 @@ class CommunityControllerTest {
 								fieldWithPath("comments[].media[].type").description("미디어 종류. IMAGE(사진), VIDEO(영상)"),
 								fieldWithPath("comments[].media[].url").description("미디어 공개 URL"),
 								fieldWithPath("comments[].replyCount").description("삭제되지 않은 답글 수. 답글이 없으면 0"),
-								fieldWithPath("comments[].createdAt").description("댓글 작성 시각(ISO-8601, 초 단위)"),
+								fieldWithPath("comments[].likeCount").description("좋아요 수"),
+						fieldWithPath("comments[].likedByMe").description("내 좋아요 여부"),
+						fieldWithPath("comments[].createdAt").description("댓글 작성 시각(ISO-8601, 초 단위)"),
 								fieldWithPath("nextCursor").optional()
 										.description("다음 페이지 요청에 cursor로 보낼 값. 마지막 페이지면 null")
 						)
@@ -1097,11 +1101,10 @@ class CommunityControllerTest {
 
 	@Test
 	void 댓글을_조회할_게시글이_없으면_404를_반환한다() throws Exception {
-		given(commentFinder.findComments(eq(999L), any(CommentListRequest.class)))
+		given(commentFinder.findComments(eq(42L), eq(999L), any(CommentListRequest.class)))
 				.willThrow(new PostNotFoundException(999L));
 
-		mockMvc.perform(get("/api/community/posts/{postId}/comments", 999L)
-						.principal(CURRENT_USER)
+		mockMvc.perform(get("/api/community/posts/{postId}/comments", 999L).principal(CURRENT_USER)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isNotFound())
 				.andExpect(jsonPath("$.code").value("COMMUNITY_POST_NOT_FOUND"))
@@ -1119,7 +1122,7 @@ class CommunityControllerTest {
 
 	@Test
 	void 댓글_목록의_커서와_size를_생략하면_첫_페이지를_기본_크기로_조회한다() throws Exception {
-		given(commentFinder.findComments(eq(30L), any(CommentListRequest.class)))
+		given(commentFinder.findComments(eq(42L), eq(30L), any(CommentListRequest.class)))
 				.willReturn(new CommentListResult(List.of(), null));
 
 		mockMvc.perform(get("/api/community/posts/{postId}/comments", 30L).principal(CURRENT_USER))
@@ -1127,12 +1130,12 @@ class CommunityControllerTest {
 				.andExpect(jsonPath("$.comments").isEmpty())
 				.andExpect(jsonPath("$.nextCursor").value(nullValue()));
 
-		then(commentFinder).should().findComments(30L, new CommentListRequest(null, CommentListRequest.DEFAULT_SIZE));
+		then(commentFinder).should().findComments(42L, 30L, new CommentListRequest(null, CommentListRequest.DEFAULT_SIZE));
 	}
 
 	@Test
 	void 댓글_목록의_size가_허용_범위를_벗어나면_400을_반환한다() throws Exception {
-		mockMvc.perform(get("/api/community/posts/{postId}/comments", 30L)
+		mockMvc.perform(get("/api/community/posts/{postId}/comments", 30L).principal(CURRENT_USER)
 						.param("size", "51")
 						.principal(CURRENT_USER))
 				.andExpect(status().isBadRequest())
@@ -1148,11 +1151,11 @@ class CommunityControllerTest {
 				CommentFixture.create(102L, post, 7L, "감사합니다!",
 						List.of(new PostMediaCommand(PostMediaType.VIDEO, "https://media.meongcoach.com/videos/community-post/42/clip.mp4")),
 						LocalDateTime.of(2026, 10, 19, 13, 0, 0)),
-				new AuthorResult(7L, "초코", "https://media.meongcoach.com/images/dog-profile/7/choco.jpg"));
-		given(commentFinder.findReplies(100L, new CommentListRequest(101L, 1)))
+				new AuthorResult(7L, "초코", "https://media.meongcoach.com/images/dog-profile/7/choco.jpg"), 0L, false);
+		given(commentFinder.findReplies(42L, 100L, new CommentListRequest(101L, 1)))
 				.willReturn(new ReplyListResult(List.of(reply), 102L));
 
-		mockMvc.perform(get("/api/community/comments/{commentId}/replies", 100L)
+		mockMvc.perform(get("/api/community/comments/{commentId}/replies", 100L).principal(CURRENT_USER)
 						.param("cursor", "101")
 						.param("size", "1")
 						.principal(CURRENT_USER)
@@ -1185,7 +1188,9 @@ class CommunityControllerTest {
 								fieldWithPath("replies[].media[]").description("첨부한 사진·영상 목록. 첨부 순서대로이고, 첨부가 없으면 빈 배열"),
 								fieldWithPath("replies[].media[].type").description("미디어 종류. IMAGE(사진), VIDEO(영상)"),
 								fieldWithPath("replies[].media[].url").description("미디어 공개 URL"),
-								fieldWithPath("replies[].createdAt").description("답글 작성 시각(ISO-8601, 초 단위)"),
+								fieldWithPath("replies[].likeCount").description("좋아요 수"),
+						fieldWithPath("replies[].likedByMe").description("내 좋아요 여부"),
+						fieldWithPath("replies[].createdAt").description("답글 작성 시각(ISO-8601, 초 단위)"),
 								fieldWithPath("nextCursor").optional()
 										.description("다음 페이지 요청에 cursor로 보낼 값. 마지막 페이지면 null")
 						)
@@ -1194,11 +1199,10 @@ class CommunityControllerTest {
 
 	@Test
 	void 답글을_조회할_루트_댓글이_없으면_404를_반환한다() throws Exception {
-		given(commentFinder.findReplies(eq(999L), any(CommentListRequest.class)))
+		given(commentFinder.findReplies(eq(42L), eq(999L), any(CommentListRequest.class)))
 				.willThrow(new CommentNotFoundException(999L));
 
-		mockMvc.perform(get("/api/community/comments/{commentId}/replies", 999L)
-						.principal(CURRENT_USER)
+		mockMvc.perform(get("/api/community/comments/{commentId}/replies", 999L).principal(CURRENT_USER)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isNotFound())
 				.andExpect(jsonPath("$.code").value("COMMUNITY_COMMENT_NOT_FOUND"))
@@ -1290,5 +1294,148 @@ class CommunityControllerTest {
 				.andExpect(jsonPath("$.errors[0].field").value("fileSizeBytes"));
 
 		then(postMediaUploadUrlIssuer).shouldHaveNoInteractions();
+	}
+
+	@Test
+	void 게시글_좋아요_like_응답을_반환한다() throws Exception {
+		given(likeRegister.likePost(42L, 30L)).willReturn(new LikeSummary(3L, true));
+
+		mockMvc.perform(post("/api/community/posts/{postId}/like", 30L)
+				.principal(CURRENT_USER)
+				.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.likeCount").value(3))
+				.andExpect(jsonPath("$.likedByMe").value(true))
+				.andDo(document("community/post-like",
+						pathParameters(parameterWithName("postId").description("게시글 ID")),
+						responseFields(fieldWithPath("likeCount").description("좋아요 수"),
+								fieldWithPath("likedByMe").description("내 좋아요 여부"))));
+	}
+
+	@Test
+	void 없는_게시글_좋아요_like_요청은_404를_반환한다() throws Exception {
+		given(likeRegister.likePost(42L, 999L)).willThrow(new PostNotFoundException(999L));
+
+		mockMvc.perform(post("/api/community/posts/{postId}/like", 999L)
+				.principal(CURRENT_USER)
+				.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+				.andExpect(status().isNotFound())
+				.andDo(document("community/post-like-error",
+						pathParameters(parameterWithName("postId").description("게시글 ID")),
+						responseFields(fieldWithPath("timestamp").description("발생 시각"),
+								fieldWithPath("title").description("문제 제목"),
+								fieldWithPath("status").description("HTTP 상태"),
+								fieldWithPath("detail").description("문제 설명"),
+								fieldWithPath("instance").description("요청 경로"),
+								fieldWithPath("code").description("에러 코드"))));
+	}
+
+	@Test
+	void 게시글_좋아요_unlike_응답을_반환한다() throws Exception {
+		given(likeRegister.unlikePost(42L, 30L)).willReturn(new LikeSummary(3L, false));
+
+		mockMvc.perform(delete("/api/community/posts/{postId}/like", 30L)
+				.principal(CURRENT_USER)
+				.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.likeCount").value(3))
+				.andExpect(jsonPath("$.likedByMe").value(false))
+				.andDo(document("community/post-unlike",
+						pathParameters(parameterWithName("postId").description("게시글 ID")),
+						responseFields(fieldWithPath("likeCount").description("좋아요 수"),
+								fieldWithPath("likedByMe").description("내 좋아요 여부"))));
+	}
+
+	@Test
+	void 없는_게시글_좋아요_unlike_요청은_404를_반환한다() throws Exception {
+		given(likeRegister.unlikePost(42L, 999L)).willThrow(new PostNotFoundException(999L));
+
+		mockMvc.perform(delete("/api/community/posts/{postId}/like", 999L)
+				.principal(CURRENT_USER)
+				.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+				.andExpect(status().isNotFound())
+				.andDo(document("community/post-unlike-error",
+						pathParameters(parameterWithName("postId").description("게시글 ID")),
+						responseFields(fieldWithPath("timestamp").description("발생 시각"),
+								fieldWithPath("title").description("문제 제목"),
+								fieldWithPath("status").description("HTTP 상태"),
+								fieldWithPath("detail").description("문제 설명"),
+								fieldWithPath("instance").description("요청 경로"),
+								fieldWithPath("code").description("에러 코드"))));
+	}
+
+	@Test
+	void 댓글_좋아요_like_응답을_반환한다() throws Exception {
+		given(likeRegister.likeComment(42L, 30L)).willReturn(new LikeSummary(3L, true));
+
+		mockMvc.perform(post("/api/community/comments/{commentId}/like", 30L)
+				.principal(CURRENT_USER)
+				.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.likeCount").value(3))
+				.andExpect(jsonPath("$.likedByMe").value(true))
+				.andDo(document("community/comment-like",
+						pathParameters(parameterWithName("commentId").description("댓글 ID")),
+						responseFields(fieldWithPath("likeCount").description("좋아요 수"),
+								fieldWithPath("likedByMe").description("내 좋아요 여부"))));
+	}
+
+	@Test
+	void 없는_댓글_좋아요_like_요청은_404를_반환한다() throws Exception {
+		given(likeRegister.likeComment(42L, 999L)).willThrow(new CommentNotFoundException(999L));
+
+		mockMvc.perform(post("/api/community/comments/{commentId}/like", 999L)
+				.principal(CURRENT_USER)
+				.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+				.andExpect(status().isNotFound())
+				.andDo(document("community/comment-like-error",
+						pathParameters(parameterWithName("commentId").description("댓글 ID")),
+						responseFields(fieldWithPath("timestamp").description("발생 시각"),
+								fieldWithPath("title").description("문제 제목"),
+								fieldWithPath("status").description("HTTP 상태"),
+								fieldWithPath("detail").description("문제 설명"),
+								fieldWithPath("instance").description("요청 경로"),
+								fieldWithPath("code").description("에러 코드"))));
+	}
+
+	@Test
+	void 댓글_좋아요_unlike_응답을_반환한다() throws Exception {
+		given(likeRegister.unlikeComment(42L, 30L)).willReturn(new LikeSummary(3L, false));
+
+		mockMvc.perform(delete("/api/community/comments/{commentId}/like", 30L)
+				.principal(CURRENT_USER)
+				.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.likeCount").value(3))
+				.andExpect(jsonPath("$.likedByMe").value(false))
+				.andDo(document("community/comment-unlike",
+						pathParameters(parameterWithName("commentId").description("댓글 ID")),
+						responseFields(fieldWithPath("likeCount").description("좋아요 수"),
+								fieldWithPath("likedByMe").description("내 좋아요 여부"))));
+	}
+
+	@Test
+	void 없는_댓글_좋아요_unlike_요청은_404를_반환한다() throws Exception {
+		given(likeRegister.unlikeComment(42L, 999L)).willThrow(new CommentNotFoundException(999L));
+
+		mockMvc.perform(delete("/api/community/comments/{commentId}/like", 999L)
+				.principal(CURRENT_USER)
+				.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+				.andExpect(status().isNotFound())
+				.andDo(document("community/comment-unlike-error",
+						pathParameters(parameterWithName("commentId").description("댓글 ID")),
+						responseFields(fieldWithPath("timestamp").description("발생 시각"),
+								fieldWithPath("title").description("문제 제목"),
+								fieldWithPath("status").description("HTTP 상태"),
+								fieldWithPath("detail").description("문제 설명"),
+								fieldWithPath("instance").description("요청 경로"),
+								fieldWithPath("code").description("에러 코드"))));
+	}
+
+	@Test
+	void 인증_없이_좋아요를_추가할_수_없다() throws Exception {
+		mockMvc.perform(post("/api/community/posts/30/like"))
+				.andExpect(status().isUnauthorized());
+		then(likeRegister).shouldHaveNoInteractions();
 	}
 }

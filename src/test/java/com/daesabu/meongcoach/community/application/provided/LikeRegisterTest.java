@@ -3,13 +3,16 @@ package com.daesabu.meongcoach.community.application.provided;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.daesabu.meongcoach.community.application.required.PostRepository;
+import com.daesabu.meongcoach.community.application.provided.dto.CommentListRequest;
+import com.daesabu.meongcoach.community.application.provided.dto.CommentRegisterRequest;
+import com.daesabu.meongcoach.community.application.provided.dto.PostListRequest;
 import com.daesabu.meongcoach.community.application.required.CommentRepository;
-import com.daesabu.meongcoach.community.domain.Post;
+import com.daesabu.meongcoach.community.application.required.PostRepository;
 import com.daesabu.meongcoach.community.domain.Comment;
+import com.daesabu.meongcoach.community.domain.Post;
 import com.daesabu.meongcoach.community.domain.PostRegisterCommand;
-import com.daesabu.meongcoach.community.domain.exception.PostNotFoundException;
 import com.daesabu.meongcoach.community.domain.exception.CommentNotFoundException;
+import com.daesabu.meongcoach.community.domain.exception.PostNotFoundException;
 import com.daesabu.meongcoach.support.ApplicationTest;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -20,6 +23,14 @@ class LikeRegisterTest {
 
 	@Autowired
 	private LikeRegister likeRegister;
+	@Autowired
+	private PostFinder postFinder;
+	@Autowired
+	private CommentFinder commentFinder;
+	@Autowired
+	private CommentRegister commentRegister;
+	@Autowired
+	private LikeFinder likeFinder;
 	@Autowired
 	private PostRepository postRepository;
 	@Autowired
@@ -100,5 +111,58 @@ class LikeRegisterTest {
 	private Post savePost() {
 		Post post = Post.register(41L, new PostRegisterCommand("본문", null, List.of()));
 		return postRepository.save(post);
+	}
+
+	@Test
+	void 목록과_상세는_현재_사용자의_좋아요_상태를_반환한다() {
+		Post post = savePost();
+		Comment comment = commentRepository.save(Comment.register(post, 41L, "댓글"));
+		likeRegister.likePost(42L, post.getId());
+		likeRegister.likeComment(42L, comment.getId());
+
+		var detail = postFinder.findPostDetail(42L, post.getId());
+		var otherDetail = postFinder.findPostDetail(43L, post.getId());
+		var posts = postFinder.findPosts(42L,
+				new PostListRequest(null, 10, null));
+		var comments = commentFinder.findComments(42L, post.getId(),
+				new CommentListRequest(null, 10));
+
+		assertThat(detail.likeCount()).isEqualTo(1);
+		assertThat(detail.likedByMe()).isTrue();
+		assertThat(otherDetail.likeCount()).isEqualTo(1);
+		assertThat(otherDetail.likedByMe()).isFalse();
+		assertThat(posts.posts()).anySatisfy(result -> {
+			assertThat(result.post().getId()).isEqualTo(post.getId());
+			assertThat(result.likedByMe()).isTrue();
+		});
+		assertThat(comments.comments().getFirst().likedByMe()).isTrue();
+		assertThat(comments.comments().getFirst().likeCount()).isEqualTo(1);
+	}
+
+	@Test
+	void 좋아요가_없는_대상과_빈_목록을_조회한다() {
+		Post post = savePost();
+		var likes = likeFinder.findPostLikes(42L, List.of(post.getId()));
+
+		assertThat(likes.get(post.getId()).likeCount()).isZero();
+		assertThat(likes.get(post.getId()).likedByMe()).isFalse();
+		assertThat(likeFinder.findPostLikes(42L, List.of())).isEmpty();
+		assertThat(likeFinder.findCommentLikes(42L, List.of())).isEmpty();
+	}
+
+	@Test
+	void 답글에도_좋아요를_추가하고_조회한다() {
+		Post post = savePost();
+		Comment root = commentRegister.register(41L, post.getId(),
+				new CommentRegisterRequest("댓글", null));
+		Comment reply = commentRegister.register(42L, post.getId(),
+				new CommentRegisterRequest("답글", root.getId()));
+		likeRegister.likeComment(43L, reply.getId());
+
+		var replies = commentFinder.findReplies(43L, root.getId(),
+				new CommentListRequest(null, 10));
+
+		assertThat(replies.replies().getFirst().likeCount()).isEqualTo(1);
+		assertThat(replies.replies().getFirst().likedByMe()).isTrue();
 	}
 }
