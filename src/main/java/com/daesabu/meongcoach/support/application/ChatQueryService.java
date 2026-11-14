@@ -24,7 +24,8 @@ public class ChatQueryService implements ChatFinder {
 		var authentication = SecurityContextHolder.getContext().getAuthentication();
 		return authentication != null && authentication.isAuthenticated()
 				&& authentication.getAuthorities().stream()
-						.anyMatch(authority -> AuthorityRole.ADMIN.authority().equals(authority.getAuthority()));
+						.anyMatch(authority -> AuthorityRole.ADMIN.authority().equals(authority.getAuthority())
+								|| AuthorityRole.EXPERT.authority().equals(authority.getAuthority()));
 	}
 
 	public void verifyExists(long conversationId) {

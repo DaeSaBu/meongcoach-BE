@@ -80,7 +80,7 @@ class ChatControllerTest {
 						document(
 								"support/chat-capabilities",
 								responseFields(
-										fieldWithPath("operator").description("ADMIN 상담원 여부"))));
+										fieldWithPath("operator").description("ADMIN·EXPERT 상담원 여부"))));
 	}
 
 	@Test

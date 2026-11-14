@@ -1177,7 +1177,7 @@ operation::support/session-error[snippets='http-response,response-fields']
 
 === 자체 실시간 상담
 
-회원은 본인 대화만 접근하며 ADMIN은 상담 목록과 답변을 처리합니다.
+일반 회원은 본인 대화만 접근하며 ADMIN과 EXPERT는 상담 목록과 답변을 처리합니다.
 이미지 첨부는 지원하지 않으며 메시지는 일반 텍스트 최대 2000자입니다.
 
 operation::support/chat-open[snippets='http-request,http-response,response-fields']
