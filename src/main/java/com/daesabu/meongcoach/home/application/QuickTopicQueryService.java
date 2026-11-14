@@ -28,9 +28,7 @@ public class QuickTopicQueryService implements QuickTopicFinder {
 	@Override
 	public List<QuickTopicResult> find(Long userId, Long dogId) {
 		List<Long> planTopicIds = currentPlanFinder.findActiveTopicIds(userId, dogId);
-		List<TopicProgressResult> topics = topicProgressFinder.findAll(userId).stream()
-				.filter(TopicProgressResult::hasThumbnail)
-				.toList();
+		List<TopicProgressResult> topics = topicProgressFinder.findAll(userId);
 		if (!planTopicIds.isEmpty()) {
 			return findPlanTopics(topics, planTopicIds);
 		}
@@ -50,6 +48,7 @@ public class QuickTopicQueryService implements QuickTopicFinder {
 
 	private List<QuickTopicResult> findRecommendedTopics(List<TopicProgressResult> topics) {
 		return topics.stream()
+				.filter(TopicProgressResult::hasThumbnail)
 				.filter(topic -> topic.status() == ProgressStatus.NOT_STARTED)
 				.limit(LIMIT)
 				.map(QuickTopicResult::from)
