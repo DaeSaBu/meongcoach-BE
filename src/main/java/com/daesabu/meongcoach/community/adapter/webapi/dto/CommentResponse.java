@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Optional;
 
 public record CommentResponse(Long commentId, String content, List<PostMediaResponse> media, AuthorResponse author, long replyCount,
-		LocalDateTime createdAt) {
+		LocalDateTime createdAt, long likeCount, boolean likedByMe) {
 
 	public static CommentResponse from(CommentResult result) {
 		Comment comment = result.comment();
@@ -15,6 +15,6 @@ public record CommentResponse(Long commentId, String content, List<PostMediaResp
 				.map(AuthorResponse::from)
 				.orElse(null);
 		return new CommentResponse(comment.getId(), comment.getContent().value(), PostMediaResponse.listOf(comment), author, result.replyCount(),
-				comment.getCreatedAt());
+				comment.getCreatedAt(), result.likeCount(), result.likedByMe());
 	}
 }
