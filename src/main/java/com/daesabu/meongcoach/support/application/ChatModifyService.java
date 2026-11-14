@@ -44,7 +44,7 @@ public class ChatModifyService implements ChatRegister {
 		var message = ChatMessage.create(command);
 		conversation.recordMessage();
 		messages.save(message);
-		message.replySentEvent().ifPresent(events::publishEvent);
+		events.publishEvent(message.sentEvent());
 		return message;
 	}
 }
