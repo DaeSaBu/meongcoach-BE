@@ -673,6 +673,44 @@ operation::community/post-list[snippets='http-request,query-parameters,http-resp
 
 operation::community/post-list-error[snippets='http-response,response-fields']
 
+=== 게시글·댓글 좋아요
+
+게시글과 댓글(답글 포함)에 좋아요를 추가하거나 취소합니다. 같은 요청을 반복해도 좋아요 수는 중복 증가하거나 감소하지 않습니다.
+게시글 목록·상세와 댓글·답글 목록은 `likeCount`와 로그인한 사용자의 `likedByMe`를 함께 반환합니다.
+삭제되거나 없는 대상과 삭제된 게시글의 댓글은 404를 반환합니다.
+
+==== 게시글 좋아요 추가
+
+link:{swagger-ui}#/Community/community-post-like[▶ Swagger에서 Try it out,window=swagger]
+
+operation::community/post-like[snippets='http-request,path-parameters,http-response,response-fields']
+
+operation::community/post-like-error[snippets='http-response,response-fields']
+
+==== 게시글 좋아요 취소
+
+link:{swagger-ui}#/Community/community-post-unlike[▶ Swagger에서 Try it out,window=swagger]
+
+operation::community/post-unlike[snippets='http-request,path-parameters,http-response,response-fields']
+
+operation::community/post-unlike-error[snippets='http-response,response-fields']
+
+==== 댓글 좋아요 추가
+
+link:{swagger-ui}#/Community/community-comment-like[▶ Swagger에서 Try it out,window=swagger]
+
+operation::community/comment-like[snippets='http-request,path-parameters,http-response,response-fields']
+
+operation::community/comment-like-error[snippets='http-response,response-fields']
+
+==== 댓글 좋아요 취소
+
+link:{swagger-ui}#/Community/community-comment-unlike[▶ Swagger에서 Try it out,window=swagger]
+
+operation::community/comment-unlike[snippets='http-request,path-parameters,http-response,response-fields']
+
+operation::community/comment-unlike-error[snippets='http-response,response-fields']
+
 === 내 작성자 정보 조회
 
 link:{swagger-ui}#/Community/community-my-author[▶ Swagger에서 Try it out,window=swagger]

@@ -2,6 +2,7 @@ package com.daesabu.meongcoach.community.application;
 
 import static java.util.Optional.ofNullable;
 
+import com.daesabu.meongcoach.community.application.provided.LikeFinder;
 import com.daesabu.meongcoach.community.application.provided.PostFinder;
 import com.daesabu.meongcoach.community.application.provided.dto.AuthorResult;
 import com.daesabu.meongcoach.community.application.provided.dto.MentionTargetResult;
@@ -10,6 +11,7 @@ import com.daesabu.meongcoach.community.application.provided.dto.PostListResult;
 import com.daesabu.meongcoach.community.application.provided.dto.PostResult;
 import com.daesabu.meongcoach.community.application.required.PostQueryRepository;
 import com.daesabu.meongcoach.community.application.required.PostRepository;
+import com.daesabu.meongcoach.community.domain.LikeSummary;
 import com.daesabu.meongcoach.community.domain.MentionTargetType;
 import com.daesabu.meongcoach.community.domain.Post;
 import com.daesabu.meongcoach.community.domain.PostMention;
@@ -34,13 +36,14 @@ public class PostQueryService implements PostFinder {
 	private final PostRepository postRepository;
 	private final PostQueryRepository postQueryRepository;
 	private final AuthorProfiles authorProfiles;
+	private final LikeFinder likeFinder;
 	private final MentionTargetReaders mentionTargetReaders;
 
 	@Override
-	public PostListResult findPosts(PostListRequest request) {
+	public PostListResult findPosts(Long userId, PostListRequest request) {
 		Slice<Post> slice = getSlice(request);
 
-		List<PostResult> posts = compose(slice.getContent());
+		List<PostResult> posts = compose(userId, slice.getContent());
 		Long nextCursor = nextCursorOf(slice);
 		return new PostListResult(posts, nextCursor);
 	}
@@ -58,10 +61,10 @@ public class PostQueryService implements PostFinder {
 	}
 
 	@Override
-	public PostResult findPostDetail(Long postId) {
+	public PostResult findPostDetail(Long userId, Long postId) {
 		Post post = findPost(postId);
 
-		List<PostResult> results = compose(List.of(post));
+		List<PostResult> results = compose(userId, List.of(post));
 		return results.getFirst();
 	}
 
@@ -77,11 +80,13 @@ public class PostQueryService implements PostFinder {
 		return last.getId();
 	}
 
-	private List<PostResult> compose(List<Post> posts) {
+	private List<PostResult> compose(Long userId, List<Post> posts) {
 		Map<Long, AuthorResult> authors = findAuthors(posts);
+		List<Long> ids = posts.stream().map(Post::getId).toList();
+		Map<Long, LikeSummary> likes = likeFinder.findPostLikes(userId, ids);
 		Map<MentionTargetType, Map<Long, MentionTargetResult>> mentionTargets = findMentionTargets(posts);
 		return posts.stream()
-				.map(post -> toResult(post, authors, mentionTargets))
+				.map(post -> toResult(post, authors, mentionTargets, likes.get(post.getId())))
 				.toList();
 	}
 
@@ -101,11 +106,11 @@ public class PostQueryService implements PostFinder {
 	}
 
 	private PostResult toResult(Post post, Map<Long, AuthorResult> authors,
-	                            Map<MentionTargetType, Map<Long, MentionTargetResult>> mentionTargets) {
+	                            Map<MentionTargetType, Map<Long, MentionTargetResult>> mentionTargets, LikeSummary likes) {
 		AuthorResult author = authors.get(post.getUserId());
 		MentionTargetResult mentionTarget = ofNullable(post.getMention())
 				.map(mention -> mentionTargets.get(mention.getTargetType()).get(mention.getTargetId()))
 				.orElse(null);
-		return new PostResult(post, author, mentionTarget);
+		return new PostResult(post, author, mentionTarget, likes.likeCount(), likes.likedByMe());
 	}
 }
