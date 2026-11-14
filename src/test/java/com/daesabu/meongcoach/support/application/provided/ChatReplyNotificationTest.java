@@ -27,21 +27,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 @NonTransactionalApplicationTest
-@Sql({
-    "/db/migration/V50__create_support_chat.sql",
-    "/db/migration/V51__create_support_push_jobs.sql",
-    "/db/migration/V52__drop_support_socket_tickets.sql",
-    "/db/migration/V53__drop_support_push_jobs.sql"
-})
-@Sql(statements = {"DROP TABLE support_messages", "DROP TABLE support_conversations"},
-    executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
 class ChatReplyNotificationTest {
     @Autowired ChatRegister chats;
     @Autowired ChatFinder finder;
