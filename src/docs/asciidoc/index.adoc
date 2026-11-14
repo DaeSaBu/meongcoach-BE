@@ -1186,7 +1186,11 @@ operation::support/chat-capabilities[snippets='http-request,http-response,respon
 
 operation::support/chat-list[snippets='http-request,query-parameters,http-response,response-fields']
 
-operation::support/chat-messages[snippets='http-request,path-parameters,query-parameters,http-response,response-fields']
+operation::support/chat-messages[snippets='http-request,path-parameters,http-response,response-fields']
+
+operation::support/chat-new-messages[snippets='http-request,path-parameters,query-parameters,http-response,response-fields']
+
+operation::support/chat-previous-messages[snippets='http-request,path-parameters,query-parameters,http-response,response-fields']
 
 operation::support/chat-send[snippets='http-request,path-parameters,request-fields,http-response,response-fields']
 

@@ -29,8 +29,10 @@ flowchart LR
 일반 회원의 타인 대화·관리자 목록 접근은 `FORBIDDEN`으로 거절합니다.
 탈퇴·미등록 회원의 토큰은 인증 과정에서 거절합니다.
 [ChatFinder](../src/main/java/com/daesabu/meongcoach/support/application/provided/ChatFinder.java)는 최초 조회 `latestMessages`, 새 메시지 조회 `newMessages`, 이전 메시지 조회 `previousMessages`를 구분합니다.
-최초 조회에는 커서가 없으며 새 메시지는 `after >= 0`, 이전 메시지는 `before > 0`을 받습니다.
-HTTP API의 `after`·`before`는 조회 서비스에서 해당 메서드로 연결하며 동시에 지정하면 거절합니다.
+최초 조회는 `GET /api/support/conversations/{id}/messages`로 요청하며 커서가 없습니다.
+새 메시지는 `GET /api/support/conversations/{id}/messages/new?after=...`로 조회하며 `after >= 0`을 받습니다.
+이전 메시지는 `GET /api/support/conversations/{id}/messages/previous?before=...`로 조회하며 `before > 0`을 받습니다.
+컨트롤러는 각 경로에서 해당 조회 메서드를 직접 호출합니다.
 상담원 목록도 화면이 활성화되어 있을 때 2초 간격으로 갱신합니다.
 목록의 다음 페이지는 이전 응답 마지막 대화의 `id`와 `updatedAt`을 각각 `before`와 `beforeUpdatedAt`으로 전달합니다.
 `updatedAt`은 응답 문자열의 소수점 정밀도를 그대로 유지합니다.
