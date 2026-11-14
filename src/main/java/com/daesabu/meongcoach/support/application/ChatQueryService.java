@@ -36,6 +36,19 @@ public class ChatQueryService implements ChatFinder {
 		return repository.conversations(before, 50);
 	}
 
+	public List<ChatMessage> messages(long id, long after, long before) {
+		if (after >= 0 && before > 0) {
+			throw new ChatCursorInvalidException();
+		}
+		if (after >= 0) {
+			return newMessages(id, after);
+		}
+		if (before > 0) {
+			return previousMessages(id, before);
+		}
+		return latestMessages(id);
+	}
+
 	public List<ChatMessage> latestMessages(long conversationId) {
 		verifyExists(conversationId);
 		return repository.latestMessages(conversationId, 50);

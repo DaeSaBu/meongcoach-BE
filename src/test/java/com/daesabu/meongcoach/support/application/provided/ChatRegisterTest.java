@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.*;
 
 import com.daesabu.meongcoach.support.ApplicationTest;
 import com.daesabu.meongcoach.support.application.provided.dto.ChatMessageRequest;
+import com.daesabu.meongcoach.support.domain.exception.ChatCursorInvalidException;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.User;
 import com.daesabu.meongcoach.user.domain.UserRole;
@@ -23,6 +24,15 @@ class ChatRegisterTest {
 	@Autowired UserRepository users;
 	@Autowired EntityManager em;
 	@Autowired JdbcTemplate jdbc;
+
+	@Test
+	void 양방향_메시지_커서를_동시에_사용하면_거절한다() {
+		Long owner = member();
+		register.open(owner);
+
+		assertThatThrownBy(() -> finder.messages(owner, 0, 2))
+				.isInstanceOf(ChatCursorInvalidException.class);
+	}
 
 	private Long member() {
 		var user = users.save(User.registerUser());
@@ -48,14 +58,14 @@ class ChatRegisterTest {
 		for (int n = 0; n < 61; n++) {
 			register.send(owner, owner, new ChatMessageRequest(UUID.randomUUID(), "문의" + n));
 		}
-		var first = finder.newMessages(owner, 0);
+		var first = finder.messages(owner, 0, 0);
 		var next = finder.newMessages(owner, first.getLast().id());
 		assertThat(first).hasSize(50);
 		assertThat(first.getFirst().body()).isEqualTo("문의0");
 		assertThat(next).hasSize(11);
-		var latest = finder.latestMessages(owner);
+		var latest = finder.messages(owner, -1, 0);
 		assertThat(latest.getFirst().body()).isEqualTo("문의11");
-		assertThat(finder.previousMessages(owner, latest.getFirst().id())).hasSize(11);
+		assertThat(finder.messages(owner, -1, latest.getFirst().id())).hasSize(11);
 	}
 
 	@Test
@@ -92,9 +102,7 @@ class ChatRegisterTest {
 		Long owner = member();
 		register.open(owner);
 		assertThatThrownBy(() -> finder.newMessages(owner, -1))
-				.isInstanceOf(
-						com.daesabu.meongcoach.support.domain.exception.ChatCursorInvalidException
-								.class);
+				.isInstanceOf(ChatCursorInvalidException.class);
 	}
 
 	@Test
@@ -102,7 +110,7 @@ class ChatRegisterTest {
 		Long owner = member();
 		register.open(owner);
 		assertThatThrownBy(() -> finder.previousMessages(owner, 0))
-				.isInstanceOf(com.daesabu.meongcoach.support.domain.exception.ChatCursorInvalidException.class);
+				.isInstanceOf(ChatCursorInvalidException.class);
 	}
 
 	@Test

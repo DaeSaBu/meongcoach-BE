@@ -8,6 +8,8 @@ import java.util.List;
 public interface ChatFinder {
 	List<ChatConversation> conversations(long before);
 
+	List<ChatMessage> messages(long conversationId, long after, long before);
+
 	List<ChatMessage> latestMessages(long conversationId);
 
 	List<ChatMessage> newMessages(long conversationId, long after);
