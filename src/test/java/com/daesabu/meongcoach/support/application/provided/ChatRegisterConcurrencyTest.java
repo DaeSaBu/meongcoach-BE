@@ -39,8 +39,8 @@ class ChatRegisterConcurrencyTest {
 
 	@AfterEach
 	void 정리한다() {
-		jdbc.update("DELETE FROM support_messages WHERE conversation_id = ?", userId);
-		jdbc.update("DELETE FROM support_conversations WHERE id = ?", userId);
+		jdbc.update("DELETE FROM support_messages WHERE conversation_id IN (SELECT id FROM support_conversations WHERE member_id = ?)", userId);
+		jdbc.update("DELETE FROM support_conversations WHERE member_id = ?", userId);
 		users.deleteById(userId);
 	}
 
@@ -59,29 +59,29 @@ class ChatRegisterConcurrencyTest {
 				return conversation;
 			});
 			assertThat(next.get().get(5, TimeUnit.SECONDS)).usingRecursiveComparison().isEqualTo(first);
-			assertThat(jdbc.queryForObject("SELECT count(*) FROM support_conversations WHERE id = ?",
+			assertThat(jdbc.queryForObject("SELECT count(*) FROM support_conversations WHERE member_id = ?",
 					Long.class, userId)).isEqualTo(1);
 		}
 	}
 
 	@Test
 	void 같은_UUID를_동시에_전송해도_하나의_메시지만_저장한다() throws Exception {
-		register.open(userId);
+		long conversationId = register.open(userId).getId();
 		var request = new ChatMessageRequest(UUID.randomUUID(), "문의");
 		try (var executor = Executors.newSingleThreadExecutor()) {
 			var started = new CountDownLatch(1);
 			var next = new AtomicReference<Future<ChatMessage>>();
 			var first = new TransactionTemplate(transactions).execute(status -> {
-				var message = register.send(userId, userId, request);
+				var message = register.send(userId, conversationId, request);
 				next.set(executor.submit(() -> {
 					started.countDown();
-					return register.send(userId, userId, request);
+					return register.send(userId, conversationId, request);
 				}));
 				assertBlocked(started, next.get());
 				return message;
 			});
 			assertThat(next.get().get(5, TimeUnit.SECONDS)).usingRecursiveComparison().isEqualTo(first);
-			assertThat(finder.newMessages(userId, 0)).usingRecursiveFieldByFieldElementComparator().containsExactly(first);
+			assertThat(finder.newMessages(userId, conversationId, 0)).usingRecursiveFieldByFieldElementComparator().containsExactly(first);
 		}
 	}
 

@@ -37,7 +37,7 @@ class ChatControllerTest {
 
 	private ChatMessage message() {
 		return ChatMessageFixture.create(
-				1, 42, 42, false, clientId, "문의합니다", Instant.parse("2026-11-01T00:00:00Z"));
+				1, 17, 42, false, clientId, "문의합니다", Instant.parse("2026-11-01T00:00:00Z"));
 	}
 
 	private FieldDescriptor[] fields(String prefix) {
@@ -55,7 +55,7 @@ class ChatControllerTest {
 	@Test
 	void 본인_대화를_연다() throws Exception {
 		given(register.open(42L))
-				.willReturn(ChatConversationFixture.create(42, Instant.parse("2026-11-01T00:00:00Z")));
+				.willReturn(ChatConversationFixture.create(17, 42, Instant.parse("2026-11-01T00:00:00Z")));
 		mvc.perform(
 						post("/api/support/conversations/me")
 								.principal(() -> "42")
@@ -66,6 +66,7 @@ class ChatControllerTest {
 								"support/chat-open",
 								responseFields(
 										fieldWithPath("id").description("대화 ID"),
+										fieldWithPath("memberId").description("대화 소유 회원 ID"),
 										fieldWithPath("updatedAt").description("최종 활동 시각"))));
 	}
 
@@ -88,7 +89,7 @@ class ChatControllerTest {
 	void 상담원_대화목록을_조회한다() throws Exception {
 		given(finder.conversations(0, null))
 				.willReturn(
-						List.of(ChatConversationFixture.create(42, Instant.parse("2026-11-01T00:00:00Z"))));
+						List.of(ChatConversationFixture.create(17, 42, Instant.parse("2026-11-01T00:00:00Z"))));
 		mvc.perform(
 						get("/api/support/conversations")
 								.principal(() -> "42")
@@ -104,14 +105,15 @@ class ChatControllerTest {
 										parameterWithName("beforeUpdatedAt").optional().description("이전 응답 마지막 대화의 updatedAt 원문; before와 함께 전달")),
 								responseFields(
 										fieldWithPath("[].id").description("대화 ID"),
+										fieldWithPath("[].memberId").description("대화 소유 회원 ID"),
 										fieldWithPath("[].updatedAt").description("최종 활동 시각"))));
 	}
 
 	@Test
 	void 메시지를_커서로_조회한다() throws Exception {
-		given(finder.latestMessages(42)).willReturn(List.of(message()));
+		given(finder.latestMessages(42L, 17)).willReturn(List.of(message()));
 		mvc.perform(
-						get("/api/support/conversations/{id}/messages", 42)
+						get("/api/support/conversations/{id}/messages", 17)
 								.principal(() -> "42")
 								.header("Authorization", "Bearer access-token"))
 				.andExpect(status().isOk())
@@ -124,17 +126,17 @@ class ChatControllerTest {
 
 	@Test
 	void 커서가_없으면_최신_메시지를_조회한다() throws Exception {
-		given(finder.latestMessages(42)).willReturn(List.of(message()));
-		mvc.perform(get("/api/support/conversations/42/messages").principal(() -> "42"))
+		given(finder.latestMessages(42L, 17)).willReturn(List.of(message()));
+		mvc.perform(get("/api/support/conversations/17/messages").principal(() -> "42"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$[0].id").value(1));
-		verify(finder).latestMessages(42);
+		verify(finder).latestMessages(42L, 17);
 	}
 
 	@Test
 	void after로_새_메시지를_조회한다() throws Exception {
-		given(finder.newMessages(42, 0)).willReturn(List.of(message()));
-		mvc.perform(get("/api/support/conversations/{id}/messages/new", 42)
+		given(finder.newMessages(42L, 17, 0)).willReturn(List.of(message()));
+		mvc.perform(get("/api/support/conversations/{id}/messages/new", 17)
 				.param("after", "0").principal(() -> "42").header("Authorization", "Bearer access-token"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$[0].id").value(1))
@@ -142,13 +144,13 @@ class ChatControllerTest {
 						pathParameters(parameterWithName("id").description("대화 ID")),
 						queryParameters(parameterWithName("after").description("조회 기준 메시지 ID")),
 						responseFields(fields("[]."))));
-		verify(finder).newMessages(42, 0);
+		verify(finder).newMessages(42L, 17, 0);
 	}
 
 	@Test
 	void before로_이전_메시지를_조회한다() throws Exception {
-		given(finder.previousMessages(42, 2)).willReturn(List.of(message()));
-		mvc.perform(get("/api/support/conversations/{id}/messages/previous", 42)
+		given(finder.previousMessages(42L, 17, 2)).willReturn(List.of(message()));
+		mvc.perform(get("/api/support/conversations/{id}/messages/previous", 17)
 				.param("before", "2").principal(() -> "42").header("Authorization", "Bearer access-token"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$[0].id").value(1))
@@ -156,14 +158,14 @@ class ChatControllerTest {
 						pathParameters(parameterWithName("id").description("대화 ID")),
 						queryParameters(parameterWithName("before").description("조회 기준 메시지 ID")),
 						responseFields(fields("[]."))));
-		verify(finder).previousMessages(42, 2);
+		verify(finder).previousMessages(42L, 17, 2);
 	}
 
 	@Test
 	void 메시지를_전송한다() throws Exception {
-		given(register.send(eq(42L), eq(42L), any())).willReturn(message());
+		given(register.send(eq(42L), eq(17L), any())).willReturn(message());
 		mvc.perform(
-						post("/api/support/conversations/{id}/messages", 42)
+						post("/api/support/conversations/{id}/messages", 17)
 								.principal(() -> "42")
 								.header("Authorization", "Bearer access-token")
 								.contentType("application/json")
@@ -185,7 +187,7 @@ class ChatControllerTest {
 
 	@Test
 	void 존재하지_않는_대화는_403이다() throws Exception {
-		given(finder.latestMessages(43)).willThrow(new ChatAccessDeniedException());
+		given(finder.latestMessages(42L, 43)).willThrow(new ChatAccessDeniedException());
 		mvc.perform(
 						get("/api/support/conversations/{id}/messages", 43)
 								.principal(() -> "42")
@@ -206,7 +208,7 @@ class ChatControllerTest {
 	@Test
 	void 빈_메시지는_400이다() throws Exception {
 		mvc.perform(
-						post("/api/support/conversations/42/messages")
+						post("/api/support/conversations/17/messages")
 								.principal(() -> "42")
 								.contentType("application/json")
 								.content(
@@ -229,11 +231,11 @@ class ChatControllerTest {
 
 	@Test
 	void 신규와_이전_조회는_유효한_커서가_필요하다() throws Exception {
-		mvc.perform(get("/api/support/conversations/42/messages/new")).andExpect(status().isBadRequest());
-		mvc.perform(get("/api/support/conversations/42/messages/new").param("after", "-1"))
+		mvc.perform(get("/api/support/conversations/17/messages/new").principal(() -> "42")).andExpect(status().isBadRequest());
+		mvc.perform(get("/api/support/conversations/17/messages/new").principal(() -> "42").param("after", "-1"))
 				.andExpect(status().isBadRequest());
-		mvc.perform(get("/api/support/conversations/42/messages/previous")).andExpect(status().isBadRequest());
-		mvc.perform(get("/api/support/conversations/42/messages/previous").param("before", "0"))
+		mvc.perform(get("/api/support/conversations/17/messages/previous").principal(() -> "42")).andExpect(status().isBadRequest());
+		mvc.perform(get("/api/support/conversations/17/messages/previous").principal(() -> "42").param("before", "0"))
 				.andExpect(status().isBadRequest());
 		verifyNoInteractions(finder);
 	}

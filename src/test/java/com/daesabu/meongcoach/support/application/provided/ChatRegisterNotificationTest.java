@@ -51,6 +51,10 @@ class ChatRegisterNotificationTest {
         when(sender.send(anyList())).thenReturn(new NotificationDelivery(1, 0, List.of()));
     }
 
+	private long conversationId(Long memberId) {
+		return chats.open(memberId).getId();
+	}
+
 	private Long member(boolean admin) {
 		var user = User.registerUser();
 		if (admin) {
@@ -63,7 +67,7 @@ class ChatRegisterNotificationTest {
 
 	private Long recipient(boolean enabled) {
 		Long user = member(false);
-		chats.open(user);
+		jdbc.update("INSERT INTO support_conversations (id, member_id, updated_at) VALUES (?, ?, now())", user + 1_000_000L, user);
 		settings.save(
 				NotificationEventSetting.create(
 						user, NotificationEventType.SUPPORT_REPLY, enabled));
@@ -103,7 +107,7 @@ class ChatRegisterNotificationTest {
             return new NotificationDelivery(1, 0, List.of());
         });
         new TransactionTemplate(transactions).executeWithoutResult(status -> {
-            chats.send(admin, user, new ChatMessageRequest(UUID.randomUUID(), "답변"));
+            chats.send(admin, conversationId(user), new ChatMessageRequest(UUID.randomUUID(), "답변"));
             verifyNoInteractions(sender);
         });
         verify(sender).send(argThat(messages -> messages.size() == 1
@@ -116,10 +120,10 @@ class ChatRegisterNotificationTest {
         Long user = recipient(true);
         Long admin = member(true);
         new TransactionTemplate(transactions).executeWithoutResult(status -> {
-            chats.send(admin, user, new ChatMessageRequest(UUID.randomUUID(), "롤백"));
+            chats.send(admin, conversationId(user), new ChatMessageRequest(UUID.randomUUID(), "롤백"));
             status.setRollbackOnly();
         });
-        assertThat(finder.newMessages(user, 0)).isEmpty();
+        assertThat(finder.newMessages(user, conversationId(user), 0)).isEmpty();
         verifyNoInteractions(sender);
     }
 
@@ -128,9 +132,9 @@ class ChatRegisterNotificationTest {
         Long user = recipient(true);
         Long admin = member(true);
         var request = new ChatMessageRequest(UUID.randomUUID(), "답변");
-        var first = chats.send(admin, user, request);
-        assertThat(chats.send(admin, user, request)).usingRecursiveComparison().isEqualTo(first);
-        assertThat(finder.newMessages(user, 0)).usingRecursiveFieldByFieldElementComparator().containsExactly(first);
+        var first = chats.send(admin, conversationId(user), request);
+        assertThat(chats.send(admin, conversationId(user), request)).usingRecursiveComparison().isEqualTo(first);
+        assertThat(finder.newMessages(user, conversationId(user), 0)).usingRecursiveFieldByFieldElementComparator().containsExactly(first);
         verify(sender).send(anyList());
     }
 
@@ -140,9 +144,9 @@ class ChatRegisterNotificationTest {
         Long admin = member(true);
         var request = new ChatMessageRequest(UUID.randomUUID(), "답변");
         when(sender.send(anyList())).thenThrow(new IllegalStateException("발송 실패"));
-        var saved = chats.send(admin, user, request);
-        assertThat(finder.newMessages(user, 0)).usingRecursiveFieldByFieldElementComparator().containsExactly(saved);
-        assertThat(chats.send(admin, user, request)).usingRecursiveComparison().isEqualTo(saved);
+        var saved = chats.send(admin, conversationId(user), request);
+        assertThat(finder.newMessages(user, conversationId(user), 0)).usingRecursiveFieldByFieldElementComparator().containsExactly(saved);
+        assertThat(chats.send(admin, conversationId(user), request)).usingRecursiveComparison().isEqualTo(saved);
         verify(sender).send(anyList());
     }
 
@@ -152,15 +156,15 @@ class ChatRegisterNotificationTest {
         Long admin = member(true);
         var request = new ChatMessageRequest(UUID.randomUUID(), "답변");
         when(sender.send(anyList())).thenReturn(new NotificationDelivery(1, 1, List.of()));
-        var saved = chats.send(admin, user, request);
-        assertThat(chats.send(admin, user, request)).usingRecursiveComparison().isEqualTo(saved);
+        var saved = chats.send(admin, conversationId(user), request);
+        assertThat(chats.send(admin, conversationId(user), request)).usingRecursiveComparison().isEqualTo(saved);
         verify(sender).send(anyList());
     }
 
     @Test
     void 알림을_끈_회원에게는_발송하지_않는다() {
         Long user = recipient(false);
-        chats.send(member(true), user, new ChatMessageRequest(UUID.randomUUID(), "답변"));
+        chats.send(member(true), conversationId(user), new ChatMessageRequest(UUID.randomUUID(), "답변"));
         verifyNoInteractions(sender);
     }
 
@@ -168,7 +172,7 @@ class ChatRegisterNotificationTest {
     @WithMockUser
     void 회원의_자기_메시지는_발송하지_않는다() {
         Long user = recipient(true);
-        chats.send(user, user, new ChatMessageRequest(UUID.randomUUID(), "문의"));
+        chats.send(user, conversationId(user), new ChatMessageRequest(UUID.randomUUID(), "문의"));
         verifyNoInteractions(sender);
     }
 
@@ -195,10 +199,10 @@ class ChatRegisterNotificationTest {
         var request = new ChatMessageRequest(UUID.randomUUID(), "문의");
 
         new TransactionTemplate(transactions).executeWithoutResult(status -> {
-            chats.send(user, user, request);
+            chats.send(user, conversationId(user), request);
             verifyNoInteractions(sender);
         });
-        chats.send(user, user, request);
+        chats.send(user, conversationId(user), request);
 
         verify(sender).send(argThat(messages -> {
             assertThat(messages).extracting(message -> message.fid()).containsExactlyInAnyOrder(admin, expert);
@@ -217,12 +221,12 @@ class ChatRegisterNotificationTest {
         operatorRecipient(UserRole.EXPERT, true, false);
 
         new TransactionTemplate(transactions).executeWithoutResult(status -> {
-            chats.send(user, user, new ChatMessageRequest(UUID.randomUUID(), "문의"));
+            chats.send(user, conversationId(user), new ChatMessageRequest(UUID.randomUUID(), "문의"));
             status.setRollbackOnly();
         });
 
         verifyNoInteractions(sender);
-        assertThat(finder.newMessages(user, 0)).isEmpty();
+        assertThat(finder.newMessages(user, conversationId(user), 0)).isEmpty();
     }
 
     @Test
@@ -233,10 +237,10 @@ class ChatRegisterNotificationTest {
         var request = new ChatMessageRequest(UUID.randomUUID(), "문의");
         when(sender.send(anyList())).thenThrow(new IllegalStateException("발송 실패"));
 
-        var saved = chats.send(user, user, request);
-        chats.send(user, user, request);
+        var saved = chats.send(user, conversationId(user), request);
+        chats.send(user, conversationId(user), request);
 
-        assertThat(finder.newMessages(user, 0)).usingRecursiveFieldByFieldElementComparator().containsExactly(saved);
+        assertThat(finder.newMessages(user, conversationId(user), 0)).usingRecursiveFieldByFieldElementComparator().containsExactly(saved);
         verify(sender).send(anyList());
     }
 
@@ -251,7 +255,7 @@ class ChatRegisterNotificationTest {
         ReflectionTestUtils.setField(account, "role", UserRole.EXPERT);
         users.save(account);
 
-        chats.send(expert, user, new ChatMessageRequest(UUID.randomUUID(), "답변"));
+        chats.send(expert, conversationId(user), new ChatMessageRequest(UUID.randomUUID(), "답변"));
 
         verify(sender).send(argThat(messages -> messages.size() == 1 && messages.getFirst().fid().equals(memberFid)));
     }
@@ -264,7 +268,7 @@ class ChatRegisterNotificationTest {
         users.save(account);
         String expert = operatorRecipient(UserRole.EXPERT, true, false);
 
-        chats.send(admin, admin, new ChatMessageRequest(UUID.randomUUID(), "문의"));
+        chats.send(admin, conversationId(admin), new ChatMessageRequest(UUID.randomUUID(), "문의"));
 
         verify(sender).send(argThat(messages -> messages.size() == 1 && messages.getFirst().fid().equals(expert)));
     }
@@ -277,8 +281,8 @@ class ChatRegisterNotificationTest {
             List<com.daesabu.meongcoach.notification.domain.PushNotification> messages = invocation.getArgument(0);
             return new NotificationDelivery(0, 0, List.of(messages.getFirst().fid()));
         });
-        var saved = chats.send(admin, user, new ChatMessageRequest(UUID.randomUUID(), "답변"));
-        assertThat(finder.newMessages(user, 0)).usingRecursiveFieldByFieldElementComparator().containsExactly(saved);
+        var saved = chats.send(admin, conversationId(user), new ChatMessageRequest(UUID.randomUUID(), "답변"));
+        assertThat(finder.newMessages(user, conversationId(user), 0)).usingRecursiveFieldByFieldElementComparator().containsExactly(saved);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM device_installations WHERE user_id=?", Long.class, user)).isZero();
         verify(sender).send(anyList());
     }

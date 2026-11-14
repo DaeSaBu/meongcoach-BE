@@ -25,6 +25,10 @@ class ChatRegisterTest {
 	@Autowired EntityManager em;
 	@Autowired JdbcTemplate jdbc;
 
+	private long conversationId(Long memberId) {
+		return register.open(memberId).getId();
+	}
+
 	private Long member() {
 		var user = users.save(User.registerUser());
 		em.flush();
@@ -32,14 +36,22 @@ class ChatRegisterTest {
 	}
 
 	@Test
+	void 회원_ID로_다시_열면_같은_대화를_반환한다() {
+		Long owner = member();
+		var first = register.open(owner);
+		assertThat(first.getMemberId()).isEqualTo(owner);
+		assertThat(register.open(owner).getId()).isEqualTo(first.getId());
+	}
+
+	@Test
 	void 같은_UUID_재전송은_메시지를_중복_저장하지_않는다() {
 		Long owner = member();
 		register.open(owner);
 		var request = new ChatMessageRequest(UUID.randomUUID(), "문의");
-		var first = register.send(owner, owner, request);
-		var retry = register.send(owner, owner, request);
+		var first = register.send(owner, conversationId(owner), request);
+		var retry = register.send(owner, conversationId(owner), request);
 		assertThat(retry.getId()).isEqualTo(first.getId());
-		assertThat(finder.newMessages(owner, 0)).hasSize(1);
+		assertThat(finder.newMessages(owner, conversationId(owner), 0)).hasSize(1);
 	}
 
 	@Test
@@ -47,16 +59,16 @@ class ChatRegisterTest {
 		Long owner = member();
 		register.open(owner);
 		for (int n = 0; n < 61; n++) {
-			register.send(owner, owner, new ChatMessageRequest(UUID.randomUUID(), "문의" + n));
+			register.send(owner, conversationId(owner), new ChatMessageRequest(UUID.randomUUID(), "문의" + n));
 		}
-		var first = finder.newMessages(owner, 0);
-		var next = finder.newMessages(owner, first.getLast().getId());
+		var first = finder.newMessages(owner, conversationId(owner), 0);
+		var next = finder.newMessages(owner, conversationId(owner), first.getLast().getId());
 		assertThat(first).hasSize(50);
 		assertThat(first.getFirst().getBody()).isEqualTo("문의0");
 		assertThat(next).hasSize(11);
-		var latest = finder.latestMessages(owner);
+		var latest = finder.latestMessages(owner, conversationId(owner));
 		assertThat(latest.getFirst().getBody()).isEqualTo("문의11");
-		assertThat(finder.previousMessages(owner, latest.getFirst().getId())).hasSize(11);
+		assertThat(finder.previousMessages(owner, conversationId(owner), latest.getFirst().getId())).hasSize(11);
 	}
 
 	@Test
@@ -71,7 +83,7 @@ class ChatRegisterTest {
 		assertThat(
 						register.send(
 										admin.getId(),
-										owner,
+										conversationId(owner),
 										new ChatMessageRequest(UUID.randomUUID(), "답변"))
 								.isOperator())
 				.isTrue();
@@ -82,17 +94,17 @@ class ChatRegisterTest {
 	void 새_메시지가_없으면_빈_목록을_반환하고_다음_조회에서_새_메시지만_받는다() {
 		Long owner = member();
 		register.open(owner);
-		var first = register.send(owner, owner, new ChatMessageRequest(UUID.randomUUID(), "첫 문의"));
-		assertThat(finder.newMessages(owner, first.getId())).isEmpty();
-		var next = register.send(owner, owner, new ChatMessageRequest(UUID.randomUUID(), "추가 문의"));
-		assertThat(finder.newMessages(owner, first.getId())).containsExactly(next);
+		var first = register.send(owner, conversationId(owner), new ChatMessageRequest(UUID.randomUUID(), "첫 문의"));
+		assertThat(finder.newMessages(owner, conversationId(owner), first.getId())).isEmpty();
+		var next = register.send(owner, conversationId(owner), new ChatMessageRequest(UUID.randomUUID(), "추가 문의"));
+		assertThat(finder.newMessages(owner, conversationId(owner), first.getId())).containsExactly(next);
 	}
 
 	@Test
 	void 새_메시지_조회에_음수_커서를_사용하면_거절한다() {
 		Long owner = member();
 		register.open(owner);
-		assertThatThrownBy(() -> finder.newMessages(owner, -1))
+		assertThatThrownBy(() -> finder.newMessages(owner, conversationId(owner), -1))
 				.isInstanceOf(ChatCursorInvalidException.class);
 	}
 
@@ -100,7 +112,7 @@ class ChatRegisterTest {
 	void 이전_메시지_조회에는_양수_커서가_필요하다() {
 		Long owner = member();
 		register.open(owner);
-		assertThatThrownBy(() -> finder.previousMessages(owner, 0))
+		assertThatThrownBy(() -> finder.previousMessages(owner, conversationId(owner), 0))
 				.isInstanceOf(ChatCursorInvalidException.class);
 	}
 
@@ -115,11 +127,11 @@ class ChatRegisterTest {
 		register.open(owner);
 		register.open(other);
 		jdbc.update("UPDATE support_conversations SET updated_at=now()-interval '1 day'");
-		register.send(owner, owner, new ChatMessageRequest(UUID.randomUUID(), "새 문의"));
-		assertThat(finder.conversations(0, null).getFirst().getId()).isEqualTo(owner);
-		assertThat(finder.conversations(owner, finder.conversations(0, null).getFirst().getUpdatedAt()))
+		register.send(owner, conversationId(owner), new ChatMessageRequest(UUID.randomUUID(), "새 문의"));
+		assertThat(finder.conversations(0, null).getFirst().getId()).isEqualTo(conversationId(owner));
+		assertThat(finder.conversations(conversationId(owner), finder.conversations(0, null).getFirst().getUpdatedAt()))
 				.extracting(com.daesabu.meongcoach.support.domain.ChatConversation::getId)
-				.containsExactly(other);
+				.containsExactly(conversationId(other));
 	}
 	@Test
 	void 활동_시각이_같으면_대화_ID로_이전_목록을_구분한다() {
@@ -139,11 +151,11 @@ class ChatRegisterTest {
 
 		assertThat(finder.conversations(0, null))
 				.extracting(com.daesabu.meongcoach.support.domain.ChatConversation::getId)
-				.containsExactly(third, second, first);
-		assertThat(finder.conversations(second, finder.conversations(0, null).get(1).getUpdatedAt()))
+				.containsExactly(conversationId(third), conversationId(second), conversationId(first));
+		assertThat(finder.conversations(conversationId(second), finder.conversations(0, null).get(1).getUpdatedAt()))
 				.extracting(com.daesabu.meongcoach.support.domain.ChatConversation::getId)
-				.containsExactly(first);
-		assertThat(finder.conversations(first, finder.conversations(0, null).getLast().getUpdatedAt())).isEmpty();
+				.containsExactly(conversationId(first));
+		assertThat(finder.conversations(conversationId(first), finder.conversations(0, null).getLast().getUpdatedAt())).isEmpty();
 	}
 
 
@@ -160,13 +172,13 @@ class ChatRegisterTest {
 		var cursor = finder.conversations(0, null).get(1);
 		var cursorId = cursor.getId();
 		var cursorUpdatedAt = cursor.getUpdatedAt();
-		register.send(second, second, new ChatMessageRequest(UUID.randomUUID(), "새 문의"));
+		register.send(second, conversationId(second), new ChatMessageRequest(UUID.randomUUID(), "새 문의"));
 		em.flush();
 		em.clear();
 
 		assertThat(finder.conversations(cursorId, cursorUpdatedAt))
 				.extracting(com.daesabu.meongcoach.support.domain.ChatConversation::getId)
-				.containsExactly(first);
+				.containsExactly(conversationId(first));
 	}
 
 	@Test
