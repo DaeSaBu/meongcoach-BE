@@ -6,7 +6,6 @@ import com.daesabu.meongcoach.support.application.provided.dto.ChatMessageReques
 import com.daesabu.meongcoach.support.application.required.ChatRepository;
 import com.daesabu.meongcoach.support.domain.ChatConversation;
 import com.daesabu.meongcoach.support.domain.ChatMessage;
-import com.daesabu.meongcoach.support.domain.ChatReplySentEvent;
 import com.daesabu.meongcoach.support.domain.exception.ChatAccessDeniedException;
 import com.daesabu.meongcoach.user.application.provided.RegisteredUserChecker;
 import lombok.RequiredArgsConstructor;
@@ -45,9 +44,7 @@ public class ChatModifyService implements ChatRegister {
 		String body = request.body().strip();
 		ChatMessage message =
 				repository.save(conversationId, userId, operator, request.clientMessageId(), body);
-		if (operator && userId != conversationId) {
-			events.publishEvent(new ChatReplySentEvent(message.id(), conversationId));
-		}
+		message.replySentEvent().ifPresent(events::publishEvent);
 		return message;
 	}
 }
