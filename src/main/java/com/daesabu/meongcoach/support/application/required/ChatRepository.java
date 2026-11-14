@@ -16,7 +16,11 @@ public interface ChatRepository {
 
 	void lock(long conversationId);
 
-	List<ChatMessage> messages(long conversationId, long after, long before, int limit);
+	List<ChatMessage> latestMessages(long conversationId, int limit);
+
+	List<ChatMessage> newMessages(long conversationId, long after, int limit);
+
+	List<ChatMessage> previousMessages(long conversationId, long before, int limit);
 
 	Optional<ChatMessage> find(long conversationId, long senderId, UUID clientMessageId);
 

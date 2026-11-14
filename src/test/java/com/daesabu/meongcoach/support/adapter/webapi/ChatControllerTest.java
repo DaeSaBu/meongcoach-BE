@@ -3,6 +3,8 @@ package com.daesabu.meongcoach.support.adapter.webapi;
 import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.document;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.*;
 import static org.springframework.restdocs.payload.PayloadDocumentation.*;
 import static org.springframework.restdocs.request.RequestDocumentation.*;
@@ -106,7 +108,7 @@ class ChatControllerTest {
 
 	@Test
 	void 메시지를_커서로_조회한다() throws Exception {
-		given(finder.messages(42L, 42, -1, 0)).willReturn(List.of(message()));
+		given(finder.latestMessages(42L, 42)).willReturn(List.of(message()));
 		mvc.perform(
 						get("/api/support/conversations/{id}/messages", 42)
 								.param("after", "-1")
@@ -127,6 +129,43 @@ class ChatControllerTest {
 												.description(
 														"과거 조회 커서, 없으면 0; after>=0과 동시 사용 불가")),
 								responseFields(fields("[]."))));
+	}
+
+	@Test
+	void 커서가_없으면_최신_메시지를_조회한다() throws Exception {
+		given(finder.latestMessages(42L, 42)).willReturn(List.of(message()));
+		mvc.perform(get("/api/support/conversations/42/messages").principal(() -> "42"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$[0].id").value(1));
+		verify(finder).latestMessages(42L, 42);
+	}
+
+	@Test
+	void after로_새_메시지를_조회한다() throws Exception {
+		given(finder.newMessages(42L, 42, 0)).willReturn(List.of(message()));
+		mvc.perform(get("/api/support/conversations/42/messages")
+				.param("after", "0").principal(() -> "42"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$[0].id").value(1));
+		verify(finder).newMessages(42L, 42, 0);
+	}
+
+	@Test
+	void before로_이전_메시지를_조회한다() throws Exception {
+		given(finder.previousMessages(42L, 42, 2)).willReturn(List.of(message()));
+		mvc.perform(get("/api/support/conversations/42/messages")
+				.param("before", "2").principal(() -> "42"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$[0].id").value(1));
+		verify(finder).previousMessages(42L, 42, 2);
+	}
+
+	@Test
+	void 양방향_커서를_동시에_사용하면_거절한다() throws Exception {
+		mvc.perform(get("/api/support/conversations/42/messages")
+				.param("after", "0").param("before", "2").principal(() -> "42"))
+				.andExpect(status().isBadRequest());
+		verifyNoInteractions(finder);
 	}
 
 	@Test
@@ -155,7 +194,7 @@ class ChatControllerTest {
 
 	@Test
 	void 다른_회원의_대화는_403이다() throws Exception {
-		given(finder.messages(42L, 43, -1, 0)).willThrow(new ChatAccessDeniedException());
+		given(finder.latestMessages(42L, 43)).willThrow(new ChatAccessDeniedException());
 		mvc.perform(
 						get("/api/support/conversations/{id}/messages", 43)
 								.principal(() -> "42")

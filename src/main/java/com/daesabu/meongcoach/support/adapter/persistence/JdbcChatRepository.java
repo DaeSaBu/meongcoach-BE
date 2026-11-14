@@ -57,31 +57,24 @@ public class JdbcChatRepository implements ChatRepository {
 				"SELECT id FROM support_conversations WHERE id = ? FOR UPDATE", Long.class, id);
 	}
 
-	public List<ChatMessage> messages(long id, long after, long before, int limit) {
-		if (after >= 0) {
-			return jdbc.query(
-					"SELECT * FROM support_messages WHERE conversation_id = ? AND id > ? ORDER BY"
-							+ " id LIMIT ?",
-					this::message,
-					id,
-					after,
-					limit);
-		}
-		if (before > 0) {
-			return jdbc.query(
-					"SELECT * FROM (SELECT * FROM support_messages WHERE conversation_id = ? AND id"
-							+ " < ? ORDER BY id DESC LIMIT ?) recent ORDER BY id",
-					this::message,
-					id,
-					before,
-					limit);
-		}
+	public List<ChatMessage> latestMessages(long id, int limit) {
 		return jdbc.query(
 				"SELECT * FROM (SELECT * FROM support_messages WHERE conversation_id = ? ORDER BY"
 						+ " id DESC LIMIT ?) recent ORDER BY id",
-				this::message,
-				id,
-				limit);
+				this::message, id, limit);
+	}
+
+	public List<ChatMessage> newMessages(long id, long after, int limit) {
+		return jdbc.query(
+				"SELECT * FROM support_messages WHERE conversation_id = ? AND id > ? ORDER BY id LIMIT ?",
+				this::message, id, after, limit);
+	}
+
+	public List<ChatMessage> previousMessages(long id, long before, int limit) {
+		return jdbc.query(
+				"SELECT * FROM (SELECT * FROM support_messages WHERE conversation_id = ? AND id"
+						+ " < ? ORDER BY id DESC LIMIT ?) recent ORDER BY id",
+				this::message, id, before, limit);
 	}
 
 	public Optional<ChatMessage> find(long id, long sender, UUID clientId) {

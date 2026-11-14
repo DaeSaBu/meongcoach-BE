@@ -6,6 +6,7 @@ import com.daesabu.meongcoach.support.application.provided.ChatRegister;
 import com.daesabu.meongcoach.support.application.provided.dto.ChatMessageRequest;
 import com.daesabu.meongcoach.support.domain.ChatConversation;
 import com.daesabu.meongcoach.support.domain.ChatMessage;
+import com.daesabu.meongcoach.support.domain.exception.ChatCursorInvalidException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Positive;
@@ -83,9 +84,22 @@ public class ChatController {
 			@PathVariable @Positive long id,
 			@RequestParam(defaultValue = "-1") @Min(-1) long after,
 			@RequestParam(defaultValue = "0") @PositiveOrZero long before) {
-		return finder.messages(userId, id, after, before).stream()
+		return findMessages(userId, id, after, before).stream()
 				.map(MessageResponse::from)
 				.toList();
+	}
+
+	private List<ChatMessage> findMessages(Long userId, long id, long after, long before) {
+		if (after >= 0 && before > 0) {
+			throw new ChatCursorInvalidException();
+		}
+		if (after >= 0) {
+			return finder.newMessages(userId, id, after);
+		}
+		if (before > 0) {
+			return finder.previousMessages(userId, id, before);
+		}
+		return finder.latestMessages(userId, id);
 	}
 
 	@PostMapping("/{id}/messages")

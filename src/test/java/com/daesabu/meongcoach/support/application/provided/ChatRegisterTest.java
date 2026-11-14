@@ -36,7 +36,7 @@ class ChatRegisterTest {
 		Long owner = member();
 		Long stranger = member();
 		register.open(owner);
-		assertThatThrownBy(() -> finder.messages(stranger, owner, -1, 0))
+		assertThatThrownBy(() -> finder.latestMessages(stranger, owner))
 				.isInstanceOf(ChatAccessDeniedException.class);
 		assertThatThrownBy(
 						() ->
@@ -55,7 +55,7 @@ class ChatRegisterTest {
 		var first = register.send(owner, owner, request);
 		var retry = register.send(owner, owner, request);
 		assertThat(retry.id()).isEqualTo(first.id());
-		assertThat(finder.messages(owner, owner, 0, 0)).hasSize(1);
+		assertThat(finder.newMessages(owner, owner, 0)).hasSize(1);
 	}
 
 	@Test
@@ -65,14 +65,14 @@ class ChatRegisterTest {
 		for (int n = 0; n < 61; n++) {
 			register.send(owner, owner, new ChatMessageRequest(UUID.randomUUID(), "문의" + n));
 		}
-		var first = finder.messages(owner, owner, 0, 0);
-		var next = finder.messages(owner, owner, first.getLast().id(), 0);
+		var first = finder.newMessages(owner, owner, 0);
+		var next = finder.newMessages(owner, owner, first.getLast().id());
 		assertThat(first).hasSize(50);
 		assertThat(first.getFirst().body()).isEqualTo("문의0");
 		assertThat(next).hasSize(11);
-		var latest = finder.messages(owner, owner, -1, 0);
+		var latest = finder.latestMessages(owner, owner);
 		assertThat(latest.getFirst().body()).isEqualTo("문의11");
-		assertThat(finder.messages(owner, owner, -1, latest.getFirst().id())).hasSize(11);
+		assertThat(finder.previousMessages(owner, owner, latest.getFirst().id())).hasSize(11);
 	}
 
 	@Test
@@ -92,7 +92,7 @@ class ChatRegisterTest {
 				.isTrue();
 		ReflectionTestUtils.setField(admin, "role", UserRole.USER);
 		em.flush();
-		assertThatThrownBy(() -> finder.messages(admin.getId(), owner, -1, 0))
+		assertThatThrownBy(() -> finder.latestMessages(admin.getId(), owner))
 				.isInstanceOf(ChatAccessDeniedException.class);
 	}
 
@@ -101,9 +101,9 @@ class ChatRegisterTest {
 		Long owner = member();
 		register.open(owner);
 		var first = register.send(owner, owner, new ChatMessageRequest(UUID.randomUUID(), "첫 문의"));
-		assertThat(finder.messages(owner, owner, first.id(), 0)).isEmpty();
+		assertThat(finder.newMessages(owner, owner, first.id())).isEmpty();
 		var next = register.send(owner, owner, new ChatMessageRequest(UUID.randomUUID(), "추가 문의"));
-		assertThat(finder.messages(owner, owner, first.id(), 0)).containsExactly(next);
+		assertThat(finder.newMessages(owner, owner, first.id())).containsExactly(next);
 	}
 
 	@Test
@@ -112,18 +112,37 @@ class ChatRegisterTest {
 		register.open(owner);
 		users.findById(owner).orElseThrow().withdraw();
 		em.flush();
-		assertThatThrownBy(() -> finder.messages(owner, owner, 0, 0))
+		assertThatThrownBy(() -> finder.newMessages(owner, owner, 0))
 				.isInstanceOf(ChatAccessDeniedException.class);
 	}
 
 	@Test
-	void 양방향_커서를_동시에_사용하면_거절한다() {
+	void 새_메시지_조회에_음수_커서를_사용하면_거절한다() {
 		Long owner = member();
 		register.open(owner);
-		assertThatThrownBy(() -> finder.messages(owner, owner, 0, 1))
+		assertThatThrownBy(() -> finder.newMessages(owner, owner, -1))
 				.isInstanceOf(
 						com.daesabu.meongcoach.support.domain.exception.ChatCursorInvalidException
 								.class);
+	}
+
+	@Test
+	void 이전_메시지_조회에는_양수_커서가_필요하다() {
+		Long owner = member();
+		register.open(owner);
+		assertThatThrownBy(() -> finder.previousMessages(owner, owner, 0))
+				.isInstanceOf(com.daesabu.meongcoach.support.domain.exception.ChatCursorInvalidException.class);
+	}
+
+	@Test
+	void 새_메시지와_이전_메시지_조회에도_접근_권한을_확인한다() {
+		Long owner = member();
+		Long stranger = member();
+		register.open(owner);
+		assertThatThrownBy(() -> finder.newMessages(stranger, owner, 0))
+				.isInstanceOf(ChatAccessDeniedException.class);
+		assertThatThrownBy(() -> finder.previousMessages(stranger, owner, 1))
+				.isInstanceOf(ChatAccessDeniedException.class);
 	}
 
 	@Test

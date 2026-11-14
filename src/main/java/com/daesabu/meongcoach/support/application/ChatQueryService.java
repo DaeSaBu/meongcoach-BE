@@ -6,6 +6,7 @@ import com.daesabu.meongcoach.support.application.required.ChatRepository;
 import com.daesabu.meongcoach.support.domain.ChatConversation;
 import com.daesabu.meongcoach.support.domain.ChatMessage;
 import com.daesabu.meongcoach.support.domain.exception.ChatAccessDeniedException;
+import com.daesabu.meongcoach.support.domain.exception.ChatCursorInvalidException;
 import com.daesabu.meongcoach.user.application.provided.RegisteredUserChecker;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -42,11 +43,24 @@ public class ChatQueryService implements ChatFinder {
 		return repository.conversations(before, 50);
 	}
 
-	public List<ChatMessage> messages(Long userId, long conversationId, long after, long before) {
-		if (after < -1 || before < 0 || (after >= 0 && before > 0)) {
-			throw new com.daesabu.meongcoach.support.domain.exception.ChatCursorInvalidException();
+	public List<ChatMessage> latestMessages(Long userId, long conversationId) {
+		verifyAccess(userId, conversationId);
+		return repository.latestMessages(conversationId, 50);
+	}
+
+	public List<ChatMessage> newMessages(Long userId, long conversationId, long after) {
+		if (after < 0) {
+			throw new ChatCursorInvalidException();
 		}
 		verifyAccess(userId, conversationId);
-		return repository.messages(conversationId, after, before, 50);
+		return repository.newMessages(conversationId, after, 50);
+	}
+
+	public List<ChatMessage> previousMessages(Long userId, long conversationId, long before) {
+		if (before <= 0) {
+			throw new ChatCursorInvalidException();
+		}
+		verifyAccess(userId, conversationId);
+		return repository.previousMessages(conversationId, before, 50);
 	}
 }
