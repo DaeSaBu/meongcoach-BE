@@ -50,20 +50,22 @@ public class ChatController {
 	}
 
 	@GetMapping("/{id}/messages")
-	public List<ChatMessageResponse> latestMessages(@PathVariable @Positive long id) {
-		return finder.latestMessages(id).stream().map(ChatMessageResponse::from).toList();
+	public List<ChatMessageResponse> latestMessages(@CurrentUserId Long userId, @PathVariable @Positive long id) {
+		return finder.latestMessages(userId, id).stream().map(ChatMessageResponse::from).toList();
 	}
 
 	@GetMapping("/{id}/messages/new")
 	public List<ChatMessageResponse> newMessages(
+			@CurrentUserId Long userId,
 			@PathVariable @Positive long id, @RequestParam @PositiveOrZero long after) {
-		return finder.newMessages(id, after).stream().map(ChatMessageResponse::from).toList();
+		return finder.newMessages(userId, id, after).stream().map(ChatMessageResponse::from).toList();
 	}
 
 	@GetMapping("/{id}/messages/previous")
 	public List<ChatMessageResponse> previousMessages(
+			@CurrentUserId Long userId,
 			@PathVariable @Positive long id, @RequestParam @Positive long before) {
-		return finder.previousMessages(id, before).stream().map(ChatMessageResponse::from).toList();
+		return finder.previousMessages(userId, id, before).stream().map(ChatMessageResponse::from).toList();
 	}
 
 	@PostMapping("/{id}/messages")

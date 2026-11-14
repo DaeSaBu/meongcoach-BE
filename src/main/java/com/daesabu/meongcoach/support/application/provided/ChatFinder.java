@@ -7,19 +7,19 @@ import java.time.Instant;
 import java.util.List;
 
 public interface ChatFinder {
-	ChatConversation findConversation(long conversationId);
+	ChatConversation findMemberConversation(long memberId);
 
-	ChatConversation findLockedConversation(long conversationId);
+	ChatConversation findConversation(Long userId, long conversationId);
+
+	ChatConversation findLockedConversation(Long userId, long conversationId);
 
 	List<ChatConversation> conversations(long before, Instant beforeUpdatedAt);
 
-	List<ChatMessage> latestMessages(long conversationId);
+	List<ChatMessage> latestMessages(Long userId, long conversationId);
 
-	List<ChatMessage> newMessages(long conversationId, long after);
+	List<ChatMessage> newMessages(Long userId, long conversationId, long after);
 
-	List<ChatMessage> previousMessages(long conversationId, long before);
+	List<ChatMessage> previousMessages(Long userId, long conversationId, long before);
 
 	boolean isOperator();
-
-	void verifyExists(long conversationId);
 }

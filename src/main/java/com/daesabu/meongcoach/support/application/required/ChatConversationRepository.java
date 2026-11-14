@@ -15,10 +15,12 @@ import org.springframework.data.repository.query.Param;
 public interface ChatConversationRepository extends JpaRepository<ChatConversation, Long> {
 	@Modifying
 	@Query(value = """
-			INSERT INTO support_conversations (id, updated_at)
-			VALUES (:id, current_timestamp) ON CONFLICT DO NOTHING
+			INSERT INTO support_conversations (member_id, updated_at)
+			VALUES (:memberId, current_timestamp) ON CONFLICT (member_id) DO NOTHING
 			""", nativeQuery = true)
-	void insertIfAbsent(@Param("id") long id);
+	void insertIfAbsent(@Param("memberId") long memberId);
+
+	Optional<ChatConversation> findByMemberId(long memberId);
 
 	List<ChatConversation> findAllByOrderByUpdatedAtDescIdDesc(Pageable pageable);
 

@@ -5,6 +5,7 @@ import com.daesabu.meongcoach.user.application.provided.UserProfileSummaries;
 import com.daesabu.meongcoach.user.application.provided.UserProfileSummaryResult;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.User;
+import com.daesabu.meongcoach.user.domain.UserRole;
 import com.daesabu.meongcoach.user.domain.UserStatus;
 import com.daesabu.meongcoach.user.domain.exception.UserNotFoundException;
 import java.util.Collection;
@@ -19,6 +20,11 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class UserQueryService implements UserFinder {
 	private final UserRepository userRepository;
+
+	@Override
+	public Set<Long> findActiveOperatorIds() {
+		return userRepository.findIdsByRoleInAndStatus(Set.of(UserRole.ADMIN, UserRole.EXPERT), UserStatus.ACTIVE);
+	}
 
 	@Override
 	public boolean isActiveUser(Long userId) {

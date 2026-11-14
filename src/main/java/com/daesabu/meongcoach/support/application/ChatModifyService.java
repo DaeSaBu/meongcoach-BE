@@ -27,12 +27,12 @@ public class ChatModifyService implements ChatRegister {
 	@Transactional
 	public ChatConversation open(Long userId) {
 		conversations.insertIfAbsent(userId);
-		return finder.findConversation(userId);
+		return finder.findMemberConversation(userId);
 	}
 
 	@Transactional
 	public ChatMessage send(Long userId, long conversationId, ChatMessageRequest request) {
-		var conversation = finder.findLockedConversation(conversationId);
+		var conversation = finder.findLockedConversation(userId, conversationId);
 		var previous = messages.findByConversationIdAndSenderIdAndClientMessageId(
 				conversationId, userId, request.clientMessageId());
 		if (previous.isPresent()) {
@@ -44,7 +44,7 @@ public class ChatModifyService implements ChatRegister {
 		var message = ChatMessage.create(command);
 		conversation.recordMessage();
 		messages.save(message);
-		message.replySentEvent().ifPresent(events::publishEvent);
+		events.publishEvent(message.sentEvent(conversation.getMemberId()));
 		return message;
 	}
 }

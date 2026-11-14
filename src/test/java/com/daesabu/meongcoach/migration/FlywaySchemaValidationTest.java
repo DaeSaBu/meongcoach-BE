@@ -29,6 +29,40 @@ class FlywaySchemaValidationTest {
 	private DataSource dataSource;
 
 	@Test
+	void 대화_ID를_분리해도_기존_소유자와_메시지는_유지하고_회원별_중복은_거절한다() throws Exception {
+		try (Connection connection = dataSource.getConnection()) {
+			connection.setAutoCommit(false);
+			try (var statement = connection.createStatement()) {
+				statement.execute("CREATE SCHEMA chat_migration_test");
+				statement.execute("SET LOCAL search_path TO chat_migration_test");
+				statement.execute("CREATE TABLE users (id BIGINT PRIMARY KEY)");
+				statement.execute("INSERT INTO users (id) VALUES (42), (99)");
+				ScriptUtils.executeSqlScript(connection, new ClassPathResource("db/migration/V52__create_support_chat.sql"));
+				statement.execute("INSERT INTO support_conversations (id) VALUES (42)");
+				statement.execute("INSERT INTO support_messages (conversation_id, sender_id, operator, client_message_id, body) "
+						+ "VALUES (42, 42, false, 'cc23e1d4-c105-435e-9473-1f5e995967c1', '문의')");
+				ScriptUtils.executeSqlScript(connection, new ClassPathResource("db/migration/V57__separate_support_conversation_member.sql"));
+				try (var rows = statement.executeQuery("SELECT c.id, c.member_id, m.conversation_id FROM support_conversations c JOIN support_messages m ON c.id = m.conversation_id")) {
+					assertThat(rows.next()).isTrue();
+					assertThat(rows.getLong(1)).isEqualTo(42);
+					assertThat(rows.getLong(2)).isEqualTo(42);
+					assertThat(rows.getLong(3)).isEqualTo(42);
+				}
+				try (var rows = statement.executeQuery("INSERT INTO support_conversations (member_id) VALUES (99) RETURNING id, member_id")) {
+					assertThat(rows.next()).isTrue();
+					assertThat(rows.getLong(1)).isEqualTo(43);
+					assertThat(rows.getLong(2)).isEqualTo(99);
+				}
+				assertThatThrownBy(() -> statement.execute("INSERT INTO support_conversations (member_id) VALUES (99)"))
+						.isInstanceOf(java.sql.SQLException.class)
+						.satisfies(exception -> assertThat(((java.sql.SQLException) exception).getSQLState()).isEqualTo("23505"));
+			} finally {
+				connection.rollback();
+			}
+		}
+	}
+
+	@Test
 	void 강아지별_활성_플랜_제약을_변경해도_기존_플랜_상태는_유지한다() throws Exception {
 		String insert = "INSERT INTO plans (user_id, dog_id, title, goal, status, created_at) "
 				+ "VALUES (955636, ?, ?, '검증', ?, CURRENT_TIMESTAMP)";

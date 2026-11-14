@@ -10,7 +10,6 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Optional;
 import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -58,11 +57,7 @@ public class ChatMessage {
 		return new ChatMessage(command);
 	}
 
-	public Optional<ChatReplySentEvent> replySentEvent() {
-		if (!operator || senderId == conversationId) {
-			return Optional.empty();
-		}
-		var event = new ChatReplySentEvent(id, conversationId);
-		return Optional.of(event);
+	public ChatMessageSentEvent sentEvent(long memberId) {
+		return new ChatMessageSentEvent(id, memberId, senderId);
 	}
 }

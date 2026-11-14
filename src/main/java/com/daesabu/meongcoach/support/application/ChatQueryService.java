@@ -23,13 +23,21 @@ public class ChatQueryService implements ChatFinder {
 	private final ChatConversationRepository conversations;
 	private final ChatMessageRepository messages;
 
-	public ChatConversation findConversation(long conversationId) {
-		return conversations.findById(conversationId).orElseThrow(ChatAccessDeniedException::new);
+	public ChatConversation findMemberConversation(long memberId) {
+		return conversations.findByMemberId(memberId).orElseThrow(ChatAccessDeniedException::new);
+	}
+
+	public ChatConversation findConversation(Long userId, long conversationId) {
+		var conversation = conversations.findById(conversationId).orElseThrow(ChatAccessDeniedException::new);
+		conversation.verifyAccess(userId, isOperator());
+		return conversation;
 	}
 
 	@Transactional
-	public ChatConversation findLockedConversation(long conversationId) {
-		return conversations.findLockedById(conversationId).orElseThrow(ChatAccessDeniedException::new);
+	public ChatConversation findLockedConversation(Long userId, long conversationId) {
+		var conversation = conversations.findLockedById(conversationId).orElseThrow(ChatAccessDeniedException::new);
+		conversation.verifyAccess(userId, isOperator());
+		return conversation;
 	}
 
 	public boolean isOperator() {
@@ -38,12 +46,6 @@ public class ChatQueryService implements ChatFinder {
 				&& authentication.getAuthorities().stream()
 						.anyMatch(authority -> AuthorityRole.ADMIN.authority().equals(authority.getAuthority())
 								|| AuthorityRole.EXPERT.authority().equals(authority.getAuthority()));
-	}
-
-	public void verifyExists(long conversationId) {
-		if (!conversations.existsById(conversationId)) {
-			throw new ChatAccessDeniedException();
-		}
 	}
 
 	public List<ChatConversation> conversations(long before, Instant beforeUpdatedAt) {
@@ -57,26 +59,26 @@ public class ChatQueryService implements ChatFinder {
 		return conversations.findPrevious(beforeUpdatedAt, before, page);
 	}
 
-	public List<ChatMessage> latestMessages(long conversationId) {
-		verifyExists(conversationId);
+	public List<ChatMessage> latestMessages(Long userId, long conversationId) {
+		findConversation(userId, conversationId);
 		var page = PageRequest.of(0, 50);
 		return messages.findByConversationIdOrderByIdDesc(conversationId, page).reversed();
 	}
 
-	public List<ChatMessage> newMessages(long conversationId, long after) {
+	public List<ChatMessage> newMessages(Long userId, long conversationId, long after) {
 		if (after < 0) {
 			throw new ChatCursorInvalidException();
 		}
-		verifyExists(conversationId);
+		findConversation(userId, conversationId);
 		var page = PageRequest.of(0, 50);
 		return messages.findByConversationIdAndIdGreaterThanOrderByIdAsc(conversationId, after, page);
 	}
 
-	public List<ChatMessage> previousMessages(long conversationId, long before) {
+	public List<ChatMessage> previousMessages(Long userId, long conversationId, long before) {
 		if (before <= 0) {
 			throw new ChatCursorInvalidException();
 		}
-		verifyExists(conversationId);
+		findConversation(userId, conversationId);
 		var page = PageRequest.of(0, 50);
 		return messages.findByConversationIdAndIdLessThanOrderByIdDesc(conversationId, before, page).reversed();
 	}
