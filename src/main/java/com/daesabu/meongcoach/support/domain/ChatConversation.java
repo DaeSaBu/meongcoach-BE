@@ -1,27 +1,36 @@
 package com.daesabu.meongcoach.support.domain;
 
+import com.daesabu.meongcoach.shared.domain.BaseEntity;
 import com.daesabu.meongcoach.support.domain.exception.ChatAccessDeniedException;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
+import jakarta.persistence.Converts;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.SQLRestriction;
 
 @Entity(name = "SupportConversation")
-@Table(name = "support_conversations", indexes = @Index(
-		name = "support_conversations_activity", columnList = "updated_at DESC, id DESC"),
-		uniqueConstraints = @UniqueConstraint(name = "uk_support_conversations_member", columnNames = "member_id"))
+@Table(name = "support_conversations", indexes = {
+		@Index(name = "support_conversations_activity", columnList = "updated_at DESC, id DESC"),
+		@Index(name = "uk_support_conversations_active_member", columnList = "(member_id)", unique = true, options = "WHERE deleted_at IS NULL")
+})
+@SQLRestriction("deleted_at IS NULL")
+@Converts({
+		@Convert(attributeName = "createdAt", converter = ChatTimestampConverter.class),
+		@Convert(attributeName = "updatedAt", converter = ChatTimestampConverter.class)
+})
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class ChatConversation {
+public class ChatConversation extends BaseEntity {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
@@ -29,16 +38,20 @@ public class ChatConversation {
 	@Column(nullable = false)
 	private long memberId;
 
-	@Column(nullable = false)
-	private Instant updatedAt;
+	@Convert(converter = ChatTimestampConverter.class)
+	private LocalDateTime deletedAt;
 
 	public void verifyAccess(long userId, boolean operator) {
-		if (memberId != userId && !operator) {
+		if (deletedAt != null || (memberId != userId && !operator)) {
 			throw new ChatAccessDeniedException();
 		}
 	}
 
 	public void recordMessage() {
-		updatedAt = Instant.now().truncatedTo(ChronoUnit.MICROS);
+		renewUpdatedAt();
+	}
+
+	public void leave() {
+		deletedAt = LocalDateTime.now().truncatedTo(ChronoUnit.MICROS);
 	}
 }

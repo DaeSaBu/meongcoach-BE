@@ -6,6 +6,7 @@ import com.daesabu.meongcoach.support.application.required.ChatConversationRepos
 import com.daesabu.meongcoach.support.application.required.ChatMessageRepository;
 import com.daesabu.meongcoach.support.domain.ChatConversation;
 import com.daesabu.meongcoach.support.domain.ChatMessage;
+import com.daesabu.meongcoach.support.domain.ChatTimestampConverter;
 import com.daesabu.meongcoach.support.domain.exception.ChatAccessDeniedException;
 import com.daesabu.meongcoach.support.domain.exception.ChatCursorInvalidException;
 import java.time.Instant;
@@ -56,7 +57,8 @@ public class ChatQueryService implements ChatFinder {
 		if (before == 0) {
 			return conversations.findAllByOrderByUpdatedAtDescIdDesc(page);
 		}
-		return conversations.findPrevious(beforeUpdatedAt, before, page);
+		var updatedAt = ChatTimestampConverter.toLocalDateTime(beforeUpdatedAt);
+		return conversations.findPrevious(updatedAt, before, page);
 	}
 
 	public List<ChatMessage> latestMessages(Long userId, long conversationId) {
