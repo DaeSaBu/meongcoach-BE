@@ -38,7 +38,6 @@ import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
-import org.springframework.security.web.access.expression.WebExpressionAuthorizationManager;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -114,11 +113,6 @@ public class SecurityConfig {
 									AuthorityRole.EXPERT.name(), AuthorityRole.ADMIN.name());
 					auth.requestMatchers(HttpMethod.GET, "/api/support/conversations", "/api/support/conversations/")
 							.hasAnyRole(AuthorityRole.ADMIN.name(), AuthorityRole.EXPERT.name());
-					auth.requestMatchers("/api/support/conversations/{id}/messages",
-							"/api/support/conversations/{id}/messages/new",
-							"/api/support/conversations/{id}/messages/previous")
-							.access(new WebExpressionAuthorizationManager(
-									"hasAnyRole('ADMIN', 'EXPERT') or (hasRole('USER') and #id == authentication.name)"));
 					auth.anyRequest().hasAnyRole(AuthorityRole.USER.name(), AuthorityRole.EXPERT.name(),
 							AuthorityRole.ADMIN.name());
 				})

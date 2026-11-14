@@ -40,8 +40,8 @@ public class ChatMessageNotificationService {
 	}
 
 	private List<Long> recipients(ChatMessageSentEvent event) {
-		if (event.senderId() != event.conversationId()) {
-			return List.of(event.conversationId());
+		if (event.senderId() != event.memberId()) {
+			return List.of(event.memberId());
 		}
 		// 임시 처리: ADMIN·EXPERT 전체 발송은 담당 상담원 지정 방식 도입 시 반드시 제거하고 해당 대화의 수신자만 조회해야 한다.
 		return users.findActiveOperatorIds().stream()

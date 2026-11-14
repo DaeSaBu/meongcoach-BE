@@ -57,7 +57,7 @@ public class ChatMessage {
 		return new ChatMessage(command);
 	}
 
-	public ChatMessageSentEvent sentEvent() {
-		return new ChatMessageSentEvent(id, conversationId, senderId);
+	public ChatMessageSentEvent sentEvent(long memberId) {
+		return new ChatMessageSentEvent(id, memberId, senderId);
 	}
 }
