@@ -58,7 +58,7 @@ class ChatRegisterConcurrencyTest {
 				assertBlocked(started, next.get());
 				return conversation;
 			});
-			assertThat(next.get().get(5, TimeUnit.SECONDS)).isEqualTo(first);
+			assertThat(next.get().get(5, TimeUnit.SECONDS)).usingRecursiveComparison().isEqualTo(first);
 			assertThat(jdbc.queryForObject("SELECT count(*) FROM support_conversations WHERE id = ?",
 					Long.class, userId)).isEqualTo(1);
 		}
@@ -80,8 +80,8 @@ class ChatRegisterConcurrencyTest {
 				assertBlocked(started, next.get());
 				return message;
 			});
-			assertThat(next.get().get(5, TimeUnit.SECONDS)).isEqualTo(first);
-			assertThat(finder.newMessages(userId, 0)).containsExactly(first);
+			assertThat(next.get().get(5, TimeUnit.SECONDS)).usingRecursiveComparison().isEqualTo(first);
+			assertThat(finder.newMessages(userId, 0)).usingRecursiveFieldByFieldElementComparator().containsExactly(first);
 		}
 	}
 
