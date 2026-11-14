@@ -3,7 +3,6 @@ package com.daesabu.meongcoach.support.application;
 import com.daesabu.meongcoach.shared.security.AuthorityRole;
 import com.daesabu.meongcoach.support.application.provided.ChatFinder;
 import com.daesabu.meongcoach.support.application.required.ChatRepository;
-import com.daesabu.meongcoach.support.domain.ChatAccess;
 import com.daesabu.meongcoach.support.domain.ChatConversation;
 import com.daesabu.meongcoach.support.domain.ChatMessage;
 import com.daesabu.meongcoach.support.domain.exception.ChatAccessDeniedException;
@@ -19,11 +18,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class ChatQueryService implements ChatFinder {
 	private final ChatRepository repository;
 	private final RegisteredUserChecker users;
-
-	public boolean isSocketAuthorized(ChatAccess access) {
-		var role = users.findRole(access.userId());
-		return role.isPresent() && (role.get() == AuthorityRole.ADMIN) == access.operator();
-	}
 
 	public boolean isOperator(Long userId) {
 		return users.findRole(userId).filter(role -> role == AuthorityRole.ADMIN).isPresent();

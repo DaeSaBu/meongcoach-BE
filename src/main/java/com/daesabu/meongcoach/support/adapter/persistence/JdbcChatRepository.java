@@ -1,12 +1,10 @@
 package com.daesabu.meongcoach.support.adapter.persistence;
 
 import com.daesabu.meongcoach.support.application.required.ChatRepository;
-import com.daesabu.meongcoach.support.domain.ChatAccess;
 import com.daesabu.meongcoach.support.domain.ChatConversation;
 import com.daesabu.meongcoach.support.domain.ChatMessage;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Timestamp;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -112,37 +110,6 @@ public class JdbcChatRepository implements ChatRepository {
 				operator,
 				clientId,
 				body);
-	}
-
-	public void notifyChanged(long id) {
-		jdbc.queryForObject("SELECT pg_notify('support_chat', ?)", String.class, Long.toString(id));
-	}
-
-	public UUID issueTicket(ChatAccess access) {
-		jdbc.update("DELETE FROM support_socket_tickets WHERE expires_at < now()");
-		UUID ticket = UUID.randomUUID();
-		jdbc.update(
-				"INSERT INTO support_socket_tickets(ticket,user_id,operator,expires_at) VALUES"
-						+ " (?,?,?,?)",
-				ticket,
-				access.userId(),
-				access.operator(),
-				Timestamp.from(access.expiresAt()));
-		return ticket;
-	}
-
-	public Optional<ChatAccess> consumeTicket(UUID ticket) {
-		return jdbc
-				.query(
-						"DELETE FROM support_socket_tickets WHERE ticket = ? RETURNING *",
-						(rs, n) ->
-								new ChatAccess(
-										rs.getLong("user_id"),
-										rs.getBoolean("operator"),
-										rs.getTimestamp("expires_at").toInstant()),
-						ticket)
-				.stream()
-				.findFirst();
 	}
 
 	private ChatConversation conversation(ResultSet rs, int n) throws SQLException {

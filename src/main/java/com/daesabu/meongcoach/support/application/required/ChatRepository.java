@@ -1,6 +1,5 @@
 package com.daesabu.meongcoach.support.application.required;
 
-import com.daesabu.meongcoach.support.domain.ChatAccess;
 import com.daesabu.meongcoach.support.domain.ChatConversation;
 import com.daesabu.meongcoach.support.domain.ChatMessage;
 
@@ -27,10 +26,4 @@ public interface ChatRepository {
 			boolean operator,
 			UUID clientMessageId,
 			String body);
-
-	void notifyChanged(long conversationId);
-
-	UUID issueTicket(ChatAccess access);
-
-	Optional<ChatAccess> consumeTicket(UUID ticket);
 }

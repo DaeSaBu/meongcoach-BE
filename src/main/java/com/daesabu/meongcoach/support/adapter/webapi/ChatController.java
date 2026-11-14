@@ -97,11 +97,4 @@ public class ChatController {
 		return MessageResponse.from(message);
 	}
 
-	@PostMapping("/socket-ticket")
-	public SocketTicketResponse ticket(@CurrentUserId Long userId) {
-		UUID ticket = register.issueTicket(userId);
-		return new SocketTicketResponse(ticket);
-	}
-
-	public record SocketTicketResponse(UUID ticket) {}
 }
