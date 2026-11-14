@@ -171,7 +171,7 @@ AI 분석은 수십 초가 걸리므로 요청-응답이 아니라 GCS 업로드
 
 #### support — 고객 상담
 
-- **책임**: 자체 실시간 상담·답변 푸시 작업·구버전 채널톡 인증과 답변 선별.
+- **책임**: 자체 실시간 상담·답변 푸시·구버전 채널톡 인증과 답변 선별.
 - **협력**: `notification`의 `EventNotificationDispatcher`로 답변 알림 발송을 요청합니다.
 
 API·채널 설정·답변 처리 규칙은 [docs/support.md](docs/support.md)에 있습니다.
@@ -220,6 +220,6 @@ API·채널 설정·답변 처리 규칙은 [docs/support.md](docs/support.md)�
 | [docs/media.md](docs/media.md) | presigned URL 발급과 객체 키 소유권 규칙 |
 | [docs/training.md](docs/training.md) | 훈련 콘텐츠와 사용자 진행 애그리거트, 완료 판단, 레슨 완료 잠금 |
 | [docs/notification.md](docs/notification.md) | 푸시 알림 토큰·수신 설정 애그리거트, 내부 API 인증, 발송 대상 규칙 |
-| [docs/support.md](docs/support.md) | 실시간 상담·답변 푸시 재시도·구버전 채널톡 설정 |
+| [docs/support.md](docs/support.md) | 실시간 상담·답변 푸시·구버전 채널톡 설정 |
 | [docs/alert.md](docs/alert.md) | 개발자 Slack 알림 호출 방법, 메시지 형식, 설정, 비동기·실패 처리 |
 | [AGENTS.md](AGENTS.md) | 팀 개발 규칙 전체 목록 |
