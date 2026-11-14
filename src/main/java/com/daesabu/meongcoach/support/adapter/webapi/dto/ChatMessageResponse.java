@@ -1,7 +1,7 @@
 package com.daesabu.meongcoach.support.adapter.webapi.dto;
 
 import com.daesabu.meongcoach.support.domain.ChatMessage;
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 public record ChatMessageResponse(
@@ -11,7 +11,7 @@ public record ChatMessageResponse(
 		boolean operator,
 		UUID clientMessageId,
 		String body,
-		Instant createdAt) {
+		LocalDateTime createdAt) {
 
 	public static ChatMessageResponse from(ChatMessage message) {
 		return new ChatMessageResponse(

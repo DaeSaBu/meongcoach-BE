@@ -8,6 +8,7 @@ import com.daesabu.meongcoach.support.application.required.ChatMessageRepository
 import com.daesabu.meongcoach.support.domain.ChatConversation;
 import com.daesabu.meongcoach.support.domain.ChatMessage;
 import com.daesabu.meongcoach.support.domain.ChatMessageCommand;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -26,7 +27,7 @@ public class ChatModifyService implements ChatRegister {
 
 	@Transactional
 	public ChatConversation open(Long userId) {
-		conversations.insertIfAbsent(userId);
+		conversations.insertIfAbsent(userId, LocalDateTime.now());
 		return finder.findMemberConversation(userId);
 	}
 
@@ -42,8 +43,9 @@ public class ChatModifyService implements ChatRegister {
 		String body = request.body().strip();
 		var command = new ChatMessageCommand(conversationId, userId, operator, request.clientMessageId(), body);
 		var message = ChatMessage.create(command);
-		conversation.recordMessage();
 		messages.save(message);
+		conversations.recordMessage(conversationId, LocalDateTime.now());
+		message = messages.findById(message.getId()).orElseThrow();
 		events.publishEvent(message.sentEvent(conversation.getMemberId()));
 		return message;
 	}

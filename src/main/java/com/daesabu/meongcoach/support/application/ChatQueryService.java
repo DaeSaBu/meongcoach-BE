@@ -8,7 +8,7 @@ import com.daesabu.meongcoach.support.domain.ChatConversation;
 import com.daesabu.meongcoach.support.domain.ChatMessage;
 import com.daesabu.meongcoach.support.domain.exception.ChatAccessDeniedException;
 import com.daesabu.meongcoach.support.domain.exception.ChatCursorInvalidException;
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -48,7 +48,7 @@ public class ChatQueryService implements ChatFinder {
 								|| AuthorityRole.EXPERT.authority().equals(authority.getAuthority()));
 	}
 
-	public List<ChatConversation> conversations(long before, Instant beforeUpdatedAt) {
+	public List<ChatConversation> conversations(long before, LocalDateTime beforeUpdatedAt) {
 		if ((before == 0) != (beforeUpdatedAt == null)) {
 			throw new ChatCursorInvalidException();
 		}

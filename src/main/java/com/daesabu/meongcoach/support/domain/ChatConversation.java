@@ -1,5 +1,6 @@
 package com.daesabu.meongcoach.support.domain;
 
+import com.daesabu.meongcoach.shared.domain.BaseEntity;
 import com.daesabu.meongcoach.support.domain.exception.ChatAccessDeniedException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -7,11 +8,8 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
+import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -25,7 +23,7 @@ import org.hibernate.annotations.SQLRestriction;
 @SQLRestriction("deleted_at IS NULL")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class ChatConversation {
+public class ChatConversation extends BaseEntity {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
@@ -33,19 +31,7 @@ public class ChatConversation {
 	@Column(nullable = false)
 	private long memberId;
 
-	private Instant deletedAt;
-
-	@Column(nullable = false, updatable = false)
-	private Instant createdAt;
-
-	@Column(nullable = false)
-	private Instant updatedAt;
-
-	@PrePersist
-	void initTimestamps() {
-		createdAt = Instant.now().truncatedTo(ChronoUnit.MICROS);
-		updatedAt = createdAt;
-	}
+	private LocalDateTime deletedAt;
 
 	public void verifyAccess(long userId, boolean operator) {
 		if (deletedAt != null || (memberId != userId && !operator)) {
@@ -53,12 +39,7 @@ public class ChatConversation {
 		}
 	}
 
-	@PreUpdate
-	public void recordMessage() {
-		updatedAt = Instant.now().truncatedTo(ChronoUnit.MICROS);
-	}
-
 	public void leave() {
-		deletedAt = Instant.now().truncatedTo(ChronoUnit.MICROS);
+		deletedAt = LocalDateTime.now();
 	}
 }
