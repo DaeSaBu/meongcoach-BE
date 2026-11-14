@@ -1,10 +1,12 @@
 package com.daesabu.meongcoach.support.adapter.webapi;
 
 import com.daesabu.meongcoach.shared.security.CurrentUserId;
+import com.daesabu.meongcoach.support.adapter.webapi.dto.ChatCapabilitiesResponse;
+import com.daesabu.meongcoach.support.adapter.webapi.dto.ChatConversationResponse;
+import com.daesabu.meongcoach.support.adapter.webapi.dto.ChatMessageResponse;
 import com.daesabu.meongcoach.support.application.provided.ChatFinder;
 import com.daesabu.meongcoach.support.application.provided.ChatRegister;
 import com.daesabu.meongcoach.support.application.provided.dto.ChatMessageRequest;
-import com.daesabu.meongcoach.support.domain.ChatConversation;
 import com.daesabu.meongcoach.support.domain.ChatMessage;
 import com.daesabu.meongcoach.support.domain.exception.ChatCursorInvalidException;
 import jakarta.validation.Valid;
@@ -12,7 +14,6 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 import java.util.List;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -30,60 +31,32 @@ public class ChatController {
 	private final ChatFinder finder;
 
 	@GetMapping("/capabilities")
-	public CapabilitiesResponse capabilities() {
+	public ChatCapabilitiesResponse capabilities() {
 		boolean operator = finder.isOperator();
-		return new CapabilitiesResponse(operator);
+		return new ChatCapabilitiesResponse(operator);
 	}
-
-	public record ConversationResponse(long id, java.time.Instant updatedAt) {
-		static ConversationResponse from(ChatConversation conversation) {
-			return new ConversationResponse(conversation.id(), conversation.updatedAt());
-		}
-	}
-
-	public record MessageResponse(
-			long id,
-			long conversationId,
-			long senderId,
-			boolean operator,
-			UUID clientMessageId,
-			String body,
-			java.time.Instant createdAt) {
-		static MessageResponse from(ChatMessage message) {
-			return new MessageResponse(
-					message.id(),
-					message.conversationId(),
-					message.senderId(),
-					message.operator(),
-					message.clientMessageId(),
-					message.body(),
-					message.createdAt());
-		}
-	}
-
-	public record CapabilitiesResponse(boolean operator) {}
 
 	@PostMapping("/me")
-	public ConversationResponse open(@CurrentUserId Long userId) {
+	public ChatConversationResponse open(@CurrentUserId Long userId) {
 		var conversation = register.open(userId);
-		return ConversationResponse.from(conversation);
+		return ChatConversationResponse.from(conversation);
 	}
 
 	@GetMapping
-	public List<ConversationResponse> conversations(
+	public List<ChatConversationResponse> conversations(
 			@RequestParam(defaultValue = "0") @PositiveOrZero long before) {
 		return finder.conversations(before).stream()
-				.map(ConversationResponse::from)
+				.map(ChatConversationResponse::from)
 				.toList();
 	}
 
 	@GetMapping("/{id}/messages")
-	public List<MessageResponse> messages(
+	public List<ChatMessageResponse> messages(
 			@PathVariable @Positive long id,
 			@RequestParam(defaultValue = "-1") @Min(-1) long after,
 			@RequestParam(defaultValue = "0") @PositiveOrZero long before) {
 		return findMessages(id, after, before).stream()
-				.map(MessageResponse::from)
+				.map(ChatMessageResponse::from)
 				.toList();
 	}
 
@@ -101,12 +74,12 @@ public class ChatController {
 	}
 
 	@PostMapping("/{id}/messages")
-	public MessageResponse send(
+	public ChatMessageResponse send(
 			@CurrentUserId Long userId,
 			@PathVariable @Positive long id,
 			@Valid @RequestBody ChatMessageRequest request) {
 		var message = register.send(userId, id, request);
-		return MessageResponse.from(message);
+		return ChatMessageResponse.from(message);
 	}
 
 }
