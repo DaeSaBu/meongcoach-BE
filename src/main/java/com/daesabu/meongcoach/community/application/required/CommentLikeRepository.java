@@ -1,6 +1,7 @@
 package com.daesabu.meongcoach.community.application.required;
 
 import com.daesabu.meongcoach.community.domain.CommentLike;
+import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -8,8 +9,12 @@ import org.springframework.data.jpa.repository.Query;
 
 public interface CommentLikeRepository extends JpaRepository<CommentLike, Long> {
 	@Modifying
-	@Query(value = "insert into comment_likes (comment_id, user_id) values (:targetId, :userId) on conflict (comment_id, user_id) do nothing", nativeQuery = true)
-	void insertIfAbsent(Long targetId, Long userId);
+	@Query(value = """
+			insert into comment_likes (comment_id, user_id, created_at, updated_at)
+			values (:targetId, :userId, :now, :now)
+			on conflict (comment_id, user_id) do nothing
+			""", nativeQuery = true)
+	void insertIfAbsent(Long targetId, Long userId, LocalDateTime now);
 
 	@Modifying
 	@Query("delete from CommentLike l where l.commentId = :targetId and l.userId = :userId")

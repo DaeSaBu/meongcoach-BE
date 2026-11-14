@@ -1,5 +1,6 @@
 package com.daesabu.meongcoach.community.domain;
 
+import com.daesabu.meongcoach.shared.domain.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -15,7 +16,7 @@ import lombok.NoArgsConstructor;
 @Entity
 @Table(name = "post_likes", uniqueConstraints = @UniqueConstraint(name = "uk_post_likes_target_user", columnNames = {"post_id", "user_id"}))
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class PostLike {
+public class PostLike extends BaseEntity {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
