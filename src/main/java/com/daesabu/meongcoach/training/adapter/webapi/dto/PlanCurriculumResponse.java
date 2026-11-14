@@ -1,7 +1,7 @@
 package com.daesabu.meongcoach.training.adapter.webapi.dto;
 
 import com.daesabu.meongcoach.training.application.provided.dto.PlanCurriculumProgressResult;
-import com.daesabu.meongcoach.training.domain.shared.ProgressStatus;
+import com.daesabu.meongcoach.training.domain.ProgressStatus;
 import java.util.List;
 
 public record PlanCurriculumResponse(Long curriculumId, Long topicId, String topicTitle, String title,

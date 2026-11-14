@@ -1,4 +1,4 @@
-package com.daesabu.meongcoach.training.domain.shared;
+package com.daesabu.meongcoach.training.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

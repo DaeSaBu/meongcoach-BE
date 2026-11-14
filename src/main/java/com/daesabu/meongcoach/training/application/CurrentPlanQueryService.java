@@ -11,7 +11,7 @@ import com.daesabu.meongcoach.training.application.provided.dto.TopicResult;
 import com.daesabu.meongcoach.training.application.required.PlanRepository;
 import com.daesabu.meongcoach.training.domain.Plan;
 import com.daesabu.meongcoach.training.domain.PlanStatus;
-import com.daesabu.meongcoach.training.domain.shared.ProgressStatus;
+import com.daesabu.meongcoach.training.domain.ProgressStatus;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;

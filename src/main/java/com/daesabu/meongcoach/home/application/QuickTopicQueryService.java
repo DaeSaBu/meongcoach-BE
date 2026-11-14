@@ -5,7 +5,6 @@ import com.daesabu.meongcoach.home.application.provided.dto.QuickTopicResult;
 import com.daesabu.meongcoach.training.application.provided.CurrentPlanFinder;
 import com.daesabu.meongcoach.training.application.provided.TopicProgressFinder;
 import com.daesabu.meongcoach.training.application.provided.dto.TopicProgressResult;
-import com.daesabu.meongcoach.training.domain.shared.ProgressStatus;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -49,7 +48,7 @@ public class QuickTopicQueryService implements QuickTopicFinder {
 	private List<QuickTopicResult> findRecommendedTopics(List<TopicProgressResult> topics) {
 		return topics.stream()
 				.filter(TopicProgressResult::hasThumbnail)
-				.filter(topic -> topic.status() == ProgressStatus.NOT_STARTED)
+				.filter(TopicProgressResult::isNotStarted)
 				.limit(LIMIT)
 				.map(QuickTopicResult::from)
 				.toList();
