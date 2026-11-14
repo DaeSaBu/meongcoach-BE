@@ -1,6 +1,6 @@
 # 상담 (support 모듈)
 
-support 모듈은 회원·ADMIN의 자체 실시간 상담, 답변 푸시와 구버전 채널톡 연동을 소유합니다.
+support 모듈은 회원·상담원의 자체 실시간 상담, 답변 푸시와 구버전 채널톡 연동을 소유합니다.
 알림 기기·수신 설정·FCM 전송은 [notification 모듈](notification.md)이 소유합니다.
 
 ```mermaid
@@ -14,7 +14,7 @@ flowchart LR
 
 ## 자체 실시간 상담
 
-[ChatController](../src/main/java/com/daesabu/meongcoach/support/adapter/webapi/ChatController.java)는 본인 대화와 ADMIN 답변 API를 제공합니다.
+[ChatController](../src/main/java/com/daesabu/meongcoach/support/adapter/webapi/ChatController.java)는 본인 대화와 상담원 답변 API를 제공합니다.
 메시지는 PostgreSQL에 저장합니다.
 서버는 단일 인스턴스로 실행하며 메시지 전송과 조회에 REST API를 사용합니다.
 채팅 화면은 마지막 조회 완료 후 2초 뒤 마지막 메시지 ID 이후를 다시 조회합니다.
@@ -24,7 +24,7 @@ flowchart LR
 [SecurityConfig](../src/main/java/com/daesabu/meongcoach/shared/config/SecurityConfig.java)는 HTTP 요청의 대화 접근 권한을 검사합니다.
 역할·소유자별 접근 규칙은 [URL 인가 규칙](security.md#url-인가-규칙)을 따릅니다.
 서비스는 대화 존재 여부와 커서를 검사합니다.
-상담원 여부는 인증 단계에서 SecurityContext에 등록한 ADMIN 권한을 재사용하며 메시지 표시와 푸시 판단에 사용합니다.
+상담원 여부는 인증 단계에서 SecurityContext에 등록한 ADMIN·EXPERT 권한을 재사용하며 메시지 표시와 푸시 판단에 사용합니다.
 관리자 판정을 위해 회원 역할을 다시 조회하지 않습니다.
 일반 회원의 타인 대화·관리자 목록 접근은 `FORBIDDEN`으로 거절합니다.
 탈퇴·미등록 회원의 토큰은 인증 과정에서 거절합니다.
