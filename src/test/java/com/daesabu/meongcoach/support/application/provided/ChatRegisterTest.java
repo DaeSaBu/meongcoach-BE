@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.*;
 
 import com.daesabu.meongcoach.support.ApplicationTest;
 import com.daesabu.meongcoach.support.application.provided.dto.ChatMessageRequest;
-import com.daesabu.meongcoach.support.domain.ChatTimestampConverter;
 import com.daesabu.meongcoach.support.domain.exception.ChatCursorInvalidException;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.User;
@@ -27,7 +26,7 @@ class ChatRegisterTest {
 	@Autowired JdbcTemplate jdbc;
 
 	@Test
-	void 공통_감사_시각은_생성_시각을_보존하고_메시지_전송_시_수정_시각을_갱신한다() {
+	void 상담_시각은_생성_시각을_보존하고_메시지_전송_시_수정_시각을_갱신한다() {
 		Long owner = member();
 		long id = register.open(owner).getId();
 		jdbc.update("UPDATE support_conversations SET created_at = ?, updated_at = ? WHERE id = ?",
@@ -47,6 +46,31 @@ class ChatRegisterTest {
 		assertThat(after.getCreatedAt()).isEqualTo(createdAt);
 		assertThat(after.getUpdatedAt()).isAfter(updatedAt);
 		assertThat(finder.latestMessages(owner, id).getFirst().getCreatedAt()).isEqualTo(messageCreatedAt);
+	}
+
+	@org.junit.jupiter.params.ParameterizedTest
+	@org.junit.jupiter.params.provider.ValueSource(strings = {"UTC", "Asia/Seoul", "America/New_York"})
+	void 서버_시간대와_관계없이_저장된_시각과_커서를_유지한다(String zone) {
+		var original = java.util.TimeZone.getDefault();
+		try {
+			java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone(zone));
+			Long owner = member();
+			long id = register.open(owner).getId();
+			var expected = java.time.Instant.parse("2026-11-01T05:30:00.123456Z");
+			jdbc.update("UPDATE support_conversations SET created_at = ?, updated_at = ? WHERE id = ?",
+					java.sql.Timestamp.from(expected), java.sql.Timestamp.from(expected), id);
+			em.clear();
+
+			var conversation = finder.findConversation(owner, id);
+			java.time.Instant createdAt = conversation.getCreatedAt();
+			assertThat(createdAt).isEqualTo(expected);
+			assertThat(conversation.getUpdatedAt()).isEqualTo(expected);
+			assertThat(finder.conversations(id, expected)).isEmpty();
+			java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("UTC"));
+			assertThat(conversation.getUpdatedAt()).isEqualTo(expected);
+		} finally {
+			java.util.TimeZone.setDefault(original);
+		}
 	}
 
 	private long conversationId(Long memberId) {
@@ -153,7 +177,7 @@ class ChatRegisterTest {
 		jdbc.update("UPDATE support_conversations SET updated_at=now()-interval '1 day'");
 		register.send(owner, conversationId(owner), new ChatMessageRequest(UUID.randomUUID(), "새 문의"));
 		assertThat(finder.conversations(0, null).getFirst().getId()).isEqualTo(conversationId(owner));
-		assertThat(finder.conversations(conversationId(owner), ChatTimestampConverter.toInstant(finder.conversations(0, null).getFirst().getUpdatedAt())))
+		assertThat(finder.conversations(conversationId(owner), finder.conversations(0, null).getFirst().getUpdatedAt()))
 				.extracting(com.daesabu.meongcoach.support.domain.ChatConversation::getId)
 				.containsExactly(conversationId(other));
 	}
@@ -176,10 +200,10 @@ class ChatRegisterTest {
 		assertThat(finder.conversations(0, null))
 				.extracting(com.daesabu.meongcoach.support.domain.ChatConversation::getId)
 				.containsExactly(conversationId(third), conversationId(second), conversationId(first));
-		assertThat(finder.conversations(conversationId(second), ChatTimestampConverter.toInstant(finder.conversations(0, null).get(1).getUpdatedAt())))
+		assertThat(finder.conversations(conversationId(second), finder.conversations(0, null).get(1).getUpdatedAt()))
 				.extracting(com.daesabu.meongcoach.support.domain.ChatConversation::getId)
 				.containsExactly(conversationId(first));
-		assertThat(finder.conversations(conversationId(first), ChatTimestampConverter.toInstant(finder.conversations(0, null).getLast().getUpdatedAt()))).isEmpty();
+		assertThat(finder.conversations(conversationId(first), finder.conversations(0, null).getLast().getUpdatedAt())).isEmpty();
 	}
 
 
@@ -195,7 +219,7 @@ class ChatRegisterTest {
 		em.clear();
 		var cursor = finder.conversations(0, null).get(1);
 		var cursorId = cursor.getId();
-		var cursorUpdatedAt = ChatTimestampConverter.toInstant(cursor.getUpdatedAt());
+		var cursorUpdatedAt = cursor.getUpdatedAt();
 		register.send(second, conversationId(second), new ChatMessageRequest(UUID.randomUUID(), "새 문의"));
 		em.flush();
 		em.clear();
