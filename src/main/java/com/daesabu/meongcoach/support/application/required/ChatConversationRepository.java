@@ -15,29 +15,21 @@ import org.springframework.data.repository.query.Param;
 public interface ChatConversationRepository extends JpaRepository<ChatConversation, Long> {
 	@Modifying
 	@Query(value = """
-			INSERT INTO support_conversations (member_id, created_at, updated_at)
-			VALUES (:memberId, statement_timestamp() AT TIME ZONE 'UTC', statement_timestamp() AT TIME ZONE 'UTC')
+			INSERT INTO support_conversations (member_id, created_at, updated_at, last_message_at)
+			VALUES (:memberId, :now, :now, :now)
 			ON CONFLICT (member_id) WHERE deleted_at IS NULL DO NOTHING
 			""", nativeQuery = true)
-	void insertIfAbsent(@Param("memberId") long memberId);
-
-	@Modifying
-	@Query(value = """
-			UPDATE support_conversations
-			SET updated_at = statement_timestamp() AT TIME ZONE 'UTC'
-			WHERE id = :id AND deleted_at IS NULL
-			""", nativeQuery = true)
-	void recordMessage(@Param("id") long id);
+	void insertIfAbsent(@Param("memberId") long memberId, @Param("now") LocalDateTime now);
 
 	Optional<ChatConversation> findByMemberId(long memberId);
 
-	List<ChatConversation> findAllByOrderByUpdatedAtDescIdDesc(Pageable pageable);
+	List<ChatConversation> findAllByOrderByLastMessageAtDescIdDesc(Pageable pageable);
 
 	@Query("""
 			SELECT c FROM SupportConversation c
-			WHERE c.updatedAt < :updatedAt
-			OR (c.updatedAt = :updatedAt AND c.id < :id)
-			ORDER BY c.updatedAt DESC, c.id DESC
+			WHERE c.lastMessageAt < :updatedAt
+			OR (c.lastMessageAt = :updatedAt AND c.id < :id)
+			ORDER BY c.lastMessageAt DESC, c.id DESC
 			""")
 	List<ChatConversation> findPrevious(
 			@Param("updatedAt") LocalDateTime updatedAt, @Param("id") long id, Pageable pageable);

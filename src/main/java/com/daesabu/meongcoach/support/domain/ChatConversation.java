@@ -9,14 +9,16 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.SQLRestriction;
 
 @Entity(name = "SupportConversation")
 @Table(name = "support_conversations", indexes = {
-		@Index(name = "support_conversations_activity", columnList = "updated_at DESC, id DESC"),
+		@Index(name = "support_conversations_activity", columnList = "last_message_at DESC, id DESC"),
 		@Index(name = "uk_support_conversations_active_member", columnList = "(member_id)", unique = true, options = "WHERE deleted_at IS NULL")
 })
 @SQLRestriction("deleted_at IS NULL")
@@ -31,6 +33,14 @@ public class ChatConversation extends BaseEntity {
 	private long memberId;
 
 	private LocalDateTime deletedAt;
+
+	@Column(nullable = false)
+	@ColumnDefault("LOCALTIMESTAMP")
+	private LocalDateTime lastMessageAt;
+
+	public void recordMessage() {
+		lastMessageAt = LocalDateTime.now().truncatedTo(ChronoUnit.MICROS);
+	}
 
 	public boolean isOwnedBy(long userId) {
 		return memberId == userId;

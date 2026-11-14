@@ -60,7 +60,7 @@ public class ChatQueryService implements ChatFinder {
 		}
 		var page = PageRequest.of(0, 50);
 		if (before == 0) {
-			return conversations.findAllByOrderByUpdatedAtDescIdDesc(page);
+			return conversations.findAllByOrderByLastMessageAtDescIdDesc(page);
 		}
 		return conversations.findPrevious(beforeUpdatedAt, before, page);
 	}

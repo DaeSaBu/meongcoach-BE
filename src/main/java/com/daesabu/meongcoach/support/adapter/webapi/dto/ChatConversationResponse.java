@@ -6,6 +6,6 @@ import java.time.LocalDateTime;
 public record ChatConversationResponse(long id, long memberId, LocalDateTime updatedAt) {
 
 	public static ChatConversationResponse from(ChatConversation conversation) {
-		return new ChatConversationResponse(conversation.getId(), conversation.getMemberId(), conversation.getUpdatedAt());
+		return new ChatConversationResponse(conversation.getId(), conversation.getMemberId(), conversation.getLastMessageAt());
 	}
 }
