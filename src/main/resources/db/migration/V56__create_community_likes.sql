@@ -11,4 +11,3 @@ CREATE TABLE comment_likes (
     user_id BIGINT NOT NULL REFERENCES users(id),
     CONSTRAINT uk_comment_likes_target_user UNIQUE (comment_id, user_id)
 );
-
