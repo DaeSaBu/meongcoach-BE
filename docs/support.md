@@ -21,6 +21,9 @@ flowchart LR
 화면을 벗어나거나 앱이 백그라운드로 가면 주기적 조회를 중단합니다.
 화면 복귀 시 즉시 조회하며 한 번에 50건을 받으면 다음 페이지를 이어서 조회합니다.
 메시지는 UUID로 중복 저장을 막고 요청마다 대화 접근 권한을 확인합니다.
+[ChatFinder](../src/main/java/com/daesabu/meongcoach/support/application/provided/ChatFinder.java)는 최초 조회 `latestMessages`, 새 메시지 조회 `newMessages`, 이전 메시지 조회 `previousMessages`를 구분합니다.
+최초 조회에는 커서가 없으며 새 메시지는 `after >= 0`, 이전 메시지는 `before > 0`을 받습니다.
+HTTP API의 `after`·`before`는 컨트롤러에서 해당 메서드로 연결하며 동시에 지정하면 거절합니다.
 상담원 목록도 화면이 활성화되어 있을 때 2초 간격으로 갱신합니다.
 
 
