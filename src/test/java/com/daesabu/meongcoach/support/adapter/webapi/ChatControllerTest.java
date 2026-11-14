@@ -12,8 +12,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.daesabu.meongcoach.support.application.provided.ChatFinder;
 import com.daesabu.meongcoach.support.application.provided.ChatRegister;
-import com.daesabu.meongcoach.support.domain.ChatConversation;
+import com.daesabu.meongcoach.support.domain.ChatConversationFixture;
 import com.daesabu.meongcoach.support.domain.ChatMessage;
+import com.daesabu.meongcoach.support.domain.ChatMessageFixture;
 import com.daesabu.meongcoach.support.domain.exception.ChatAccessDeniedException;
 import java.time.Instant;
 import java.util.List;
@@ -35,7 +36,7 @@ class ChatControllerTest {
 	private final UUID clientId = UUID.fromString("cc23e1d4-c105-435e-9473-1f5e995967c1");
 
 	private ChatMessage message() {
-		return new ChatMessage(
+		return ChatMessageFixture.create(
 				1, 42, 42, false, clientId, "문의합니다", Instant.parse("2026-11-01T00:00:00Z"));
 	}
 
@@ -54,7 +55,7 @@ class ChatControllerTest {
 	@Test
 	void 본인_대화를_연다() throws Exception {
 		given(register.open(42L))
-				.willReturn(new ChatConversation(42, Instant.parse("2026-11-01T00:00:00Z")));
+				.willReturn(ChatConversationFixture.create(42, Instant.parse("2026-11-01T00:00:00Z")));
 		mvc.perform(
 						post("/api/support/conversations/me")
 								.principal(() -> "42")
@@ -87,7 +88,7 @@ class ChatControllerTest {
 	void 상담원_대화목록을_조회한다() throws Exception {
 		given(finder.conversations(0, null))
 				.willReturn(
-						List.of(new ChatConversation(42, Instant.parse("2026-11-01T00:00:00Z"))));
+						List.of(ChatConversationFixture.create(42, Instant.parse("2026-11-01T00:00:00Z"))));
 		mvc.perform(
 						get("/api/support/conversations")
 								.principal(() -> "42")

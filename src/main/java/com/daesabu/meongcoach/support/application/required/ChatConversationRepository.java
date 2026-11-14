@@ -1,5 +1,6 @@
-package com.daesabu.meongcoach.support.adapter.persistence;
+package com.daesabu.meongcoach.support.application.required;
 
+import com.daesabu.meongcoach.support.domain.ChatConversation;
 import jakarta.persistence.LockModeType;
 import java.time.Instant;
 import java.util.List;
@@ -11,7 +12,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-interface ChatConversationJpaRepository extends JpaRepository<ChatConversationEntity, Long> {
+public interface ChatConversationRepository extends JpaRepository<ChatConversation, Long> {
 	@Modifying
 	@Query(value = """
 			INSERT INTO support_conversations (id, updated_at)
@@ -19,7 +20,7 @@ interface ChatConversationJpaRepository extends JpaRepository<ChatConversationEn
 			""", nativeQuery = true)
 	void insertIfAbsent(@Param("id") long id);
 
-	List<ChatConversationEntity> findAllByOrderByUpdatedAtDescIdDesc(Pageable pageable);
+	List<ChatConversation> findAllByOrderByUpdatedAtDescIdDesc(Pageable pageable);
 
 	@Query("""
 			SELECT c FROM SupportConversation c
@@ -27,9 +28,9 @@ interface ChatConversationJpaRepository extends JpaRepository<ChatConversationEn
 			OR (c.updatedAt = :updatedAt AND c.id < :id)
 			ORDER BY c.updatedAt DESC, c.id DESC
 			""")
-	List<ChatConversationEntity> findPrevious(
+	List<ChatConversation> findPrevious(
 			@Param("updatedAt") Instant updatedAt, @Param("id") long id, Pageable pageable);
 
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
-	Optional<ChatConversationEntity> findLockedById(long id);
+	Optional<ChatConversation> findLockedById(long id);
 }
