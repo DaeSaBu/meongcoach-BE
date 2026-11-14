@@ -26,6 +26,31 @@ class ChatMediaUrlIssuerTest {
 	@Autowired UserRepository users;
 
 	@Test
+	void 크기_초과와_미디어_종류가_다른_형식은_업로드할_수_없다() {
+		long userId = users.save(User.registerUser()).getId();
+		long id = chats.open(userId).getId();
+		assertThatThrownBy(() -> media.upload(userId, id, new ChatMediaUploadRequest("IMAGE", "image/jpeg", 20L * 1024 * 1024 + 1)))
+				.isInstanceOf(com.daesabu.meongcoach.media.domain.exception.VideoFileSizeExceededException.class);
+		assertThatThrownBy(() -> media.upload(userId, id, new ChatMediaUploadRequest("VIDEO", "video/mp4", 512L * 1024 * 1024 + 1)))
+				.isInstanceOf(com.daesabu.meongcoach.media.domain.exception.VideoFileSizeExceededException.class);
+		assertThatThrownBy(() -> media.upload(userId, id, new ChatMediaUploadRequest("IMAGE", "video/mp4", 1024L)))
+				.isInstanceOf(com.daesabu.meongcoach.media.domain.exception.UnsupportedImageTypeException.class);
+	}
+
+	@Test
+	@WithMockUser(roles = "EXPERT")
+	void 상담원도_본인_영상으로_답변하고_회원이_열람할_수_있다() {
+		long owner = users.save(User.registerUser()).getId();
+		long expert = users.save(User.registerUser()).getId();
+		long id = chats.open(owner).getId();
+		var uploaded = media.upload(expert, id, new ChatMediaUploadRequest("VIDEO", "video/mp4", 1024L));
+		var message = chats.send(expert, id, new ChatMessageRequest(UUID.randomUUID(), "이렇게 해보세요", new ChatAttachmentRequest("VIDEO", uploaded.objectKey())));
+
+		assertThat(message.isOperator()).isTrue();
+		assertThat(media.download(owner, id, message.getId())).contains("X-Goog-Signature=");
+	}
+
+	@Test
 	void 사진과_영상은_회원별_비공개_경로로_업로드한다() {
 		long userId = users.save(User.registerUser()).getId();
 		long id = chats.open(userId).getId();

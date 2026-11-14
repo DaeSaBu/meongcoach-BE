@@ -16,6 +16,7 @@ import com.daesabu.meongcoach.support.domain.ChatConversationFixture;
 import com.daesabu.meongcoach.support.domain.ChatMessage;
 import com.daesabu.meongcoach.support.domain.ChatMessageFixture;
 import com.daesabu.meongcoach.support.domain.exception.ChatAccessDeniedException;
+import com.daesabu.meongcoach.support.domain.exception.InvalidChatMessageException;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -48,7 +49,9 @@ class ChatControllerTest {
 			fieldWithPath(prefix + "operator").description("상담원 답변 여부"),
 			fieldWithPath(prefix + "clientMessageId").description("중복 방지 UUID"),
 			fieldWithPath(prefix + "body").description("텍스트 본문"),
-			fieldWithPath(prefix + "createdAt").description("생성 시각")
+			fieldWithPath(prefix + "createdAt").description("생성 시각"),
+			fieldWithPath(prefix + "attachment").type(org.springframework.restdocs.payload.JsonFieldType.OBJECT).optional().description("사진 또는 영상 첨부"),
+			fieldWithPath(prefix + "attachment.type").type(org.springframework.restdocs.payload.JsonFieldType.STRING).optional().description("IMAGE 또는 VIDEO")
 		};
 	}
 
@@ -181,7 +184,10 @@ class ChatControllerTest {
 								requestFields(
 										fieldWithPath("clientMessageId")
 												.description("재시도 시 유지할 UUID"),
-										fieldWithPath("body").description("공백 제외 1~2000자 텍스트")),
+										fieldWithPath("body").optional().description("최대 2000자 텍스트, 첨부가 있으면 생략 가능"),
+										fieldWithPath("attachment").type(org.springframework.restdocs.payload.JsonFieldType.OBJECT).optional().description("사진 또는 영상 하나"),
+										fieldWithPath("attachment.type").type(org.springframework.restdocs.payload.JsonFieldType.STRING).optional().description("IMAGE 또는 VIDEO"),
+										fieldWithPath("attachment.objectKey").type(org.springframework.restdocs.payload.JsonFieldType.STRING).optional().description("본인에게 발급된 업로드 객체 키")),
 								responseFields(fields(""))));
 	}
 
@@ -207,6 +213,7 @@ class ChatControllerTest {
 
 	@Test
 	void 빈_메시지는_400이다() throws Exception {
+		given(register.send(anyLong(), anyLong(), any())).willThrow(new InvalidChatMessageException());
 		mvc.perform(
 						post("/api/support/conversations/17/messages")
 								.principal(() -> "42")
