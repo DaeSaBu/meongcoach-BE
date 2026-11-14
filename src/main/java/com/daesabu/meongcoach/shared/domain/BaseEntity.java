@@ -5,9 +5,11 @@ import jakarta.persistence.MappedSuperclass;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import lombok.Getter;
 
+/**
+ * 생성·수정 시각을 기록하는 엔티티 공통 부모.
+ */
 @Getter
 @MappedSuperclass
 public abstract class BaseEntity extends BaseTimeEntity {
@@ -17,11 +19,11 @@ public abstract class BaseEntity extends BaseTimeEntity {
 
 	@PrePersist
 	void initUpdatedAt() {
-		renewUpdatedAt();
+		this.updatedAt = LocalDateTime.now();
 	}
 
 	@PreUpdate
-	protected void renewUpdatedAt() {
-		this.updatedAt = LocalDateTime.now().truncatedTo(ChronoUnit.MICROS);
+	void renewUpdatedAt() {
+		this.updatedAt = LocalDateTime.now();
 	}
 }

@@ -4,9 +4,11 @@ import jakarta.persistence.Column;
 import jakarta.persistence.MappedSuperclass;
 import jakarta.persistence.PrePersist;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import lombok.Getter;
 
+/**
+ * 생성 시각만 기록하는 엔티티 공통 부모. 원장·로그 성격 테이블이 상속한다.
+ */
 @Getter
 @MappedSuperclass
 public abstract class BaseTimeEntity {
@@ -16,6 +18,6 @@ public abstract class BaseTimeEntity {
 
 	@PrePersist
 	void initCreatedAt() {
-		this.createdAt = LocalDateTime.now().truncatedTo(ChronoUnit.MICROS);
+		this.createdAt = LocalDateTime.now();
 	}
 }
