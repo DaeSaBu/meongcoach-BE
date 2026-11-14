@@ -125,8 +125,8 @@ class ChatRegisterTest {
 		register.open(other);
 		jdbc.update("UPDATE support_conversations SET updated_at=now()-interval '1 day'");
 		register.send(owner, owner, new ChatMessageRequest(UUID.randomUUID(), "새 문의"));
-		assertThat(finder.conversations(0).getFirst().id()).isEqualTo(owner);
-		assertThat(finder.conversations(owner))
+		assertThat(finder.conversations(0, null).getFirst().id()).isEqualTo(owner);
+		assertThat(finder.conversations(owner, finder.conversations(0, null).getFirst().updatedAt()))
 				.extracting(com.daesabu.meongcoach.support.domain.ChatConversation::id)
 				.containsExactly(other);
 	}
@@ -146,14 +146,41 @@ class ChatRegisterTest {
 		jdbc.update("UPDATE support_conversations SET updated_at=now()");
 		em.clear();
 
-		assertThat(finder.conversations(0))
+		assertThat(finder.conversations(0, null))
 				.extracting(com.daesabu.meongcoach.support.domain.ChatConversation::id)
 				.containsExactly(third, second, first);
-		assertThat(finder.conversations(second))
+		assertThat(finder.conversations(second, finder.conversations(0, null).get(1).updatedAt()))
 				.extracting(com.daesabu.meongcoach.support.domain.ChatConversation::id)
 				.containsExactly(first);
-		assertThat(finder.conversations(first)).isEmpty();
-		assertThat(finder.conversations(adminId)).isEmpty();
+		assertThat(finder.conversations(first, finder.conversations(0, null).getLast().updatedAt())).isEmpty();
 	}
 
+
+	@Test
+	void 커서_대화가_갱신되어도_이전_조회_경계를_유지한다() {
+		Long first = member();
+		Long second = member();
+		Long third = member();
+		register.open(first);
+		register.open(second);
+		register.open(third);
+		jdbc.update("UPDATE support_conversations SET updated_at=now()-interval '1 day'");
+		em.clear();
+		var cursor = finder.conversations(0, null).get(1);
+		register.send(second, second, new ChatMessageRequest(UUID.randomUUID(), "새 문의"));
+		em.flush();
+		em.clear();
+
+		assertThat(finder.conversations(cursor.id(), cursor.updatedAt()))
+				.extracting(com.daesabu.meongcoach.support.domain.ChatConversation::id)
+				.containsExactly(first);
+	}
+
+	@Test
+	void 대화_목록_커서는_ID와_시각을_함께_지정한다() {
+		assertThatThrownBy(() -> finder.conversations(1, null))
+				.isInstanceOf(ChatCursorInvalidException.class);
+		assertThatThrownBy(() -> finder.conversations(0, java.time.Instant.now()))
+				.isInstanceOf(ChatCursorInvalidException.class);
+	}
 }

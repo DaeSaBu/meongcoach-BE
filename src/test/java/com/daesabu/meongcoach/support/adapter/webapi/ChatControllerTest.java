@@ -85,7 +85,7 @@ class ChatControllerTest {
 
 	@Test
 	void 상담원_대화목록을_조회한다() throws Exception {
-		given(finder.conversations(0))
+		given(finder.conversations(0, null))
 				.willReturn(
 						List.of(new ChatConversation(42, Instant.parse("2026-11-01T00:00:00Z"))));
 		mvc.perform(
@@ -100,7 +100,8 @@ class ChatControllerTest {
 								queryParameters(
 										parameterWithName("before")
 												.description(
-														"이전 대화 ID, 최초 0; 최근 활동 시각·ID 내림차순 최대 50건")),
+														"이전 대화 ID, 최초 0; 최근 활동 시각·ID 내림차순 최대 50건"),
+										parameterWithName("beforeUpdatedAt").optional().description("이전 응답 마지막 대화의 updatedAt 원문; before와 함께 전달")),
 								responseFields(
 										fieldWithPath("[].id").description("대화 ID"),
 										fieldWithPath("[].updatedAt").description("최종 활동 시각"))));
@@ -224,5 +225,16 @@ class ChatControllerTest {
 												+ clientId
 												+ "\",\"body\":\" \"}"))
 				.andExpect(status().isBadRequest());
+	}
+
+	@Test
+	void 대화_커서의_마이크로초를_그대로_전달한다() throws Exception {
+		Instant timestamp = Instant.parse("2026-11-01T00:00:00.123456Z");
+		given(finder.conversations(42, timestamp)).willReturn(List.of());
+		mvc.perform(get("/api/support/conversations")
+				.param("before", "42").param("beforeUpdatedAt", timestamp.toString())
+				.principal(() -> "42"))
+				.andExpect(status().isOk());
+		verify(finder).conversations(42, timestamp);
 	}
 }
