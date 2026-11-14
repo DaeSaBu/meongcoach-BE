@@ -85,7 +85,7 @@ class ChatControllerTest {
 
 	@Test
 	void 상담원_대화목록을_조회한다() throws Exception {
-		given(finder.conversations(42L, 0))
+		given(finder.conversations(0))
 				.willReturn(
 						List.of(new ChatConversation(42, Instant.parse("2026-11-01T00:00:00Z"))));
 		mvc.perform(
@@ -108,7 +108,7 @@ class ChatControllerTest {
 
 	@Test
 	void 메시지를_커서로_조회한다() throws Exception {
-		given(finder.latestMessages(42L, 42)).willReturn(List.of(message()));
+		given(finder.latestMessages(42)).willReturn(List.of(message()));
 		mvc.perform(
 						get("/api/support/conversations/{id}/messages", 42)
 								.param("after", "-1")
@@ -133,31 +133,31 @@ class ChatControllerTest {
 
 	@Test
 	void 커서가_없으면_최신_메시지를_조회한다() throws Exception {
-		given(finder.latestMessages(42L, 42)).willReturn(List.of(message()));
+		given(finder.latestMessages(42)).willReturn(List.of(message()));
 		mvc.perform(get("/api/support/conversations/42/messages").principal(() -> "42"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$[0].id").value(1));
-		verify(finder).latestMessages(42L, 42);
+		verify(finder).latestMessages(42);
 	}
 
 	@Test
 	void after로_새_메시지를_조회한다() throws Exception {
-		given(finder.newMessages(42L, 42, 0)).willReturn(List.of(message()));
+		given(finder.newMessages(42, 0)).willReturn(List.of(message()));
 		mvc.perform(get("/api/support/conversations/42/messages")
 				.param("after", "0").principal(() -> "42"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$[0].id").value(1));
-		verify(finder).newMessages(42L, 42, 0);
+		verify(finder).newMessages(42, 0);
 	}
 
 	@Test
 	void before로_이전_메시지를_조회한다() throws Exception {
-		given(finder.previousMessages(42L, 42, 2)).willReturn(List.of(message()));
+		given(finder.previousMessages(42, 2)).willReturn(List.of(message()));
 		mvc.perform(get("/api/support/conversations/42/messages")
 				.param("before", "2").principal(() -> "42"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$[0].id").value(1));
-		verify(finder).previousMessages(42L, 42, 2);
+		verify(finder).previousMessages(42, 2);
 	}
 
 	@Test
@@ -193,8 +193,8 @@ class ChatControllerTest {
 	}
 
 	@Test
-	void 다른_회원의_대화는_403이다() throws Exception {
-		given(finder.latestMessages(42L, 43)).willThrow(new ChatAccessDeniedException());
+	void 존재하지_않는_대화는_403이다() throws Exception {
+		given(finder.latestMessages(43)).willThrow(new ChatAccessDeniedException());
 		mvc.perform(
 						get("/api/support/conversations/{id}/messages", 43)
 								.principal(() -> "42")

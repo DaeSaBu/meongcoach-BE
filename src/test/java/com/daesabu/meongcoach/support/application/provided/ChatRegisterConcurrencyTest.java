@@ -81,7 +81,7 @@ class ChatRegisterConcurrencyTest {
 				return message;
 			});
 			assertThat(next.get().get(5, TimeUnit.SECONDS)).isEqualTo(first);
-			assertThat(finder.newMessages(userId, userId, 0)).containsExactly(first);
+			assertThat(finder.newMessages(userId, 0)).containsExactly(first);
 		}
 	}
 
