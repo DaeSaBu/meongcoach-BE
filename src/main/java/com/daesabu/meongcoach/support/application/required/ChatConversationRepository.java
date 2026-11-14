@@ -2,7 +2,7 @@ package com.daesabu.meongcoach.support.application.required;
 
 import com.daesabu.meongcoach.support.domain.ChatConversation;
 import jakarta.persistence.LockModeType;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Pageable;
@@ -32,7 +32,7 @@ public interface ChatConversationRepository extends JpaRepository<ChatConversati
 			ORDER BY c.updatedAt DESC, c.id DESC
 			""")
 	List<ChatConversation> findPrevious(
-			@Param("updatedAt") LocalDateTime updatedAt, @Param("id") long id, Pageable pageable);
+			@Param("updatedAt") Instant updatedAt, @Param("id") long id, Pageable pageable);
 
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	Optional<ChatConversation> findLockedById(long id);

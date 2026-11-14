@@ -1,17 +1,16 @@
 package com.daesabu.meongcoach.support.domain;
 
-import com.daesabu.meongcoach.shared.domain.BaseEntity;
 import com.daesabu.meongcoach.support.domain.exception.ChatAccessDeniedException;
 import jakarta.persistence.Column;
-import jakarta.persistence.Convert;
-import jakarta.persistence.Converts;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -24,13 +23,9 @@ import org.hibernate.annotations.SQLRestriction;
 		@Index(name = "uk_support_conversations_active_member", columnList = "(member_id)", unique = true, options = "WHERE deleted_at IS NULL")
 })
 @SQLRestriction("deleted_at IS NULL")
-@Converts({
-		@Convert(attributeName = "createdAt", converter = ChatTimestampConverter.class),
-		@Convert(attributeName = "updatedAt", converter = ChatTimestampConverter.class)
-})
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class ChatConversation extends BaseEntity {
+public class ChatConversation {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
@@ -38,8 +33,19 @@ public class ChatConversation extends BaseEntity {
 	@Column(nullable = false)
 	private long memberId;
 
-	@Convert(converter = ChatTimestampConverter.class)
-	private LocalDateTime deletedAt;
+	private Instant deletedAt;
+
+	@Column(nullable = false, updatable = false)
+	private Instant createdAt;
+
+	@Column(nullable = false)
+	private Instant updatedAt;
+
+	@PrePersist
+	void initTimestamps() {
+		createdAt = Instant.now().truncatedTo(ChronoUnit.MICROS);
+		updatedAt = createdAt;
+	}
 
 	public void verifyAccess(long userId, boolean operator) {
 		if (deletedAt != null || (memberId != userId && !operator)) {
@@ -47,11 +53,12 @@ public class ChatConversation extends BaseEntity {
 		}
 	}
 
+	@PreUpdate
 	public void recordMessage() {
-		renewUpdatedAt();
+		updatedAt = Instant.now().truncatedTo(ChronoUnit.MICROS);
 	}
 
 	public void leave() {
-		deletedAt = LocalDateTime.now().truncatedTo(ChronoUnit.MICROS);
+		deletedAt = Instant.now().truncatedTo(ChronoUnit.MICROS);
 	}
 }

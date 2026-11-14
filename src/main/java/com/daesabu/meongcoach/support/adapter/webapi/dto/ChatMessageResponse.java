@@ -1,7 +1,6 @@
 package com.daesabu.meongcoach.support.adapter.webapi.dto;
 
 import com.daesabu.meongcoach.support.domain.ChatMessage;
-import com.daesabu.meongcoach.support.domain.ChatTimestampConverter;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -22,6 +21,6 @@ public record ChatMessageResponse(
 				message.isOperator(),
 				message.getClientMessageId(),
 				message.getBody(),
-				ChatTimestampConverter.toInstant(message.getCreatedAt()));
+				message.getCreatedAt());
 	}
 }
