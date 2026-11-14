@@ -15,18 +15,24 @@ flowchart LR
 ## 자체 실시간 상담
 
 [ChatController](../src/main/java/com/daesabu/meongcoach/support/adapter/webapi/ChatController.java)는 본인 대화와 상담원 답변 API를 제공합니다.
+대화는 독립적으로 생성하는 `id`와 소유 회원의 `memberId`를 저장합니다.
+`member_id`는 회원 외래 키이며 UNIQUE 제약으로 회원당 대화 하나를 유지합니다.
+동시에 대화를 열어도 `member_id` 충돌을 처리해 같은 대화를 반환합니다.
+기존 대화는 ID와 메시지 연결을 유지하고 `member_id`를 기존 ID로 채웁니다.
 메시지는 PostgreSQL에 저장합니다.
 서버는 단일 인스턴스로 실행하며 메시지 전송과 조회에 REST API를 사용합니다.
 채팅 화면은 마지막 조회 완료 후 1초 뒤 마지막 메시지 ID 이후를 다시 조회합니다.
 화면을 벗어나거나 앱이 백그라운드로 가면 주기적 조회를 중단합니다.
 화면 복귀 시 즉시 조회하며 한 번에 50건을 받으면 다음 페이지를 이어서 조회합니다.
 메시지는 UUID로 중복 저장을 막습니다.
-[SecurityConfig](../src/main/java/com/daesabu/meongcoach/shared/config/SecurityConfig.java)는 HTTP 요청의 대화 접근 권한을 검사합니다.
+[SecurityConfig](../src/main/java/com/daesabu/meongcoach/shared/config/SecurityConfig.java)는 HTTP 요청의 역할을 검사합니다.
 역할·소유자별 접근 규칙은 [URL 인가 규칙](security.md#url-인가-규칙)을 따릅니다.
 서비스는 대화 존재 여부와 커서를 검사합니다.
+조회·전송은 인증한 회원 ID가 대화의 `memberId`와 같거나 ADMIN·EXPERT인 경우만 허용합니다.
 상담원 여부는 인증 단계에서 SecurityContext에 등록한 ADMIN·EXPERT 권한을 재사용하며 메시지 표시에 사용합니다.
 관리자 판정을 위해 회원 역할을 다시 조회하지 않습니다.
-일반 회원의 타인 대화·관리자 목록 접근은 `FORBIDDEN`으로 거절합니다.
+일반 회원의 타인 대화 접근은 `SUPPORT_CHAT_ACCESS_DENIED`로 거절합니다.
+상담원 목록 접근은 `FORBIDDEN`으로 거절합니다.
 탈퇴·미등록 회원의 토큰은 인증 과정에서 거절합니다.
 [ChatFinder](../src/main/java/com/daesabu/meongcoach/support/application/provided/ChatFinder.java)는 최초 조회 `latestMessages`, 새 메시지 조회 `newMessages`, 이전 메시지 조회 `previousMessages`를 구분합니다.
 최초 조회는 `GET /api/support/conversations/{id}/messages`로 요청하며 커서가 없습니다.
@@ -41,7 +47,7 @@ flowchart LR
 
 ## 메시지 푸시
 
-[ChatModifyService](../src/main/java/com/daesabu/meongcoach/support/application/ChatModifyService.java)는 새 메시지를 저장하고 발신자·대화 ID를 담은 알림 이벤트를 발행합니다.
+[ChatModifyService](../src/main/java/com/daesabu/meongcoach/support/application/ChatModifyService.java)는 새 메시지를 저장하고 발신자·대화 소유 회원 ID를 담은 알림 이벤트를 발행합니다.
 [ChatMessageNotificationService](../src/main/java/com/daesabu/meongcoach/support/application/ChatMessageNotificationService.java)는 저장 트랜잭션이 커밋된 뒤 현재 요청 스레드에서 푸시를 한 번 발송합니다.
 푸시 처리 시간만큼 메시지 전송 응답이 늦어질 수 있습니다.
 
