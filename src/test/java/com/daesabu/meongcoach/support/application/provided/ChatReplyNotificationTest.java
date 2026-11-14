@@ -129,8 +129,8 @@ class ChatReplyNotificationTest {
         Long admin = member(true);
         var request = new ChatMessageRequest(UUID.randomUUID(), "답변");
         var first = chats.send(admin, user, request);
-        assertThat(chats.send(admin, user, request)).isEqualTo(first);
-        assertThat(finder.newMessages(user, 0)).containsExactly(first);
+        assertThat(chats.send(admin, user, request)).usingRecursiveComparison().isEqualTo(first);
+        assertThat(finder.newMessages(user, 0)).usingRecursiveFieldByFieldElementComparator().containsExactly(first);
         verify(sender).send(anyList());
     }
 
@@ -141,8 +141,8 @@ class ChatReplyNotificationTest {
         var request = new ChatMessageRequest(UUID.randomUUID(), "답변");
         when(sender.send(anyList())).thenThrow(new IllegalStateException("발송 실패"));
         var saved = chats.send(admin, user, request);
-        assertThat(finder.newMessages(user, 0)).containsExactly(saved);
-        assertThat(chats.send(admin, user, request)).isEqualTo(saved);
+        assertThat(finder.newMessages(user, 0)).usingRecursiveFieldByFieldElementComparator().containsExactly(saved);
+        assertThat(chats.send(admin, user, request)).usingRecursiveComparison().isEqualTo(saved);
         verify(sender).send(anyList());
     }
 
@@ -153,7 +153,7 @@ class ChatReplyNotificationTest {
         var request = new ChatMessageRequest(UUID.randomUUID(), "답변");
         when(sender.send(anyList())).thenReturn(new NotificationDelivery(1, 1, List.of()));
         var saved = chats.send(admin, user, request);
-        assertThat(chats.send(admin, user, request)).isEqualTo(saved);
+        assertThat(chats.send(admin, user, request)).usingRecursiveComparison().isEqualTo(saved);
         verify(sender).send(anyList());
     }
 
@@ -181,7 +181,7 @@ class ChatReplyNotificationTest {
             return new NotificationDelivery(0, 0, List.of(messages.getFirst().fid()));
         });
         var saved = chats.send(admin, user, new ChatMessageRequest(UUID.randomUUID(), "답변"));
-        assertThat(finder.newMessages(user, 0)).containsExactly(saved);
+        assertThat(finder.newMessages(user, 0)).usingRecursiveFieldByFieldElementComparator().containsExactly(saved);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM device_installations WHERE user_id=?", Long.class, user)).isZero();
         verify(sender).send(anyList());
     }

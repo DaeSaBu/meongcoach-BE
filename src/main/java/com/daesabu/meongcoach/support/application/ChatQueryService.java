@@ -2,7 +2,8 @@ package com.daesabu.meongcoach.support.application;
 
 import com.daesabu.meongcoach.shared.security.AuthorityRole;
 import com.daesabu.meongcoach.support.application.provided.ChatFinder;
-import com.daesabu.meongcoach.support.application.required.ChatRepository;
+import com.daesabu.meongcoach.support.application.required.ChatConversationRepository;
+import com.daesabu.meongcoach.support.application.required.ChatMessageRepository;
 import com.daesabu.meongcoach.support.domain.ChatConversation;
 import com.daesabu.meongcoach.support.domain.ChatMessage;
 import com.daesabu.meongcoach.support.domain.exception.ChatAccessDeniedException;
@@ -10,6 +11,7 @@ import com.daesabu.meongcoach.support.domain.exception.ChatCursorInvalidExceptio
 import java.time.Instant;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,7 +20,17 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class ChatQueryService implements ChatFinder {
-	private final ChatRepository repository;
+	private final ChatConversationRepository conversations;
+	private final ChatMessageRepository messages;
+
+	public ChatConversation findConversation(long conversationId) {
+		return conversations.findById(conversationId).orElseThrow(ChatAccessDeniedException::new);
+	}
+
+	@Transactional
+	public ChatConversation findLockedConversation(long conversationId) {
+		return conversations.findLockedById(conversationId).orElseThrow(ChatAccessDeniedException::new);
+	}
 
 	public boolean isOperator() {
 		var authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -29,7 +41,7 @@ public class ChatQueryService implements ChatFinder {
 	}
 
 	public void verifyExists(long conversationId) {
-		if (!repository.exists(conversationId)) {
+		if (!conversations.existsById(conversationId)) {
 			throw new ChatAccessDeniedException();
 		}
 	}
@@ -38,12 +50,17 @@ public class ChatQueryService implements ChatFinder {
 		if ((before == 0) != (beforeUpdatedAt == null)) {
 			throw new ChatCursorInvalidException();
 		}
-		return repository.conversations(before, beforeUpdatedAt, 50);
+		var page = PageRequest.of(0, 50);
+		if (before == 0) {
+			return conversations.findAllByOrderByUpdatedAtDescIdDesc(page);
+		}
+		return conversations.findPrevious(beforeUpdatedAt, before, page);
 	}
 
 	public List<ChatMessage> latestMessages(long conversationId) {
 		verifyExists(conversationId);
-		return repository.latestMessages(conversationId, 50);
+		var page = PageRequest.of(0, 50);
+		return messages.findByConversationIdOrderByIdDesc(conversationId, page).reversed();
 	}
 
 	public List<ChatMessage> newMessages(long conversationId, long after) {
@@ -51,7 +68,8 @@ public class ChatQueryService implements ChatFinder {
 			throw new ChatCursorInvalidException();
 		}
 		verifyExists(conversationId);
-		return repository.newMessages(conversationId, after, 50);
+		var page = PageRequest.of(0, 50);
+		return messages.findByConversationIdAndIdGreaterThanOrderByIdAsc(conversationId, after, page);
 	}
 
 	public List<ChatMessage> previousMessages(long conversationId, long before) {
@@ -59,6 +77,7 @@ public class ChatQueryService implements ChatFinder {
 			throw new ChatCursorInvalidException();
 		}
 		verifyExists(conversationId);
-		return repository.previousMessages(conversationId, before, 50);
+		var page = PageRequest.of(0, 50);
+		return messages.findByConversationIdAndIdLessThanOrderByIdDesc(conversationId, before, page).reversed();
 	}
 }

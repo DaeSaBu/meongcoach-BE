@@ -15,12 +15,12 @@ public record ChatMessageResponse(
 
 	public static ChatMessageResponse from(ChatMessage message) {
 		return new ChatMessageResponse(
-				message.id(),
-				message.conversationId(),
-				message.senderId(),
-				message.operator(),
-				message.clientMessageId(),
-				message.body(),
-				message.createdAt());
+				message.getId(),
+				message.getConversationId(),
+				message.getSenderId(),
+				message.isOperator(),
+				message.getClientMessageId(),
+				message.getBody(),
+				message.getCreatedAt());
 	}
 }

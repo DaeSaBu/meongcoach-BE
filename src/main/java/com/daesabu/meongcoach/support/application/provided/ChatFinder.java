@@ -7,6 +7,10 @@ import java.time.Instant;
 import java.util.List;
 
 public interface ChatFinder {
+	ChatConversation findConversation(long conversationId);
+
+	ChatConversation findLockedConversation(long conversationId);
+
 	List<ChatConversation> conversations(long before, Instant beforeUpdatedAt);
 
 	List<ChatMessage> latestMessages(long conversationId);
