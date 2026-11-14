@@ -12,9 +12,11 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ApplicationTest
+@WithMockUser
 class ChatRegisterTest {
 	@Autowired ChatRegister register;
 	@Autowired ChatFinder finder;
@@ -57,6 +59,7 @@ class ChatRegisterTest {
 	}
 
 	@Test
+	@WithMockUser(roles = "ADMIN")
 	void 관리자_메시지는_상담원_답변으로_저장한다() {
 		Long owner = member();
 		var admin = User.registerUser();

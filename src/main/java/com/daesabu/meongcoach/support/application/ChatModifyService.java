@@ -34,7 +34,7 @@ public class ChatModifyService implements ChatRegister {
 		if (previous.isPresent()) {
 			return previous.get();
 		}
-		boolean operator = finder.isOperator(userId);
+		boolean operator = finder.isOperator();
 		String body = request.body().strip();
 		ChatMessage message =
 				repository.save(conversationId, userId, operator, request.clientMessageId(), body);

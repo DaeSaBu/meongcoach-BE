@@ -70,7 +70,7 @@ class ChatControllerTest {
 
 	@Test
 	void 운영자_권한을_조회한다() throws Exception {
-		given(finder.isOperator(42L)).willReturn(true);
+		given(finder.isOperator()).willReturn(true);
 		mvc.perform(
 						get("/api/support/conversations/capabilities")
 								.principal(() -> "42")

@@ -7,9 +7,9 @@ import com.daesabu.meongcoach.support.domain.ChatConversation;
 import com.daesabu.meongcoach.support.domain.ChatMessage;
 import com.daesabu.meongcoach.support.domain.exception.ChatAccessDeniedException;
 import com.daesabu.meongcoach.support.domain.exception.ChatCursorInvalidException;
-import com.daesabu.meongcoach.user.application.provided.RegisteredUserChecker;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,10 +18,12 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class ChatQueryService implements ChatFinder {
 	private final ChatRepository repository;
-	private final RegisteredUserChecker users;
 
-	public boolean isOperator(Long userId) {
-		return users.findRole(userId).filter(role -> role == AuthorityRole.ADMIN).isPresent();
+	public boolean isOperator() {
+		var authentication = SecurityContextHolder.getContext().getAuthentication();
+		return authentication != null && authentication.isAuthenticated()
+				&& authentication.getAuthorities().stream()
+						.anyMatch(authority -> AuthorityRole.ADMIN.authority().equals(authority.getAuthority()));
 	}
 
 	public void verifyExists(long conversationId) {

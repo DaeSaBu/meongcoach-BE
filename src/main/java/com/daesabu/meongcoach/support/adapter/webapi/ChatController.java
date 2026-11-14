@@ -30,8 +30,8 @@ public class ChatController {
 	private final ChatFinder finder;
 
 	@GetMapping("/capabilities")
-	public CapabilitiesResponse capabilities(@CurrentUserId Long userId) {
-		boolean operator = finder.isOperator(userId);
+	public CapabilitiesResponse capabilities() {
+		boolean operator = finder.isOperator();
 		return new CapabilitiesResponse(operator);
 	}
 

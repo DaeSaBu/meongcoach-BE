@@ -3,6 +3,8 @@ package com.daesabu.meongcoach.support.adapter.security;
 import static com.daesabu.meongcoach.support.AppClientRequests.appGet;
 import static com.daesabu.meongcoach.support.AppClientRequests.appPost;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -10,6 +12,7 @@ import com.daesabu.meongcoach.auth.application.required.TokenProvider;
 import com.daesabu.meongcoach.support.ApplicationTest;
 import com.daesabu.meongcoach.support.application.provided.ChatFinder;
 import com.daesabu.meongcoach.support.application.provided.ChatRegister;
+import com.daesabu.meongcoach.user.application.provided.RegisteredUserChecker;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.User;
 import com.daesabu.meongcoach.user.domain.UserRole;
@@ -21,6 +24,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -33,6 +37,7 @@ class ChatSecurityTest {
 	@Autowired ChatFinder finder;
 	@Autowired TokenProvider tokens;
 	@Autowired EntityManager em;
+	@MockitoSpyBean RegisteredUserChecker registeredUsers;
 
 	private Long member(UserRole role) {
 		var user = User.registerUser();
@@ -165,4 +170,25 @@ class ChatSecurityTest {
 		mvc.perform(appPost("/api/support/conversations/me").header("Authorization", token))
 				.andExpect(status().isForbidden());
 	}
+	@Test
+	void 관리자_조회는_인증_단계의_권한을_재사용한다() throws Exception {
+		Long adminId = member(UserRole.ADMIN);
+		String token = bearer(adminId);
+		mvc.perform(appGet("/api/support/conversations/capabilities").header("Authorization", token))
+				.andExpect(status().isOk()).andExpect(jsonPath("$.operator").value(true));
+		verify(registeredUsers, times(1)).findRole(adminId);
+	}
+
+	@Test
+	void 메시지_작성도_인증_단계의_권한을_재사용한다() throws Exception {
+		Long owner = member(UserRole.USER);
+		chats.open(owner);
+		Long adminId = member(UserRole.ADMIN);
+		String token = bearer(adminId);
+		mvc.perform(appPost(messages(owner)).header("Authorization", token)
+				.contentType(MediaType.APPLICATION_JSON).content(body()))
+				.andExpect(status().isOk()).andExpect(jsonPath("$.operator").value(true));
+		verify(registeredUsers, times(1)).findRole(adminId);
+	}
+
 }

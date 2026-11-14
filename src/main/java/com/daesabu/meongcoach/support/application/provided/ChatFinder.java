@@ -14,7 +14,7 @@ public interface ChatFinder {
 
 	List<ChatMessage> previousMessages(long conversationId, long before);
 
-	boolean isOperator(Long userId);
+	boolean isOperator();
 
 	void verifyExists(long conversationId);
 }

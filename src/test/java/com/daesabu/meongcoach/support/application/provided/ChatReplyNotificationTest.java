@@ -27,12 +27,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 @NonTransactionalApplicationTest
+@WithMockUser(roles = "ADMIN")
 class ChatReplyNotificationTest {
     @Autowired ChatRegister chats;
     @Autowired ChatFinder finder;
@@ -163,6 +165,7 @@ class ChatReplyNotificationTest {
     }
 
     @Test
+    @WithMockUser
     void 회원의_자기_메시지는_발송하지_않는다() {
         Long user = recipient(true);
         chats.send(user, user, new ChatMessageRequest(UUID.randomUUID(), "문의"));
