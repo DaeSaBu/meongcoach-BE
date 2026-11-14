@@ -81,7 +81,7 @@ class ChatRegisterConcurrencyTest {
 				return message;
 			});
 			assertThat(next.get().get(5, TimeUnit.SECONDS)).usingRecursiveComparison().withComparatorForType(ChatMessageTimeComparator.INSTANCE, java.time.LocalDateTime.class).isEqualTo(first);
-			assertThat(finder.newMessages(userId, conversationId, 0)).usingRecursiveFieldByFieldElementComparator(new org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration.Builder().withComparatorForType(ChatMessageTimeComparator.INSTANCE, java.time.LocalDateTime.class).build()).containsExactly(first);
+			assertThat(finder.newMessages(userId, conversationId, 0)).usingRecursiveComparison().withComparatorForType(ChatMessageTimeComparator.INSTANCE, java.time.LocalDateTime.class).isEqualTo(java.util.List.of(first));
 		}
 	}
 

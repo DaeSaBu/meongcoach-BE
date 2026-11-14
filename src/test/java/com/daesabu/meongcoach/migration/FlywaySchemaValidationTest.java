@@ -29,6 +29,27 @@ class FlywaySchemaValidationTest {
 	private DataSource dataSource;
 
 	@Test
+	void 활동시각_분리는_기존_정렬시각을_보존한다() throws Exception {
+		try (Connection connection = dataSource.getConnection()) {
+			connection.setAutoCommit(false);
+			try (var statement = connection.createStatement()) {
+				statement.execute("CREATE SCHEMA chat_activity_test");
+				statement.execute("SET LOCAL search_path TO chat_activity_test");
+				statement.execute("CREATE TABLE support_conversations (id BIGINT, updated_at TIMESTAMP)");
+				statement.execute("CREATE INDEX support_conversations_activity ON support_conversations (updated_at DESC, id DESC)");
+				statement.execute("INSERT INTO support_conversations VALUES (1, '2026-11-01T01:00:00.123456')");
+				ScriptUtils.executeSqlScript(connection, new ClassPathResource("db/migration/V60__separate_support_message_activity.sql"));
+				try (var rows = statement.executeQuery("SELECT last_message_at = updated_at FROM support_conversations")) {
+					assertThat(rows.next()).isTrue();
+					assertThat(rows.getBoolean(1)).isTrue();
+				}
+			} finally {
+				connection.rollback();
+			}
+		}
+	}
+
+	@Test
 	void 상담_시각을_UTC_LocalDateTime으로_이관한다() throws Exception {
 		try (Connection connection = dataSource.getConnection()) {
 			connection.setAutoCommit(false);

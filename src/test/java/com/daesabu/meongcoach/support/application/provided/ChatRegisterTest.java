@@ -55,10 +55,11 @@ class ChatRegisterTest {
 		Long owner = member();
 		var conversation = register.open(owner);
 		var request = new ChatMessageRequest(UUID.randomUUID(), "문의");
-		var before = conversation.getLastMessageAt();
+		var before = conversation.getLastMessageAt().minusDays(1);
+		ReflectionTestUtils.setField(conversation, "lastMessageAt", before);
 		register.send(owner, conversation.getId(), request);
 		var sentAt = conversation.getLastMessageAt();
-		assertThat(sentAt).isAfterOrEqualTo(before);
+		assertThat(sentAt).isAfter(before);
 		register.send(owner, conversation.getId(), request);
 		assertThat(conversation.getLastMessageAt()).isEqualTo(sentAt);
 		em.flush();
@@ -195,10 +196,10 @@ class ChatRegisterTest {
 		assertThat(finder.conversations(0, null))
 				.extracting(com.daesabu.meongcoach.support.domain.ChatConversation::getId)
 				.containsExactly(conversationId(third), conversationId(second), conversationId(first));
-		assertThat(finder.conversations(conversationId(second), finder.conversations(0, null).get(1).getUpdatedAt()))
+		assertThat(finder.conversations(conversationId(second), finder.conversations(0, null).get(1).getLastMessageAt()))
 				.extracting(com.daesabu.meongcoach.support.domain.ChatConversation::getId)
 				.containsExactly(conversationId(first));
-		assertThat(finder.conversations(conversationId(first), finder.conversations(0, null).getLast().getUpdatedAt())).isEmpty();
+		assertThat(finder.conversations(conversationId(first), finder.conversations(0, null).getLast().getLastMessageAt())).isEmpty();
 	}
 
 
@@ -214,7 +215,7 @@ class ChatRegisterTest {
 		em.clear();
 		var cursor = finder.conversations(0, null).get(1);
 		var cursorId = cursor.getId();
-		var cursorUpdatedAt = cursor.getUpdatedAt();
+		var cursorUpdatedAt = cursor.getLastMessageAt();
 		register.send(second, conversationId(second), new ChatMessageRequest(UUID.randomUUID(), "새 문의"));
 		em.flush();
 		em.clear();
