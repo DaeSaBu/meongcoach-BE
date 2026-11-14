@@ -29,15 +29,21 @@ public class ChatQueryService implements ChatFinder {
 
 	public ChatConversation findConversation(Long userId, long conversationId) {
 		var conversation = conversations.findById(conversationId).orElseThrow(ChatAccessDeniedException::new);
-		conversation.verifyAccess(userId, isOperator());
+		verifyAccess(conversation, userId);
 		return conversation;
 	}
 
 	@Transactional
 	public ChatConversation findLockedConversation(Long userId, long conversationId) {
 		var conversation = conversations.findLockedById(conversationId).orElseThrow(ChatAccessDeniedException::new);
-		conversation.verifyAccess(userId, isOperator());
+		verifyAccess(conversation, userId);
 		return conversation;
+	}
+
+	private void verifyAccess(ChatConversation conversation, long userId) {
+		if (conversation.isClosed() || (!conversation.isOwnedBy(userId) && !isOperator())) {
+			throw new ChatAccessDeniedException();
+		}
 	}
 
 	public boolean isOperator() {

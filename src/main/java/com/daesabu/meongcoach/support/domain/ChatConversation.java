@@ -1,7 +1,6 @@
 package com.daesabu.meongcoach.support.domain;
 
 import com.daesabu.meongcoach.shared.domain.BaseEntity;
-import com.daesabu.meongcoach.support.domain.exception.ChatAccessDeniedException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -33,14 +32,15 @@ public class ChatConversation extends BaseEntity {
 
 	private LocalDateTime deletedAt;
 
-	public void verifyAccess(long userId, boolean operator) {
-		if (deletedAt != null || (memberId != userId && !operator)) {
-			throw new ChatAccessDeniedException();
-		}
+	public boolean isOwnedBy(long userId) {
+		return memberId == userId;
 	}
 
-	public void leave(long userId) {
-		verifyAccess(userId, false);
+	public boolean isClosed() {
+		return deletedAt != null;
+	}
+
+	public void leave() {
 		deletedAt = LocalDateTime.now();
 	}
 }
