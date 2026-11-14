@@ -20,7 +20,12 @@ flowchart LR
 채팅 화면은 마지막 조회 완료 후 2초 뒤 마지막 메시지 ID 이후를 다시 조회합니다.
 화면을 벗어나거나 앱이 백그라운드로 가면 주기적 조회를 중단합니다.
 화면 복귀 시 즉시 조회하며 한 번에 50건을 받으면 다음 페이지를 이어서 조회합니다.
-메시지는 UUID로 중복 저장을 막고 요청마다 대화 접근 권한을 확인합니다.
+메시지는 UUID로 중복 저장을 막습니다.
+[SecurityConfig](../src/main/java/com/daesabu/meongcoach/shared/config/SecurityConfig.java)는 HTTP 요청의 대화 접근 권한을 검사합니다.
+역할·소유자별 접근 규칙은 [URL 인가 규칙](security.md#url-인가-규칙)을 따릅니다.
+서비스는 대화 존재 여부와 커서를 검사하며 상담원 여부는 메시지 표시와 푸시 판단에 사용합니다.
+일반 회원의 타인 대화·관리자 목록 접근은 `FORBIDDEN`으로 거절합니다.
+탈퇴·미등록 회원의 토큰은 인증 과정에서 거절합니다.
 [ChatFinder](../src/main/java/com/daesabu/meongcoach/support/application/provided/ChatFinder.java)는 최초 조회 `latestMessages`, 새 메시지 조회 `newMessages`, 이전 메시지 조회 `previousMessages`를 구분합니다.
 최초 조회에는 커서가 없으며 새 메시지는 `after >= 0`, 이전 메시지는 `before > 0`을 받습니다.
 HTTP API의 `after`·`before`는 컨트롤러에서 해당 메서드로 연결하며 동시에 지정하면 거절합니다.
