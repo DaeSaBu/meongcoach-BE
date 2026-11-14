@@ -35,7 +35,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 @NonTransactionalApplicationTest
 @WithMockUser(roles = "ADMIN")
-class ChatReplyNotificationTest {
+class ChatRegisterNotificationTest {
     @Autowired ChatRegister chats;
     @Autowired ChatFinder finder;
     @Autowired UserRepository users;
@@ -170,6 +170,103 @@ class ChatReplyNotificationTest {
         Long user = recipient(true);
         chats.send(user, user, new ChatMessageRequest(UUID.randomUUID(), "문의"));
         verifyNoInteractions(sender);
+    }
+
+    private String operatorRecipient(UserRole role, boolean enabled, boolean withdrawn) {
+        Long id = recipient(enabled);
+        var user = users.findById(id).orElseThrow();
+        ReflectionTestUtils.setField(user, "role", role);
+        if (withdrawn) {
+            user.withdraw();
+        }
+        users.save(user);
+        return installations.findAllByUserIdInOrderByUserIdAscIdAsc(List.of(id)).getFirst().getFid();
+    }
+
+    @Test
+    @WithMockUser
+    void 회원_메시지는_활성_ADMIN과_EXPERT에게만_커밋_후_한번_발송한다() {
+        Long user = recipient(true);
+        String admin = operatorRecipient(UserRole.ADMIN, true, false);
+        String expert = operatorRecipient(UserRole.EXPERT, true, false);
+        operatorRecipient(UserRole.USER, true, false);
+        operatorRecipient(UserRole.ADMIN, false, false);
+        operatorRecipient(UserRole.EXPERT, true, true);
+        var request = new ChatMessageRequest(UUID.randomUUID(), "문의");
+
+        new TransactionTemplate(transactions).executeWithoutResult(status -> {
+            chats.send(user, user, request);
+            verifyNoInteractions(sender);
+        });
+        chats.send(user, user, request);
+
+        verify(sender).send(argThat(messages -> {
+            assertThat(messages).extracting(message -> message.fid()).containsExactlyInAnyOrder(admin, expert);
+            assertThat(messages).allSatisfy(message -> {
+                assertThat(message.type()).isEqualTo(NotificationEventType.SUPPORT_REPLY);
+                assertThat(message.deepLink().value()).isEqualTo("meongcoach://support-chat");
+            });
+            return true;
+        }));
+    }
+
+    @Test
+    @WithMockUser
+    void 롤백된_회원_메시지는_상담원에게_발송하지_않는다() {
+        Long user = recipient(true);
+        operatorRecipient(UserRole.EXPERT, true, false);
+
+        new TransactionTemplate(transactions).executeWithoutResult(status -> {
+            chats.send(user, user, new ChatMessageRequest(UUID.randomUUID(), "문의"));
+            status.setRollbackOnly();
+        });
+
+        verifyNoInteractions(sender);
+        assertThat(finder.newMessages(user, 0)).isEmpty();
+    }
+
+    @Test
+    @WithMockUser
+    void 상담원_푸시가_실패해도_회원_메시지는_저장되고_재전송하지_않는다() {
+        Long user = recipient(true);
+        operatorRecipient(UserRole.ADMIN, true, false);
+        var request = new ChatMessageRequest(UUID.randomUUID(), "문의");
+        when(sender.send(anyList())).thenThrow(new IllegalStateException("발송 실패"));
+
+        var saved = chats.send(user, user, request);
+        chats.send(user, user, request);
+
+        assertThat(finder.newMessages(user, 0)).usingRecursiveFieldByFieldElementComparator().containsExactly(saved);
+        verify(sender).send(anyList());
+    }
+
+    @Test
+    @WithMockUser(roles = "EXPERT")
+    void 전문가_답변은_다른_상담원이_아닌_해당_회원에게만_발송한다() {
+        Long user = recipient(true);
+        String memberFid = installations.findAllByUserIdInOrderByUserIdAscIdAsc(List.of(user)).getFirst().getFid();
+        operatorRecipient(UserRole.ADMIN, true, false);
+        Long expert = member(false);
+        var account = users.findById(expert).orElseThrow();
+        ReflectionTestUtils.setField(account, "role", UserRole.EXPERT);
+        users.save(account);
+
+        chats.send(expert, user, new ChatMessageRequest(UUID.randomUUID(), "답변"));
+
+        verify(sender).send(argThat(messages -> messages.size() == 1 && messages.getFirst().fid().equals(memberFid)));
+    }
+
+    @Test
+    void 상담원이_자신의_대화에_보내면_다른_상담원에게만_발송한다() {
+        Long admin = recipient(true);
+        var account = users.findById(admin).orElseThrow();
+        ReflectionTestUtils.setField(account, "role", UserRole.ADMIN);
+        users.save(account);
+        String expert = operatorRecipient(UserRole.EXPERT, true, false);
+
+        chats.send(admin, admin, new ChatMessageRequest(UUID.randomUUID(), "문의"));
+
+        verify(sender).send(argThat(messages -> messages.size() == 1 && messages.getFirst().fid().equals(expert)));
     }
 
     @Test
