@@ -17,7 +17,13 @@ flowchart LR
 
 [ChatController](../src/main/java/com/daesabu/meongcoach/support/adapter/webapi/ChatController.java)는 본인 대화와 ADMIN 답변 API를 제공합니다.
 메시지는 PostgreSQL에 저장합니다.
-WebSocket은 변경 신호만 전달하며 클라이언트가 커서로 본문을 다시 조회합니다.
+서버는 단일 인스턴스로 실행하며 메시지 전송과 조회에 REST API를 사용합니다.
+채팅 화면은 마지막 조회 완료 후 2초 뒤 마지막 메시지 ID 이후를 다시 조회합니다.
+화면을 벗어나거나 앱이 백그라운드로 가면 주기적 조회를 중단합니다.
+화면 복귀 시 즉시 조회하며 한 번에 50건을 받으면 다음 페이지를 이어서 조회합니다.
+메시지는 UUID로 중복 저장을 막고 요청마다 대화 접근 권한을 확인합니다.
+상담원 목록도 화면이 활성화되어 있을 때 2초 간격으로 갱신합니다.
+
 
 ## 답변 푸시 작업과 재시도
 
