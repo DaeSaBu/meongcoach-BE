@@ -80,8 +80,8 @@ class ChatRegisterConcurrencyTest {
 				assertBlocked(started, next.get());
 				return message;
 			});
-			assertThat(next.get().get(5, TimeUnit.SECONDS)).usingRecursiveComparison().isEqualTo(first);
-			assertThat(finder.newMessages(userId, conversationId, 0)).usingRecursiveFieldByFieldElementComparator().containsExactly(first);
+			assertThat(next.get().get(5, TimeUnit.SECONDS)).usingRecursiveComparison().withComparatorForType(ChatMessageTimeComparator.INSTANCE, java.time.LocalDateTime.class).isEqualTo(first);
+			assertThat(finder.newMessages(userId, conversationId, 0)).usingRecursiveComparison().withComparatorForType(ChatMessageTimeComparator.INSTANCE, java.time.LocalDateTime.class).isEqualTo(java.util.List.of(first));
 		}
 	}
 

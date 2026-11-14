@@ -17,7 +17,7 @@ import com.daesabu.meongcoach.support.domain.ChatMessage;
 import com.daesabu.meongcoach.support.domain.ChatMessageFixture;
 import com.daesabu.meongcoach.support.domain.exception.ChatAccessDeniedException;
 import com.daesabu.meongcoach.support.domain.exception.InvalidChatMessageException;
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -38,7 +38,7 @@ class ChatControllerTest {
 
 	private ChatMessage message() {
 		return ChatMessageFixture.create(
-				1, 17, 42, false, clientId, "문의합니다", Instant.parse("2026-11-01T00:00:00Z"));
+				1, 17, 42, false, clientId, "문의합니다", LocalDateTime.parse("2026-11-01T00:00:00"));
 	}
 
 	private FieldDescriptor[] fields(String prefix) {
@@ -58,7 +58,7 @@ class ChatControllerTest {
 	@Test
 	void 본인_대화를_연다() throws Exception {
 		given(register.open(42L))
-				.willReturn(ChatConversationFixture.create(17, 42, Instant.parse("2026-11-01T00:00:00Z")));
+				.willReturn(ChatConversationFixture.create(17, 42, LocalDateTime.parse("2026-11-01T00:00:00")));
 		mvc.perform(
 						post("/api/support/conversations/me")
 								.principal(() -> "42")
@@ -92,7 +92,7 @@ class ChatControllerTest {
 	void 상담원_대화목록을_조회한다() throws Exception {
 		given(finder.conversations(0, null))
 				.willReturn(
-						List.of(ChatConversationFixture.create(17, 42, Instant.parse("2026-11-01T00:00:00Z"))));
+						List.of(ChatConversationFixture.create(17, 42, LocalDateTime.parse("2026-11-01T00:00:00"))));
 		mvc.perform(
 						get("/api/support/conversations")
 								.principal(() -> "42")
@@ -227,10 +227,21 @@ class ChatControllerTest {
 
 	@Test
 	void 대화_커서의_마이크로초를_그대로_전달한다() throws Exception {
-		Instant timestamp = Instant.parse("2026-11-01T00:00:00.123456Z");
+		LocalDateTime timestamp = LocalDateTime.parse("2026-11-01T00:00:00.123456");
 		given(finder.conversations(42, timestamp)).willReturn(List.of());
 		mvc.perform(get("/api/support/conversations")
 				.param("before", "42").param("beforeUpdatedAt", timestamp.toString())
+				.principal(() -> "42"))
+				.andExpect(status().isOk());
+		verify(finder).conversations(42, timestamp);
+	}
+
+	@Test
+	void 기존_UTC_커서도_같은_LocalDateTime으로_해석한다() throws Exception {
+		LocalDateTime timestamp = LocalDateTime.parse("2026-11-01T00:00:00.123456");
+		given(finder.conversations(42, timestamp)).willReturn(List.of());
+		mvc.perform(get("/api/support/conversations")
+				.param("before", "42").param("beforeUpdatedAt", "2026-11-01T00:00:00.123456Z")
 				.principal(() -> "42"))
 				.andExpect(status().isOk());
 		verify(finder).conversations(42, timestamp);

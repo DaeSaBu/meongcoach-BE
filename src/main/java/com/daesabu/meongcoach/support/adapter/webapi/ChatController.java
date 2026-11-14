@@ -10,9 +10,10 @@ import com.daesabu.meongcoach.support.application.provided.dto.ChatMessageReques
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -43,7 +44,7 @@ public class ChatController {
 	@GetMapping
 	public List<ChatConversationResponse> conversations(
 			@RequestParam(defaultValue = "0") @PositiveOrZero long before,
-			@RequestParam(required = false) Instant beforeUpdatedAt) {
+			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime beforeUpdatedAt) {
 		return finder.conversations(before, beforeUpdatedAt).stream()
 				.map(ChatConversationResponse::from)
 				.toList();

@@ -30,7 +30,7 @@ public class ChatModifyService implements ChatRegister {
 
 	@Transactional
 	public ChatConversation open(Long userId) {
-		conversations.insertIfAbsent(userId);
+		conversations.insertIfAbsent(userId, java.time.LocalDateTime.now());
 		return finder.findMemberConversation(userId);
 	}
 
@@ -52,8 +52,8 @@ public class ChatModifyService implements ChatRegister {
 		}
 		var command = new ChatMessageCommand(conversationId, userId, operator, request.clientMessageId(), request.body(), attachment);
 		var message = ChatMessage.create(command);
-		conversation.recordMessage();
 		messages.save(message);
+		conversation.recordMessage();
 		events.publishEvent(message.sentEvent(conversation.getMemberId()));
 		return message;
 	}

@@ -29,6 +29,56 @@ class FlywaySchemaValidationTest {
 	private DataSource dataSource;
 
 	@Test
+	void 활동시각_분리는_기존_정렬시각을_보존한다() throws Exception {
+		try (Connection connection = dataSource.getConnection()) {
+			connection.setAutoCommit(false);
+			try (var statement = connection.createStatement()) {
+				statement.execute("CREATE SCHEMA chat_activity_test");
+				statement.execute("SET LOCAL search_path TO chat_activity_test");
+				statement.execute("CREATE TABLE support_conversations (id BIGINT, updated_at TIMESTAMP)");
+				statement.execute("CREATE INDEX support_conversations_activity ON support_conversations (updated_at DESC, id DESC)");
+				statement.execute("INSERT INTO support_conversations VALUES (1, '2026-11-01T01:00:00.123456')");
+				ScriptUtils.executeSqlScript(connection, new ClassPathResource("db/migration/V60__separate_support_message_activity.sql"));
+				try (var rows = statement.executeQuery("SELECT last_message_at = updated_at FROM support_conversations")) {
+					assertThat(rows.next()).isTrue();
+					assertThat(rows.getBoolean(1)).isTrue();
+				}
+			} finally {
+				connection.rollback();
+			}
+		}
+	}
+
+	@Test
+	void 상담_시각을_UTC_LocalDateTime으로_이관한다() throws Exception {
+		try (Connection connection = dataSource.getConnection()) {
+			connection.setAutoCommit(false);
+			try (var statement = connection.createStatement()) {
+				statement.execute("CREATE SCHEMA chat_time_test");
+				statement.execute("SET LOCAL search_path TO chat_time_test");
+				statement.execute("SET LOCAL TIME ZONE 'Asia/Seoul'");
+				statement.execute("CREATE TABLE support_conversations (created_at TIMESTAMPTZ, updated_at TIMESTAMPTZ, deleted_at TIMESTAMPTZ)");
+				statement.execute("CREATE TABLE support_messages (created_at TIMESTAMPTZ)");
+				statement.execute("INSERT INTO support_conversations VALUES ('2026-11-01T09:00:00.123456+09:00', '2026-11-01T10:00:00+09:00', NULL)");
+				statement.execute("INSERT INTO support_messages VALUES ('2026-11-01T09:00:00.123456+09:00')");
+				ScriptUtils.executeSqlScript(connection, new ClassPathResource("db/migration/V59__align_support_timestamps.sql"));
+				try (var rows = statement.executeQuery("SELECT created_at, updated_at, deleted_at FROM support_conversations")) {
+					assertThat(rows.next()).isTrue();
+					assertThat(rows.getObject(1, java.time.LocalDateTime.class)).isEqualTo(java.time.LocalDateTime.parse("2026-11-01T00:00:00.123456"));
+					assertThat(rows.getObject(2, java.time.LocalDateTime.class)).isEqualTo(java.time.LocalDateTime.parse("2026-11-01T01:00:00"));
+					assertThat(rows.getObject(3)).isNull();
+				}
+				try (var rows = statement.executeQuery("SELECT created_at FROM support_messages")) {
+					assertThat(rows.next()).isTrue();
+					assertThat(rows.getObject(1, java.time.LocalDateTime.class)).isEqualTo(java.time.LocalDateTime.parse("2026-11-01T00:00:00.123456"));
+				}
+			} finally {
+				connection.rollback();
+			}
+		}
+	}
+
+	@Test
 	void 상담_종료를_도입해도_기존_메시지를_보존하고_활성_상담만_유일하다() throws Exception {
 		try (Connection connection = dataSource.getConnection()) {
 			connection.setAutoCommit(false);
