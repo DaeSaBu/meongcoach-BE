@@ -1,13 +1,16 @@
 package com.daesabu.meongcoach.support.application;
 
+import com.daesabu.meongcoach.media.application.provided.StoredMediaVerifier;
 import com.daesabu.meongcoach.support.application.provided.ChatFinder;
 import com.daesabu.meongcoach.support.application.provided.ChatRegister;
 import com.daesabu.meongcoach.support.application.provided.dto.ChatMessageRequest;
 import com.daesabu.meongcoach.support.application.required.ChatConversationRepository;
 import com.daesabu.meongcoach.support.application.required.ChatMessageRepository;
+import com.daesabu.meongcoach.support.domain.ChatAttachment;
 import com.daesabu.meongcoach.support.domain.ChatConversation;
 import com.daesabu.meongcoach.support.domain.ChatMessage;
 import com.daesabu.meongcoach.support.domain.ChatMessageCommand;
+import com.daesabu.meongcoach.support.domain.exception.InvalidChatAttachmentException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -23,6 +26,7 @@ public class ChatModifyService implements ChatRegister {
 	private final ChatMessageRepository messages;
 	private final ChatFinder finder;
 	private final ApplicationEventPublisher events;
+	private final StoredMediaVerifier storedMedia;
 
 	@Transactional
 	public ChatConversation open(Long userId) {
@@ -39,8 +43,14 @@ public class ChatModifyService implements ChatRegister {
 			return previous.get();
 		}
 		boolean operator = finder.isOperator();
-		String body = request.body().strip();
-		var command = new ChatMessageCommand(conversationId, userId, operator, request.clientMessageId(), body);
+		ChatAttachment attachment = null;
+		if (request.attachment() != null) {
+			attachment = request.attachment().toAttachment();
+			if (!storedMedia.isOwnedObjectKey(attachment.getType().getScope(), userId, attachment.getObjectKey())) {
+				throw new InvalidChatAttachmentException();
+			}
+		}
+		var command = new ChatMessageCommand(conversationId, userId, operator, request.clientMessageId(), request.body(), attachment);
 		var message = ChatMessage.create(command);
 		conversation.recordMessage();
 		messages.save(message);

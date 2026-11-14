@@ -8,6 +8,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> {
+	Optional<ChatMessage> findByIdAndConversationId(long id, long conversationId);
+
 	List<ChatMessage> findByConversationIdOrderByIdDesc(long conversationId, Pageable pageable);
 
 	List<ChatMessage> findByConversationIdAndIdGreaterThanOrderByIdAsc(

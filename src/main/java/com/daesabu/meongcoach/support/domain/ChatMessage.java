@@ -1,6 +1,8 @@
 package com.daesabu.meongcoach.support.domain;
 
+import com.daesabu.meongcoach.support.domain.exception.InvalidChatMessageException;
 import jakarta.persistence.Column;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -11,6 +13,7 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Objects;
 import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -50,12 +53,19 @@ public class ChatMessage {
 		createdAt = Instant.now().truncatedTo(ChronoUnit.MICROS);
 	}
 
+	@Embedded
+	private ChatAttachment attachment;
+
 	private ChatMessage(ChatMessageCommand command) {
 		this.conversationId = command.conversationId();
 		this.senderId = command.senderId();
 		this.operator = command.operator();
 		this.clientMessageId = command.clientMessageId();
-		this.body = command.body();
+		this.body = Objects.requireNonNullElse(command.body(), "").strip();
+		this.attachment = command.attachment();
+		if ((body.isEmpty() && attachment == null) || body.length() > 2000) {
+			throw new InvalidChatMessageException();
+		}
 	}
 
 	public static ChatMessage create(ChatMessageCommand command) {
