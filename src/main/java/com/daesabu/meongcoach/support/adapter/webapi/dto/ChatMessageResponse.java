@@ -11,7 +11,8 @@ public record ChatMessageResponse(
 		boolean operator,
 		UUID clientMessageId,
 		String body,
-		LocalDateTime createdAt) {
+		LocalDateTime createdAt,
+		ChatAttachmentResponse attachment) {
 
 	public static ChatMessageResponse from(ChatMessage message) {
 		return new ChatMessageResponse(
@@ -21,6 +22,7 @@ public record ChatMessageResponse(
 				message.isOperator(),
 				message.getClientMessageId(),
 				message.getBody(),
-				message.getCreatedAt());
+				message.getCreatedAt(),
+				ChatAttachmentResponse.from(message.getAttachment()));
 	}
 }

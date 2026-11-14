@@ -3,6 +3,8 @@ package com.daesabu.meongcoach.support.domain.exception;
 import com.daesabu.meongcoach.shared.exception.ErrorCode;
 
 public enum SupportErrorCode implements ErrorCode {
+	SUPPORT_CHAT_MESSAGE_INVALID(400, "메시지 또는 첨부가 필요합니다."),
+	SUPPORT_CHAT_ATTACHMENT_INVALID(400, "상담 첨부 파일이 올바르지 않습니다."),
 
 	SUPPORT_CHAT_CURSOR_INVALID(400, "상담 메시지 커서가 올바르지 않습니다."),
 	SUPPORT_CHAT_ACCESS_DENIED(403, "상담에 접근할 수 없습니다."),

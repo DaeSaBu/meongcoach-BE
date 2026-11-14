@@ -45,6 +45,16 @@ flowchart LR
 최초 조회는 두 커서를 생략하며 다음 페이지에는 두 값이 모두 필요합니다.
 
 
+## 사진·영상 첨부
+
+메시지당 사진 또는 영상 하나를 첨부할 수 있습니다.
+첨부가 있으면 본문을 비울 수 있습니다.
+[ChatMediaUrlIssuer](../src/main/java/com/daesabu/meongcoach/support/application/provided/ChatMediaUrlIssuer.java)는 진행 중 대화의 접근 권한을 확인하고 회원별 GCS 업로드 URL을 발급합니다.
+사진은 20MiB, 영상은 512MiB까지 허용합니다.
+메시지 저장 시 파일 종류와 객체 키의 업로더 소유권을 검증합니다.
+첨부를 열 때 대화 접근 권한과 메시지 소속을 확인하고 임시 다운로드 URL을 발급합니다.
+종료된 대화에는 업로드·다운로드 URL을 발급하지 않습니다.
+
 ## 상담 종료와 시각
 
 [ChatRemover](../src/main/java/com/daesabu/meongcoach/support/application/provided/ChatRemover.java)는 본인 대화의 `deletedAt`을 기록합니다.
