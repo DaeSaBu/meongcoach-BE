@@ -39,7 +39,8 @@ public class ChatConversation extends BaseEntity {
 		}
 	}
 
-	public void leave() {
+	public void leave(long userId) {
+		verifyAccess(userId, false);
 		deletedAt = LocalDateTime.now();
 	}
 }

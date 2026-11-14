@@ -21,7 +21,7 @@ public interface ChatConversationRepository extends JpaRepository<ChatConversati
 			""", nativeQuery = true)
 	void insertIfAbsent(@Param("memberId") long memberId, @Param("now") LocalDateTime now);
 
-	@Modifying(flushAutomatically = true, clearAutomatically = true)
+	@Modifying
 	@Query("UPDATE SupportConversation c SET c.updatedAt = :now WHERE c.id = :id")
 	void recordMessage(@Param("id") long id, @Param("now") LocalDateTime now);
 
