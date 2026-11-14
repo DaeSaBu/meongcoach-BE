@@ -8,7 +8,7 @@ import com.daesabu.meongcoach.support.domain.ChatConversation;
 import com.daesabu.meongcoach.support.domain.ChatMessage;
 import com.daesabu.meongcoach.support.domain.exception.ChatAccessDeniedException;
 import com.daesabu.meongcoach.support.domain.exception.ChatCursorInvalidException;
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -29,15 +29,21 @@ public class ChatQueryService implements ChatFinder {
 
 	public ChatConversation findConversation(Long userId, long conversationId) {
 		var conversation = conversations.findById(conversationId).orElseThrow(ChatAccessDeniedException::new);
-		conversation.verifyAccess(userId, isOperator());
+		verifyAccess(conversation, userId);
 		return conversation;
 	}
 
 	@Transactional
 	public ChatConversation findLockedConversation(Long userId, long conversationId) {
 		var conversation = conversations.findLockedById(conversationId).orElseThrow(ChatAccessDeniedException::new);
-		conversation.verifyAccess(userId, isOperator());
+		verifyAccess(conversation, userId);
 		return conversation;
+	}
+
+	private void verifyAccess(ChatConversation conversation, long userId) {
+		if (conversation.isClosed() || (!conversation.isOwnedBy(userId) && !isOperator())) {
+			throw new ChatAccessDeniedException();
+		}
 	}
 
 	public boolean isOperator() {
@@ -48,13 +54,13 @@ public class ChatQueryService implements ChatFinder {
 								|| AuthorityRole.EXPERT.authority().equals(authority.getAuthority()));
 	}
 
-	public List<ChatConversation> conversations(long before, Instant beforeUpdatedAt) {
+	public List<ChatConversation> conversations(long before, LocalDateTime beforeUpdatedAt) {
 		if ((before == 0) != (beforeUpdatedAt == null)) {
 			throw new ChatCursorInvalidException();
 		}
 		var page = PageRequest.of(0, 50);
 		if (before == 0) {
-			return conversations.findAllByOrderByUpdatedAtDescIdDesc(page);
+			return conversations.findAllByOrderByLastMessageAtDescIdDesc(page);
 		}
 		return conversations.findPrevious(beforeUpdatedAt, before, page);
 	}

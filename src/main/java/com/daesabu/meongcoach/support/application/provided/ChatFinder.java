@@ -3,7 +3,7 @@ package com.daesabu.meongcoach.support.application.provided;
 import com.daesabu.meongcoach.support.domain.ChatConversation;
 import com.daesabu.meongcoach.support.domain.ChatMessage;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface ChatFinder {
@@ -13,7 +13,7 @@ public interface ChatFinder {
 
 	ChatConversation findLockedConversation(Long userId, long conversationId);
 
-	List<ChatConversation> conversations(long before, Instant beforeUpdatedAt);
+	List<ChatConversation> conversations(long before, LocalDateTime beforeUpdatedAt);
 
 	List<ChatMessage> latestMessages(Long userId, long conversationId);
 

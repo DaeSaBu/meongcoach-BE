@@ -25,6 +25,48 @@ class ChatRegisterTest {
 	@Autowired EntityManager em;
 	@Autowired JdbcTemplate jdbc;
 
+	@Test
+	void 상담_시각은_생성_시각을_보존하고_메시지_전송_시_수정_시각을_갱신한다() {
+		Long owner = member();
+		long id = register.open(owner).getId();
+		jdbc.update("UPDATE support_conversations SET created_at = ?, updated_at = ? WHERE id = ?",
+				java.sql.Timestamp.valueOf(java.time.LocalDateTime.parse("2026-01-01T00:00:00")),
+				java.sql.Timestamp.valueOf(java.time.LocalDateTime.parse("2026-01-01T00:00:00")), id);
+		em.clear();
+		var before = finder.findConversation(owner, id);
+		var createdAt = before.getCreatedAt();
+		var updatedAt = before.getUpdatedAt();
+
+		var message = register.send(owner, id, new ChatMessageRequest(UUID.randomUUID(), "시각 검증"));
+		assertThat(em.contains(before)).isTrue();
+		em.flush();
+		var messageCreatedAt = message.getCreatedAt();
+		em.clear();
+
+		var after = finder.findConversation(owner, id);
+		assertThat(after.getCreatedAt()).isEqualTo(createdAt);
+		assertThat(after.getUpdatedAt()).isAfter(updatedAt);
+		assertThat(finder.latestMessages(owner, id).getFirst().getCreatedAt())
+				.isCloseTo(messageCreatedAt, within(1, java.time.temporal.ChronoUnit.MICROS));
+	}
+
+	@Test
+	void 메시지_전송은_관리중인_대화의_활동시각을_즉시_변경하고_재전송은_유지한다() {
+		Long owner = member();
+		var conversation = register.open(owner);
+		var request = new ChatMessageRequest(UUID.randomUUID(), "문의");
+		var before = conversation.getLastMessageAt().minusDays(1);
+		ReflectionTestUtils.setField(conversation, "lastMessageAt", before);
+		register.send(owner, conversation.getId(), request);
+		var sentAt = conversation.getLastMessageAt();
+		assertThat(sentAt).isAfter(before);
+		register.send(owner, conversation.getId(), request);
+		assertThat(conversation.getLastMessageAt()).isEqualTo(sentAt);
+		em.flush();
+		em.clear();
+		assertThat(finder.findConversation(owner, conversation.getId()).getLastMessageAt()).isEqualTo(sentAt);
+	}
+
 	private long conversationId(Long memberId) {
 		return register.open(memberId).getId();
 	}
@@ -126,10 +168,12 @@ class ChatRegisterTest {
 		em.flush();
 		register.open(owner);
 		register.open(other);
-		jdbc.update("UPDATE support_conversations SET updated_at=now()-interval '1 day'");
+		jdbc.update("UPDATE support_conversations SET last_message_at=now()-interval '1 day'");
 		register.send(owner, conversationId(owner), new ChatMessageRequest(UUID.randomUUID(), "새 문의"));
+		em.flush();
+		em.clear();
 		assertThat(finder.conversations(0, null).getFirst().getId()).isEqualTo(conversationId(owner));
-		assertThat(finder.conversations(conversationId(owner), finder.conversations(0, null).getFirst().getUpdatedAt()))
+		assertThat(finder.conversations(conversationId(owner), finder.conversations(0, null).getFirst().getLastMessageAt()))
 				.extracting(com.daesabu.meongcoach.support.domain.ChatConversation::getId)
 				.containsExactly(conversationId(other));
 	}
@@ -146,16 +190,16 @@ class ChatRegisterTest {
 		register.open(first);
 		register.open(second);
 		register.open(third);
-		jdbc.update("UPDATE support_conversations SET updated_at=now()");
+		jdbc.update("UPDATE support_conversations SET last_message_at=now()");
 		em.clear();
 
 		assertThat(finder.conversations(0, null))
 				.extracting(com.daesabu.meongcoach.support.domain.ChatConversation::getId)
 				.containsExactly(conversationId(third), conversationId(second), conversationId(first));
-		assertThat(finder.conversations(conversationId(second), finder.conversations(0, null).get(1).getUpdatedAt()))
+		assertThat(finder.conversations(conversationId(second), finder.conversations(0, null).get(1).getLastMessageAt()))
 				.extracting(com.daesabu.meongcoach.support.domain.ChatConversation::getId)
 				.containsExactly(conversationId(first));
-		assertThat(finder.conversations(conversationId(first), finder.conversations(0, null).getLast().getUpdatedAt())).isEmpty();
+		assertThat(finder.conversations(conversationId(first), finder.conversations(0, null).getLast().getLastMessageAt())).isEmpty();
 	}
 
 
@@ -167,11 +211,11 @@ class ChatRegisterTest {
 		register.open(first);
 		register.open(second);
 		register.open(third);
-		jdbc.update("UPDATE support_conversations SET updated_at=now()-interval '1 day'");
+		jdbc.update("UPDATE support_conversations SET last_message_at=now()-interval '1 day'");
 		em.clear();
 		var cursor = finder.conversations(0, null).get(1);
 		var cursorId = cursor.getId();
-		var cursorUpdatedAt = cursor.getUpdatedAt();
+		var cursorUpdatedAt = cursor.getLastMessageAt();
 		register.send(second, conversationId(second), new ChatMessageRequest(UUID.randomUUID(), "새 문의"));
 		em.flush();
 		em.clear();
@@ -185,7 +229,7 @@ class ChatRegisterTest {
 	void 대화_목록_커서는_ID와_시각을_함께_지정한다() {
 		assertThatThrownBy(() -> finder.conversations(1, null))
 				.isInstanceOf(ChatCursorInvalidException.class);
-		assertThatThrownBy(() -> finder.conversations(0, java.time.Instant.now()))
+		assertThatThrownBy(() -> finder.conversations(0, java.time.LocalDateTime.now()))
 				.isInstanceOf(ChatCursorInvalidException.class);
 	}
 }
