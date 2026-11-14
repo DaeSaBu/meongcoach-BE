@@ -4,6 +4,7 @@ import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.docume
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.*;
 import static org.springframework.restdocs.payload.PayloadDocumentation.*;
 import static org.springframework.restdocs.request.RequestDocumentation.*;
@@ -96,7 +97,7 @@ class ChatControllerTest {
 						document(
 								"support/chat-list",
 								queryParameters(
-										parameterWithName("before")
+										parameterWithName("before").optional()
 												.description(
 														"이전 대화 ID, 최초 0; 최근 활동 시각·ID 내림차순 최대 50건"),
 										parameterWithName("beforeUpdatedAt").optional().description("이전 응답 마지막 대화의 updatedAt 원문; before와 함께 전달")),
