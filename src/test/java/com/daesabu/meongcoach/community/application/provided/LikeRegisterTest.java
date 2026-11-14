@@ -6,14 +6,20 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.daesabu.meongcoach.community.application.provided.dto.CommentListRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.CommentRegisterRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.PostListRequest;
+import com.daesabu.meongcoach.community.application.required.CommentLikeRepository;
 import com.daesabu.meongcoach.community.application.required.CommentRepository;
+import com.daesabu.meongcoach.community.application.required.PostLikeRepository;
 import com.daesabu.meongcoach.community.application.required.PostRepository;
 import com.daesabu.meongcoach.community.domain.Comment;
+import com.daesabu.meongcoach.community.domain.CommentLike;
 import com.daesabu.meongcoach.community.domain.Post;
+import com.daesabu.meongcoach.community.domain.PostLike;
 import com.daesabu.meongcoach.community.domain.PostRegisterCommand;
 import com.daesabu.meongcoach.community.domain.exception.CommentNotFoundException;
 import com.daesabu.meongcoach.community.domain.exception.PostNotFoundException;
 import com.daesabu.meongcoach.support.ApplicationTest;
+import jakarta.persistence.EntityManager;
+import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +29,12 @@ class LikeRegisterTest {
 
 	@Autowired
 	private LikeRegister likeRegister;
+	@Autowired
+	private PostLikeRepository postLikeRepository;
+	@Autowired
+	private CommentLikeRepository commentLikeRepository;
+	@Autowired
+	private EntityManager entityManager;
 	@Autowired
 	private PostFinder postFinder;
 	@Autowired
@@ -164,5 +176,54 @@ class LikeRegisterTest {
 
 		assertThat(replies.replies().getFirst().likeCount()).isEqualTo(1);
 		assertThat(replies.replies().getFirst().likedByMe()).isTrue();
+	}
+
+	@Test
+	void 게시글_좋아요의_감사_시각을_저장하고_중복_요청에서도_유지한다() {
+		Post post = savePost();
+		Long targetId = post.getId();
+		likeRegister.likePost(42L, targetId);
+		entityManager.clear();
+		PostLike saved = postLikeRepository.findAll().stream()
+				.filter(like -> like.getPostId().equals(targetId))
+				.findFirst().orElseThrow();
+		assertThat(saved.getCreatedAt()).isNotNull();
+		assertThat(saved.getUpdatedAt()).isEqualTo(saved.getCreatedAt());
+		LocalDateTime original = LocalDateTime.of(2026, 1, 1, 0, 0);
+		entityManager.createNativeQuery("update post_likes set created_at = :at, updated_at = :at where id = :id")
+				.setParameter("at", original).setParameter("id", saved.getId()).executeUpdate();
+		entityManager.clear();
+
+		likeRegister.likePost(42L, targetId);
+		entityManager.clear();
+
+		PostLike found = postLikeRepository.findById(saved.getId()).orElseThrow();
+		assertThat(found.getCreatedAt()).isEqualTo(original);
+		assertThat(found.getUpdatedAt()).isEqualTo(original);
+	}
+
+	@Test
+	void 댓글_좋아요의_감사_시각을_저장하고_중복_요청에서도_유지한다() {
+		Post post = savePost();
+		Comment comment = commentRepository.save(Comment.register(post, 41L, "댓글"));
+		Long targetId = comment.getId();
+		likeRegister.likeComment(42L, targetId);
+		entityManager.clear();
+		CommentLike saved = commentLikeRepository.findAll().stream()
+				.filter(like -> like.getCommentId().equals(targetId))
+				.findFirst().orElseThrow();
+		assertThat(saved.getCreatedAt()).isNotNull();
+		assertThat(saved.getUpdatedAt()).isEqualTo(saved.getCreatedAt());
+		LocalDateTime original = LocalDateTime.of(2026, 1, 1, 0, 0);
+		entityManager.createNativeQuery("update comment_likes set created_at = :at, updated_at = :at where id = :id")
+				.setParameter("at", original).setParameter("id", saved.getId()).executeUpdate();
+		entityManager.clear();
+
+		likeRegister.likeComment(42L, targetId);
+		entityManager.clear();
+
+		CommentLike found = commentLikeRepository.findById(saved.getId()).orElseThrow();
+		assertThat(found.getCreatedAt()).isEqualTo(original);
+		assertThat(found.getUpdatedAt()).isEqualTo(original);
 	}
 }
