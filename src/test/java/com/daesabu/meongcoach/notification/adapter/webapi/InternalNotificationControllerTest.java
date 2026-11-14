@@ -99,7 +99,7 @@ class InternalNotificationControllerTest {
 	void 이벤트_알림을_발송하고_결과를_응답한다() throws Exception {
 		var request = new EventNotificationDispatchRequest("OPERATOR_MESSAGE",
 				"USERS", List.of(1L, 2L), "점검 안내", "오늘 밤 점검합니다.", "meongcoach://home");
-		given(eventDispatcher.dispatch(request)).willReturn(new EventNotificationDispatchResult(2, 1));
+		given(eventDispatcher.dispatch(request)).willReturn(new EventNotificationDispatchResult(2));
 
 		mockMvc.perform(post("/internal/notifications/event-dispatches")
 						.header(INTERNAL_SECRET_HEADER, "internal-secret")
