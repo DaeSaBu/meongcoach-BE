@@ -75,6 +75,34 @@ class ChatRegisterTest {
 		}
 	}
 
+	@Test
+	void 대화_생성과_활동_시각은_JVM과_DB_세션_시간대와_관계없이_DB의_UTC를_사용한다() {
+		var original = java.util.TimeZone.getDefault();
+		try {
+			java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("Pacific/Honolulu"));
+			jdbc.execute("SET LOCAL TIME ZONE 'Asia/Seoul'");
+			Long owner = member();
+			var start = jdbc.queryForObject("SELECT clock_timestamp() AT TIME ZONE 'UTC'", java.time.LocalDateTime.class);
+
+			var conversation = register.open(owner);
+			long id = conversation.getId();
+			var createdAt = conversation.getCreatedAt();
+			jdbc.update("UPDATE support_conversations SET updated_at = TIMESTAMP '2026-01-01 00:00:00' WHERE id = ?", id);
+			em.clear();
+			register.send(owner, id, new ChatMessageRequest(UUID.randomUUID(), "DB 시각 확인"));
+			em.flush();
+			em.clear();
+
+			var end = jdbc.queryForObject("SELECT clock_timestamp() AT TIME ZONE 'UTC'", java.time.LocalDateTime.class);
+			var saved = finder.findConversation(owner, id);
+			assertThat(createdAt).isBetween(start, end);
+			assertThat(saved.getCreatedAt()).isEqualTo(createdAt);
+			assertThat(saved.getUpdatedAt()).isBetween(start, end);
+		} finally {
+			java.util.TimeZone.setDefault(original);
+		}
+	}
+
 	private long conversationId(Long memberId) {
 		return register.open(memberId).getId();
 	}
