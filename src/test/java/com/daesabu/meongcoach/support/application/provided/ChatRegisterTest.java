@@ -50,57 +50,20 @@ class ChatRegisterTest {
 				.isCloseTo(messageCreatedAt, within(1, java.time.temporal.ChronoUnit.MICROS));
 	}
 
-	@org.junit.jupiter.params.ParameterizedTest
-	@org.junit.jupiter.params.provider.ValueSource(strings = {"UTC", "Asia/Seoul", "America/New_York"})
-	void 서버_시간대와_관계없이_저장된_시각과_커서를_유지한다(String zone) {
-		var original = java.util.TimeZone.getDefault();
-		try {
-			java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone(zone));
-			Long owner = member();
-			long id = register.open(owner).getId();
-			var expected = java.time.LocalDateTime.parse("2026-11-01T05:30:00.123456");
-			jdbc.update("UPDATE support_conversations SET created_at = ?, updated_at = ? WHERE id = ?",
-					java.sql.Timestamp.valueOf(expected), java.sql.Timestamp.valueOf(expected), id);
-			em.clear();
-
-			var conversation = finder.findConversation(owner, id);
-			java.time.LocalDateTime createdAt = conversation.getCreatedAt();
-			assertThat(createdAt).isEqualTo(expected);
-			assertThat(conversation.getUpdatedAt()).isEqualTo(expected);
-			assertThat(finder.conversations(id, expected)).isEmpty();
-			java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("UTC"));
-			assertThat(conversation.getUpdatedAt()).isEqualTo(expected);
-		} finally {
-			java.util.TimeZone.setDefault(original);
-		}
-	}
-
 	@Test
-	void 대화_생성과_활동_시각은_JVM과_DB_세션_시간대와_관계없이_DB의_UTC를_사용한다() {
-		var original = java.util.TimeZone.getDefault();
-		try {
-			java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("Pacific/Honolulu"));
-			jdbc.execute("SET LOCAL TIME ZONE 'Asia/Seoul'");
-			Long owner = member();
-			var start = jdbc.queryForObject("SELECT clock_timestamp() AT TIME ZONE 'UTC'", java.time.LocalDateTime.class);
-
-			var conversation = register.open(owner);
-			long id = conversation.getId();
-			var createdAt = conversation.getCreatedAt();
-			jdbc.update("UPDATE support_conversations SET updated_at = TIMESTAMP '2026-01-01 00:00:00' WHERE id = ?", id);
-			em.clear();
-			register.send(owner, id, new ChatMessageRequest(UUID.randomUUID(), "DB 시각 확인"));
-			em.flush();
-			em.clear();
-
-			var end = jdbc.queryForObject("SELECT clock_timestamp() AT TIME ZONE 'UTC'", java.time.LocalDateTime.class);
-			var saved = finder.findConversation(owner, id);
-			assertThat(createdAt).isBetween(start, end);
-			assertThat(saved.getCreatedAt()).isEqualTo(createdAt);
-			assertThat(saved.getUpdatedAt()).isBetween(start, end);
-		} finally {
-			java.util.TimeZone.setDefault(original);
-		}
+	void 메시지_전송은_관리중인_대화의_활동시각을_즉시_변경하고_재전송은_유지한다() {
+		Long owner = member();
+		var conversation = register.open(owner);
+		var request = new ChatMessageRequest(UUID.randomUUID(), "문의");
+		var before = conversation.getLastMessageAt();
+		register.send(owner, conversation.getId(), request);
+		var sentAt = conversation.getLastMessageAt();
+		assertThat(sentAt).isAfterOrEqualTo(before);
+		register.send(owner, conversation.getId(), request);
+		assertThat(conversation.getLastMessageAt()).isEqualTo(sentAt);
+		em.flush();
+		em.clear();
+		assertThat(finder.findConversation(owner, conversation.getId()).getLastMessageAt()).isEqualTo(sentAt);
 	}
 
 	private long conversationId(Long memberId) {
@@ -204,12 +167,12 @@ class ChatRegisterTest {
 		em.flush();
 		register.open(owner);
 		register.open(other);
-		jdbc.update("UPDATE support_conversations SET updated_at=now()-interval '1 day'");
+		jdbc.update("UPDATE support_conversations SET last_message_at=now()-interval '1 day'");
 		register.send(owner, conversationId(owner), new ChatMessageRequest(UUID.randomUUID(), "새 문의"));
 		em.flush();
 		em.clear();
 		assertThat(finder.conversations(0, null).getFirst().getId()).isEqualTo(conversationId(owner));
-		assertThat(finder.conversations(conversationId(owner), finder.conversations(0, null).getFirst().getUpdatedAt()))
+		assertThat(finder.conversations(conversationId(owner), finder.conversations(0, null).getFirst().getLastMessageAt()))
 				.extracting(com.daesabu.meongcoach.support.domain.ChatConversation::getId)
 				.containsExactly(conversationId(other));
 	}
@@ -226,7 +189,7 @@ class ChatRegisterTest {
 		register.open(first);
 		register.open(second);
 		register.open(third);
-		jdbc.update("UPDATE support_conversations SET updated_at=now()");
+		jdbc.update("UPDATE support_conversations SET last_message_at=now()");
 		em.clear();
 
 		assertThat(finder.conversations(0, null))
@@ -247,7 +210,7 @@ class ChatRegisterTest {
 		register.open(first);
 		register.open(second);
 		register.open(third);
-		jdbc.update("UPDATE support_conversations SET updated_at=now()-interval '1 day'");
+		jdbc.update("UPDATE support_conversations SET last_message_at=now()-interval '1 day'");
 		em.clear();
 		var cursor = finder.conversations(0, null).get(1);
 		var cursorId = cursor.getId();

@@ -133,8 +133,8 @@ class ChatRegisterNotificationTest {
         Long admin = member(true);
         var request = new ChatMessageRequest(UUID.randomUUID(), "답변");
         var first = chats.send(admin, conversationId(user), request);
-        assertThat(chats.send(admin, conversationId(user), request)).usingRecursiveComparison().ignoringFields("createdAt").isEqualTo(first);
-        assertThat(finder.newMessages(user, conversationId(user), 0)).usingRecursiveFieldByFieldElementComparatorIgnoringFields("createdAt").containsExactly(first);
+        assertThat(chats.send(admin, conversationId(user), request)).usingRecursiveComparison().withComparatorForType(ChatMessageTimeComparator.INSTANCE, java.time.LocalDateTime.class).isEqualTo(first);
+        assertThat(finder.newMessages(user, conversationId(user), 0)).usingRecursiveFieldByFieldElementComparator(new org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration.Builder().withComparatorForType(ChatMessageTimeComparator.INSTANCE, java.time.LocalDateTime.class).build()).containsExactly(first);
         verify(sender).send(anyList());
     }
 
@@ -145,8 +145,8 @@ class ChatRegisterNotificationTest {
         var request = new ChatMessageRequest(UUID.randomUUID(), "답변");
         when(sender.send(anyList())).thenThrow(new IllegalStateException("발송 실패"));
         var saved = chats.send(admin, conversationId(user), request);
-        assertThat(finder.newMessages(user, conversationId(user), 0)).usingRecursiveFieldByFieldElementComparatorIgnoringFields("createdAt").containsExactly(saved);
-        assertThat(chats.send(admin, conversationId(user), request)).usingRecursiveComparison().ignoringFields("createdAt").isEqualTo(saved);
+        assertThat(finder.newMessages(user, conversationId(user), 0)).usingRecursiveFieldByFieldElementComparator(new org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration.Builder().withComparatorForType(ChatMessageTimeComparator.INSTANCE, java.time.LocalDateTime.class).build()).containsExactly(saved);
+        assertThat(chats.send(admin, conversationId(user), request)).usingRecursiveComparison().withComparatorForType(ChatMessageTimeComparator.INSTANCE, java.time.LocalDateTime.class).isEqualTo(saved);
         verify(sender).send(anyList());
     }
 
@@ -157,7 +157,7 @@ class ChatRegisterNotificationTest {
         var request = new ChatMessageRequest(UUID.randomUUID(), "답변");
         when(sender.send(anyList())).thenReturn(new NotificationDelivery(1, 1, List.of()));
         var saved = chats.send(admin, conversationId(user), request);
-        assertThat(chats.send(admin, conversationId(user), request)).usingRecursiveComparison().ignoringFields("createdAt").isEqualTo(saved);
+        assertThat(chats.send(admin, conversationId(user), request)).usingRecursiveComparison().withComparatorForType(ChatMessageTimeComparator.INSTANCE, java.time.LocalDateTime.class).isEqualTo(saved);
         verify(sender).send(anyList());
     }
 
@@ -240,7 +240,7 @@ class ChatRegisterNotificationTest {
         var saved = chats.send(user, conversationId(user), request);
         chats.send(user, conversationId(user), request);
 
-        assertThat(finder.newMessages(user, conversationId(user), 0)).usingRecursiveFieldByFieldElementComparatorIgnoringFields("createdAt").containsExactly(saved);
+        assertThat(finder.newMessages(user, conversationId(user), 0)).usingRecursiveFieldByFieldElementComparator(new org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration.Builder().withComparatorForType(ChatMessageTimeComparator.INSTANCE, java.time.LocalDateTime.class).build()).containsExactly(saved);
         verify(sender).send(anyList());
     }
 
@@ -282,7 +282,7 @@ class ChatRegisterNotificationTest {
             return new NotificationDelivery(0, 0, List.of(messages.getFirst().fid()));
         });
         var saved = chats.send(admin, conversationId(user), new ChatMessageRequest(UUID.randomUUID(), "답변"));
-        assertThat(finder.newMessages(user, conversationId(user), 0)).usingRecursiveFieldByFieldElementComparatorIgnoringFields("createdAt").containsExactly(saved);
+        assertThat(finder.newMessages(user, conversationId(user), 0)).usingRecursiveFieldByFieldElementComparator(new org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration.Builder().withComparatorForType(ChatMessageTimeComparator.INSTANCE, java.time.LocalDateTime.class).build()).containsExactly(saved);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM device_installations WHERE user_id=?", Long.class, user)).isZero();
         verify(sender).send(anyList());
     }

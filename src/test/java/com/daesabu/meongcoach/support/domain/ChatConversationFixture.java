@@ -8,7 +8,7 @@ public class ChatConversationFixture {
 		var entity = new ChatConversation();
 		ReflectionTestUtils.setField(entity, "id", id);
 		ReflectionTestUtils.setField(entity, "memberId", memberId);
-		ReflectionTestUtils.setField(entity, "updatedAt", updatedAt);
+		ReflectionTestUtils.setField(entity, "lastMessageAt", updatedAt);
 		return entity;
 	}
 }
