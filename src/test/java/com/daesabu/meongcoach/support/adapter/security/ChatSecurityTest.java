@@ -102,7 +102,7 @@ class ChatSecurityTest {
 	void 대화_ID가_다른_회원_ID와_같아도_소유자만_접근한다() throws Exception {
 		Long owner = member(UserRole.USER);
 		Long attacker = member(UserRole.USER);
-		em.createNativeQuery("INSERT INTO support_conversations (id, member_id, updated_at) VALUES (:id, :memberId, now())")
+		em.createNativeQuery("INSERT INTO support_conversations (id, member_id, created_at, updated_at) VALUES (:id, :memberId, now(), now())")
 				.setParameter("id", attacker).setParameter("memberId", owner).executeUpdate();
 		String ownerToken = bearer(owner);
 		String attackerToken = bearer(attacker);

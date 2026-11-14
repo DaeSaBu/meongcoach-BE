@@ -11,7 +11,7 @@ public class ChatMessageFixture {
 		var command = new ChatMessageCommand(conversationId, senderId, operator, clientMessageId, body);
 		var message = ChatMessage.create(command);
 		ReflectionTestUtils.setField(message, "id", id);
-		ReflectionTestUtils.setField(message, "createdAt", createdAt);
+		ReflectionTestUtils.setField(message, "createdAt", ChatTimestampConverter.toLocalDateTime(createdAt));
 		return message;
 	}
 }

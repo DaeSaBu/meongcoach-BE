@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.*;
 
 import com.daesabu.meongcoach.support.ApplicationTest;
 import com.daesabu.meongcoach.support.application.provided.dto.ChatMessageRequest;
+import com.daesabu.meongcoach.support.domain.ChatTimestampConverter;
 import com.daesabu.meongcoach.support.domain.exception.ChatCursorInvalidException;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.User;
@@ -152,7 +153,7 @@ class ChatRegisterTest {
 		jdbc.update("UPDATE support_conversations SET updated_at=now()-interval '1 day'");
 		register.send(owner, conversationId(owner), new ChatMessageRequest(UUID.randomUUID(), "새 문의"));
 		assertThat(finder.conversations(0, null).getFirst().getId()).isEqualTo(conversationId(owner));
-		assertThat(finder.conversations(conversationId(owner), finder.conversations(0, null).getFirst().getUpdatedAt()))
+		assertThat(finder.conversations(conversationId(owner), ChatTimestampConverter.toInstant(finder.conversations(0, null).getFirst().getUpdatedAt())))
 				.extracting(com.daesabu.meongcoach.support.domain.ChatConversation::getId)
 				.containsExactly(conversationId(other));
 	}
@@ -175,10 +176,10 @@ class ChatRegisterTest {
 		assertThat(finder.conversations(0, null))
 				.extracting(com.daesabu.meongcoach.support.domain.ChatConversation::getId)
 				.containsExactly(conversationId(third), conversationId(second), conversationId(first));
-		assertThat(finder.conversations(conversationId(second), finder.conversations(0, null).get(1).getUpdatedAt()))
+		assertThat(finder.conversations(conversationId(second), ChatTimestampConverter.toInstant(finder.conversations(0, null).get(1).getUpdatedAt())))
 				.extracting(com.daesabu.meongcoach.support.domain.ChatConversation::getId)
 				.containsExactly(conversationId(first));
-		assertThat(finder.conversations(conversationId(first), finder.conversations(0, null).getLast().getUpdatedAt())).isEmpty();
+		assertThat(finder.conversations(conversationId(first), ChatTimestampConverter.toInstant(finder.conversations(0, null).getLast().getUpdatedAt()))).isEmpty();
 	}
 
 
@@ -194,7 +195,7 @@ class ChatRegisterTest {
 		em.clear();
 		var cursor = finder.conversations(0, null).get(1);
 		var cursorId = cursor.getId();
-		var cursorUpdatedAt = cursor.getUpdatedAt();
+		var cursorUpdatedAt = ChatTimestampConverter.toInstant(cursor.getUpdatedAt());
 		register.send(second, conversationId(second), new ChatMessageRequest(UUID.randomUUID(), "새 문의"));
 		em.flush();
 		em.clear();

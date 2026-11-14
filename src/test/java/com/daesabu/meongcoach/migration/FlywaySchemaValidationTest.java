@@ -29,6 +29,42 @@ class FlywaySchemaValidationTest {
 	private DataSource dataSource;
 
 	@Test
+	void 상담_종료를_도입해도_기존_메시지를_보존하고_활성_상담만_유일하다() throws Exception {
+		try (Connection connection = dataSource.getConnection()) {
+			connection.setAutoCommit(false);
+			try (var statement = connection.createStatement()) {
+				statement.execute("CREATE SCHEMA chat_soft_delete_test");
+				statement.execute("SET LOCAL search_path TO chat_soft_delete_test");
+				statement.execute("CREATE TABLE users (id BIGINT PRIMARY KEY)");
+				statement.execute("INSERT INTO users (id) VALUES (42)");
+				ScriptUtils.executeSqlScript(connection, new ClassPathResource("db/migration/V52__create_support_chat.sql"));
+				statement.execute("INSERT INTO support_conversations (id, updated_at) VALUES (42, '2026-11-02T00:00:00Z')");
+				statement.execute("INSERT INTO support_messages (conversation_id, sender_id, operator, client_message_id, body, created_at) "
+						+ "VALUES (42, 42, false, 'cc23e1d4-c105-435e-9473-1f5e995967c1', '보관할 문의', '2026-11-01T00:00:00Z')");
+				ScriptUtils.executeSqlScript(connection, new ClassPathResource("db/migration/V57__separate_support_conversation_member.sql"));
+				ScriptUtils.executeSqlScript(connection, new ClassPathResource("db/migration/V58__soft_delete_support_conversations.sql"));
+				try (var rows = statement.executeQuery("SELECT created_at, updated_at, deleted_at FROM support_conversations WHERE id = 42")) {
+					assertThat(rows.next()).isTrue();
+					assertThat(rows.getTimestamp(1).toInstant()).isEqualTo(java.time.Instant.parse("2026-11-01T00:00:00Z"));
+					assertThat(rows.getTimestamp(2).toInstant()).isEqualTo(java.time.Instant.parse("2026-11-02T00:00:00Z"));
+					assertThat(rows.getTimestamp(3)).isNull();
+				}
+				statement.execute("UPDATE support_conversations SET deleted_at = now() WHERE id = 42");
+				statement.execute("INSERT INTO support_conversations (member_id, created_at) VALUES (42, now())");
+				try (var rows = statement.executeQuery("SELECT count(*) FROM support_messages WHERE conversation_id = 42")) {
+					assertThat(rows.next()).isTrue();
+					assertThat(rows.getLong(1)).isEqualTo(1);
+				}
+				assertThatThrownBy(() -> statement.execute("INSERT INTO support_conversations (member_id, created_at) VALUES (42, now())"))
+						.isInstanceOf(java.sql.SQLException.class)
+						.satisfies(exception -> assertThat(((java.sql.SQLException) exception).getSQLState()).isEqualTo("23505"));
+			} finally {
+				connection.rollback();
+			}
+		}
+	}
+
+	@Test
 	void 대화_ID를_분리해도_기존_소유자와_메시지는_유지하고_회원별_중복은_거절한다() throws Exception {
 		try (Connection connection = dataSource.getConnection()) {
 			connection.setAutoCommit(false);

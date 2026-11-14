@@ -67,7 +67,7 @@ class ChatRegisterNotificationTest {
 
 	private Long recipient(boolean enabled) {
 		Long user = member(false);
-		jdbc.update("INSERT INTO support_conversations (id, member_id, updated_at) VALUES (?, ?, now())", user + 1_000_000L, user);
+		jdbc.update("INSERT INTO support_conversations (id, member_id, created_at, updated_at) VALUES (?, ?, now(), now())", user + 1_000_000L, user);
 		settings.save(
 				NotificationEventSetting.create(
 						user, NotificationEventType.SUPPORT_REPLY, enabled));

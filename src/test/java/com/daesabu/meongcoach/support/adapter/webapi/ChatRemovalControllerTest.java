@@ -23,13 +23,13 @@ class ChatRemovalControllerTest {
 	@MockitoBean ChatRemover remover;
 
 	@Test
-	void 인증_회원의_대화를_삭제하고_204를_반환한다() throws Exception {
+	void 인증_회원의_대화를_종료하고_204를_반환한다() throws Exception {
 		mvc.perform(delete("/api/support/conversations/{id}", 17)
 				.principal(() -> "42").header("Authorization", "Bearer access-token"))
 				.andExpect(status().isNoContent())
 				.andExpect(content().string(""))
 				.andDo(document("support/chat-leave",
-						pathParameters(parameterWithName("id").description("삭제할 대화 ID"))));
+						pathParameters(parameterWithName("id").description("종료할 대화 ID"))));
 
 		verify(remover).leave(42L, 17);
 	}
@@ -42,7 +42,7 @@ class ChatRemovalControllerTest {
 				.principal(() -> "42").header("Authorization", "Bearer access-token"))
 				.andExpect(status().isForbidden())
 				.andDo(document("support/chat-leave-error",
-						pathParameters(parameterWithName("id").description("삭제할 대화 ID")),
+						pathParameters(parameterWithName("id").description("종료할 대화 ID")),
 						responseFields(
 								fieldWithPath("title").description("HTTP 상태"),
 								fieldWithPath("status").description("상태 코드"),
@@ -53,7 +53,7 @@ class ChatRemovalControllerTest {
 	}
 
 	@Test
-	void 잘못된_대화_ID는_삭제하지_않는다() throws Exception {
+	void 잘못된_대화_ID는_종료하지_않는다() throws Exception {
 		mvc.perform(delete("/api/support/conversations/0").principal(() -> "42"))
 				.andExpect(status().isBadRequest());
 		verifyNoInteractions(remover);
