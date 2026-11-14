@@ -1,13 +1,13 @@
 package com.daesabu.meongcoach.support.domain;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.UUID;
 import org.springframework.test.util.ReflectionTestUtils;
 
 public class ChatMessageFixture {
 	public static ChatMessage create(
 			long id, long conversationId, long senderId, boolean operator,
-			UUID clientMessageId, String body, Instant createdAt) {
+			UUID clientMessageId, String body, LocalDateTime createdAt) {
 		var command = new ChatMessageCommand(conversationId, senderId, operator, clientMessageId, body);
 		var message = ChatMessage.create(command);
 		ReflectionTestUtils.setField(message, "id", id);

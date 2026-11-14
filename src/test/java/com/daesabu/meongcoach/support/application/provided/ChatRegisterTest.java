@@ -30,8 +30,8 @@ class ChatRegisterTest {
 		Long owner = member();
 		long id = register.open(owner).getId();
 		jdbc.update("UPDATE support_conversations SET created_at = ?, updated_at = ? WHERE id = ?",
-				java.sql.Timestamp.from(java.time.Instant.parse("2026-01-01T00:00:00Z")),
-				java.sql.Timestamp.from(java.time.Instant.parse("2026-01-01T00:00:00Z")), id);
+				java.sql.Timestamp.valueOf(java.time.LocalDateTime.parse("2026-01-01T00:00:00")),
+				java.sql.Timestamp.valueOf(java.time.LocalDateTime.parse("2026-01-01T00:00:00")), id);
 		em.clear();
 		var before = finder.findConversation(owner, id);
 		var createdAt = before.getCreatedAt();
@@ -56,13 +56,13 @@ class ChatRegisterTest {
 			java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone(zone));
 			Long owner = member();
 			long id = register.open(owner).getId();
-			var expected = java.time.Instant.parse("2026-11-01T05:30:00.123456Z");
+			var expected = java.time.LocalDateTime.parse("2026-11-01T05:30:00.123456");
 			jdbc.update("UPDATE support_conversations SET created_at = ?, updated_at = ? WHERE id = ?",
-					java.sql.Timestamp.from(expected), java.sql.Timestamp.from(expected), id);
+					java.sql.Timestamp.valueOf(expected), java.sql.Timestamp.valueOf(expected), id);
 			em.clear();
 
 			var conversation = finder.findConversation(owner, id);
-			java.time.Instant createdAt = conversation.getCreatedAt();
+			java.time.LocalDateTime createdAt = conversation.getCreatedAt();
 			assertThat(createdAt).isEqualTo(expected);
 			assertThat(conversation.getUpdatedAt()).isEqualTo(expected);
 			assertThat(finder.conversations(id, expected)).isEmpty();
@@ -233,7 +233,7 @@ class ChatRegisterTest {
 	void 대화_목록_커서는_ID와_시각을_함께_지정한다() {
 		assertThatThrownBy(() -> finder.conversations(1, null))
 				.isInstanceOf(ChatCursorInvalidException.class);
-		assertThatThrownBy(() -> finder.conversations(0, java.time.Instant.now()))
+		assertThatThrownBy(() -> finder.conversations(0, java.time.LocalDateTime.now()))
 				.isInstanceOf(ChatCursorInvalidException.class);
 	}
 }
