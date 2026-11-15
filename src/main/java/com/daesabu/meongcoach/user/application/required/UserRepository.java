@@ -12,10 +12,12 @@ import org.springframework.data.repository.query.Param;
 
 public interface UserRepository extends JpaRepository<User, Long> {
 
-	// 인증 경로에서 요청마다 호출되므로 엔티티를 읽지 않고 역할만 조회한다. 탈퇴 회원은 행이 남아 있어 상태로 걸러낸다
 	@Query("select u.role from User u where u.id = :userId and u.status <> :excludedStatus")
 	Optional<UserRole> findRoleByIdAndStatusNot(@Param("userId") Long userId,
 	                                            @Param("excludedStatus") UserStatus excludedStatus);
+
+	@Query("select u.id from User u where u.role in :roles and u.status = :status")
+	Set<Long> findIdsByRoleInAndStatus(@Param("roles") Collection<UserRole> roles, @Param("status") UserStatus status);
 
 	@Query("select u.id from User u where u.id in :userIds and u.status = :status")
 	Set<Long> findIdsByIdInAndStatus(@Param("userIds") Collection<Long> userIds, @Param("status") UserStatus status);

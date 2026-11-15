@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;
-import com.daesabu.meongcoach.training.domain.shared.ProgressStatus;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;

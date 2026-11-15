@@ -14,7 +14,7 @@ spring:
       ddl-auto: validate
 
 meongcoach:
-  ai:
+  analysis:
     pubsub:
       # 로컬은 실제 구독 없이 기동한다. 실 구독으로 소비를 확인하려면 켜고 GCP_·AI_VIDEO_SUBSCRIPTION 환경 변수에 실제 값을 넣는다
       enabled: false

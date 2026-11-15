@@ -1,6 +1,5 @@
 package com.daesabu.meongcoach.training.domain;
 
-import com.daesabu.meongcoach.training.domain.shared.ProgressStatus;
 
 public record TopicCompletion(int completedLessons, ProgressStatus status) {
 

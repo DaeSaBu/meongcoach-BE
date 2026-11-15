@@ -97,7 +97,7 @@ class PostFinderTest {
 		savePost(USER_ID, "세 번째");
 		flushAndClear();
 
-		PostListResult result = postFinder.findPosts(new PostListRequest(null, 20, null));
+		PostListResult result = postFinder.findPosts(42L, new PostListRequest(null, 20, null));
 
 		assertThat(result.posts()).extracting(this::contentOf).containsExactly("세 번째", "두 번째", "첫 번째");
 		assertThat(result.nextCursor()).isNull();
@@ -108,7 +108,7 @@ class PostFinderTest {
 		List<Post> posts = savePosts(3);
 		flushAndClear();
 
-		PostListResult result = postFinder.findPosts(new PostListRequest(null, 2, null));
+		PostListResult result = postFinder.findPosts(42L, new PostListRequest(null, 2, null));
 
 		assertThat(result.posts()).extracting(this::contentOf).containsExactly("글 3", "글 2");
 		assertThat(result.nextCursor()).isEqualTo(posts.get(1).getId());
@@ -119,7 +119,7 @@ class PostFinderTest {
 		List<Post> posts = savePosts(3);
 		flushAndClear();
 
-		PostListResult result = postFinder.findPosts(new PostListRequest(posts.get(1).getId(), 2, null));
+		PostListResult result = postFinder.findPosts(42L, new PostListRequest(posts.get(1).getId(), 2, null));
 
 		assertThat(result.posts()).extracting(this::contentOf).containsExactly("글 1");
 		assertThat(result.nextCursor()).isNull();
@@ -130,9 +130,9 @@ class PostFinderTest {
 		savePosts(5);
 		flushAndClear();
 
-		PostListResult first = postFinder.findPosts(new PostListRequest(null, 2, null));
-		PostListResult second = postFinder.findPosts(new PostListRequest(first.nextCursor(), 2, null));
-		PostListResult third = postFinder.findPosts(new PostListRequest(second.nextCursor(), 2, null));
+		PostListResult first = postFinder.findPosts(42L, new PostListRequest(null, 2, null));
+		PostListResult second = postFinder.findPosts(42L, new PostListRequest(first.nextCursor(), 2, null));
+		PostListResult third = postFinder.findPosts(42L, new PostListRequest(second.nextCursor(), 2, null));
 
 		assertThat(first.posts()).extracting(this::contentOf).containsExactly("글 5", "글 4");
 		assertThat(second.posts()).extracting(this::contentOf).containsExactly("글 3", "글 2");
@@ -145,7 +145,7 @@ class PostFinderTest {
 		savePosts(21);
 		flushAndClear();
 
-		PostListResult result = postFinder.findPosts(new PostListRequest(null, null, null));
+		PostListResult result = postFinder.findPosts(42L, new PostListRequest(null, null, null));
 
 		assertThat(result.posts()).hasSize(20);
 		assertThat(result.nextCursor()).isNotNull();
@@ -153,25 +153,25 @@ class PostFinderTest {
 
 	@Test
 	void size가_1_미만이면_예외를_던진다() {
-		assertThatThrownBy(() -> postFinder.findPosts(new PostListRequest(null, 0, null)))
+		assertThatThrownBy(() -> postFinder.findPosts(42L, new PostListRequest(null, 0, null)))
 				.isInstanceOf(ConstraintViolationException.class);
 	}
 
 	@Test
 	void size가_50을_넘으면_예외를_던진다() {
-		assertThatThrownBy(() -> postFinder.findPosts(new PostListRequest(null, 51, null)))
+		assertThatThrownBy(() -> postFinder.findPosts(42L, new PostListRequest(null, 51, null)))
 				.isInstanceOf(ConstraintViolationException.class);
 	}
 
 	@Test
 	void cursor가_양수가_아니면_예외를_던진다() {
-		assertThatThrownBy(() -> postFinder.findPosts(new PostListRequest(0L, 20, null)))
+		assertThatThrownBy(() -> postFinder.findPosts(42L, new PostListRequest(0L, 20, null)))
 				.isInstanceOf(ConstraintViolationException.class);
 	}
 
 	@Test
 	void lessonId가_양수가_아니면_예외를_던진다() {
-		assertThatThrownBy(() -> postFinder.findPosts(new PostListRequest(null, 20, 0L)))
+		assertThatThrownBy(() -> postFinder.findPosts(42L, new PostListRequest(null, 20, 0L)))
 				.isInstanceOf(ConstraintViolationException.class);
 	}
 
@@ -183,7 +183,7 @@ class PostFinderTest {
 		savePost(USER_ID, "레슨 A 둘째 글", LESSON_A_ID);
 		flushAndClear();
 
-		PostListResult result = postFinder.findPosts(new PostListRequest(null, 20, LESSON_A_ID));
+		PostListResult result = postFinder.findPosts(42L, new PostListRequest(null, 20, LESSON_A_ID));
 
 		assertThat(result.posts()).extracting(this::contentOf).containsExactly("레슨 A 둘째 글", "레슨 A 첫 글");
 		assertThat(result.nextCursor()).isNull();
@@ -197,8 +197,8 @@ class PostFinderTest {
 		});
 		flushAndClear();
 
-		PostListResult first = postFinder.findPosts(new PostListRequest(null, 2, LESSON_A_ID));
-		PostListResult second = postFinder.findPosts(new PostListRequest(first.nextCursor(), 2, LESSON_A_ID));
+		PostListResult first = postFinder.findPosts(42L, new PostListRequest(null, 2, LESSON_A_ID));
+		PostListResult second = postFinder.findPosts(42L, new PostListRequest(first.nextCursor(), 2, LESSON_A_ID));
 
 		assertThat(first.posts()).extracting(this::contentOf).containsExactly("레슨 A 글 3", "레슨 A 글 2");
 		assertThat(second.posts()).extracting(this::contentOf).containsExactly("레슨 A 글 1");
@@ -211,7 +211,7 @@ class PostFinderTest {
 		savePost(author.getId(), "본문");
 		flushAndClear();
 
-		PostListResult result = postFinder.findPosts(new PostListRequest(null, 20, null));
+		PostListResult result = postFinder.findPosts(42L, new PostListRequest(null, 20, null));
 
 		assertThat(result.posts().getFirst().author()).isEqualTo(
 				new AuthorResult(author.getId(), "보리", SELECTED_DOG_IMAGE_URL));
@@ -226,7 +226,7 @@ class PostFinderTest {
 		savePost(author.getId(), "본문");
 		flushAndClear();
 
-		PostListResult result = postFinder.findPosts(new PostListRequest(null, 20, null));
+		PostListResult result = postFinder.findPosts(42L, new PostListRequest(null, 20, null));
 
 		assertThat(result.posts().getFirst().author()).isEqualTo(
 				new AuthorResult(author.getId(), "멍코치 훈련사", "https://cdn.example.com/coach.png", true));
@@ -239,7 +239,7 @@ class PostFinderTest {
 		savePost(author.getId(), "본문");
 		flushAndClear();
 
-		PostListResult result = postFinder.findPosts(new PostListRequest(null, 20, null));
+		PostListResult result = postFinder.findPosts(42L, new PostListRequest(null, 20, null));
 
 		assertThat(result.posts().getFirst().author()).isNull();
 	}
@@ -249,7 +249,7 @@ class PostFinderTest {
 		savePost(USER_ID, "본문");
 		flushAndClear();
 
-		PostListResult result = postFinder.findPosts(new PostListRequest(null, 20, null));
+		PostListResult result = postFinder.findPosts(42L, new PostListRequest(null, 20, null));
 
 		assertThat(result.posts().getFirst().author()).isNull();
 	}
@@ -263,7 +263,7 @@ class PostFinderTest {
 		savePost(USER_ID, "본문", lesson.getId());
 		flushAndClear();
 
-		PostListResult result = postFinder.findPosts(new PostListRequest(null, 20, null));
+		PostListResult result = postFinder.findPosts(42L, new PostListRequest(null, 20, null));
 
 		assertThat(result.posts()).extracting(PostResult::mentionTarget)
 				.containsExactly(new MentionTargetResult(MentionTargetType.LESSON, lesson.getId(),
@@ -278,7 +278,7 @@ class PostFinderTest {
 		savePost(USER_ID, "본문");
 		flushAndClear();
 
-		PostListResult result = postFinder.findPosts(new PostListRequest(null, 20, null));
+		PostListResult result = postFinder.findPosts(42L, new PostListRequest(null, 20, null));
 
 		assertThat(result.posts().getFirst().mentionTarget()).isNull();
 	}
@@ -288,7 +288,7 @@ class PostFinderTest {
 		savePost(USER_ID, "본문", -1L);
 		flushAndClear();
 
-		PostListResult result = postFinder.findPosts(new PostListRequest(null, 20, null));
+		PostListResult result = postFinder.findPosts(42L, new PostListRequest(null, 20, null));
 
 		assertThat(result.posts().getFirst().mentionTarget()).isNull();
 	}
@@ -300,7 +300,7 @@ class PostFinderTest {
 				new PostMediaCommand(PostMediaType.IMAGE, IMAGE_URL)));
 		flushAndClear();
 
-		PostListResult result = postFinder.findPosts(new PostListRequest(null, 20, null));
+		PostListResult result = postFinder.findPosts(42L, new PostListRequest(null, 20, null));
 
 		assertThat(result.posts().getFirst().post().getMedia())
 				.extracting(PostMedia::getType, PostMedia::getUrl)
@@ -314,7 +314,7 @@ class PostFinderTest {
 		savePost(USER_ID, "본문");
 		flushAndClear();
 
-		PostListResult result = postFinder.findPosts(new PostListRequest(null, 20, null));
+		PostListResult result = postFinder.findPosts(42L, new PostListRequest(null, 20, null));
 
 		assertThat(result.posts().getFirst().post().getMedia()).isEmpty();
 	}
@@ -326,14 +326,14 @@ class PostFinderTest {
 		savePost(USER_ID, "세 번째");
 		flushAndClear();
 
-		PostListResult result = postFinder.findPosts(new PostListRequest(null, 20, null));
+		PostListResult result = postFinder.findPosts(42L, new PostListRequest(null, 20, null));
 
 		assertThat(result.posts()).extracting(this::contentOf).containsExactly("세 번째", "첫 번째");
 	}
 
 	@Test
 	void 게시글이_없으면_빈_목록을_반환한다() {
-		PostListResult result = postFinder.findPosts(new PostListRequest(null, 20, null));
+		PostListResult result = postFinder.findPosts(42L, new PostListRequest(null, 20, null));
 
 		assertThat(result.posts()).isEmpty();
 		assertThat(result.nextCursor()).isNull();
@@ -408,7 +408,7 @@ class PostFinderTest {
 						new PostMediaCommand(PostMediaType.IMAGE, IMAGE_URL)))));
 		flushAndClear();
 
-		PostResult result = postFinder.findPostDetail(saved.getId());
+		PostResult result = postFinder.findPostDetail(42L, saved.getId());
 
 		assertThat(contentOf(result)).isEqualTo("본문");
 		assertThat(result.author()).isEqualTo(
@@ -426,7 +426,7 @@ class PostFinderTest {
 		Post saved = savePost(USER_ID, "본문");
 		flushAndClear();
 
-		PostResult result = postFinder.findPostDetail(saved.getId());
+		PostResult result = postFinder.findPostDetail(42L, saved.getId());
 
 		assertThat(result.author()).isNull();
 		assertThat(result.mentionTarget()).isNull();
@@ -434,7 +434,7 @@ class PostFinderTest {
 
 	@Test
 	void 단건_조회할_게시글이_없으면_예외를_던진다() {
-		assertThatThrownBy(() -> postFinder.findPostDetail(999_999L))
+		assertThatThrownBy(() -> postFinder.findPostDetail(42L, 999_999L))
 				.isInstanceOf(PostNotFoundException.class);
 	}
 
@@ -442,7 +442,7 @@ class PostFinderTest {
 	void 단건_조회할_게시글이_삭제됐으면_예외를_던진다() {
 		Post saved = saveDeletedPost(USER_ID);
 
-		assertThatThrownBy(() -> postFinder.findPostDetail(saved.getId()))
+		assertThatThrownBy(() -> postFinder.findPostDetail(42L, saved.getId()))
 				.isInstanceOf(PostNotFoundException.class);
 	}
 

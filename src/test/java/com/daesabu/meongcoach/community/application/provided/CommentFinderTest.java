@@ -81,7 +81,7 @@ class CommentFinderTest {
 		saveComment(USER_ID, "둘째 댓글");
 		flushAndClear();
 
-		CommentListResult result = commentFinder.findComments(post.getId(), new CommentListRequest(null, 20));
+		CommentListResult result = commentFinder.findComments(42L, post.getId(), new CommentListRequest(null, 20));
 
 		assertThat(result.comments()).extracting(this::contentOf).containsExactly("첫 댓글", "둘째 댓글");
 		assertThat(result.nextCursor()).isNull();
@@ -92,7 +92,7 @@ class CommentFinderTest {
 		List<Comment> comments = saveComments(3);
 		flushAndClear();
 
-		CommentListResult result = commentFinder.findComments(post.getId(), new CommentListRequest(null, 2));
+		CommentListResult result = commentFinder.findComments(42L, post.getId(), new CommentListRequest(null, 2));
 
 		assertThat(result.comments()).extracting(this::contentOf).containsExactly("댓글 1", "댓글 2");
 		assertThat(result.nextCursor()).isEqualTo(comments.get(1).getId());
@@ -103,10 +103,10 @@ class CommentFinderTest {
 		saveComments(5);
 		flushAndClear();
 
-		CommentListResult first = commentFinder.findComments(post.getId(), new CommentListRequest(null, 2));
-		CommentListResult second = commentFinder.findComments(post.getId(),
+		CommentListResult first = commentFinder.findComments(42L, post.getId(), new CommentListRequest(null, 2));
+		CommentListResult second = commentFinder.findComments(42L, post.getId(),
 				new CommentListRequest(first.nextCursor(), 2));
-		CommentListResult third = commentFinder.findComments(post.getId(),
+		CommentListResult third = commentFinder.findComments(42L, post.getId(),
 				new CommentListRequest(second.nextCursor(), 2));
 
 		assertThat(first.comments()).extracting(this::contentOf).containsExactly("댓글 1", "댓글 2");
@@ -122,7 +122,7 @@ class CommentFinderTest {
 		commentRepository.save(Comment.register(other, USER_ID, "다른 게시글 댓글"));
 		flushAndClear();
 
-		CommentListResult result = commentFinder.findComments(post.getId(), new CommentListRequest(null, 20));
+		CommentListResult result = commentFinder.findComments(42L, post.getId(), new CommentListRequest(null, 20));
 
 		assertThat(result.comments()).extracting(this::contentOf).containsExactly("이 게시글 댓글");
 	}
@@ -133,7 +133,7 @@ class CommentFinderTest {
 		saveComment(USER_ID, "남은 댓글");
 		flushAndClear();
 
-		CommentListResult result = commentFinder.findComments(post.getId(), new CommentListRequest(null, 20));
+		CommentListResult result = commentFinder.findComments(42L, post.getId(), new CommentListRequest(null, 20));
 
 		assertThat(result.comments()).extracting(this::contentOf).containsExactly("남은 댓글");
 	}
@@ -147,7 +147,7 @@ class CommentFinderTest {
 		saveReply(second, USER_ID, "답글");
 		flushAndClear();
 
-		CommentListResult result = commentFinder.findComments(post.getId(), new CommentListRequest(null, 20));
+		CommentListResult result = commentFinder.findComments(42L, post.getId(), new CommentListRequest(null, 20));
 
 		assertThat(result.comments()).extracting(CommentResult::replyCount).containsExactly(2L, 1L);
 	}
@@ -157,7 +157,7 @@ class CommentFinderTest {
 		saveComment(USER_ID, "댓글");
 		flushAndClear();
 
-		CommentListResult result = commentFinder.findComments(post.getId(), new CommentListRequest(null, 20));
+		CommentListResult result = commentFinder.findComments(42L, post.getId(), new CommentListRequest(null, 20));
 
 		assertThat(result.comments().getFirst().replyCount()).isZero();
 	}
@@ -169,7 +169,7 @@ class CommentFinderTest {
 		saveReply(root, USER_ID, "남은 답글");
 		flushAndClear();
 
-		CommentListResult result = commentFinder.findComments(post.getId(), new CommentListRequest(null, 20));
+		CommentListResult result = commentFinder.findComments(42L, post.getId(), new CommentListRequest(null, 20));
 
 		assertThat(result.comments().getFirst().replyCount()).isEqualTo(1L);
 	}
@@ -180,7 +180,7 @@ class CommentFinderTest {
 		saveComment(author.getId(), "댓글");
 		flushAndClear();
 
-		CommentListResult result = commentFinder.findComments(post.getId(), new CommentListRequest(null, 20));
+		CommentListResult result = commentFinder.findComments(42L, post.getId(), new CommentListRequest(null, 20));
 
 		assertThat(result.comments().getFirst().author()).isEqualTo(
 				new AuthorResult(author.getId(), "보리", SELECTED_DOG_IMAGE_URL));
@@ -193,7 +193,7 @@ class CommentFinderTest {
 		saveComment(author.getId(), "댓글");
 		flushAndClear();
 
-		CommentListResult result = commentFinder.findComments(post.getId(), new CommentListRequest(null, 20));
+		CommentListResult result = commentFinder.findComments(42L, post.getId(), new CommentListRequest(null, 20));
 
 		assertThat(result.comments().getFirst().author()).isNull();
 	}
@@ -203,14 +203,14 @@ class CommentFinderTest {
 		saveComment(USER_ID, "댓글");
 		flushAndClear();
 
-		CommentListResult result = commentFinder.findComments(post.getId(), new CommentListRequest(null, 20));
+		CommentListResult result = commentFinder.findComments(42L, post.getId(), new CommentListRequest(null, 20));
 
 		assertThat(result.comments().getFirst().author()).isNull();
 	}
 
 	@Test
 	void 댓글이_없으면_빈_목록을_반환한다() {
-		CommentListResult result = commentFinder.findComments(post.getId(), new CommentListRequest(null, null));
+		CommentListResult result = commentFinder.findComments(42L, post.getId(), new CommentListRequest(null, null));
 
 		assertThat(result.comments()).isEmpty();
 		assertThat(result.nextCursor()).isNull();
@@ -221,7 +221,7 @@ class CommentFinderTest {
 		saveComments(21);
 		flushAndClear();
 
-		CommentListResult result = commentFinder.findComments(post.getId(), new CommentListRequest(null, null));
+		CommentListResult result = commentFinder.findComments(42L, post.getId(), new CommentListRequest(null, null));
 
 		assertThat(result.comments()).hasSize(20);
 		assertThat(result.nextCursor()).isNotNull();
@@ -229,7 +229,7 @@ class CommentFinderTest {
 
 	@Test
 	void 게시글이_없으면_예외를_던진다() {
-		assertThatThrownBy(() -> commentFinder.findComments(999_999L, new CommentListRequest(null, 20)))
+		assertThatThrownBy(() -> commentFinder.findComments(42L, 999_999L, new CommentListRequest(null, 20)))
 				.isInstanceOf(PostNotFoundException.class);
 	}
 
@@ -238,19 +238,19 @@ class CommentFinderTest {
 		post.delete();
 		flushAndClear();
 
-		assertThatThrownBy(() -> commentFinder.findComments(post.getId(), new CommentListRequest(null, 20)))
+		assertThatThrownBy(() -> commentFinder.findComments(42L, post.getId(), new CommentListRequest(null, 20)))
 				.isInstanceOf(PostNotFoundException.class);
 	}
 
 	@Test
 	void size가_허용_범위를_벗어나면_예외를_던진다() {
-		assertThatThrownBy(() -> commentFinder.findComments(post.getId(), new CommentListRequest(null, 51)))
+		assertThatThrownBy(() -> commentFinder.findComments(42L, post.getId(), new CommentListRequest(null, 51)))
 				.isInstanceOf(ConstraintViolationException.class);
 	}
 
 	@Test
 	void cursor가_양수가_아니면_예외를_던진다() {
-		assertThatThrownBy(() -> commentFinder.findComments(post.getId(), new CommentListRequest(0L, 20)))
+		assertThatThrownBy(() -> commentFinder.findComments(42L, post.getId(), new CommentListRequest(0L, 20)))
 				.isInstanceOf(ConstraintViolationException.class);
 	}
 
@@ -263,7 +263,7 @@ class CommentFinderTest {
 		saveReply(otherRoot, USER_ID, "다른 루트의 답글");
 		flushAndClear();
 
-		ReplyListResult result = commentFinder.findReplies(root.getId(), new CommentListRequest(null, 20));
+		ReplyListResult result = commentFinder.findReplies(42L, root.getId(), new CommentListRequest(null, 20));
 
 		assertThat(result.replies()).extracting(this::contentOf).containsExactly("답글 1", "답글 2");
 		assertThat(result.nextCursor()).isNull();
@@ -275,8 +275,8 @@ class CommentFinderTest {
 		IntStream.rangeClosed(1, 3).forEach(index -> saveReply(root, USER_ID, "답글 " + index));
 		flushAndClear();
 
-		ReplyListResult first = commentFinder.findReplies(root.getId(), new CommentListRequest(null, 2));
-		ReplyListResult second = commentFinder.findReplies(root.getId(), new CommentListRequest(first.nextCursor(), 2));
+		ReplyListResult first = commentFinder.findReplies(42L, root.getId(), new CommentListRequest(null, 2));
+		ReplyListResult second = commentFinder.findReplies(42L, root.getId(), new CommentListRequest(first.nextCursor(), 2));
 
 		assertThat(first.replies()).extracting(this::contentOf).containsExactly("답글 1", "답글 2");
 		assertThat(first.nextCursor()).isNotNull();
@@ -291,7 +291,7 @@ class CommentFinderTest {
 		saveReply(root, USER_ID, "남은 답글");
 		flushAndClear();
 
-		ReplyListResult result = commentFinder.findReplies(root.getId(), new CommentListRequest(null, 20));
+		ReplyListResult result = commentFinder.findReplies(42L, root.getId(), new CommentListRequest(null, 20));
 
 		assertThat(result.replies()).extracting(this::contentOf).containsExactly("남은 답글");
 	}
@@ -304,7 +304,7 @@ class CommentFinderTest {
 		saveReply(root, USER_ID, "프로필 없는 작성자의 답글");
 		flushAndClear();
 
-		ReplyListResult result = commentFinder.findReplies(root.getId(), new CommentListRequest(null, 20));
+		ReplyListResult result = commentFinder.findReplies(42L, root.getId(), new CommentListRequest(null, 20));
 
 		assertThat(result.replies()).extracting(ReplyResult::author).containsExactly(
 				new AuthorResult(author.getId(), "보리", SELECTED_DOG_IMAGE_URL),
@@ -313,7 +313,7 @@ class CommentFinderTest {
 
 	@Test
 	void 답글을_조회할_댓글이_없으면_예외를_던진다() {
-		assertThatThrownBy(() -> commentFinder.findReplies(999_999L, new CommentListRequest(null, 20)))
+		assertThatThrownBy(() -> commentFinder.findReplies(42L, 999_999L, new CommentListRequest(null, 20)))
 				.isInstanceOf(CommentNotFoundException.class);
 	}
 
@@ -324,7 +324,7 @@ class CommentFinderTest {
 		root.delete();
 		flushAndClear();
 
-		assertThatThrownBy(() -> commentFinder.findReplies(root.getId(), new CommentListRequest(null, 20)))
+		assertThatThrownBy(() -> commentFinder.findReplies(42L, root.getId(), new CommentListRequest(null, 20)))
 				.isInstanceOf(CommentNotFoundException.class);
 	}
 
@@ -334,7 +334,7 @@ class CommentFinderTest {
 		Comment reply = saveReply(root, USER_ID, "답글");
 		flushAndClear();
 
-		assertThatThrownBy(() -> commentFinder.findReplies(reply.getId(), new CommentListRequest(null, 20)))
+		assertThatThrownBy(() -> commentFinder.findReplies(42L, reply.getId(), new CommentListRequest(null, 20)))
 				.isInstanceOf(CommentNotFoundException.class);
 	}
 
@@ -342,7 +342,7 @@ class CommentFinderTest {
 	void 답글_목록의_size가_허용_범위를_벗어나면_예외를_던진다() {
 		Comment root = saveComment(USER_ID, "루트 댓글");
 
-		assertThatThrownBy(() -> commentFinder.findReplies(root.getId(), new CommentListRequest(null, 0)))
+		assertThatThrownBy(() -> commentFinder.findReplies(42L, root.getId(), new CommentListRequest(null, 0)))
 				.isInstanceOf(ConstraintViolationException.class);
 	}
 

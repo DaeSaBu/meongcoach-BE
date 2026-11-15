@@ -5,6 +5,11 @@ import java.util.Collection;
 import java.util.Set;
 
 public interface UserFinder {
+	/**
+	 * 활성 ADMIN·EXPERT 회원의 ID를 반환한다.
+	 */
+	Set<Long> findActiveOperatorIds();
+
 	boolean isActiveUser(Long userId);
 
 	User findById(Long userId);

@@ -7,6 +7,7 @@ public enum NotificationEventType {
 	AI_ANALYSIS,
 	OPERATOR_MESSAGE,
 	COMMENT,
+	LIKE,
 	SUPPORT_REPLY;
 
 	public static NotificationEventType from(String value) {
