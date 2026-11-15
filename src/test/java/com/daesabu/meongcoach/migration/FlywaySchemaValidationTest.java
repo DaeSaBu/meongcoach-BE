@@ -29,6 +29,31 @@ class FlywaySchemaValidationTest {
 	private DataSource dataSource;
 
 	@Test
+	void 기존_좋아요는_LIKED로_이관된다() throws Exception {
+		try (Connection connection = dataSource.getConnection()) {
+			connection.setAutoCommit(false);
+			try (var statement = connection.createStatement()) {
+				statement.execute("CREATE SCHEMA like_status_test");
+				statement.execute("SET LOCAL search_path TO like_status_test");
+				statement.execute("CREATE TABLE post_likes (id BIGINT)");
+				statement.execute("CREATE TABLE comment_likes (id BIGINT)");
+				statement.execute("INSERT INTO post_likes VALUES (1)");
+				statement.execute("INSERT INTO comment_likes VALUES (1)");
+				ScriptUtils.executeSqlScript(connection, new ClassPathResource("db/migration/V63__retain_like_status.sql"));
+				try (var rows = statement.executeQuery("SELECT status FROM post_likes UNION ALL SELECT status FROM comment_likes")) {
+					assertThat(rows.next()).isTrue();
+					assertThat(rows.getString(1)).isEqualTo("LIKED");
+					assertThat(rows.next()).isTrue();
+					assertThat(rows.getString(1)).isEqualTo("LIKED");
+					assertThat(rows.next()).isFalse();
+				}
+			} finally {
+				connection.rollback();
+			}
+		}
+	}
+
+	@Test
 	void 활동시각_분리는_기존_정렬시각을_보존한다() throws Exception {
 		try (Connection connection = dataSource.getConnection()) {
 			connection.setAutoCommit(false);

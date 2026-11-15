@@ -54,7 +54,7 @@ class LikeRegisterConcurrencyTest {
 				release.countDown();
 			}
 		} finally {
-			transactionTemplate.executeWithoutResult(status -> postLikeRepository.deleteLike(id, 42L));
+			transactionTemplate.executeWithoutResult(status -> postLikeRepository.deleteAll(postLikeRepository.findAll().stream().filter(like -> like.getPostId().equals(id)).toList()));
 			postRepository.deleteById(id);
 		}
 	}

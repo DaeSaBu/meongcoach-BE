@@ -124,11 +124,12 @@ class LikeRegisterNotificationTest {
 	}
 
 	@Test
-	void 게시글_좋아요는_작성자에게_한번만_알리고_취소는_알리지_않는다() {
+	void 게시글_좋아요는_취소_후_다시_눌러도_한번만_알린다() {
 		likeRegister.likePost(commenterId, postId);
 		verify(sender, timeout(ASYNC_TIMEOUT_MILLIS)).send(anyList());
 		likeRegister.likePost(commenterId, postId);
 		likeRegister.unlikePost(commenterId, postId);
+		likeRegister.likePost(commenterId, postId);
 
 		verify(sender, after(ASYNC_SETTLE_MILLIS).times(1)).send(anyList());
 		PushNotification notification = batches.getFirst().getFirst();
@@ -139,13 +140,14 @@ class LikeRegisterNotificationTest {
 	}
 
 	@Test
-	void 댓글_좋아요는_댓글_작성자에게만_한번_알린다() {
+	void 댓글_좋아요는_취소_후_다시_눌러도_작성자에게_한번만_알린다() {
 		Long commentId = transaction.execute(status -> comments.save(Comment.register(posts.findById(postId).orElseThrow(), rootAuthorId, "댓글")).getId());
 
 		likeRegister.likeComment(commenterId, commentId);
 		verify(sender, timeout(ASYNC_TIMEOUT_MILLIS)).send(anyList());
 		likeRegister.likeComment(commenterId, commentId);
 		likeRegister.unlikeComment(commenterId, commentId);
+		likeRegister.likeComment(commenterId, commentId);
 
 		verify(sender, after(ASYNC_SETTLE_MILLIS).times(1)).send(anyList());
 		assertThat(batches.getFirst()).extracting(PushNotification::fid).containsExactly(ROOT_AUTHOR_FID);
@@ -183,6 +185,35 @@ class LikeRegisterNotificationTest {
 		});
 
 		verify(sender, after(ASYNC_SETTLE_MILLIS).never()).send(any());
+	}
+
+	@Test
+	void 다른_사람과_다른_댓글의_첫_좋아요는_각각_알린다() {
+		Long firstComment = transaction.execute(status -> comments.save(Comment.register(posts.findById(postId).orElseThrow(), rootAuthorId, "첫 댓글")).getId());
+		Long secondComment = transaction.execute(status -> comments.save(Comment.register(posts.findById(postId).orElseThrow(), rootAuthorId, "다음 댓글")).getId());
+
+		likeRegister.likePost(commenterId, postId);
+		likeRegister.likePost(participantId, postId);
+		likeRegister.likeComment(commenterId, firstComment);
+		likeRegister.likeComment(commenterId, secondComment);
+
+		verify(sender, timeout(ASYNC_TIMEOUT_MILLIS).times(4)).send(anyList());
+		likeRegister.unlikeComment(commenterId, firstComment);
+		likeRegister.likeComment(commenterId, firstComment);
+		verify(sender, after(ASYNC_SETTLE_MILLIS).times(4)).send(anyList());
+	}
+
+	@Test
+	void 롤백된_좋아요는_재시도할_때_알린다() {
+		transaction.executeWithoutResult(status -> {
+			likeRegister.likePost(commenterId, postId);
+			status.setRollbackOnly();
+		});
+
+		likeRegister.likePost(commenterId, postId);
+
+		verify(sender, timeout(ASYNC_TIMEOUT_MILLIS)).send(anyList());
+		verify(sender, after(ASYNC_SETTLE_MILLIS).times(1)).send(anyList());
 	}
 
 	private Long saveUser(String nickname, String fid) {
