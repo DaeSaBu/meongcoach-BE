@@ -42,7 +42,7 @@ flowchart LR
 - 토픽은 커리큘럼이 1개 이상이고 모든 커리큘럼이 `COMPLETED`이면 완료입니다.
 - 새로 추가된 레슨은 미완료로 계산되므로 완료했던 커리큘럼도 `IN_PROGRESS`로 돌아갑니다.
 - 삭제된 레슨의 진행 기록은 계산에서 빠집니다.
-- 판단은 도메인이 합니다. `Curriculum.completion`과 `Topic.isCompleted`가 사용자의 레슨 진행 모음(`LessonProgresses`)을 받아 계산합니다.
+- 판단은 도메인이 합니다. `Curriculum.determineStatus`와 `Topic.isCompleted`가 사용자의 레슨 진행 모음(`LessonProgresses`)을 받아 계산합니다.
 
 ## 조회
 
