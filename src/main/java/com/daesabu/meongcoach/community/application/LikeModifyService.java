@@ -34,12 +34,7 @@ public class LikeModifyService implements LikeRegister {
 	@Transactional
 	public LikeSummary likePost(Long userId, Long postId) {
 		Post post = postFinder.findPostForUpdate(postId);
-		postLikeRepository.findByPostIdAndUserId(postId, userId).ifPresentOrElse(
-				PostLike::relike,
-				() -> {
-					postLikeRepository.save(PostLike.register(postId, userId));
-					eventPublisher.publishEvent(new LikeRegisteredEvent(postId, post.getUserId(), userId, "게시글"));
-				});
+		registerOrRelikePost(userId, post);
 		Map<Long, LikeSummary> likes = likeFinder.findPostLikes(userId, List.of(postId));
 		return likes.get(postId);
 	}
@@ -48,7 +43,10 @@ public class LikeModifyService implements LikeRegister {
 	@Transactional
 	public LikeSummary unlikePost(Long userId, Long postId) {
 		postFinder.findPostForUpdate(postId);
-		postLikeRepository.findByPostIdAndUserId(postId, userId).ifPresent(PostLike::unlike);
+		PostLike like = postLikeRepository.findByPostIdAndUserId(postId, userId).orElse(null);
+		if (like != null) {
+			like.unlike();
+		}
 		Map<Long, LikeSummary> likes = likeFinder.findPostLikes(userId, List.of(postId));
 		return likes.get(postId);
 	}
@@ -57,12 +55,7 @@ public class LikeModifyService implements LikeRegister {
 	@Transactional
 	public LikeSummary likeComment(Long userId, Long commentId) {
 		Comment comment = commentFinder.findCommentForUpdate(commentId);
-		commentLikeRepository.findByCommentIdAndUserId(commentId, userId).ifPresentOrElse(
-				CommentLike::relike,
-				() -> {
-					commentLikeRepository.save(CommentLike.register(commentId, userId));
-					eventPublisher.publishEvent(new LikeRegisteredEvent(comment.getPost().getId(), comment.getUserId(), userId, "댓글"));
-				});
+		registerOrRelikeComment(userId, comment);
 		Map<Long, LikeSummary> likes = likeFinder.findCommentLikes(userId, List.of(commentId));
 		return likes.get(commentId);
 	}
@@ -71,8 +64,39 @@ public class LikeModifyService implements LikeRegister {
 	@Transactional
 	public LikeSummary unlikeComment(Long userId, Long commentId) {
 		commentFinder.findCommentForUpdate(commentId);
-		commentLikeRepository.findByCommentIdAndUserId(commentId, userId).ifPresent(CommentLike::unlike);
+		CommentLike like = commentLikeRepository.findByCommentIdAndUserId(commentId, userId).orElse(null);
+		if (like != null) {
+			like.unlike();
+		}
 		Map<Long, LikeSummary> likes = likeFinder.findCommentLikes(userId, List.of(commentId));
 		return likes.get(commentId);
+	}
+
+	private void registerOrRelikePost(Long userId, Post post) {
+		Long postId = post.getId();
+		PostLike like = postLikeRepository.findByPostIdAndUserId(postId, userId).orElse(null);
+		if (like != null) {
+			like.relike();
+			return;
+		}
+
+		PostLike newLike = PostLike.register(postId, userId);
+		postLikeRepository.save(newLike);
+		LikeRegisteredEvent event = new LikeRegisteredEvent(postId, post.getUserId(), userId, "게시글");
+		eventPublisher.publishEvent(event);
+	}
+
+	private void registerOrRelikeComment(Long userId, Comment comment) {
+		Long commentId = comment.getId();
+		CommentLike like = commentLikeRepository.findByCommentIdAndUserId(commentId, userId).orElse(null);
+		if (like != null) {
+			like.relike();
+			return;
+		}
+
+		CommentLike newLike = CommentLike.register(commentId, userId);
+		commentLikeRepository.save(newLike);
+		LikeRegisteredEvent event = new LikeRegisteredEvent(comment.getPost().getId(), comment.getUserId(), userId, "댓글");
+		eventPublisher.publishEvent(event);
 	}
 }
