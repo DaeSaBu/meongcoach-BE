@@ -25,8 +25,8 @@ class CurriculumProgressPersistenceTest {
 	private TestEntityManager entityManager;
 
 	@Test
-	void 훈련한_날짜와_성공_여부를_저장하고_조회한다() {
-		CurriculumProgress progress = register(DOG_ID, CURRICULUM_ID, TRAINED_ON, true);
+	void 훈련한_날짜와_상태를_저장하고_조회한다() {
+		CurriculumProgress progress = register(DOG_ID, CURRICULUM_ID, TRAINED_ON, CurriculumProgressStatus.SUCCEEDED);
 		entityManager.persistAndFlush(progress);
 		Long progressId = progress.getId();
 		entityManager.clear();
@@ -34,12 +34,12 @@ class CurriculumProgressPersistenceTest {
 		CurriculumProgress found = entityManager.find(CurriculumProgress.class, progressId);
 
 		assertThat(found.getTrainedOn()).isEqualTo(TRAINED_ON);
-		assertThat(found.isSucceeded()).isTrue();
+		assertThat(found.getStatus()).isEqualTo(CurriculumProgressStatus.SUCCEEDED);
 	}
 
 	@Test
 	void 실패한_날을_성공으로_바꾸면_같은_행에_반영된다() {
-		CurriculumProgress progress = register(DOG_ID, CURRICULUM_ID, TRAINED_ON, false);
+		CurriculumProgress progress = register(DOG_ID, CURRICULUM_ID, TRAINED_ON, CurriculumProgressStatus.FAILED);
 		entityManager.persistAndFlush(progress);
 		Long progressId = progress.getId();
 		entityManager.clear();
@@ -50,13 +50,13 @@ class CurriculumProgressPersistenceTest {
 		entityManager.clear();
 
 		CurriculumProgress updated = entityManager.find(CurriculumProgress.class, progressId);
-		assertThat(updated.isSucceeded()).isTrue();
+		assertThat(updated.getStatus()).isEqualTo(CurriculumProgressStatus.SUCCEEDED);
 	}
 
 	@Test
 	void 같은_강아지의_같은_커리큘럼은_하루에_한_행만_저장된다() {
-		entityManager.persistAndFlush(register(DOG_ID, CURRICULUM_ID, TRAINED_ON, false));
-		CurriculumProgress duplicate = register(DOG_ID, CURRICULUM_ID, TRAINED_ON, true);
+		entityManager.persistAndFlush(register(DOG_ID, CURRICULUM_ID, TRAINED_ON, CurriculumProgressStatus.FAILED));
+		CurriculumProgress duplicate = register(DOG_ID, CURRICULUM_ID, TRAINED_ON, CurriculumProgressStatus.SUCCEEDED);
 
 		assertThatThrownBy(() -> entityManager.persistAndFlush(duplicate))
 				.isInstanceOf(ConstraintViolationException.class);
@@ -64,8 +64,8 @@ class CurriculumProgressPersistenceTest {
 
 	@Test
 	void 날짜가_다르면_같은_커리큘럼도_따로_저장된다() {
-		entityManager.persistAndFlush(register(DOG_ID, CURRICULUM_ID, TRAINED_ON, true));
-		CurriculumProgress nextDay = register(DOG_ID, CURRICULUM_ID, TRAINED_ON.plusDays(1), true);
+		entityManager.persistAndFlush(register(DOG_ID, CURRICULUM_ID, TRAINED_ON, CurriculumProgressStatus.SUCCEEDED));
+		CurriculumProgress nextDay = register(DOG_ID, CURRICULUM_ID, TRAINED_ON.plusDays(1), CurriculumProgressStatus.SUCCEEDED);
 
 		entityManager.persistAndFlush(nextDay);
 
@@ -74,17 +74,18 @@ class CurriculumProgressPersistenceTest {
 
 	@Test
 	void 강아지가_다르면_같은_날_같은_커리큘럼도_따로_저장된다() {
-		entityManager.persistAndFlush(register(DOG_ID, CURRICULUM_ID, TRAINED_ON, true));
-		CurriculumProgress otherDog = register(3L, CURRICULUM_ID, TRAINED_ON, true);
+		entityManager.persistAndFlush(register(DOG_ID, CURRICULUM_ID, TRAINED_ON, CurriculumProgressStatus.SUCCEEDED));
+		CurriculumProgress otherDog = register(3L, CURRICULUM_ID, TRAINED_ON, CurriculumProgressStatus.SUCCEEDED);
 
 		entityManager.persistAndFlush(otherDog);
 
 		assertThat(otherDog.getId()).isNotNull();
 	}
 
-	private CurriculumProgress register(Long dogId, Long curriculumId, LocalDate trainedOn, boolean succeeded) {
+	private CurriculumProgress register(Long dogId, Long curriculumId, LocalDate trainedOn,
+			CurriculumProgressStatus status) {
 		CurriculumProgressRegisterCommand command = new CurriculumProgressRegisterCommand(USER_ID, dogId,
-				curriculumId, trainedOn, succeeded);
+				curriculumId, trainedOn, status);
 		return CurriculumProgress.register(command);
 	}
 }
