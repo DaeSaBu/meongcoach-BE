@@ -26,4 +26,23 @@ public class PostLike extends BaseEntity {
 	@Column(nullable = false)
 	private Long userId;
 	private LocalDateTime deletedAt;
+
+	private PostLike(Long postId, Long userId) {
+		this.postId = postId;
+		this.userId = userId;
+	}
+
+	public static PostLike register(Long postId, Long userId) {
+		return new PostLike(postId, userId);
+	}
+
+	public void delete() {
+		if (deletedAt == null) {
+			deletedAt = LocalDateTime.now();
+		}
+	}
+
+	public void restore() {
+		deletedAt = null;
+	}
 }

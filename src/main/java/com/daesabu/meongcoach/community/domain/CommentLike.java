@@ -26,4 +26,23 @@ public class CommentLike extends BaseEntity {
 	@Column(nullable = false)
 	private Long userId;
 	private LocalDateTime deletedAt;
+
+	private CommentLike(Long commentId, Long userId) {
+		this.commentId = commentId;
+		this.userId = userId;
+	}
+
+	public static CommentLike register(Long commentId, Long userId) {
+		return new CommentLike(commentId, userId);
+	}
+
+	public void delete() {
+		if (deletedAt == null) {
+			deletedAt = LocalDateTime.now();
+		}
+	}
+
+	public void restore() {
+		deletedAt = null;
+	}
 }

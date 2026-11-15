@@ -61,6 +61,13 @@ public class CommentQueryService implements CommentFinder {
 	}
 
 	@Override
+	@Transactional
+	public Comment findCommentForUpdate(Long commentId) {
+		return commentRepository.findActiveByIdForUpdate(commentId)
+				.orElseThrow(() -> new CommentNotFoundException(commentId));
+	}
+
+	@Override
 	public Comment findComment(Long commentId) {
 		return commentRepository.findActiveById(commentId)
 				.orElseThrow(() -> new CommentNotFoundException(commentId));

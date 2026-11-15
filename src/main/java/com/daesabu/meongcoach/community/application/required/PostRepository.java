@@ -1,10 +1,15 @@
 package com.daesabu.meongcoach.community.application.required;
 
 import com.daesabu.meongcoach.community.domain.Post;
+import jakarta.persistence.LockModeType;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 
 public interface PostRepository extends JpaRepository<Post, Long> {
+
+	@Lock(LockModeType.PESSIMISTIC_WRITE)
+	Optional<Post> findLockedByIdAndDeletedAtIsNull(Long id);
 
 	/**
 	 * 삭제되지 않은 게시글을 조회한다. 없거나 삭제됐으면 빈 Optional을 반환한다.
