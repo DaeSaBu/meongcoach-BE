@@ -34,9 +34,8 @@ public class LikeModifyService implements LikeRegister {
 	@Transactional
 	public LikeSummary likePost(Long userId, Long postId) {
 		Post post = postFinder.findPostForUpdate(postId);
-		PostLike like = postLikeRepository.findByPostIdAndUserId(postId, userId)
-				.orElseGet(() -> registerPostLike(userId, post));
-		like.relike();
+		postLikeRepository.findByPostIdAndUserId(postId, userId)
+				.ifPresentOrElse(PostLike::relike, () -> registerPostLike(userId, post));
 		Map<Long, LikeSummary> likes = likeFinder.findPostLikes(userId, List.of(postId));
 		return likes.get(postId);
 	}
@@ -54,9 +53,8 @@ public class LikeModifyService implements LikeRegister {
 	@Transactional
 	public LikeSummary likeComment(Long userId, Long commentId) {
 		Comment comment = commentFinder.findCommentForUpdate(commentId);
-		CommentLike like = commentLikeRepository.findByCommentIdAndUserId(commentId, userId)
-				.orElseGet(() -> registerCommentLike(userId, comment));
-		like.relike();
+		commentLikeRepository.findByCommentIdAndUserId(commentId, userId)
+				.ifPresentOrElse(CommentLike::relike, () -> registerCommentLike(userId, comment));
 		Map<Long, LikeSummary> likes = likeFinder.findCommentLikes(userId, List.of(commentId));
 		return likes.get(commentId);
 	}
@@ -70,19 +68,17 @@ public class LikeModifyService implements LikeRegister {
 		return likes.get(commentId);
 	}
 
-	private PostLike registerPostLike(Long userId, Post post) {
+	private void registerPostLike(Long userId, Post post) {
 		Long postId = post.getId();
 		PostLike like = PostLike.register(postId, userId);
 		postLikeRepository.save(like);
 		LikeRegisteredEvent event = new LikeRegisteredEvent(postId, post.getUserId(), userId, "게시글");
 		eventPublisher.publishEvent(event);
-		return like;
 	}
-	private CommentLike registerCommentLike(Long userId, Comment comment) {
+	private void registerCommentLike(Long userId, Comment comment) {
 		Long commentId = comment.getId();
 		CommentLike like = CommentLike.register(commentId, userId);
 		commentLikeRepository.save(like);
 		LikeRegisteredEvent event = new LikeRegisteredEvent(comment.getPost().getId(), comment.getUserId(), userId, "댓글");
 		eventPublisher.publishEvent(event);
-		return like;
 	}}
