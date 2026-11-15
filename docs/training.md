@@ -1,7 +1,7 @@
 # 훈련 콘텐츠와 사용자 진행 (training 모듈)
 
-training 모듈은 모든 사용자가 공유하는 훈련 콘텐츠와 사용자별 토픽 선택·레슨 진행, 반려견별 훈련 플랜을 소유합니다.
-진행은 레슨 단위로만 저장합니다.
+training 모듈은 모든 사용자가 공유하는 훈련 콘텐츠와 사용자별 토픽 선택·레슨 진행, 반려견별 훈련 플랜·날짜별 커리큘럼 진행을 소유합니다.
+학습 진행은 레슨 단위로만 저장합니다.
 커리큘럼과 토픽의 완료 상태는 저장하지 않고 조회할 때마다 현재 콘텐츠 구성으로 계산합니다.
 
 ```mermaid
@@ -10,6 +10,7 @@ flowchart LR
     LessonProgress -. 레슨 ID .-> Lesson
     TopicSelection -. 토픽 ID .-> Topic
     Plan -. 커리큘럼 ID .-> Curriculum
+    CurriculumProgress -. 커리큘럼 ID .-> Curriculum
 ```
 
 ## 애그리거트
@@ -20,6 +21,7 @@ flowchart LR
 | `LessonProgress` | 사용자·레슨당 한 행 | 완료 횟수 |
 | `TopicSelection` | 사용자당 한 행 | 마지막으로 선택한 토픽 |
 | `Plan` | 사용자·반려견당 활성 한 행 | 커리큘럼 순서, 플랜 안에서 완료한 레슨 ID, 상태, 회고 |
+| `CurriculumProgress` | 사용자·반려견·커리큘럼·날짜당 한 행 | 훈련한 날짜, 그날의 상태(`PENDING`·`SUCCEEDED`·`FAILED`) |
 
 - 사용자 기록은 콘텐츠를 ID로만 참조하고 FK를 두지 않습니다.
 - 레슨이 삭제돼도 그 레슨의 진행 기록은 남습니다.
@@ -40,7 +42,7 @@ flowchart LR
 - 토픽은 커리큘럼이 1개 이상이고 모든 커리큘럼이 `COMPLETED`이면 완료입니다.
 - 새로 추가된 레슨은 미완료로 계산되므로 완료했던 커리큘럼도 `IN_PROGRESS`로 돌아갑니다.
 - 삭제된 레슨의 진행 기록은 계산에서 빠집니다.
-- 판단은 도메인이 합니다. `Curriculum.completion`과 `Topic.isCompleted`가 사용자의 레슨 진행 모음(`LessonProgresses`)을 받아 계산합니다.
+- 판단은 도메인이 합니다. `Curriculum.determineStatus`와 `Topic.isCompleted`가 사용자의 레슨 진행 모음(`LessonProgresses`)을 받아 계산합니다.
 
 ## 조회
 
@@ -65,3 +67,12 @@ flowchart LR
 - 플랜의 커리큘럼 상태도 `ProgressStatus`로 표현하지만, 완료 레슨 수는 플랜 기록 기준입니다. 일반 학습 화면과 플랜 화면의 상태가 다를 수 있습니다.
 - 레슨 순서는 토픽별로 따로 봅니다. 각 토픽의 첫 미완료 레슨만 완료할 수 있고, 다른 토픽의 진행은 영향을 주지 않습니다.
 - 활성 플랜은 사용자·반려견당 하나입니다. 새 플랜을 만들면 기존 활성 플랜은 `REPLACED`가 되고, 동시 생성은 부분 유니크 인덱스(`uk_plans_active_user_dog`)가 막아 409(`PLAN_CREATION_CONFLICT`)로 응답합니다.
+
+## 날짜별 커리큘럼 진행
+
+- `CurriculumProgress`는 반려견이 커리큘럼을 훈련한 날마다 한 행을 남깁니다. 같은 날 여러 번 훈련해도 행은 하나이며, 유니크 제약(`uk_curriculum_progress_user_dog_curriculum_trained_date`)이 중복을 막습니다.
+- 새 행은 `PENDING`으로 등록됩니다.
+- 그날 한 번이라도 성공하면 성공한 날입니다. 실패한 날은 성공으로 바꿀 수 있습니다.
+- 성공한 날은 상태를 더 바꿀 수 없습니다. 호출하는 쪽이 성공 여부를 먼저 확인해야 하며, 성공한 날에 `succeed()`나 `fail()`을 호출하면 `IllegalStateException`이 납니다.
+- 레슨 진행으로 계산하는 커리큘럼 완료 상태(`ProgressStatus`)와는 별개의 기록입니다. 레슨을 모두 완료해도 이 기록은 생기지 않고, 이 기록이 있어도 커리큘럼 완료 상태는 바뀌지 않습니다.
+- `LessonProgress`는 사용자 단위이고 `CurriculumProgress`는 반려견 단위입니다.

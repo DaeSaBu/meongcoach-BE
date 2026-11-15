@@ -70,10 +70,14 @@ public class Topic extends BaseEntity {
 		return thumbnailUrl != null && !thumbnailUrl.isBlank();
 	}
 
-	public TopicCompletion completion(LessonProgresses progresses) {
+	public int countCompletedLessons(LessonProgresses progresses) {
+		return progresses.countCompletedIn(getAllLessonIds());
+	}
+
+	public ProgressStatus determineStatus(LessonProgresses progresses) {
 		List<Long> lessonIds = getAllLessonIds();
-		int completed = progresses.countCompletedIn(lessonIds);
-		return TopicCompletion.of(lessonIds.size(), completed);
+		int completedLessons = progresses.countCompletedIn(lessonIds);
+		return ProgressStatus.of(lessonIds.size(), completedLessons);
 	}
 
 	public List<Long> getAllLessonIds() {

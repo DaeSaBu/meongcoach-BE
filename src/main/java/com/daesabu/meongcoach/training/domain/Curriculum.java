@@ -65,12 +65,15 @@ public class Curriculum extends BaseEntity {
 				.toList();
 	}
 
-	public CurriculumCompletion completion(LessonProgresses progresses) {
+	public int countCompletedLessons(LessonProgresses progresses) {
 		validateHasLessons();
 
-		int completed = progresses.countCompletedIn(getLessonIds());
-		int total = lessons.size();
-		return CurriculumCompletion.of(total, completed);
+		return progresses.countCompletedIn(getLessonIds());
+	}
+
+	public ProgressStatus determineStatus(LessonProgresses progresses) {
+		int completedLessons = countCompletedLessons(progresses);
+		return ProgressStatus.of(lessons.size(), completedLessons);
 	}
 
 	public void validateHasLessons() {
@@ -78,7 +81,7 @@ public class Curriculum extends BaseEntity {
 	}
 
 	public boolean isCompleted(LessonProgresses progresses) {
-		return completion(progresses).status() == ProgressStatus.COMPLETED;
+		return determineStatus(progresses) == ProgressStatus.COMPLETED;
 	}
 
 	public int getLessonsSize() {

@@ -34,7 +34,6 @@ import com.daesabu.meongcoach.training.domain.CardFixture;
 import com.daesabu.meongcoach.training.domain.CardMedia;
 import com.daesabu.meongcoach.training.domain.CardMediaFixture;
 import com.daesabu.meongcoach.training.domain.Curriculum;
-import com.daesabu.meongcoach.training.domain.CurriculumCompletion;
 import com.daesabu.meongcoach.training.domain.CurriculumFixture;
 import com.daesabu.meongcoach.training.domain.Expert;
 import com.daesabu.meongcoach.training.domain.ExpertFixture;
@@ -268,8 +267,8 @@ class TrainingControllerTest {
 		addLesson(inProgress, 112L, "5초 기다려", 3, 5);
 		addLesson(inProgress, 113L, "10초 기다려", 4, 5);
 		given(curriculumFinder.findCurriculums(42L)).willReturn(new CurriculumListResult(topic, List.of(
-				new CurriculumResult(completed, new CurriculumCompletion(3, ProgressStatus.COMPLETED), false),
-				new CurriculumResult(inProgress, new CurriculumCompletion(1, ProgressStatus.IN_PROGRESS), false))));
+				new CurriculumResult(completed, 3, ProgressStatus.COMPLETED, false),
+				new CurriculumResult(inProgress, 1, ProgressStatus.IN_PROGRESS, false))));
 
 		mockMvc.perform(get("/api/training/topic/selection/curriculums")
 						.principal(CURRENT_USER)
@@ -314,8 +313,8 @@ class TrainingControllerTest {
 		ReflectionTestUtils.setField(premium, "id", 11L);
 		given(curriculumFinder.findCurriculums(42L))
 				.willReturn(new CurriculumListResult(topic, List.of(
-						new CurriculumResult(sample, new CurriculumCompletion(0, ProgressStatus.NOT_STARTED), false),
-						new CurriculumResult(premium, new CurriculumCompletion(0, ProgressStatus.NOT_STARTED), true))));
+						new CurriculumResult(sample, 0, ProgressStatus.NOT_STARTED, false),
+						new CurriculumResult(premium, 0, ProgressStatus.NOT_STARTED, true))));
 
 		mockMvc.perform(get("/api/training/topic/selection/curriculums").principal(CURRENT_USER))
 				.andExpect(status().isOk())

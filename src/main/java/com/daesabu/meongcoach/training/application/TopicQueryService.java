@@ -11,7 +11,6 @@ import com.daesabu.meongcoach.training.application.provided.dto.TopicResult;
 import com.daesabu.meongcoach.training.application.required.LessonProgressRepository;
 import com.daesabu.meongcoach.training.application.required.TopicRepository;
 import com.daesabu.meongcoach.training.domain.Curriculum;
-import com.daesabu.meongcoach.training.domain.CurriculumCompletion;
 import com.daesabu.meongcoach.training.domain.LessonProgress;
 import com.daesabu.meongcoach.training.domain.LessonProgresses;
 import com.daesabu.meongcoach.training.domain.Topic;
@@ -50,12 +49,11 @@ public class TopicQueryService implements TopicFinder, TopicCompletionChecker, P
 
 	private AiPlanCurriculumResult toAiPlanCurriculumResult(Long topicId, String topicTitle, Curriculum curriculum,
 			LessonProgresses progresses) {
-		CurriculumCompletion completion = curriculum.completion(progresses);
 		Long id = curriculum.getId();
 		String title = curriculum.getTitle();
 		String description = curriculum.getDescription();
 		int totalLessons = curriculum.getLessonsSize();
-		int completedLessons = completion.completedLessons();
+		int completedLessons = curriculum.countCompletedLessons(progresses);
 		return new AiPlanCurriculumResult(id, topicId, topicTitle, title, description,
 				totalLessons, completedLessons);
 	}

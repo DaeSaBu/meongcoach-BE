@@ -24,7 +24,7 @@ class CurriculumTest {
 	void 완료한_레슨_id에_속한_레슨만_센다() {
 		Curriculum curriculum = curriculumWithLessonIds(1L, 2L, 3L);
 
-		int completed = curriculum.completion(completedProgresses(1L, 3L)).completedLessons();
+		int completed = curriculum.countCompletedLessons(completedProgresses(1L, 3L));
 
 		assertThat(completed).isEqualTo(2);
 	}
@@ -33,7 +33,7 @@ class CurriculumTest {
 	void 다른_커리큘럼의_레슨_id는_세지_않는다() {
 		Curriculum curriculum = curriculumWithLessonIds(1L, 2L);
 
-		int completed = curriculum.completion(completedProgresses(2L, 99L)).completedLessons();
+		int completed = curriculum.countCompletedLessons(completedProgresses(2L, 99L));
 
 		assertThat(completed).isEqualTo(1);
 	}
@@ -43,7 +43,7 @@ class CurriculumTest {
 		Curriculum curriculum = curriculumWithLessonIds();
 		LessonProgresses progresses = completedProgresses();
 
-		assertThatThrownBy(() -> curriculum.completion(progresses))
+		assertThatThrownBy(() -> curriculum.determineStatus(progresses))
 				.isInstanceOf(IllegalStateException.class)
 				.hasMessage("커리큘럼에는 레슨이 하나 이상 있어야 합니다.");
 	}
@@ -61,7 +61,7 @@ class CurriculumTest {
 	void 일부_레슨만_완료하면_진행_중_상태다() {
 		Curriculum curriculum = curriculumWithLessonIds(1L, 2L);
 
-		ProgressStatus status = curriculum.completion(completedProgresses(1L)).status();
+		ProgressStatus status = curriculum.determineStatus(completedProgresses(1L));
 
 		assertThat(status).isEqualTo(ProgressStatus.IN_PROGRESS);
 	}
@@ -70,7 +70,7 @@ class CurriculumTest {
 	void 모든_레슨을_완료하면_완료_상태다() {
 		Curriculum curriculum = curriculumWithLessonIds(1L, 2L);
 
-		ProgressStatus status = curriculum.completion(completedProgresses(1L, 2L)).status();
+		ProgressStatus status = curriculum.determineStatus(completedProgresses(1L, 2L));
 
 		assertThat(status).isEqualTo(ProgressStatus.COMPLETED);
 	}

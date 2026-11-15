@@ -6,8 +6,8 @@ import com.daesabu.meongcoach.training.application.required.LessonProgressReposi
 import com.daesabu.meongcoach.training.application.required.TopicRepository;
 import com.daesabu.meongcoach.training.domain.Curriculum;
 import com.daesabu.meongcoach.training.domain.LessonProgresses;
+import com.daesabu.meongcoach.training.domain.ProgressStatus;
 import com.daesabu.meongcoach.training.domain.Topic;
-import com.daesabu.meongcoach.training.domain.TopicCompletion;
 import com.daesabu.meongcoach.training.domain.TrainingCategory;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -40,13 +40,14 @@ public class TopicProgressQueryService implements TopicProgressFinder {
 
 	private TopicProgressResult toResult(Topic topic, LessonProgresses progresses) {
 		List<Long> lessonIds = topic.getAllLessonIds();
-		TopicCompletion completion = topic.completion(progresses);
+		int completedLessons = topic.countCompletedLessons(progresses);
+		ProgressStatus status = topic.determineStatus(progresses);
 		LocalDateTime lastStudiedAt = progresses.findLastCompletedAt(lessonIds).orElse(null);
 		Long nextCurriculumId = findNextCurriculumId(topic, progresses);
 		TrainingCategory category = topic.getTrainingCategory();
 		return new TopicProgressResult(topic.getId(), topic.getTitle(), topic.getDescription(), topic.getIconUrl(),
 				topic.getThumbnailUrl(), topic.hasThumbnail(), category.getId(), category.getTitle(), category.getSortOrder(), lessonIds.size(),
-				completion.completedLessons(), completion.status(), nextCurriculumId, lastStudiedAt);
+				completedLessons, status, nextCurriculumId, lastStudiedAt);
 	}
 
 	private Long findNextCurriculumId(Topic topic, LessonProgresses progresses) {

@@ -3,6 +3,7 @@ package com.daesabu.meongcoach.training.application.provided;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
+import static org.assertj.core.api.Assertions.tuple;
 
 import com.daesabu.meongcoach.entitlement.application.required.EntitlementRepository;
 import com.daesabu.meongcoach.entitlement.domain.EntitlementFixture;
@@ -20,7 +21,6 @@ import com.daesabu.meongcoach.training.application.required.TopicRepository;
 import com.daesabu.meongcoach.training.application.required.TopicSelectionRepository;
 import com.daesabu.meongcoach.training.application.required.TrainingCategoryRepository;
 import com.daesabu.meongcoach.training.domain.Curriculum;
-import com.daesabu.meongcoach.training.domain.CurriculumCompletion;
 import com.daesabu.meongcoach.training.domain.CurriculumFixture;
 import com.daesabu.meongcoach.training.domain.Expert;
 import com.daesabu.meongcoach.training.domain.ExpertFixture;
@@ -38,6 +38,7 @@ import com.daesabu.meongcoach.training.domain.exception.TopicNotConfiguredExcept
 import jakarta.persistence.EntityManager;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -185,9 +186,9 @@ class CurriculumFinderTest {
 
 		CurriculumListResult curriculumList = curriculumFinder.findCurriculums(USER_ID);
 
-		assertThat(curriculumList.curriculums()).extracting(CurriculumResult::completion)
-				.containsExactly(new CurriculumCompletion(1, ProgressStatus.IN_PROGRESS),
-						new CurriculumCompletion(0, ProgressStatus.NOT_STARTED));
+		assertThat(curriculumList.curriculums()).extracting(CurriculumResult::completedLessons, CurriculumResult::status)
+				.containsExactly(tuple(1, ProgressStatus.IN_PROGRESS),
+						tuple(0, ProgressStatus.NOT_STARTED));
 	}
 
 	@Test
@@ -201,8 +202,8 @@ class CurriculumFinderTest {
 
 		CurriculumListResult curriculumList = curriculumFinder.findCurriculums(USER_ID);
 
-		assertThat(curriculumList.curriculums()).extracting(CurriculumResult::completion)
-				.containsExactly(new CurriculumCompletion(0, ProgressStatus.NOT_STARTED));
+		assertThat(curriculumList.curriculums()).extracting(CurriculumResult::completedLessons, CurriculumResult::status)
+				.containsExactly(tuple(0, ProgressStatus.NOT_STARTED));
 	}
 
 	@Test
@@ -420,11 +421,11 @@ class CurriculumFinderTest {
 		saveLesson(second, "레슨", 1);
 		flushAndClear();
 
-		Map<Long, CurriculumCompletion> completions = findCompletions(USER_ID, topic.getId());
+		Map<Long, Tuple> completions = findCompletions(USER_ID, topic.getId());
 
 		assertThat(completions).containsOnly(
-				entry(curriculum.getId(), new CurriculumCompletion(0, ProgressStatus.NOT_STARTED)),
-				entry(second.getId(), new CurriculumCompletion(0, ProgressStatus.NOT_STARTED)));
+				entry(curriculum.getId(), tuple(0, ProgressStatus.NOT_STARTED)),
+				entry(second.getId(), tuple(0, ProgressStatus.NOT_STARTED)));
 		assertThat(lessonProgressRepository.count()).isZero();
 	}
 
@@ -442,12 +443,12 @@ class CurriculumFinderTest {
 		complete(USER_ID, secondLesson, 1);
 		flushAndClear();
 
-		Map<Long, CurriculumCompletion> completions = findCompletions(USER_ID, topic.getId());
+		Map<Long, Tuple> completions = findCompletions(USER_ID, topic.getId());
 
 		assertThat(completions).containsOnly(
-				entry(first.getId(), new CurriculumCompletion(1, ProgressStatus.IN_PROGRESS)),
-				entry(second.getId(), new CurriculumCompletion(1, ProgressStatus.COMPLETED)),
-				entry(third.getId(), new CurriculumCompletion(0, ProgressStatus.NOT_STARTED)));
+				entry(first.getId(), tuple(1, ProgressStatus.IN_PROGRESS)),
+				entry(second.getId(), tuple(1, ProgressStatus.COMPLETED)),
+				entry(third.getId(), tuple(0, ProgressStatus.NOT_STARTED)));
 	}
 
 	@Test
@@ -462,10 +463,10 @@ class CurriculumFinderTest {
 		complete(USER_ID, otherLesson, 1);
 		flushAndClear();
 
-		Map<Long, CurriculumCompletion> completions = findCompletions(USER_ID, topic.getId());
+		Map<Long, Tuple> completions = findCompletions(USER_ID, topic.getId());
 
 		assertThat(completions).containsOnly(
-				entry(curriculum.getId(), new CurriculumCompletion(0, ProgressStatus.NOT_STARTED)));
+				entry(curriculum.getId(), tuple(0, ProgressStatus.NOT_STARTED)));
 	}
 
 	@Test
@@ -476,14 +477,14 @@ class CurriculumFinderTest {
 		complete(USER_ID, lesson, 1);
 		flushAndClear();
 		assertThat(findCompletions(USER_ID, topic.getId()))
-				.containsEntry(curriculum.getId(), new CurriculumCompletion(1, ProgressStatus.COMPLETED));
+				.containsEntry(curriculum.getId(), tuple(1, ProgressStatus.COMPLETED));
 		saveLesson(curriculum, "레슨", 2);
 		flushAndClear();
 
-		Map<Long, CurriculumCompletion> completions = findCompletions(USER_ID, topic.getId());
+		Map<Long, Tuple> completions = findCompletions(USER_ID, topic.getId());
 
 		assertThat(completions)
-				.containsEntry(curriculum.getId(), new CurriculumCompletion(1, ProgressStatus.IN_PROGRESS));
+				.containsEntry(curriculum.getId(), tuple(1, ProgressStatus.IN_PROGRESS));
 	}
 
 	@Test
@@ -496,10 +497,10 @@ class CurriculumFinderTest {
 		lessonRepository.delete(removed);
 		flushAndClear();
 
-		Map<Long, CurriculumCompletion> completions = findCompletions(USER_ID, topic.getId());
+		Map<Long, Tuple> completions = findCompletions(USER_ID, topic.getId());
 
 		assertThat(completions)
-				.containsEntry(curriculum.getId(), new CurriculumCompletion(0, ProgressStatus.NOT_STARTED));
+				.containsEntry(curriculum.getId(), tuple(0, ProgressStatus.NOT_STARTED));
 	}
 
 	@Test
@@ -556,10 +557,10 @@ class CurriculumFinderTest {
 		lessonProgressRepository.save(progress);
 	}
 
-	private Map<Long, CurriculumCompletion> findCompletions(Long userId, Long topicId) {
+	private Map<Long, Tuple> findCompletions(Long userId, Long topicId) {
 		topicSelector.selectTopic(userId, new TopicSelectionRequest(topicId));
 		CurriculumListResult result = curriculumFinder.findCurriculums(userId);
 		return result.curriculums().stream().collect(Collectors.toMap(
-				item -> item.curriculum().getId(), CurriculumResult::completion));
+				item -> item.curriculum().getId(), item -> tuple(item.completedLessons(), item.status())));
 	}
 }
