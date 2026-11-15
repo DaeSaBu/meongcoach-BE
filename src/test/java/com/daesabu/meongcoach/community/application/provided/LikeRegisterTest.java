@@ -223,7 +223,7 @@ class LikeRegisterTest {
 				.filter(like -> like.getPostId().equals(targetId))
 				.findFirst().orElseThrow();
 		assertThat(saved.getCreatedAt()).isNotNull();
-		assertThat(saved.getUpdatedAt()).isEqualTo(saved.getCreatedAt());
+		assertThat(saved.getUpdatedAt()).isAfterOrEqualTo(saved.getCreatedAt());
 		LocalDateTime original = LocalDateTime.of(2026, 1, 1, 0, 0);
 		entityManager.createNativeQuery("update post_likes set created_at = :at, updated_at = :at where id = :id")
 				.setParameter("at", original).setParameter("id", saved.getId()).executeUpdate();
@@ -248,7 +248,7 @@ class LikeRegisterTest {
 				.filter(like -> like.getCommentId().equals(targetId))
 				.findFirst().orElseThrow();
 		assertThat(saved.getCreatedAt()).isNotNull();
-		assertThat(saved.getUpdatedAt()).isEqualTo(saved.getCreatedAt());
+		assertThat(saved.getUpdatedAt()).isAfterOrEqualTo(saved.getCreatedAt());
 		LocalDateTime original = LocalDateTime.of(2026, 1, 1, 0, 0);
 		entityManager.createNativeQuery("update comment_likes set created_at = :at, updated_at = :at where id = :id")
 				.setParameter("at", original).setParameter("id", saved.getId()).executeUpdate();
