@@ -34,13 +34,14 @@ class CurriculumProgressTest {
 	}
 
 	@Test
-	void 이미_성공한_날은_성공으로_남는다() {
+	void 이미_성공한_날은_다시_성공으로_바꿀_수_없다() {
 		CurriculumProgressRegisterCommand command = new CurriculumProgressRegisterCommand(2L, 10L, TRAINED_DATE);
 		CurriculumProgress progress = CurriculumProgress.register(1L, command);
 		progress.succeed();
 
-		progress.succeed();
-
+		assertThatThrownBy(progress::succeed)
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessage("이미 성공한 날입니다.");
 		assertThat(progress.getStatus()).isEqualTo(CurriculumProgressStatus.SUCCEEDED);
 	}
 
