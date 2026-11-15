@@ -83,7 +83,7 @@ class LikeRegisterTest {
 	void 취소한_게시글_좋아요는_기록을_유지하고_재등록하면_집계에_포함된다() {
 		Long postId = savePost().getId();
 		likeRegister.likePost(42L, postId);
-		PostLike original = postLikeRepository.findAll().stream().filter(like -> like.getPostId().equals(postId)).findFirst().orElseThrow();
+		PostLike original = postLikeRepository.findByPostIdAndUserId(postId, 42L).orElseThrow();
 
 		likeRegister.unlikePost(42L, postId);
 		entityManager.clear();
@@ -101,7 +101,7 @@ class LikeRegisterTest {
 		Comment comment = commentRepository.save(Comment.register(savePost(), 41L, "댓글"));
 		Long commentId = comment.getId();
 		likeRegister.likeComment(42L, commentId);
-		CommentLike original = commentLikeRepository.findAll().stream().filter(like -> like.getCommentId().equals(commentId)).findFirst().orElseThrow();
+		CommentLike original = commentLikeRepository.findByCommentIdAndUserId(commentId, 42L).orElseThrow();
 
 		likeRegister.unlikeComment(42L, commentId);
 		entityManager.clear();
@@ -219,9 +219,7 @@ class LikeRegisterTest {
 		Long targetId = post.getId();
 		likeRegister.likePost(42L, targetId);
 		entityManager.clear();
-		PostLike saved = postLikeRepository.findAll().stream()
-				.filter(like -> like.getPostId().equals(targetId))
-				.findFirst().orElseThrow();
+		PostLike saved = postLikeRepository.findByPostIdAndUserId(targetId, 42L).orElseThrow();
 		assertThat(saved.getCreatedAt()).isNotNull();
 		assertThat(saved.getUpdatedAt()).isAfterOrEqualTo(saved.getCreatedAt());
 		LocalDateTime original = LocalDateTime.of(2026, 1, 1, 0, 0);
@@ -244,9 +242,7 @@ class LikeRegisterTest {
 		Long targetId = comment.getId();
 		likeRegister.likeComment(42L, targetId);
 		entityManager.clear();
-		CommentLike saved = commentLikeRepository.findAll().stream()
-				.filter(like -> like.getCommentId().equals(targetId))
-				.findFirst().orElseThrow();
+		CommentLike saved = commentLikeRepository.findByCommentIdAndUserId(targetId, 42L).orElseThrow();
 		assertThat(saved.getCreatedAt()).isNotNull();
 		assertThat(saved.getUpdatedAt()).isAfterOrEqualTo(saved.getCreatedAt());
 		LocalDateTime original = LocalDateTime.of(2026, 1, 1, 0, 0);

@@ -141,7 +141,7 @@ class LikeRegisterNotificationTest {
 
 	@Test
 	void 댓글_좋아요는_취소_후_다시_눌러도_작성자에게_한번만_알린다() {
-		Long commentId = transaction.execute(status -> comments.save(Comment.register(posts.findById(postId).orElseThrow(), rootAuthorId, "댓글")).getId());
+		Long commentId = saveComment("댓글");
 
 		likeRegister.likeComment(commenterId, commentId);
 		verify(sender, timeout(ASYNC_TIMEOUT_MILLIS)).send(anyList());
@@ -157,7 +157,7 @@ class LikeRegisterNotificationTest {
 
 	@Test
 	void 본인_게시글과_댓글_좋아요는_알리지_않는다() {
-		Long commentId = transaction.execute(status -> comments.save(Comment.register(posts.findById(postId).orElseThrow(), rootAuthorId, "댓글")).getId());
+		Long commentId = saveComment("댓글");
 
 		likeRegister.likePost(postAuthorId, postId);
 		likeRegister.likeComment(rootAuthorId, commentId);
@@ -177,7 +177,7 @@ class LikeRegisterNotificationTest {
 
 	@Test
 	void 좋아요_트랜잭션이_롤백되면_알리지_않는다() {
-		Long commentId = transaction.execute(status -> comments.save(Comment.register(posts.findById(postId).orElseThrow(), rootAuthorId, "댓글")).getId());
+		Long commentId = saveComment("댓글");
 		transaction.executeWithoutResult(status -> {
 			likeRegister.likePost(commenterId, postId);
 			likeRegister.likeComment(commenterId, commentId);
@@ -188,19 +188,26 @@ class LikeRegisterNotificationTest {
 	}
 
 	@Test
-	void 다른_사람과_다른_댓글의_첫_좋아요는_각각_알린다() {
-		Long firstComment = transaction.execute(status -> comments.save(Comment.register(posts.findById(postId).orElseThrow(), rootAuthorId, "첫 댓글")).getId());
-		Long secondComment = transaction.execute(status -> comments.save(Comment.register(posts.findById(postId).orElseThrow(), rootAuthorId, "다음 댓글")).getId());
-
+	void 다른_사람의_첫_좋아요는_각각_알린다() {
 		likeRegister.likePost(commenterId, postId);
 		likeRegister.likePost(participantId, postId);
+
+		verify(sender, timeout(ASYNC_TIMEOUT_MILLIS).times(2)).send(anyList());
+		verify(sender, after(ASYNC_SETTLE_MILLIS).times(2)).send(anyList());
+	}
+
+	@Test
+	void 같은_사람이라도_다른_댓글의_첫_좋아요는_각각_알린다() {
+		Long firstComment = saveComment("첫 댓글");
+		Long secondComment = saveComment("다음 댓글");
+
 		likeRegister.likeComment(commenterId, firstComment);
 		likeRegister.likeComment(commenterId, secondComment);
 
-		verify(sender, timeout(ASYNC_TIMEOUT_MILLIS).times(4)).send(anyList());
+		verify(sender, timeout(ASYNC_TIMEOUT_MILLIS).times(2)).send(anyList());
 		likeRegister.unlikeComment(commenterId, firstComment);
 		likeRegister.likeComment(commenterId, firstComment);
-		verify(sender, after(ASYNC_SETTLE_MILLIS).times(4)).send(anyList());
+		verify(sender, after(ASYNC_SETTLE_MILLIS).times(2)).send(anyList());
 	}
 
 	@Test
@@ -214,6 +221,14 @@ class LikeRegisterNotificationTest {
 
 		verify(sender, timeout(ASYNC_TIMEOUT_MILLIS)).send(anyList());
 		verify(sender, after(ASYNC_SETTLE_MILLIS).times(1)).send(anyList());
+	}
+
+	private Long saveComment(String content) {
+		return transaction.execute(status -> {
+			Post post = posts.findById(postId).orElseThrow();
+			Comment comment = Comment.register(post, rootAuthorId, content);
+			return comments.save(comment).getId();
+		});
 	}
 
 	private Long saveUser(String nickname, String fid) {
