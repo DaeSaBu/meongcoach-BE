@@ -55,7 +55,7 @@ public class CurriculumProgress extends BaseEntity {
 		curriculumProgress.dogId = requireNonNull(command.dogId());
 		curriculumProgress.curriculumId = requireNonNull(command.curriculumId());
 		curriculumProgress.trainedOn = requireNonNull(command.trainedOn());
-		curriculumProgress.status = requireNonNull(command.status());
+		curriculumProgress.status = CurriculumProgressStatus.PENDING;
 
 		return curriculumProgress;
 	}
