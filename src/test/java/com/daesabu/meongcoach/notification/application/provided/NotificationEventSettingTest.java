@@ -40,6 +40,7 @@ class NotificationEventSettingTest {
 						tuple(NotificationEventType.AI_ANALYSIS, true),
 						tuple(NotificationEventType.OPERATOR_MESSAGE, true),
 						tuple(NotificationEventType.COMMENT, false),
+						tuple(NotificationEventType.LIKE, true),
 						tuple(NotificationEventType.SUPPORT_REPLY, true));
 	}
 
