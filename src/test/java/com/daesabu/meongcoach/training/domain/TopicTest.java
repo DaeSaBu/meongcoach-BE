@@ -88,10 +88,10 @@ class TopicTest {
 		LessonFixture.create(curriculum, 1001L);
 		LessonFixture.create(curriculum, 1002L);
 
-		TopicCompletion completion = topic.completion(LessonProgresses.from(List.of()));
+		LessonProgresses progresses = LessonProgresses.from(List.of());
 
-		assertThat(completion.completedLessons()).isZero();
-		assertThat(completion.status()).isEqualTo(ProgressStatus.NOT_STARTED);
+		assertThat(topic.countCompletedLessons(progresses)).isZero();
+		assertThat(topic.determineStatus(progresses)).isEqualTo(ProgressStatus.NOT_STARTED);
 	}
 
 	@Test
@@ -103,10 +103,10 @@ class TopicTest {
 		LessonFixture.create(first, 1002L);
 		Lesson thirdLesson = LessonFixture.create(second, 2001L);
 
-		TopicCompletion completion = topic.completion(progresses(firstLesson, thirdLesson));
+		LessonProgresses progresses = progresses(firstLesson, thirdLesson);
 
-		assertThat(completion.completedLessons()).isEqualTo(2);
-		assertThat(completion.status()).isEqualTo(ProgressStatus.IN_PROGRESS);
+		assertThat(topic.countCompletedLessons(progresses)).isEqualTo(2);
+		assertThat(topic.determineStatus(progresses)).isEqualTo(ProgressStatus.IN_PROGRESS);
 	}
 
 	@Test
@@ -116,10 +116,10 @@ class TopicTest {
 		Lesson firstLesson = LessonFixture.create(curriculum, 1001L);
 		Lesson secondLesson = LessonFixture.create(curriculum, 1002L);
 
-		TopicCompletion completion = topic.completion(progresses(firstLesson, secondLesson));
+		LessonProgresses progresses = progresses(firstLesson, secondLesson);
 
-		assertThat(completion.completedLessons()).isEqualTo(2);
-		assertThat(completion.status()).isEqualTo(ProgressStatus.COMPLETED);
+		assertThat(topic.countCompletedLessons(progresses)).isEqualTo(2);
+		assertThat(topic.determineStatus(progresses)).isEqualTo(ProgressStatus.COMPLETED);
 	}
 
 	@Test
