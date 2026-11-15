@@ -29,7 +29,7 @@ class FlywaySchemaValidationTest {
 	private DataSource dataSource;
 
 	@Test
-	void 기존_좋아요는_LIKED로_이관된다() throws Exception {
+	void 기존_좋아요는_소프트_삭제되지_않은_상태로_이관된다() throws Exception {
 		try (Connection connection = dataSource.getConnection()) {
 			connection.setAutoCommit(false);
 			try (var statement = connection.createStatement()) {
@@ -39,12 +39,12 @@ class FlywaySchemaValidationTest {
 				statement.execute("CREATE TABLE comment_likes (id BIGINT)");
 				statement.execute("INSERT INTO post_likes VALUES (1)");
 				statement.execute("INSERT INTO comment_likes VALUES (1)");
-				ScriptUtils.executeSqlScript(connection, new ClassPathResource("db/migration/V63__retain_like_status.sql"));
-				try (var rows = statement.executeQuery("SELECT status FROM post_likes UNION ALL SELECT status FROM comment_likes")) {
+				ScriptUtils.executeSqlScript(connection, new ClassPathResource("db/migration/V63__soft_delete_likes.sql"));
+				try (var rows = statement.executeQuery("SELECT deleted_at FROM post_likes UNION ALL SELECT deleted_at FROM comment_likes")) {
 					assertThat(rows.next()).isTrue();
-					assertThat(rows.getString(1)).isEqualTo("LIKED");
+					assertThat(rows.getTimestamp(1)).isNull();
 					assertThat(rows.next()).isTrue();
-					assertThat(rows.getString(1)).isEqualTo("LIKED");
+					assertThat(rows.getTimestamp(1)).isNull();
 					assertThat(rows.next()).isFalse();
 				}
 			} finally {

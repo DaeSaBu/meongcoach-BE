@@ -88,12 +88,12 @@ class LikeRegisterTest {
 		likeRegister.unlikePost(42L, postId);
 		entityManager.clear();
 
-		assertThat(postLikeRepository.findById(original.getId())).isPresent();
+		assertThat(postLikeRepository.findById(original.getId()).orElseThrow().getDeletedAt()).isNotNull();
 		var result = likeRegister.likePost(42L, postId);
 		assertThat(result.likeCount()).isEqualTo(1);
 		assertThat(result.likedByMe()).isTrue();
 		entityManager.clear();
-		assertThat(postLikeRepository.findById(original.getId())).isPresent();
+		assertThat(postLikeRepository.findById(original.getId()).orElseThrow().getDeletedAt()).isNull();
 	}
 
 	@Test
@@ -106,12 +106,12 @@ class LikeRegisterTest {
 		likeRegister.unlikeComment(42L, commentId);
 		entityManager.clear();
 
-		assertThat(commentLikeRepository.findById(original.getId())).isPresent();
+		assertThat(commentLikeRepository.findById(original.getId()).orElseThrow().getDeletedAt()).isNotNull();
 		var result = likeRegister.likeComment(42L, commentId);
 		assertThat(result.likeCount()).isEqualTo(1);
 		assertThat(result.likedByMe()).isTrue();
 		entityManager.clear();
-		assertThat(commentLikeRepository.findById(original.getId())).isPresent();
+		assertThat(commentLikeRepository.findById(original.getId()).orElseThrow().getDeletedAt()).isNull();
 	}
 
 	@Test
