@@ -35,7 +35,7 @@ public class LikeModifyService implements LikeRegister {
 	public LikeSummary likePost(Long userId, Long postId) {
 		Post post = postFinder.findPostForUpdate(postId);
 		postLikeRepository.findByPostIdAndUserId(postId, userId).ifPresentOrElse(
-				PostLike::restore,
+				PostLike::relike,
 				() -> {
 					postLikeRepository.save(PostLike.register(postId, userId));
 					eventPublisher.publishEvent(new LikeRegisteredEvent(postId, post.getUserId(), userId, "게시글"));
@@ -48,7 +48,7 @@ public class LikeModifyService implements LikeRegister {
 	@Transactional
 	public LikeSummary unlikePost(Long userId, Long postId) {
 		postFinder.findPostForUpdate(postId);
-		postLikeRepository.findByPostIdAndUserId(postId, userId).ifPresent(PostLike::delete);
+		postLikeRepository.findByPostIdAndUserId(postId, userId).ifPresent(PostLike::unlike);
 		Map<Long, LikeSummary> likes = likeFinder.findPostLikes(userId, List.of(postId));
 		return likes.get(postId);
 	}
@@ -58,7 +58,7 @@ public class LikeModifyService implements LikeRegister {
 	public LikeSummary likeComment(Long userId, Long commentId) {
 		Comment comment = commentFinder.findCommentForUpdate(commentId);
 		commentLikeRepository.findByCommentIdAndUserId(commentId, userId).ifPresentOrElse(
-				CommentLike::restore,
+				CommentLike::relike,
 				() -> {
 					commentLikeRepository.save(CommentLike.register(commentId, userId));
 					eventPublisher.publishEvent(new LikeRegisteredEvent(comment.getPost().getId(), comment.getUserId(), userId, "댓글"));
@@ -71,7 +71,7 @@ public class LikeModifyService implements LikeRegister {
 	@Transactional
 	public LikeSummary unlikeComment(Long userId, Long commentId) {
 		commentFinder.findCommentForUpdate(commentId);
-		commentLikeRepository.findByCommentIdAndUserId(commentId, userId).ifPresent(CommentLike::delete);
+		commentLikeRepository.findByCommentIdAndUserId(commentId, userId).ifPresent(CommentLike::unlike);
 		Map<Long, LikeSummary> likes = likeFinder.findCommentLikes(userId, List.of(commentId));
 		return likes.get(commentId);
 	}

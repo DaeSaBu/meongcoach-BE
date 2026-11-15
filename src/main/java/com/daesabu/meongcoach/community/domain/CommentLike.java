@@ -36,13 +36,13 @@ public class CommentLike extends BaseEntity {
 		return new CommentLike(commentId, userId);
 	}
 
-	public void delete() {
+	public void unlike() {
 		if (deletedAt == null) {
 			deletedAt = LocalDateTime.now();
 		}
 	}
 
-	public void restore() {
+	public void relike() {
 		deletedAt = null;
 	}
 }
