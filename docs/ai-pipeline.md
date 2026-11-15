@@ -6,11 +6,11 @@
 
 ```
 앱 → 영상 압축 + 보호자가 맥락 입력          (병렬. 둘 다 끝난 뒤 다음 요청)
-앱 → POST /api/ai/analyses                  (ai — media의 MediaUploadUrlIssuer로 GCS V4 서명 URL 발급. 구 앱은 POST /api/ai/presigned-urls, 맥락 없음)
+앱 → POST /api/ai/analyses                  (analysis — media의 MediaUploadUrlIssuer로 GCS V4 서명 URL 발급. 구 앱은 POST /api/ai/presigned-urls, 맥락 없음)
   → AiAnalysis UPLOADING 저장               (맥락 포함. 발급 즉시. uploadExpiresAt = 발급 시각 + URL 유효 시간. 응답의 analysisId(구 API는 reportId)는 이 분석 건의 ID)
 앱 → GCS에 영상 직접 업로드                  (서버를 거치지 않음)
 GCS → OBJECT_FINALIZE 알림 → Pub/Sub 토픽    (버킷 알림 설정, videos/training/ 접두사)
-VideoUploadSubscriber                       (ai/adapter/consumer — streaming pull 구독, meongcoach.ai.pubsub.video-subscription)
+VideoUploadSubscriber                       (analysis/adapter/consumer — streaming pull 구독, meongcoach.analysis.pubsub.video-subscription)
   → VideoUploadPubSubConsumer               (attributes의 eventType·objectId만 읽는다)
   → AiReportGenerator.generate(objectKey)   (AiReportGenerateService)
      → findByVideoObjectKey                 (발급 row 없으면 warn 후 스킵, UPLOADING이 아니면 중복 전달로 스킵)
@@ -18,13 +18,13 @@ VideoUploadSubscriber                       (ai/adapter/consumer — streaming p
      → AiAnalysis ANALYZING 전이 저장           (이후 결말은 이 row의 status로 기록)
      → AiTrialFinder                        (무료 체험 횟수 확인, 초과 시 FAILED_TRIAL_EXCEEDED)
      → DogProfileFinder                     (dog — 선택된 강아지 프로필, 없으면 FAILED_UNEXPECTED)
-     → VideoAnalyzer → Gemini 영상 분석·제목  (ai/adapter/integration — files:register로 gs:// 등록 후 저장된 맥락·프로필과 함께 generateContent 한 번에 본문과 제목, 실패 시 FAILED_ANALYSIS)
+     → VideoAnalyzer → Gemini 영상 분석·제목  (analysis/adapter/integration — files:register로 gs:// 등록 후 저장된 맥락·프로필과 함께 generateContent 한 번에 본문과 제목, 실패 시 FAILED_ANALYSIS)
      → AiAnalysis COMPLETED 전이 + AiReport 저장 + AiTrial 사용 횟수 증가 (AiAnalysisModifyService.complete의 한 트랜잭션. 그 외 예외는 FAILED_UNEXPECTED)
 ```
 
 앱은 `GET /api/ai/reports`를 폴링하다가 `UPLOADING`·`ANALYZING`인 리포트가 없으면 멈춥니다. 사용자 ID만으로 묻는 조회라 앱이 재시작돼 객체 키·리포트 ID를 잃어도 폴링을 이어갈 수 있습니다 — 그래서 row를 업로드 완료가 아니라 **발급 시점**에 만듭니다.
 
-소유자 식별은 객체 키 경로에 인코딩되어 있습니다 — `videos/training/{userId}/{UUID}.{확장자}` 구조는 `media/domain/MediaObjectKey`가 단일 소유하고, 경로 범위 `training`은 `ai/domain/AiVideo`가 정합니다. 리포트의 소유자는 발급 시 row에 기록한 `userId`가 원천입니다.
+소유자 식별은 객체 키 경로에 인코딩되어 있습니다 — `videos/training/{userId}/{UUID}.{확장자}` 구조는 `media/domain/MediaObjectKey`가 단일 소유하고, 경로 범위 `training`은 `analysis/domain/AiVideo`가 정합니다. 리포트의 소유자는 발급 시 row에 기록한 `userId`가 원천입니다.
 
 ## 설계 결정과 함정
 
@@ -64,16 +64,16 @@ VideoUploadSubscriber                       (ai/adapter/consumer — streaming p
 
 ## Gemini 연동 (플랜 생성)
 
-- 다른 모듈은 `ai/application/provided`의 `AiContentGenerator`로 시스템 프롬프트, 사용자 프롬프트, 응답 JSON 스키마를 전달합니다. `GeminiContentGenerator`가 스키마를 `responseJsonSchema`로, 시스템 프롬프트를 `systemInstruction`으로 넣어 `generateContent`를 호출합니다. 생성된 내용은 문자열로 반환하며 업무별 결과 해석과 검증은 호출 모듈이 담당합니다. (호출 예시: `plan/adapter/integration/AiPlanGenerationAdapter`)
+- 다른 모듈은 `llm/application/provided`의 `AiContentGenerator`로 시스템 프롬프트, 사용자 프롬프트, 응답 JSON 스키마를 전달합니다. `GeminiContentGenerator`가 스키마를 `responseJsonSchema`로, 시스템 프롬프트를 `systemInstruction`으로 넣어 `generateContent`를 호출합니다. 생성된 내용은 문자열로 반환하며 업무별 결과 해석과 검증은 호출 모듈이 담당합니다. (호출 예시: `training/adapter/integration/AiPlanGenerationAdapter`)
 - JSON 문법이 잘못되거나 객체가 아닌 스키마는 외부 호출 전에 거절합니다. 통신 오류, `candidates` 없음, 비정상 종료(`SAFETY` 등), `MAX_TOKENS` 잘림, 빈 응답은 원인을 보존한 `AiContentGenerationFailedException`으로 변환하며 오류 코드는 `AI_CONTENT_GENERATION_FAILED`(502)입니다. 로컬 스키마 오류는 내부 오류(500)로 처리합니다.
-- **영상 분석과 같은 `meongcoach.ai.gemini` 설정(모델·타임아웃·토큰 상한·temperature·사고 수준)을 함께 씁니다.** 용도별로 모델을 달리할 필요가 생기면 그때 설정을 나눕니다. `video-fps`는 영상 분석에만 쓰입니다.
-- Gemini `Client`는 `GeminiClientConfiguration`이 빈으로 한 번 만들어 `GeminiVideoAnalyzer`와 `GeminiContentGenerator`가 공유합니다. 응답의 `candidates`·종료 사유·빈 텍스트 검증은 `GeminiResponses`에 모여 있고, 두 어댑터가 각자의 도메인 예외(`VideoAnalysisFailedException`·`AiContentGenerationFailedException`)로 번역합니다.
+- **영상 분석과 같은 `meongcoach.llm.gemini` 설정(모델·타임아웃·토큰 상한·temperature·사고 수준)을 함께 씁니다.** 용도별로 모델을 달리할 필요가 생기면 그때 설정을 나눕니다. `video-fps`는 영상 분석에만 쓰입니다.
+- Gemini `Client`는 `GeminiClientConfiguration`이 빈으로 한 번 만들어 `GeminiVideoAnalyzer`와 `GeminiContentGenerator`가 공유합니다. 응답의 `candidates`·종료 사유·빈 텍스트 검증은 `GeminiResponses`에 모여 있고, 두 어댑터가 각자의 도메인 예외(`VideoAnalysisFailedException`·`AiContentGenerationFailedException`)로 번역합니다. 이 셋은 `llm/adapter/integration`에 있고, 이 패키지를 named interface `gemini`로 공개해 `analysis`의 `GeminiVideoAnalyzer`가 `GeminiProperties`와 `GeminiResponses`를 그대로 씁니다.
 
 ## 프롬프트 템플릿 (src/main/resources/prompts/)
 
 `{video-analysis,plan-generation}/{system.md, user.md, schema.json}`과 두 기능이 함께 참조하는 조각 `behavior-analysis/*.md` 구조입니다.
 
-- `ai/application/provided`의 `PromptTemplateLoader`가 기동 시점에 읽어 검증합니다 — 파일이 없거나 비어 있으면 **애플리케이션이 기동하지 않습니다.** 다른 모듈도 이 로더로 프롬프트를 읽습니다. (호출 예시: `plan/adapter/integration/AiPlanGenerationAdapter`)
+- `llm/application/provided`의 `PromptTemplateLoader`가 기동 시점에 읽어 검증합니다 — 파일이 없거나 비어 있으면 **애플리케이션이 기동하지 않습니다.** 다른 모듈도 이 로더로 프롬프트를 읽습니다. (호출 예시: `training/adapter/integration/AiPlanGenerationAdapter`)
 - 템플릿의 `{{include:behavior-analysis/이름}}`은 `prompts/behavior-analysis/이름.md`의 내용으로 바뀝니다. 조각 안에는 include를 쓸 수 없고, 풀리지 않은 지시문이 남으면 기동하지 않습니다. include는 기동 시점에 템플릿에만 적용되므로 사용자 입력에 같은 문자열이 있어도 풀리지 않습니다.
 - **`behavior-analysis/` 조각(안전 원칙, 행동 기능 후보, 문제 우선순위, 교육 매핑)을 고치면 영상 분석과 플랜 생성 프롬프트가 함께 바뀝니다.** 영상 분석 프롬프트는 조각을 합친 결과가 PoC 검증 문구와 같아야 하므로, 조각 수정도 PoC에서 새 세트로 검증한 뒤 옮깁니다. 한 기능에만 필요한 문장은 조각이 아니라 그 기능의 템플릿에 씁니다.
 - 플랜 생성도 영상 분석처럼 내부 근거 필드(`interpretation`, `decision`)를 먼저 채우게 하고, 기대사항과 함께 info 로그(`플랜 생성 근거:`)에 남깁니다. 근거 필드는 플랜에 저장하지 않습니다.
@@ -81,6 +81,6 @@ VideoUploadSubscriber                       (ai/adapter/consumer — streaming p
 
 ## 필요 설정
 
-`application.yml`의 `meongcoach.google-cloud`(서비스 계정), `meongcoach.storage.gcs`(버킷), `meongcoach.ai.pubsub`(구독), `meongcoach.ai.gemini`(모델) 블록이 원천이며, 각 항목의 이유는 해당 yml 주석에 있습니다. 배포 Secrets 주입은 [cd-dev.yml](../.github/workflows/cd-dev.yml)·[cd-prod.yml](../.github/workflows/cd-prod.yml)이 원천입니다.
+`application.yml`의 `meongcoach.google-cloud`(서비스 계정), `meongcoach.storage.gcs`(버킷), `meongcoach.analysis.pubsub`(구독), `meongcoach.llm.gemini`(모델) 블록이 원천이며, 각 항목의 이유는 해당 yml 주석에 있습니다. 배포 Secrets 주입은 [cd-dev.yml](../.github/workflows/cd-dev.yml)·[cd-prod.yml](../.github/workflows/cd-prod.yml)이 원천입니다.
 
 Google Cloud 쪽에는 프로젝트(dev·prod 분리)마다 버킷, Pub/Sub 토픽과 pull 구독, 버킷 알림(`OBJECT_FINALIZE`, 접두사 `videos/training/`), 서비스 계정(버킷 `storage.objectAdmin`·구독 `pubsub.subscriber`·프로젝트 `serviceusage.serviceUsageConsumer`), Gemini 서비스 에이전트의 버킷 `storage.objectViewer`, Generative Language API로 제한한 API 키가 있어야 합니다.

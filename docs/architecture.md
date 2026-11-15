@@ -13,14 +13,15 @@ com.daesabu.meongcoach
 ├── auth         ← 소셜/이메일 로그인·JWT·리프레시 토큰·자격증명(소셜·로컬 계정)
 ├── user         ← 회원 역할·상태·프로필
 ├── dog          ← 반려견 프로필
-├── training     ← 훈련 콘텐츠와 사용자별 진행
-├── ai           ← AI 영상 분석 리포트·AI 콘텐츠 생성 (Pub/Sub 컨슈머, Gemini 연동)
+├── training     ← 훈련 콘텐츠와 사용자별 진행, 훈련 플랜
+├── analysis     ← AI 영상 행동 분석 리포트·무료 체험 횟수 (Pub/Sub 컨슈머, Gemini 영상 분석)
+├── llm          ← AI 콘텐츠 생성·프롬프트 로딩 (Gemini 연동). analysis·training이 사용
 ├── media        ← 이미지·영상 업로드 URL 발급 (R2/GCS)
 ├── onboarding   ← 온보딩 흐름 조합
 ├── entitlement  ← 이용권 동기화. RevenueCat 활성 이용권의 사본을 둠
 ├── community    ← 게시글·댓글. 훈련 카드 등 다른 모듈의 대상을 멘션할 수 있고, 댓글 알림을 notification에 요청
 ├── graduation   ← 토픽 수료(실습 인증) 제출·조회. 수료 사실의 유일한 출처
-├── home         ← 홈 화면 조합. 「바로 훈련해볼까요?」 토픽 추천 (training·plan·dog 조합)
+├── home         ← 홈 화면 조합. 「바로 훈련해볼까요?」 토픽 추천 (training 조합)
 ├── support      ← 채널톡 상담 세션·웹훅·답변 선별. notification의 공개 발송 API를 호출
 ├── notification ← 푸시 알림 FID·시각별 수신 설정·FCM 발송
 ├── alert        ← 개발자 모니터링용 Slack 알림. 각 모듈이 Alerter로 호출
@@ -61,7 +62,7 @@ com.daesabu.meongcoach
 
 | 계층 | 책임 | 내용 |
 |---|---|---|
-| `adapter` | 외부 세계와의 연결 | `webapi/` — 컨트롤러, 웹 요청/응답 DTO. `integration/` — 외부 API 호출 구현과 응답 DTO. `security/` — Spring Security 연동 지점. `consumer/` — 메시지 큐 컨슈머(예: `ai/adapter/consumer/VideoUploadPubSubConsumer`). 기술 의존은 여기에만 둔다 |
+| `adapter` | 외부 세계와의 연결 | `webapi/` — 컨트롤러, 웹 요청/응답 DTO. `integration/` — 외부 API 호출 구현과 응답 DTO. `security/` — Spring Security 연동 지점. `consumer/` — 메시지 큐 컨슈머(예: `analysis/adapter/consumer/VideoUploadPubSubConsumer`). 기술 의존은 여기에만 둔다 |
 | `application` | 유스케이스 | `provided/` — 모듈이 외부에 공개하는 인터페이스, `required/` — 모듈이 필요로 하는 자원 인터페이스(리포지토리, 메일 등), 그리고 이를 구현·사용하는 서비스 |
 | `domain` | 도메인 모델·로직 | 엔티티(`User`), 일급 컬렉션(`Dogs` — 엔티티 하나로 판단할 수 없는 사용자 단위 규칙), 값 객체(`RefreshTokenId`), 예외(`exception/`), 도메인 입력 모델(`~Command`) |
 

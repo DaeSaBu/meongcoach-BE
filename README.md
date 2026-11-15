@@ -131,23 +131,29 @@ AI 분석은 수십 초가 걸리므로 요청-응답이 아니라 GCS 업로드
 
 #### training — 훈련 콘텐츠와 사용자별 진행
 
-- **책임**: 카테고리·토픽·커리큘럼·레슨·카드로 구성된 훈련 카탈로그, 사용자의 토픽 선택과 레슨별 완료 횟수, 이 진행으로 계산하는 커리큘럼·토픽 완료 판단
-- **역할**: `TrainingCategoryFinder`, `TopicFinder`, `TopicSelector`, `CurriculumFinder`, `LessonFinder`, `LessonCompleter`, `TopicCompletionChecker`
-- **협력**: 카테고리는 열람에 필요한 이용권 종류를 `entitlement`의 `EntitlementType`으로 표현하고, 유료 콘텐츠를 조회·완료할 때 `entitlement`의 `EntitlementChecker`로 이용권을 확인합니다. `graduation`이 토픽 완료 판단과 토픽 조회에, `ai`가 토픽 목록 조회에, `community`가 레슨 멘션 조회에 사용합니다.
+- **책임**: 카테고리·토픽·커리큘럼·레슨·카드로 구성된 훈련 카탈로그, 사용자의 토픽 선택과 레슨별 완료 횟수, 이 진행으로 계산하는 커리큘럼·토픽 완료 판단, 반려견별 훈련 플랜(직접 구성·AI 구성)과 플랜 안에서의 진행·회고
+- **역할**: `TrainingCategoryFinder`, `TopicFinder`, `TopicSelector`, `CurriculumFinder`, `LessonFinder`, `LessonCompleter`, `TopicCompletionChecker`, `PlanRegister`, `CurrentPlanFinder`, `PlanLessonCompleter`
+- **협력**: 카테고리는 열람에 필요한 이용권 종류를 `entitlement`의 `EntitlementType`으로 표현하고, 유료 콘텐츠를 조회·완료할 때 `entitlement`의 `EntitlementChecker`로 이용권을 확인합니다. 플랜을 만들 때 `dog`의 `DogProfileFinder`로 반려견을 확인하고, AI 플랜 구성은 `llm`의 `AiContentGenerator`에 Gemini 호출을 맡깁니다. `graduation`이 토픽 완료 판단과 토픽 조회에, `analysis`가 토픽 목록 조회에, `community`가 레슨 멘션 조회에, `home`이 토픽 진행과 활성 플랜 조회에 사용합니다.
 
 애그리거트와 완료 조건은 [docs/training.md](docs/training.md)에 있습니다.
 
-#### ai — AI 행동 분석
+#### analysis — AI 행동 분석
 
-- **책임**: 영상 업로드 URL 발급과 리포트 생성, 비동기 분석 파이프라인, 리포트 상태(업로드 중·분석 중·완료·실패) 관리, 사용자별 무료 체험 횟수(부여·사용) 관리, 다른 모듈이 쓰는 AI 콘텐츠 생성
-- **역할**: `AiVideoUploadUrlIssuer`, `AiReportGenerator`, `AiReportFinder`, `AiTrialFinder`, `AiContentGenerator`
-- **협력**: 업로드·다운로드 presigned URL은 `media`에 요청합니다. 분석할 때는 `training`의 `TopicFinder`로 토픽 목록을 받아 AI가 추천할 수 있는 훈련 후보로 넘깁니다. 외부로는 Pub/Sub에서 업로드 이벤트를 받고(`VideoUploadPubSubConsumer`), Gemini로 영상 분석과 제목 생성을 요청합니다. `plan`이 AI 플랜 구성을 만들 때 `AiContentGenerator`로 Gemini 호출을 위임받습니다.
+- **책임**: 영상 업로드 URL 발급과 리포트 생성, 비동기 분석 파이프라인, 리포트 상태(업로드 중·분석 중·완료·실패) 관리, 사용자별 무료 체험 횟수(부여·사용) 관리
+- **역할**: `AiVideoUploadUrlIssuer`, `AiReportGenerator`, `AiReportFinder`, `AiTrialFinder`
+- **협력**: 업로드·다운로드 presigned URL은 `media`에 요청합니다. 분석할 때는 `training`의 `TopicFinder`로 토픽 목록을 받아 AI가 추천할 수 있는 훈련 후보로 넘깁니다. 외부로는 Pub/Sub에서 업로드 이벤트를 받고(`VideoUploadPubSubConsumer`), Gemini로 영상 분석과 제목 생성을 요청하며, Gemini 클라이언트·설정과 프롬프트 로딩은 `llm`의 것을 씁니다.
+
+#### llm — AI 콘텐츠 생성
+
+- **책임**: Gemini 클라이언트와 설정, 시스템·사용자 프롬프트와 응답 스키마를 받아 내용을 생성하는 범용 호출, 프롬프트 템플릿 로딩
+- **역할**: `AiContentGenerator`, `PromptTemplateLoader`. Gemini 설정·응답 검증(`GeminiProperties`, `GeminiResponses`)은 named interface `gemini`로 공개합니다.
+- **협력**: 다른 모듈을 호출하지 않습니다. `training`이 AI 플랜 구성에, `analysis`가 영상 분석에 사용합니다.
 
 #### media — 파일 저장소
 
 - **책임**: 공개(R2)·비공개(GCS) 스토리지의 presigned URL 발급, 객체 키 구조와 소유권, 클라이언트가 보낸 미디어 URL·객체 키가 본인이 올린 것인지 확인
 - **역할**: `MediaUploadUrlIssuer`, `MediaDownloadUrlIssuer`, `StoredMediaVerifier`
-- **협력**: 다른 모듈을 호출하지 않고, `ai`·`graduation`·`community`·`onboarding`·`dog`가 사용합니다. 경로 범위·크기 상한 같은 용도별 규칙은 각 모듈이 `MediaScope`로 정해 넘기고, media는 스토리지 세부 사항만 가둡니다.
+- **협력**: 다른 모듈을 호출하지 않고, `analysis`·`graduation`·`community`·`onboarding`·`dog`가 사용합니다. 경로 범위·크기 상한 같은 용도별 규칙은 각 모듈이 `MediaScope`로 정해 넘기고, media는 스토리지 세부 사항만 가둡니다.
 
 #### onboarding — 온보딩 조합
 

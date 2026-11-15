@@ -3,7 +3,7 @@ package com.daesabu.meongcoach.support;
 import com.daesabu.meongcoach.alert.application.required.AlertSender;
 import com.daesabu.meongcoach.entitlement.application.required.ActiveEntitlementReader;
 import com.daesabu.meongcoach.notification.application.required.NotificationSender;
-import com.daesabu.meongcoach.plan.application.required.AiPlanGenerator;
+import com.daesabu.meongcoach.training.application.required.AiPlanGenerator;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
