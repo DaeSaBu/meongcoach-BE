@@ -7,5 +7,5 @@ public record CurriculumProgressRegisterCommand(
 		Long dogId,
 		Long curriculumId,
 		LocalDate trainedOn,
-		boolean succeeded) {
+		CurriculumProgressStatus status) {
 }

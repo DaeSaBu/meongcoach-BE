@@ -5,6 +5,8 @@ import static java.util.Objects.requireNonNull;
 import com.daesabu.meongcoach.shared.domain.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -42,8 +44,9 @@ public class CurriculumProgress extends BaseEntity {
 	@Column(nullable = false)
 	private LocalDate trainedOn;
 
-	@Column(nullable = false)
-	private boolean succeeded;
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false, length = 20)
+	private CurriculumProgressStatus status;
 
 	public static CurriculumProgress register(CurriculumProgressRegisterCommand command) {
 		CurriculumProgress curriculumProgress = new CurriculumProgress();
@@ -52,12 +55,12 @@ public class CurriculumProgress extends BaseEntity {
 		curriculumProgress.dogId = requireNonNull(command.dogId());
 		curriculumProgress.curriculumId = requireNonNull(command.curriculumId());
 		curriculumProgress.trainedOn = requireNonNull(command.trainedOn());
-		curriculumProgress.succeeded = command.succeeded();
+		curriculumProgress.status = requireNonNull(command.status());
 
 		return curriculumProgress;
 	}
 
 	public void succeed() {
-		succeeded = true;
+		status = CurriculumProgressStatus.SUCCEEDED;
 	}
 }

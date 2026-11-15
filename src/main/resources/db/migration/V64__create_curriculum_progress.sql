@@ -4,7 +4,7 @@ CREATE TABLE "curriculum_progress" (
     "dog_id" BIGINT NOT NULL,
     "curriculum_id" BIGINT NOT NULL,
     "trained_on" DATE NOT NULL,
-    "succeeded" BOOLEAN NOT NULL,
+    "status" VARCHAR(20) NOT NULL,
     "created_at" TIMESTAMP NOT NULL,
     "updated_at" TIMESTAMP NOT NULL,
     CONSTRAINT "uk_curriculum_progress_user_dog_curriculum_trained_on"
