@@ -8,6 +8,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -24,4 +25,24 @@ public class PostLike extends BaseEntity {
 	private Long postId;
 	@Column(nullable = false)
 	private Long userId;
+	private LocalDateTime deletedAt;
+
+	private PostLike(Long postId, Long userId) {
+		this.postId = postId;
+		this.userId = userId;
+	}
+
+	public static PostLike register(Long postId, Long userId) {
+		return new PostLike(postId, userId);
+	}
+
+	public void unlike() {
+		if (deletedAt == null) {
+			deletedAt = LocalDateTime.now();
+		}
+	}
+
+	public void relike() {
+		deletedAt = null;
+	}
 }

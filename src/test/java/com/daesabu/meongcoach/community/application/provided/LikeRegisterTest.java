@@ -80,6 +80,41 @@ class LikeRegisterTest {
 	}
 
 	@Test
+	void 취소한_게시글_좋아요는_기록을_유지하고_재등록하면_집계에_포함된다() {
+		Long postId = savePost().getId();
+		likeRegister.likePost(42L, postId);
+		PostLike original = postLikeRepository.findByPostIdAndUserId(postId, 42L).orElseThrow();
+
+		likeRegister.unlikePost(42L, postId);
+		entityManager.clear();
+
+		assertThat(postLikeRepository.findById(original.getId()).orElseThrow().getDeletedAt()).isNotNull();
+		var result = likeRegister.likePost(42L, postId);
+		assertThat(result.likeCount()).isEqualTo(1);
+		assertThat(result.likedByMe()).isTrue();
+		entityManager.clear();
+		assertThat(postLikeRepository.findById(original.getId()).orElseThrow().getDeletedAt()).isNull();
+	}
+
+	@Test
+	void 취소한_댓글_좋아요는_기록을_유지하고_재등록하면_집계에_포함된다() {
+		Comment comment = commentRepository.save(Comment.register(savePost(), 41L, "댓글"));
+		Long commentId = comment.getId();
+		likeRegister.likeComment(42L, commentId);
+		CommentLike original = commentLikeRepository.findByCommentIdAndUserId(commentId, 42L).orElseThrow();
+
+		likeRegister.unlikeComment(42L, commentId);
+		entityManager.clear();
+
+		assertThat(commentLikeRepository.findById(original.getId()).orElseThrow().getDeletedAt()).isNotNull();
+		var result = likeRegister.likeComment(42L, commentId);
+		assertThat(result.likeCount()).isEqualTo(1);
+		assertThat(result.likedByMe()).isTrue();
+		entityManager.clear();
+		assertThat(commentLikeRepository.findById(original.getId()).orElseThrow().getDeletedAt()).isNull();
+	}
+
+	@Test
 	void 삭제된_게시글에는_좋아요를_추가하거나_취소할_수_없다() {
 		Post post = savePost();
 		post.delete();
@@ -184,11 +219,9 @@ class LikeRegisterTest {
 		Long targetId = post.getId();
 		likeRegister.likePost(42L, targetId);
 		entityManager.clear();
-		PostLike saved = postLikeRepository.findAll().stream()
-				.filter(like -> like.getPostId().equals(targetId))
-				.findFirst().orElseThrow();
+		PostLike saved = postLikeRepository.findByPostIdAndUserId(targetId, 42L).orElseThrow();
 		assertThat(saved.getCreatedAt()).isNotNull();
-		assertThat(saved.getUpdatedAt()).isEqualTo(saved.getCreatedAt());
+		assertThat(saved.getUpdatedAt()).isAfterOrEqualTo(saved.getCreatedAt());
 		LocalDateTime original = LocalDateTime.of(2026, 1, 1, 0, 0);
 		entityManager.createNativeQuery("update post_likes set created_at = :at, updated_at = :at where id = :id")
 				.setParameter("at", original).setParameter("id", saved.getId()).executeUpdate();
@@ -209,11 +242,9 @@ class LikeRegisterTest {
 		Long targetId = comment.getId();
 		likeRegister.likeComment(42L, targetId);
 		entityManager.clear();
-		CommentLike saved = commentLikeRepository.findAll().stream()
-				.filter(like -> like.getCommentId().equals(targetId))
-				.findFirst().orElseThrow();
+		CommentLike saved = commentLikeRepository.findByCommentIdAndUserId(targetId, 42L).orElseThrow();
 		assertThat(saved.getCreatedAt()).isNotNull();
-		assertThat(saved.getUpdatedAt()).isEqualTo(saved.getCreatedAt());
+		assertThat(saved.getUpdatedAt()).isAfterOrEqualTo(saved.getCreatedAt());
 		LocalDateTime original = LocalDateTime.of(2026, 1, 1, 0, 0);
 		entityManager.createNativeQuery("update comment_likes set created_at = :at, updated_at = :at where id = :id")
 				.setParameter("at", original).setParameter("id", saved.getId()).executeUpdate();

@@ -49,6 +49,13 @@ public class PostQueryService implements PostFinder {
 	}
 
 	@Override
+	@Transactional
+	public Post findPostForUpdate(Long postId) {
+		return postRepository.findLockedByIdAndDeletedAtIsNull(postId)
+				.orElseThrow(() -> new PostNotFoundException(postId));
+	}
+
+	@Override
 	public Post findPost(Long postId) {
 		return postRepository.findByIdAndDeletedAtIsNull(postId)
 				.orElseThrow(() -> new PostNotFoundException(postId));
