@@ -45,10 +45,7 @@ public class LikeModifyService implements LikeRegister {
 	@Transactional
 	public LikeSummary unlikePost(Long userId, Long postId) {
 		postFinder.findPostForUpdate(postId);
-		PostLike like = postLikeRepository.findByPostIdAndUserId(postId, userId).orElse(null);
-		if (like != null) {
-			like.unlike();
-		}
+		postLikeRepository.findByPostIdAndUserId(postId, userId).ifPresent(PostLike::unlike);
 		Map<Long, LikeSummary> likes = likeFinder.findPostLikes(userId, List.of(postId));
 		return likes.get(postId);
 	}
@@ -68,10 +65,7 @@ public class LikeModifyService implements LikeRegister {
 	@Transactional
 	public LikeSummary unlikeComment(Long userId, Long commentId) {
 		commentFinder.findCommentForUpdate(commentId);
-		CommentLike like = commentLikeRepository.findByCommentIdAndUserId(commentId, userId).orElse(null);
-		if (like != null) {
-			like.unlike();
-		}
+		commentLikeRepository.findByCommentIdAndUserId(commentId, userId).ifPresent(CommentLike::unlike);
 		Map<Long, LikeSummary> likes = likeFinder.findCommentLikes(userId, List.of(commentId));
 		return likes.get(commentId);
 	}
