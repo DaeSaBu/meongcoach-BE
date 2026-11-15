@@ -24,6 +24,17 @@ class CurriculumProgressTest {
 	}
 
 	@Test
+	void 판정을_기다리는_날을_성공으로_바꾼다() {
+		CurriculumProgressRegisterCommand command = new CurriculumProgressRegisterCommand(1L, 2L, 10L, TRAINED_ON,
+				CurriculumProgressStatus.PENDING);
+		CurriculumProgress progress = CurriculumProgress.register(command);
+
+		progress.succeed();
+
+		assertThat(progress.getStatus()).isEqualTo(CurriculumProgressStatus.SUCCEEDED);
+	}
+
+	@Test
 	void 실패한_날을_성공으로_바꾼다() {
 		CurriculumProgressRegisterCommand command = new CurriculumProgressRegisterCommand(1L, 2L, 10L, TRAINED_ON,
 				CurriculumProgressStatus.FAILED);
