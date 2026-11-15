@@ -119,6 +119,8 @@ meongcoach:
     internal-secret: ${NOTIFICATION_INTERNAL_SECRET}
     comment:
       enabled: true
+    like:
+      enabled: true
   channel-talk:
     # 채널톡 데스크에 등록한 웹훅 주소(/webhooks/channel-talk/support-replies?token=...)의 token 값. 미주입 시 구버전 웹훅 인증을 거절한다
     webhook-token: ${CHANNEL_TALK_WEBHOOK_TOKEN:}

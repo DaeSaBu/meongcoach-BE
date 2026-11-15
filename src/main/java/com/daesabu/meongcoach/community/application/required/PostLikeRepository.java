@@ -14,7 +14,7 @@ public interface PostLikeRepository extends JpaRepository<PostLike, Long> {
 			values (:targetId, :userId, :now, :now)
 			on conflict (post_id, user_id) do nothing
 			""", nativeQuery = true)
-	void insertIfAbsent(Long targetId, Long userId, LocalDateTime now);
+	int insertIfAbsent(Long targetId, Long userId, LocalDateTime now);
 
 	@Modifying
 	@Query("delete from PostLike l where l.postId = :targetId and l.userId = :userId")

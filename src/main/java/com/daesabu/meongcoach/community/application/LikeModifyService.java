@@ -6,11 +6,15 @@ import com.daesabu.meongcoach.community.application.provided.LikeRegister;
 import com.daesabu.meongcoach.community.application.provided.PostFinder;
 import com.daesabu.meongcoach.community.application.required.CommentLikeRepository;
 import com.daesabu.meongcoach.community.application.required.PostLikeRepository;
+import com.daesabu.meongcoach.community.domain.Comment;
+import com.daesabu.meongcoach.community.domain.LikeRegisteredEvent;
 import com.daesabu.meongcoach.community.domain.LikeSummary;
+import com.daesabu.meongcoach.community.domain.Post;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class LikeModifyService implements LikeRegister {
+	private final ApplicationEventPublisher eventPublisher;
 	private final PostFinder postFinder;
 	private final CommentFinder commentFinder;
 	private final LikeFinder likeFinder;
@@ -27,8 +32,11 @@ public class LikeModifyService implements LikeRegister {
 	@Override
 	@Transactional
 	public LikeSummary likePost(Long userId, Long postId) {
-		postFinder.findPost(postId);
-		postLikeRepository.insertIfAbsent(postId, userId, LocalDateTime.now());
+		Post post = postFinder.findPost(postId);
+		int inserted = postLikeRepository.insertIfAbsent(postId, userId, LocalDateTime.now());
+		if (inserted > 0) {
+			eventPublisher.publishEvent(new LikeRegisteredEvent(postId, post.getUserId(), userId, "게시글"));
+		}
 		Map<Long, LikeSummary> likes = likeFinder.findPostLikes(userId, List.of(postId));
 		return likes.get(postId);
 	}
@@ -45,8 +53,11 @@ public class LikeModifyService implements LikeRegister {
 	@Override
 	@Transactional
 	public LikeSummary likeComment(Long userId, Long commentId) {
-		commentFinder.findComment(commentId);
-		commentLikeRepository.insertIfAbsent(commentId, userId, LocalDateTime.now());
+		Comment comment = commentFinder.findComment(commentId);
+		int inserted = commentLikeRepository.insertIfAbsent(commentId, userId, LocalDateTime.now());
+		if (inserted > 0) {
+			eventPublisher.publishEvent(new LikeRegisteredEvent(comment.getPost().getId(), comment.getUserId(), userId, "댓글"));
+		}
 		Map<Long, LikeSummary> likes = likeFinder.findCommentLikes(userId, List.of(commentId));
 		return likes.get(commentId);
 	}
