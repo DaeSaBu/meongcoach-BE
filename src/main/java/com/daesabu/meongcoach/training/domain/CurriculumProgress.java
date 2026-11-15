@@ -1,6 +1,7 @@
 package com.daesabu.meongcoach.training.domain;
 
 import static java.util.Objects.requireNonNull;
+import static org.springframework.util.Assert.state;
 
 import com.daesabu.meongcoach.shared.domain.BaseEntity;
 import jakarta.persistence.Column;
@@ -65,9 +66,8 @@ public class CurriculumProgress extends BaseEntity {
 	}
 
 	public void fail() {
-		if (status == CurriculumProgressStatus.SUCCEEDED) {
-			return;
-		}
+		state(status != CurriculumProgressStatus.SUCCEEDED, "성공한 날은 실패로 바꿀 수 없습니다.");
+
 		status = CurriculumProgressStatus.FAILED;
 	}
 }
