@@ -63,4 +63,11 @@ public class CurriculumProgress extends BaseEntity {
 	public void succeed() {
 		status = CurriculumProgressStatus.SUCCEEDED;
 	}
+
+	public void fail() {
+		if (status == CurriculumProgressStatus.SUCCEEDED) {
+			return;
+		}
+		status = CurriculumProgressStatus.FAILED;
+	}
 }
