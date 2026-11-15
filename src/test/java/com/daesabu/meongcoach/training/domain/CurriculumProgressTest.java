@@ -1,6 +1,7 @@
 package com.daesabu.meongcoach.training.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.LocalDate;
 import org.junit.jupiter.api.Test;
@@ -65,13 +66,14 @@ class CurriculumProgressTest {
 	}
 
 	@Test
-	void 성공한_날은_실패_판정이_와도_성공으로_남는다() {
+	void 성공한_날은_실패로_바꿀_수_없다() {
 		CurriculumProgressRegisterCommand command = new CurriculumProgressRegisterCommand(1L, 2L, 10L, TRAINED_DATE);
 		CurriculumProgress progress = CurriculumProgress.register(command);
 		progress.succeed();
 
-		progress.fail();
-
+		assertThatThrownBy(progress::fail)
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessage("성공한 날은 실패로 바꿀 수 없습니다.");
 		assertThat(progress.getStatus()).isEqualTo(CurriculumProgressStatus.SUCCEEDED);
 	}
 }
