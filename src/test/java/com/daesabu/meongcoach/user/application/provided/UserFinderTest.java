@@ -6,11 +6,13 @@ import com.daesabu.meongcoach.support.ApplicationTest;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.User;
 import com.daesabu.meongcoach.user.domain.UserProfileCreateCommand;
+import com.daesabu.meongcoach.user.domain.UserRole;
 import jakarta.persistence.EntityManager;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ApplicationTest
 class UserFinderTest {
@@ -89,6 +91,21 @@ class UserFinderTest {
 
 		assertThat(activeIds).isEmpty();
 	}
+
+    @Test
+    void 활성_ADMIN과_EXPERT의_ID만_반환한다() {
+        User admin = userRepository.save(User.registerUser());
+        User expert = userRepository.save(User.registerUser());
+        User withdrawn = userRepository.save(User.registerUser());
+        userRepository.save(User.registerUser());
+        ReflectionTestUtils.setField(admin, "role", UserRole.ADMIN);
+        ReflectionTestUtils.setField(expert, "role", UserRole.EXPERT);
+        ReflectionTestUtils.setField(withdrawn, "role", UserRole.EXPERT);
+        withdrawn.withdraw();
+        flushAndClear();
+
+        assertThat(userFinder.findActiveOperatorIds()).containsExactlyInAnyOrder(admin.getId(), expert.getId());
+    }
 
 	private User saveUserWithProfile(String nickname, String profileImageUrl) {
 		User user = User.registerUser();

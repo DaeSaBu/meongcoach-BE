@@ -111,6 +111,8 @@ public class SecurityConfig {
 					auth.requestMatchers(HttpMethod.GET, MY_INFO_PATH)
 							.hasAnyRole(AuthorityRole.USER.name(), AuthorityRole.ONBOARDING_USER.name(),
 									AuthorityRole.EXPERT.name(), AuthorityRole.ADMIN.name());
+					auth.requestMatchers(HttpMethod.GET, "/api/support/conversations", "/api/support/conversations/")
+							.hasAnyRole(AuthorityRole.ADMIN.name(), AuthorityRole.EXPERT.name());
 					auth.anyRequest().hasAnyRole(AuthorityRole.USER.name(), AuthorityRole.EXPERT.name(),
 							AuthorityRole.ADMIN.name());
 				})

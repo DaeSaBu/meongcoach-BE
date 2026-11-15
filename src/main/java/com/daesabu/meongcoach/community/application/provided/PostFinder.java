@@ -16,9 +16,9 @@ public interface PostFinder {
 	 * lessonId가 있으면 그 레슨을 멘션한 게시글만 반환한다.
 	 * 다음 페이지가 있으면 nextCursor에 마지막 게시글 ID가 담기고, 없으면 null이다.
 	 * 각 게시글에는 작성자 프로필 요약과 멘션 대상 요약이 함께 담기고, 게시글의 미디어는 등록 순서대로 조회된다.
-	 * 프로필이 없는 작성자는 author가 null이고, 멘션이 없거나 멘션 대상이 없으면 mentionTarget이 null이다.
+	 * 좋아요 수와 userId 사용자의 좋아요 여부를 포함한다. 프로필이 없는 작성자는 author가 null이고, 멘션이 없거나 멘션 대상이 없으면 mentionTarget이 null이다.
 	 */
-	PostListResult findPosts(@Valid PostListRequest request);
+	PostListResult findPosts(Long userId, @Valid PostListRequest request);
 
 	/**
 	 * 게시글 하나를 id로 조회한다. 없거나 삭제됐으면 PostNotFoundException을 던진다.
@@ -32,8 +32,8 @@ public interface PostFinder {
 
 	/**
 	 * 게시글 하나를 작성자 프로필 요약, 멘션 대상 요약과 함께 반환하며, 게시글의 미디어는 등록 순서대로 조회된다.
-	 * 프로필이 없는 작성자는 author가 null이고, 멘션이 없거나 멘션 대상이 없으면 mentionTarget이 null이다.
+	 * 좋아요 수와 userId 사용자의 좋아요 여부를 포함한다. 프로필이 없는 작성자는 author가 null이고, 멘션이 없거나 멘션 대상이 없으면 mentionTarget이 null이다.
 	 * 게시글이 없거나 삭제됐으면 PostNotFoundException을 던진다.
 	 */
-	PostResult findPostDetail(Long postId);
+	PostResult findPostDetail(Long userId, Long postId);
 }

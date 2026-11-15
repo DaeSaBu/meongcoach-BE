@@ -1,6 +1,7 @@
 package com.daesabu.meongcoach.community.application;
 
 import com.daesabu.meongcoach.community.application.provided.CommentFinder;
+import com.daesabu.meongcoach.community.application.provided.LikeFinder;
 import com.daesabu.meongcoach.community.application.provided.dto.AuthorResult;
 import com.daesabu.meongcoach.community.application.provided.dto.CommentListRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.CommentListResult;
@@ -13,6 +14,7 @@ import com.daesabu.meongcoach.community.application.required.CommentRepository;
 import com.daesabu.meongcoach.community.application.required.PostRepository;
 import com.daesabu.meongcoach.community.domain.Comment;
 import com.daesabu.meongcoach.community.domain.CommentClosure;
+import com.daesabu.meongcoach.community.domain.LikeSummary;
 import com.daesabu.meongcoach.community.domain.exception.CommentNotFoundException;
 import com.daesabu.meongcoach.community.domain.exception.PostNotFoundException;
 import java.util.List;
@@ -36,25 +38,32 @@ public class CommentQueryService implements CommentFinder {
 	private final CommentClosureRepository commentClosureRepository;
 	private final CommentQueryRepository commentQueryRepository;
 	private final AuthorProfiles authorProfiles;
+	private final LikeFinder likeFinder;
 
 	@Override
-	public CommentListResult findComments(Long postId, CommentListRequest request) {
+	public CommentListResult findComments(Long userId, Long postId, CommentListRequest request) {
 		validatePostExists(postId);
 		Slice<Comment> slice = commentQueryRepository.findRootComments(postId, request.cursor(), request.size());
 
-		List<CommentResult> comments = compose(slice.getContent());
+		List<CommentResult> comments = compose(userId, slice.getContent());
 		Long nextCursor = nextCursorOf(slice);
 		return new CommentListResult(comments, nextCursor);
 	}
 
 	@Override
-	public ReplyListResult findReplies(Long commentId, CommentListRequest request) {
+	public ReplyListResult findReplies(Long userId, Long commentId, CommentListRequest request) {
 		validateRootComment(commentId);
 		Slice<Comment> slice = commentQueryRepository.findReplies(commentId, request.cursor(), request.size());
 
-		List<ReplyResult> replies = composeReplies(slice.getContent());
+		List<ReplyResult> replies = composeReplies(userId, slice.getContent());
 		Long nextCursor = nextCursorOf(slice);
 		return new ReplyListResult(replies, nextCursor);
+	}
+
+	@Override
+	public Comment findComment(Long commentId) {
+		return commentRepository.findActiveById(commentId)
+				.orElseThrow(() -> new CommentNotFoundException(commentId));
 	}
 
 	@Override
@@ -77,19 +86,23 @@ public class CommentQueryService implements CommentFinder {
 		}
 	}
 
-	private List<CommentResult> compose(List<Comment> comments) {
+	private List<CommentResult> compose(Long userId, List<Comment> comments) {
 		Map<Long, AuthorResult> authors = findAuthors(comments);
+		List<Long> ids = comments.stream().map(Comment::getId).toList();
+		Map<Long, LikeSummary> likes = likeFinder.findCommentLikes(userId, ids);
 		Map<Long, Long> replyCounts = countReplies(comments);
 		return comments.stream()
 				.map(comment -> new CommentResult(comment, authors.get(comment.getUserId()),
-						replyCounts.getOrDefault(comment.getId(), 0L)))
+						replyCounts.getOrDefault(comment.getId(), 0L), likes.get(comment.getId()).likeCount(), likes.get(comment.getId()).likedByMe()))
 				.toList();
 	}
 
-	private List<ReplyResult> composeReplies(List<Comment> replies) {
+	private List<ReplyResult> composeReplies(Long userId, List<Comment> replies) {
 		Map<Long, AuthorResult> authors = findAuthors(replies);
+		List<Long> ids = replies.stream().map(Comment::getId).toList();
+		Map<Long, LikeSummary> likes = likeFinder.findCommentLikes(userId, ids);
 		return replies.stream()
-				.map(reply -> new ReplyResult(reply, authors.get(reply.getUserId())))
+				.map(reply -> new ReplyResult(reply, authors.get(reply.getUserId()), likes.get(reply.getId()).likeCount(), likes.get(reply.getId()).likedByMe()))
 				.toList();
 	}
 

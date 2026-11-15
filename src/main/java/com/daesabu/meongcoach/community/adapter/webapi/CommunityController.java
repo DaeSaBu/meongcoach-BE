@@ -4,6 +4,7 @@ import com.daesabu.meongcoach.community.adapter.webapi.dto.AuthorDogResponse;
 import com.daesabu.meongcoach.community.adapter.webapi.dto.CommentListResponse;
 import com.daesabu.meongcoach.community.adapter.webapi.dto.CommentRegisterResponse;
 import com.daesabu.meongcoach.community.adapter.webapi.dto.CommentUpdateResponse;
+import com.daesabu.meongcoach.community.adapter.webapi.dto.LikeResponse;
 import com.daesabu.meongcoach.community.adapter.webapi.dto.MyAuthorResponse;
 import com.daesabu.meongcoach.community.adapter.webapi.dto.PostListResponse;
 import com.daesabu.meongcoach.community.adapter.webapi.dto.PostMediaUploadUrlResponse;
@@ -14,6 +15,7 @@ import com.daesabu.meongcoach.community.adapter.webapi.dto.ReplyListResponse;
 import com.daesabu.meongcoach.community.application.provided.AuthorFinder;
 import com.daesabu.meongcoach.community.application.provided.CommentFinder;
 import com.daesabu.meongcoach.community.application.provided.CommentRegister;
+import com.daesabu.meongcoach.community.application.provided.LikeRegister;
 import com.daesabu.meongcoach.community.application.provided.PostFinder;
 import com.daesabu.meongcoach.community.application.provided.PostMediaUploadUrlIssuer;
 import com.daesabu.meongcoach.community.application.provided.PostRegister;
@@ -31,6 +33,7 @@ import com.daesabu.meongcoach.community.application.provided.dto.PostResult;
 import com.daesabu.meongcoach.community.application.provided.dto.PostUpdateRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.ReplyListResult;
 import com.daesabu.meongcoach.community.domain.Comment;
+import com.daesabu.meongcoach.community.domain.LikeSummary;
 import com.daesabu.meongcoach.community.domain.Post;
 import com.daesabu.meongcoach.media.application.provided.dto.MediaUploadUrlResult;
 import com.daesabu.meongcoach.shared.security.CurrentUserId;
@@ -55,6 +58,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class CommunityController {
 
 	private final PostFinder postFinder;
+	private final LikeRegister likeRegister;
 	private final PostRegister postRegister;
 	private final CommentRegister commentRegister;
 	private final CommentFinder commentFinder;
@@ -74,14 +78,14 @@ public class CommunityController {
 	}
 
 	@GetMapping("/posts")
-	public PostListResponse findPosts(@Valid @ModelAttribute PostListRequest request) {
-		PostListResult result = postFinder.findPosts(request);
+	public PostListResponse findPosts(@CurrentUserId Long userId, @Valid @ModelAttribute PostListRequest request) {
+		PostListResult result = postFinder.findPosts(userId, request);
 		return PostListResponse.from(result);
 	}
 
 	@GetMapping("/posts/{postId}")
-	public PostResponse findPost(@PathVariable Long postId) {
-		PostResult result = postFinder.findPostDetail(postId);
+	public PostResponse findPost(@CurrentUserId Long userId, @PathVariable Long postId) {
+		PostResult result = postFinder.findPostDetail(userId, postId);
 		return PostResponse.from(result);
 	}
 
@@ -114,16 +118,16 @@ public class CommunityController {
 	}
 
 	@GetMapping("/posts/{postId}/comments")
-	public CommentListResponse findComments(@PathVariable Long postId,
+	public CommentListResponse findComments(@CurrentUserId Long userId, @PathVariable Long postId,
 	                                        @Valid @ModelAttribute CommentListRequest request) {
-		CommentListResult result = commentFinder.findComments(postId, request);
+		CommentListResult result = commentFinder.findComments(userId, postId, request);
 		return CommentListResponse.from(result);
 	}
 
 	@GetMapping("/comments/{commentId}/replies")
-	public ReplyListResponse findReplies(@PathVariable Long commentId,
+	public ReplyListResponse findReplies(@CurrentUserId Long userId, @PathVariable Long commentId,
 	                                     @Valid @ModelAttribute CommentListRequest request) {
-		ReplyListResult result = commentFinder.findReplies(commentId, request);
+		ReplyListResult result = commentFinder.findReplies(userId, commentId, request);
 		return ReplyListResponse.from(result);
 	}
 
@@ -146,5 +150,29 @@ public class CommunityController {
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public void deleteComment(@CurrentUserId Long userId, @PathVariable Long commentId) {
 		commentRegister.delete(userId, commentId);
+	}
+
+	@PostMapping("/posts/{postId}/like")
+	public LikeResponse likePost(@CurrentUserId Long userId, @PathVariable Long postId) {
+		LikeSummary result = likeRegister.likePost(userId, postId);
+		return LikeResponse.from(result);
+	}
+
+	@DeleteMapping("/posts/{postId}/like")
+	public LikeResponse unlikePost(@CurrentUserId Long userId, @PathVariable Long postId) {
+		LikeSummary result = likeRegister.unlikePost(userId, postId);
+		return LikeResponse.from(result);
+	}
+
+	@PostMapping("/comments/{commentId}/like")
+	public LikeResponse likeComment(@CurrentUserId Long userId, @PathVariable Long commentId) {
+		LikeSummary result = likeRegister.likeComment(userId, commentId);
+		return LikeResponse.from(result);
+	}
+
+	@DeleteMapping("/comments/{commentId}/like")
+	public LikeResponse unlikeComment(@CurrentUserId Long userId, @PathVariable Long commentId) {
+		LikeSummary result = likeRegister.unlikeComment(userId, commentId);
+		return LikeResponse.from(result);
 	}
 }

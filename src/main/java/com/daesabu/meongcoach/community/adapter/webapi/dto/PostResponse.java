@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Optional;
 
 public record PostResponse(Long postId, String content, AuthorResponse author, MentionResponse mention,
-		List<PostMediaResponse> media, int commentCount, LocalDateTime createdAt) {
+		List<PostMediaResponse> media, int commentCount, LocalDateTime createdAt, long likeCount, boolean likedByMe) {
 
 	public static PostResponse from(PostResult result) {
 		Post post = result.post();
@@ -24,7 +24,7 @@ public record PostResponse(Long postId, String content, AuthorResponse author, M
 				.map(PostMediaResponse::from)
 				.toList();
 		return new PostResponse(post.getId(), post.getContent().value(), author, mention, media,
-				post.getCommentCount(), post.getCreatedAt());
+				post.getCommentCount(), post.getCreatedAt(), result.likeCount(), result.likedByMe());
 	}
 
 	public record MentionResponse(MentionTargetType targetType, Long targetId, Long categoryId, String categoryTitle,
