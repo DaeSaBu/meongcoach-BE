@@ -72,6 +72,6 @@ flowchart LR
 
 - `CurriculumProgress`는 반려견이 커리큘럼을 훈련한 날마다 한 행을 남깁니다. 같은 날 여러 번 훈련해도 행은 하나이며, 유니크 제약(`uk_curriculum_progress_user_dog_curriculum_trained_on`)이 중복을 막습니다.
 - 새 행은 `PENDING`으로 등록됩니다.
-- 그날 한 번이라도 성공하면 성공한 날입니다. 성공한 날을 실패로 되돌리는 경로는 없습니다.
+- 그날 한 번이라도 성공하면 성공한 날입니다. 실패한 날은 성공으로 바꿀 수 있고, 성공한 날은 실패 판정이 와도 성공으로 남습니다.
 - 레슨 진행으로 계산하는 커리큘럼 완료 상태(`ProgressStatus`)와는 별개의 기록입니다. 레슨을 모두 완료해도 이 기록은 생기지 않고, 이 기록이 있어도 커리큘럼 완료 상태는 바뀌지 않습니다.
 - `LessonProgress`는 사용자 단위이고 `CurriculumProgress`는 반려견 단위입니다.
