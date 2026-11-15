@@ -3,10 +3,10 @@ CREATE TABLE "curriculum_progress" (
     "user_id" BIGINT NOT NULL,
     "dog_id" BIGINT NOT NULL,
     "curriculum_id" BIGINT NOT NULL,
-    "trained_on" DATE NOT NULL,
+    "trained_date" DATE NOT NULL,
     "status" VARCHAR(20) NOT NULL,
     "created_at" TIMESTAMP NOT NULL,
     "updated_at" TIMESTAMP NOT NULL,
-    CONSTRAINT "uk_curriculum_progress_user_dog_curriculum_trained_on"
-        UNIQUE ("user_id", "dog_id", "curriculum_id", "trained_on")
+    CONSTRAINT "uk_curriculum_progress_user_dog_curriculum_trained_date"
+        UNIQUE ("user_id", "dog_id", "curriculum_id", "trained_date")
 );

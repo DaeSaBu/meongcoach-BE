@@ -22,8 +22,8 @@ import lombok.NoArgsConstructor;
 @Table(
 		name = "curriculum_progress",
 		uniqueConstraints = @UniqueConstraint(
-				name = "uk_curriculum_progress_user_dog_curriculum_trained_on",
-				columnNames = {"user_id", "dog_id", "curriculum_id", "trained_on"})
+				name = "uk_curriculum_progress_user_dog_curriculum_trained_date",
+				columnNames = {"user_id", "dog_id", "curriculum_id", "trained_date"})
 )
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class CurriculumProgress extends BaseEntity {
@@ -42,7 +42,7 @@ public class CurriculumProgress extends BaseEntity {
 	private Long curriculumId;
 
 	@Column(nullable = false)
-	private LocalDate trainedOn;
+	private LocalDate trainedDate;
 
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, length = 20)
@@ -54,7 +54,7 @@ public class CurriculumProgress extends BaseEntity {
 		curriculumProgress.userId = requireNonNull(command.userId());
 		curriculumProgress.dogId = requireNonNull(command.dogId());
 		curriculumProgress.curriculumId = requireNonNull(command.curriculumId());
-		curriculumProgress.trainedOn = requireNonNull(command.trainedOn());
+		curriculumProgress.trainedDate = requireNonNull(command.trainedDate());
 		curriculumProgress.status = CurriculumProgressStatus.PENDING;
 
 		return curriculumProgress;
