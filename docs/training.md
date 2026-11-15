@@ -21,7 +21,7 @@ flowchart LR
 | `LessonProgress` | 사용자·레슨당 한 행 | 완료 횟수 |
 | `TopicSelection` | 사용자당 한 행 | 마지막으로 선택한 토픽 |
 | `Plan` | 사용자·반려견당 활성 한 행 | 커리큘럼 순서, 플랜 안에서 완료한 레슨 ID, 상태, 회고 |
-| `CurriculumProgress` | 사용자·반려견·커리큘럼·날짜당 한 행 | 훈련한 날짜, 그날의 상태(`SUCCEEDED`·`FAILED`) |
+| `CurriculumProgress` | 사용자·반려견·커리큘럼·날짜당 한 행 | 훈련한 날짜, 그날의 상태(`PENDING`·`SUCCEEDED`·`FAILED`) |
 
 - 사용자 기록은 콘텐츠를 ID로만 참조하고 FK를 두지 않습니다.
 - 레슨이 삭제돼도 그 레슨의 진행 기록은 남습니다.
