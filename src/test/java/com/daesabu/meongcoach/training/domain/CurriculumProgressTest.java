@@ -42,4 +42,36 @@ class CurriculumProgressTest {
 
 		assertThat(progress.getStatus()).isEqualTo(CurriculumProgressStatus.SUCCEEDED);
 	}
+
+	@Test
+	void 판정을_기다리는_날을_실패로_바꾼다() {
+		CurriculumProgressRegisterCommand command = new CurriculumProgressRegisterCommand(1L, 2L, 10L, TRAINED_ON);
+		CurriculumProgress progress = CurriculumProgress.register(command);
+
+		progress.fail();
+
+		assertThat(progress.getStatus()).isEqualTo(CurriculumProgressStatus.FAILED);
+	}
+
+	@Test
+	void 실패한_날을_성공으로_바꾼다() {
+		CurriculumProgressRegisterCommand command = new CurriculumProgressRegisterCommand(1L, 2L, 10L, TRAINED_ON);
+		CurriculumProgress progress = CurriculumProgress.register(command);
+		progress.fail();
+
+		progress.succeed();
+
+		assertThat(progress.getStatus()).isEqualTo(CurriculumProgressStatus.SUCCEEDED);
+	}
+
+	@Test
+	void 성공한_날은_실패_판정이_와도_성공으로_남는다() {
+		CurriculumProgressRegisterCommand command = new CurriculumProgressRegisterCommand(1L, 2L, 10L, TRAINED_ON);
+		CurriculumProgress progress = CurriculumProgress.register(command);
+		progress.succeed();
+
+		progress.fail();
+
+		assertThat(progress.getStatus()).isEqualTo(CurriculumProgressStatus.SUCCEEDED);
+	}
 }
