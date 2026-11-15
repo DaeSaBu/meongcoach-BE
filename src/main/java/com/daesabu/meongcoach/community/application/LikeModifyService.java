@@ -8,6 +8,7 @@ import com.daesabu.meongcoach.community.application.required.CommentLikeReposito
 import com.daesabu.meongcoach.community.application.required.PostLikeRepository;
 import com.daesabu.meongcoach.community.domain.Comment;
 import com.daesabu.meongcoach.community.domain.LikeRegisteredEvent;
+import com.daesabu.meongcoach.community.domain.LikeStatus;
 import com.daesabu.meongcoach.community.domain.LikeSummary;
 import com.daesabu.meongcoach.community.domain.Post;
 import java.time.LocalDateTime;
@@ -34,6 +35,7 @@ public class LikeModifyService implements LikeRegister {
 	public LikeSummary likePost(Long userId, Long postId) {
 		Post post = postFinder.findPost(postId);
 		int inserted = postLikeRepository.insertIfAbsent(postId, userId, LocalDateTime.now());
+		postLikeRepository.updateStatus(postId, userId, LikeStatus.LIKED, LocalDateTime.now());
 		if (inserted > 0) {
 			eventPublisher.publishEvent(new LikeRegisteredEvent(postId, post.getUserId(), userId, "게시글"));
 		}
@@ -45,7 +47,7 @@ public class LikeModifyService implements LikeRegister {
 	@Transactional
 	public LikeSummary unlikePost(Long userId, Long postId) {
 		postFinder.findPost(postId);
-		postLikeRepository.deleteLike(postId, userId);
+		postLikeRepository.updateStatus(postId, userId, LikeStatus.UNLIKED, LocalDateTime.now());
 		Map<Long, LikeSummary> likes = likeFinder.findPostLikes(userId, List.of(postId));
 		return likes.get(postId);
 	}
@@ -55,6 +57,7 @@ public class LikeModifyService implements LikeRegister {
 	public LikeSummary likeComment(Long userId, Long commentId) {
 		Comment comment = commentFinder.findComment(commentId);
 		int inserted = commentLikeRepository.insertIfAbsent(commentId, userId, LocalDateTime.now());
+		commentLikeRepository.updateStatus(commentId, userId, LikeStatus.LIKED, LocalDateTime.now());
 		if (inserted > 0) {
 			eventPublisher.publishEvent(new LikeRegisteredEvent(comment.getPost().getId(), comment.getUserId(), userId, "댓글"));
 		}
@@ -66,7 +69,7 @@ public class LikeModifyService implements LikeRegister {
 	@Transactional
 	public LikeSummary unlikeComment(Long userId, Long commentId) {
 		commentFinder.findComment(commentId);
-		commentLikeRepository.deleteLike(commentId, userId);
+		commentLikeRepository.updateStatus(commentId, userId, LikeStatus.UNLIKED, LocalDateTime.now());
 		Map<Long, LikeSummary> likes = likeFinder.findCommentLikes(userId, List.of(commentId));
 		return likes.get(commentId);
 	}

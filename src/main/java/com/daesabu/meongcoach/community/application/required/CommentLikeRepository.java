@@ -1,6 +1,7 @@
 package com.daesabu.meongcoach.community.application.required;
 
 import com.daesabu.meongcoach.community.domain.CommentLike;
+import com.daesabu.meongcoach.community.domain.LikeStatus;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -10,19 +11,19 @@ import org.springframework.data.jpa.repository.Query;
 public interface CommentLikeRepository extends JpaRepository<CommentLike, Long> {
 	@Modifying
 	@Query(value = """
-			insert into comment_likes (comment_id, user_id, created_at, updated_at)
-			values (:targetId, :userId, :now, :now)
+			insert into comment_likes (comment_id, user_id, created_at, updated_at, status)
+			values (:targetId, :userId, :now, :now, 'LIKED')
 			on conflict (comment_id, user_id) do nothing
 			""", nativeQuery = true)
 	int insertIfAbsent(Long targetId, Long userId, LocalDateTime now);
 
 	@Modifying
-	@Query("delete from CommentLike l where l.commentId = :targetId and l.userId = :userId")
-	void deleteLike(Long targetId, Long userId);
+	@Query("update CommentLike l set l.status = :status, l.updatedAt = :now where l.commentId = :targetId and l.userId = :userId and l.status <> :status")
+	void updateStatus(Long targetId, Long userId, LikeStatus status, LocalDateTime now);
 
-	@Query("select l.commentId as targetId, count(l) as likeCount from CommentLike l where l.commentId in :targetIds group by l.commentId")
+	@Query("select l.commentId as targetId, count(l) as likeCount from CommentLike l where l.status = com.daesabu.meongcoach.community.domain.LikeStatus.LIKED and l.commentId in :targetIds group by l.commentId")
 	List<LikeCount> countByTargetIds(List<Long> targetIds);
 
-	@Query("select l.commentId from CommentLike l where l.commentId in :targetIds and l.userId = :userId")
+	@Query("select l.commentId from CommentLike l where l.status = com.daesabu.meongcoach.community.domain.LikeStatus.LIKED and l.commentId in :targetIds and l.userId = :userId")
 	List<Long> findLikedTargetIds(Long userId, List<Long> targetIds);
 }

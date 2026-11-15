@@ -3,6 +3,8 @@ package com.daesabu.meongcoach.community.domain;
 import com.daesabu.meongcoach.shared.domain.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -24,4 +26,7 @@ public class PostLike extends BaseEntity {
 	private Long postId;
 	@Column(nullable = false)
 	private Long userId;
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false, length = 16)
+	private LikeStatus status;
 }
