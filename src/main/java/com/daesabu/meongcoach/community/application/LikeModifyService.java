@@ -34,7 +34,9 @@ public class LikeModifyService implements LikeRegister {
 	@Transactional
 	public LikeSummary likePost(Long userId, Long postId) {
 		Post post = postFinder.findPostForUpdate(postId);
-		registerOrRelikePost(userId, post);
+		PostLike like = postLikeRepository.findByPostIdAndUserId(postId, userId)
+				.orElseGet(() -> registerPostLike(userId, post));
+		like.relike();
 		Map<Long, LikeSummary> likes = likeFinder.findPostLikes(userId, List.of(postId));
 		return likes.get(postId);
 	}
@@ -55,7 +57,9 @@ public class LikeModifyService implements LikeRegister {
 	@Transactional
 	public LikeSummary likeComment(Long userId, Long commentId) {
 		Comment comment = commentFinder.findCommentForUpdate(commentId);
-		registerOrRelikeComment(userId, comment);
+		CommentLike like = commentLikeRepository.findByCommentIdAndUserId(commentId, userId)
+				.orElseGet(() -> registerCommentLike(userId, comment));
+		like.relike();
 		Map<Long, LikeSummary> likes = likeFinder.findCommentLikes(userId, List.of(commentId));
 		return likes.get(commentId);
 	}
@@ -72,31 +76,19 @@ public class LikeModifyService implements LikeRegister {
 		return likes.get(commentId);
 	}
 
-	private void registerOrRelikePost(Long userId, Post post) {
+	private PostLike registerPostLike(Long userId, Post post) {
 		Long postId = post.getId();
-		PostLike like = postLikeRepository.findByPostIdAndUserId(postId, userId).orElse(null);
-		if (like != null) {
-			like.relike();
-			return;
-		}
-
-		PostLike newLike = PostLike.register(postId, userId);
-		postLikeRepository.save(newLike);
+		PostLike like = PostLike.register(postId, userId);
+		postLikeRepository.save(like);
 		LikeRegisteredEvent event = new LikeRegisteredEvent(postId, post.getUserId(), userId, "게시글");
 		eventPublisher.publishEvent(event);
+		return like;
 	}
-
-	private void registerOrRelikeComment(Long userId, Comment comment) {
+	private CommentLike registerCommentLike(Long userId, Comment comment) {
 		Long commentId = comment.getId();
-		CommentLike like = commentLikeRepository.findByCommentIdAndUserId(commentId, userId).orElse(null);
-		if (like != null) {
-			like.relike();
-			return;
-		}
-
-		CommentLike newLike = CommentLike.register(commentId, userId);
-		commentLikeRepository.save(newLike);
+		CommentLike like = CommentLike.register(commentId, userId);
+		commentLikeRepository.save(like);
 		LikeRegisteredEvent event = new LikeRegisteredEvent(comment.getPost().getId(), comment.getUserId(), userId, "댓글");
 		eventPublisher.publishEvent(event);
-	}
-}
+		return like;
+	}}
