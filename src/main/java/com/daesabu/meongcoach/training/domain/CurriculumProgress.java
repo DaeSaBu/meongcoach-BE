@@ -49,10 +49,10 @@ public class CurriculumProgress extends BaseEntity {
 	@Column(nullable = false, length = 20)
 	private CurriculumProgressStatus status;
 
-	public static CurriculumProgress register(CurriculumProgressRegisterCommand command) {
+	public static CurriculumProgress register(Long userId, CurriculumProgressRegisterCommand command) {
 		CurriculumProgress curriculumProgress = new CurriculumProgress();
 
-		curriculumProgress.userId = requireNonNull(command.userId());
+		curriculumProgress.userId = requireNonNull(userId);
 		curriculumProgress.dogId = requireNonNull(command.dogId());
 		curriculumProgress.curriculumId = requireNonNull(command.curriculumId());
 		curriculumProgress.trainedDate = requireNonNull(command.trainedDate());

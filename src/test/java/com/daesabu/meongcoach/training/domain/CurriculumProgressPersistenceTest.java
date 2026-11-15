@@ -83,8 +83,8 @@ class CurriculumProgressPersistenceTest {
 	}
 
 	private CurriculumProgress register(Long dogId, Long curriculumId, LocalDate trainedDate) {
-		CurriculumProgressRegisterCommand command = new CurriculumProgressRegisterCommand(USER_ID, dogId,
-				curriculumId, trainedDate);
-		return CurriculumProgress.register(command);
+		CurriculumProgressRegisterCommand command = new CurriculumProgressRegisterCommand(dogId, curriculumId,
+				trainedDate);
+		return CurriculumProgress.register(USER_ID, command);
 	}
 }

@@ -12,9 +12,9 @@ class CurriculumProgressTest {
 
 	@Test
 	void 등록하면_대상과_날짜가_담기고_판정을_기다리는_상태가_된다() {
-		CurriculumProgressRegisterCommand command = new CurriculumProgressRegisterCommand(1L, 2L, 10L, TRAINED_DATE);
+		CurriculumProgressRegisterCommand command = new CurriculumProgressRegisterCommand(2L, 10L, TRAINED_DATE);
 
-		CurriculumProgress progress = CurriculumProgress.register(command);
+		CurriculumProgress progress = CurriculumProgress.register(1L, command);
 
 		assertThat(progress.getUserId()).isEqualTo(1L);
 		assertThat(progress.getDogId()).isEqualTo(2L);
@@ -25,8 +25,8 @@ class CurriculumProgressTest {
 
 	@Test
 	void 판정을_기다리는_날을_성공으로_바꾼다() {
-		CurriculumProgressRegisterCommand command = new CurriculumProgressRegisterCommand(1L, 2L, 10L, TRAINED_DATE);
-		CurriculumProgress progress = CurriculumProgress.register(command);
+		CurriculumProgressRegisterCommand command = new CurriculumProgressRegisterCommand(2L, 10L, TRAINED_DATE);
+		CurriculumProgress progress = CurriculumProgress.register(1L, command);
 
 		progress.succeed();
 
@@ -35,8 +35,8 @@ class CurriculumProgressTest {
 
 	@Test
 	void 이미_성공한_날은_성공으로_남는다() {
-		CurriculumProgressRegisterCommand command = new CurriculumProgressRegisterCommand(1L, 2L, 10L, TRAINED_DATE);
-		CurriculumProgress progress = CurriculumProgress.register(command);
+		CurriculumProgressRegisterCommand command = new CurriculumProgressRegisterCommand(2L, 10L, TRAINED_DATE);
+		CurriculumProgress progress = CurriculumProgress.register(1L, command);
 		progress.succeed();
 
 		progress.succeed();
@@ -46,8 +46,8 @@ class CurriculumProgressTest {
 
 	@Test
 	void 판정을_기다리는_날을_실패로_바꾼다() {
-		CurriculumProgressRegisterCommand command = new CurriculumProgressRegisterCommand(1L, 2L, 10L, TRAINED_DATE);
-		CurriculumProgress progress = CurriculumProgress.register(command);
+		CurriculumProgressRegisterCommand command = new CurriculumProgressRegisterCommand(2L, 10L, TRAINED_DATE);
+		CurriculumProgress progress = CurriculumProgress.register(1L, command);
 
 		progress.fail();
 
@@ -56,8 +56,8 @@ class CurriculumProgressTest {
 
 	@Test
 	void 실패한_날을_성공으로_바꾼다() {
-		CurriculumProgressRegisterCommand command = new CurriculumProgressRegisterCommand(1L, 2L, 10L, TRAINED_DATE);
-		CurriculumProgress progress = CurriculumProgress.register(command);
+		CurriculumProgressRegisterCommand command = new CurriculumProgressRegisterCommand(2L, 10L, TRAINED_DATE);
+		CurriculumProgress progress = CurriculumProgress.register(1L, command);
 		progress.fail();
 
 		progress.succeed();
@@ -67,8 +67,8 @@ class CurriculumProgressTest {
 
 	@Test
 	void 성공한_날은_실패로_바꿀_수_없다() {
-		CurriculumProgressRegisterCommand command = new CurriculumProgressRegisterCommand(1L, 2L, 10L, TRAINED_DATE);
-		CurriculumProgress progress = CurriculumProgress.register(command);
+		CurriculumProgressRegisterCommand command = new CurriculumProgressRegisterCommand(2L, 10L, TRAINED_DATE);
+		CurriculumProgress progress = CurriculumProgress.register(1L, command);
 		progress.succeed();
 
 		assertThatThrownBy(progress::fail)
