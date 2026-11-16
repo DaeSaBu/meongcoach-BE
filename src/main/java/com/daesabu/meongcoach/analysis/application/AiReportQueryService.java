@@ -8,6 +8,7 @@ import com.daesabu.meongcoach.analysis.application.required.AiAnalysisRepository
 import com.daesabu.meongcoach.analysis.domain.AiAnalysis;
 import com.daesabu.meongcoach.analysis.domain.AiVideo;
 import com.daesabu.meongcoach.analysis.domain.exception.AiReportNotFoundException;
+import com.daesabu.meongcoach.dog.application.provided.DogProfileFinder;
 import com.daesabu.meongcoach.media.application.provided.MediaDownloadUrlIssuer;
 import java.time.Instant;
 import java.util.List;
@@ -24,11 +25,13 @@ public class AiReportQueryService implements AiReportFinder {
 	private final AiAnalysisRepository aiAnalysisRepository;
 	private final ObjectMapper objectMapper;
 	private final MediaDownloadUrlIssuer mediaDownloadUrlIssuer;
+	private final DogProfileFinder dogProfileFinder;
 
 	@Override
-	public List<AiReportResult> findReports(Long userId) {
+	public List<AiReportResult> findReports(Long userId, Long dogId) {
+		Long resolvedDogId = dogProfileFinder.findDogProfileOrSelected(userId, dogId).id();
 		Instant now = Instant.now();
-		return aiAnalysisRepository.findAllByUserIdOrderByCreatedAtDescIdDesc(userId).stream()
+		return aiAnalysisRepository.findAllByUserIdAndDogIdOrderByCreatedAtDescIdDesc(userId, resolvedDogId).stream()
 				.map(analysis -> new AiReportResult(analysis.getId(), analysis.getVideoObjectKey(), analysis.getTitle(),
 						analysis.statusAt(now), analysis.getCreatedAt()))
 				.toList();

@@ -16,10 +16,10 @@ public interface AiAnalysisRepository extends JpaRepository<AiAnalysis, Long> {
 	Optional<AiAnalysis> findByVideoObjectKey(String videoObjectKey);
 
 	/**
-	 * 사용자의 분석 건을 생성 시각 내림차순으로 조회한다.
+	 * 사용자가 지정한 강아지로 등록한 분석 건을 생성 시각 내림차순으로 조회한다.
 	 * 같은 시각이면 id 내림차순으로 순서를 고정한다.
 	 */
-	List<AiAnalysis> findAllByUserIdOrderByCreatedAtDescIdDesc(Long userId);
+	List<AiAnalysis> findAllByUserIdAndDogIdOrderByCreatedAtDescIdDesc(Long userId, Long dogId);
 
 	/**
 	 * 분석 건 ID와 소유자가 모두 일치할 때만 조회한다.
