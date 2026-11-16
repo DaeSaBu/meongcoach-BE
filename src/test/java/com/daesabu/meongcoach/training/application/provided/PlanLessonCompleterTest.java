@@ -2,16 +2,21 @@ package com.daesabu.meongcoach.training.application.provided;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
 import com.daesabu.meongcoach.dog.application.required.DogRepository;
 import com.daesabu.meongcoach.dog.domain.DogFixture;
 import com.daesabu.meongcoach.entitlement.domain.exception.EntitlementRequiredException;
 import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;
 import com.daesabu.meongcoach.support.ApplicationTest;
+import com.daesabu.meongcoach.training.application.required.CurriculumProgressRepository;
 import com.daesabu.meongcoach.training.application.required.LessonProgressRepository;
 import com.daesabu.meongcoach.training.application.required.PlanRepository;
+import com.daesabu.meongcoach.training.application.required.TrainedLessonRepository;
 import com.daesabu.meongcoach.training.domain.Curriculum;
 import com.daesabu.meongcoach.training.domain.CurriculumFixture;
+import com.daesabu.meongcoach.training.domain.CurriculumProgress;
+import com.daesabu.meongcoach.training.domain.CurriculumProgressStatus;
 import com.daesabu.meongcoach.training.domain.Lesson;
 import com.daesabu.meongcoach.training.domain.LessonFixture;
 import com.daesabu.meongcoach.training.domain.LessonProgress;
@@ -20,13 +25,17 @@ import com.daesabu.meongcoach.training.domain.PlanCreateCommand;
 import com.daesabu.meongcoach.training.domain.PlanStatus;
 import com.daesabu.meongcoach.training.domain.Topic;
 import com.daesabu.meongcoach.training.domain.TopicFixture;
+import com.daesabu.meongcoach.training.domain.TrainedLesson;
 import com.daesabu.meongcoach.training.domain.TrainingCategory;
 import com.daesabu.meongcoach.training.domain.TrainingCategoryFixture;
+import com.daesabu.meongcoach.training.domain.TrainingSource;
 import com.daesabu.meongcoach.training.domain.exception.PlanLessonOrderException;
 import com.daesabu.meongcoach.training.domain.exception.PlanNotActiveException;
 import com.daesabu.meongcoach.training.domain.exception.PlanNotFoundException;
 import jakarta.persistence.EntityManager;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
@@ -41,6 +50,10 @@ class PlanLessonCompleterTest {
 
 	private static final Long USER_ID = 42L;
 
+	private static final Long ABSENT_LESSON_ID = 999_999L;
+
+	private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
+
 	@Autowired
 	private PlanLessonCompleter completer;
 
@@ -49,6 +62,12 @@ class PlanLessonCompleterTest {
 
 	@Autowired
 	private LessonProgressRepository progressRepository;
+
+	@Autowired
+	private TrainedLessonRepository trainedLessonRepository;
+
+	@Autowired
+	private CurriculumProgressRepository curriculumProgressRepository;
 
 	@Autowired
 	private EntityManager entityManager;
@@ -224,6 +243,77 @@ class PlanLessonCompleterTest {
 		assertThatThrownBy(() -> completer.complete(USER_ID, plan.getId(), lesson.getId()))
 				.isInstanceOf(PlanNotActiveException.class);
 		assertThat(progressRepository.findByUserIdAndDogIdAndLessonId(USER_ID, dogId(), lesson.getId())).isEmpty();
+		assertThat(trainedLessonRepository.count()).isZero();
+	}
+
+	@Test
+	void 플랜_레슨을_완료하면_그날_플랜으로_훈련한_기록과_커리큘럼_진행_기록을_남긴다() {
+		Curriculum curriculum = saveCurriculum(false);
+		Lesson lesson = saveLesson(curriculum, 1);
+		Plan plan = savePlan(curriculum);
+		flushAndClear();
+
+		completer.complete(USER_ID, plan.getId(), lesson.getId());
+		flushAndClear();
+
+		List<TrainedLesson> trainedLessons = findTrainedLessons();
+		assertThat(trainedLessons).hasSize(1);
+		TrainedLesson trainedLesson = trainedLessons.getFirst();
+		assertThat(trainedLesson.getLessonId()).isEqualTo(lesson.getId());
+		assertThat(trainedLesson.getSource()).isEqualTo(TrainingSource.PLAN);
+		assertThat(curriculumProgressRepository.findByUserIdAndDogIdAndCurriculumIdAndTrainedDate(USER_ID, dogId(),
+				curriculum.getId(), today()))
+				.get().extracting(CurriculumProgress::getStatus).isEqualTo(CurriculumProgressStatus.PENDING);
+	}
+
+	@Test
+	void 이미_완료한_플랜_레슨을_다시_요청하면_횟수는_그대로_두고_그날_훈련한_기록을_남긴다() {
+		Curriculum curriculum = saveCurriculum(false);
+		Lesson first = saveLesson(curriculum, 1);
+		saveLesson(curriculum, 2);
+		Plan plan = savePlan(curriculum);
+		plan.completeLesson(first.getId());
+		flushAndClear();
+
+		completer.complete(USER_ID, plan.getId(), first.getId());
+		flushAndClear();
+
+		assertThat(progressRepository.findByUserIdAndDogIdAndLessonId(USER_ID, dogId(), first.getId())).isEmpty();
+		assertThat(findPlan(plan).getCompletedLessonIds()).containsExactly(first.getId());
+		assertThat(findTrainedLessons()).extracting(TrainedLesson::getLessonId, TrainedLesson::getSource)
+				.containsExactly(tuple(first.getId(), TrainingSource.PLAN));
+		assertThat(curriculumProgressRepository.count()).isOne();
+	}
+
+	@Test
+	void 같은_날_플랜_레슨을_완료하고_다시_요청해도_훈련한_기록은_하나만_남는다() {
+		Curriculum curriculum = saveCurriculum(false);
+		Lesson first = saveLesson(curriculum, 1);
+		saveLesson(curriculum, 2);
+		Plan plan = savePlan(curriculum);
+		flushAndClear();
+		completer.complete(USER_ID, plan.getId(), first.getId());
+		flushAndClear();
+
+		completer.complete(USER_ID, plan.getId(), first.getId());
+		flushAndClear();
+
+		assertThat(findTrainedLessons()).hasSize(1);
+		assertThat(curriculumProgressRepository.count()).isOne();
+	}
+
+	@Test
+	void 완료한_플랜_레슨이_삭제된_뒤_다시_요청하면_기록_없이_끝난다() {
+		Curriculum curriculum = saveCurriculum(false);
+		saveLesson(curriculum, 1);
+		Plan plan = savePlan(curriculum);
+		plan.completeLesson(ABSENT_LESSON_ID);
+		flushAndClear();
+
+		completer.complete(USER_ID, plan.getId(), ABSENT_LESSON_ID);
+		flushAndClear();
+
+		assertThat(trainedLessonRepository.count()).isZero();
 	}
 
 	@Test
@@ -351,6 +441,15 @@ class PlanLessonCompleterTest {
 			dogId = dogRepository.save(DogFixture.selected(USER_ID)).getId();
 		}
 		return dogId;
+	}
+
+	private List<TrainedLesson> findTrainedLessons() {
+		return trainedLessonRepository.findAllByUserIdAndDogIdAndTrainedDateBetween(USER_ID, dogId(), today(),
+				today());
+	}
+
+	private LocalDate today() {
+		return LocalDate.now(SEOUL);
 	}
 
 	private Plan findPlan(Plan plan) {
