@@ -12,22 +12,32 @@ import com.daesabu.meongcoach.entitlement.domain.exception.EntitlementRequiredEx
 import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;
 import com.daesabu.meongcoach.support.ApplicationTest;
 import com.daesabu.meongcoach.training.application.provided.dto.TopicSelectionRequest;
+import com.daesabu.meongcoach.training.application.required.CurriculumProgressRepository;
 import com.daesabu.meongcoach.training.application.required.CurriculumRepository;
 import com.daesabu.meongcoach.training.application.required.LessonProgressRepository;
 import com.daesabu.meongcoach.training.application.required.LessonRepository;
 import com.daesabu.meongcoach.training.application.required.TopicRepository;
+import com.daesabu.meongcoach.training.application.required.TrainedLessonRepository;
 import com.daesabu.meongcoach.training.application.required.TrainingCategoryRepository;
 import com.daesabu.meongcoach.training.domain.Curriculum;
 import com.daesabu.meongcoach.training.domain.CurriculumFixture;
+import com.daesabu.meongcoach.training.domain.CurriculumProgress;
+import com.daesabu.meongcoach.training.domain.CurriculumProgressStatus;
 import com.daesabu.meongcoach.training.domain.Lesson;
 import com.daesabu.meongcoach.training.domain.LessonFixture;
 import com.daesabu.meongcoach.training.domain.LessonProgress;
 import com.daesabu.meongcoach.training.domain.Topic;
 import com.daesabu.meongcoach.training.domain.TopicFixture;
+import com.daesabu.meongcoach.training.domain.TrainedLesson;
 import com.daesabu.meongcoach.training.domain.TrainingCategory;
 import com.daesabu.meongcoach.training.domain.TrainingCategoryFixture;
+import com.daesabu.meongcoach.training.domain.TrainingSource;
 import com.daesabu.meongcoach.training.domain.exception.LessonNotFoundException;
 import jakarta.persistence.EntityManager;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,6 +52,8 @@ class LessonCompleterTest {
 	private static final Long DOGLESS_USER_ID = 3L;
 
 	private static final Long ABSENT_LESSON_ID = 999L;
+
+	private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
 
 	@Autowired
 	private LessonCompleter lessonCompleter;
@@ -63,6 +75,12 @@ class LessonCompleterTest {
 
 	@Autowired
 	private LessonProgressRepository lessonProgressRepository;
+
+	@Autowired
+	private TrainedLessonRepository trainedLessonRepository;
+
+	@Autowired
+	private CurriculumProgressRepository curriculumProgressRepository;
 
 	@Autowired
 	private EntitlementRepository entitlementRepository;
@@ -174,6 +192,8 @@ class LessonCompleterTest {
 
 		flushAndClear();
 		assertThat(lessonProgressRepository.count()).isZero();
+		assertThat(trainedLessonRepository.count()).isZero();
+		assertThat(curriculumProgressRepository.count()).isZero();
 	}
 
 	@Test
@@ -275,6 +295,108 @@ class LessonCompleterTest {
 		assertThat(findCompletedCount(USER_ID, dogId, second.getId())).isOne();
 	}
 
+	@Test
+	void 레슨을_완료하면_그날_라이브러리에서_훈련한_기록을_남긴다() {
+		Lesson lesson = saveLesson("앉아");
+		flushAndClear();
+
+		lessonCompleter.completeLesson(USER_ID, dogId, lesson.getId());
+		flushAndClear();
+
+		List<TrainedLesson> trainedLessons = findTrainedLessons(USER_ID, dogId);
+		assertThat(trainedLessons).hasSize(1);
+		TrainedLesson trainedLesson = trainedLessons.getFirst();
+		assertThat(trainedLesson.getLessonId()).isEqualTo(lesson.getId());
+		assertThat(trainedLesson.getSource()).isEqualTo(TrainingSource.LIBRARY);
+		assertThat(trainedLesson.getTrainedDate()).isEqualTo(today());
+	}
+
+	@Test
+	void 레슨을_완료하면_그_커리큘럼의_그날_진행_기록이_판정을_기다리는_상태로_생긴다() {
+		Lesson lesson = saveLesson("앉아");
+		Long curriculumId = lesson.getCurriculum().getId();
+		flushAndClear();
+
+		lessonCompleter.completeLesson(USER_ID, dogId, lesson.getId());
+		flushAndClear();
+
+		assertThat(findCurriculumProgress(USER_ID, dogId, curriculumId))
+				.get().extracting(CurriculumProgress::getStatus).isEqualTo(CurriculumProgressStatus.PENDING);
+	}
+
+	@Test
+	void 같은_날_두_번_완료하면_횟수는_2가_되고_훈련한_기록은_하나만_남는다() {
+		Lesson lesson = saveLesson("앉아");
+		flushAndClear();
+
+		lessonCompleter.completeLesson(USER_ID, dogId, lesson.getId());
+		int completedCount = lessonCompleter.completeLesson(USER_ID, dogId, lesson.getId());
+		flushAndClear();
+
+		assertThat(completedCount).isEqualTo(2);
+		assertThat(findTrainedLessons(USER_ID, dogId)).hasSize(1);
+		assertThat(curriculumProgressRepository.count()).isOne();
+	}
+
+	@Test
+	void 같은_커리큘럼의_다른_레슨을_완료하면_레슨마다_기록하고_그날_진행_기록은_하나만_둔다() {
+		Lesson first = saveLesson("앉아");
+		Lesson second = lessonRepository.save(LessonFixture.create(first.getCurriculum(), "기다려", 2, 5));
+		flushAndClear();
+
+		lessonCompleter.completeLesson(USER_ID, dogId, first.getId());
+		lessonCompleter.completeLesson(USER_ID, dogId, second.getId());
+		flushAndClear();
+
+		assertThat(findTrainedLessons(USER_ID, dogId)).extracting(TrainedLesson::getLessonId)
+				.containsExactlyInAnyOrder(first.getId(), second.getId());
+		assertThat(curriculumProgressRepository.count()).isOne();
+	}
+
+	@Test
+	void 그날_결과를_고른_커리큘럼의_레슨을_다시_완료해도_결과를_유지한다() {
+		Lesson lesson = saveLesson("앉아");
+		Long curriculumId = lesson.getCurriculum().getId();
+		flushAndClear();
+		lessonCompleter.completeLesson(USER_ID, dogId, lesson.getId());
+		findCurriculumProgress(USER_ID, dogId, curriculumId).orElseThrow().succeed();
+		flushAndClear();
+
+		lessonCompleter.completeLesson(USER_ID, dogId, lesson.getId());
+		flushAndClear();
+
+		assertThat(findCurriculumProgress(USER_ID, dogId, curriculumId))
+				.get().extracting(CurriculumProgress::getStatus).isEqualTo(CurriculumProgressStatus.SUCCEEDED);
+	}
+
+	@Test
+	void dogId를_생략하면_선택된_강아지에_훈련한_기록을_남긴다() {
+		Long unselectedDogId = dogRepository.save(DogFixture.unselected(USER_ID)).getId();
+		Lesson lesson = saveLesson("앉아");
+		flushAndClear();
+
+		lessonCompleter.completeLesson(USER_ID, null, lesson.getId());
+		flushAndClear();
+
+		assertThat(findTrainedLessons(USER_ID, dogId)).hasSize(1);
+		assertThat(findTrainedLessons(USER_ID, unselectedDogId)).isEmpty();
+	}
+
+	@Test
+	void 같은_사용자의_다른_강아지로_완료하면_강아지마다_따로_기록한다() {
+		Long unselectedDogId = dogRepository.save(DogFixture.unselected(USER_ID)).getId();
+		Lesson lesson = saveLesson("앉아");
+		flushAndClear();
+
+		lessonCompleter.completeLesson(USER_ID, dogId, lesson.getId());
+		lessonCompleter.completeLesson(USER_ID, unselectedDogId, lesson.getId());
+		flushAndClear();
+
+		assertThat(findTrainedLessons(USER_ID, dogId)).hasSize(1);
+		assertThat(findTrainedLessons(USER_ID, unselectedDogId)).hasSize(1);
+		assertThat(curriculumProgressRepository.count()).isEqualTo(2);
+	}
+
 	private Lesson saveLesson(String title) {
 		return saveLesson(title, null, false);
 	}
@@ -296,6 +418,19 @@ class LessonCompleterTest {
 		return lessonProgressRepository.findByUserIdAndDogIdAndLessonId(userId, dogId, lessonId)
 				.map(LessonProgress::getCompletedCount)
 				.orElseThrow();
+	}
+
+	private List<TrainedLesson> findTrainedLessons(Long userId, Long dogId) {
+		return trainedLessonRepository.findAllByUserIdAndDogIdAndTrainedDateBetween(userId, dogId, today(), today());
+	}
+
+	private Optional<CurriculumProgress> findCurriculumProgress(Long userId, Long dogId, Long curriculumId) {
+		return curriculumProgressRepository.findByUserIdAndDogIdAndCurriculumIdAndTrainedDate(userId, dogId,
+				curriculumId, today());
+	}
+
+	private LocalDate today() {
+		return LocalDate.now(SEOUL);
 	}
 
 	private void flushAndClear() {
