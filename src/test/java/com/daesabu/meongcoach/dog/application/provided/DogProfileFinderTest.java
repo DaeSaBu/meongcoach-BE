@@ -93,6 +93,75 @@ class DogProfileFinderTest {
 				.isInstanceOf(DogNotFoundException.class);
 	}
 
+	@Test
+	void dogId를_지정하면_선택_상태와_무관하게_그_강아지의_프로필을_반환한다() {
+		Dog selected = newDog(42L, "초코");
+		selected.select();
+		dogRepository.save(selected);
+		Dog dog = dogRepository.save(newDog(42L, "보리"));
+
+		DogProfileResult result = finder.findDogProfileOrSelected(42L, dog.getId());
+
+		assertThat(result.id()).isEqualTo(dog.getId());
+		assertThat(result.name()).isEqualTo("보리");
+	}
+
+	@Test
+	void dogId가_없으면_선택된_강아지의_프로필을_반환한다() {
+		dogRepository.save(newDog(42L, "보리"));
+		Dog selected = newDog(42L, "초코");
+		selected.select();
+		dogRepository.save(selected);
+
+		DogProfileResult result = finder.findDogProfileOrSelected(42L, null);
+
+		assertThat(result.id()).isEqualTo(selected.getId());
+		assertThat(result.name()).isEqualTo("초코");
+	}
+
+	@Test
+	void 지정한_dogId가_다른_사용자의_강아지면_선택된_강아지로_대체하지_않고_거절한다() {
+		Dog selected = newDog(42L, "초코");
+		selected.select();
+		dogRepository.save(selected);
+		Dog other = dogRepository.save(newDog(99L, "보리"));
+
+		assertThatThrownBy(() -> finder.findDogProfileOrSelected(42L, other.getId()))
+				.isInstanceOf(DogNotFoundException.class);
+	}
+
+	@Test
+	void dogId도_없고_선택된_강아지도_없으면_거절한다() {
+		dogRepository.save(newDog(42L, "보리"));
+
+		assertThatThrownBy(() -> finder.findDogProfileOrSelected(42L, null))
+				.isInstanceOf(DogNotFoundException.class);
+	}
+
+	@Test
+	void dogId를_지정하면_그_강아지를_반환한다() {
+		Dog selected = newDog(42L, "초코");
+		selected.select();
+		dogRepository.save(selected);
+		Dog dog = dogRepository.save(newDog(42L, "보리"));
+
+		Dog result = finder.findDogOrSelected(42L, dog.getId());
+
+		assertThat(result.getId()).isEqualTo(dog.getId());
+	}
+
+	@Test
+	void dogId가_없으면_선택된_강아지를_반환한다() {
+		dogRepository.save(newDog(42L, "보리"));
+		Dog selected = newDog(42L, "초코");
+		selected.select();
+		dogRepository.save(selected);
+
+		Dog result = finder.findDogOrSelected(42L, null);
+
+		assertThat(result.getId()).isEqualTo(selected.getId());
+	}
+
 	private Dog newDog(Long userId, String name) {
 		DogRegisterCommand command = new DogRegisterCommand(userId, name, Breed.of(RegisteredBreed.POODLE),
 				DogSex.MALE, LocalDate.of(2024, 3, 1), new BigDecimal("4.50"), null, null);
