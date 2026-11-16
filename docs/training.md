@@ -97,7 +97,7 @@ flowchart LR
 
 - `CurriculumProgress`는 반려견이 커리큘럼을 훈련한 날마다 한 행을 남깁니다. 같은 날 여러 번 훈련해도 행은 하나이며, 유니크 제약(`uk_curriculum_progress_user_dog_curriculum_trained_date`)이 중복을 막습니다.
 - 새 행은 `PENDING`으로 등록됩니다.
-- 결과는 보호자가 훈련 결과 기록 API로 고릅니다. `CurriculumProgressModifyService`가 행을 배타 잠금으로 읽고, 지금과 같은 값이면 그대로 두며, 성공한 날을 실패로 바꾸는 요청은 도메인 메서드를 부르기 전에 409(`TRAINING_CURRICULUM_PROGRESS_ALREADY_SUCCEEDED`)로 거절합니다.
-- 그날 한 번이라도 성공하면 성공한 날입니다. 실패한 날은 성공으로 바꿀 수 있습니다.
-- 성공한 날은 상태를 더 바꿀 수 없습니다. 호출하는 쪽이 성공 여부를 먼저 확인해야 하며, 성공한 날에 `succeed()`나 `fail()`을 호출하면 `IllegalStateException`이 납니다.
+- 결과는 보호자가 훈련 결과 기록 API로 고릅니다. `CurriculumProgressModifyService`가 행을 배타 잠금으로 읽고, 지금과 같은 값이면 도메인 메서드를 부르지 않고 그대로 둡니다.
+- 성공과 실패는 서로 바꿀 수 있습니다. `PENDING`으로 되돌리는 길은 없습니다.
+- 이미 성공한 날에 `succeed()`를 호출하면 `IllegalStateException`이 납니다. 같은 값인지는 호출하는 쪽이 먼저 확인합니다.
 - 레슨 진행으로 계산하는 커리큘럼 완료 상태(`ProgressStatus`)와는 별개의 기록입니다. 레슨을 모두 완료해도 이 기록은 생기지 않고, 이 기록이 있어도 커리큘럼 완료 상태는 바뀌지 않습니다.

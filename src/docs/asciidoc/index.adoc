@@ -365,12 +365,11 @@ link:{swagger-ui}#/Training/training-calendar-result[▶ Swagger에서 Try it ou
 |지금 상태 |요청 |결과
 
 |`PENDING`, `FAILED` |`SUCCEEDED` |204
-|`PENDING` |`FAILED` |204
+|`PENDING`, `SUCCEEDED` |`FAILED` |204
 |요청과 같은 값 |`SUCCEEDED`, `FAILED` |204 (변경 없음)
-|`SUCCEEDED` |`FAILED` |409 (`TRAINING_CURRICULUM_PROGRESS_ALREADY_SUCCEEDED`)
 |===
 
-결과를 지우거나(`PENDING`으로 되돌리기) 성공을 실패로 바꿀 수는 없습니다.
+성공과 실패는 서로 바꿀 수 있습니다. 결과를 지울(`PENDING`으로 되돌릴) 수는 없습니다.
 
 operation::training/calendar-result[snippets='http-request,path-parameters,query-parameters,request-fields,http-response']
 
@@ -379,7 +378,6 @@ operation::training/calendar-result[snippets='http-request,path-parameters,query
 `result`가 `SUCCEEDED`, `FAILED` 중 하나가 아니면 400(`TRAINING_INVALID_CURRICULUM_PROGRESS_RESULT`)을 반환합니다.
 그날 그 커리큘럼을 훈련한 기록이 없으면 404(`TRAINING_CURRICULUM_PROGRESS_NOT_FOUND`)를 반환합니다.
 강아지가 없거나 본인 소유가 아니면 404(`DOG_NOT_FOUND`)를 반환합니다.
-성공한 날을 실패로 바꾸려 하면 409(`TRAINING_CURRICULUM_PROGRESS_ALREADY_SUCCEEDED`)를 반환합니다.
 
 operation::training/calendar-result-error[snippets='http-response,response-fields']
 
