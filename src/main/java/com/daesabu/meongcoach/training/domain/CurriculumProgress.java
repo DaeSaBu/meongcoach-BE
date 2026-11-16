@@ -61,6 +61,10 @@ public class CurriculumProgress extends BaseEntity {
 		return curriculumProgress;
 	}
 
+	public boolean isSucceeded() {
+		return status == CurriculumProgressStatus.SUCCEEDED;
+	}
+
 	public void succeed() {
 		state(status != CurriculumProgressStatus.SUCCEEDED, "이미 성공한 날입니다.");
 

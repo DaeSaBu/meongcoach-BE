@@ -9,7 +9,10 @@ public enum TrainingErrorCode implements ErrorCode {
 	TRAINING_LESSON_NOT_FOUND(404, "레슨을 찾을 수 없습니다."),
 	TRAINING_TOPIC_NOT_CONFIGURED(404, "등록된 토픽이 없습니다."),
 	TRAINING_LESSON_COMPLETION_CONFLICT(409, "같은 레슨의 완료가 동시에 처리되었습니다. 다시 시도해 주세요."),
-	TRAINING_INVALID_CALENDAR_PERIOD(400, "훈련 달력은 시작일부터 종료일까지 최대 62일만 조회할 수 있습니다.");
+	TRAINING_INVALID_CALENDAR_PERIOD(400, "훈련 달력은 시작일부터 종료일까지 최대 62일만 조회할 수 있습니다."),
+	TRAINING_INVALID_CURRICULUM_PROGRESS_RESULT(400, "훈련 결과는 SUCCEEDED, FAILED 중 하나여야 합니다."),
+	TRAINING_CURRICULUM_PROGRESS_NOT_FOUND(404, "그날의 커리큘럼 훈련 기록을 찾을 수 없습니다."),
+	TRAINING_CURRICULUM_PROGRESS_ALREADY_SUCCEEDED(409, "이미 성공한 날의 훈련 결과는 바꿀 수 없습니다.");
 
 	private final int status;
 	private final String message;
