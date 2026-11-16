@@ -60,4 +60,12 @@ public class DogRegisterService implements DogRegister {
 		dog.updateProfile(request.toCommand());
 		return dog;
 	}
+
+	@Override
+	@Transactional
+	public void select(Long userId, Long dogId) {
+		List<Dog> owned = dogRepository.findAllByUserIdOrderByIdAsc(userId);
+		Dogs dogs = new Dogs(owned);
+		dogs.select(dogId);
+	}
 }

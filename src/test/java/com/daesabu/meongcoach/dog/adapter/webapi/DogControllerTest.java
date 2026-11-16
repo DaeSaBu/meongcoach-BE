@@ -959,6 +959,62 @@ class DogControllerTest {
 		then(dogProfileDeleter).shouldHaveNoInteractions();
 	}
 
+	@Test
+	void 소유_강아지를_선택하면_204를_반환한다() throws Exception {
+		mockMvc.perform(put("/api/dogs/{dogId}/selection", 10L)
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+				.andExpect(status().isNoContent())
+				.andDo(document("dog/select",
+						pathParameters(
+								parameterWithName("dogId").description("선택할 강아지 ID")
+						)
+				));
+	}
+
+	@Test
+	void 인증_주체와_경로의_강아지_ID로_선택을_위임한다() throws Exception {
+		mockMvc.perform(put("/api/dogs/{dogId}/selection", 10L).principal(CURRENT_USER))
+				.andExpect(status().isNoContent());
+
+		then(dogRegister).should().select(42L, 10L);
+	}
+
+	@Test
+	void 없거나_본인_소유가_아닌_강아지를_선택하면_404와_에러_코드를_반환한다() throws Exception {
+		willThrow(new DogNotFoundException(999L)).given(dogRegister).select(42L, 999L);
+
+		mockMvc.perform(put("/api/dogs/{dogId}/selection", 999L)
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.status").value(404))
+				.andExpect(jsonPath("$.code").value("DOG_NOT_FOUND"))
+				.andExpect(jsonPath("$.detail").value("id가 999인 강아지를 찾을 수 없습니다."))
+				.andDo(document("dog/select-error",
+						pathParameters(
+								parameterWithName("dogId").description("선택할 강아지 ID")
+						),
+						responseFields(
+								fieldWithPath("title").description("HTTP 상태 이름"),
+								fieldWithPath("status").description("HTTP 상태 코드"),
+								fieldWithPath("detail").description("사람이 읽을 수 있는 에러 설명"),
+								fieldWithPath("instance").description("에러가 발생한 요청 경로"),
+								fieldWithPath("code").description("클라이언트 분기용 에러 코드"),
+								fieldWithPath("timestamp").description("에러 발생 시각(UTC)")
+						)
+				));
+	}
+
+	@Test
+	void 인증_정보가_없으면_선택은_401을_반환한다() throws Exception {
+		mockMvc.perform(put("/api/dogs/{dogId}/selection", 10L))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+
+		then(dogRegister).shouldHaveNoInteractions();
+	}
+
 	private Dog selectedDog(Long id) {
 		Dog dog = Dog.register(new DogRegisterCommand(42L, "초코", Breed.of(RegisteredBreed.POODLE), DogSex.MALE,
 				LocalDate.of(2024, 3, 1), new BigDecimal("4.50"), IMAGE_URL, EXPECTATION));
