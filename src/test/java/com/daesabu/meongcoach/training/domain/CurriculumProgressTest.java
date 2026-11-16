@@ -46,6 +46,20 @@ class CurriculumProgressTest {
 	}
 
 	@Test
+	void 성공으로_바꾼_날만_성공한_날이다() {
+		CurriculumProgressRegisterCommand command = new CurriculumProgressRegisterCommand(2L, 10L, TRAINED_DATE);
+		CurriculumProgress pending = CurriculumProgress.register(1L, command);
+		CurriculumProgress failed = CurriculumProgress.register(1L, command);
+		failed.fail();
+		CurriculumProgress succeeded = CurriculumProgress.register(1L, command);
+		succeeded.succeed();
+
+		assertThat(pending.isSucceeded()).isFalse();
+		assertThat(failed.isSucceeded()).isFalse();
+		assertThat(succeeded.isSucceeded()).isTrue();
+	}
+
+	@Test
 	void 판정을_기다리는_날을_실패로_바꾼다() {
 		CurriculumProgressRegisterCommand command = new CurriculumProgressRegisterCommand(2L, 10L, TRAINED_DATE);
 		CurriculumProgress progress = CurriculumProgress.register(1L, command);

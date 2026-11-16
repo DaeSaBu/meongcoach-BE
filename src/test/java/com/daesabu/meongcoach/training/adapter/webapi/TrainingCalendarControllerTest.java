@@ -4,16 +4,23 @@ import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.docume
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
+import static org.mockito.BDDMockito.willThrow;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.get;
+import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.put;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
+import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
+import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
 import static org.springframework.restdocs.request.RequestDocumentation.queryParameters;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.daesabu.meongcoach.dog.domain.exception.DogNotFoundException;
+import com.daesabu.meongcoach.training.application.provided.CurriculumProgressRegister;
 import com.daesabu.meongcoach.training.application.provided.TrainingCalendarFinder;
+import com.daesabu.meongcoach.training.application.provided.dto.CurriculumProgressResultRequest;
 import com.daesabu.meongcoach.training.application.provided.dto.TrainingCalendarCurriculumResult;
 import com.daesabu.meongcoach.training.application.provided.dto.TrainingCalendarDayResult;
 import com.daesabu.meongcoach.training.application.provided.dto.TrainingCalendarLessonResult;
@@ -26,6 +33,9 @@ import com.daesabu.meongcoach.training.domain.Lesson;
 import com.daesabu.meongcoach.training.domain.LessonFixture;
 import com.daesabu.meongcoach.training.domain.Topic;
 import com.daesabu.meongcoach.training.domain.TopicFixture;
+import com.daesabu.meongcoach.training.domain.exception.CurriculumProgressAlreadySucceededException;
+import com.daesabu.meongcoach.training.domain.exception.CurriculumProgressNotFoundException;
+import com.daesabu.meongcoach.training.domain.exception.InvalidCurriculumProgressResultException;
 import com.daesabu.meongcoach.training.domain.exception.InvalidTrainingCalendarPeriodException;
 import java.security.Principal;
 import java.time.LocalDate;
@@ -36,6 +46,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.restdocs.payload.FieldDescriptor;
 import org.springframework.restdocs.payload.JsonFieldType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -57,6 +68,9 @@ class TrainingCalendarControllerTest {
 
 	@MockitoBean
 	private TrainingCalendarFinder trainingCalendarFinder;
+
+	@MockitoBean
+	private CurriculumProgressRegister curriculumProgressRegister;
 
 	@Test
 	void 훈련_달력을_조회하면_날짜별_훈련_기록을_반환한다() throws Exception {
@@ -202,6 +216,142 @@ class TrainingCalendarControllerTest {
 						.queryParam("dogId", "3")
 						.queryParam("from", "2026-11-01")
 						.queryParam("to", "2026-11-30"))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+	}
+
+	@Test
+	void 훈련_결과를_기록하면_204를_반환한다() throws Exception {
+		mockMvc.perform(put("/api/training/calendar/{date}/curriculums/{curriculumId}/result", "2026-11-16", 130103L)
+						.queryParam("dogId", "3")
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{"result": "SUCCEEDED"}
+								"""))
+				.andExpect(status().isNoContent())
+				.andDo(document("training/calendar-result",
+						pathParameters(
+								parameterWithName("date").description("훈련한 날(yyyy-MM-dd)"),
+								parameterWithName("curriculumId").description("그날 훈련한 커리큘럼 ID")
+						),
+						queryParameters(
+								parameterWithName("dogId").description("훈련한 강아지 ID")
+						),
+						requestFields(
+								fieldWithPath("result").description("훈련 결과(SUCCEEDED, FAILED)")
+						)
+				));
+
+		then(curriculumProgressRegister).should().recordResult(42L, 3L, 130103L, LocalDate.of(2026, 11, 16),
+				new CurriculumProgressResultRequest("SUCCEEDED"));
+	}
+
+	@Test
+	void 성공한_날을_실패로_바꾸려_하면_409와_에러_코드를_반환한다() throws Exception {
+		willThrow(new CurriculumProgressAlreadySucceededException()).given(curriculumProgressRegister)
+				.recordResult(42L, 3L, 130103L, LocalDate.of(2026, 11, 16),
+						new CurriculumProgressResultRequest("FAILED"));
+
+		mockMvc.perform(put("/api/training/calendar/{date}/curriculums/{curriculumId}/result", "2026-11-16", 130103L)
+						.queryParam("dogId", "3")
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{"result": "FAILED"}
+								"""))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.status").value(409))
+				.andExpect(jsonPath("$.code").value("TRAINING_CURRICULUM_PROGRESS_ALREADY_SUCCEEDED"))
+				.andDo(document("training/calendar-result-error",
+						pathParameters(
+								parameterWithName("date").description("훈련한 날(yyyy-MM-dd)"),
+								parameterWithName("curriculumId").description("그날 훈련한 커리큘럼 ID")
+						),
+						queryParameters(
+								parameterWithName("dogId").description("훈련한 강아지 ID")
+						),
+						requestFields(
+								fieldWithPath("result").description("훈련 결과(SUCCEEDED, FAILED)")
+						),
+						responseFields(
+								fieldWithPath("title").description("HTTP 상태 이름"),
+								fieldWithPath("status").description("HTTP 상태 코드"),
+								fieldWithPath("detail").description("사람이 읽을 수 있는 에러 설명"),
+								fieldWithPath("instance").description("에러가 발생한 요청 경로"),
+								fieldWithPath("code").description("클라이언트 분기용 에러 코드"),
+								fieldWithPath("timestamp").description("에러 발생 시각(UTC)")
+						)
+				));
+	}
+
+	@Test
+	void 훈련_결과가_SUCCEEDED나_FAILED가_아니면_400과_에러_코드를_반환한다() throws Exception {
+		willThrow(new InvalidCurriculumProgressResultException()).given(curriculumProgressRegister)
+				.recordResult(42L, 3L, 130103L, LocalDate.of(2026, 11, 16),
+						new CurriculumProgressResultRequest("PENDING"));
+
+		mockMvc.perform(put("/api/training/calendar/{date}/curriculums/{curriculumId}/result", "2026-11-16", 130103L)
+						.queryParam("dogId", "3")
+						.principal(CURRENT_USER)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{"result": "PENDING"}
+								"""))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("TRAINING_INVALID_CURRICULUM_PROGRESS_RESULT"));
+	}
+
+	@Test
+	void 그날_훈련한_기록이_없으면_404와_에러_코드를_반환한다() throws Exception {
+		willThrow(new CurriculumProgressNotFoundException()).given(curriculumProgressRegister)
+				.recordResult(42L, 3L, 130103L, LocalDate.of(2026, 11, 16),
+						new CurriculumProgressResultRequest("SUCCEEDED"));
+
+		mockMvc.perform(put("/api/training/calendar/{date}/curriculums/{curriculumId}/result", "2026-11-16", 130103L)
+						.queryParam("dogId", "3")
+						.principal(CURRENT_USER)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{"result": "SUCCEEDED"}
+								"""))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.code").value("TRAINING_CURRICULUM_PROGRESS_NOT_FOUND"));
+	}
+
+	@Test
+	void 훈련_결과가_비어_있으면_400을_반환한다() throws Exception {
+		mockMvc.perform(put("/api/training/calendar/{date}/curriculums/{curriculumId}/result", "2026-11-16", 130103L)
+						.queryParam("dogId", "3")
+						.principal(CURRENT_USER)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{"result": ""}
+								"""))
+				.andExpect(status().isBadRequest());
+	}
+
+	@Test
+	void 훈련_결과_기록에_dogId가_없으면_400을_반환한다() throws Exception {
+		mockMvc.perform(put("/api/training/calendar/{date}/curriculums/{curriculumId}/result", "2026-11-16", 130103L)
+						.principal(CURRENT_USER)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{"result": "SUCCEEDED"}
+								"""))
+				.andExpect(status().isBadRequest());
+	}
+
+	@Test
+	void 훈련_결과_기록_시_인증_정보가_없으면_401을_반환한다() throws Exception {
+		mockMvc.perform(put("/api/training/calendar/{date}/curriculums/{curriculumId}/result", "2026-11-16", 130103L)
+						.queryParam("dogId", "3")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{"result": "SUCCEEDED"}
+								"""))
 				.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
 	}
