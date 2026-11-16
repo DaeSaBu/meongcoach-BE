@@ -55,6 +55,12 @@ public class Dogs {
 		dog.delete();
 	}
 
+	public void select(Long dogId) {
+		Dog target = find(dogId);
+		dogs.forEach(Dog::unselect);
+		target.select();
+	}
+
 	private Dog find(Long dogId) {
 		return dogs.stream()
 				.filter(dog -> dog.getId().equals(dogId))

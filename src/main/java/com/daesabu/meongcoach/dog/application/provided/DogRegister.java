@@ -26,4 +26,10 @@ public interface DogRegister {
 	 * 강아지가 없거나 본인 소유가 아니면 DogNotFoundException을 던진다.
 	 */
 	Dog update(Long userId, Long dogId, @Valid DogProfileUpdateRequest request);
+
+	/**
+	 * 소유한 강아지를 선택된 강아지로 바꾸고, 사용자의 나머지 강아지는 미선택으로 바꾼다.
+	 * 강아지가 없거나 본인 소유가 아니거나 삭제됐으면 DogNotFoundException을 던진다.
+	 */
+	void select(Long userId, Long dogId);
 }
