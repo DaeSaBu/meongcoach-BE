@@ -92,10 +92,11 @@ user-invocable: true
 |---|---|---|
 | `main` | 배포 기준 | 직접 push 금지, `develop`에서만 머지 |
 | `develop` | 통합 개발 | 직접 push 금지, PR로만 머지 |
-| `feature/{이슈번호}` | 기능 개발 | Linear 이슈 기준 생성, `develop`에서 분기, PR base는 `develop` |
+| `feature/{이슈번호}-{작업 내용}` | 기능 개발 | Linear 이슈 기준 생성, `develop`에서 분기, PR base는 `develop` |
 
-- 브랜치명에는 Linear가 제공하는 이슈번호를 소문자로 그대로 쓴다. (예: `feature/dae-179`)
-- 작업 내용을 덧붙일 경우 `feature/dae-179-add-sns-login`처럼 영문 소문자와 하이픈으로 이어 쓴다.
+- 브랜치명에는 Linear가 제공하는 이슈번호를 소문자로 그대로 쓴다. (예: `dae-179`)
+- 이슈번호 뒤에는 작업 내용을 영문 소문자와 하이픈으로 이어 붙인다. (예: `feature/dae-179-add-sns-login`)
+- 작업자가 `feature/dae-720`, `refactor/dae-721`처럼 `{접두사}/dae-{숫자}`까지만 알려 주면 Linear 티켓 번호만 준 것이다. 그 이름 그대로 만들지 않고, 접두사와 이슈번호는 유지한 채 맡은 작업 내용을 요약해 뒤에 붙인 이름으로 브랜치를 만든다. (예: `feature/dae-720` → `feature/dae-720-allow-succeeded-to-failed`)
 - 한 이슈를 여러 브랜치로 나눠야 하는 경우 `feature/dae-179-2`처럼 뒤에 순번을 붙인다.
 - 머지 방향은 `feature → develop → main`이다.
 - 머지 전략은 아래 [PR 컨벤션](#pr-컨벤션)에서 정의한다.
