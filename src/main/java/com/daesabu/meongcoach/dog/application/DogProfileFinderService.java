@@ -50,6 +50,20 @@ public class DogProfileFinderService implements DogProfileFinder {
 	}
 
 	@Override
+	public Dog findDogOrSelected(Long userId, Long dogId) {
+		if (dogId == null) {
+			return findSelectedDog(userId);
+		}
+		return findDog(userId, dogId);
+	}
+
+	@Override
+	public DogProfileResult findDogProfileOrSelected(Long userId, Long dogId) {
+		Dog dog = findDogOrSelected(userId, dogId);
+		return DogProfileResult.from(dog);
+	}
+
+	@Override
 	public DogProfileResult findSelectedDogProfile(Long userId) {
 		Dog dog = findSelectedDog(userId);
 		return DogProfileResult.from(dog);
