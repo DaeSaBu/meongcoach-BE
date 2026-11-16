@@ -3,6 +3,8 @@ package com.daesabu.meongcoach.training.application.provided;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.daesabu.meongcoach.dog.application.required.DogRepository;
+import com.daesabu.meongcoach.dog.domain.DogFixture;
 import com.daesabu.meongcoach.entitlement.domain.exception.EntitlementRequiredException;
 import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;
 import com.daesabu.meongcoach.support.ApplicationTest;
@@ -53,6 +55,30 @@ class PlanLessonCompleterTest {
 
 	@Autowired
 	private PlatformTransactionManager transactionManager;
+
+	@Autowired
+	private DogRepository dogRepository;
+
+	private Long dogId;
+
+	@Test
+	void 플랜_레슨을_완료하면_선택된_강아지가_아니라_플랜의_강아지에_완료_횟수를_기록한다() {
+		Long selectedDogId = dogId();
+		Long planDogId = dogRepository.save(DogFixture.unselected(USER_ID)).getId();
+		Curriculum curriculum = saveCurriculum(false);
+		Lesson lesson = saveLesson(curriculum, 1);
+		PlanCreateCommand command = new PlanCreateCommand(USER_ID, planDogId, "보리의 훈련 플랜", "목표");
+		Plan plan = planRepository.save(Plan.create(command, List.of(curriculum.getId())));
+		flushAndClear();
+
+		completer.complete(USER_ID, plan.getId(), lesson.getId());
+		flushAndClear();
+
+		assertThat(progressRepository.findByUserIdAndDogIdAndLessonId(USER_ID, planDogId, lesson.getId()))
+				.get().extracting(LessonProgress::getCompletedCount).isEqualTo(1);
+		assertThat(progressRepository.findByUserIdAndDogIdAndLessonId(USER_ID, selectedDogId, lesson.getId()))
+				.isEmpty();
+	}
 
 	@Test
 	void 현재_레슨을_완료하면_일반_학습과_플랜_기록을_함께_저장한다() {
@@ -183,7 +209,7 @@ class PlanLessonCompleterTest {
 		assertThatThrownBy(() -> completer.complete(43L, plan.getId(), lesson.getId()))
 				.isInstanceOf(PlanNotFoundException.class);
 		assertThat(findPlan(plan).getCompletedLessonIds()).isEmpty();
-		assertThat(progressRepository.findByUserIdAndLessonId(USER_ID, lesson.getId())).isEmpty();
+		assertThat(progressRepository.findByUserIdAndDogIdAndLessonId(USER_ID, dogId(), lesson.getId())).isEmpty();
 	}
 
 	@Test
@@ -197,7 +223,7 @@ class PlanLessonCompleterTest {
 
 		assertThatThrownBy(() -> completer.complete(USER_ID, plan.getId(), lesson.getId()))
 				.isInstanceOf(PlanNotActiveException.class);
-		assertThat(progressRepository.findByUserIdAndLessonId(USER_ID, lesson.getId())).isEmpty();
+		assertThat(progressRepository.findByUserIdAndDogIdAndLessonId(USER_ID, dogId(), lesson.getId())).isEmpty();
 	}
 
 	@Test
@@ -226,7 +252,7 @@ class PlanLessonCompleterTest {
 		assertThatThrownBy(() -> completer.complete(USER_ID, plan.getId(), -1L))
 				.isInstanceOf(PlanLessonOrderException.class);
 		assertThat(findPlan(plan).getCompletedLessonIds()).isEmpty();
-		assertThat(progressRepository.findByUserIdAndLessonId(USER_ID, later.getId())).isEmpty();
+		assertThat(progressRepository.findByUserIdAndDogIdAndLessonId(USER_ID, dogId(), later.getId())).isEmpty();
 	}
 
 	@Test
@@ -234,7 +260,7 @@ class PlanLessonCompleterTest {
 		Curriculum curriculum = saveCurriculum(false);
 		Lesson first = saveLesson(curriculum, 1);
 		Lesson later = saveLesson(curriculum, 2);
-		LessonProgress progress = LessonProgress.start(USER_ID, later.getId());
+		LessonProgress progress = LessonProgress.start(USER_ID, dogId(), later.getId());
 		progress.complete();
 		progressRepository.save(progress);
 		Plan plan = savePlan(curriculum);
@@ -261,7 +287,7 @@ class PlanLessonCompleterTest {
 				.isInstanceOf(EntitlementRequiredException.class);
 		assertThat(findPlan(plan).getCompletedLessonIds()).isEmpty();
 		assertThat(findPlan(plan).getStatus()).isEqualTo(PlanStatus.ACTIVE);
-		assertThat(progressRepository.findByUserIdAndLessonId(USER_ID, lesson.getId())).isEmpty();
+		assertThat(progressRepository.findByUserIdAndDogIdAndLessonId(USER_ID, dogId(), lesson.getId())).isEmpty();
 	}
 
 	@Test
@@ -287,13 +313,13 @@ class PlanLessonCompleterTest {
 
 		transaction.executeWithoutResult(status -> {
 			assertThat(planRepository.findById(planId.get())).isEmpty();
-			assertThat(progressRepository.findByUserIdAndLessonId(USER_ID, lessonId.get())).isEmpty();
+			assertThat(progressRepository.findByUserIdAndDogIdAndLessonId(USER_ID, dogId(), lessonId.get())).isEmpty();
 		});
 	}
 
 	private Plan savePlan(Curriculum... curriculums) {
 		List<Long> curriculumIds = List.of(curriculums).stream().map(Curriculum::getId).toList();
-		PlanCreateCommand command = new PlanCreateCommand(USER_ID, 1L, "초코의 훈련 플랜", "목표");
+		PlanCreateCommand command = new PlanCreateCommand(USER_ID, dogId(), "초코의 훈련 플랜", "목표");
 		Plan plan = Plan.create(command, curriculumIds);
 		return planRepository.save(plan);
 	}
@@ -320,12 +346,19 @@ class PlanLessonCompleterTest {
 		return lesson;
 	}
 
+	private Long dogId() {
+		if (dogId == null) {
+			dogId = dogRepository.save(DogFixture.selected(USER_ID)).getId();
+		}
+		return dogId;
+	}
+
 	private Plan findPlan(Plan plan) {
 		return planRepository.findById(plan.getId()).orElseThrow();
 	}
 
 	private int completedCount(Lesson lesson) {
-		return progressRepository.findByUserIdAndLessonId(USER_ID, lesson.getId())
+		return progressRepository.findByUserIdAndDogIdAndLessonId(USER_ID, dogId(), lesson.getId())
 				.orElseThrow().getCompletedCount();
 	}
 

@@ -1,5 +1,7 @@
 package com.daesabu.meongcoach.graduation.application.provided;
 
+import com.daesabu.meongcoach.dog.application.required.DogRepository;
+import com.daesabu.meongcoach.dog.domain.DogFixture;
 import com.daesabu.meongcoach.training.application.provided.LessonCompleter;
 import com.daesabu.meongcoach.training.application.required.CurriculumRepository;
 import com.daesabu.meongcoach.training.application.required.LessonRepository;
@@ -36,13 +38,17 @@ class TopicSeeder {
 	private LessonCompleter lessonCompleter;
 
 	@Autowired
+	private DogRepository dogRepository;
+
+	@Autowired
 	private EntityManager entityManager;
 
 	Topic completedTopic(Long userId, String title) {
 		Topic topic = saveTopic(title);
 		Lesson lesson = saveLesson(topic);
 		flushAndClear();
-		lessonCompleter.completeLesson(userId, lesson.getId());
+		Long dogId = dogRepository.save(DogFixture.selected(userId)).getId();
+		lessonCompleter.completeLesson(userId, dogId, lesson.getId());
 		flushAndClear();
 		return topic;
 	}

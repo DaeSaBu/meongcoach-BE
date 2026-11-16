@@ -253,7 +253,7 @@ class PlanPreparationFinderTest {
 	}
 
 	private void complete(Long userId, Lesson lesson) {
-		LessonProgress progress = LessonProgress.start(userId, lesson.getId());
+		LessonProgress progress = LessonProgress.start(userId, 7L, lesson.getId());
 		progress.complete();
 		progressRepository.save(progress);
 	}

@@ -3,6 +3,9 @@ package com.daesabu.meongcoach.training.application.provided;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.daesabu.meongcoach.dog.application.required.DogRepository;
+import com.daesabu.meongcoach.dog.domain.DogFixture;
+import com.daesabu.meongcoach.dog.domain.exception.DogNotFoundException;
 import com.daesabu.meongcoach.entitlement.application.required.EntitlementRepository;
 import com.daesabu.meongcoach.entitlement.domain.EntitlementFixture;
 import com.daesabu.meongcoach.entitlement.domain.exception.EntitlementRequiredException;
@@ -25,6 +28,7 @@ import com.daesabu.meongcoach.training.domain.TrainingCategory;
 import com.daesabu.meongcoach.training.domain.TrainingCategoryFixture;
 import com.daesabu.meongcoach.training.domain.exception.LessonNotFoundException;
 import jakarta.persistence.EntityManager;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -34,6 +38,8 @@ class LessonCompleterTest {
 	private static final Long USER_ID = 1L;
 
 	private static final Long OTHER_USER_ID = 2L;
+
+	private static final Long DOGLESS_USER_ID = 3L;
 
 	private static final Long ABSENT_LESSON_ID = 999L;
 
@@ -62,14 +68,27 @@ class LessonCompleterTest {
 	private EntitlementRepository entitlementRepository;
 
 	@Autowired
+	private DogRepository dogRepository;
+
+	@Autowired
 	private EntityManager entityManager;
+
+	private Long dogId;
+
+	private Long otherUserDogId;
+
+	@BeforeEach
+	void setUp() {
+		dogId = dogRepository.save(DogFixture.selected(USER_ID)).getId();
+		otherUserDogId = dogRepository.save(DogFixture.selected(OTHER_USER_ID)).getId();
+	}
 
 	@Test
 	void 첫_완료_시_완료_횟수_1을_반환한다() {
 		Lesson lesson = saveLesson("앉아");
 		flushAndClear();
 
-		int completedCount = lessonCompleter.completeLesson(USER_ID, lesson.getId());
+		int completedCount = lessonCompleter.completeLesson(USER_ID, dogId, lesson.getId());
 
 		assertThat(completedCount).isOne();
 	}
@@ -79,11 +98,11 @@ class LessonCompleterTest {
 		Lesson lesson = saveLesson("앉아");
 		flushAndClear();
 
-		lessonCompleter.completeLesson(USER_ID, lesson.getId());
+		lessonCompleter.completeLesson(USER_ID, dogId, lesson.getId());
 
 		flushAndClear();
 		assertThat(lessonProgressRepository.count()).isOne();
-		assertThat(findCompletedCount(USER_ID, lesson.getId())).isOne();
+		assertThat(findCompletedCount(USER_ID, dogId, lesson.getId())).isOne();
 	}
 
 	@Test
@@ -91,33 +110,90 @@ class LessonCompleterTest {
 		Lesson lesson = saveLesson("앉아");
 		flushAndClear();
 
-		assertThat(lessonCompleter.completeLesson(USER_ID, lesson.getId())).isEqualTo(1);
-		assertThat(lessonCompleter.completeLesson(USER_ID, lesson.getId())).isEqualTo(2);
-		assertThat(lessonCompleter.completeLesson(USER_ID, lesson.getId())).isEqualTo(3);
+		assertThat(lessonCompleter.completeLesson(USER_ID, dogId, lesson.getId())).isEqualTo(1);
+		assertThat(lessonCompleter.completeLesson(USER_ID, dogId, lesson.getId())).isEqualTo(2);
+		assertThat(lessonCompleter.completeLesson(USER_ID, dogId, lesson.getId())).isEqualTo(3);
 
 		flushAndClear();
 		assertThat(lessonProgressRepository.count()).isOne();
-		assertThat(findCompletedCount(USER_ID, lesson.getId())).isEqualTo(3);
+		assertThat(findCompletedCount(USER_ID, dogId, lesson.getId())).isEqualTo(3);
 	}
 
 	@Test
 	void 다른_사용자의_완료_횟수에는_영향을_주지_않는다() {
 		Lesson lesson = saveLesson("앉아");
 		flushAndClear();
-		lessonCompleter.completeLesson(OTHER_USER_ID, lesson.getId());
-		lessonCompleter.completeLesson(OTHER_USER_ID, lesson.getId());
+		lessonCompleter.completeLesson(OTHER_USER_ID, otherUserDogId, lesson.getId());
+		lessonCompleter.completeLesson(OTHER_USER_ID, otherUserDogId, lesson.getId());
 
-		int completedCount = lessonCompleter.completeLesson(USER_ID, lesson.getId());
+		int completedCount = lessonCompleter.completeLesson(USER_ID, dogId, lesson.getId());
 
 		flushAndClear();
 		assertThat(completedCount).isOne();
-		assertThat(findCompletedCount(USER_ID, lesson.getId())).isOne();
-		assertThat(findCompletedCount(OTHER_USER_ID, lesson.getId())).isEqualTo(2);
+		assertThat(findCompletedCount(USER_ID, dogId, lesson.getId())).isOne();
+		assertThat(findCompletedCount(OTHER_USER_ID, otherUserDogId, lesson.getId())).isEqualTo(2);
+	}
+
+	@Test
+	void 같은_사용자의_다른_강아지_완료_횟수에는_영향을_주지_않는다() {
+		Long secondDogId = dogRepository.save(DogFixture.unselected(USER_ID)).getId();
+		Lesson lesson = saveLesson("앉아");
+		flushAndClear();
+		lessonCompleter.completeLesson(USER_ID, dogId, lesson.getId());
+		lessonCompleter.completeLesson(USER_ID, dogId, lesson.getId());
+
+		int completedCount = lessonCompleter.completeLesson(USER_ID, secondDogId, lesson.getId());
+
+		flushAndClear();
+		assertThat(completedCount).isOne();
+		assertThat(findCompletedCount(USER_ID, secondDogId, lesson.getId())).isOne();
+		assertThat(findCompletedCount(USER_ID, dogId, lesson.getId())).isEqualTo(2);
+	}
+
+	@Test
+	void dogId를_생략하면_선택된_강아지에_기록한다() {
+		dogRepository.save(DogFixture.unselected(USER_ID));
+		Lesson lesson = saveLesson("앉아");
+		flushAndClear();
+
+		int completedCount = lessonCompleter.completeLesson(USER_ID, null, lesson.getId());
+
+		flushAndClear();
+		assertThat(completedCount).isOne();
+		assertThat(lessonProgressRepository.count()).isOne();
+		assertThat(findCompletedCount(USER_ID, dogId, lesson.getId())).isOne();
+	}
+
+	@Test
+	void 다른_사용자의_강아지를_지정하면_예외를_던지고_진행도를_만들지_않는다() {
+		Lesson lesson = saveLesson("앉아");
+		flushAndClear();
+
+		assertThatThrownBy(() -> lessonCompleter.completeLesson(USER_ID, otherUserDogId, lesson.getId()))
+				.isInstanceOf(DogNotFoundException.class);
+
+		flushAndClear();
+		assertThat(lessonProgressRepository.count()).isZero();
+	}
+
+	@Test
+	void 선택된_강아지가_없는_사용자가_dogId를_생략하면_예외를_던진다() {
+		Lesson lesson = saveLesson("앉아");
+		flushAndClear();
+
+		assertThatThrownBy(() -> lessonCompleter.completeLesson(DOGLESS_USER_ID, null, lesson.getId()))
+				.isInstanceOf(DogNotFoundException.class);
+	}
+
+	@Test
+	void 강아지가_없는_사용자도_존재하지_않는_레슨이면_레슨_예외를_던진다() {
+		assertThatThrownBy(() -> lessonCompleter.completeLesson(DOGLESS_USER_ID, null, ABSENT_LESSON_ID))
+				.isInstanceOf(LessonNotFoundException.class);
 	}
 
 	@Test
 	void 존재하지_않는_레슨이면_예외를_던진다() {
-		assertThatThrownBy(() -> lessonCompleter.completeLesson(USER_ID, ABSENT_LESSON_ID))
+		assertThatThrownBy(() -> lessonCompleter.completeLesson(USER_ID, dogId, ABSENT_LESSON_ID))
 				.isInstanceOf(LessonNotFoundException.class);
 	}
 
@@ -125,15 +201,15 @@ class LessonCompleterTest {
 	void 존재하지_않는_레슨이면_진행도를_변경하지_않는다() {
 		Lesson lesson = saveLesson("앉아");
 		flushAndClear();
-		lessonCompleter.completeLesson(USER_ID, lesson.getId());
+		lessonCompleter.completeLesson(USER_ID, dogId, lesson.getId());
 		flushAndClear();
 
-		assertThatThrownBy(() -> lessonCompleter.completeLesson(USER_ID, ABSENT_LESSON_ID))
+		assertThatThrownBy(() -> lessonCompleter.completeLesson(USER_ID, dogId, ABSENT_LESSON_ID))
 				.isInstanceOf(LessonNotFoundException.class);
 
 		flushAndClear();
 		assertThat(lessonProgressRepository.count()).isOne();
-		assertThat(findCompletedCount(USER_ID, lesson.getId())).isOne();
+		assertThat(findCompletedCount(USER_ID, dogId, lesson.getId())).isOne();
 	}
 
 	@Test
@@ -141,7 +217,7 @@ class LessonCompleterTest {
 		Lesson lesson = savePremiumLesson("앉아", EntitlementType.PUPPY);
 		flushAndClear();
 
-		assertThatThrownBy(() -> lessonCompleter.completeLesson(USER_ID, lesson.getId()))
+		assertThatThrownBy(() -> lessonCompleter.completeLesson(USER_ID, dogId, lesson.getId()))
 				.isInstanceOf(EntitlementRequiredException.class);
 
 		flushAndClear();
@@ -154,7 +230,7 @@ class LessonCompleterTest {
 		entitlementRepository.save(EntitlementFixture.create(USER_ID, EntitlementType.PUPPY, null));
 		flushAndClear();
 
-		int completedCount = lessonCompleter.completeLesson(USER_ID, lesson.getId());
+		int completedCount = lessonCompleter.completeLesson(USER_ID, dogId, lesson.getId());
 
 		assertThat(completedCount).isOne();
 	}
@@ -165,21 +241,21 @@ class LessonCompleterTest {
 		Curriculum firstCurriculum = first.getCurriculum();
 		Topic topic = firstCurriculum.getTopic();
 		flushAndClear();
-		lessonCompleter.completeLesson(USER_ID, first.getId());
+		lessonCompleter.completeLesson(USER_ID, dogId, first.getId());
 		flushAndClear();
 		Lesson second = lessonRepository.save(LessonFixture.create(firstCurriculum, "기다려", 2, 5));
 		Curriculum next = curriculumRepository.save(CurriculumFixture.create(topic, "다음 단계", 2, null, null));
 		Lesson third = lessonRepository.save(LessonFixture.create(next, "멀리서 기다려", 1, 5));
 		flushAndClear();
 
-		lessonCompleter.completeLesson(USER_ID, second.getId());
-		lessonCompleter.completeLesson(USER_ID, third.getId());
+		lessonCompleter.completeLesson(USER_ID, dogId, second.getId());
+		lessonCompleter.completeLesson(USER_ID, dogId, third.getId());
 		flushAndClear();
 
 		assertThat(lessonProgressRepository.count()).isEqualTo(3);
-		assertThat(findCompletedCount(USER_ID, first.getId())).isOne();
-		assertThat(findCompletedCount(USER_ID, second.getId())).isOne();
-		assertThat(findCompletedCount(USER_ID, third.getId())).isOne();
+		assertThat(findCompletedCount(USER_ID, dogId, first.getId())).isOne();
+		assertThat(findCompletedCount(USER_ID, dogId, second.getId())).isOne();
+		assertThat(findCompletedCount(USER_ID, dogId, third.getId())).isOne();
 	}
 
 	@Test
@@ -188,15 +264,15 @@ class LessonCompleterTest {
 		Lesson second = saveLesson("기다려");
 		Long secondTopicId = second.getCurriculum().getTopic().getId();
 		flushAndClear();
-		lessonCompleter.completeLesson(USER_ID, first.getId());
+		lessonCompleter.completeLesson(USER_ID, dogId, first.getId());
 
-		topicSelector.selectTopic(USER_ID, new TopicSelectionRequest(secondTopicId));
-		lessonCompleter.completeLesson(USER_ID, second.getId());
+		topicSelector.selectTopic(USER_ID, dogId, new TopicSelectionRequest(secondTopicId));
+		lessonCompleter.completeLesson(USER_ID, dogId, second.getId());
 		flushAndClear();
 
 		assertThat(lessonProgressRepository.count()).isEqualTo(2);
-		assertThat(findCompletedCount(USER_ID, first.getId())).isOne();
-		assertThat(findCompletedCount(USER_ID, second.getId())).isOne();
+		assertThat(findCompletedCount(USER_ID, dogId, first.getId())).isOne();
+		assertThat(findCompletedCount(USER_ID, dogId, second.getId())).isOne();
 	}
 
 	private Lesson saveLesson(String title) {
@@ -216,8 +292,8 @@ class LessonCompleterTest {
 		return lessonRepository.save(LessonFixture.create(curriculum, title + " 레슨", 1, 5));
 	}
 
-	private int findCompletedCount(Long userId, Long lessonId) {
-		return lessonProgressRepository.findByUserIdAndLessonId(userId, lessonId)
+	private int findCompletedCount(Long userId, Long dogId, Long lessonId) {
+		return lessonProgressRepository.findByUserIdAndDogIdAndLessonId(userId, dogId, lessonId)
 				.map(LessonProgress::getCompletedCount)
 				.orElseThrow();
 	}

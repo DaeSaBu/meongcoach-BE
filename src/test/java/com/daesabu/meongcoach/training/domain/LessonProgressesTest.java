@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 class LessonProgressesTest {
 	@Test
 	void 미완료_레슨의_기록은_완료로_세지_않는다() {
-		LessonProgress uncompleted = LessonProgress.start(1L, 1001L);
+		LessonProgress uncompleted = LessonProgress.start(1L, 7L, 1001L);
 		LessonProgresses progresses = LessonProgresses.from(List.of(uncompleted));
 
 		assertThat(progresses.countCompletedIn(List.of(1001L)))
@@ -17,7 +17,7 @@ class LessonProgressesTest {
 
 	@Test
 	void 반복_완료도_하나의_레슨으로_센다() {
-		LessonProgress record = LessonProgress.start(1L, 1001L);
+		LessonProgress record = LessonProgress.start(1L, 7L, 1001L);
 		record.complete();
 		record.complete();
 		LessonProgresses progresses = LessonProgresses.from(List.of(record));
@@ -28,11 +28,11 @@ class LessonProgressesTest {
 
 	@Test
 	void 레슨별_완료_횟수를_반환하고_미기록은_0이다() {
-		LessonProgress twice = LessonProgress.start(1L, 1001L);
+		LessonProgress twice = LessonProgress.start(1L, 7L, 1001L);
 		twice.complete();
 		twice.complete();
-		LessonProgress uncompleted = LessonProgress.start(1L, 1002L);
-		LessonProgress other = LessonProgress.start(1L, 9999L);
+		LessonProgress uncompleted = LessonProgress.start(1L, 7L, 1002L);
+		LessonProgress other = LessonProgress.start(1L, 7L, 9999L);
 		other.complete();
 		LessonProgresses progresses = LessonProgresses.from(List.of(twice, uncompleted, other));
 
