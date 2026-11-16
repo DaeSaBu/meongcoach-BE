@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -32,27 +33,31 @@ public class GraduationController {
 	private final GraduationSubmitter graduationSubmitter;
 
 	@GetMapping("/graduations")
-	public GraduationListResponse findGraduations(@CurrentUserId Long userId) {
-		return GraduationListResponse.from(graduationFinder.findGraduations(userId));
+	public GraduationListResponse findGraduations(@CurrentUserId Long userId,
+	                                              @RequestParam(required = false) Long dogId) {
+		return GraduationListResponse.from(graduationFinder.findGraduations(userId, dogId));
 	}
 
 	@GetMapping("/topics/{topicId}/graduation")
-	public GraduationResponse findGraduation(@CurrentUserId Long userId, @PathVariable Long topicId) {
-		return GraduationResponse.from(graduationFinder.findGraduation(userId, topicId));
+	public GraduationResponse findGraduation(@CurrentUserId Long userId, @PathVariable Long topicId,
+	                                         @RequestParam(required = false) Long dogId) {
+		return GraduationResponse.from(graduationFinder.findGraduation(userId, dogId, topicId));
 	}
 
 	@PostMapping("/topics/{topicId}/graduation/presigned-urls")
 	@ResponseStatus(HttpStatus.CREATED)
 	public GraduationUploadUrlResponse issueUploadUrl(@CurrentUserId Long userId, @PathVariable Long topicId,
+	                                                  @RequestParam(required = false) Long dogId,
 	                                                  @Valid @RequestBody GraduationUploadUrlRequest request) {
-		return GraduationUploadUrlResponse.from(graduationUploadUrlIssuer.issue(userId, topicId, request));
+		return GraduationUploadUrlResponse.from(graduationUploadUrlIssuer.issue(userId, dogId, topicId, request));
 	}
 
 	@PostMapping("/topics/{topicId}/graduation/submissions")
 	@ResponseStatus(HttpStatus.CREATED)
 	public GraduationSubmissionResponse submit(@CurrentUserId Long userId, @PathVariable Long topicId,
+	                                           @RequestParam(required = false) Long dogId,
 	                                           @Valid @RequestBody GraduationSubmissionRequest request) {
-		GraduationSubmission graduation = graduationSubmitter.submit(userId, topicId, request);
+		GraduationSubmission graduation = graduationSubmitter.submit(userId, dogId, topicId, request);
 		return GraduationSubmissionResponse.from(graduation);
 	}
 }

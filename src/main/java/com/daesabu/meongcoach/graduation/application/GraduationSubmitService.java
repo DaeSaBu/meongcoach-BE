@@ -33,19 +33,19 @@ public class GraduationSubmitService implements GraduationSubmitter {
 
 	@Override
 	@Transactional
-	public GraduationSubmission submit(Long userId, Long topicId, GraduationSubmissionRequest request) {
+	public GraduationSubmission submit(Long userId, Long dogId, Long topicId, GraduationSubmissionRequest request) {
 		String videoKey = request.objectKey();
 		if (!storedMediaVerifier.isOwnedObjectKey(GraduationVideo.scopeOf(topicId), userId, videoKey)) {
 			throw new InvalidGraduationVideoKeyException(videoKey);
 		}
-		graduationSubmissionRepository.findFirstByUserIdAndTopicIdOrderByIdDesc(userId, topicId)
+		Long resolvedDogId = dogProfileFinder.findDogProfileOrSelected(userId, dogId).id();
+		graduationSubmissionRepository.findFirstByUserIdAndDogIdAndTopicIdOrderByIdDesc(userId, resolvedDogId, topicId)
 				.ifPresent(GraduationSubmission::validateCanSubmit);
-		Long dogId = dogProfileFinder.findDogProfileOrSelected(userId, null).id();
-		if (!topicCompletionChecker.isCompleted(userId, dogId, topicId)) {
+		if (!topicCompletionChecker.isCompleted(userId, resolvedDogId, topicId)) {
 			throw new TopicNotCompletedException(topicId);
 		}
 		GraduationSubmission submission = GraduationSubmission.create(
-				new GraduationSubmissionCommand(userId, topicId, videoKey, Instant.now()));
+				new GraduationSubmissionCommand(userId, resolvedDogId, topicId, videoKey, Instant.now()));
 		GraduationSubmission saved = save(submission, topicId);
 		eventPublisher.publishEvent(GraduationSubmittedEvent.from(saved));
 		return saved;

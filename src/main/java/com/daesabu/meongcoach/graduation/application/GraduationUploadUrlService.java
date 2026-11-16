@@ -26,11 +26,11 @@ public class GraduationUploadUrlService implements GraduationUploadUrlIssuer {
 	private final DogProfileFinder dogProfileFinder;
 
 	@Override
-	public MediaUploadUrlResult issue(Long userId, Long topicId, GraduationUploadUrlRequest request) {
-		graduationSubmissionRepository.findFirstByUserIdAndTopicIdOrderByIdDesc(userId, topicId)
+	public MediaUploadUrlResult issue(Long userId, Long dogId, Long topicId, GraduationUploadUrlRequest request) {
+		Long resolvedDogId = dogProfileFinder.findDogProfileOrSelected(userId, dogId).id();
+		graduationSubmissionRepository.findFirstByUserIdAndDogIdAndTopicIdOrderByIdDesc(userId, resolvedDogId, topicId)
 				.ifPresent(GraduationSubmission::validateCanSubmit);
-		Long dogId = dogProfileFinder.findDogProfileOrSelected(userId, null).id();
-		if (!topicCompletionChecker.isCompleted(userId, dogId, topicId)) {
+		if (!topicCompletionChecker.isCompleted(userId, resolvedDogId, topicId)) {
 			throw new TopicNotCompletedException(topicId);
 		}
 		MediaUploadRequest uploadRequest = MediaUploadRequest.video(GraduationVideo.scopeOf(topicId), userId,

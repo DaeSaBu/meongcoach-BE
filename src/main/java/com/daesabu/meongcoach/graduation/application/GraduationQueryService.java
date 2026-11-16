@@ -31,12 +31,12 @@ public class GraduationQueryService implements GraduationFinder {
 	private final DogProfileFinder dogProfileFinder;
 
 	@Override
-	public GraduationDetailResult findGraduation(Long userId, Long topicId) {
+	public GraduationDetailResult findGraduation(Long userId, Long dogId, Long topicId) {
 		TopicResult topic = topicFinder.findTopic(topicId);
-		Long dogId = dogProfileFinder.findDogProfileOrSelected(userId, null).id();
-		boolean eligible = topicCompletionChecker.isCompleted(userId, dogId, topicId);
-		Optional<GraduationSubmission> graduation = graduationSubmissionRepository.findFirstByUserIdAndTopicIdOrderByIdDesc(
-				userId, topicId);
+		Long resolvedDogId = dogProfileFinder.findDogProfileOrSelected(userId, dogId).id();
+		boolean eligible = topicCompletionChecker.isCompleted(userId, resolvedDogId, topicId);
+		Optional<GraduationSubmission> graduation = graduationSubmissionRepository
+				.findFirstByUserIdAndDogIdAndTopicIdOrderByIdDesc(userId, resolvedDogId, topicId);
 		if (graduation.isEmpty()) {
 			return GraduationDetailResult.notSubmitted(topic, eligible);
 		}
@@ -46,15 +46,16 @@ public class GraduationQueryService implements GraduationFinder {
 	}
 
 	@Override
-	public List<GraduationSummaryResult> findGraduations(Long userId) {
-		Long dogId = dogProfileFinder.findDogProfileOrSelected(userId, null).id();
-		List<GraduationSubmission> submissions = graduationSubmissionRepository.findLatestByUserId(userId);
+	public List<GraduationSummaryResult> findGraduations(Long userId, Long dogId) {
+		Long resolvedDogId = dogProfileFinder.findDogProfileOrSelected(userId, dogId).id();
+		List<GraduationSubmission> submissions = graduationSubmissionRepository
+				.findLatestByUserIdAndDogId(userId, resolvedDogId);
 		List<Long> topicIds = submissions.stream().map(GraduationSubmission::getTopicId).toList();
 		List<TopicResult> topics = topicFinder.findTopics(topicIds);
 		List<GraduationSummaryResult> results = new ArrayList<>(submissions.stream()
 				.map(submission -> summarize(submission, topics)).toList());
 		Set<Long> submittedTopicIds = Set.copyOf(topicIds);
-		List<GraduationSummaryResult> unsubmitted = topicCompletionChecker.findCompletedTopics(userId, dogId).stream()
+		List<GraduationSummaryResult> unsubmitted = topicCompletionChecker.findCompletedTopics(userId, resolvedDogId).stream()
 				.filter(topic -> !submittedTopicIds.contains(topic.id()))
 				.map(topic -> new GraduationSummaryResult(null, topic))
 				.toList();
