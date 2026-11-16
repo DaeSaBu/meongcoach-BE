@@ -153,7 +153,7 @@ class CurriculumTest {
 	private LessonProgresses completedProgresses(Long... lessonIds) {
 		List<LessonProgress> progresses = new ArrayList<>();
 		for (Long lessonId : lessonIds) {
-			LessonProgress progress = LessonProgress.start(1L, lessonId);
+			LessonProgress progress = LessonProgress.start(1L, 7L, lessonId);
 			progress.complete();
 			progresses.add(progress);
 		}

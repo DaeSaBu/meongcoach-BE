@@ -44,6 +44,7 @@ import org.springframework.context.ApplicationEventPublisher;
 class AiReportGenerateServiceTest {
 
 	private static final Long USER_ID = 7L;
+	private static final Long DOG_ID = 3L;
 	private static final String OBJECT_KEY = "videos/training/7/key.mp4";
 	private static final String VIDEO_URI = "gs://test-ai-video-bucket/videos/training/7/key.mp4";
 	private static final String ANALYZED_CONTENT = "{\"recommend\":[],\"report\":[{\"subTitle\":\"영상에서 이런 행동이 보여요\","
@@ -86,10 +87,10 @@ class AiReportGenerateServiceTest {
 				new AiAnalysisModifyService(aiAnalysisRepository, aiTrialRepository), dogProfileFinder, events);
 
 		issuedAnalysis = AiAnalysis.uploading(
-				new AiAnalysisUploadCommand(USER_ID, OBJECT_KEY, Instant.now().plusSeconds(900), CONTEXT));
+				new AiAnalysisUploadCommand(USER_ID, DOG_ID, OBJECT_KEY, Instant.now().plusSeconds(900), CONTEXT));
 		when(aiAnalysisRepository.findByVideoObjectKey(OBJECT_KEY)).thenReturn(Optional.of(issuedAnalysis));
 		when(storageUriResolver.resolve(AiVideo.SCOPE, OBJECT_KEY)).thenReturn(VIDEO_URI);
-		when(dogProfileFinder.findSelectedDogProfile(USER_ID)).thenReturn(DOG);
+		when(dogProfileFinder.findDogProfile(USER_ID, DOG_ID)).thenReturn(DOG);
 		when(aiTrialFinder.findTrial(USER_ID)).thenReturn(AiTrial.start(USER_ID));
 		when(videoAnalyzer.analyze(VIDEO_URI, CONTEXT, DOG)).thenReturn(new VideoAnalysisResult(GENERATED_TITLE, ANALYZED_CONTENT));
 		doAnswer(recordSave).when(aiAnalysisRepository).save(any());
@@ -199,8 +200,8 @@ class AiReportGenerateServiceTest {
 	}
 
 	@Test
-	void 선택된_강아지가_없으면_분석하지_않고_FAILED_UNEXPECTED로_기록한다() {
-		when(dogProfileFinder.findSelectedDogProfile(USER_ID)).thenThrow(new DogNotFoundException());
+	void 분석_건의_강아지가_삭제됐으면_분석하지_않고_FAILED_UNEXPECTED로_기록한다() {
+		when(dogProfileFinder.findDogProfile(USER_ID, DOG_ID)).thenThrow(new DogNotFoundException(DOG_ID));
 
 		assertThatCode(() -> service.generate(OBJECT_KEY)).doesNotThrowAnyException();
 

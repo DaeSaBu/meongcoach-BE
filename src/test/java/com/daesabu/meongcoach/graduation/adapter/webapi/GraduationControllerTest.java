@@ -9,6 +9,7 @@ import static org.springframework.restdocs.payload.PayloadDocumentation.requestF
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
 import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
+import static org.springframework.restdocs.request.RequestDocumentation.queryParameters;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -81,10 +82,11 @@ class GraduationControllerTest {
 		GraduationSubmission graduation = GraduationSubmissionFixture.create(3L, 42L, TOPIC_ID,
 				GraduationSubmissionStatus.APPROVED,
 				VIDEO_KEY, SUBMITTED_AT, REVIEWED_AT, "끝까지 함께 시도했어요!");
-		given(graduationFinder.findGraduation(42L, TOPIC_ID))
+		given(graduationFinder.findGraduation(42L, 3L, TOPIC_ID))
 				.willReturn(new GraduationDetailResult(TOPIC, true, graduation, VIDEO_URL));
 
 		mockMvc.perform(get("/api/training/topics/{topicId}/graduation", TOPIC_ID)
+						.queryParam("dogId", "3")
 						.principal(CURRENT_USER)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isOk())
@@ -102,6 +104,8 @@ class GraduationControllerTest {
 				.andExpect(jsonPath("$.graduation.retakeImageUrl").isEmpty())
 				.andDo(document("graduation/detail",
 						pathParameters(parameterWithName("topicId").description("토픽 ID")),
+						queryParameters(parameterWithName("dogId").optional()
+								.description("현황을 조회할 강아지 ID. 생략하면 선택된 강아지")),
 						responseFields(
 								fieldWithPath("topicId").description("토픽 ID"),
 								fieldWithPath("topicTitle").description("토픽 제목"),
@@ -132,7 +136,7 @@ class GraduationControllerTest {
 				GraduationSubmissionFixture.submission(graduation, REVIEWED_AT, "현관 장면부터 다시 찍어 주세요."),
 				"https://images.test/images/graduation-retake/3/example.jpg",
 				List.of("현관이 함께 보이게 찍어 주세요.", "보호자가 나가는 순간부터 찍어 주세요."));
-		given(graduationFinder.findGraduation(42L, TOPIC_ID))
+		given(graduationFinder.findGraduation(42L, null, TOPIC_ID))
 				.willReturn(new GraduationDetailResult(TOPIC, true, submission, VIDEO_URL));
 
 		mockMvc.perform(get("/api/training/topics/{topicId}/graduation", TOPIC_ID).principal(CURRENT_USER))
@@ -149,11 +153,12 @@ class GraduationControllerTest {
 		GraduationSubmission graduation = GraduationSubmissionFixture.create(3L, 42L, TOPIC_ID,
 				GraduationSubmissionStatus.APPROVED,
 				VIDEO_KEY, SUBMITTED_AT, REVIEWED_AT, "끝까지 함께 시도했어요!");
-		given(graduationFinder.findGraduations(42L)).willReturn(List.of(new GraduationSummaryResult(
+		given(graduationFinder.findGraduations(42L, 3L)).willReturn(List.of(new GraduationSummaryResult(
 				GraduationSubmissionFixture.submission(graduation, REVIEWED_AT, "끝까지 함께 시도했어요!"), TOPIC),
 				new GraduationSummaryResult(null, new TopicResult(8L, "학습 완료", "미제출"))));
 
 		mockMvc.perform(get("/api/training/graduations")
+						.queryParam("dogId", "3")
 						.principal(CURRENT_USER)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isOk())
@@ -173,6 +178,8 @@ class GraduationControllerTest {
 				.andExpect(jsonPath("$.graduations[1].review.note").isEmpty())
 				.andExpect(jsonPath("$.graduations[1].review.retakeInstructions").isEmpty())
 				.andDo(document("graduation/list",
+						queryParameters(parameterWithName("dogId").optional()
+								.description("현황을 조회할 강아지 ID. 생략하면 선택된 강아지")),
 						responseFields(
 								fieldWithPath("graduations[]").description("제출 이력 또는 학습 완료가 있는 토픽. 최신 제출 순이며 미제출 토픽은 뒤에 교육 순서로 표시"),
 								fieldWithPath("graduations[].submissionId").optional().description("최신 제출 ID. 미제출이면 null"),
@@ -191,7 +198,7 @@ class GraduationControllerTest {
 
 	@Test
 	void 제출한_적이_없으면_graduation을_null로_반환한다() throws Exception {
-		given(graduationFinder.findGraduation(42L, TOPIC_ID)).willReturn(
+		given(graduationFinder.findGraduation(42L, null, TOPIC_ID)).willReturn(
 				GraduationDetailResult.notSubmitted(TOPIC, false));
 
 		mockMvc.perform(get("/api/training/topics/{topicId}/graduation", TOPIC_ID).principal(CURRENT_USER))
@@ -202,7 +209,7 @@ class GraduationControllerTest {
 
 	@Test
 	void 없는_토픽이면_404와_에러_코드를_반환한다() throws Exception {
-		given(graduationFinder.findGraduation(42L, 999L)).willThrow(new TopicNotFoundException(999L));
+		given(graduationFinder.findGraduation(42L, null, 999L)).willThrow(new TopicNotFoundException(999L));
 
 		mockMvc.perform(get("/api/training/topics/{topicId}/graduation", 999L)
 						.principal(CURRENT_USER)
@@ -214,10 +221,11 @@ class GraduationControllerTest {
 
 	@Test
 	void 실습_영상_업로드_URL을_발급하고_201을_반환한다() throws Exception {
-		given(graduationUploadUrlIssuer.issue(42L, TOPIC_ID, new GraduationUploadUrlRequest("video/mp4", 10485760L)))
+		given(graduationUploadUrlIssuer.issue(42L, 3L, TOPIC_ID, new GraduationUploadUrlRequest("video/mp4", 10485760L)))
 				.willReturn(new MediaUploadUrlResult(VIDEO_URL, "https://videos.test/" + VIDEO_KEY, VIDEO_KEY, 900L));
 
 		mockMvc.perform(post("/api/training/topics/{topicId}/graduation/presigned-urls", TOPIC_ID)
+						.queryParam("dogId", "3")
 						.principal(CURRENT_USER)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
 						.contentType(MediaType.APPLICATION_JSON)
@@ -229,6 +237,8 @@ class GraduationControllerTest {
 				.andExpect(jsonPath("$.publicUrl").doesNotExist())
 				.andDo(document("graduation/upload-url",
 						pathParameters(parameterWithName("topicId").description("토픽 ID")),
+						queryParameters(parameterWithName("dogId").optional()
+								.description("실습 인증을 제출할 강아지 ID. 생략하면 선택된 강아지")),
 						requestFields(
 								fieldWithPath("contentType").description("필수 입력. `video/mp4`, `video/quicktime`만 지원"),
 								fieldWithPath("fileSizeBytes").description(
@@ -245,7 +255,7 @@ class GraduationControllerTest {
 
 	@Test
 	void 영상이_상한을_넘으면_공통_에러_응답으로_발급을_거절한다() throws Exception {
-		given(graduationUploadUrlIssuer.issue(42L, TOPIC_ID, new GraduationUploadUrlRequest("video/mp4", 536870913L)))
+		given(graduationUploadUrlIssuer.issue(42L, null, TOPIC_ID, new GraduationUploadUrlRequest("video/mp4", 536870913L)))
 				.willThrow(new VideoFileSizeExceededException(536870913L, 536870912L));
 
 		mockMvc.perform(post("/api/training/topics/{topicId}/graduation/presigned-urls", TOPIC_ID)
@@ -263,7 +273,7 @@ class GraduationControllerTest {
 
 	@Test
 	void 커리큘럼을_다_마치지_않았으면_업로드_URL_발급에_403을_반환한다() throws Exception {
-		given(graduationUploadUrlIssuer.issue(42L, TOPIC_ID, new GraduationUploadUrlRequest("video/mp4", 10485760L)))
+		given(graduationUploadUrlIssuer.issue(42L, null, TOPIC_ID, new GraduationUploadUrlRequest("video/mp4", 10485760L)))
 				.willThrow(new TopicNotCompletedException(TOPIC_ID));
 
 		mockMvc.perform(post("/api/training/topics/{topicId}/graduation/presigned-urls", TOPIC_ID)
@@ -278,12 +288,13 @@ class GraduationControllerTest {
 
 	@Test
 	void 업로드한_영상으로_제출하고_201을_반환한다() throws Exception {
-		given(graduationSubmitter.submit(42L, TOPIC_ID, new GraduationSubmissionRequest(VIDEO_KEY)))
+		given(graduationSubmitter.submit(42L, 3L, TOPIC_ID, new GraduationSubmissionRequest(VIDEO_KEY)))
 				.willReturn(GraduationSubmissionFixture.create(3L, 42L, TOPIC_ID, GraduationSubmissionStatus.SUBMITTED,
 						VIDEO_KEY,
 						SUBMITTED_AT, null, null));
 
 		mockMvc.perform(post("/api/training/topics/{topicId}/graduation/submissions", TOPIC_ID)
+						.queryParam("dogId", "3")
 						.principal(CURRENT_USER)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
 						.contentType(MediaType.APPLICATION_JSON)
@@ -294,6 +305,8 @@ class GraduationControllerTest {
 				.andExpect(jsonPath("$.submittedAt").value("2026-10-14T05:03:00Z"))
 				.andDo(document("graduation/submission",
 						pathParameters(parameterWithName("topicId").description("토픽 ID")),
+						queryParameters(parameterWithName("dogId").optional()
+								.description("실습 인증을 제출할 강아지 ID. 생략하면 선택된 강아지")),
 						requestFields(fieldWithPath("objectKey").description(
 								"필수 입력. 업로드 URL 발급 응답의 objectKey. 본인이 이 토픽으로 받은 `videos/graduation/{userId}/{topicId}/` 키만 받는다")),
 						responseFields(
@@ -305,7 +318,7 @@ class GraduationControllerTest {
 
 	@Test
 	void 이미_수료한_토픽에_제출하면_409를_반환한다() throws Exception {
-		given(graduationSubmitter.submit(42L, TOPIC_ID, new GraduationSubmissionRequest(VIDEO_KEY)))
+		given(graduationSubmitter.submit(42L, null, TOPIC_ID, new GraduationSubmissionRequest(VIDEO_KEY)))
 				.willThrow(new GraduationAlreadyApprovedException(TOPIC_ID));
 
 		mockMvc.perform(post("/api/training/topics/{topicId}/graduation/submissions", TOPIC_ID)
@@ -320,9 +333,9 @@ class GraduationControllerTest {
 
 	@Test
 	void 검수_대기_중에는_발급과_제출을_409로_거절한다() throws Exception {
-		given(graduationSubmitter.submit(42L, TOPIC_ID, new GraduationSubmissionRequest(VIDEO_KEY)))
+		given(graduationSubmitter.submit(42L, null, TOPIC_ID, new GraduationSubmissionRequest(VIDEO_KEY)))
 				.willThrow(new GraduationReviewPendingException());
-		given(graduationUploadUrlIssuer.issue(42L, TOPIC_ID, new GraduationUploadUrlRequest("video/mp4", 1024L)))
+		given(graduationUploadUrlIssuer.issue(42L, null, TOPIC_ID, new GraduationUploadUrlRequest("video/mp4", 1024L)))
 				.willThrow(new GraduationReviewPendingException());
 		mockMvc.perform(post("/api/training/topics/{topicId}/graduation/submissions", TOPIC_ID)
 						.principal(CURRENT_USER).header(HttpHeaders.AUTHORIZATION, "Bearer access-token")

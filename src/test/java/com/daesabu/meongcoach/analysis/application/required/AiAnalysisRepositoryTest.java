@@ -107,14 +107,15 @@ class AiAnalysisRepositoryTest {
 	}
 
 	@Test
-	void 사용자의_분석만_생성_시각_내림차순으로_조회한다() {
+	void 사용자가_지정한_강아지의_분석만_생성_시각_내림차순으로_조회한다() {
 		AiAnalysis first = aiAnalysisRepository.saveAndFlush(
 				completedAnalysis(7L, "videos/training/7/first.mp4", "첫 제목", "첫 리포트"));
 		AiAnalysis second = aiAnalysisRepository.saveAndFlush(
 				completedAnalysis(7L, "videos/training/7/second.mp4", "둘째 제목", "둘째 리포트"));
 		aiAnalysisRepository.saveAndFlush(completedAnalysis(8L, "videos/training/8/other.mp4", "남의 제목", "남의 리포트"));
+		aiAnalysisRepository.saveAndFlush(uploadingAnalysis(7L, 4L, "videos/training/7/other-dog.mp4"));
 
-		List<AiAnalysis> analyses = aiAnalysisRepository.findAllByUserIdOrderByCreatedAtDescIdDesc(7L);
+		List<AiAnalysis> analyses = aiAnalysisRepository.findAllByUserIdAndDogIdOrderByCreatedAtDescIdDesc(7L, 3L);
 
 		assertThat(analyses).extracting(AiAnalysis::getId)
 				.containsExactly(second.getId(), first.getId());
@@ -129,7 +130,11 @@ class AiAnalysisRepositoryTest {
 	}
 
 	private static AiAnalysis uploadingAnalysis(Long userId, String videoObjectKey) {
-		return AiAnalysis.uploading(new AiAnalysisUploadCommand(userId, videoObjectKey, UPLOAD_EXPIRES_AT, null));
+		return uploadingAnalysis(userId, 3L, videoObjectKey);
+	}
+
+	private static AiAnalysis uploadingAnalysis(Long userId, Long dogId, String videoObjectKey) {
+		return AiAnalysis.uploading(new AiAnalysisUploadCommand(userId, dogId, videoObjectKey, UPLOAD_EXPIRES_AT, null));
 	}
 
 	private static AiAnalysis startedAnalysis(Long userId, String videoObjectKey) {

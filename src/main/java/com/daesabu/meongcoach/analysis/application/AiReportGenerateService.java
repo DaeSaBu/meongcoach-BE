@@ -68,7 +68,7 @@ public class AiReportGenerateService implements AiReportGenerator {
 			return;
 		}
 
-		DogProfileResult dog = dogProfileFinder.findSelectedDogProfile(analysis.getUserId());
+		DogProfileResult dog = dogProfileFinder.findDogProfile(analysis.getUserId(), analysis.getDogId());
 		VideoAnalysisResult result;
 		try {
 			result = videoAnalyzer.analyze(videoUri, analysis.getContext(), dog);

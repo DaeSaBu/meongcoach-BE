@@ -12,7 +12,7 @@ public final class GraduationSubmissionFixture {
 	                                          String videoObjectKey, Instant submittedAt, Instant reviewedAt,
 	                                          String reviewNote) {
 		GraduationSubmission submission = GraduationSubmission.create(
-				new GraduationSubmissionCommand(userId, topicId, videoObjectKey, submittedAt));
+				new GraduationSubmissionCommand(userId, 3L, topicId, videoObjectKey, submittedAt));
 		ReflectionTestUtils.setField(submission, "id", id);
 		ReflectionTestUtils.setField(submission, "status", status);
 		ReflectionTestUtils.setField(submission, "reviewedAt", reviewedAt);

@@ -3,6 +3,8 @@ package com.daesabu.meongcoach.training.application.provided;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.daesabu.meongcoach.dog.application.required.DogRepository;
+import com.daesabu.meongcoach.dog.domain.DogFixture;
 import com.daesabu.meongcoach.support.ApplicationTest;
 import com.daesabu.meongcoach.training.application.required.CurriculumRepository;
 import com.daesabu.meongcoach.training.application.required.LessonRepository;
@@ -18,6 +20,7 @@ import com.daesabu.meongcoach.training.domain.TrainingCategory;
 import com.daesabu.meongcoach.training.domain.TrainingCategoryFixture;
 import com.daesabu.meongcoach.training.domain.exception.TopicNotFoundException;
 import jakarta.persistence.EntityManager;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -45,7 +48,20 @@ class TopicCompletionCheckerTest {
 	private LessonRepository lessonRepository;
 
 	@Autowired
+	private DogRepository dogRepository;
+
+	@Autowired
 	private EntityManager entityManager;
+
+	private Long dogId;
+
+	private Long otherUserDogId;
+
+	@BeforeEach
+	void setUp() {
+		dogId = dogRepository.save(DogFixture.selected(USER_ID)).getId();
+		otherUserDogId = dogRepository.save(DogFixture.selected(43L)).getId();
+	}
 
 	@Test
 	void 모든_커리큘럼의_레슨을_완료하면_토픽이_완료다() {
@@ -53,11 +69,11 @@ class TopicCompletionCheckerTest {
 		Lesson first = saveLesson(saveCurriculum(topic, 1), "앉아 1");
 		Lesson second = saveLesson(saveCurriculum(topic, 2), "앉아 2");
 		flushAndClear();
-		lessonCompleter.completeLesson(USER_ID, first.getId());
-		lessonCompleter.completeLesson(USER_ID, second.getId());
+		lessonCompleter.completeLesson(USER_ID, dogId, first.getId());
+		lessonCompleter.completeLesson(USER_ID, dogId, second.getId());
 		flushAndClear();
 
-		assertThat(topicCompletionChecker.isCompleted(USER_ID, topic.getId())).isTrue();
+		assertThat(topicCompletionChecker.isCompleted(USER_ID, dogId, topic.getId())).isTrue();
 	}
 
 	@Test
@@ -66,10 +82,10 @@ class TopicCompletionCheckerTest {
 		Lesson first = saveLesson(saveCurriculum(topic, 1), "앉아 1");
 		saveLesson(saveCurriculum(topic, 2), "앉아 2");
 		flushAndClear();
-		lessonCompleter.completeLesson(USER_ID, first.getId());
+		lessonCompleter.completeLesson(USER_ID, dogId, first.getId());
 		flushAndClear();
 
-		assertThat(topicCompletionChecker.isCompleted(USER_ID, topic.getId())).isFalse();
+		assertThat(topicCompletionChecker.isCompleted(USER_ID, dogId, topic.getId())).isFalse();
 	}
 
 	@Test
@@ -77,12 +93,12 @@ class TopicCompletionCheckerTest {
 		Topic topic = saveTopic();
 		flushAndClear();
 
-		assertThat(topicCompletionChecker.isCompleted(USER_ID, topic.getId())).isFalse();
+		assertThat(topicCompletionChecker.isCompleted(USER_ID, dogId, topic.getId())).isFalse();
 	}
 
 	@Test
 	void 존재하지_않는_토픽이면_예외를_던진다() {
-		assertThatThrownBy(() -> topicCompletionChecker.isCompleted(USER_ID, 999L))
+		assertThatThrownBy(() -> topicCompletionChecker.isCompleted(USER_ID, dogId, 999L))
 				.isInstanceOf(TopicNotFoundException.class);
 	}
 
@@ -98,14 +114,28 @@ class TopicCompletionCheckerTest {
 		Topic otherUser = saveTopic();
 		Lesson otherLesson = saveLesson(saveCurriculum(otherUser, 1), "다른 회원");
 		flushAndClear();
-		lessonCompleter.completeLesson(USER_ID, first.getId());
-		lessonCompleter.completeLesson(USER_ID, partialLesson.getId());
-		lessonCompleter.completeLesson(43L, otherLesson.getId());
+		lessonCompleter.completeLesson(USER_ID, dogId, first.getId());
+		lessonCompleter.completeLesson(USER_ID, dogId, partialLesson.getId());
+		lessonCompleter.completeLesson(43L, otherUserDogId, otherLesson.getId());
 		flushAndClear();
 
-		assertThat(topicCompletionChecker.findCompletedTopics(USER_ID))
+		assertThat(topicCompletionChecker.findCompletedTopics(USER_ID, dogId))
 				.extracting(com.daesabu.meongcoach.training.application.provided.dto.TopicResult::id)
 				.containsExactly(completed.getId());
+	}
+
+	@Test
+	void 같은_사용자의_다른_강아지가_완료한_토픽은_완료로_보지_않는다() {
+		Long secondDogId = dogRepository.save(DogFixture.unselected(USER_ID)).getId();
+		Topic topic = saveTopic();
+		Lesson lesson = saveLesson(saveCurriculum(topic, 1), "앉아");
+		flushAndClear();
+		lessonCompleter.completeLesson(USER_ID, secondDogId, lesson.getId());
+		flushAndClear();
+
+		assertThat(topicCompletionChecker.isCompleted(USER_ID, dogId, topic.getId())).isFalse();
+		assertThat(topicCompletionChecker.findCompletedTopics(USER_ID, dogId)).isEmpty();
+		assertThat(topicCompletionChecker.isCompleted(USER_ID, secondDogId, topic.getId())).isTrue();
 	}
 
 	@Test
@@ -114,7 +144,7 @@ class TopicCompletionCheckerTest {
 		saveCurriculum(topic, 1);
 		flushAndClear();
 
-		assertThatThrownBy(() -> topicCompletionChecker.findCompletedTopics(USER_ID))
+		assertThatThrownBy(() -> topicCompletionChecker.findCompletedTopics(USER_ID, dogId))
 				.isInstanceOf(IllegalStateException.class);
 	}
 

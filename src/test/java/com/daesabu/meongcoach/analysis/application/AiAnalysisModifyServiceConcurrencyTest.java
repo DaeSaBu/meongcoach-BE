@@ -27,6 +27,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 class AiAnalysisModifyServiceConcurrencyTest {
 
 	private static final Long USER_ID = 687001L;
+	private static final Long DOG_ID = 3L;
 	private static final VideoAnalysisResult RESULT = new VideoAnalysisResult("제목", "본문");
 
 	@Autowired
@@ -48,7 +49,7 @@ class AiAnalysisModifyServiceConcurrencyTest {
 	void tearDown() {
 		lockReleased.complete(null);
 		executor.close();
-		aiAnalysisRepository.deleteAll(aiAnalysisRepository.findAllByUserIdOrderByCreatedAtDescIdDesc(USER_ID));
+		aiAnalysisRepository.deleteAll(aiAnalysisRepository.findAllByUserIdAndDogIdOrderByCreatedAtDescIdDesc(USER_ID, DOG_ID));
 		aiTrialRepository.findByUserId(USER_ID).ifPresent(aiTrialRepository::delete);
 	}
 
@@ -94,7 +95,7 @@ class AiAnalysisModifyServiceConcurrencyTest {
 
 	private AiAnalysis persistStartedAnalysis(String videoObjectKey) {
 		AiAnalysis analysis = AiAnalysis.uploading(
-				new AiAnalysisUploadCommand(USER_ID, videoObjectKey, Instant.now().plusSeconds(900), null));
+				new AiAnalysisUploadCommand(USER_ID, DOG_ID, videoObjectKey, Instant.now().plusSeconds(900), null));
 		analysis.startAnalysis();
 		return aiAnalysisRepository.saveAndFlush(analysis);
 	}

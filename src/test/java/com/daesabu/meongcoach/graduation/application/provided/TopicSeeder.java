@@ -1,5 +1,8 @@
 package com.daesabu.meongcoach.graduation.application.provided;
 
+import com.daesabu.meongcoach.dog.application.required.DogRepository;
+import com.daesabu.meongcoach.dog.domain.DogFixture;
+import com.daesabu.meongcoach.dog.domain.DogStatus;
 import com.daesabu.meongcoach.training.application.provided.LessonCompleter;
 import com.daesabu.meongcoach.training.application.required.CurriculumRepository;
 import com.daesabu.meongcoach.training.application.required.LessonRepository;
@@ -36,15 +39,38 @@ class TopicSeeder {
 	private LessonCompleter lessonCompleter;
 
 	@Autowired
+	private DogRepository dogRepository;
+
+	@Autowired
 	private EntityManager entityManager;
 
 	Topic completedTopic(Long userId, String title) {
+		return completedTopic(userId, selectedDog(userId), title);
+	}
+
+	Topic completedTopic(Long userId, Long dogId, String title) {
 		Topic topic = saveTopic(title);
 		Lesson lesson = saveLesson(topic);
 		flushAndClear();
-		lessonCompleter.completeLesson(userId, lesson.getId());
+		lessonCompleter.completeLesson(userId, dogId, lesson.getId());
 		flushAndClear();
 		return topic;
+	}
+
+	void completeTopic(Long userId, Long dogId, Topic topic) {
+		Topic found = topicRepository.findById(topic.getId()).orElseThrow();
+		found.getAllLessonIds().forEach(lessonId -> lessonCompleter.completeLesson(userId, dogId, lessonId));
+		flushAndClear();
+	}
+
+	Long selectedDog(Long userId) {
+		return dogRepository.findFirstByUserIdAndStatusOrderByIdAsc(userId, DogStatus.SELECTED)
+				.orElseGet(() -> dogRepository.save(DogFixture.selected(userId)))
+				.getId();
+	}
+
+	Long unselectedDog(Long userId) {
+		return dogRepository.save(DogFixture.unselected(userId)).getId();
 	}
 
 	Topic incompleteTopic(String title) {

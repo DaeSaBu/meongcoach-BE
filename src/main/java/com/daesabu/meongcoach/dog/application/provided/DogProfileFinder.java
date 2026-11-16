@@ -28,6 +28,12 @@ public interface DogProfileFinder {
 	Dog findSelectedDog(Long userId);
 
 	/**
+	 * 강아지 ID가 있으면 사용자가 소유한 그 강아지를, 없으면 사용자가 선택한 강아지를 조회한다.
+	 * 지정한 강아지가 없거나 본인 소유가 아니면, 또는 선택된 강아지가 없으면 {@code DogNotFoundException}을 던진다.
+	 */
+	Dog findDogOrSelected(Long userId, Long dogId);
+
+	/**
 	 * 사용자가 선택한 강아지의 ID, 이름, 품종, 생년월일, 몸무게를 조회한다.
 	 * 선택된 강아지가 없으면 {@code DogNotFoundException}을 던진다.
 	 */
@@ -49,4 +55,10 @@ public interface DogProfileFinder {
 	 * 지정한 강아지의 프로필을 반환한다. 없거나 본인 소유가 아니면 DogNotFoundException을 던진다.
 	 */
 	DogProfileResult findDogProfile(Long userId, Long dogId);
+
+	/**
+	 * 강아지 ID가 있으면 사용자가 소유한 그 강아지의, 없으면 사용자가 선택한 강아지의 프로필을 반환한다.
+	 * 지정한 강아지가 없거나 본인 소유가 아니면, 또는 선택된 강아지가 없으면 {@code DogNotFoundException}을 던진다.
+	 */
+	DogProfileResult findDogProfileOrSelected(Long userId, Long dogId);
 }

@@ -17,6 +17,7 @@ import static org.springframework.restdocs.payload.PayloadDocumentation.requestF
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
 import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
+import static org.springframework.restdocs.request.RequestDocumentation.queryParameters;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -500,18 +501,23 @@ class DogControllerTest {
 	}
 
 	@Test
-	void 선택된_강아지의_id와_프로필_이미지_URL을_반환한다() throws Exception {
-		given(dogProfileFinder.findSelectedDog(42L)).willReturn(selectedDog(10L));
+	void 지정한_강아지의_id와_프로필_이미지_URL을_반환한다() throws Exception {
+		given(dogProfileFinder.findDogOrSelected(42L, 10L)).willReturn(selectedDog(10L));
 
 		mockMvc.perform(get("/api/dogs/profile/image")
+						.queryParam("dogId", "10")
 						.principal(CURRENT_USER)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.dogId").value(10))
 				.andExpect(jsonPath("$.profileImageUrl").value(IMAGE_URL))
 				.andDo(document("dog/profile-image",
+						queryParameters(
+								parameterWithName("dogId").optional()
+										.description("조회할 강아지 ID. 생략하면 선택된 강아지")
+						),
 						responseFields(
-								fieldWithPath("dogId").description("선택된 강아지 ID"),
+								fieldWithPath("dogId").description("강아지 ID"),
 								fieldWithPath("profileImageUrl")
 										.description("강아지 프로필 이미지 공개 URL. 등록하지 않았으면 빈 문자열")
 						)
@@ -519,18 +525,19 @@ class DogControllerTest {
 	}
 
 	@Test
-	void 로그인한_사용자_ID로_선택된_강아지의_프로필_이미지를_조회한다() throws Exception {
-		given(dogProfileFinder.findSelectedDog(42L)).willReturn(selectedDog(10L));
+	void dogId를_생략하면_선택된_강아지의_프로필_이미지_조회를_위임한다() throws Exception {
+		given(dogProfileFinder.findDogOrSelected(42L, null)).willReturn(selectedDog(10L));
 
 		mockMvc.perform(get("/api/dogs/profile/image").principal(CURRENT_USER))
-				.andExpect(status().isOk());
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.dogId").value(10));
 
-		then(dogProfileFinder).should().findSelectedDog(42L);
+		then(dogProfileFinder).should().findDogOrSelected(42L, null);
 	}
 
 	@Test
 	void 프로필_이미지가_없는_강아지는_빈_문자열과_200을_반환한다() throws Exception {
-		given(dogProfileFinder.findSelectedDog(42L)).willReturn(selectedDogWithoutImage(10L));
+		given(dogProfileFinder.findDogOrSelected(42L, null)).willReturn(selectedDogWithoutImage(10L));
 
 		mockMvc.perform(get("/api/dogs/profile/image").principal(CURRENT_USER))
 				.andExpect(status().isOk())
@@ -540,7 +547,7 @@ class DogControllerTest {
 
 	@Test
 	void 선택된_강아지가_없으면_404와_에러_코드를_반환한다() throws Exception {
-		given(dogProfileFinder.findSelectedDog(42L)).willThrow(new DogNotFoundException());
+		given(dogProfileFinder.findDogOrSelected(42L, null)).willThrow(new DogNotFoundException());
 
 		mockMvc.perform(get("/api/dogs/profile/image")
 						.principal(CURRENT_USER)

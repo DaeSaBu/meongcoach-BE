@@ -8,9 +8,13 @@ import com.daesabu.meongcoach.analysis.domain.AiAnalysis;
 import com.daesabu.meongcoach.analysis.domain.AiAnalysisStatus;
 import com.daesabu.meongcoach.analysis.domain.AiAnalysisUploadCommand;
 import com.daesabu.meongcoach.analysis.domain.exception.AiReportNotFoundException;
+import com.daesabu.meongcoach.dog.application.required.DogRepository;
+import com.daesabu.meongcoach.dog.domain.DogFixture;
+import com.daesabu.meongcoach.dog.domain.exception.DogNotFoundException;
 import com.daesabu.meongcoach.support.ApplicationTest;
 import java.time.Instant;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -37,13 +41,53 @@ class AiReportFinderTest {
 	@Autowired
 	private AiAnalysisRepository aiAnalysisRepository;
 
+	@Autowired
+	private DogRepository dogRepository;
+
+	private Long dogId;
+
+	@BeforeEach
+	void setUp() {
+		dogId = dogRepository.save(DogFixture.selected(USER_ID)).getId();
+	}
+
+	@Test
+	void 같은_사용자의_다른_강아지_리포트는_목록에_나오지_않는다() {
+		Long otherDogId = dogRepository.save(DogFixture.unselected(USER_ID)).getId();
+		persistCompletedAnalysis(USER_ID, "videos/training/42/mine.mp4", "선택된 강아지 제목");
+		AiAnalysis other = AiAnalysis.uploading(new AiAnalysisUploadCommand(USER_ID, otherDogId,
+				"videos/training/42/other-dog.mp4", Instant.now().plusSeconds(900), null));
+		aiAnalysisRepository.saveAndFlush(other);
+
+		assertThat(aiReportFinder.findReports(USER_ID, dogId)).extracting(AiReportResult::videoObjectKey)
+				.containsExactly("videos/training/42/mine.mp4");
+		assertThat(aiReportFinder.findReports(USER_ID, otherDogId)).extracting(AiReportResult::videoObjectKey)
+				.containsExactly("videos/training/42/other-dog.mp4");
+	}
+
+	@Test
+	void dogId를_생략하면_선택된_강아지의_리포트를_반환한다() {
+		persistCompletedAnalysis(USER_ID, "videos/training/42/mine.mp4", "선택된 강아지 제목");
+
+		assertThat(aiReportFinder.findReports(USER_ID, null)).extracting(AiReportResult::videoObjectKey)
+				.containsExactly("videos/training/42/mine.mp4");
+	}
+
+	@Test
+	void 다른_사용자의_강아지를_지정하면_예외를_던진다() {
+		Long otherUserDogId = dogRepository.save(DogFixture.selected(OTHER_USER_ID)).getId();
+
+		assertThatThrownBy(() -> aiReportFinder.findReports(USER_ID, otherUserDogId))
+				.isInstanceOf(DogNotFoundException.class);
+	}
+
 	@Test
 	void 내_리포트만_최신순으로_반환한다() {
 		persistCompletedAnalysis(USER_ID, "videos/training/42/first.mp4", "첫 제목");
 		persistCompletedAnalysis(USER_ID, "videos/training/42/second.mp4", "둘째 제목");
 		persistCompletedAnalysis(OTHER_USER_ID, "videos/training/99/other.mp4", "남의 제목");
 
-		List<AiReportResult> reports = aiReportFinder.findReports(USER_ID);
+		List<AiReportResult> reports = aiReportFinder.findReports(USER_ID, dogId);
 
 		assertThat(reports).extracting(AiReportResult::videoObjectKey)
 				.containsExactly("videos/training/42/second.mp4", "videos/training/42/first.mp4");
@@ -51,14 +95,14 @@ class AiReportFinderTest {
 
 	@Test
 	void 리포트가_없으면_빈_리스트를_반환한다() {
-		assertThat(aiReportFinder.findReports(USER_ID)).isEmpty();
+		assertThat(aiReportFinder.findReports(USER_ID, dogId)).isEmpty();
 	}
 
 	@Test
 	void 목록_항목에_식별자_영상_객체_키_제목_상태_생성_시각을_담는다() {
 		AiAnalysis saved = persistCompletedAnalysis(USER_ID, "videos/training/42/key.mp4", "분리불안 징후 행동 분석");
 
-		AiReportResult result = aiReportFinder.findReports(USER_ID).getFirst();
+		AiReportResult result = aiReportFinder.findReports(USER_ID, dogId).getFirst();
 
 		assertThat(result.id()).isEqualTo(saved.getId());
 		assertThat(result.videoObjectKey()).isEqualTo("videos/training/42/key.mp4");
@@ -72,7 +116,7 @@ class AiReportFinderTest {
 		aiAnalysisRepository.saveAndFlush(startedAnalysis(USER_ID, "videos/training/42/pending.mp4"));
 		persistFailedAnalysis(USER_ID, "videos/training/42/failed.mp4");
 
-		List<AiReportResult> reports = aiReportFinder.findReports(USER_ID);
+		List<AiReportResult> reports = aiReportFinder.findReports(USER_ID, dogId);
 
 		assertThat(reports).extracting(AiReportResult::status)
 				.containsExactly(AiAnalysisStatus.FAILED_ANALYSIS, AiAnalysisStatus.ANALYZING);
@@ -83,7 +127,7 @@ class AiReportFinderTest {
 	void 제목이_없는_리포트는_목록에서_제목이_null이다() {
 		persistCompletedAnalysis(USER_ID, "videos/training/42/key.mp4", null);
 
-		AiReportResult result = aiReportFinder.findReports(USER_ID).getFirst();
+		AiReportResult result = aiReportFinder.findReports(USER_ID, dogId).getFirst();
 
 		assertThat(result.title()).isNull();
 	}
@@ -143,7 +187,7 @@ class AiReportFinderTest {
 	@Test
 	void 분석에_실패한_리포트_상세도_업로드된_영상의_재생_URL을_담는다() {
 		persistFailedAnalysis(USER_ID, "videos/training/42/failed.mp4");
-		Long reportId = aiReportFinder.findReports(USER_ID).getFirst().id();
+		Long reportId = aiReportFinder.findReports(USER_ID, dogId).getFirst().id();
 
 		AiReportDetailResult detail = aiReportFinder.findReport(USER_ID, reportId);
 
@@ -189,7 +233,7 @@ class AiReportFinderTest {
 		aiAnalysisRepository.saveAndFlush(uploadingAnalysis(USER_ID, "videos/training/42/uploading.mp4",
 				Instant.now().plusSeconds(900)));
 
-		AiReportResult result = aiReportFinder.findReports(USER_ID).getFirst();
+		AiReportResult result = aiReportFinder.findReports(USER_ID, dogId).getFirst();
 
 		assertThat(result.status()).isEqualTo(AiAnalysisStatus.UPLOADING);
 	}
@@ -199,7 +243,7 @@ class AiReportFinderTest {
 		aiAnalysisRepository.saveAndFlush(uploadingAnalysis(USER_ID, "videos/training/42/expired.mp4",
 				Instant.now().minusSeconds(1)));
 
-		AiReportResult result = aiReportFinder.findReports(USER_ID).getFirst();
+		AiReportResult result = aiReportFinder.findReports(USER_ID, dogId).getFirst();
 
 		assertThat(result.status()).isEqualTo(AiAnalysisStatus.FAILED_UPLOAD);
 	}
@@ -231,11 +275,11 @@ class AiReportFinderTest {
 		return aiAnalysisRepository.saveAndFlush(analysis);
 	}
 
-	private static AiAnalysis uploadingAnalysis(Long userId, String videoObjectKey, Instant uploadExpiresAt) {
-		return AiAnalysis.uploading(new AiAnalysisUploadCommand(userId, videoObjectKey, uploadExpiresAt, null));
+	private AiAnalysis uploadingAnalysis(Long userId, String videoObjectKey, Instant uploadExpiresAt) {
+		return AiAnalysis.uploading(new AiAnalysisUploadCommand(userId, dogId, videoObjectKey, uploadExpiresAt, null));
 	}
 
-	private static AiAnalysis startedAnalysis(Long userId, String videoObjectKey) {
+	private AiAnalysis startedAnalysis(Long userId, String videoObjectKey) {
 		AiAnalysis analysis = uploadingAnalysis(userId, videoObjectKey, Instant.now().plusSeconds(900));
 		analysis.startAnalysis();
 		return analysis;

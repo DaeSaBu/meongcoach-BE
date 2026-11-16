@@ -12,9 +12,13 @@ import com.daesabu.meongcoach.analysis.domain.AiTrial;
 import com.daesabu.meongcoach.analysis.domain.AiTrialFixture;
 import com.daesabu.meongcoach.analysis.domain.exception.AiReportTrialExceededException;
 import com.daesabu.meongcoach.analysis.domain.exception.AiVideoDurationOutOfRangeException;
+import com.daesabu.meongcoach.dog.application.required.DogRepository;
+import com.daesabu.meongcoach.dog.domain.DogFixture;
+import com.daesabu.meongcoach.dog.domain.exception.DogNotFoundException;
 import com.daesabu.meongcoach.support.ApplicationTest;
 import jakarta.validation.ConstraintViolationException;
 import java.time.Instant;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -39,9 +43,48 @@ class AiAnalysisRegisterTest {
 	@Autowired
 	private AiTrialRepository aiTrialRepository;
 
+	@Autowired
+	private DogRepository dogRepository;
+
+	private Long dogId;
+
+	@BeforeEach
+	void setUp() {
+		dogId = dogRepository.save(DogFixture.selected(USER_ID)).getId();
+	}
+
+	@Test
+	void 지정한_강아지로_분석_건을_저장한다() {
+		Long otherDogId = dogRepository.save(DogFixture.unselected(USER_ID)).getId();
+
+		AiAnalysisRegisterResult result = aiAnalysisRegister.register(USER_ID, otherDogId, REQUEST);
+
+		AiAnalysis saved = aiAnalysisRepository.findById(result.analysisId()).orElseThrow();
+		assertThat(saved.getDogId()).isEqualTo(otherDogId);
+	}
+
+	@Test
+	void dogId를_생략하면_선택된_강아지로_분석_건을_저장한다() {
+		dogRepository.save(DogFixture.unselected(USER_ID));
+
+		AiAnalysisRegisterResult result = aiAnalysisRegister.register(USER_ID, null, REQUEST);
+
+		AiAnalysis saved = aiAnalysisRepository.findById(result.analysisId()).orElseThrow();
+		assertThat(saved.getDogId()).isEqualTo(dogId);
+	}
+
+	@Test
+	void 다른_사용자의_강아지를_지정하면_예외를_던지고_분석_건을_만들지_않는다() {
+		Long otherUserDogId = dogRepository.save(DogFixture.selected(8L)).getId();
+
+		assertThatThrownBy(() -> aiAnalysisRegister.register(USER_ID, otherUserDogId, REQUEST))
+				.isInstanceOf(DogNotFoundException.class);
+		assertThat(aiAnalysisRepository.count()).isZero();
+	}
+
 	@Test
 	void 맥락을_담은_UPLOADING_분석_건을_저장하고_그_ID와_업로드_URL을_돌려준다() {
-		AiAnalysisRegisterResult result = aiAnalysisRegister.register(USER_ID, REQUEST);
+		AiAnalysisRegisterResult result = aiAnalysisRegister.register(USER_ID, dogId, REQUEST);
 
 		AiAnalysis saved = aiAnalysisRepository.findById(result.analysisId()).orElseThrow();
 		assertThat(saved.getUserId()).isEqualTo(USER_ID);
@@ -59,7 +102,7 @@ class AiAnalysisRegisterTest {
 	void 업로드_만료_시각은_요청_시각에_URL_유효_시간을_더한_값이다() {
 		Instant before = Instant.now();
 
-		AiAnalysisRegisterResult result = aiAnalysisRegister.register(USER_ID, REQUEST);
+		AiAnalysisRegisterResult result = aiAnalysisRegister.register(USER_ID, dogId, REQUEST);
 
 		Instant after = Instant.now();
 		AiAnalysis saved = aiAnalysisRepository.findById(result.analysisId()).orElseThrow();
@@ -71,7 +114,7 @@ class AiAnalysisRegisterTest {
 	void 맥락_없이도_분석_건을_만든다() {
 		AiAnalysisRegisterRequest request = new AiAnalysisRegisterRequest("video/mp4", 10485760L, 60L, null);
 
-		AiAnalysisRegisterResult result = aiAnalysisRegister.register(USER_ID, request);
+		AiAnalysisRegisterResult result = aiAnalysisRegister.register(USER_ID, dogId, request);
 
 		AiAnalysis saved = aiAnalysisRepository.findById(result.analysisId()).orElseThrow();
 		assertThat(saved.getContext()).isNull();
@@ -82,7 +125,7 @@ class AiAnalysisRegisterTest {
 		AiAnalysisRegisterRequest request =
 				new AiAnalysisRegisterRequest("video/mp4", 10485760L, 60L, "가".repeat(AiAnalysis.CONTEXT_MAX_LENGTH));
 
-		AiAnalysisRegisterResult result = aiAnalysisRegister.register(USER_ID, request);
+		AiAnalysisRegisterResult result = aiAnalysisRegister.register(USER_ID, dogId, request);
 
 		AiAnalysis saved = aiAnalysisRepository.findById(result.analysisId()).orElseThrow();
 		assertThat(saved.getContext()).hasSize(AiAnalysis.CONTEXT_MAX_LENGTH);
@@ -93,7 +136,7 @@ class AiAnalysisRegisterTest {
 		String context = "  " + "가".repeat(AiAnalysis.CONTEXT_MAX_LENGTH) + "\n";
 		AiAnalysisRegisterRequest request = new AiAnalysisRegisterRequest("video/mp4", 10485760L, 60L, context);
 
-		AiAnalysisRegisterResult result = aiAnalysisRegister.register(USER_ID, request);
+		AiAnalysisRegisterResult result = aiAnalysisRegister.register(USER_ID, dogId, request);
 
 		AiAnalysis saved = aiAnalysisRepository.findById(result.analysisId()).orElseThrow();
 		assertThat(saved.getContext()).isEqualTo("가".repeat(AiAnalysis.CONTEXT_MAX_LENGTH));
@@ -104,18 +147,18 @@ class AiAnalysisRegisterTest {
 		AiAnalysisRegisterRequest request = new AiAnalysisRegisterRequest("video/mp4", 10485760L, 60L,
 				"가".repeat(AiAnalysis.CONTEXT_MAX_LENGTH + 1));
 
-		assertThatThrownBy(() -> aiAnalysisRegister.register(USER_ID, request))
+		assertThatThrownBy(() -> aiAnalysisRegister.register(USER_ID, dogId, request))
 				.isInstanceOf(ConstraintViolationException.class);
-		assertThat(aiAnalysisRepository.findAllByUserIdOrderByCreatedAtDescIdDesc(USER_ID)).isEmpty();
+		assertThat(aiAnalysisRepository.findAllByUserIdAndDogIdOrderByCreatedAtDescIdDesc(USER_ID, dogId)).isEmpty();
 	}
 
 	@Test
 	void 체험_횟수를_소진했으면_분석_건_저장_없이_예외를_던진다() {
 		aiTrialRepository.saveAndFlush(AiTrialFixture.used(USER_ID, AiTrial.DEFAULT_GRANTED_COUNT));
 
-		assertThatThrownBy(() -> aiAnalysisRegister.register(USER_ID, REQUEST))
+		assertThatThrownBy(() -> aiAnalysisRegister.register(USER_ID, dogId, REQUEST))
 				.isInstanceOf(AiReportTrialExceededException.class);
-		assertThat(aiAnalysisRepository.findAllByUserIdOrderByCreatedAtDescIdDesc(USER_ID)).isEmpty();
+		assertThat(aiAnalysisRepository.findAllByUserIdAndDogIdOrderByCreatedAtDescIdDesc(USER_ID, dogId)).isEmpty();
 	}
 
 	@ParameterizedTest
@@ -124,8 +167,8 @@ class AiAnalysisRegisterTest {
 		AiAnalysisRegisterRequest request =
 				new AiAnalysisRegisterRequest("video/mp4", 10485760L, durationSeconds, CONTEXT);
 
-		assertThatThrownBy(() -> aiAnalysisRegister.register(USER_ID, request))
+		assertThatThrownBy(() -> aiAnalysisRegister.register(USER_ID, dogId, request))
 				.isInstanceOf(AiVideoDurationOutOfRangeException.class);
-		assertThat(aiAnalysisRepository.findAllByUserIdOrderByCreatedAtDescIdDesc(USER_ID)).isEmpty();
+		assertThat(aiAnalysisRepository.findAllByUserIdAndDogIdOrderByCreatedAtDescIdDesc(USER_ID, dogId)).isEmpty();
 	}
 }

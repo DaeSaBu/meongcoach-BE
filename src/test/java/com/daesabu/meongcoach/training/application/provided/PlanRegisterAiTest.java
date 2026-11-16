@@ -325,7 +325,7 @@ class PlanRegisterAiTest {
 	}
 
 	private void completeLesson(Long lessonId) {
-		LessonProgress progress = LessonProgress.start(USER_ID, lessonId);
+		LessonProgress progress = LessonProgress.start(USER_ID, dogId, lessonId);
 		progress.complete();
 		entityManager.persist(progress);
 	}

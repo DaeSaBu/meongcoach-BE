@@ -146,7 +146,7 @@ class TopicTest {
 
 	private LessonProgresses progresses(Lesson... lessons) {
 		List<LessonProgress> records = List.of(lessons).stream().map(lesson -> {
-			LessonProgress progress = LessonProgress.start(1L, lesson.getId());
+			LessonProgress progress = LessonProgress.start(1L, 7L, lesson.getId());
 			progress.complete();
 			return progress;
 		}).toList();

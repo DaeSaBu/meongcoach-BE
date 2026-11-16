@@ -27,7 +27,7 @@ public class QuickTopicQueryService implements QuickTopicFinder {
 	@Override
 	public List<QuickTopicResult> find(Long userId, Long dogId) {
 		List<Long> planTopicIds = currentPlanFinder.findActiveTopicIds(userId, dogId);
-		List<TopicProgressResult> topics = topicProgressFinder.findAll(userId);
+		List<TopicProgressResult> topics = topicProgressFinder.findAll(userId, dogId);
 		if (!planTopicIds.isEmpty()) {
 			return findPlanTopics(topics, planTopicIds);
 		}

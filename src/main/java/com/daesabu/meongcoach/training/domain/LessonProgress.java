@@ -19,7 +19,9 @@ import lombok.NoArgsConstructor;
 @Entity
 @Table(
 		name = "lesson_progress",
-		uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "lesson_id"})
+		uniqueConstraints = @UniqueConstraint(
+				name = "uk_lesson_progress_user_dog_lesson",
+				columnNames = {"user_id", "dog_id", "lesson_id"})
 )
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class LessonProgress extends BaseEntity {
@@ -36,15 +38,19 @@ public class LessonProgress extends BaseEntity {
 	private Long userId;
 
 	@Column(nullable = false)
+	private Long dogId;
+
+	@Column(nullable = false)
 	private Long lessonId;
 
 	@Column(nullable = false)
 	private int completedCount;
 
-	public static LessonProgress start(Long userId, Long lessonId) {
+	public static LessonProgress start(Long userId, Long dogId, Long lessonId) {
 		LessonProgress lessonProgress = new LessonProgress();
 
 		lessonProgress.userId = requireNonNull(userId);
+		lessonProgress.dogId = requireNonNull(dogId);
 		lessonProgress.lessonId = requireNonNull(lessonId);
 		lessonProgress.completedCount = 0;
 

@@ -34,12 +34,12 @@ public class TopicQueryService implements TopicFinder, TopicCompletionChecker, P
 	private final TopicRepository topicRepository;
 
 	@Override
-	public AiPlanPreparationResult find(Long userId) {
+	public AiPlanPreparationResult find(Long userId, Long dogId) {
 		List<Topic> topics = topicRepository.findAll(TopicRepository.EDUCATION_ORDER);
 		List<Long> lessonIds = topics.stream()
 				.flatMap(topic -> topic.getAllLessonIds().stream())
 				.toList();
-		LessonProgresses progresses = findProgresses(userId, lessonIds);
+		LessonProgresses progresses = findProgresses(userId, dogId, lessonIds);
 		List<AiPlanCurriculumResult> curriculums = topics.stream()
 				.flatMap(topic -> topic.getCurriculums().stream()
 						.map(curriculum -> toAiPlanCurriculumResult(topic.getId(), topic.getTitle(), curriculum, progresses)))
@@ -120,20 +120,20 @@ public class TopicQueryService implements TopicFinder, TopicCompletionChecker, P
 	}
 
 	@Override
-	public boolean isCompleted(Long userId, Long topicId) {
+	public boolean isCompleted(Long userId, Long dogId, Long topicId) {
 		Topic topic = loadTopic(topicId);
-		LessonProgresses progresses = findProgresses(userId, topic.getAllLessonIds());
+		LessonProgresses progresses = findProgresses(userId, dogId, topic.getAllLessonIds());
 		return topic.isCompleted(progresses);
 	}
 
 	@Override
-	public List<TopicResult> findCompletedTopics(Long userId) {
+	public List<TopicResult> findCompletedTopics(Long userId, Long dogId) {
 		List<Topic> topics = topicRepository.findAll(TopicRepository.EDUCATION_ORDER);
 		if (topics.isEmpty()) {
 			return List.of();
 		}
 		List<Long> lessonIds = topics.stream().flatMap(topic -> topic.getAllLessonIds().stream()).toList();
-		LessonProgresses progresses = findProgresses(userId, lessonIds);
+		LessonProgresses progresses = findProgresses(userId, dogId, lessonIds);
 		return topics.stream()
 				.filter(topic -> topic.isCompleted(progresses))
 				.map(TopicResult::from)
@@ -156,8 +156,9 @@ public class TopicQueryService implements TopicFinder, TopicCompletionChecker, P
 		return topicRepository.findById(topicId).orElseThrow(() -> new TopicNotFoundException(topicId));
 	}
 
-	private LessonProgresses findProgresses(Long userId, List<Long> lessonIds) {
-		List<LessonProgress> progresses = lessonProgressRepository.findAllByUserIdAndLessonIdIn(userId, lessonIds);
+	private LessonProgresses findProgresses(Long userId, Long dogId, List<Long> lessonIds) {
+		List<LessonProgress> progresses = lessonProgressRepository
+				.findAllByUserIdAndDogIdAndLessonIdIn(userId, dogId, lessonIds);
 		return LessonProgresses.from(progresses);
 	}
 

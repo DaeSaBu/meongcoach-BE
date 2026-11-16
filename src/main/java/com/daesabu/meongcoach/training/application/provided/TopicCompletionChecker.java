@@ -9,13 +9,13 @@ import java.util.List;
 public interface TopicCompletionChecker {
 
 	/**
-	 * 토픽의 커리큘럼이 1개 이상이고 모든 커리큘럼의 레슨을 완료했으면 참이다.
+	 * 토픽의 커리큘럼이 1개 이상이고 지정한 강아지가 모든 커리큘럼의 레슨을 완료했으면 참이다.
 	 * 토픽이 없으면 TopicNotFoundException을 던진다.
 	 */
-	boolean isCompleted(Long userId, Long topicId);
+	boolean isCompleted(Long userId, Long dogId, Long topicId);
 
 	/**
-	 * 회원이 모든 커리큘럼의 레슨을 완료한 토픽을 교육 순서로 조회한다.
+	 * 지정한 강아지가 모든 커리큘럼의 레슨을 완료한 토픽을 교육 순서로 조회한다.
 	 */
-	List<TopicResult> findCompletedTopics(Long userId);
+	List<TopicResult> findCompletedTopics(Long userId, Long dogId);
 }

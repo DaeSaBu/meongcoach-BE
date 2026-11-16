@@ -3,6 +3,7 @@ package com.daesabu.meongcoach.migration;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.util.Map;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -16,7 +17,7 @@ class GraduationSubmissionMigrationTest {
 		parents(jdbc);
 		jdbc.update(
 				"insert into graduation_submissions (graduation_id, attempt_no, video_object_key, submitted_at, created_at) values (1, 1, 'old', now(), now())");
-		Flyway.configure().dataSource(source).load().migrate();
+		Flyway.configure().dataSource(source).target("65").load().migrate();
 		assertThat(jdbc.queryForObject("select to_regclass('topic_graduations')::text", String.class)).isNull();
 		assertThat(jdbc.queryForObject("select count(*) from information_schema.columns "
 				+ "where table_name = 'graduation_submissions' and column_name in ('graduation_id', 'attempt_no', "
@@ -48,7 +49,7 @@ class GraduationSubmissionMigrationTest {
 		parents(jdbc);
 		jdbc.update(
 				"insert into graduation_submissions (graduation_id, attempt_no, video_object_key, submitted_at, created_at) values (3, 1, 'a', now(), now()), (3, 2, 'b', now(), now())");
-		Flyway.configure().dataSource(source).load().migrate();
+		Flyway.configure().dataSource(source).target("65").load().migrate();
 		assertThat(jdbc.queryForObject("select count(*) from graduation_submissions where user_id = 42 and topic_id = 3",
 				Integer.class)).isEqualTo(2);
 		assertThat(jdbc.queryForObject(
@@ -66,6 +67,46 @@ class GraduationSubmissionMigrationTest {
 		assertThat(jdbc.queryForObject(
 				"select video_object_key from graduation_submissions where user_id = 42 and topic_id = 3 order by id desc limit 1",
 				String.class)).isEqualTo("b");
+	}
+
+	@Test
+	void 제출을_선택된_강아지로_옮기고_강아지마다_따로_제출할_수_있게_한다() {
+		var source = new DriverManagerDataSource(
+				"jdbc:tc:postgresql:18.3:///graduation_dog_migration?TC_DAEMON=true", "test", "test");
+		Flyway.configure().dataSource(source).target("65").load().migrate();
+		var jdbc = new JdbcTemplate(source);
+		jdbc.update("""
+				insert into dogs (id, user_id, name, breed, sex, weight_kg, status, profile_image_url, expectation,
+				                  deleted_at, created_at, updated_at)
+				values (10, 1, '첫째', '믹스', 'MALE', 4.5, 'UNSELECTED', '', '', null, now(), now()),
+				       (11, 1, '둘째', '믹스', 'MALE', 4.5, 'SELECTED', '', '', null, now(), now()),
+				       (20, 2, '삭제된 강아지', '믹스', 'MALE', 4.5, 'SELECTED', '', '', now(), now(), now())
+				""");
+		jdbc.update("""
+				insert into graduation_submissions (user_id, topic_id, video_object_key, submitted_at, created_at, status)
+				values (1, 7, 'selected', now(), now(), 'SUBMITTED'),
+				       (2, 7, 'deleted-dog', now(), now(), 'APPROVED'),
+				       (3, 7, 'dogless', now(), now(), 'SUBMITTED')
+				""");
+
+		Flyway.configure().dataSource(source).target("66").load().migrate();
+
+		assertThat(jdbc.queryForList(
+				"select user_id, dog_id, video_object_key from graduation_submissions order by user_id"))
+				.containsExactly(
+						Map.of("user_id", 1L, "dog_id", 11L, "video_object_key", "selected"),
+						Map.of("user_id", 2L, "dog_id", 20L, "video_object_key", "deleted-dog"));
+		jdbc.update("""
+				insert into graduation_submissions
+				    (user_id, dog_id, topic_id, video_object_key, submitted_at, created_at, status)
+				values (1, 10, 7, 'other-dog', now(), now(), 'SUBMITTED')
+				""");
+		assertThatThrownBy(() -> jdbc.update("""
+				insert into graduation_submissions
+				    (user_id, dog_id, topic_id, video_object_key, submitted_at, created_at, status)
+				values (1, 11, 7, 'duplicate', now(), now(), 'SUBMITTED')
+				"""))
+				.isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
 	}
 
 	private DriverManagerDataSource source(String name) {

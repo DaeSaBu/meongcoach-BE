@@ -238,7 +238,7 @@ class CurrentPlanFinderTest {
 		flushAndClear();
 		Curriculum curriculum = entityManager.find(Curriculum.class, curriculumId);
 		Long lessonId = curriculum.getLessonIds().getFirst();
-		LessonProgress progress = LessonProgress.start(42L, lessonId);
+		LessonProgress progress = LessonProgress.start(42L, dogId, lessonId);
 		progress.complete();
 		entityManager.persist(progress);
 		Plan previous = savePlan(42L, dogId, curriculumId);
