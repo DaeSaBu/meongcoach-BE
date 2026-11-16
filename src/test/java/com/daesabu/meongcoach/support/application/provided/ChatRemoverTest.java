@@ -75,12 +75,17 @@ class ChatRemoverTest {
 
 	@Test
 	@WithMockUser(roles = "EXPERT")
-	void 상담원도_다른_회원의_대화를_삭제할_수_없다() {
+	void 상담원은_회원의_대화를_종료할_수_있다() {
 		Long owner = users.save(User.registerUser()).getId();
 		Long expert = users.save(User.registerUser()).getId();
 		long id = register.open(owner).getId();
 
-		assertThatThrownBy(() -> remover.leave(expert, id)).isInstanceOf(ChatAccessDeniedException.class);
-		assertThat(conversations.existsById(id)).isTrue();
+		remover.leave(expert, id);
+		conversations.flush();
+		em.clear();
+
+		assertThat(conversations.existsById(id)).isFalse();
+		assertThat(jdbc.queryForObject("SELECT deleted_at IS NOT NULL FROM support_conversations WHERE id = ?", Boolean.class, id)).isTrue();
+		assertThat(register.open(owner).getId()).isNotEqualTo(id);
 	}
 }

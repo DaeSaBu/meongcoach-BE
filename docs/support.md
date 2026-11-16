@@ -57,7 +57,8 @@ flowchart LR
 
 ## 상담 종료와 시각
 
-[ChatRemover](../src/main/java/com/daesabu/meongcoach/support/application/provided/ChatRemover.java)는 본인 대화의 `deletedAt`을 기록합니다.
+[ChatRemover](../src/main/java/com/daesabu/meongcoach/support/application/provided/ChatRemover.java)는 대화의 `deletedAt`을 기록합니다.
+대화 소유 회원과 ADMIN·EXPERT가 종료할 수 있습니다.
 대화와 메시지는 DB에 보관합니다.
 종료된 대화는 회원·상담원의 조회, 전송과 상담원 목록에서 제외합니다.
 다시 상담을 열면 새 ID의 빈 대화를 만듭니다.
