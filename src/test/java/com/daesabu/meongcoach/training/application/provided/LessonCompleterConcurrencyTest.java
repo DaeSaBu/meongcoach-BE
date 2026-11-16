@@ -85,6 +85,8 @@ class LessonCompleterConcurrencyTest {
 		release.complete(null);
 		executor.close();
 		jdbc.update("delete from lesson_progress where user_id = ?", USER_ID);
+		jdbc.update("delete from trained_lessons where user_id = ?", USER_ID);
+		jdbc.update("delete from curriculum_progress where user_id = ?", USER_ID);
 		jdbc.update("delete from dogs where user_id = ?", USER_ID);
 		for (Long categoryId : categoryIds) {
 			jdbc.update("""
@@ -137,17 +139,34 @@ class LessonCompleterConcurrencyTest {
 	}
 
 	@Test
-	void 같은_커리큘럼의_다른_레슨_완료와는_충돌하지_않는다() throws Exception {
+	void 그날_커리큘럼_기록이_있으면_같은_커리큘럼의_다른_레슨_완료와는_충돌하지_않는다() throws Exception {
 		Lesson held = saveLesson();
-		Lesson lesson = transactions.execute(status -> {
-			Lesson other = LessonFixture.create(held.getCurriculum(), "다른 레슨", 2, 5);
-			return contentRepository.save(other);
-		});
+		Lesson lesson = saveOtherLesson(held);
+		lessonCompleter.completeLesson(USER_ID, dogId, held.getId());
 		completeAndHold(held);
 
 		Future<Integer> completion = executor.submit(() -> lessonCompleter.completeLesson(USER_ID, dogId, lesson.getId()));
 
 		assertThat(completion.get(5, SECONDS)).isOne();
+	}
+
+	@Test
+	void 같은_날_같은_커리큘럼의_첫_완료가_겹치면_먼저_커밋한_완료만_기록한다() throws Exception {
+		Lesson held = saveLesson();
+		Lesson lesson = saveOtherLesson(held);
+		Future<?> first = completeAndHold(held);
+
+		Future<Integer> second = executor.submit(() -> lessonCompleter.completeLesson(USER_ID, dogId, lesson.getId()));
+
+		assertThatThrownBy(() -> second.get(500, MILLISECONDS)).isInstanceOf(TimeoutException.class);
+		release.complete(null);
+		first.get(5, SECONDS);
+		assertThatThrownBy(() -> second.get(5, SECONDS))
+				.isInstanceOf(ExecutionException.class)
+				.hasCauseInstanceOf(LessonCompletionConflictException.class);
+		assertThat(repository.findByUserIdAndDogIdAndLessonId(USER_ID, dogId, lesson.getId())).isEmpty();
+		assertThat(countRows("trained_lessons")).isOne();
+		assertThat(countRows("curriculum_progress")).isOne();
 	}
 
 	private Future<?> completeAndHold(Lesson lesson) throws Exception {
@@ -159,6 +178,17 @@ class LessonCompleterConcurrencyTest {
 		}));
 		completed.get(5, SECONDS);
 		return holder;
+	}
+
+	private Lesson saveOtherLesson(Lesson lesson) {
+		return transactions.execute(status -> {
+			Lesson other = LessonFixture.create(lesson.getCurriculum(), "다른 레슨", 2, 5);
+			return contentRepository.save(other);
+		});
+	}
+
+	private Integer countRows(String table) {
+		return jdbc.queryForObject("select count(*) from " + table + " where user_id = ?", Integer.class, USER_ID);
 	}
 
 	private Lesson saveLesson() {
