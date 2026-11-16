@@ -33,7 +33,6 @@ import com.daesabu.meongcoach.training.domain.Lesson;
 import com.daesabu.meongcoach.training.domain.LessonFixture;
 import com.daesabu.meongcoach.training.domain.Topic;
 import com.daesabu.meongcoach.training.domain.TopicFixture;
-import com.daesabu.meongcoach.training.domain.exception.CurriculumProgressAlreadySucceededException;
 import com.daesabu.meongcoach.training.domain.exception.CurriculumProgressNotFoundException;
 import com.daesabu.meongcoach.training.domain.exception.InvalidCurriculumProgressResultException;
 import com.daesabu.meongcoach.training.domain.exception.InvalidTrainingCalendarPeriodException;
@@ -249,45 +248,6 @@ class TrainingCalendarControllerTest {
 	}
 
 	@Test
-	void 성공한_날을_실패로_바꾸려_하면_409와_에러_코드를_반환한다() throws Exception {
-		willThrow(new CurriculumProgressAlreadySucceededException()).given(curriculumProgressRegister)
-				.recordResult(42L, 3L, 130103L, LocalDate.of(2026, 11, 16),
-						new CurriculumProgressResultRequest("FAILED"));
-
-		mockMvc.perform(put("/api/training/calendar/{date}/curriculums/{curriculumId}/result", "2026-11-16", 130103L)
-						.queryParam("dogId", "3")
-						.principal(CURRENT_USER)
-						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content("""
-								{"result": "FAILED"}
-								"""))
-				.andExpect(status().isConflict())
-				.andExpect(jsonPath("$.status").value(409))
-				.andExpect(jsonPath("$.code").value("TRAINING_CURRICULUM_PROGRESS_ALREADY_SUCCEEDED"))
-				.andDo(document("training/calendar-result-error",
-						pathParameters(
-								parameterWithName("date").description("훈련한 날(yyyy-MM-dd)"),
-								parameterWithName("curriculumId").description("그날 훈련한 커리큘럼 ID")
-						),
-						queryParameters(
-								parameterWithName("dogId").description("훈련한 강아지 ID")
-						),
-						requestFields(
-								fieldWithPath("result").description("훈련 결과(SUCCEEDED, FAILED)")
-						),
-						responseFields(
-								fieldWithPath("title").description("HTTP 상태 이름"),
-								fieldWithPath("status").description("HTTP 상태 코드"),
-								fieldWithPath("detail").description("사람이 읽을 수 있는 에러 설명"),
-								fieldWithPath("instance").description("에러가 발생한 요청 경로"),
-								fieldWithPath("code").description("클라이언트 분기용 에러 코드"),
-								fieldWithPath("timestamp").description("에러 발생 시각(UTC)")
-						)
-				));
-	}
-
-	@Test
 	void 훈련_결과가_SUCCEEDED나_FAILED가_아니면_400과_에러_코드를_반환한다() throws Exception {
 		willThrow(new InvalidCurriculumProgressResultException()).given(curriculumProgressRegister)
 				.recordResult(42L, 3L, 130103L, LocalDate.of(2026, 11, 16),
@@ -313,12 +273,34 @@ class TrainingCalendarControllerTest {
 		mockMvc.perform(put("/api/training/calendar/{date}/curriculums/{curriculumId}/result", "2026-11-16", 130103L)
 						.queryParam("dogId", "3")
 						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
 								{"result": "SUCCEEDED"}
 								"""))
 				.andExpect(status().isNotFound())
-				.andExpect(jsonPath("$.code").value("TRAINING_CURRICULUM_PROGRESS_NOT_FOUND"));
+				.andExpect(jsonPath("$.status").value(404))
+				.andExpect(jsonPath("$.code").value("TRAINING_CURRICULUM_PROGRESS_NOT_FOUND"))
+				.andDo(document("training/calendar-result-error",
+						pathParameters(
+								parameterWithName("date").description("훈련한 날(yyyy-MM-dd)"),
+								parameterWithName("curriculumId").description("그날 훈련한 커리큘럼 ID")
+						),
+						queryParameters(
+								parameterWithName("dogId").description("훈련한 강아지 ID")
+						),
+						requestFields(
+								fieldWithPath("result").description("훈련 결과(SUCCEEDED, FAILED)")
+						),
+						responseFields(
+								fieldWithPath("title").description("HTTP 상태 이름"),
+								fieldWithPath("status").description("HTTP 상태 코드"),
+								fieldWithPath("detail").description("사람이 읽을 수 있는 에러 설명"),
+								fieldWithPath("instance").description("에러가 발생한 요청 경로"),
+								fieldWithPath("code").description("클라이언트 분기용 에러 코드"),
+								fieldWithPath("timestamp").description("에러 발생 시각(UTC)")
+						)
+				));
 	}
 
 	@Test

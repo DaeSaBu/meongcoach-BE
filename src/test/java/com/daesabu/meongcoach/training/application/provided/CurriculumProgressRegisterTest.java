@@ -12,7 +12,6 @@ import com.daesabu.meongcoach.training.application.required.CurriculumProgressRe
 import com.daesabu.meongcoach.training.domain.CurriculumProgress;
 import com.daesabu.meongcoach.training.domain.CurriculumProgressRegisterCommand;
 import com.daesabu.meongcoach.training.domain.CurriculumProgressStatus;
-import com.daesabu.meongcoach.training.domain.exception.CurriculumProgressAlreadySucceededException;
 import com.daesabu.meongcoach.training.domain.exception.CurriculumProgressNotFoundException;
 import com.daesabu.meongcoach.training.domain.exception.InvalidCurriculumProgressResultException;
 import jakarta.persistence.EntityManager;
@@ -115,16 +114,14 @@ class CurriculumProgressRegisterTest {
 	}
 
 	@Test
-	void 성공한_날을_실패로_바꾸려_하면_예외를_던지고_성공을_유지한다() {
+	void 성공한_날을_실패로_바꾼다() {
 		saveProgress(dogId, TRAINED_DATE).succeed();
 		flushAndClear();
 
-		assertThatThrownBy(
-				() -> curriculumProgressRegister.recordResult(USER_ID, dogId, CURRICULUM_ID, TRAINED_DATE, FAILED))
-				.isInstanceOf(CurriculumProgressAlreadySucceededException.class);
-
+		curriculumProgressRegister.recordResult(USER_ID, dogId, CURRICULUM_ID, TRAINED_DATE, FAILED);
 		flushAndClear();
-		assertThat(findStatus(dogId, TRAINED_DATE)).isEqualTo(CurriculumProgressStatus.SUCCEEDED);
+
+		assertThat(findStatus(dogId, TRAINED_DATE)).isEqualTo(CurriculumProgressStatus.FAILED);
 	}
 
 	@ParameterizedTest
