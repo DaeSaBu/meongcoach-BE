@@ -33,7 +33,7 @@ public class PlanLessonCompletionService implements PlanLessonCompleter {
 
 		List<List<Long>> topicLessonIds = planCurriculumFinder.findTopicLessonIds(plan.getCurriculumIds());
 		plan.verifyCurrentLesson(lessonId, topicLessonIds);
-		lessonCompleter.completeLesson(userId, lessonId);
+		lessonCompleter.completeLesson(userId, plan.getDogId(), lessonId);
 		plan.completeCurrentLesson(lessonId, topicLessonIds, Instant.now());
 	}
 }

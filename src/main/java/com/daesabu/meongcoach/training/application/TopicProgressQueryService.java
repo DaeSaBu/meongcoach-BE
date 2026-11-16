@@ -24,7 +24,7 @@ public class TopicProgressQueryService implements TopicProgressFinder {
 	private final LessonProgressRepository lessonProgressRepository;
 
 	@Override
-	public List<TopicProgressResult> findAll(Long userId) {
+	public List<TopicProgressResult> findAll(Long userId, Long dogId) {
 		List<Topic> topics = topicRepository.findAll(TopicRepository.EDUCATION_ORDER).stream()
 				.filter(topic -> !topic.getAllLessonIds().isEmpty())
 				.toList();
@@ -32,7 +32,7 @@ public class TopicProgressQueryService implements TopicProgressFinder {
 				.flatMap(topic -> topic.getAllLessonIds().stream())
 				.toList();
 		LessonProgresses progresses = LessonProgresses.from(
-				lessonProgressRepository.findAllByUserIdAndLessonIdIn(userId, lessonIds));
+				lessonProgressRepository.findAllByUserIdAndDogIdAndLessonIdIn(userId, dogId, lessonIds));
 		return topics.stream()
 				.map(topic -> toResult(topic, progresses))
 				.toList();

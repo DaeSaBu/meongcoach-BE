@@ -1,5 +1,6 @@
 package com.daesabu.meongcoach.graduation.application;
 
+import com.daesabu.meongcoach.dog.application.provided.DogProfileFinder;
 import com.daesabu.meongcoach.graduation.application.provided.GraduationUploadUrlIssuer;
 import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationUploadUrlRequest;
 import com.daesabu.meongcoach.graduation.application.required.GraduationSubmissionRepository;
@@ -22,12 +23,14 @@ public class GraduationUploadUrlService implements GraduationUploadUrlIssuer {
 	private final TopicCompletionChecker topicCompletionChecker;
 	private final GraduationSubmissionRepository graduationSubmissionRepository;
 	private final MediaUploadUrlIssuer mediaUploadUrlIssuer;
+	private final DogProfileFinder dogProfileFinder;
 
 	@Override
 	public MediaUploadUrlResult issue(Long userId, Long topicId, GraduationUploadUrlRequest request) {
 		graduationSubmissionRepository.findFirstByUserIdAndTopicIdOrderByIdDesc(userId, topicId)
 				.ifPresent(GraduationSubmission::validateCanSubmit);
-		if (!topicCompletionChecker.isCompleted(userId, topicId)) {
+		Long dogId = dogProfileFinder.findDogProfileOrSelected(userId, null).id();
+		if (!topicCompletionChecker.isCompleted(userId, dogId, topicId)) {
 			throw new TopicNotCompletedException(topicId);
 		}
 		MediaUploadRequest uploadRequest = MediaUploadRequest.video(GraduationVideo.scopeOf(topicId), userId,

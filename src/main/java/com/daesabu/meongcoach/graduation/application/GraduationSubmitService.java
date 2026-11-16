@@ -1,5 +1,6 @@
 package com.daesabu.meongcoach.graduation.application;
 
+import com.daesabu.meongcoach.dog.application.provided.DogProfileFinder;
 import com.daesabu.meongcoach.graduation.application.provided.GraduationSubmitter;
 import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationSubmissionRequest;
 import com.daesabu.meongcoach.graduation.application.required.GraduationSubmissionRepository;
@@ -28,6 +29,7 @@ public class GraduationSubmitService implements GraduationSubmitter {
 	private final GraduationSubmissionRepository graduationSubmissionRepository;
 	private final StoredMediaVerifier storedMediaVerifier;
 	private final ApplicationEventPublisher eventPublisher;
+	private final DogProfileFinder dogProfileFinder;
 
 	@Override
 	@Transactional
@@ -38,7 +40,8 @@ public class GraduationSubmitService implements GraduationSubmitter {
 		}
 		graduationSubmissionRepository.findFirstByUserIdAndTopicIdOrderByIdDesc(userId, topicId)
 				.ifPresent(GraduationSubmission::validateCanSubmit);
-		if (!topicCompletionChecker.isCompleted(userId, topicId)) {
+		Long dogId = dogProfileFinder.findDogProfileOrSelected(userId, null).id();
+		if (!topicCompletionChecker.isCompleted(userId, dogId, topicId)) {
 			throw new TopicNotCompletedException(topicId);
 		}
 		GraduationSubmission submission = GraduationSubmission.create(

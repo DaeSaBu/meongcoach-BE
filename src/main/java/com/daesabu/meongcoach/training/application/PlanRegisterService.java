@@ -61,7 +61,7 @@ public class PlanRegisterService implements PlanRegister {
 	@Override
 	public Plan createAiPlan(Long userId, Long dogId, AiPlanCreateRequest request) {
 		DogProfileResult dog = dogProfileFinder.findDogProfile(userId, dogId);
-		AiPlanPreparationResult candidates = aiPreparationFinder.find(userId);
+		AiPlanPreparationResult candidates = aiPreparationFinder.find(userId, dog.id());
 		if (candidates.curriculums().isEmpty()) {
 			throw new EmptyPlanCurriculumsException();
 		}

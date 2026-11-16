@@ -18,7 +18,9 @@ import lombok.NoArgsConstructor;
 @Entity
 @Table(
 		name = "topic_selection",
-		uniqueConstraints = @UniqueConstraint(columnNames = "user_id")
+		uniqueConstraints = @UniqueConstraint(
+				name = "uk_topic_selection_user_dog",
+				columnNames = {"user_id", "dog_id"})
 )
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class TopicSelection extends BaseEntity {
@@ -31,12 +33,16 @@ public class TopicSelection extends BaseEntity {
 	private Long userId;
 
 	@Column(nullable = false)
+	private Long dogId;
+
+	@Column(nullable = false)
 	private Long topicId;
 
-	public static TopicSelection enter(Long userId, Long topicId) {
+	public static TopicSelection enter(Long userId, Long dogId, Long topicId) {
 		TopicSelection topicSelection = new TopicSelection();
 
 		topicSelection.userId = requireNonNull(userId);
+		topicSelection.dogId = requireNonNull(dogId);
 		topicSelection.topicId = requireNonNull(topicId);
 
 		return topicSelection;
