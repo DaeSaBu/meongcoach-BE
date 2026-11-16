@@ -3,6 +3,7 @@ package com.daesabu.meongcoach.graduation.application.provided;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.daesabu.meongcoach.dog.domain.exception.DogNotFoundException;
 import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationDetailResult;
 import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationSubmissionRequest;
 import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationSummaryResult;
@@ -11,6 +12,7 @@ import com.daesabu.meongcoach.support.ApplicationTest;
 import com.daesabu.meongcoach.training.domain.Topic;
 import com.daesabu.meongcoach.training.domain.exception.TopicNotFoundException;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
@@ -35,11 +37,59 @@ class GraduationFinderTest {
 	@Autowired
 	private JdbcTemplate jdbcTemplate;
 
+	private Long dogId;
+
+	@BeforeEach
+	void setUp() {
+		dogId = topicSeeder.selectedDog(USER_ID);
+	}
+
+	@Test
+	void 같은_회원의_다른_강아지가_마친_학습과_제출은_보이지_않는다() {
+		Long otherDogId = topicSeeder.unselectedDog(USER_ID);
+		Topic topic = topicSeeder.completedTopic(USER_ID, otherDogId, "분리불안");
+		graduationSubmitter.submit(USER_ID, otherDogId, topic.getId(), new GraduationSubmissionRequest(
+				"videos/graduation/" + USER_ID + "/" + topic.getId() + "/a.mp4"));
+		topicSeeder.flushAndClear();
+
+		GraduationDetailResult detail = graduationFinder.findGraduation(USER_ID, dogId, topic.getId());
+
+		assertThat(detail.eligible()).isFalse();
+		assertThat(detail.submission()).isNull();
+		assertThat(graduationFinder.findGraduations(USER_ID, dogId)).isEmpty();
+		assertThat(graduationFinder.findGraduations(USER_ID, otherDogId))
+				.extracting(result -> result.topic().id()).containsExactly(topic.getId());
+	}
+
+	@Test
+	void dogId를_생략하면_선택된_강아지의_현황을_조회한다() {
+		Long otherDogId = topicSeeder.unselectedDog(USER_ID);
+		Topic selectedDogTopic = topicSeeder.completedTopic(USER_ID, "분리불안");
+		topicSeeder.completedTopic(USER_ID, otherDogId, "산책");
+
+		GraduationDetailResult detail = graduationFinder.findGraduation(USER_ID, null, selectedDogTopic.getId());
+		List<GraduationSummaryResult> summaries = graduationFinder.findGraduations(USER_ID, null);
+
+		assertThat(detail.eligible()).isTrue();
+		assertThat(summaries).extracting(result -> result.topic().id()).containsExactly(selectedDogTopic.getId());
+	}
+
+	@Test
+	void 다른_회원의_강아지를_지정하면_예외를_던진다() {
+		Long otherUserDogId = topicSeeder.selectedDog(OTHER_USER_ID);
+		Topic topic = topicSeeder.completedTopic(USER_ID, "분리불안");
+
+		assertThatThrownBy(() -> graduationFinder.findGraduation(USER_ID, otherUserDogId, topic.getId()))
+				.isInstanceOf(DogNotFoundException.class);
+		assertThatThrownBy(() -> graduationFinder.findGraduations(USER_ID, otherUserDogId))
+				.isInstanceOf(DogNotFoundException.class);
+	}
+
 	@Test
 	void 제출한_적이_없으면_토픽과_자격만_담아_돌려준다() {
 		Topic topic = topicSeeder.completedTopic(USER_ID, "분리불안");
 
-		GraduationDetailResult result = graduationFinder.findGraduation(USER_ID, topic.getId());
+		GraduationDetailResult result = graduationFinder.findGraduation(USER_ID, dogId, topic.getId());
 
 		assertThat(result.topic().title()).isEqualTo("분리불안");
 		assertThat(result.eligible()).isTrue();
@@ -51,7 +101,7 @@ class GraduationFinderTest {
 	void 커리큘럼을_다_마치지_않았으면_자격이_없다() {
 		Topic topic = topicSeeder.incompleteTopic("분리불안");
 
-		assertThat(graduationFinder.findGraduation(USER_ID, topic.getId()).eligible()).isFalse();
+		assertThat(graduationFinder.findGraduation(USER_ID, dogId, topic.getId()).eligible()).isFalse();
 	}
 
 	@Test
@@ -61,7 +111,7 @@ class GraduationFinderTest {
 		revise(topic);
 		submit(USER_ID, topic, "second");
 
-		GraduationDetailResult result = graduationFinder.findGraduation(USER_ID, topic.getId());
+		GraduationDetailResult result = graduationFinder.findGraduation(USER_ID, dogId, topic.getId());
 
 		assertThat(result.submission().getStatus()).isEqualTo(GraduationSubmissionStatus.SUBMITTED);
 		assertThat(result.videoUrl()).contains("videos/graduation/42/" + topic.getId() + "/second.mp4");
@@ -76,8 +126,8 @@ class GraduationFinderTest {
 
 		String objectKey = "videos/graduation/42/" + topic.getId() + "/second.mp4";
 
-		GraduationDetailResult detail = graduationFinder.findGraduation(USER_ID, topic.getId());
-		List<GraduationSummaryResult> summaries = graduationFinder.findGraduations(USER_ID);
+		GraduationDetailResult detail = graduationFinder.findGraduation(USER_ID, dogId, topic.getId());
+		List<GraduationSummaryResult> summaries = graduationFinder.findGraduations(USER_ID, dogId);
 
 		assertThat(detail.submission().getVideoObjectKey()).isEqualTo(objectKey);
 		assertThat(detail.submission().getReview().note()).isNull();
@@ -92,12 +142,12 @@ class GraduationFinderTest {
 		Topic topic = topicSeeder.completedTopic(OTHER_USER_ID, "분리불안");
 		submit(OTHER_USER_ID, topic, "a");
 
-		assertThat(graduationFinder.findGraduation(USER_ID, topic.getId()).submission()).isNull();
+		assertThat(graduationFinder.findGraduation(USER_ID, dogId, topic.getId()).submission()).isNull();
 	}
 
 	@Test
 	void 존재하지_않는_토픽이면_예외를_던진다() {
-		assertThatThrownBy(() -> graduationFinder.findGraduation(USER_ID, 999L))
+		assertThatThrownBy(() -> graduationFinder.findGraduation(USER_ID, dogId, 999L))
 				.isInstanceOf(TopicNotFoundException.class);
 	}
 
@@ -110,7 +160,7 @@ class GraduationFinderTest {
 		submit(USER_ID, second, "b");
 		submit(OTHER_USER_ID, other, "c");
 
-		List<GraduationSummaryResult> results = graduationFinder.findGraduations(USER_ID);
+		List<GraduationSummaryResult> results = graduationFinder.findGraduations(USER_ID, dogId);
 
 		assertThat(results).extracting(result -> result.submission().getTopicId())
 				.containsExactly(second.getId(), first.getId());
@@ -120,7 +170,7 @@ class GraduationFinderTest {
 
 	@Test
 	void 제출과_완료한_학습이_없으면_빈_목록이다() {
-		assertThat(graduationFinder.findGraduations(USER_ID)).isEmpty();
+		assertThat(graduationFinder.findGraduations(USER_ID, dogId)).isEmpty();
 	}
 
 	@Test
@@ -129,7 +179,7 @@ class GraduationFinderTest {
 		topicSeeder.incompleteTopic("아직 학습 중");
 		topicSeeder.completedTopic(OTHER_USER_ID, "다른 회원 학습 완료");
 
-		List<GraduationSummaryResult> results = graduationFinder.findGraduations(USER_ID);
+		List<GraduationSummaryResult> results = graduationFinder.findGraduations(USER_ID, dogId);
 
 		assertThat(results).extracting(result -> result.topic().id()).containsExactly(completed.getId());
 		assertThat(results.getFirst().submission()).isNull();
@@ -142,7 +192,7 @@ class GraduationFinderTest {
 		Topic submitted = topicSeeder.completedTopic(USER_ID, "제출");
 		submit(USER_ID, submitted, "video");
 
-		List<GraduationSummaryResult> results = graduationFinder.findGraduations(USER_ID);
+		List<GraduationSummaryResult> results = graduationFinder.findGraduations(USER_ID, dogId);
 
 		assertThat(results).extracting(result -> result.topic().id())
 				.containsExactly(submitted.getId(), unsubmitted.getId());
@@ -162,13 +212,13 @@ class GraduationFinderTest {
 		jdbcTemplate.update("update graduation_submissions set submitted_at = '2026-10-21T00:00:00Z' "
 				+ "where status = 'REVISION_REQUESTED'");
 		jdbcTemplate.update("insert into graduation_submissions "
-				+ "(user_id, topic_id, version, video_object_key, submitted_at, created_at, status, review) "
-				+ "select ?, topic_id, 0, video_object_key, submitted_at, created_at, status, review "
+				+ "(user_id, dog_id, topic_id, version, video_object_key, submitted_at, created_at, status, review) "
+				+ "select ?, dog_id, topic_id, 0, video_object_key, submitted_at, created_at, status, review "
 				+ "from graduation_submissions where user_id = ? and topic_id = ? and status = 'SUBMITTED'",
 				OTHER_USER_ID, USER_ID, first.getId());
 		topicSeeder.flushAndClear();
 
-		List<GraduationSummaryResult> results = graduationFinder.findGraduations(USER_ID);
+		List<GraduationSummaryResult> results = graduationFinder.findGraduations(USER_ID, dogId);
 
 		assertThat(results).extracting(result -> result.topic().id()).containsExactly(first.getId(), second.getId());
 		assertThat(results).allSatisfy(result -> assertThat(result.submission().getUserId()).isEqualTo(USER_ID));
@@ -183,7 +233,7 @@ class GraduationFinderTest {
 	}
 
 	private void submit(Long userId, Topic topic, String name) {
-		graduationSubmitter.submit(userId, topic.getId(),
+		graduationSubmitter.submit(userId, null, topic.getId(),
 				new GraduationSubmissionRequest(
 						"videos/graduation/" + userId + "/" + topic.getId() + "/" + name + ".mp4"));
 		topicSeeder.flushAndClear();

@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 
 class GraduationSubmissionTest {
 	private GraduationSubmission submission() {
-		return GraduationSubmission.create(new GraduationSubmissionCommand(42L, 7L, "video", Instant.EPOCH));
+		return GraduationSubmission.create(new GraduationSubmissionCommand(42L, 3L, 7L, "video", Instant.EPOCH));
 	}
 
 	@Test

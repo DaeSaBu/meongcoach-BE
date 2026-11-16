@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.groups.Tuple.tuple;
 import static org.mockito.BDDMockito.willReturn;
 
+import com.daesabu.meongcoach.dog.domain.exception.DogNotFoundException;
 import com.daesabu.meongcoach.graduation.application.provided.dto.GraduationSubmissionRequest;
 import com.daesabu.meongcoach.graduation.application.required.GraduationSubmissionRepository;
 import com.daesabu.meongcoach.graduation.domain.GraduationRevisionCommand;
@@ -21,6 +22,7 @@ import com.daesabu.meongcoach.training.domain.Topic;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
@@ -45,11 +47,64 @@ class GraduationSubmitterTest {
 	@Autowired
 	private TopicSeeder topicSeeder;
 
+	private Long dogId;
+
+	@BeforeEach
+	void setUp() {
+		dogId = topicSeeder.selectedDog(USER_ID);
+	}
+
+	@Test
+	void 한_강아지가_검수_대기_중이어도_다른_강아지는_같은_토픽에_제출한다() {
+		Long otherDogId = topicSeeder.unselectedDog(USER_ID);
+		Topic topic = topicSeeder.completedTopic(USER_ID, "분리불안");
+		topicSeeder.completeTopic(USER_ID, otherDogId, topic);
+		graduationSubmitter.submit(USER_ID, dogId, topic.getId(), request(key(topic, "first")));
+
+		GraduationSubmission other = graduationSubmitter.submit(USER_ID, otherDogId, topic.getId(),
+				request(key(topic, "second")));
+
+		assertThat(other.getDogId()).isEqualTo(otherDogId);
+		assertThat(other.getStatus()).isEqualTo(GraduationSubmissionStatus.SUBMITTED);
+	}
+
+	@Test
+	void 다른_강아지가_마친_토픽에_제출하면_예외를_던진다() {
+		Long otherDogId = topicSeeder.unselectedDog(USER_ID);
+		Topic topic = topicSeeder.completedTopic(USER_ID, otherDogId, "분리불안");
+
+		assertThatThrownBy(() -> graduationSubmitter.submit(USER_ID, dogId, topic.getId(),
+				request(key(topic, "first"))))
+				.isInstanceOf(TopicNotCompletedException.class);
+	}
+
+	@Test
+	void dogId를_생략하면_선택된_강아지로_제출한다() {
+		topicSeeder.unselectedDog(USER_ID);
+		Topic topic = topicSeeder.completedTopic(USER_ID, "분리불안");
+
+		GraduationSubmission graduation = graduationSubmitter.submit(USER_ID, null, topic.getId(),
+				request(key(topic, "first")));
+
+		assertThat(graduation.getDogId()).isEqualTo(dogId);
+	}
+
+	@Test
+	void 다른_회원의_강아지를_지정하면_예외를_던지고_아무것도_만들지_않는다() {
+		Long otherUserDogId = topicSeeder.selectedDog(43L);
+		Topic topic = topicSeeder.completedTopic(USER_ID, "분리불안");
+
+		assertThatThrownBy(() -> graduationSubmitter.submit(USER_ID, otherUserDogId, topic.getId(),
+				request(key(topic, "first"))))
+				.isInstanceOf(DogNotFoundException.class);
+		assertThat(graduationSubmissionRepository.count()).isZero();
+	}
+
 	@Test
 	void 첫_제출은_수료_행을_만들고_기록을_남긴다() {
 		Topic topic = topicSeeder.completedTopic(USER_ID, "분리불안");
 
-		GraduationSubmission graduation = graduationSubmitter.submit(USER_ID, topic.getId(),
+		GraduationSubmission graduation = graduationSubmitter.submit(USER_ID, dogId, topic.getId(),
 				request(key(topic, "first")));
 		topicSeeder.flushAndClear();
 
@@ -64,9 +119,9 @@ class GraduationSubmitterTest {
 	@Test
 	void 검수_대기_중에는_영상을_바꾸지_않고_추가_제출을_거절한다() {
 		Topic topic = topicSeeder.completedTopic(USER_ID, "분리불안");
-		graduationSubmitter.submit(USER_ID, topic.getId(), request(key(topic, "first")));
+		graduationSubmitter.submit(USER_ID, dogId, topic.getId(), request(key(topic, "first")));
 		topicSeeder.flushAndClear();
-		assertThatThrownBy(() -> graduationSubmitter.submit(USER_ID, topic.getId(), request(key(topic, "second"))))
+		assertThatThrownBy(() -> graduationSubmitter.submit(USER_ID, dogId, topic.getId(), request(key(topic, "second"))))
 				.isInstanceOf(GraduationReviewPendingException.class);
 		assertThat(graduationSubmissionRepository.findAll()).extracting(GraduationSubmission::getVideoObjectKey)
 				.containsExactly(key(topic, "first"));
@@ -75,7 +130,7 @@ class GraduationSubmitterTest {
 	@Test
 	void 재제출하면_이전_판정과_재촬영_지시를_보존하고_새_제출은_판정_대기다() {
 		Topic topic = topicSeeder.completedTopic(USER_ID, "분리불안");
-		GraduationSubmission first = graduationSubmitter.submit(USER_ID, topic.getId(), request(key(topic, "first")));
+		GraduationSubmission first = graduationSubmitter.submit(USER_ID, dogId, topic.getId(), request(key(topic, "first")));
 		Instant reviewedAt = Instant.parse("2026-10-20T01:00:00Z");
 		GraduationSubmission previous = first;
 		first.requestRevision(new GraduationRevisionCommand("다시 찍어 주세요.",
@@ -83,7 +138,7 @@ class GraduationSubmitterTest {
 				reviewedAt));
 		topicSeeder.flushAndClear();
 
-		GraduationSubmission second = graduationSubmitter.submit(USER_ID, topic.getId(), request(key(topic, "second")));
+		GraduationSubmission second = graduationSubmitter.submit(USER_ID, dogId, topic.getId(), request(key(topic, "second")));
 		topicSeeder.flushAndClear();
 
 		GraduationSubmission saved = graduationSubmissionRepository.findById(second.getId()).orElseThrow();
@@ -108,11 +163,11 @@ class GraduationSubmitterTest {
 	@Test
 	void 새_제출을_승인해도_이전_보완_요청은_유지한다() {
 		Topic topic = topicSeeder.completedTopic(USER_ID, "분리불안");
-		GraduationSubmission first = graduationSubmitter.submit(USER_ID, topic.getId(), request(key(topic, "first")));
+		GraduationSubmission first = graduationSubmitter.submit(USER_ID, dogId, topic.getId(), request(key(topic, "first")));
 		GraduationSubmission previous = first;
 		first.requestRevision(new GraduationRevisionCommand("현관을 보여 주세요.", List.of(), null, Instant.now()));
 		topicSeeder.flushAndClear();
-		GraduationSubmission second = graduationSubmitter.submit(USER_ID, topic.getId(), request(key(topic, "second")));
+		GraduationSubmission second = graduationSubmitter.submit(USER_ID, dogId, topic.getId(), request(key(topic, "second")));
 
 		second.approve("잘했어요.", Instant.now());
 		topicSeeder.flushAndClear();
@@ -129,11 +184,11 @@ class GraduationSubmitterTest {
 	@Test
 	void 승인된_수료에_다시_제출하면_예외를_던진다() {
 		Topic topic = topicSeeder.completedTopic(USER_ID, "분리불안");
-		GraduationSubmission first = graduationSubmitter.submit(USER_ID, topic.getId(), request(key(topic, "first")));
+		GraduationSubmission first = graduationSubmitter.submit(USER_ID, dogId, topic.getId(), request(key(topic, "first")));
 		first.approve(null, Instant.now());
 		topicSeeder.flushAndClear();
 
-		assertThatThrownBy(() -> graduationSubmitter.submit(USER_ID, topic.getId(), request(key(topic, "second"))))
+		assertThatThrownBy(() -> graduationSubmitter.submit(USER_ID, dogId, topic.getId(), request(key(topic, "second"))))
 				.isInstanceOf(GraduationAlreadyApprovedException.class);
 	}
 
@@ -141,10 +196,10 @@ class GraduationSubmitterTest {
 	void 다른_사용자의_영상_키로_제출하면_예외를_던지고_아무것도_만들지_않는다() {
 		Topic topic = topicSeeder.completedTopic(USER_ID, "분리불안");
 
-		assertThatThrownBy(() -> graduationSubmitter.submit(USER_ID, topic.getId(),
+		assertThatThrownBy(() -> graduationSubmitter.submit(USER_ID, dogId, topic.getId(),
 				request("videos/graduation/43/" + topic.getId() + "/x.mp4")))
 				.isInstanceOf(InvalidGraduationVideoKeyException.class);
-		assertThat(graduationSubmissionRepository.findFirstByUserIdAndTopicIdOrderByIdDesc(USER_ID,
+		assertThat(graduationSubmissionRepository.findFirstByUserIdAndDogIdAndTopicIdOrderByIdDesc(USER_ID, dogId,
 				topic.getId())).isEmpty();
 	}
 
@@ -153,9 +208,9 @@ class GraduationSubmitterTest {
 		Topic topic = topicSeeder.completedTopic(USER_ID, "분리불안");
 		String otherTopicKey = "videos/graduation/42/" + (topic.getId() + 1) + "/x.mp4";
 
-		assertThatThrownBy(() -> graduationSubmitter.submit(USER_ID, topic.getId(), request(otherTopicKey)))
+		assertThatThrownBy(() -> graduationSubmitter.submit(USER_ID, dogId, topic.getId(), request(otherTopicKey)))
 				.isInstanceOf(InvalidGraduationVideoKeyException.class);
-		assertThat(graduationSubmissionRepository.findFirstByUserIdAndTopicIdOrderByIdDesc(USER_ID,
+		assertThat(graduationSubmissionRepository.findFirstByUserIdAndDogIdAndTopicIdOrderByIdDesc(USER_ID, dogId,
 				topic.getId())).isEmpty();
 	}
 
@@ -163,21 +218,19 @@ class GraduationSubmitterTest {
 	void 커리큘럼을_다_마치지_않은_토픽에_제출하면_예외를_던진다() {
 		Topic topic = topicSeeder.incompleteTopic("분리불안");
 
-		assertThatThrownBy(() -> graduationSubmitter.submit(USER_ID, topic.getId(), request(key(topic, "first"))))
+		assertThatThrownBy(() -> graduationSubmitter.submit(USER_ID, dogId, topic.getId(), request(key(topic, "first"))))
 				.isInstanceOf(TopicNotCompletedException.class);
 	}
 
 	@Test
 	void 같은_토픽의_첫_제출이_동시에_들어와_유니크_제약에_걸리면_충돌_예외로_바꾼다() {
 		Topic topic = topicSeeder.completedTopic(USER_ID, "분리불안");
-		jdbcTemplate.execute(
-				"create unique index if not exists uk_graduation_submissions_active on graduation_submissions(user_id, topic_id) where status in ('SUBMITTED', 'APPROVED')");
 		graduationSubmissionRepository.saveAndFlush(GraduationSubmission.create(
-				new GraduationSubmissionCommand(USER_ID, topic.getId(), key(topic, "first"), Instant.now())));
+				new GraduationSubmissionCommand(USER_ID, dogId, topic.getId(), key(topic, "first"), Instant.now())));
 		willReturn(Optional.empty()).given(graduationSubmissionRepository)
-				.findFirstByUserIdAndTopicIdOrderByIdDesc(USER_ID, topic.getId());
+				.findFirstByUserIdAndDogIdAndTopicIdOrderByIdDesc(USER_ID, dogId, topic.getId());
 
-		assertThatThrownBy(() -> graduationSubmitter.submit(USER_ID, topic.getId(), request(key(topic, "second"))))
+		assertThatThrownBy(() -> graduationSubmitter.submit(USER_ID, dogId, topic.getId(), request(key(topic, "second"))))
 				.isInstanceOf(GraduationSubmissionConflictException.class);
 	}
 
