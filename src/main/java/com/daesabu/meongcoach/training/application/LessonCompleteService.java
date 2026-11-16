@@ -7,6 +7,7 @@ import com.daesabu.meongcoach.training.application.provided.LessonFinder;
 import com.daesabu.meongcoach.training.application.required.LessonProgressRepository;
 import com.daesabu.meongcoach.training.domain.Lesson;
 import com.daesabu.meongcoach.training.domain.LessonProgress;
+import com.daesabu.meongcoach.training.domain.TrainingSource;
 import com.daesabu.meongcoach.training.domain.exception.LessonCompletionConflictException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -22,10 +23,20 @@ public class LessonCompleteService implements LessonCompleter {
 	private final EntitlementChecker entitlementChecker;
 	private final LessonProgressRepository lessonProgressRepository;
 	private final DogProfileFinder dogProfileFinder;
+	private final TrainedLessonRecordService trainedLessonRecordService;
 
 	@Override
 	@Transactional
 	public int completeLesson(Long userId, Long dogId, Long lessonId) {
+		return complete(userId, dogId, lessonId, TrainingSource.LIBRARY);
+	}
+
+	@Transactional
+	public void completePlanLesson(Long userId, Long dogId, Long lessonId) {
+		complete(userId, dogId, lessonId, TrainingSource.PLAN);
+	}
+
+	private int complete(Long userId, Long dogId, Long lessonId, TrainingSource source) {
 		Lesson lesson = lessonFinder.find(lessonId);
 		lesson.findRequiredEntitlementType().ifPresent(type -> entitlementChecker.validateEntitlement(userId, type));
 		Long resolvedDogId = dogProfileFinder.findDogProfileOrSelected(userId, dogId).id();
@@ -38,6 +49,7 @@ public class LessonCompleteService implements LessonCompleter {
 		} catch (DataIntegrityViolationException | OptimisticLockingFailureException e) {
 			throw new LessonCompletionConflictException(lessonId, e);
 		}
+		trainedLessonRecordService.record(userId, resolvedDogId, lesson, source);
 		return completedCount;
 	}
 }

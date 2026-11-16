@@ -79,6 +79,8 @@ class GraduationSubmitterConcurrencyTest {
 		transaction.executeWithoutResult(status -> {
 			jdbcTemplate.update("delete from graduation_submissions where user_id = ?", USER_ID);
 			jdbcTemplate.update("delete from lesson_progress where user_id = ?", USER_ID);
+			jdbcTemplate.update("delete from trained_lessons where user_id = ?", USER_ID);
+			jdbcTemplate.update("delete from curriculum_progress where user_id = ?", USER_ID);
 			jdbcTemplate.update("delete from dogs where user_id = ?", USER_ID);
 			jdbcTemplate.update(
 					"delete from lessons where curriculum_id in (select id from curriculums where topic_id = ?)",

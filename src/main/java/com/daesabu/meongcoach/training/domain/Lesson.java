@@ -14,6 +14,7 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import lombok.AccessLevel;
@@ -46,6 +47,12 @@ public class Lesson extends BaseEntity {
 	@OneToMany(mappedBy = "lesson")
 	@OrderBy("sortOrder ASC, id ASC")
 	private List<Card> cards = new ArrayList<>();
+
+	public static Comparator<Lesson> trainingOrder() {
+		return Comparator.comparing(Lesson::getCurriculum, Curriculum.trainingOrder())
+				.thenComparingInt(Lesson::getSortOrder)
+				.thenComparing(Lesson::getId);
+	}
 
 	public Optional<EntitlementType> findRequiredEntitlementType() {
 		return curriculum.findRequiredEntitlementType();
