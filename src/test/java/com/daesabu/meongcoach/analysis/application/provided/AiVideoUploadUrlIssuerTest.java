@@ -12,9 +12,12 @@ import com.daesabu.meongcoach.analysis.domain.AiTrial;
 import com.daesabu.meongcoach.analysis.domain.AiTrialFixture;
 import com.daesabu.meongcoach.analysis.domain.exception.AiReportTrialExceededException;
 import com.daesabu.meongcoach.analysis.domain.exception.AiVideoDurationOutOfRangeException;
+import com.daesabu.meongcoach.dog.application.required.DogRepository;
+import com.daesabu.meongcoach.dog.domain.DogFixture;
 import com.daesabu.meongcoach.support.ApplicationTest;
 import jakarta.validation.ConstraintViolationException;
 import java.time.Instant;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -36,6 +39,25 @@ class AiVideoUploadUrlIssuerTest {
 
 	@Autowired
 	private AiTrialRepository aiTrialRepository;
+
+	@Autowired
+	private DogRepository dogRepository;
+
+	private Long dogId;
+
+	@BeforeEach
+	void setUp() {
+		dogId = dogRepository.save(DogFixture.selected(USER_ID)).getId();
+	}
+
+	@Test
+	void 선택된_강아지로_분석_건을_저장한다() {
+		dogRepository.save(DogFixture.unselected(USER_ID));
+
+		AiVideoUploadUrlResult result = service.issue(USER_ID, REQUEST);
+
+		assertThat(aiAnalysisRepository.findById(result.reportId()).orElseThrow().getDogId()).isEqualTo(dogId);
+	}
 
 	@ParameterizedTest
 	@ValueSource(ints = {0, 1, 29})
@@ -80,7 +102,7 @@ class AiVideoUploadUrlIssuerTest {
 
 		assertThatThrownBy(() -> service.issue(USER_ID, REQUEST))
 				.isInstanceOf(AiReportTrialExceededException.class);
-		assertThat(aiAnalysisRepository.findAllByUserIdOrderByCreatedAtDescIdDesc(USER_ID)).isEmpty();
+		assertThat(aiAnalysisRepository.findAllByUserIdAndDogIdOrderByCreatedAtDescIdDesc(USER_ID, dogId)).isEmpty();
 	}
 
 	@Test
@@ -107,7 +129,7 @@ class AiVideoUploadUrlIssuerTest {
 
 		assertThatThrownBy(() -> service.issue(USER_ID, request))
 				.isInstanceOf(AiVideoDurationOutOfRangeException.class);
-		assertThat(aiAnalysisRepository.findAllByUserIdOrderByCreatedAtDescIdDesc(USER_ID)).isEmpty();
+		assertThat(aiAnalysisRepository.findAllByUserIdAndDogIdOrderByCreatedAtDescIdDesc(USER_ID, dogId)).isEmpty();
 	}
 
 	@Test
