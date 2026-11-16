@@ -119,6 +119,57 @@ class DogsTest {
 				.isInstanceOf(DogNotFoundException.class);
 	}
 
+	@Test
+	void 강아지를_선택하면_기존에_선택된_강아지는_미선택이_된다() {
+		Dog previous = selectedDog(10L);
+		Dog target = unselectedDog(11L);
+		Dog other = unselectedDog(12L);
+		Dogs dogs = new Dogs(List.of(previous, target, other));
+
+		dogs.select(11L);
+
+		assertThat(target.getStatus()).isEqualTo(DogStatus.SELECTED);
+		assertThat(previous.getStatus()).isEqualTo(DogStatus.UNSELECTED);
+		assertThat(other.getStatus()).isEqualTo(DogStatus.UNSELECTED);
+	}
+
+	@Test
+	void 이미_선택된_강아지를_선택하면_선택이_유지된다() {
+		Dog selected = selectedDog(10L);
+		Dog other = unselectedDog(11L);
+		Dogs dogs = new Dogs(List.of(selected, other));
+
+		dogs.select(10L);
+
+		assertThat(selected.getStatus()).isEqualTo(DogStatus.SELECTED);
+		assertThat(other.getStatus()).isEqualTo(DogStatus.UNSELECTED);
+	}
+
+	@Test
+	void 선택된_강아지가_여러_마리여도_선택한_강아지만_선택된다() {
+		Dog first = selectedDog(10L);
+		Dog second = selectedDog(11L);
+		Dog target = unselectedDog(12L);
+		Dogs dogs = new Dogs(List.of(first, second, target));
+
+		dogs.select(12L);
+
+		assertThat(target.getStatus()).isEqualTo(DogStatus.SELECTED);
+		assertThat(first.getStatus()).isEqualTo(DogStatus.UNSELECTED);
+		assertThat(second.getStatus()).isEqualTo(DogStatus.UNSELECTED);
+	}
+
+	@Test
+	void 없는_강아지를_선택하면_예외를_던지고_선택은_바뀌지_않는다() {
+		Dog selected = selectedDog(10L);
+		Dogs dogs = new Dogs(List.of(selected, unselectedDog(11L)));
+
+		assertThatThrownBy(() -> dogs.select(999L))
+				.isInstanceOf(DogNotFoundException.class);
+
+		assertThat(selected.getStatus()).isEqualTo(DogStatus.SELECTED);
+	}
+
 	private List<Dog> unselectedDogs(int count) {
 		return LongStream.range(0, count)
 				.mapToObj(this::unselectedDog)
