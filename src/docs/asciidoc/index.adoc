@@ -240,6 +240,7 @@ operation::health/check[snippets='http-request,http-response,response-fields']
 * `dogId`를 생략하면 사용자가 선택한 강아지(`status`가 `SELECTED`인 강아지)를 씁니다. `dogId`를 보내지 않는 기존 앱은 그대로 동작합니다.
 * 서버의 선택된 강아지는 처음 등록한 강아지이며 바꾸는 API가 없습니다. 앱에서 고른 강아지를 쓰려면 `dogId`를 보내야 합니다.
 * 지정한 강아지가 없거나 본인 소유가 아니면, 또는 `dogId`를 생략했는데 선택된 강아지가 없으면 404(`DOG_NOT_FOUND`)를 반환합니다.
+* <<_훈련_달력_조회>>와 <<_훈련_결과_기록>>은 `dogId`가 필수이며 생략하면 400을 반환합니다.
 
 === 커리큘럼 리스트 조회
 
@@ -303,10 +304,15 @@ link:{swagger-ui}#/Training/training-lesson-complete[▶ Swagger에서 Try it ou
 요청 바디는 받지 않습니다.
 첫 완료 시 진행도가 생성되어 완료 횟수가 1이 되고, 이후 호출할 때마다 1씩 증가합니다.
 
+완료한 날(Asia/Seoul)에 이 레슨을 라이브러리에서 훈련한 기록을 남기며, <<_훈련_달력_조회>>의 `library`에 나옵니다.
+같은 날 여러 번 완료해도 기록은 하나입니다.
+그 레슨이 속한 커리큘럼의 그날 훈련 결과가 없으면 `PENDING`으로 만듭니다.
+
 operation::training/lesson-complete[snippets='http-request,path-parameters,query-parameters,http-response,response-fields']
 
 존재하지 않는 레슨을 요청하면 404(`TRAINING_LESSON_NOT_FOUND`)를 반환하며 진행도는 변경되지 않습니다.
 같은 강아지의 같은 레슨 완료가 동시에 들어오면 먼저 처리된 요청만 반영하고 나머지는 409(`TRAINING_LESSON_COMPLETION_CONFLICT`)를 반환합니다.
+같은 강아지가 같은 커리큘럼을 그날 처음 훈련하는 완료 두 건이 동시에 들어와도 같은 409를 반환합니다.
 
 operation::training/lesson-complete-error[snippets='http-response,response-fields']
 
@@ -322,6 +328,60 @@ operation::training/topic-select[snippets='http-request,query-parameters,request
 존재하지 않는 토픽을 요청하면 404(`TRAINING_TOPIC_NOT_FOUND`)를 반환합니다.
 
 operation::training/topic-select-error[snippets='http-response,response-fields']
+
+=== 훈련 달력 조회
+
+link:{swagger-ui}#/Training/training-calendar[▶ Swagger에서 Try it out,window=swagger]
+
+강아지가 `from`부터 `to`까지 훈련한 레슨을 날짜별로 조회합니다.
+`dogId`, `from`, `to`는 모두 필수이며 날짜는 `yyyy-MM-dd` 형식입니다.
+
+* `days`에는 훈련한 날만 날짜 오름차순으로 들어갑니다. 훈련하지 않은 날은 항목이 없습니다.
+* 그날 플랜으로 한 훈련은 `plan`, 라이브러리에서 따로 한 훈련은 `library`에 들어가며, 없는 쪽은 빈 배열입니다.
+* 토픽·커리큘럼·레슨은 노출 순서대로 내려갑니다.
+* `status`는 그날 그 커리큘럼의 훈련 결과(`PENDING`, `SUCCEEDED`, `FAILED`)입니다. 같은 날 같은 커리큘럼은 `plan`과 `library`에서 값이 같습니다.
+* `completedCount`는 그날까지 이 레슨을 훈련한 날 수입니다. 출처와 무관하게 하루에 한 번만 세며, 조회 기간 이전의 날도 포함합니다.
+* `firstTrainedDate`는 이 강아지가 처음 훈련한 날입니다. 조회 기간과 무관하며 훈련한 적이 없으면 `null`입니다.
+* 날짜는 서버가 완료를 처리한 시각의 Asia/Seoul 날짜입니다.
+* 달력에는 이 API가 배포된 뒤의 훈련부터 쌓입니다. 그 전에 완료한 레슨은 나오지 않습니다.
+
+operation::training/calendar[snippets='http-request,query-parameters,http-response,response-fields']
+
+==== 실패 응답
+
+`from`이 `to`보다 늦거나 기간이 62일을 넘으면 400(`TRAINING_INVALID_CALENDAR_PERIOD`)을 반환합니다.
+강아지가 없거나 본인 소유가 아니면 404(`DOG_NOT_FOUND`)를 반환합니다.
+
+operation::training/calendar-error[snippets='http-response,response-fields']
+
+=== 훈련 결과 기록
+
+link:{swagger-ui}#/Training/training-calendar-result[▶ Swagger에서 Try it out,window=swagger]
+
+강아지가 그날 훈련한 커리큘럼의 훈련 결과를 `SUCCEEDED`나 `FAILED`로 기록합니다.
+성공하면 본문 없는 `204 No Content`를 반환합니다.
+
+|===
+|지금 상태 |요청 |결과
+
+|`PENDING`, `FAILED` |`SUCCEEDED` |204
+|`PENDING` |`FAILED` |204
+|요청과 같은 값 |`SUCCEEDED`, `FAILED` |204 (변경 없음)
+|`SUCCEEDED` |`FAILED` |409 (`TRAINING_CURRICULUM_PROGRESS_ALREADY_SUCCEEDED`)
+|===
+
+결과를 지우거나(`PENDING`으로 되돌리기) 성공을 실패로 바꿀 수는 없습니다.
+
+operation::training/calendar-result[snippets='http-request,path-parameters,query-parameters,request-fields,http-response']
+
+==== 실패 응답
+
+`result`가 `SUCCEEDED`, `FAILED` 중 하나가 아니면 400(`TRAINING_INVALID_CURRICULUM_PROGRESS_RESULT`)을 반환합니다.
+그날 그 커리큘럼을 훈련한 기록이 없으면 404(`TRAINING_CURRICULUM_PROGRESS_NOT_FOUND`)를 반환합니다.
+강아지가 없거나 본인 소유가 아니면 404(`DOG_NOT_FOUND`)를 반환합니다.
+성공한 날을 실패로 바꾸려 하면 409(`TRAINING_CURRICULUM_PROGRESS_ALREADY_SUCCEEDED`)를 반환합니다.
+
+operation::training/calendar-result-error[snippets='http-response,response-fields']
 
 == AI API
 
@@ -1043,11 +1103,13 @@ operation::plan/current-error[snippets='http-response,response-fields']
 같은 토픽 안에서는 플랜에 저장한 커리큘럼 순서와 각 커리큘럼의 현재 레슨 순서를 지킵니다.
 요청 본문은 없으며 성공하면 본문 없는 `204 No Content`를 반환합니다.
 플랜의 강아지의 일반 학습 완료 횟수와 플랜 완료 기록을 같은 트랜잭션에서 반영합니다.
+완료한 날(Asia/Seoul)에 이 레슨을 플랜으로 훈련한 기록도 함께 남기며, <<_훈련_달력_조회>>의 `plan`에 나옵니다.
 현재 레슨을 모두 완료하면 플랜 상태를 `COMPLETED`로 변경하고 완료 시각을 기록합니다.
 프론트는 성공 후 현재 플랜 조회 API를 호출해 진도와 완료 상태를 갱신합니다.
 
 활성 또는 완료된 플랜에 이미 기록된 레슨을 다시 요청하면 `204`를 반환하며,
 일반 학습 횟수, 플랜 완료 기록, 완료 시각을 변경하지 않습니다.
+다만 그날 플랜으로 훈련한 기록은 없으면 남깁니다.
 교체된 플랜의 요청은 이미 완료한 레슨이어도 거절합니다.
 
 link:{swagger-ui}#/Plan/plan-lesson-complete[▶ Swagger에서 Try it out,window=swagger]
