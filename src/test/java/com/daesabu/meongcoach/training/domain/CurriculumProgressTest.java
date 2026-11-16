@@ -46,20 +46,6 @@ class CurriculumProgressTest {
 	}
 
 	@Test
-	void 성공으로_바꾼_날만_성공한_날이다() {
-		CurriculumProgressRegisterCommand command = new CurriculumProgressRegisterCommand(2L, 10L, TRAINED_DATE);
-		CurriculumProgress pending = CurriculumProgress.register(1L, command);
-		CurriculumProgress failed = CurriculumProgress.register(1L, command);
-		failed.fail();
-		CurriculumProgress succeeded = CurriculumProgress.register(1L, command);
-		succeeded.succeed();
-
-		assertThat(pending.isSucceeded()).isFalse();
-		assertThat(failed.isSucceeded()).isFalse();
-		assertThat(succeeded.isSucceeded()).isTrue();
-	}
-
-	@Test
 	void 판정을_기다리는_날을_실패로_바꾼다() {
 		CurriculumProgressRegisterCommand command = new CurriculumProgressRegisterCommand(2L, 10L, TRAINED_DATE);
 		CurriculumProgress progress = CurriculumProgress.register(1L, command);
@@ -81,14 +67,13 @@ class CurriculumProgressTest {
 	}
 
 	@Test
-	void 성공한_날은_실패로_바꿀_수_없다() {
+	void 성공한_날을_실패로_바꾼다() {
 		CurriculumProgressRegisterCommand command = new CurriculumProgressRegisterCommand(2L, 10L, TRAINED_DATE);
 		CurriculumProgress progress = CurriculumProgress.register(1L, command);
 		progress.succeed();
 
-		assertThatThrownBy(progress::fail)
-				.isInstanceOf(IllegalStateException.class)
-				.hasMessage("성공한 날은 실패로 바꿀 수 없습니다.");
-		assertThat(progress.getStatus()).isEqualTo(CurriculumProgressStatus.SUCCEEDED);
+		progress.fail();
+
+		assertThat(progress.getStatus()).isEqualTo(CurriculumProgressStatus.FAILED);
 	}
 }
