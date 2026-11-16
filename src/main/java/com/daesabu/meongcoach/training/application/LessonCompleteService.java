@@ -31,6 +31,11 @@ public class LessonCompleteService implements LessonCompleter {
 		return complete(userId, dogId, lessonId, TrainingSource.LIBRARY);
 	}
 
+	@Transactional
+	public void completePlanLesson(Long userId, Long dogId, Long lessonId) {
+		complete(userId, dogId, lessonId, TrainingSource.PLAN);
+	}
+
 	private int complete(Long userId, Long dogId, Long lessonId, TrainingSource source) {
 		Lesson lesson = lessonFinder.find(lessonId);
 		lesson.findRequiredEntitlementType().ifPresent(type -> entitlementChecker.validateEntitlement(userId, type));
