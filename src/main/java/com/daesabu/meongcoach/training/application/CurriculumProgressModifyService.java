@@ -6,7 +6,6 @@ import com.daesabu.meongcoach.training.application.provided.CurriculumProgressRe
 import com.daesabu.meongcoach.training.application.provided.dto.CurriculumProgressResultRequest;
 import com.daesabu.meongcoach.training.domain.CurriculumProgress;
 import com.daesabu.meongcoach.training.domain.CurriculumProgressStatus;
-import com.daesabu.meongcoach.training.domain.exception.CurriculumProgressAlreadySucceededException;
 import java.time.LocalDate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -32,9 +31,6 @@ public class CurriculumProgressModifyService implements CurriculumProgressRegist
 				dogId, curriculumId, trainedDate);
 		if (curriculumProgress.getStatus() == result) {
 			return;
-		}
-		if (curriculumProgress.isSucceeded()) {
-			throw new CurriculumProgressAlreadySucceededException();
 		}
 		if (result == CurriculumProgressStatus.SUCCEEDED) {
 			curriculumProgress.succeed();
