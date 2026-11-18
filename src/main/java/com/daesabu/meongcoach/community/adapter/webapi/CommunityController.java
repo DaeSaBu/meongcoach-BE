@@ -124,6 +124,7 @@ public class CommunityController {
 		return CommentListResponse.from(result);
 	}
 
+	@Deprecated(forRemoval = true)
 	@GetMapping("/comments/{commentId}/replies")
 	public ReplyListResponse findReplies(@CurrentUserId Long userId, @PathVariable Long commentId,
 	                                     @Valid @ModelAttribute CommentListRequest request) {
