@@ -26,7 +26,6 @@ import com.daesabu.meongcoach.community.application.provided.dto.CommentListRequ
 import com.daesabu.meongcoach.community.application.provided.dto.CommentListResult;
 import com.daesabu.meongcoach.community.application.provided.dto.CommentRegisterRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.CommentUpdateRequest;
-import com.daesabu.meongcoach.community.application.provided.dto.MyCommentListResult;
 import com.daesabu.meongcoach.community.application.provided.dto.PostListRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.PostListResult;
 import com.daesabu.meongcoach.community.application.provided.dto.PostMediaUploadUrlRequest;
@@ -75,14 +74,14 @@ public class CommunityController {
 
 	@GetMapping("/me/posts")
 	public PostListResponse findMyPosts(@CurrentUserId Long userId, @Valid @ModelAttribute PostListRequest request) {
-		PostListResult result = postFinder.findMyPosts(userId, request);
+		PostListResult result = postFinder.findPostsByAuthor(userId, userId, request);
 		return PostListResponse.from(result);
 	}
 
 	@GetMapping("/me/comments")
 	public MyCommentListResponse findMyComments(@CurrentUserId Long userId,
 	                                            @Valid @ModelAttribute CommentListRequest request) {
-		MyCommentListResult result = commentFinder.findMyComments(userId, request);
+		CommentListResult result = commentFinder.findCommentsByAuthor(userId, userId, request);
 		return MyCommentListResponse.from(result);
 	}
 

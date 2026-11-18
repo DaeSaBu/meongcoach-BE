@@ -37,8 +37,6 @@ import com.daesabu.meongcoach.community.application.provided.dto.CommentUpdateRe
 import com.daesabu.meongcoach.community.application.provided.dto.MentionLevelResult;
 import com.daesabu.meongcoach.community.application.provided.dto.MentionRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.MentionTargetResult;
-import com.daesabu.meongcoach.community.application.provided.dto.MyCommentListResult;
-import com.daesabu.meongcoach.community.application.provided.dto.MyCommentResult;
 import com.daesabu.meongcoach.community.application.provided.dto.PostListRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.PostListResult;
 import com.daesabu.meongcoach.community.application.provided.dto.PostMediaRequest;
@@ -347,7 +345,7 @@ class CommunityControllerTest {
 						new MentionLevelResult(3L, "앉아"),
 						new MentionLevelResult(7L, "앉아 기초"),
 						new MentionLevelResult(101L, "손 신호로 앉기")), 2L, true);
-		given(postFinder.findMyPosts(42L, new PostListRequest(31L, 1, 101L)))
+		given(postFinder.findPostsByAuthor(42L, 42L, new PostListRequest(31L, 1, 101L)))
 				.willReturn(new PostListResult(List.of(withMention), 30L));
 
 		mockMvc.perform(get("/api/community/me/posts").principal(CURRENT_USER)
@@ -379,14 +377,14 @@ class CommunityControllerTest {
 
 	@Test
 	void 내가_쓴_게시글_목록의_커서와_size를_생략하면_첫_페이지를_기본_크기로_조회한다() throws Exception {
-		given(postFinder.findMyPosts(eq(42L), any(PostListRequest.class))).willReturn(new PostListResult(List.of(), null));
+		given(postFinder.findPostsByAuthor(eq(42L), eq(42L), any(PostListRequest.class))).willReturn(new PostListResult(List.of(), null));
 
 		mockMvc.perform(get("/api/community/me/posts").principal(CURRENT_USER))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.posts").isEmpty())
 				.andExpect(jsonPath("$.nextCursor").value(nullValue()));
 
-		then(postFinder).should().findMyPosts(42L, new PostListRequest(null, PostListRequest.DEFAULT_SIZE, null));
+		then(postFinder).should().findPostsByAuthor(42L, 42L, new PostListRequest(null, PostListRequest.DEFAULT_SIZE, null));
 	}
 
 	@Test
@@ -416,14 +414,14 @@ class CommunityControllerTest {
 	@Test
 	void 내가_쓴_댓글_목록을_다음_커서와_함께_반환한다() throws Exception {
 		Post post = PostFixture.create(30L, 7L, "이 레슨 따라해봤어요", LocalDateTime.of(2026, 10, 19, 10, 30, 0));
-		MyCommentResult withMedia = new MyCommentResult(
+		CommentResult withMedia = new CommentResult(
 				CommentFixture.create(101L, post, 42L, "저희 강아지도 성공했어요!",
 						List.of(new PostMediaCommand(PostMediaType.IMAGE, "https://media.meongcoach.com/images/community-post/42/shot.jpg")),
-						LocalDateTime.of(2026, 10, 19, 12, 0, 0)), 2L, true);
-		MyCommentResult withoutMedia = new MyCommentResult(
-				CommentFixture.create(100L, post, 42L, "축하해요!", LocalDateTime.of(2026, 10, 19, 11, 0, 0)), 0L, false);
-		given(commentFinder.findMyComments(42L, new CommentListRequest(102L, 2)))
-				.willReturn(new MyCommentListResult(List.of(withMedia, withoutMedia), 100L));
+						LocalDateTime.of(2026, 10, 19, 12, 0, 0)), null, 0L, 2L, true);
+		CommentResult withoutMedia = new CommentResult(
+				CommentFixture.create(100L, post, 42L, "축하해요!", LocalDateTime.of(2026, 10, 19, 11, 0, 0)), null, 0L, 0L, false);
+		given(commentFinder.findCommentsByAuthor(42L, 42L, new CommentListRequest(102L, 2)))
+				.willReturn(new CommentListResult(List.of(withMedia, withoutMedia), 100L));
 
 		mockMvc.perform(get("/api/community/me/comments").principal(CURRENT_USER)
 						.param("cursor", "102")
@@ -469,15 +467,15 @@ class CommunityControllerTest {
 
 	@Test
 	void 내가_쓴_댓글_목록의_커서와_size를_생략하면_첫_페이지를_기본_크기로_조회한다() throws Exception {
-		given(commentFinder.findMyComments(eq(42L), any(CommentListRequest.class)))
-				.willReturn(new MyCommentListResult(List.of(), null));
+		given(commentFinder.findCommentsByAuthor(eq(42L), eq(42L), any(CommentListRequest.class)))
+				.willReturn(new CommentListResult(List.of(), null));
 
 		mockMvc.perform(get("/api/community/me/comments").principal(CURRENT_USER))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.comments").isEmpty())
 				.andExpect(jsonPath("$.nextCursor").value(nullValue()));
 
-		then(commentFinder).should().findMyComments(42L, new CommentListRequest(null, CommentListRequest.DEFAULT_SIZE));
+		then(commentFinder).should().findCommentsByAuthor(42L, 42L, new CommentListRequest(null, CommentListRequest.DEFAULT_SIZE));
 	}
 
 	@Test

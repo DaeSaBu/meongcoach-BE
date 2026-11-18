@@ -49,8 +49,8 @@ public class PostQueryService implements PostFinder {
 	}
 
 	@Override
-	public PostListResult findMyPosts(Long userId, PostListRequest request) {
-		Slice<Post> slice = postQueryRepository.findPostsByUserId(userId, request.cursor(), request.lessonId(),
+	public PostListResult findPostsByAuthor(Long userId, Long authorId, PostListRequest request) {
+		Slice<Post> slice = postQueryRepository.findPostsByUserId(authorId, request.cursor(), request.lessonId(),
 				request.size());
 
 		List<PostResult> posts = compose(userId, slice.getContent());
