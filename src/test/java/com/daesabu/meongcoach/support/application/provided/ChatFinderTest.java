@@ -9,10 +9,12 @@ import com.daesabu.meongcoach.support.domain.ChatConversation;
 import com.daesabu.meongcoach.support.domain.exception.ChatCursorInvalidException;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.User;
+import jakarta.persistence.EntityManager;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.test.context.support.WithMockUser;
 
 @ApplicationTest
@@ -23,6 +25,8 @@ class ChatFinderTest {
 	@Autowired ChatRemover remover;
 	@Autowired ChatConversationRepository conversations;
 	@Autowired UserRepository users;
+	@Autowired JdbcTemplate jdbc;
+	@Autowired EntityManager em;
 
 	@Test
 	void 회원은_진행_중인_대화와_닫힌_대화를_최근_활동순으로_조회한다() {
@@ -43,19 +47,54 @@ class ChatFinderTest {
 	}
 
 	@Test
-	void 회원_대화_목록의_다음_페이지는_이전_응답_마지막_대화_이후를_조회한다() {
+	void 회원_대화_목록의_다음_페이지는_같은_시각이면_ID로_이어서_본인_대화만_조회한다() {
 		Long owner = users.save(User.registerUser()).getId();
+		Long other = users.save(User.registerUser()).getId();
 		long firstId = register.open(owner).getId();
-		register.send(owner, firstId, new ChatMessageRequest(UUID.randomUUID(), "첫 문의"));
 		remover.close(owner, firstId);
 		long secondId = register.open(owner).getId();
-		register.send(owner, secondId, new ChatMessageRequest(UUID.randomUUID(), "두 번째 문의"));
+		remover.close(owner, secondId);
+		long otherId = register.open(other).getId();
+		long latestId = register.open(owner).getId();
 		conversations.flush();
-		var last = finder.memberConversations(owner, 0, null).getFirst();
+		em.clear();
+		LocalDateTime tied = LocalDateTime.parse("2026-11-01T00:00:00.123456");
+		LocalDateTime latest = tied.plusSeconds(1);
+		setLastMessageAt(tied, firstId, secondId, otherId);
+		setLastMessageAt(latest, latestId);
 
-		var next = finder.memberConversations(owner, last.getId(), last.getLastMessageAt());
+		var afterLatest = finder.memberConversations(owner, latestId, latest);
+		var afterSecond = finder.memberConversations(owner, secondId, tied);
 
-		assertThat(next).extracting(ChatConversation::getId).containsExactly(firstId);
+		assertThat(afterLatest).extracting(ChatConversation::getId).containsExactly(secondId, firstId);
+		assertThat(afterSecond).extracting(ChatConversation::getId).containsExactly(firstId);
+	}
+
+	@Test
+	void 상담원_목록의_다음_페이지도_닫힌_대화를_제외한다() {
+		Long first = users.save(User.registerUser()).getId();
+		Long second = users.save(User.registerUser()).getId();
+		Long third = users.save(User.registerUser()).getId();
+		long oldestId = register.open(first).getId();
+		long closedId = register.open(second).getId();
+		remover.close(second, closedId);
+		long latestId = register.open(third).getId();
+		conversations.flush();
+		em.clear();
+		LocalDateTime latest = LocalDateTime.parse("2999-01-01T00:00:00");
+		setLastMessageAt(latest.minusSeconds(2), oldestId);
+		setLastMessageAt(latest.minusSeconds(1), closedId);
+		setLastMessageAt(latest, latestId);
+
+		var next = finder.conversations(latestId, latest);
+
+		assertThat(next).extracting(ChatConversation::getId).doesNotContain(closedId, latestId).startsWith(oldestId);
+	}
+
+	private void setLastMessageAt(LocalDateTime lastMessageAt, long... ids) {
+		for (long id : ids) {
+			jdbc.update("UPDATE support_conversations SET last_message_at = ? WHERE id = ?", lastMessageAt, id);
+		}
 	}
 
 	@Test

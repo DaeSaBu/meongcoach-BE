@@ -81,10 +81,14 @@ class ChatRemoverTest {
 		long id = register.open(owner).getId();
 		remover.close(owner, id);
 		conversations.flush();
+		em.clear();
 		var closedAt = conversations.findById(id).orElseThrow().getClosedAt();
 
 		remover.close(owner, id);
+		conversations.flush();
+		em.clear();
 
+		assertThat(closedAt).isNotNull();
 		assertThat(conversations.findById(id).orElseThrow().getClosedAt()).isEqualTo(closedAt);
 	}
 
