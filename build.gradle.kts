@@ -174,6 +174,13 @@ val postProcessOpenApiSpec = tasks.register("postProcessOpenApiSpec") {
 	val appHeaderExcludedPaths = setOf("/api/health")
 	val appHeaderSecurity = mapOf("appVersion" to emptyList<String>(), "appPlatform" to emptyList<String>())
 	val httpMethods = setOf("get", "post", "put", "patch", "delete", "head", "options")
+	// 컨트롤러에 @Deprecated(forRemoval = true)를 붙인 사용 중단 예정 API. 경로 → 메서드
+	val deprecatedOperations = mapOf(
+		"/api/ai/presigned-urls" to "post",
+		"/api/onboarding/presigned-urls" to "post",
+		"/api/community/comments/{commentId}/replies" to "get",
+		"/api/dogs/profile/image" to "get",
+	)
 	// REST Docs 스니펫 식별자의 모듈 접두어 → Swagger UI 그룹 태그. 선언 순서가 화면 표시 순서다
 	val moduleTags = linkedMapOf(
 		"auth" to "Auth",
@@ -223,6 +230,13 @@ val postProcessOpenApiSpec = tasks.register("postProcessOpenApiSpec") {
 					(operation as MutableMap<String, Any?>)["security"] = security
 				}
 			}
+		}
+
+		deprecatedOperations.forEach { (path, method) ->
+			@Suppress("UNCHECKED_CAST")
+			val operation = (paths[path] as? MutableMap<String, Any?>)?.get(method) as? MutableMap<String, Any?>
+			requireNotNull(operation) { "사용 중단 표시 대상이 스펙에 없습니다: $method $path" }
+			operation["deprecated"] = true
 		}
 
 		paths.values.forEach { pathItem ->
