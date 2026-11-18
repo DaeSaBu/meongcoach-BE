@@ -42,6 +42,8 @@ flowchart LR
 목록의 다음 페이지는 이전 응답 마지막 대화의 `id`와 `updatedAt`을 각각 `before`와 `beforeUpdatedAt`으로 전달합니다.
 `updatedAt`은 응답 문자열의 소수점 정밀도를 그대로 유지합니다.
 최초 조회는 두 커서를 생략하며 다음 페이지에는 두 값이 모두 필요합니다.
+회원은 `GET /api/support/conversations/me`로 본인의 진행 중·종료된 대화 목록을 같은 정렬·커서 규칙으로 조회합니다.
+대화 응답의 `closedAt`이 null이면 진행 중, 값이 있으면 종료된 대화입니다.
 
 
 ## 사진·영상 첨부
@@ -52,14 +54,18 @@ flowchart LR
 사진은 20MiB, 영상은 512MiB까지 허용합니다.
 메시지 저장 시 파일 종류와 객체 키의 업로더 소유권을 검증합니다.
 첨부를 열 때 대화 접근 권한과 메시지 소속을 확인하고 임시 다운로드 URL을 발급합니다.
-종료된 대화에는 업로드·다운로드 URL을 발급하지 않습니다.
+종료된 대화에는 업로드 URL을 발급하지 않으며, 기존 첨부의 다운로드 URL은 발급합니다.
 
 ## 상담 종료와 시각
 
-[ChatRemover](../src/main/java/com/daesabu/meongcoach/support/application/provided/ChatRemover.java)는 대화의 `deletedAt`을 기록합니다.
+[ChatRemover](../src/main/java/com/daesabu/meongcoach/support/application/provided/ChatRemover.java)는 대화의 종료 시각 `closedAt`을 기록합니다.
+엔티티 필드 `closedAt`은 `deleted_at` 컬럼에 매핑하며, 진행 중 대화의 부분 UNIQUE 인덱스도 이 컬럼을 기준으로 합니다.
 대화 소유 회원과 ADMIN·EXPERT가 종료할 수 있습니다.
+이미 종료된 대화를 다시 닫으면 처음 종료 시각을 유지합니다.
 대화와 메시지는 DB에 보관합니다.
-종료된 대화는 회원·상담원의 조회, 전송과 상담원 목록에서 제외합니다.
+종료된 대화도 소유 회원과 ADMIN·EXPERT가 메시지와 첨부를 조회할 수 있습니다.
+종료된 대화의 메시지 전송과 업로드 URL 발급은 `SUPPORT_CHAT_CLOSED`(409)로 거절합니다.
+상담원 목록에는 진행 중인 대화만 표시합니다.
 다시 상담을 열면 새 ID의 빈 대화를 만듭니다.
 
 대화는 `BaseEntity`, 메시지는 `BaseTimeEntity`의 `LocalDateTime` 시각을 사용합니다.
