@@ -100,6 +100,24 @@ class ChatSecurityTest {
 	}
 
 	@Test
+	void 회원은_본인_대화_목록만_조회한다() throws Exception {
+		Long owner = member(UserRole.USER);
+		long closedId = chats.open(owner).getId();
+		remover.close(owner, closedId);
+		em.flush();
+		long openId = chats.open(owner).getId();
+		chats.open(member(UserRole.USER));
+		em.flush();
+
+		mvc.perform(appGet("/api/support/conversations/me").header("Authorization", bearer(owner)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.length()").value(2))
+				.andExpect(jsonPath("$[0].id").value(openId))
+				.andExpect(jsonPath("$[1].id").value(closedId))
+				.andExpect(jsonPath("$[1].closedAt").isNotEmpty());
+	}
+
+	@Test
 	void 다른_회원의_대화와_관리자_목록은_거절한다() throws Exception {
 		Long owner = member(UserRole.USER);
 		long conversationId = chats.open(owner).getId();
@@ -183,6 +201,7 @@ class ChatSecurityTest {
 				.andExpect(status().isUnauthorized());
 		mvc.perform(appGet("/api/support/conversations")).andExpect(status().isUnauthorized());
 		mvc.perform(appPost("/api/support/conversations/me")).andExpect(status().isUnauthorized());
+		mvc.perform(appGet("/api/support/conversations/me")).andExpect(status().isUnauthorized());
 	}
 
 	@Test
@@ -212,6 +231,8 @@ class ChatSecurityTest {
 		mvc.perform(appGet("/api/support/conversations").header("Authorization", token))
 				.andExpect(status().isForbidden());
 		mvc.perform(appPost("/api/support/conversations/me").header("Authorization", token))
+				.andExpect(status().isForbidden());
+		mvc.perform(appGet("/api/support/conversations/me").header("Authorization", token))
 				.andExpect(status().isForbidden());
 	}
 	@ParameterizedTest
