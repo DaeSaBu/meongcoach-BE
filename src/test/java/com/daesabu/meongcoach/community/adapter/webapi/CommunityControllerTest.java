@@ -75,6 +75,7 @@ import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDoc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.restdocs.payload.FieldDescriptor;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
@@ -254,37 +255,7 @@ class CommunityControllerTest {
 								parameterWithName("lessonId").optional()
 										.description("이 레슨을 멘션한 게시글만 조회한다. 생략하면 전체 게시글을 조회한다")
 						),
-						responseFields(
-								fieldWithPath("posts[]").description("게시글 목록. 최신순(게시글 ID 내림차순)"),
-								fieldWithPath("posts[].postId").description("게시글 ID"),
-								fieldWithPath("posts[].content").description("게시글 본문"),
-								fieldWithPath("posts[].author").optional()
-										.description("작성자 요약. 작성자가 탈퇴했거나 선택된 강아지가 없으면(훈련사 계정 제외) null"),
-								fieldWithPath("posts[].author.userId").description("작성자 회원 ID"),
-								fieldWithPath("posts[].author.nickname").description("작성자 표시 이름. 작성자가 선택한 강아지 이름 뒤에 ' 보호자'를 붙인다. 훈련사(EXPERT) 계정은 프로필 닉네임을 그대로 쓴다"),
-								fieldWithPath("posts[].author.profileImageUrl").description("작성자가 선택한 강아지의 프로필 이미지 URL. 훈련사(EXPERT) 계정은 회원 프로필 이미지 URL. 이미지를 등록하지 않았으면 빈 문자열"),
-								fieldWithPath("posts[].mention").optional()
-										.description("멘션 대상 요약. 멘션이 없거나 멘션 대상이 없으면 null"),
-								fieldWithPath("posts[].mention.targetType").description("멘션 대상 종류. 현재 LESSON(레슨)만 있다"),
-								fieldWithPath("posts[].mention.targetId").description("멘션 대상 ID"),
-								fieldWithPath("posts[].mention.categoryId").description("멘션한 레슨이 속한 카테고리 ID"),
-								fieldWithPath("posts[].mention.categoryTitle").description("멘션한 레슨이 속한 카테고리 제목"),
-								fieldWithPath("posts[].mention.topicId").description("멘션한 레슨이 속한 토픽 ID"),
-								fieldWithPath("posts[].mention.topicTitle").description("멘션한 레슨이 속한 토픽 제목"),
-								fieldWithPath("posts[].mention.curriculumId").description("멘션한 레슨이 속한 커리큘럼 ID"),
-								fieldWithPath("posts[].mention.curriculumTitle").description("멘션한 레슨이 속한 커리큘럼 제목"),
-								fieldWithPath("posts[].mention.lessonId").description("멘션한 레슨 ID. targetId와 같다"),
-								fieldWithPath("posts[].mention.lessonTitle").description("멘션한 레슨 제목"),
-								fieldWithPath("posts[].media[]").description("게시글 사진·영상 목록. 배열 순서가 표시 순서이고, 없으면 빈 배열"),
-								fieldWithPath("posts[].media[].type").description("미디어 종류. IMAGE(사진), VIDEO(영상)"),
-								fieldWithPath("posts[].media[].url").description("미디어 공개 URL"),
-								fieldWithPath("posts[].commentCount").description("삭제되지 않은 댓글·답글 수. 댓글이 없으면 0"),
-								fieldWithPath("posts[].likeCount").description("좋아요 수"),
-						fieldWithPath("posts[].likedByMe").description("내 좋아요 여부"),
-						fieldWithPath("posts[].createdAt").description("게시글 작성 시각(ISO-8601, 초 단위)"),
-								fieldWithPath("nextCursor").optional()
-										.description("다음 페이지 요청에 cursor로 보낼 값. 마지막 페이지면 null")
-						)
+						responseFields(postListFields())
 				));
 	}
 
@@ -358,6 +329,177 @@ class CommunityControllerTest {
 				.andExpect(jsonPath("$.errors[0].field").value("lessonId"));
 
 		then(postFinder).shouldHaveNoInteractions();
+	}
+
+	@Test
+	void 내가_쓴_게시글_목록을_다음_커서와_함께_반환한다() throws Exception {
+		Post mine = PostFixture.create(30L, 42L, "이 레슨 따라해봤어요", null,
+				List.of(new PostMediaCommand(PostMediaType.IMAGE, "https://media.meongcoach.com/images/community-post/42/photo.jpg")),
+				LocalDateTime.of(2026, 10, 19, 10, 30, 0));
+		ReflectionTestUtils.setField(mine, "commentCount", 3);
+		PostResult withMention = new PostResult(
+				mine,
+				new AuthorResult(42L, "보리", "https://media.meongcoach.com/images/dog-profile/42/bori.jpg"),
+				new MentionTargetResult(MentionTargetType.LESSON, 101L,
+						new MentionLevelResult(1L, "기본 예절"),
+						new MentionLevelResult(3L, "앉아"),
+						new MentionLevelResult(7L, "앉아 기초"),
+						new MentionLevelResult(101L, "손 신호로 앉기")), 2L, true);
+		given(postFinder.findPostsByAuthor(42L, 42L, new PostListRequest(31L, 1, 101L)))
+				.willReturn(new PostListResult(List.of(withMention), 30L));
+
+		mockMvc.perform(get("/api/community/me/posts").principal(CURRENT_USER)
+						.param("cursor", "31")
+						.param("size", "1")
+						.param("lessonId", "101")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.posts[0].postId").value(30))
+				.andExpect(jsonPath("$.posts[0].content").value("이 레슨 따라해봤어요"))
+				.andExpect(jsonPath("$.posts[0].author.userId").value(42))
+				.andExpect(jsonPath("$.posts[0].mention.lessonId").value(101))
+				.andExpect(jsonPath("$.posts[0].media[0].type").value("IMAGE"))
+				.andExpect(jsonPath("$.posts[0].commentCount").value(3))
+				.andExpect(jsonPath("$.posts[0].likeCount").value(2))
+				.andExpect(jsonPath("$.posts[0].likedByMe").value(true))
+				.andExpect(jsonPath("$.nextCursor").value(30))
+				.andDo(document("community/my-post-list",
+						queryParameters(
+								parameterWithName("cursor").optional()
+										.description("이전 응답의 nextCursor. 첫 페이지는 생략하며, 이 ID보다 작은 게시글부터 조회한다"),
+								parameterWithName("size").optional().description("한 번에 조회할 게시글 수. 1~50, 기본 20"),
+								parameterWithName("lessonId").optional()
+										.description("내 게시글 중 이 레슨을 멘션한 게시글만 조회한다. 생략하면 내 게시글 전체를 조회한다")
+						),
+						responseFields(postListFields())
+				));
+	}
+
+	@Test
+	void 내가_쓴_게시글_목록의_커서와_size를_생략하면_첫_페이지를_기본_크기로_조회한다() throws Exception {
+		given(postFinder.findPostsByAuthor(eq(42L), eq(42L), any(PostListRequest.class))).willReturn(new PostListResult(List.of(), null));
+
+		mockMvc.perform(get("/api/community/me/posts").principal(CURRENT_USER))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.posts").isEmpty())
+				.andExpect(jsonPath("$.nextCursor").value(nullValue()));
+
+		then(postFinder).should().findPostsByAuthor(42L, 42L, new PostListRequest(null, PostListRequest.DEFAULT_SIZE, null));
+	}
+
+	@Test
+	void 내가_쓴_게시글_목록의_size가_허용_범위를_벗어나면_400을_반환한다() throws Exception {
+		mockMvc.perform(get("/api/community/me/posts").principal(CURRENT_USER)
+						.param("size", "51")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
+				.andExpect(jsonPath("$.errors[0].field").value("size"))
+				.andDo(document("community/my-post-list-error",
+						responseFields(
+								fieldWithPath("title").description("HTTP 상태 이름"),
+								fieldWithPath("status").description("HTTP 상태 코드"),
+								fieldWithPath("detail").description("사람이 읽을 수 있는 에러 설명"),
+								fieldWithPath("instance").description("에러가 발생한 요청 경로"),
+								fieldWithPath("code").description("클라이언트 분기용 에러 코드"),
+								fieldWithPath("timestamp").description("에러 발생 시각(UTC)"),
+								fieldWithPath("errors[].field").description("검증에 실패한 필드 이름"),
+								fieldWithPath("errors[].message").description("검증 실패 사유")
+						)
+				));
+
+		then(postFinder).shouldHaveNoInteractions();
+	}
+
+	@Test
+	void 내가_쓴_댓글_목록을_다음_커서와_함께_반환한다() throws Exception {
+		Post post = PostFixture.create(30L, 7L, "이 레슨 따라해봤어요", LocalDateTime.of(2026, 10, 19, 10, 30, 0));
+		CommentResult withMedia = new CommentResult(
+				CommentFixture.create(101L, post, 42L, "저희 강아지도 성공했어요!",
+						List.of(new PostMediaCommand(PostMediaType.IMAGE, "https://media.meongcoach.com/images/community-post/42/shot.jpg")),
+						LocalDateTime.of(2026, 10, 19, 12, 0, 0)), null, 0L, 2L, true);
+		CommentResult withoutMedia = new CommentResult(
+				CommentFixture.create(100L, post, 42L, "축하해요!", LocalDateTime.of(2026, 10, 19, 11, 0, 0)), null, 0L, 0L, false);
+		given(commentFinder.findCommentsByAuthor(42L, 42L, new CommentListRequest(102L, 2)))
+				.willReturn(new CommentListResult(List.of(withMedia, withoutMedia), 100L));
+
+		mockMvc.perform(get("/api/community/me/comments").principal(CURRENT_USER)
+						.param("cursor", "102")
+						.param("size", "2")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.comments[0].commentId").value(101))
+				.andExpect(jsonPath("$.comments[0].postId").value(30))
+				.andExpect(jsonPath("$.comments[0].postContent").value("이 레슨 따라해봤어요"))
+				.andExpect(jsonPath("$.comments[0].content").value("저희 강아지도 성공했어요!"))
+				.andExpect(jsonPath("$.comments[0].media[0].type").value("IMAGE"))
+				.andExpect(jsonPath("$.comments[0].media[0].url").value("https://media.meongcoach.com/images/community-post/42/shot.jpg"))
+				.andExpect(jsonPath("$.comments[0].likeCount").value(2))
+				.andExpect(jsonPath("$.comments[0].likedByMe").value(true))
+				.andExpect(jsonPath("$.comments[0].createdAt").value("2026-10-19T12:00:00"))
+				.andExpect(jsonPath("$.comments[1].commentId").value(100))
+				.andExpect(jsonPath("$.comments[1].media").isEmpty())
+				.andExpect(jsonPath("$.nextCursor").value(100))
+				.andDo(document("community/my-comment-list",
+						queryParameters(
+								parameterWithName("cursor").optional()
+										.description("이전 응답의 nextCursor. 첫 페이지는 생략하며, 이 ID보다 작은 댓글부터 조회한다"),
+								parameterWithName("size").optional().description("한 번에 조회할 댓글 수. 1~50, 기본 20")
+						),
+						responseFields(
+								fieldWithPath("comments[]")
+										.description("내가 쓴 댓글·답글 목록. 최신순(댓글 ID 내림차순). 삭제된 댓글과 삭제된 게시글의 댓글은 담기지 않는다"),
+								fieldWithPath("comments[].commentId").description("댓글 ID"),
+								fieldWithPath("comments[].postId").description("댓글이 달린 게시글 ID"),
+								fieldWithPath("comments[].postContent").description("댓글이 달린 게시글 본문"),
+								fieldWithPath("comments[].content").description("댓글 본문"),
+								fieldWithPath("comments[].media[]").description("첨부한 사진·영상 목록. 첨부 순서대로이고, 첨부가 없으면 빈 배열"),
+								fieldWithPath("comments[].media[].type").description("미디어 종류. IMAGE(사진), VIDEO(영상)"),
+								fieldWithPath("comments[].media[].url").description("미디어 공개 URL"),
+								fieldWithPath("comments[].likeCount").description("좋아요 수"),
+								fieldWithPath("comments[].likedByMe").description("내 좋아요 여부"),
+								fieldWithPath("comments[].createdAt").description("댓글 작성 시각(ISO-8601, 초 단위)"),
+								fieldWithPath("nextCursor").optional()
+										.description("다음 페이지 요청에 cursor로 보낼 값. 마지막 페이지면 null")
+						)
+				));
+	}
+
+	@Test
+	void 내가_쓴_댓글_목록의_커서와_size를_생략하면_첫_페이지를_기본_크기로_조회한다() throws Exception {
+		given(commentFinder.findCommentsByAuthor(eq(42L), eq(42L), any(CommentListRequest.class)))
+				.willReturn(new CommentListResult(List.of(), null));
+
+		mockMvc.perform(get("/api/community/me/comments").principal(CURRENT_USER))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.comments").isEmpty())
+				.andExpect(jsonPath("$.nextCursor").value(nullValue()));
+
+		then(commentFinder).should().findCommentsByAuthor(42L, 42L, new CommentListRequest(null, CommentListRequest.DEFAULT_SIZE));
+	}
+
+	@Test
+	void 내가_쓴_댓글_목록의_size가_허용_범위를_벗어나면_400을_반환한다() throws Exception {
+		mockMvc.perform(get("/api/community/me/comments").principal(CURRENT_USER)
+						.param("size", "51")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
+				.andExpect(jsonPath("$.errors[0].field").value("size"))
+				.andDo(document("community/my-comment-list-error",
+						responseFields(
+								fieldWithPath("title").description("HTTP 상태 이름"),
+								fieldWithPath("status").description("HTTP 상태 코드"),
+								fieldWithPath("detail").description("사람이 읽을 수 있는 에러 설명"),
+								fieldWithPath("instance").description("에러가 발생한 요청 경로"),
+								fieldWithPath("code").description("클라이언트 분기용 에러 코드"),
+								fieldWithPath("timestamp").description("에러 발생 시각(UTC)"),
+								fieldWithPath("errors[].field").description("검증에 실패한 필드 이름"),
+								fieldWithPath("errors[].message").description("검증 실패 사유")
+						)
+				));
+
+		then(commentFinder).shouldHaveNoInteractions();
 	}
 
 	@Test
@@ -1437,5 +1579,39 @@ class CommunityControllerTest {
 		mockMvc.perform(post("/api/community/posts/30/like"))
 				.andExpect(status().isUnauthorized());
 		then(likeRegister).shouldHaveNoInteractions();
+	}
+
+	private static FieldDescriptor[] postListFields() {
+		return new FieldDescriptor[]{
+				fieldWithPath("posts[]").description("게시글 목록. 최신순(게시글 ID 내림차순)"),
+				fieldWithPath("posts[].postId").description("게시글 ID"),
+				fieldWithPath("posts[].content").description("게시글 본문"),
+				fieldWithPath("posts[].author").optional()
+						.description("작성자 요약. 작성자가 탈퇴했거나 선택된 강아지가 없으면(훈련사 계정 제외) null"),
+				fieldWithPath("posts[].author.userId").description("작성자 회원 ID"),
+				fieldWithPath("posts[].author.nickname").description("작성자 표시 이름. 작성자가 선택한 강아지 이름 뒤에 ' 보호자'를 붙인다. 훈련사(EXPERT) 계정은 프로필 닉네임을 그대로 쓴다"),
+				fieldWithPath("posts[].author.profileImageUrl").description("작성자가 선택한 강아지의 프로필 이미지 URL. 훈련사(EXPERT) 계정은 회원 프로필 이미지 URL. 이미지를 등록하지 않았으면 빈 문자열"),
+				fieldWithPath("posts[].mention").optional()
+						.description("멘션 대상 요약. 멘션이 없거나 멘션 대상이 없으면 null"),
+				fieldWithPath("posts[].mention.targetType").description("멘션 대상 종류. 현재 LESSON(레슨)만 있다"),
+				fieldWithPath("posts[].mention.targetId").description("멘션 대상 ID"),
+				fieldWithPath("posts[].mention.categoryId").description("멘션한 레슨이 속한 카테고리 ID"),
+				fieldWithPath("posts[].mention.categoryTitle").description("멘션한 레슨이 속한 카테고리 제목"),
+				fieldWithPath("posts[].mention.topicId").description("멘션한 레슨이 속한 토픽 ID"),
+				fieldWithPath("posts[].mention.topicTitle").description("멘션한 레슨이 속한 토픽 제목"),
+				fieldWithPath("posts[].mention.curriculumId").description("멘션한 레슨이 속한 커리큘럼 ID"),
+				fieldWithPath("posts[].mention.curriculumTitle").description("멘션한 레슨이 속한 커리큘럼 제목"),
+				fieldWithPath("posts[].mention.lessonId").description("멘션한 레슨 ID. targetId와 같다"),
+				fieldWithPath("posts[].mention.lessonTitle").description("멘션한 레슨 제목"),
+				fieldWithPath("posts[].media[]").description("게시글 사진·영상 목록. 배열 순서가 표시 순서이고, 없으면 빈 배열"),
+				fieldWithPath("posts[].media[].type").description("미디어 종류. IMAGE(사진), VIDEO(영상)"),
+				fieldWithPath("posts[].media[].url").description("미디어 공개 URL"),
+				fieldWithPath("posts[].commentCount").description("삭제되지 않은 댓글·답글 수. 댓글이 없으면 0"),
+				fieldWithPath("posts[].likeCount").description("좋아요 수"),
+				fieldWithPath("posts[].likedByMe").description("내 좋아요 여부"),
+				fieldWithPath("posts[].createdAt").description("게시글 작성 시각(ISO-8601, 초 단위)"),
+				fieldWithPath("nextCursor").optional()
+						.description("다음 페이지 요청에 cursor로 보낼 값. 마지막 페이지면 null")
+		};
 	}
 }

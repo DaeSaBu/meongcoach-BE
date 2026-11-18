@@ -30,4 +30,10 @@ public interface CommentQueryRepository {
 	 * 루트 댓글의 삭제되지 않은 답글을 모두 조회한다. 답글이 없거나 루트 댓글이 아니면 빈 목록을 반환한다.
 	 */
 	List<Comment> findActiveReplies(Long rootId);
+
+	/**
+	 * 사용자가 작성하고 삭제되지 않은 댓글과 답글을 ID 내림차순으로 size개까지 조회한다. cursor가 있으면 그보다 작은 ID의 댓글만 조회한다.
+	 * 삭제된 게시글의 댓글은 조회하지 않는다.
+	 */
+	Slice<Comment> findCommentsByUserId(Long userId, Long cursor, int size);
 }

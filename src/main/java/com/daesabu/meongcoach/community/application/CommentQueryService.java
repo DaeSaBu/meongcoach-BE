@@ -61,6 +61,15 @@ public class CommentQueryService implements CommentFinder {
 	}
 
 	@Override
+	public CommentListResult findCommentsByAuthor(Long userId, Long authorId, CommentListRequest request) {
+		Slice<Comment> slice = commentQueryRepository.findCommentsByUserId(authorId, request.cursor(), request.size());
+
+		List<CommentResult> comments = compose(userId, slice.getContent());
+		Long nextCursor = nextCursorOf(slice);
+		return new CommentListResult(comments, nextCursor);
+	}
+
+	@Override
 	@Transactional
 	public Comment findCommentForUpdate(Long commentId) {
 		return commentRepository.findActiveByIdForUpdate(commentId)
