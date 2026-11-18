@@ -12,6 +12,7 @@ import com.daesabu.meongcoach.auth.application.required.TokenProvider;
 import com.daesabu.meongcoach.support.ApplicationTest;
 import com.daesabu.meongcoach.support.application.provided.ChatFinder;
 import com.daesabu.meongcoach.support.application.provided.ChatRegister;
+import com.daesabu.meongcoach.support.application.provided.ChatRemover;
 import com.daesabu.meongcoach.user.application.provided.RegisteredUserChecker;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.User;
@@ -35,6 +36,7 @@ class ChatSecurityTest {
 	@Autowired UserRepository users;
 	@Autowired ChatRegister chats;
 	@Autowired ChatFinder finder;
+	@Autowired ChatRemover remover;
 	@Autowired TokenProvider tokens;
 	@Autowired EntityManager em;
 	@MockitoSpyBean RegisteredUserChecker registeredUsers;
@@ -77,6 +79,24 @@ class ChatSecurityTest {
 				.andExpect(status().isOk());
 		mvc.perform(appGet("/api/support/conversations/capabilities").header("Authorization", token))
 				.andExpect(status().isOk()).andExpect(jsonPath("$.operator").value(false));
+	}
+
+	@Test
+	void 회원은_닫힌_대화를_조회하지만_추가로_전송할_수_없다() throws Exception {
+		Long owner = member(UserRole.USER);
+		String token = bearer(owner);
+		long conversationId = chats.open(owner).getId();
+		mvc.perform(appPost(messages(conversationId)).header("Authorization", token)
+				.contentType(MediaType.APPLICATION_JSON).content(body()))
+				.andExpect(status().isOk());
+		remover.close(owner, conversationId);
+		em.flush();
+
+		mvc.perform(appGet(messages(conversationId)).header("Authorization", token))
+				.andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(1));
+		mvc.perform(appPost(messages(conversationId)).header("Authorization", token)
+				.contentType(MediaType.APPLICATION_JSON).content(body()))
+				.andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("SUPPORT_CHAT_CLOSED"));
 	}
 
 	@Test

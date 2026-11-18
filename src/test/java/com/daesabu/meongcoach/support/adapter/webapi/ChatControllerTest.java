@@ -16,6 +16,7 @@ import com.daesabu.meongcoach.support.domain.ChatConversationFixture;
 import com.daesabu.meongcoach.support.domain.ChatMessage;
 import com.daesabu.meongcoach.support.domain.ChatMessageFixture;
 import com.daesabu.meongcoach.support.domain.exception.ChatAccessDeniedException;
+import com.daesabu.meongcoach.support.domain.exception.ChatClosedException;
 import com.daesabu.meongcoach.support.domain.exception.InvalidChatMessageException;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -202,6 +203,30 @@ class ChatControllerTest {
 				.andDo(
 						document(
 								"support/chat-messages-error",
+								responseFields(
+										fieldWithPath("title").description("HTTP 상태"),
+										fieldWithPath("status").description("상태 코드"),
+										fieldWithPath("detail").description("설명"),
+										fieldWithPath("instance").description("요청 경로"),
+										fieldWithPath("code").description("에러 코드"),
+										fieldWithPath("timestamp").description("발생 시각"))));
+	}
+
+	@Test
+	void 닫힌_대화에_전송하면_409이다() throws Exception {
+		given(register.send(eq(42L), eq(17L), any())).willThrow(new ChatClosedException());
+		mvc.perform(
+						post("/api/support/conversations/{id}/messages", 17)
+								.principal(() -> "42")
+								.header("Authorization", "Bearer access-token")
+								.contentType("application/json")
+								.content("{\"clientMessageId\":\"" + clientId + "\",\"body\":\"문의합니다\"}"))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code").value("SUPPORT_CHAT_CLOSED"))
+				.andDo(
+						document(
+								"support/chat-send-error",
+								pathParameters(parameterWithName("id").description("대화 ID")),
 								responseFields(
 										fieldWithPath("title").description("HTTP 상태"),
 										fieldWithPath("status").description("상태 코드"),
