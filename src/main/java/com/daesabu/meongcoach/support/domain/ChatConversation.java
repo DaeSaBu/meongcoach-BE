@@ -1,6 +1,7 @@
 package com.daesabu.meongcoach.support.domain;
 
 import com.daesabu.meongcoach.shared.domain.BaseEntity;
+import com.daesabu.meongcoach.support.domain.exception.ChatClosedException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -14,14 +15,12 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.ColumnDefault;
-import org.hibernate.annotations.SQLRestriction;
 
 @Entity(name = "SupportConversation")
 @Table(name = "support_conversations", indexes = {
 		@Index(name = "support_conversations_activity", columnList = "last_message_at DESC, id DESC"),
 		@Index(name = "uk_support_conversations_active_member", columnList = "(member_id)", unique = true, options = "WHERE deleted_at IS NULL")
 })
-@SQLRestriction("deleted_at IS NULL")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ChatConversation extends BaseEntity {
@@ -32,7 +31,8 @@ public class ChatConversation extends BaseEntity {
 	@Column(nullable = false)
 	private long memberId;
 
-	private LocalDateTime deletedAt;
+	@Column(name = "deleted_at")
+	private LocalDateTime closedAt;
 
 	@Column(nullable = false)
 	@ColumnDefault("LOCALTIMESTAMP")
@@ -47,10 +47,19 @@ public class ChatConversation extends BaseEntity {
 	}
 
 	public boolean isClosed() {
-		return deletedAt != null;
+		return closedAt != null;
 	}
 
-	public void leave() {
-		deletedAt = LocalDateTime.now();
+	public void verifyOpen() {
+		if (isClosed()) {
+			throw new ChatClosedException();
+		}
+	}
+
+	public void close() {
+		if (isClosed()) {
+			return;
+		}
+		closedAt = LocalDateTime.now();
 	}
 }

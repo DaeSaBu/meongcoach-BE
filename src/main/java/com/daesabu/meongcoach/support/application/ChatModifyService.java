@@ -11,6 +11,7 @@ import com.daesabu.meongcoach.support.domain.ChatConversation;
 import com.daesabu.meongcoach.support.domain.ChatMessage;
 import com.daesabu.meongcoach.support.domain.ChatMessageCommand;
 import com.daesabu.meongcoach.support.domain.exception.InvalidChatAttachmentException;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -30,13 +31,14 @@ public class ChatModifyService implements ChatRegister {
 
 	@Transactional
 	public ChatConversation open(Long userId) {
-		conversations.insertIfAbsent(userId, java.time.LocalDateTime.now());
+		conversations.insertIfAbsent(userId, LocalDateTime.now());
 		return finder.findMemberConversation(userId);
 	}
 
 	@Transactional
 	public ChatMessage send(Long userId, long conversationId, ChatMessageRequest request) {
 		var conversation = finder.findLockedConversation(userId, conversationId);
+		conversation.verifyOpen();
 		var previous = messages.findByConversationIdAndSenderIdAndClientMessageId(
 				conversationId, userId, request.clientMessageId());
 		if (previous.isPresent()) {

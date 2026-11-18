@@ -24,7 +24,7 @@ public class ChatQueryService implements ChatFinder {
 	private final ChatMessageRepository messages;
 
 	public ChatConversation findMemberConversation(long memberId) {
-		return conversations.findByMemberId(memberId).orElseThrow(ChatAccessDeniedException::new);
+		return conversations.findByMemberIdAndClosedAtIsNull(memberId).orElseThrow(ChatAccessDeniedException::new);
 	}
 
 	public ChatConversation findConversation(Long userId, long conversationId) {
@@ -41,7 +41,7 @@ public class ChatQueryService implements ChatFinder {
 	}
 
 	private void verifyAccess(ChatConversation conversation, long userId) {
-		if (conversation.isClosed() || (!conversation.isOwnedBy(userId) && !isOperator())) {
+		if (!conversation.isOwnedBy(userId) && !isOperator()) {
 			throw new ChatAccessDeniedException();
 		}
 	}
@@ -60,7 +60,7 @@ public class ChatQueryService implements ChatFinder {
 		}
 		var page = PageRequest.of(0, 50);
 		if (before == 0) {
-			return conversations.findAllByOrderByLastMessageAtDescIdDesc(page);
+			return conversations.findByClosedAtIsNullOrderByLastMessageAtDescIdDesc(page);
 		}
 		return conversations.findPrevious(beforeUpdatedAt, before, page);
 	}

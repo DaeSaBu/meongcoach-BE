@@ -21,14 +21,14 @@ public interface ChatConversationRepository extends JpaRepository<ChatConversati
 			""", nativeQuery = true)
 	void insertIfAbsent(@Param("memberId") long memberId, @Param("now") LocalDateTime now);
 
-	Optional<ChatConversation> findByMemberId(long memberId);
+	Optional<ChatConversation> findByMemberIdAndClosedAtIsNull(long memberId);
 
-	List<ChatConversation> findAllByOrderByLastMessageAtDescIdDesc(Pageable pageable);
+	List<ChatConversation> findByClosedAtIsNullOrderByLastMessageAtDescIdDesc(Pageable pageable);
 
 	@Query("""
 			SELECT c FROM SupportConversation c
-			WHERE c.lastMessageAt < :updatedAt
-			OR (c.lastMessageAt = :updatedAt AND c.id < :id)
+			WHERE c.closedAt IS NULL
+			AND (c.lastMessageAt < :updatedAt OR (c.lastMessageAt = :updatedAt AND c.id < :id))
 			ORDER BY c.lastMessageAt DESC, c.id DESC
 			""")
 	List<ChatConversation> findPrevious(
