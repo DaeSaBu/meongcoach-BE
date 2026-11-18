@@ -446,6 +446,64 @@ class PostFinderTest {
 				.isInstanceOf(PostNotFoundException.class);
 	}
 
+	@Test
+	void 내가_작성한_게시글만_최신순으로_반환한다() {
+		savePost(USER_ID, "내 첫 글");
+		savePost(7L, "다른 사용자 글");
+		savePost(USER_ID, "내 둘째 글");
+		flushAndClear();
+
+		PostListResult result = postFinder.findMyPosts(USER_ID, new PostListRequest(null, 20, null));
+
+		assertThat(result.posts()).extracting(this::contentOf).containsExactly("내 둘째 글", "내 첫 글");
+		assertThat(result.nextCursor()).isNull();
+	}
+
+	@Test
+	void 내_게시글을_다음_커서로_이어서_조회하면_중복이나_누락_없이_전체를_순회한다() {
+		IntStream.rangeClosed(1, 3).forEach(index -> {
+			savePost(USER_ID, "내 글 " + index);
+			savePost(7L, "다른 사용자 글 " + index);
+		});
+		flushAndClear();
+
+		PostListResult first = postFinder.findMyPosts(USER_ID, new PostListRequest(null, 2, null));
+		PostListResult second = postFinder.findMyPosts(USER_ID, new PostListRequest(first.nextCursor(), 2, null));
+
+		assertThat(first.posts()).extracting(this::contentOf).containsExactly("내 글 3", "내 글 2");
+		assertThat(second.posts()).extracting(this::contentOf).containsExactly("내 글 1");
+		assertThat(second.nextCursor()).isNull();
+	}
+
+	@Test
+	void 레슨을_넘기면_내_게시글_중_그_레슨을_멘션한_게시글만_반환한다() {
+		savePost(USER_ID, "내 레슨 A 글", LESSON_A_ID);
+		savePost(USER_ID, "내 레슨 B 글", LESSON_B_ID);
+		savePost(7L, "다른 사용자 레슨 A 글", LESSON_A_ID);
+		flushAndClear();
+
+		PostListResult result = postFinder.findMyPosts(USER_ID, new PostListRequest(null, 20, LESSON_A_ID));
+
+		assertThat(result.posts()).extracting(this::contentOf).containsExactly("내 레슨 A 글");
+	}
+
+	@Test
+	void 삭제된_내_게시글은_내_게시글_목록에서_제외한다() {
+		savePost(USER_ID, "남은 글");
+		savePost(USER_ID, "삭제된 글").delete();
+		flushAndClear();
+
+		PostListResult result = postFinder.findMyPosts(USER_ID, new PostListRequest(null, 20, null));
+
+		assertThat(result.posts()).extracting(this::contentOf).containsExactly("남은 글");
+	}
+
+	@Test
+	void 내_게시글_목록의_size가_50을_넘으면_예외를_던진다() {
+		assertThatThrownBy(() -> postFinder.findMyPosts(USER_ID, new PostListRequest(null, 51, null)))
+				.isInstanceOf(ConstraintViolationException.class);
+	}
+
 	private String contentOf(PostResult result) {
 		PostContent content = result.post().getContent();
 		return content.value();
