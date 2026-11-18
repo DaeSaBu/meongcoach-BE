@@ -80,6 +80,24 @@ public class QuerydslCommentQueryRepository implements CommentQueryRepository {
 				.fetch();
 	}
 
+	@Override
+	public Slice<Comment> findCommentsByUserId(Long userId, Long cursor, int size) {
+		List<Comment> comments = queryFactory.selectFrom(comment)
+				.where(comment.userId.eq(userId), comment.deletedAt.isNull(), comment.post.deletedAt.isNull(),
+						idLessThan(cursor))
+				.orderBy(comment.id.desc())
+				.limit(size + 1)
+				.fetch();
+		return toSlice(comments, size);
+	}
+
+	private BooleanExpression idLessThan(Long cursor) {
+		if (cursor == null) {
+			return null;
+		}
+		return comment.id.lt(cursor);
+	}
+
 	private BooleanExpression idGreaterThan(QComment target, Long cursor) {
 		if (cursor == null) {
 			return null;
