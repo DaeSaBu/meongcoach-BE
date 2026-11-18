@@ -93,6 +93,20 @@ class ChatRemoverTest {
 	}
 
 	@Test
+	void 닫힌_대화에_이미_저장된_메시지를_같은_UUID로_재전송하면_기존_메시지를_반환한다() {
+		Long owner = users.save(User.registerUser()).getId();
+		long id = register.open(owner).getId();
+		var request = new ChatMessageRequest(UUID.randomUUID(), "닫기 전 문의");
+		var saved = register.send(owner, id, request);
+		remover.close(owner, id);
+
+		var retried = register.send(owner, id, request);
+
+		assertThat(retried.getId()).isEqualTo(saved.getId());
+		assertThat(finder.latestMessages(owner, id)).hasSize(1);
+	}
+
+	@Test
 	void 다른_회원이_닫힌_대화를_조회할_수_없다() {
 		Long owner = users.save(User.registerUser()).getId();
 		Long other = users.save(User.registerUser()).getId();
