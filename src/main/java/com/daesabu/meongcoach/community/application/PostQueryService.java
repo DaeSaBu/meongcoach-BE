@@ -49,6 +49,16 @@ public class PostQueryService implements PostFinder {
 	}
 
 	@Override
+	public PostListResult findMyPosts(Long userId, PostListRequest request) {
+		Slice<Post> slice = postQueryRepository.findPostsByUserId(userId, request.cursor(), request.lessonId(),
+				request.size());
+
+		List<PostResult> posts = compose(userId, slice.getContent());
+		Long nextCursor = nextCursorOf(slice);
+		return new PostListResult(posts, nextCursor);
+	}
+
+	@Override
 	@Transactional
 	public Post findPostForUpdate(Long postId) {
 		return postRepository.findLockedByIdAndDeletedAtIsNull(postId)

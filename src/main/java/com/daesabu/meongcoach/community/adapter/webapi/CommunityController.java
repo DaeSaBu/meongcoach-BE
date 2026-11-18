@@ -6,6 +6,7 @@ import com.daesabu.meongcoach.community.adapter.webapi.dto.CommentRegisterRespon
 import com.daesabu.meongcoach.community.adapter.webapi.dto.CommentUpdateResponse;
 import com.daesabu.meongcoach.community.adapter.webapi.dto.LikeResponse;
 import com.daesabu.meongcoach.community.adapter.webapi.dto.MyAuthorResponse;
+import com.daesabu.meongcoach.community.adapter.webapi.dto.MyCommentListResponse;
 import com.daesabu.meongcoach.community.adapter.webapi.dto.PostListResponse;
 import com.daesabu.meongcoach.community.adapter.webapi.dto.PostMediaUploadUrlResponse;
 import com.daesabu.meongcoach.community.adapter.webapi.dto.PostRegisterResponse;
@@ -25,6 +26,7 @@ import com.daesabu.meongcoach.community.application.provided.dto.CommentListRequ
 import com.daesabu.meongcoach.community.application.provided.dto.CommentListResult;
 import com.daesabu.meongcoach.community.application.provided.dto.CommentRegisterRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.CommentUpdateRequest;
+import com.daesabu.meongcoach.community.application.provided.dto.MyCommentListResult;
 import com.daesabu.meongcoach.community.application.provided.dto.PostListRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.PostListResult;
 import com.daesabu.meongcoach.community.application.provided.dto.PostMediaUploadUrlRequest;
@@ -69,6 +71,19 @@ public class CommunityController {
 	public MyAuthorResponse findMyAuthor(@CurrentUserId Long userId) {
 		Optional<AuthorResult> author = authorFinder.findAuthor(userId);
 		return MyAuthorResponse.from(author);
+	}
+
+	@GetMapping("/me/posts")
+	public PostListResponse findMyPosts(@CurrentUserId Long userId, @Valid @ModelAttribute PostListRequest request) {
+		PostListResult result = postFinder.findMyPosts(userId, request);
+		return PostListResponse.from(result);
+	}
+
+	@GetMapping("/me/comments")
+	public MyCommentListResponse findMyComments(@CurrentUserId Long userId,
+	                                            @Valid @ModelAttribute CommentListRequest request) {
+		MyCommentListResult result = commentFinder.findMyComments(userId, request);
+		return MyCommentListResponse.from(result);
 	}
 
 	@GetMapping("/users/{userId}/dog")

@@ -6,6 +6,8 @@ import com.daesabu.meongcoach.community.application.provided.dto.AuthorResult;
 import com.daesabu.meongcoach.community.application.provided.dto.CommentListRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.CommentListResult;
 import com.daesabu.meongcoach.community.application.provided.dto.CommentResult;
+import com.daesabu.meongcoach.community.application.provided.dto.MyCommentListResult;
+import com.daesabu.meongcoach.community.application.provided.dto.MyCommentResult;
 import com.daesabu.meongcoach.community.application.provided.dto.ReplyListResult;
 import com.daesabu.meongcoach.community.application.provided.dto.ReplyResult;
 import com.daesabu.meongcoach.community.application.required.CommentClosureRepository;
@@ -61,6 +63,15 @@ public class CommentQueryService implements CommentFinder {
 	}
 
 	@Override
+	public MyCommentListResult findMyComments(Long userId, CommentListRequest request) {
+		Slice<Comment> slice = commentQueryRepository.findCommentsByUserId(userId, request.cursor(), request.size());
+
+		List<MyCommentResult> comments = composeMine(userId, slice.getContent());
+		Long nextCursor = nextCursorOf(slice);
+		return new MyCommentListResult(comments, nextCursor);
+	}
+
+	@Override
 	@Transactional
 	public Comment findCommentForUpdate(Long commentId) {
 		return commentRepository.findActiveByIdForUpdate(commentId)
@@ -110,6 +121,14 @@ public class CommentQueryService implements CommentFinder {
 		Map<Long, LikeSummary> likes = likeFinder.findCommentLikes(userId, ids);
 		return replies.stream()
 				.map(reply -> new ReplyResult(reply, authors.get(reply.getUserId()), likes.get(reply.getId()).likeCount(), likes.get(reply.getId()).likedByMe()))
+				.toList();
+	}
+
+	private List<MyCommentResult> composeMine(Long userId, List<Comment> comments) {
+		List<Long> ids = comments.stream().map(Comment::getId).toList();
+		Map<Long, LikeSummary> likes = likeFinder.findCommentLikes(userId, ids);
+		return comments.stream()
+				.map(comment -> new MyCommentResult(comment, likes.get(comment.getId()).likeCount(), likes.get(comment.getId()).likedByMe()))
 				.toList();
 	}
 

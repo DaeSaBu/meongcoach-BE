@@ -22,8 +22,17 @@ public class QuerydslPostQueryRepository implements PostQueryRepository {
 
 	@Override
 	public Slice<Post> findPosts(Long cursor, Long lessonId, int size) {
+		return findPosts(null, cursor, lessonId, size);
+	}
+
+	@Override
+	public Slice<Post> findPostsByUserId(Long userId, Long cursor, Long lessonId, int size) {
+		return findPosts(post.userId.eq(userId), cursor, lessonId, size);
+	}
+
+	private Slice<Post> findPosts(BooleanExpression author, Long cursor, Long lessonId, int size) {
 		List<Post> posts = queryFactory.selectFrom(post)
-				.where(post.deletedAt.isNull(), idLessThan(cursor), mentionsLesson(lessonId))
+				.where(post.deletedAt.isNull(), author, idLessThan(cursor), mentionsLesson(lessonId))
 				.orderBy(post.id.desc())
 				.limit(size + 1)
 				.fetch();

@@ -21,6 +21,12 @@ public interface PostFinder {
 	PostListResult findPosts(Long userId, @Valid PostListRequest request);
 
 	/**
+	 * userId 사용자가 작성하고 삭제되지 않은 게시글을 ID 내림차순으로 size개까지 반환한다.
+	 * cursor, lessonId, nextCursor와 각 게시글에 담기는 값은 findPosts와 같다.
+	 */
+	PostListResult findMyPosts(Long userId, @Valid PostListRequest request);
+
+	/**
 	 * 게시글 하나를 id로 조회한다. 없거나 삭제됐으면 PostNotFoundException을 던진다.
 	 */
 	Post findPost(Long postId);
