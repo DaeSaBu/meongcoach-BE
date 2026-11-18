@@ -1329,6 +1329,16 @@ operation::support/chat-capabilities[snippets='http-request,http-response,respon
 
 operation::support/chat-list[snippets='http-request,query-parameters,http-response,response-fields']
 
+==== 회원 상담 목록
+
+`GET /api/support/conversations/me`는 로그인한 회원 본인의 진행 중인 상담과 종료된 상담을 최근 활동 시각·ID 내림차순으로 최대 50건 반환합니다.
+`closedAt`이 null이면 진행 중인 상담이고, 값이 있으면 종료된 상담입니다.
+다음 페이지는 이전 응답 마지막 대화의 `id`와 `updatedAt`을 `before`와 `beforeUpdatedAt`으로 함께 전달합니다.
+
+link:{swagger-ui}#/Support/support-chat-my-list[▶ Swagger에서 Try it out,window=swagger]
+
+operation::support/chat-my-list[snippets='http-request,query-parameters,http-response,response-fields']
+
 operation::support/chat-messages[snippets='http-request,path-parameters,http-response,response-fields']
 
 operation::support/chat-new-messages[snippets='http-request,path-parameters,query-parameters,http-response,response-fields']
@@ -1337,14 +1347,20 @@ operation::support/chat-previous-messages[snippets='http-request,path-parameters
 
 operation::support/chat-send[snippets='http-request,path-parameters,request-fields,http-response,response-fields']
 
+종료된 상담에 메시지를 보내면 409(`SUPPORT_CHAT_CLOSED`)를 반환합니다.
+
+operation::support/chat-send-error[snippets='http-response,response-fields']
+
 operation::support/chat-messages-error[snippets='http-response,response-fields']
 
-=== 상담 나가기
+=== 상담 닫기
 
 `DELETE /api/support/conversations/{id}`는 대화 소유 회원과 ADMIN·EXPERT가 호출할 수 있습니다.
-나가기를 확인하면 `deletedAt`을 기록하고 204를 반환합니다. 대화와 메시지는 보관되며, 종료된 대화는 조회·전송·상담원 목록에서 제외합니다.
+상담을 닫으면 종료 시각(`closedAt`)을 기록하고 204를 반환합니다. 이미 닫힌 상담을 다시 닫아도 204이며 처음 종료 시각을 유지합니다.
+대화와 메시지는 보관되며, 소유 회원과 ADMIN·EXPERT는 종료된 상담의 메시지와 첨부를 계속 조회할 수 있습니다.
+종료된 상담에는 메시지 전송과 업로드 URL 발급을 409(`SUPPORT_CHAT_CLOSED`)로 거절하고, 상담원 목록에서는 제외합니다.
 다시 `POST /api/support/conversations/me`를 호출하면 새 ID의 빈 대화를 만듭니다.
-일반 회원이 다른 회원의 대화를 종료하려 하거나, 종료되었거나 없는 대화이면 403을 반환합니다.
+일반 회원이 다른 회원의 대화를 닫으려 하거나 없는 대화이면 403을 반환합니다.
 
 operation::support/chat-leave[snippets='http-request,path-parameters,http-response']
 

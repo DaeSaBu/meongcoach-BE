@@ -41,6 +41,16 @@ public class ChatController {
 		return ChatConversationResponse.from(conversation);
 	}
 
+	@GetMapping("/me")
+	public List<ChatConversationResponse> memberConversations(
+			@CurrentUserId Long userId,
+			@RequestParam(defaultValue = "0") @PositiveOrZero long before,
+			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime beforeUpdatedAt) {
+		return finder.memberConversations(userId, before, beforeUpdatedAt).stream()
+				.map(ChatConversationResponse::from)
+				.toList();
+	}
+
 	@GetMapping
 	public List<ChatConversationResponse> conversations(
 			@RequestParam(defaultValue = "0") @PositiveOrZero long before,
