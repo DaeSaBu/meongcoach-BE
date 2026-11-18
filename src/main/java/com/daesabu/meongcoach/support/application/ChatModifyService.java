@@ -38,12 +38,12 @@ public class ChatModifyService implements ChatRegister {
 	@Transactional
 	public ChatMessage send(Long userId, long conversationId, ChatMessageRequest request) {
 		var conversation = finder.findLockedConversation(userId, conversationId);
-		conversation.verifyOpen();
 		var previous = messages.findByConversationIdAndSenderIdAndClientMessageId(
 				conversationId, userId, request.clientMessageId());
 		if (previous.isPresent()) {
 			return previous.get();
 		}
+		conversation.verifyOpen();
 		boolean operator = finder.isOperator();
 		ChatAttachment attachment = null;
 		if (request.attachment() != null) {
