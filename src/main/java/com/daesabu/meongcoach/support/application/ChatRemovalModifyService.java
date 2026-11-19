@@ -14,7 +14,8 @@ public class ChatRemovalModifyService implements ChatRemover {
 
 	@Override
 	@Transactional
-	public void leave(Long userId, long conversationId) {
-		finder.findLockedConversation(userId, conversationId).leave();
+	public void close(Long userId, long conversationId) {
+		var conversation = finder.findLockedConversation(userId, conversationId);
+		conversation.close();
 	}
 }

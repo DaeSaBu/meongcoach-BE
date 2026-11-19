@@ -7,6 +7,7 @@ import com.daesabu.meongcoach.support.application.provided.dto.ChatAttachmentReq
 import com.daesabu.meongcoach.support.application.provided.dto.ChatMediaUploadRequest;
 import com.daesabu.meongcoach.support.application.provided.dto.ChatMessageRequest;
 import com.daesabu.meongcoach.support.domain.exception.ChatAccessDeniedException;
+import com.daesabu.meongcoach.support.domain.exception.ChatClosedException;
 import com.daesabu.meongcoach.support.domain.exception.InvalidChatAttachmentException;
 import com.daesabu.meongcoach.support.domain.exception.InvalidChatMessageException;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
@@ -111,8 +112,20 @@ class ChatMediaUrlIssuerTest {
 				.isInstanceOf(ChatAccessDeniedException.class);
 		assertThatThrownBy(() -> media.download(other, id, message.getId())).isInstanceOf(ChatAccessDeniedException.class);
 		assertThatThrownBy(() -> media.download(other, otherId, message.getId())).isInstanceOf(ChatAccessDeniedException.class);
-		remover.leave(owner, id);
-		assertThatThrownBy(() -> media.download(owner, id, message.getId())).isInstanceOf(ChatAccessDeniedException.class);
+	}
+
+	@Test
+	void 닫힌_대화의_첨부는_열람하지만_새로_업로드할_수_없다() {
+		long owner = users.save(User.registerUser()).getId();
+		long id = chats.open(owner).getId();
+		var uploaded = media.upload(owner, id, new ChatMediaUploadRequest("IMAGE", "image/jpeg", 1024L));
+		var message = chats.send(owner, id, new ChatMessageRequest(UUID.randomUUID(), "", new ChatAttachmentRequest("IMAGE", uploaded.objectKey())));
+
+		remover.close(owner, id);
+
+		assertThat(media.download(owner, id, message.getId())).contains("X-Goog-Signature=");
+		assertThatThrownBy(() -> media.upload(owner, id, new ChatMediaUploadRequest("IMAGE", "image/jpeg", 1024L)))
+				.isInstanceOf(ChatClosedException.class);
 	}
 
 	@Test

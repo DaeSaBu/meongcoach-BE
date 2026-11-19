@@ -16,6 +16,7 @@ import com.daesabu.meongcoach.support.domain.ChatConversationFixture;
 import com.daesabu.meongcoach.support.domain.ChatMessage;
 import com.daesabu.meongcoach.support.domain.ChatMessageFixture;
 import com.daesabu.meongcoach.support.domain.exception.ChatAccessDeniedException;
+import com.daesabu.meongcoach.support.domain.exception.ChatClosedException;
 import com.daesabu.meongcoach.support.domain.exception.InvalidChatMessageException;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -25,7 +26,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.restdocs.payload.FieldDescriptor;
+import org.springframework.restdocs.payload.JsonFieldType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(ChatController.class)
@@ -70,7 +73,8 @@ class ChatControllerTest {
 								responseFields(
 										fieldWithPath("id").description("대화 ID"),
 										fieldWithPath("memberId").description("대화 소유 회원 ID"),
-										fieldWithPath("updatedAt").description("최종 활동 시각"))));
+										fieldWithPath("updatedAt").description("최종 활동 시각"),
+										fieldWithPath("closedAt").type(JsonFieldType.STRING).optional().description("종료 시각, 진행 중이면 null"))));
 	}
 
 	@Test
@@ -105,11 +109,91 @@ class ChatControllerTest {
 										parameterWithName("before").optional()
 												.description(
 														"이전 대화 ID, 최초 0; 최근 활동 시각·ID 내림차순 최대 50건"),
+										parameterWithName("beforeUpdatedAt").optional().description("이전 응답 마지막 대화의 updatedAt 원문; before와 함께 전달"),
+										parameterWithName("closed").optional().description("true면 종료된 대화만, 생략하거나 false면 진행 중인 대화만 반환")),
+								responseFields(
+										fieldWithPath("[].id").description("대화 ID"),
+										fieldWithPath("[].memberId").description("대화 소유 회원 ID"),
+										fieldWithPath("[].updatedAt").description("최종 활동 시각"),
+										fieldWithPath("[].closedAt").type(JsonFieldType.STRING).optional().description("종료 시각, 진행 중이면 null"))));
+	}
+
+	@Test
+	void 상담원_종료된_대화목록을_조회한다() throws Exception {
+		var closed = ChatConversationFixture.create(16, 42, LocalDateTime.parse("2026-10-01T00:00:00"));
+		ReflectionTestUtils.setField(closed, "closedAt", LocalDateTime.parse("2026-10-02T00:00:00"));
+		given(finder.closedConversations(0, null)).willReturn(List.of(closed));
+		mvc.perform(
+						get("/api/support/conversations")
+								.param("closed", "true")
+								.principal(() -> "42")
+								.header("Authorization", "Bearer access-token"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$[0].id").value(16))
+				.andExpect(jsonPath("$[0].closedAt").value("2026-10-02T00:00:00"))
+				.andDo(
+						document(
+								"support/chat-closed-list",
+								queryParameters(
+										parameterWithName("closed").description("true면 종료된 대화만 반환"),
+										parameterWithName("before").optional()
+												.description("이전 응답 마지막 대화 ID, 최초 0; 최근 활동 시각·ID 내림차순 최대 50건"),
 										parameterWithName("beforeUpdatedAt").optional().description("이전 응답 마지막 대화의 updatedAt 원문; before와 함께 전달")),
 								responseFields(
 										fieldWithPath("[].id").description("대화 ID"),
 										fieldWithPath("[].memberId").description("대화 소유 회원 ID"),
-										fieldWithPath("[].updatedAt").description("최종 활동 시각"))));
+										fieldWithPath("[].updatedAt").description("최종 활동 시각"),
+										fieldWithPath("[].closedAt").description("종료 시각"))));
+	}
+
+	@Test
+	void 종료된_대화목록_커서를_그대로_전달한다() throws Exception {
+		LocalDateTime timestamp = LocalDateTime.parse("2026-11-01T00:00:00.123456");
+		given(finder.closedConversations(17, timestamp)).willReturn(List.of());
+		mvc.perform(get("/api/support/conversations")
+				.param("closed", "true")
+				.param("before", "17").param("beforeUpdatedAt", timestamp.toString())
+				.principal(() -> "42"))
+				.andExpect(status().isOk());
+		verify(finder).closedConversations(17, timestamp);
+	}
+
+	@Test
+	void 회원_본인_대화목록을_조회한다() throws Exception {
+		var closed = ChatConversationFixture.create(16, 42, LocalDateTime.parse("2026-10-01T00:00:00"));
+		ReflectionTestUtils.setField(closed, "closedAt", LocalDateTime.parse("2026-10-02T00:00:00"));
+		given(finder.memberConversations(42L, 0, null))
+				.willReturn(List.of(ChatConversationFixture.create(17, 42, LocalDateTime.parse("2026-11-01T00:00:00")), closed));
+		mvc.perform(
+						get("/api/support/conversations/me")
+								.principal(() -> "42")
+								.header("Authorization", "Bearer access-token"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$[0].closedAt").doesNotExist())
+				.andExpect(jsonPath("$[1].closedAt").value("2026-10-02T00:00:00"))
+				.andDo(
+						document(
+								"support/chat-my-list",
+								queryParameters(
+										parameterWithName("before").optional()
+												.description("이전 응답 마지막 대화 ID, 최초 0; 최근 활동 시각·ID 내림차순 최대 50건"),
+										parameterWithName("beforeUpdatedAt").optional().description("이전 응답 마지막 대화의 updatedAt 원문; before와 함께 전달")),
+								responseFields(
+										fieldWithPath("[].id").description("대화 ID"),
+										fieldWithPath("[].memberId").description("대화 소유 회원 ID"),
+										fieldWithPath("[].updatedAt").description("최종 활동 시각"),
+										fieldWithPath("[].closedAt").type(JsonFieldType.STRING).optional().description("종료 시각, 진행 중이면 null"))));
+	}
+
+	@Test
+	void 회원_대화목록_커서를_그대로_전달한다() throws Exception {
+		LocalDateTime timestamp = LocalDateTime.parse("2026-11-01T00:00:00.123456");
+		given(finder.memberConversations(42L, 17, timestamp)).willReturn(List.of());
+		mvc.perform(get("/api/support/conversations/me")
+				.param("before", "17").param("beforeUpdatedAt", timestamp.toString())
+				.principal(() -> "42"))
+				.andExpect(status().isOk());
+		verify(finder).memberConversations(42L, 17, timestamp);
 	}
 
 	@Test
@@ -202,6 +286,30 @@ class ChatControllerTest {
 				.andDo(
 						document(
 								"support/chat-messages-error",
+								responseFields(
+										fieldWithPath("title").description("HTTP 상태"),
+										fieldWithPath("status").description("상태 코드"),
+										fieldWithPath("detail").description("설명"),
+										fieldWithPath("instance").description("요청 경로"),
+										fieldWithPath("code").description("에러 코드"),
+										fieldWithPath("timestamp").description("발생 시각"))));
+	}
+
+	@Test
+	void 닫힌_대화에_전송하면_409이다() throws Exception {
+		given(register.send(eq(42L), eq(17L), any())).willThrow(new ChatClosedException());
+		mvc.perform(
+						post("/api/support/conversations/{id}/messages", 17)
+								.principal(() -> "42")
+								.header("Authorization", "Bearer access-token")
+								.contentType("application/json")
+								.content("{\"clientMessageId\":\"" + clientId + "\",\"body\":\"문의합니다\"}"))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code").value("SUPPORT_CHAT_CLOSED"))
+				.andDo(
+						document(
+								"support/chat-send-error",
+								pathParameters(parameterWithName("id").description("대화 ID")),
 								responseFields(
 										fieldWithPath("title").description("HTTP 상태"),
 										fieldWithPath("status").description("상태 코드"),

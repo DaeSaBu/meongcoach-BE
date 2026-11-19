@@ -27,7 +27,8 @@ public class ChatMediaUrlIssueService implements ChatMediaUrlIssuer {
 
 	@Override
 	public MediaUploadUrlResult upload(Long userId, long conversationId, ChatMediaUploadRequest request) {
-		finder.findConversation(userId, conversationId);
+		var conversation = finder.findConversation(userId, conversationId);
+		conversation.verifyOpen();
 		var type = ChatAttachmentType.from(request.mediaType());
 		var upload = new MediaUploadRequest(type.getScope(), userId, request.contentType(), request.fileSizeBytes(), type.getMaxFileSizeBytes());
 		return uploads.issueToGcs(upload);
