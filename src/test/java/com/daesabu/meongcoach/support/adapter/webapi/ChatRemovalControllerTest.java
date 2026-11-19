@@ -23,26 +23,26 @@ class ChatRemovalControllerTest {
 	@MockitoBean ChatRemover remover;
 
 	@Test
-	void 인증_회원의_대화를_종료하고_204를_반환한다() throws Exception {
+	void 인증_회원의_대화를_닫고_204를_반환한다() throws Exception {
 		mvc.perform(delete("/api/support/conversations/{id}", 17)
 				.principal(() -> "42").header("Authorization", "Bearer access-token"))
 				.andExpect(status().isNoContent())
 				.andExpect(content().string(""))
 				.andDo(document("support/chat-leave",
-						pathParameters(parameterWithName("id").description("종료할 대화 ID"))));
+						pathParameters(parameterWithName("id").description("닫을 대화 ID"))));
 
-		verify(remover).leave(42L, 17);
+		verify(remover).close(42L, 17);
 	}
 
 	@Test
 	void 다른_회원의_대화는_403을_반환한다() throws Exception {
-		doThrow(new ChatAccessDeniedException()).when(remover).leave(42L, 17);
+		doThrow(new ChatAccessDeniedException()).when(remover).close(42L, 17);
 
 		mvc.perform(delete("/api/support/conversations/{id}", 17)
 				.principal(() -> "42").header("Authorization", "Bearer access-token"))
 				.andExpect(status().isForbidden())
 				.andDo(document("support/chat-leave-error",
-						pathParameters(parameterWithName("id").description("종료할 대화 ID")),
+						pathParameters(parameterWithName("id").description("닫을 대화 ID")),
 						responseFields(
 								fieldWithPath("title").description("HTTP 상태"),
 								fieldWithPath("status").description("상태 코드"),
