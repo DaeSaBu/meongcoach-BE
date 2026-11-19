@@ -65,7 +65,7 @@ flowchart LR
 대화와 메시지는 DB에 보관합니다.
 종료된 대화도 소유 회원과 ADMIN·EXPERT가 메시지와 첨부를 조회할 수 있습니다.
 종료된 대화의 메시지 전송과 업로드 URL 발급은 `SUPPORT_CHAT_CLOSED`(409)로 거절합니다.
-상담원 목록에는 진행 중인 대화만 표시합니다.
+상담원 목록 `GET /api/support/conversations`는 진행 중인 대화만 반환하고, `closed=true`를 전달하면 종료된 대화만 같은 정렬·커서 규칙으로 반환합니다.
 다시 상담을 열면 새 ID의 빈 대화를 만듭니다.
 
 대화는 `BaseEntity`, 메시지는 `BaseTimeEntity`의 `LocalDateTime` 시각을 사용합니다.

@@ -1329,6 +1329,14 @@ operation::support/chat-capabilities[snippets='http-request,http-response,respon
 
 operation::support/chat-list[snippets='http-request,query-parameters,http-response,response-fields']
 
+==== 상담원 종료 상담 목록
+
+`GET /api/support/conversations?closed=true`는 ADMIN·EXPERT에게 종료된 상담만 최근 활동 시각·ID 내림차순으로 최대 50건 반환합니다.
+`closed`를 생략하거나 false로 보내면 진행 중인 상담만 반환합니다.
+커서 규칙은 진행 중 목록과 같습니다.
+
+operation::support/chat-closed-list[snippets='http-request,query-parameters,http-response,response-fields']
+
 ==== 회원 상담 목록
 
 `GET /api/support/conversations/me`는 로그인한 회원 본인의 진행 중인 상담과 종료된 상담을 최근 활동 시각·ID 내림차순으로 최대 50건 반환합니다.
@@ -1358,7 +1366,7 @@ operation::support/chat-messages-error[snippets='http-response,response-fields']
 `DELETE /api/support/conversations/{id}`는 대화 소유 회원과 ADMIN·EXPERT가 호출할 수 있습니다.
 상담을 닫으면 종료 시각(`closedAt`)을 기록하고 204를 반환합니다. 이미 닫힌 상담을 다시 닫아도 204이며 처음 종료 시각을 유지합니다.
 대화와 메시지는 보관되며, 소유 회원과 ADMIN·EXPERT는 종료된 상담의 메시지와 첨부를 계속 조회할 수 있습니다.
-종료된 상담에는 메시지 전송과 업로드 URL 발급을 409(`SUPPORT_CHAT_CLOSED`)로 거절하고, 상담원 목록에서는 제외합니다.
+종료된 상담에는 메시지 전송과 업로드 URL 발급을 409(`SUPPORT_CHAT_CLOSED`)로 거절하고, 상담원 목록에서는 `closed=true`로 조회할 때만 반환합니다.
 다시 `POST /api/support/conversations/me`를 호출하면 새 ID의 빈 대화를 만듭니다.
 일반 회원이 다른 회원의 대화를 닫으려 하거나 없는 대화이면 403을 반환합니다.
 
