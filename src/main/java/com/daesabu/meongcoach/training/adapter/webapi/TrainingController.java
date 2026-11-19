@@ -70,8 +70,8 @@ public class TrainingController {
 	}
 
 	@GetMapping("/lessons/{lessonId}/cards")
-	public CardListResponse findCards(@CurrentUserId Long userId, @PathVariable Long lessonId) {
-		List<Card> cards = lessonFinder.findCards(userId, lessonId);
+	public CardListResponse findCards(@PathVariable Long lessonId) {
+		List<Card> cards = lessonFinder.findCards(lessonId);
 		return CardListResponse.from(cards);
 	}
 

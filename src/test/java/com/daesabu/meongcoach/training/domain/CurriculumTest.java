@@ -3,7 +3,6 @@ package com.daesabu.meongcoach.training.domain;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -76,51 +75,9 @@ class CurriculumTest {
 	}
 
 	@Test
-	void 유료_커리큘럼은_카테고리의_이용권을_요구한다() {
-		Curriculum curriculum = curriculumIn(EntitlementType.PUPPY, true);
-
-		assertThat(curriculum.findRequiredEntitlementType()).contains(EntitlementType.PUPPY);
-	}
-
-	@Test
-	void 맛보기_커리큘럼은_이용권을_요구하지_않는다() {
-		Curriculum curriculum = curriculumIn(EntitlementType.PUPPY, false);
-
-		assertThat(curriculum.findRequiredEntitlementType()).isEmpty();
-	}
-
-	@Test
-	void 이용권이_없는_카테고리의_커리큘럼은_유료여도_이용권을_요구하지_않는다() {
-		Curriculum curriculum = curriculumIn(null, true);
-
-		assertThat(curriculum.findRequiredEntitlementType()).isEmpty();
-	}
-
-	@Test
-	void 이용권을_요구하는_커리큘럼은_이용권이_없으면_잠긴다() {
-		Curriculum curriculum = curriculumIn(EntitlementType.PUPPY, true);
-
-		assertThat(curriculum.isLocked(false)).isTrue();
-	}
-
-	@Test
-	void 이용권을_요구하는_커리큘럼도_이용권이_있으면_잠기지_않는다() {
-		Curriculum curriculum = curriculumIn(EntitlementType.PUPPY, true);
-
-		assertThat(curriculum.isLocked(true)).isFalse();
-	}
-
-	@Test
-	void 이용권을_요구하지_않는_커리큘럼은_이용권이_없어도_잠기지_않는다() {
-		Curriculum curriculum = curriculumIn(EntitlementType.PUPPY, false);
-
-		assertThat(curriculum.isLocked(false)).isFalse();
-	}
-
-	@Test
 	void 제작_전문가가_있으면_전문가를_반환한다() {
 		Expert expert = ExpertFixture.create("정은겸", "교수", null, null);
-		Curriculum curriculum = CurriculumFixture.create(null, "커리큘럼", 1, null, null, false, expert);
+		Curriculum curriculum = CurriculumFixture.create(null, "커리큘럼", 1, null, null, expert);
 
 		assertThat(curriculum.findExpert()).contains(expert);
 	}
@@ -130,12 +87,6 @@ class CurriculumTest {
 		Curriculum curriculum = CurriculumFixture.create(null, "커리큘럼", 1, null, null);
 
 		assertThat(curriculum.findExpert()).isEmpty();
-	}
-
-	private Curriculum curriculumIn(EntitlementType requiredEntitlementType, boolean isPremium) {
-		TrainingCategory category = TrainingCategoryFixture.create("퍼피 교육", 1, null, null, requiredEntitlementType);
-		Topic topic = TopicFixture.create(category, "앉아", 1, null, null, null);
-		return CurriculumFixture.create(topic, "커리큘럼", 1, null, null, isPremium);
 	}
 
 	private Curriculum curriculumWithLessonIds(Long... lessonIds) {

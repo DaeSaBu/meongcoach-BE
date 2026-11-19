@@ -113,11 +113,6 @@ meongcoach:
     base-url: https://api.revenuecat.test/v2
     api-key: test-revenuecat-api-key
     project-id: proj_test
-    entitlement-ids:
-      puppy: entl_test_puppy
-      junior: entl_test_junior
-      adult: entl_test_adult
-      senior: entl_test_senior
   alert:
     slack:
       # 테스트는 Slack을 부르지 않는다. 꺼 두면 로그 전송기가 뜨고, Application 테스트는 AlertSender를 목으로 대체한다

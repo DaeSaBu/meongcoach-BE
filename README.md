@@ -12,7 +12,6 @@
 | 온보딩 | 보호자 프로필과 반려견 프로필(견종·성격 등)을 한 번에 등록합니다 |
 | 훈련 | 카테고리 → 토픽 → 커리큘럼 → 레슨 → 카드로 이어지는 훈련 콘텐츠를 제공하고 학습 진도를 기록합니다 |
 | AI 행동 분석 | 보호자가 올린 반려견 영상을 AI가 분석해 문제 행동 리포트와 추천 훈련을 돌려줍니다 |
-| 구독 | 결제는 RevenueCat이 처리하고, 서버는 활성 이용권 사본을 동기화해 유료 콘텐츠 접근을 판단합니다 |
 
 **기술 스택**: Java 25, Spring Boot 4.1, Spring Data JPA, PostgreSQL, Flyway, Spring Modulith 2.1, Google Cloud(Pub/Sub·GCS·Gemini), JUnit 5, Testcontainers, ArchUnit, Spring REST Docs
 
@@ -31,7 +30,6 @@ flowchart LR
 
     DB[("PostgreSQL")]
     Social["카카오 · 애플 · 구글<br/>소셜 로그인"]
-    RC["RevenueCat<br/>구독 결제"]
     Gemini["Gemini<br/>영상 분석 · 플랜 생성"]
     R2["Cloudflare R2<br/>이미지"]
     GCS["Google Cloud Storage<br/>영상"]
@@ -43,7 +41,6 @@ flowchart LR
     App -->|"presigned URL로 직접 업로드"| GCS
     API --> DB
     API -->|"토큰 검증 · 탈퇴 시 revoke"| Social
-    API -->|"활성 이용권 조회"| RC
     API -->|"AI 플랜 생성"| Gemini
     GCS -->|"업로드 완료 이벤트"| PubSub
     PubSub --> Consumer
@@ -62,7 +59,7 @@ AI 분석은 수십 초가 걸리므로 요청-응답이 아니라 GCS 업로드
 
 - **모듈 간 호출은 각 모듈의 `application/provided` 인터페이스로만 합니다.** 다른 모듈의 서비스 구현체, 리포지토리, 엔티티에는 접근할 수 없습니다.
 - **모듈 간 의존은 단방향이고, 다른 모듈의 엔티티는 연관 대신 ID로 참조합니다.** 예를 들어 `auth`는 `user`를 참조하지만 그 반대는 없습니다. 양쪽에 걸친 흐름(회원 탈퇴)은 참조하는 쪽인 `auth`가 조율합니다.
-- **경계를 넘는 값은 두 가지뿐입니다.** enum·값 객체 같은 도메인 타입은 `domain/shared` 패키지로 노출해 그대로 주고받고(예: `Breed`, `EntitlementType`), 여러 애그리거트를 조합하거나 일부만 내리는 값만 `~Result` record로 만듭니다. 엔티티는 경계를 넘지 않습니다.
+- **경계를 넘는 값은 두 가지뿐입니다.** enum·값 객체 같은 도메인 타입은 `domain/shared` 패키지로 노출해 그대로 주고받고(예: `Breed`, `DogSex`), 여러 애그리거트를 조합하거나 일부만 내리는 값만 `~Result` record로 만듭니다. 엔티티는 경계를 넘지 않습니다.
 
 ### 모듈 내부 구조 (헥사고날 아키텍처)
 
@@ -133,7 +130,7 @@ AI 분석은 수십 초가 걸리므로 요청-응답이 아니라 GCS 업로드
 
 - **책임**: 카테고리·토픽·커리큘럼·레슨·카드로 구성된 훈련 카탈로그, 사용자의 토픽 선택과 레슨별 완료 횟수, 이 진행으로 계산하는 커리큘럼·토픽 완료 판단, 반려견별 훈련 플랜(직접 구성·AI 구성)과 플랜 안에서의 진행·회고
 - **역할**: `TrainingCategoryFinder`, `TopicFinder`, `TopicSelector`, `CurriculumFinder`, `LessonFinder`, `LessonCompleter`, `TopicCompletionChecker`, `PlanRegister`, `CurrentPlanFinder`, `PlanLessonCompleter`
-- **협력**: 카테고리는 열람에 필요한 이용권 종류를 `entitlement`의 `EntitlementType`으로 표현하고, 유료 콘텐츠를 조회·완료할 때 `entitlement`의 `EntitlementChecker`로 이용권을 확인합니다. 플랜을 만들 때 `dog`의 `DogProfileFinder`로 반려견을 확인하고, AI 플랜 구성은 `llm`의 `AiContentGenerator`에 Gemini 호출을 맡깁니다. `graduation`이 토픽 완료 판단과 토픽 조회에, `analysis`가 토픽 목록 조회에, `community`가 레슨 멘션 조회에, `home`이 토픽 진행과 활성 플랜 조회에 사용합니다.
+- **협력**: 플랜을 만들 때 `dog`의 `DogProfileFinder`로 반려견을 확인하고, AI 플랜 구성은 `llm`의 `AiContentGenerator`에 Gemini 호출을 맡깁니다. `graduation`이 토픽 완료 판단과 토픽 조회에, `analysis`가 토픽 목록 조회에, `community`가 레슨 멘션 조회에, `home`이 토픽 진행과 활성 플랜 조회에 사용합니다.
 
 애그리거트와 완료 조건은 [docs/training.md](docs/training.md)에 있습니다.
 
@@ -160,12 +157,6 @@ AI 분석은 수십 초가 걸리므로 요청-응답이 아니라 GCS 업로드
 - **책임**: 온보딩 화면에 필요한 데이터를 모으고, 기본 보호자 프로필 생성과 반려견 등록을 하나의 트랜잭션으로 완료
 - **역할**: `OnboardingMetadataFinder`, `OnboardingCompleter`, `OnboardingImageUploadUrlIssuer`
 - **협력**: 자체 도메인 없이 `user`(기본 프로필 생성), `dog`(반려견 등록·견종·성격 목록·프로필 이미지 업로드)를 조합합니다. 여러 모듈에 걸친 화면 흐름을 한 곳에 모아, 각 도메인 모듈이 서로를 알지 않아도 되게 합니다.
-
-#### entitlement — 이용권
-
-- **책임**: RevenueCat에 기록된 활성 이용권의 사본을 보관하고 동기화(회수·복구·신규 부여)
-- **역할**: `EntitlementSynchronizer`. 이용권 종류(`EntitlementType`)는 `domain/shared`로 노출해 여러 모듈이 같은 어휘를 씁니다.
-- **협력**: 앱이 결제 후 동기화를 요청하면 RevenueCat에서 활성 이용권을 조회해 맞춥니다. `training`이 이용권 종류 타입을 참조합니다.
 
 #### notification — 푸시 알림 토큰·수신 설정
 
@@ -206,7 +197,7 @@ API·채널 설정·답변 처리 규칙은 [docs/support.md](docs/support.md)�
 | 계층 | 테스트 종류 | 방식 |
 |---|---|---|
 | `domain` | 단위 테스트 | Spring 없이 순수 Java로 엔티티·일급 컬렉션·값 객체의 규칙을 검증합니다. (예: `DogsTest`) |
-| `application` | 통합 테스트 | `@ApplicationTest`(`@SpringBootTest` + `@Transactional`)로 `provided` 인터페이스부터 서비스·도메인·DB까지 관통해 검증합니다. DB는 Testcontainers가 띄운 실제 PostgreSQL을 쓰고, 외부 연동 포트(RevenueCat 등)만 목으로 바꿉니다. 각 테스트는 끝나면 롤백됩니다. |
+| `application` | 통합 테스트 | `@ApplicationTest`(`@SpringBootTest` + `@Transactional`)로 `provided` 인터페이스부터 서비스·도메인·DB까지 관통해 검증합니다. DB는 Testcontainers가 띄운 실제 PostgreSQL을 쓰고, 외부 연동 포트(AI 플랜 생성·푸시 발송 등)만 목으로 바꿉니다. 각 테스트는 끝나면 롤백됩니다. |
 | `adapter` | 슬라이스 테스트 | 컨트롤러는 `@WebMvcTest` + MockMvc로 웹 계층만 띄워 요청·응답 형식을 검증합니다. 이 테스트가 Spring REST Docs 스니펫을 만들고, 스니펫으로 API 문서와 OpenAPI(Swagger UI) 스펙을 생성합니다. 외부 API 연동 어댑터는 `MockRestServiceServer`로 검증합니다. |
 
 이에 더해 아키텍처 규칙도 테스트로 강제합니다.

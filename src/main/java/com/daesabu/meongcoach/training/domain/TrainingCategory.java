@@ -1,12 +1,8 @@
 package com.daesabu.meongcoach.training.domain;
 
-import static jakarta.persistence.EnumType.STRING;
-
-import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;
 import com.daesabu.meongcoach.shared.domain.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -16,7 +12,6 @@ import jakarta.persistence.Table;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -43,10 +38,6 @@ public class TrainingCategory extends BaseEntity {
 	@Column(nullable = false)
 	private int sortOrder;
 
-	@Enumerated(STRING)
-	@Column(length = 50)
-	private EntitlementType requiredEntitlementType;
-
 	@OneToMany(mappedBy = "trainingCategory")
 	@OrderBy("sortOrder ASC, id ASC")
 	private List<Topic> topics = new ArrayList<>();
@@ -54,9 +45,5 @@ public class TrainingCategory extends BaseEntity {
 	public static Comparator<TrainingCategory> trainingOrder() {
 		return Comparator.comparingInt(TrainingCategory::getSortOrder)
 				.thenComparing(TrainingCategory::getId);
-	}
-
-	public Optional<EntitlementType> findRequiredEntitlementType() {
-		return Optional.ofNullable(requiredEntitlementType);
 	}
 }

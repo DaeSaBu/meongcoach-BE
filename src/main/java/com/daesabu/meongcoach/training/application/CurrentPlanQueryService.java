@@ -34,7 +34,7 @@ public class CurrentPlanQueryService implements CurrentPlanFinder {
 
 		return planRepository.findByUserIdAndDogIdAndStatus(userId, dogId, PlanStatus.ACTIVE)
 				.or(() -> planRepository.findFirstByUserIdAndDogIdAndStatusOrderByCompletedAtDescIdDesc(userId, dogId, PlanStatus.COMPLETED))
-				.map(plan -> toResult(userId, plan));
+				.map(this::toResult);
 	}
 
 	@Override
@@ -48,12 +48,12 @@ public class CurrentPlanQueryService implements CurrentPlanFinder {
 				.toList();
 	}
 
-	private CurrentPlanResult toResult(Long userId, Plan plan) {
+	private CurrentPlanResult toResult(Plan plan) {
 		if (plan.getStatus() == PlanStatus.COMPLETED) {
 			List<PlanCurriculumProgressResult> curriculums = List.of();
 			return new CurrentPlanResult(plan, curriculums);
 		}
-		List<PlanCurriculumResult> curriculums = planCurriculumFinder.find(userId, plan.getCurriculumIds());
+		List<PlanCurriculumResult> curriculums = planCurriculumFinder.find(plan.getCurriculumIds());
 		Set<Long> completedLessonIds = plan.getCompletedLessonIds();
 		List<PlanCurriculumProgressResult> curriculumProgresses = curriculums.stream()
 				.map(curriculum -> toProgressResult(curriculum, completedLessonIds))
@@ -74,7 +74,7 @@ public class CurrentPlanQueryService implements CurrentPlanFinder {
 		ProgressStatus status = ProgressStatus.of(totalLessons, completedLessons);
 		return new PlanCurriculumProgressResult(curriculum.id(), curriculum.topicId(), curriculum.topicTitle(),
 				curriculum.title(), curriculum.description(),
-				totalLessons, completedLessons, status, curriculum.locked(), planLessons);
+				totalLessons, completedLessons, status, planLessons);
 	}
 
 }

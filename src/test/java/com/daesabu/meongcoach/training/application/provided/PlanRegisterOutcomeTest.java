@@ -150,7 +150,7 @@ class PlanRegisterOutcomeTest {
 	}
 
 	private Curriculum saveCurriculum(Topic topic, int order) {
-		Curriculum curriculum = CurriculumFixture.create(topic, "커리큘럼 " + order, order, null, null, false);
+		Curriculum curriculum = CurriculumFixture.create(topic, "커리큘럼 " + order, order, null, null);
 		entityManager.persist(curriculum);
 		return curriculum;
 	}

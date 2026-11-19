@@ -2,7 +2,6 @@ package com.daesabu.meongcoach.training.domain;
 
 import static jakarta.persistence.FetchType.LAZY;
 
-import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;
 import com.daesabu.meongcoach.shared.domain.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -17,7 +16,6 @@ import jakarta.persistence.Table;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -62,10 +60,6 @@ public class Topic extends BaseEntity {
 		return Comparator.comparing(Topic::getTrainingCategory, TrainingCategory.trainingOrder())
 				.thenComparingInt(Topic::getSortOrder)
 				.thenComparing(Topic::getId);
-	}
-
-	public Optional<EntitlementType> findRequiredEntitlementType() {
-		return trainingCategory.findRequiredEntitlementType();
 	}
 
 	public boolean isCompleted(LessonProgresses progresses) {

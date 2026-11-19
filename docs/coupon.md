@@ -18,7 +18,7 @@
 ## 사용
 
 - **한 사용자는 같은 쿠폰을 한 번만 씁니다.** `CouponRedemptionModifyService`가 회원 ID로 advisory lock을 잡은 뒤 사용 기록을 확인하므로, 같은 사용자의 요청이 겹쳐도 두 번째 요청은 `COUPON_ALREADY_REDEEMED`로 끝납니다. `uk_coupon_redemptions_coupon_id_user_id`는 락을 거치지 않는 경로에 대비한 안전망이라 위반을 도메인 예외로 바꾸지 않습니다.
-- **락 키는 회원 ID 그대로이고 `analysis`·`entitlement`의 락과 같은 키입니다.** 쿠폰 사용 트랜잭션 안에서 `AiTrialRegister.grant`가 같은 락을 다시 잡지만, 같은 트랜잭션의 advisory lock은 재진입되어 기다리지 않습니다. 분석 완료(`AiAnalysisModifyService.complete`)와 겹치면 서로 끝날 때까지 기다립니다.
+- **락 키는 회원 ID 그대로이고 `analysis`의 락과 같은 키입니다.** 쿠폰 사용 트랜잭션 안에서 `AiTrialRegister.grant`가 같은 락을 다시 잡지만, 같은 트랜잭션의 advisory lock은 재진입되어 기다리지 않습니다. 분석 완료(`AiAnalysisModifyService.complete`)와 겹치면 서로 끝날 때까지 기다립니다.
 - **지급한 횟수는 회수하지 않습니다.** 사용 기록이나 쿠폰 행을 지워도 `ai_trials.granted_count`는 그대로입니다. 사용 기록을 지우면 그 사용자는 같은 쿠폰을 다시 쓸 수 있으므로, 회수가 필요하면 `granted_count`를 직접 내립니다.
 - **사용 기록은 지급 당시 횟수를 따로 저장합니다** (`coupon_redemptions.ai_trial_count`). 쿠폰 행의 횟수를 나중에 바꿔도 이미 지급한 횟수의 기록은 바뀌지 않습니다.
 - **온보딩을 마치지 않은 회원도 사용할 수 있습니다.** 온보딩 화면에서 코드를 입력하기 때문이고, 횟수는 회원 ID에 붙으므로 강아지 프로필이 없어도 지급됩니다. ([security.md](security.md)의 URL 인가 규칙)

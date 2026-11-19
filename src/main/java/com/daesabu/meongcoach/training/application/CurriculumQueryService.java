@@ -1,7 +1,6 @@
 package com.daesabu.meongcoach.training.application;
 
 import com.daesabu.meongcoach.dog.application.provided.DogProfileFinder;
-import com.daesabu.meongcoach.entitlement.application.provided.EntitlementChecker;
 import com.daesabu.meongcoach.training.application.provided.CurriculumFinder;
 import com.daesabu.meongcoach.training.application.provided.dto.CurriculumDetailResult;
 import com.daesabu.meongcoach.training.application.provided.dto.CurriculumListResult;
@@ -29,7 +28,6 @@ public class CurriculumQueryService implements CurriculumFinder {
 	private final CurriculumRepository curriculumRepository;
 	private final TopicSelectionRepository topicSelectionRepository;
 	private final LessonProgressRepository lessonProgressRepository;
-	private final EntitlementChecker entitlementChecker;
 	private final DogProfileFinder dogProfileFinder;
 
 	@Override
@@ -37,16 +35,13 @@ public class CurriculumQueryService implements CurriculumFinder {
 		Long resolvedDogId = dogProfileFinder.findDogProfileOrSelected(userId, dogId).id();
 		Topic topic = findSelectedOrFirstTopic(userId, resolvedDogId);
 		LessonProgresses progresses = findProgresses(userId, resolvedDogId, topic.getAllLessonIds());
-		boolean hasEntitlement = hasEntitlement(userId, topic);
-		return CurriculumListResult.of(topic, progresses, hasEntitlement);
+		return CurriculumListResult.of(topic, progresses);
 	}
 
 	@Override
 	public CurriculumDetailResult findCurriculum(Long userId, Long dogId, Long curriculumId) {
 		Curriculum curriculum = curriculumRepository.findById(curriculumId)
 				.orElseThrow(() -> new CurriculumNotFoundException(curriculumId));
-		curriculum.findRequiredEntitlementType()
-				.ifPresent(type -> entitlementChecker.validateEntitlement(userId, type));
 		Long resolvedDogId = dogProfileFinder.findDogProfileOrSelected(userId, dogId).id();
 		LessonProgresses progresses = findProgresses(userId, resolvedDogId, curriculum.getLessonIds());
 		return new CurriculumDetailResult(curriculum, progresses);
@@ -62,12 +57,6 @@ public class CurriculumQueryService implements CurriculumFinder {
 	private Topic findFirstTopic() {
 		return topicRepository.findFirstBy(TopicRepository.EDUCATION_ORDER)
 				.orElseThrow(TopicNotConfiguredException::new);
-	}
-
-	private boolean hasEntitlement(Long userId, Topic topic) {
-		return topic.findRequiredEntitlementType()
-				.map(type -> entitlementChecker.hasEntitlement(userId, type))
-				.orElse(true);
 	}
 
 	private LessonProgresses findProgresses(Long userId, Long dogId, List<Long> lessonIds) {

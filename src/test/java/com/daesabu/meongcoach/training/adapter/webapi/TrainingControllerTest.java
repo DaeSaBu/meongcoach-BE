@@ -19,8 +19,6 @@ import static org.springframework.restdocs.request.RequestDocumentation.queryPar
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.daesabu.meongcoach.entitlement.domain.exception.EntitlementRequiredException;
-import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;
 import com.daesabu.meongcoach.training.application.provided.CurriculumFinder;
 import com.daesabu.meongcoach.training.application.provided.LessonCompleter;
 import com.daesabu.meongcoach.training.application.provided.LessonFinder;
@@ -275,8 +273,8 @@ class TrainingControllerTest {
 		addLesson(inProgress, 112L, "5초 기다려", 3, 5);
 		addLesson(inProgress, 113L, "10초 기다려", 4, 5);
 		given(curriculumFinder.findCurriculums(42L, 3L)).willReturn(new CurriculumListResult(topic, List.of(
-				new CurriculumResult(completed, 3, ProgressStatus.COMPLETED, false),
-				new CurriculumResult(inProgress, 1, ProgressStatus.IN_PROGRESS, false))));
+				new CurriculumResult(completed, 3, ProgressStatus.COMPLETED),
+				new CurriculumResult(inProgress, 1, ProgressStatus.IN_PROGRESS))));
 
 		mockMvc.perform(get("/api/training/topic/selection/curriculums")
 						.queryParam("dogId", "3")
@@ -294,7 +292,6 @@ class TrainingControllerTest {
 				.andExpect(jsonPath("$.curriculums[1].totalLessons").value(4))
 				.andExpect(jsonPath("$.curriculums[1].completedLessons").value(1))
 				.andExpect(jsonPath("$.curriculums[1].status").value("IN_PROGRESS"))
-				.andExpect(jsonPath("$.curriculums[1].locked").value(false))
 				.andDo(document("training/curriculum-list",
 						queryParameters(
 								parameterWithName("dogId").optional()
@@ -309,30 +306,9 @@ class TrainingControllerTest {
 								fieldWithPath("curriculums[].totalLessons").description("커리큘럼에 속한 전체 레슨 수"),
 								fieldWithPath("curriculums[].completedLessons").description("강아지가 완료한 레슨 수"),
 								fieldWithPath("curriculums[].status")
-										.description("진행 상태. `NOT_STARTED`, `IN_PROGRESS`, `COMPLETED`"),
-								fieldWithPath("curriculums[].locked")
-										.description("이용권이 없어 열 수 없는 유료 커리큘럼이면 true")
+										.description("진행 상태. `NOT_STARTED`, `IN_PROGRESS`, `COMPLETED`")
 						)
 				));
-	}
-
-	@Test
-	void 이용권이_없으면_유료_커리큘럼만_잠금으로_표시한다() throws Exception {
-		TrainingCategory category = TrainingCategoryFixture.create("퍼피 교육", 1, null, null, EntitlementType.PUPPY);
-		Topic topic = TopicFixture.create(category, "앉아", 1, null, null, null);
-		ReflectionTestUtils.setField(topic, "id", 1L);
-		Curriculum sample = curriculum(10L, topic, "앉아 맛보기", 1);
-		Curriculum premium = CurriculumFixture.create(topic, "앉아 1단계", 2, null, null, true);
-		ReflectionTestUtils.setField(premium, "id", 11L);
-		given(curriculumFinder.findCurriculums(42L, null))
-				.willReturn(new CurriculumListResult(topic, List.of(
-						new CurriculumResult(sample, 0, ProgressStatus.NOT_STARTED, false),
-						new CurriculumResult(premium, 0, ProgressStatus.NOT_STARTED, true))));
-
-		mockMvc.perform(get("/api/training/topic/selection/curriculums").principal(CURRENT_USER))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.curriculums[0].locked").value(false))
-				.andExpect(jsonPath("$.curriculums[1].locked").value(true));
 	}
 
 	@Test
@@ -509,31 +485,6 @@ class TrainingControllerTest {
 	}
 
 	@Test
-	void 이용권_없이_유료_커리큘럼을_조회하면_403과_에러_코드를_반환한다() throws Exception {
-		given(curriculumFinder.findCurriculum(42L, null, 10L)).willThrow(new EntitlementRequiredException());
-
-		mockMvc.perform(get("/api/training/curriculums/{curriculumId}", 10L)
-						.principal(CURRENT_USER)
-						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
-				.andExpect(status().isForbidden())
-				.andExpect(jsonPath("$.status").value(403))
-				.andExpect(jsonPath("$.code").value("ENTITLEMENT_REQUIRED"))
-				.andDo(document("training/curriculum-detail-entitlement-error",
-						pathParameters(
-								parameterWithName("curriculumId").description("조회할 커리큘럼 ID")
-						),
-						responseFields(
-								fieldWithPath("title").description("HTTP 상태 이름"),
-								fieldWithPath("status").description("HTTP 상태 코드"),
-								fieldWithPath("detail").description("사람이 읽을 수 있는 에러 설명"),
-								fieldWithPath("instance").description("에러가 발생한 요청 경로"),
-								fieldWithPath("code").description("클라이언트 분기용 에러 코드"),
-								fieldWithPath("timestamp").description("에러 발생 시각(UTC)")
-						)
-				));
-	}
-
-	@Test
 	void 레슨의_카드와_미디어_목록을_반환한다() throws Exception {
 		Card first = card(10L, "앉아 준비", 1, "간식을 손에 쥐고 앉아를 말하세요");
 		ReflectionTestUtils.setField(first, "instructionAudioUrl", "https://cdn.example.com/tts/1.mp3");
@@ -541,7 +492,7 @@ class TrainingControllerTest {
 		addCardMedia(first, 101L, VIDEO, "https://cdn.example.com/1.mp4", 2);
 		Card second = card(11L, "앉아 보상", 2, "앉으면 바로 간식을 주세요");
 		addCardMedia(second, 102L, IMAGE, "https://cdn.example.com/2.png", 1);
-		given(lessonFinder.findCards(42L, 1L)).willReturn(List.of(first, second));
+		given(lessonFinder.findCards(1L)).willReturn(List.of(first, second));
 
 		mockMvc.perform(get("/api/training/lessons/{lessonId}/cards", 1L)
 						.principal(CURRENT_USER)
@@ -581,7 +532,7 @@ class TrainingControllerTest {
 
 	@Test
 	void 미디어가_없는_카드는_빈_배열을_반환한다() throws Exception {
-		given(lessonFinder.findCards(42L, 1L)).willReturn(List.of(card(10L, "앉아 준비", 1, "간식을 손에 쥐고 앉아를 말하세요")));
+		given(lessonFinder.findCards(1L)).willReturn(List.of(card(10L, "앉아 준비", 1, "간식을 손에 쥐고 앉아를 말하세요")));
 
 		mockMvc.perform(get("/api/training/lessons/{lessonId}/cards", 1L).principal(CURRENT_USER))
 				.andExpect(status().isOk())
@@ -591,7 +542,7 @@ class TrainingControllerTest {
 
 	@Test
 	void 카드가_없는_레슨은_빈_배열과_200을_반환한다() throws Exception {
-		given(lessonFinder.findCards(42L, 1L)).willReturn(List.of());
+		given(lessonFinder.findCards(1L)).willReturn(List.of());
 
 		mockMvc.perform(get("/api/training/lessons/{lessonId}/cards", 1L).principal(CURRENT_USER))
 				.andExpect(status().isOk())
@@ -601,7 +552,7 @@ class TrainingControllerTest {
 
 	@Test
 	void 존재하지_않는_레슨이면_404와_에러_코드를_반환한다() throws Exception {
-		given(lessonFinder.findCards(42L, 999L)).willThrow(new LessonNotFoundException(999L));
+		given(lessonFinder.findCards(999L)).willThrow(new LessonNotFoundException(999L));
 
 		mockMvc.perform(get("/api/training/lessons/{lessonId}/cards", 999L)
 						.principal(CURRENT_USER)
@@ -623,22 +574,6 @@ class TrainingControllerTest {
 								fieldWithPath("timestamp").description("에러 발생 시각(UTC)")
 						)
 				));
-	}
-
-	@Test
-	void 이용권_없이_유료_레슨의_카드를_조회하면_403을_반환한다() throws Exception {
-		given(lessonFinder.findCards(42L, 1L)).willThrow(new EntitlementRequiredException());
-
-		mockMvc.perform(get("/api/training/lessons/{lessonId}/cards", 1L).principal(CURRENT_USER))
-				.andExpect(status().isForbidden())
-				.andExpect(jsonPath("$.code").value("ENTITLEMENT_REQUIRED"));
-	}
-
-	@Test
-	void 카드_조회_시_인증_정보가_없으면_401을_반환한다() throws Exception {
-		mockMvc.perform(get("/api/training/lessons/{lessonId}/cards", 1L))
-				.andExpect(status().isUnauthorized())
-				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
 	}
 
 	@Test
@@ -712,15 +647,6 @@ class TrainingControllerTest {
 	}
 
 	@Test
-	void 이용권_없이_유료_레슨을_완료하면_403을_반환한다() throws Exception {
-		given(lessonCompleter.completeLesson(42L, null, 1L)).willThrow(new EntitlementRequiredException());
-
-		mockMvc.perform(post("/api/training/lessons/{lessonId}/completion", 1L).principal(CURRENT_USER))
-				.andExpect(status().isForbidden())
-				.andExpect(jsonPath("$.code").value("ENTITLEMENT_REQUIRED"));
-	}
-
-	@Test
 	void 레슨_완료_시_인증_정보가_없으면_401을_반환한다() throws Exception {
 		mockMvc.perform(post("/api/training/lessons/{lessonId}/completion", 1L))
 				.andExpect(status().isUnauthorized())
@@ -749,7 +675,7 @@ class TrainingControllerTest {
 	}
 
 	private Curriculum curriculum(Long id, Topic topic, String title, int sortOrder, Expert expert) {
-		Curriculum curriculum = CurriculumFixture.create(topic, title, sortOrder, null, null, false, expert);
+		Curriculum curriculum = CurriculumFixture.create(topic, title, sortOrder, null, null, expert);
 		ReflectionTestUtils.setField(curriculum, "id", id);
 		return curriculum;
 	}
