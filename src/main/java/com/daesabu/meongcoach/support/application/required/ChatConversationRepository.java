@@ -34,6 +34,17 @@ public interface ChatConversationRepository extends JpaRepository<ChatConversati
 	List<ChatConversation> findPrevious(
 			@Param("updatedAt") LocalDateTime updatedAt, @Param("id") long id, Pageable pageable);
 
+	List<ChatConversation> findByClosedAtIsNotNullOrderByLastMessageAtDescIdDesc(Pageable pageable);
+
+	@Query("""
+			SELECT c FROM SupportConversation c
+			WHERE c.closedAt IS NOT NULL
+			AND (c.lastMessageAt < :updatedAt OR (c.lastMessageAt = :updatedAt AND c.id < :id))
+			ORDER BY c.lastMessageAt DESC, c.id DESC
+			""")
+	List<ChatConversation> findPreviousClosed(
+			@Param("updatedAt") LocalDateTime updatedAt, @Param("id") long id, Pageable pageable);
+
 	List<ChatConversation> findByMemberIdOrderByLastMessageAtDescIdDesc(long memberId, Pageable pageable);
 
 	@Query("""

@@ -63,6 +63,15 @@ public class ChatQueryService implements ChatFinder {
 		return conversations.findPrevious(beforeUpdatedAt, before, page);
 	}
 
+	public List<ChatConversation> closedConversations(long before, LocalDateTime beforeUpdatedAt) {
+		verifyConversationCursor(before, beforeUpdatedAt);
+		var page = PageRequest.of(0, 50);
+		if (before == 0) {
+			return conversations.findByClosedAtIsNotNullOrderByLastMessageAtDescIdDesc(page);
+		}
+		return conversations.findPreviousClosed(beforeUpdatedAt, before, page);
+	}
+
 	public List<ChatConversation> memberConversations(Long memberId, long before, LocalDateTime beforeUpdatedAt) {
 		verifyConversationCursor(before, beforeUpdatedAt);
 		var page = PageRequest.of(0, 50);

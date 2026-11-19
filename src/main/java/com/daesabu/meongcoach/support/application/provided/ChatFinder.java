@@ -16,6 +16,12 @@ public interface ChatFinder {
 	List<ChatConversation> conversations(long before, LocalDateTime beforeUpdatedAt);
 
 	/**
+	 * 종료된 대화를 최근 활동 시각과 ID 내림차순으로 최대 50건 반환한다.
+	 * 최초 조회는 before 0과 beforeUpdatedAt null을 받으며, 둘 중 하나만 전달하면 커서 예외를 던진다.
+	 */
+	List<ChatConversation> closedConversations(long before, LocalDateTime beforeUpdatedAt);
+
+	/**
 	 * 회원 본인의 진행 중·종료된 대화를 최근 활동 시각과 ID 내림차순으로 최대 50건 반환한다.
 	 * 최초 조회는 before 0과 beforeUpdatedAt null을 받으며, 둘 중 하나만 전달하면 커서 예외를 던진다.
 	 */

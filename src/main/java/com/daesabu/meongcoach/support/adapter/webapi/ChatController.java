@@ -54,7 +54,13 @@ public class ChatController {
 	@GetMapping
 	public List<ChatConversationResponse> conversations(
 			@RequestParam(defaultValue = "0") @PositiveOrZero long before,
-			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime beforeUpdatedAt) {
+			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime beforeUpdatedAt,
+			@RequestParam(defaultValue = "false") boolean closed) {
+		if (closed) {
+			return finder.closedConversations(before, beforeUpdatedAt).stream()
+					.map(ChatConversationResponse::from)
+					.toList();
+		}
 		return finder.conversations(before, beforeUpdatedAt).stream()
 				.map(ChatConversationResponse::from)
 				.toList();
