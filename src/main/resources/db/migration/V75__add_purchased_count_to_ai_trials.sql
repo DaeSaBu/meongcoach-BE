@@ -1,0 +1,1 @@
+ALTER TABLE "ai_trials" ADD COLUMN "purchased_count" INTEGER NOT NULL DEFAULT 0;
