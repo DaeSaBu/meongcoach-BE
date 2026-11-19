@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -49,32 +50,36 @@ public class TrainingController {
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	@PutMapping("/topic/selection")
 	public void selectTopic(@CurrentUserId Long userId,
+	                        @RequestParam(required = false) Long dogId,
 	                        @Valid @RequestBody TopicSelectionRequest request) {
-		topicSelector.selectTopic(userId, request);
+		topicSelector.selectTopic(userId, dogId, request);
 	}
 
 	@GetMapping("/topic/selection/curriculums")
-	public CurriculumListResponse findCurriculums(@CurrentUserId Long userId) {
-		CurriculumListResult result = curriculumFinder.findCurriculums(userId);
+	public CurriculumListResponse findCurriculums(@CurrentUserId Long userId,
+	                                              @RequestParam(required = false) Long dogId) {
+		CurriculumListResult result = curriculumFinder.findCurriculums(userId, dogId);
 		return CurriculumListResponse.from(result);
 	}
 
 	@GetMapping("/curriculums/{curriculumId}")
-	public CurriculumDetailResponse findCurriculum(@CurrentUserId Long userId, @PathVariable Long curriculumId) {
-		CurriculumDetailResult result = curriculumFinder.findCurriculum(userId, curriculumId);
+	public CurriculumDetailResponse findCurriculum(@CurrentUserId Long userId, @PathVariable Long curriculumId,
+	                                               @RequestParam(required = false) Long dogId) {
+		CurriculumDetailResult result = curriculumFinder.findCurriculum(userId, dogId, curriculumId);
 		return CurriculumDetailResponse.from(result);
 	}
 
 	@GetMapping("/lessons/{lessonId}/cards")
-	public CardListResponse findCards(@CurrentUserId Long userId, @PathVariable Long lessonId) {
-		List<Card> cards = lessonFinder.findCards(userId, lessonId);
+	public CardListResponse findCards(@PathVariable Long lessonId) {
+		List<Card> cards = lessonFinder.findCards(lessonId);
 		return CardListResponse.from(cards);
 	}
 
 	@PostMapping("/lessons/{lessonId}/completion")
 	@ResponseStatus(HttpStatus.CREATED)
-	public LessonCompleteResponse completeLesson(@CurrentUserId Long userId, @PathVariable Long lessonId) {
-		int completedCount = lessonCompleter.completeLesson(userId, lessonId);
+	public LessonCompleteResponse completeLesson(@CurrentUserId Long userId, @PathVariable Long lessonId,
+	                                             @RequestParam(required = false) Long dogId) {
+		int completedCount = lessonCompleter.completeLesson(userId, dogId, lessonId);
 		return new LessonCompleteResponse(lessonId, completedCount);
 	}
 }

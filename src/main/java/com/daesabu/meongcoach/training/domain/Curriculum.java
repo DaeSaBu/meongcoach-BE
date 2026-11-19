@@ -2,7 +2,6 @@ package com.daesabu.meongcoach.training.domain;
 
 import static org.springframework.util.Assert.state;
 
-import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;
 import com.daesabu.meongcoach.shared.domain.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -16,6 +15,7 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import lombok.AccessLevel;
@@ -44,9 +44,6 @@ public class Curriculum extends BaseEntity {
 	@Column(nullable = false, columnDefinition = "TEXT")
 	private String description;
 
-	@Column(nullable = false)
-	private boolean isPremium;
-
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "topic_id", nullable = false)
 	private Topic topic;
@@ -59,18 +56,27 @@ public class Curriculum extends BaseEntity {
 	@OrderBy("sortOrder ASC, id ASC")
 	private List<Lesson> lessons = new ArrayList<>();
 
+	public static Comparator<Curriculum> trainingOrder() {
+		return Comparator.comparing(Curriculum::getTopic, Topic.trainingOrder())
+				.thenComparingInt(Curriculum::getSortOrder)
+				.thenComparing(Curriculum::getId);
+	}
+
 	public List<Long> getLessonIds() {
 		return lessons.stream()
 				.map(Lesson::getId)
 				.toList();
 	}
 
-	public CurriculumCompletion completion(LessonProgresses progresses) {
+	public int countCompletedLessons(LessonProgresses progresses) {
 		validateHasLessons();
 
-		int completed = progresses.countCompletedIn(getLessonIds());
-		int total = lessons.size();
-		return CurriculumCompletion.of(total, completed);
+		return progresses.countCompletedIn(getLessonIds());
+	}
+
+	public ProgressStatus determineStatus(LessonProgresses progresses) {
+		int completedLessons = countCompletedLessons(progresses);
+		return ProgressStatus.of(lessons.size(), completedLessons);
 	}
 
 	public void validateHasLessons() {
@@ -78,7 +84,7 @@ public class Curriculum extends BaseEntity {
 	}
 
 	public boolean isCompleted(LessonProgresses progresses) {
-		return completion(progresses).status() == ProgressStatus.COMPLETED;
+		return determineStatus(progresses) == ProgressStatus.COMPLETED;
 	}
 
 	public int getLessonsSize() {
@@ -88,16 +94,4 @@ public class Curriculum extends BaseEntity {
 	public Optional<Expert> findExpert() {
 		return Optional.ofNullable(expert);
 	}
-
-	public Optional<EntitlementType> findRequiredEntitlementType() {
-		if (!isPremium) {
-			return Optional.empty();
-		}
-		return topic.findRequiredEntitlementType();
-	}
-
-	public boolean isLocked(boolean hasEntitlement) {
-		return findRequiredEntitlementType().isPresent() && !hasEntitlement;
-	}
-
 }

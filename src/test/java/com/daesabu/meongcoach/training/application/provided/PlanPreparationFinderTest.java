@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;
 import com.daesabu.meongcoach.support.ApplicationTest;
 import com.daesabu.meongcoach.training.application.provided.dto.PlanPreparationResult;
 import com.daesabu.meongcoach.training.application.required.CurriculumRepository;
@@ -57,18 +56,18 @@ class PlanPreparationFinderTest {
 	void 요청_순서와_관계없이_선택한_토픽의_커리큘럼을_교육_순서로_반환한다() {
 		TrainingCategory laterCategory = saveCategory(2);
 		Topic later = saveTopic(laterCategory, 1);
-		Curriculum last = saveCurriculum(later, 1, false);
+		Curriculum last = saveCurriculum(later, 1);
 		saveLesson(last);
 		TrainingCategory firstCategory = saveCategory(1);
 		Topic second = saveTopic(firstCategory, 2);
-		Curriculum third = saveCurriculum(second, 1, false);
+		Curriculum third = saveCurriculum(second, 1);
 		saveLesson(third);
 		Topic first = saveTopic(firstCategory, 1);
-		Curriculum secondCurriculum = saveCurriculum(first, 2, false);
+		Curriculum secondCurriculum = saveCurriculum(first, 2);
 		saveLesson(secondCurriculum);
-		Curriculum firstCurriculum = saveCurriculum(first, 1, false);
+		Curriculum firstCurriculum = saveCurriculum(first, 1);
 		saveLesson(firstCurriculum);
-		saveCurriculum(saveTopic(firstCategory, 3), 1, false);
+		saveCurriculum(saveTopic(firstCategory, 3), 1);
 		flushAndClear();
 
 		PlanPreparationResult result = finder.find(List.of(later.getId(), second.getId(), first.getId()));
@@ -81,15 +80,15 @@ class PlanPreparationFinderTest {
 	void 완료_여부와_관계없이_선택한_토픽의_커리큘럼을_모두_포함한다() {
 		TrainingCategory category = saveCategory(1);
 		Topic firstTopic = saveTopic(category, 1);
-		Curriculum completed = saveCurriculum(firstTopic, 1, false);
+		Curriculum completed = saveCurriculum(firstTopic, 1);
 		complete(USER_ID, saveLesson(completed));
-		Curriculum partial = saveCurriculum(firstTopic, 2, false);
+		Curriculum partial = saveCurriculum(firstTopic, 2);
 		complete(USER_ID, saveLesson(partial));
 		saveLesson(partial);
 		Topic nextTopic = saveTopic(category, 2);
-		Curriculum otherUser = saveCurriculum(nextTopic, 1, false);
+		Curriculum otherUser = saveCurriculum(nextTopic, 1);
 		complete(43L, saveLesson(otherUser));
-		Curriculum incomplete = saveCurriculum(nextTopic, 2, false);
+		Curriculum incomplete = saveCurriculum(nextTopic, 2);
 		saveLesson(incomplete);
 		flushAndClear();
 
@@ -102,8 +101,8 @@ class PlanPreparationFinderTest {
 	@Test
 	void 레슨이_없는_커리큘럼이_있으면_거절한다() {
 		Topic topic = saveTopic(saveCategory(1), 1);
-		saveLesson(saveCurriculum(topic, 1, false));
-		saveCurriculum(topic, 2, false);
+		saveLesson(saveCurriculum(topic, 1));
+		saveCurriculum(topic, 2);
 		flushAndClear();
 
 		assertThatThrownBy(() -> finder.find(List.of(topic.getId())))
@@ -114,12 +113,12 @@ class PlanPreparationFinderTest {
 	void 선택한_토픽을_모두_완료하면_전체_커리큘럼을_교육_순서로_반환한다() {
 		TrainingCategory category = saveCategory(1);
 		Topic firstTopic = saveTopic(category, 1);
-		Curriculum first = saveCurriculum(firstTopic, 1, false);
+		Curriculum first = saveCurriculum(firstTopic, 1);
 		complete(USER_ID, saveLesson(first));
-		Curriculum second = saveCurriculum(firstTopic, 2, false);
+		Curriculum second = saveCurriculum(firstTopic, 2);
 		complete(USER_ID, saveLesson(second));
 		Topic nextTopic = saveTopic(category, 2);
-		Curriculum third = saveCurriculum(nextTopic, 1, false);
+		Curriculum third = saveCurriculum(nextTopic, 1);
 		complete(USER_ID, saveLesson(third));
 		flushAndClear();
 
@@ -137,20 +136,6 @@ class PlanPreparationFinderTest {
 	}
 
 	@Test
-	void 이용권이_없어도_프리미엄_커리큘럼을_포함한다() {
-		TrainingCategory category = categoryRepository.save(
-				TrainingCategoryFixture.create("유료 교육", 1, null, null, EntitlementType.PUPPY));
-		Topic topic = saveTopic(category, 1);
-		Curriculum curriculum = saveCurriculum(topic, 1, true);
-		saveLesson(curriculum);
-		flushAndClear();
-
-		PlanPreparationResult result = finder.find(List.of(topic.getId()));
-
-		assertThat(result.curriculumIds()).containsExactly(curriculum.getId());
-	}
-
-	@Test
 	void 요청한_토픽_중_하나라도_없으면_거절한다() {
 		Topic topic = saveTopic(saveCategory(1), 1);
 		flushAndClear();
@@ -163,13 +148,13 @@ class PlanPreparationFinderTest {
 	void 요청한_토픽_순서대로_커리큘럼을_합쳐_반환한다() {
 		TrainingCategory firstCategory = saveCategory(1);
 		Topic first = saveTopic(firstCategory, 1);
-		Curriculum firstCurriculum = saveCurriculum(first, 1, false);
+		Curriculum firstCurriculum = saveCurriculum(first, 1);
 		saveLesson(firstCurriculum);
 		TrainingCategory laterCategory = saveCategory(2);
 		Topic later = saveTopic(laterCategory, 1);
-		Curriculum laterSecond = saveCurriculum(later, 2, false);
+		Curriculum laterSecond = saveCurriculum(later, 2);
 		saveLesson(laterSecond);
-		Curriculum laterFirst = saveCurriculum(later, 1, false);
+		Curriculum laterFirst = saveCurriculum(later, 1);
 		saveLesson(laterFirst);
 		flushAndClear();
 
@@ -182,7 +167,7 @@ class PlanPreparationFinderTest {
 	@Test
 	void 요청_순서로_조회할_때_없는_토픽이_있으면_거절한다() {
 		Topic topic = saveTopic(saveCategory(1), 1);
-		saveLesson(saveCurriculum(topic, 1, false));
+		saveLesson(saveCurriculum(topic, 1));
 		flushAndClear();
 
 		assertThatThrownBy(() -> finder.findInRequestOrder(List.of(topic.getId(), Long.MAX_VALUE)))
@@ -192,8 +177,8 @@ class PlanPreparationFinderTest {
 	@Test
 	void 요청_순서로_조회할_때_레슨이_없는_커리큘럼이_있으면_거절한다() {
 		Topic topic = saveTopic(saveCategory(1), 1);
-		saveLesson(saveCurriculum(topic, 1, false));
-		saveCurriculum(topic, 2, false);
+		saveLesson(saveCurriculum(topic, 1));
+		saveCurriculum(topic, 2);
 		flushAndClear();
 
 		assertThatThrownBy(() -> finder.findInRequestOrder(List.of(topic.getId())))
@@ -204,7 +189,7 @@ class PlanPreparationFinderTest {
 	void 선택_토픽의_모든_커리큘럼에_레슨이_있으면_검증을_통과한다() {
 		TrainingCategory category = saveCategory(1);
 		Topic topic = saveTopic(category, 1);
-		Curriculum curriculum = saveCurriculum(topic, 1, false);
+		Curriculum curriculum = saveCurriculum(topic, 1);
 		saveLesson(curriculum);
 		flushAndClear();
 
@@ -215,7 +200,7 @@ class PlanPreparationFinderTest {
 	void 선택_토픽_검증은_없는_토픽을_거절한다() {
 		TrainingCategory category = saveCategory(1);
 		Topic topic = saveTopic(category, 1);
-		Curriculum curriculum = saveCurriculum(topic, 1, false);
+		Curriculum curriculum = saveCurriculum(topic, 1);
 		saveLesson(curriculum);
 		flushAndClear();
 
@@ -227,9 +212,9 @@ class PlanPreparationFinderTest {
 	void 선택_토픽_검증은_레슨이_없는_커리큘럼을_거절한다() {
 		TrainingCategory category = saveCategory(1);
 		Topic topic = saveTopic(category, 1);
-		Curriculum curriculum = saveCurriculum(topic, 1, false);
+		Curriculum curriculum = saveCurriculum(topic, 1);
 		saveLesson(curriculum);
-		saveCurriculum(topic, 2, false);
+		saveCurriculum(topic, 2);
 		flushAndClear();
 
 		assertThatThrownBy(() -> finder.validate(List.of(topic.getId())))
@@ -244,8 +229,8 @@ class PlanPreparationFinderTest {
 		return topicRepository.save(TopicFixture.create(category, "토픽 " + order, order, "설명", null, null));
 	}
 
-	private Curriculum saveCurriculum(Topic topic, int order, boolean premium) {
-		return curriculumRepository.save(CurriculumFixture.create(topic, "훈련 " + order, order, null, null, premium));
+	private Curriculum saveCurriculum(Topic topic, int order) {
+		return curriculumRepository.save(CurriculumFixture.create(topic, "훈련 " + order, order, null, null));
 	}
 
 	private Lesson saveLesson(Curriculum curriculum) {
@@ -253,7 +238,7 @@ class PlanPreparationFinderTest {
 	}
 
 	private void complete(Long userId, Lesson lesson) {
-		LessonProgress progress = LessonProgress.start(userId, lesson.getId());
+		LessonProgress progress = LessonProgress.start(userId, 7L, lesson.getId());
 		progress.complete();
 		progressRepository.save(progress);
 	}

@@ -15,6 +15,7 @@ import com.daesabu.meongcoach.support.ApplicationTest;
 import com.daesabu.meongcoach.training.domain.Topic;
 import com.daesabu.meongcoach.training.domain.exception.TopicNotFoundException;
 import java.time.Instant;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
@@ -39,15 +40,41 @@ class GraduationUploadUrlIssuerTest {
 	@Autowired
 	private TopicSeeder topicSeeder;
 
+	private Long dogId;
+
+	@BeforeEach
+	void setUp() {
+		dogId = topicSeeder.selectedDog(USER_ID);
+	}
+
+	@Test
+	void 다른_강아지가_마친_토픽이면_예외를_던진다() {
+		Long otherDogId = topicSeeder.unselectedDog(USER_ID);
+		Topic topic = topicSeeder.completedTopic(USER_ID, otherDogId, "분리불안");
+
+		assertThatThrownBy(() -> graduationUploadUrlIssuer.issue(USER_ID, dogId, topic.getId(), REQUEST))
+				.isInstanceOf(TopicNotCompletedException.class);
+	}
+
+	@Test
+	void dogId를_생략하면_선택된_강아지의_학습_완료로_판단한다() {
+		topicSeeder.unselectedDog(USER_ID);
+		Topic topic = topicSeeder.completedTopic(USER_ID, "분리불안");
+
+		MediaUploadUrlResult result = graduationUploadUrlIssuer.issue(USER_ID, null, topic.getId(), REQUEST);
+
+		assertThat(result.uploadUrl()).isNotBlank();
+	}
+
 	@Test
 	void 토픽을_완료한_회원에게_본인_토픽_실습_영상_경로의_업로드_URL을_발급한다() {
 		Topic topic = topicSeeder.completedTopic(USER_ID, "분리불안");
 
-		MediaUploadUrlResult result = graduationUploadUrlIssuer.issue(USER_ID, topic.getId(), REQUEST);
+		MediaUploadUrlResult result = graduationUploadUrlIssuer.issue(USER_ID, dogId, topic.getId(), REQUEST);
 
 		assertThat(result.objectKey()).startsWith("videos/graduation/42/" + topic.getId() + "/").endsWith(".mp4");
 		assertThat(result.uploadUrl()).isNotBlank();
-		assertThat(graduationSubmissionRepository.findFirstByUserIdAndTopicIdOrderByIdDesc(USER_ID,
+		assertThat(graduationSubmissionRepository.findFirstByUserIdAndDogIdAndTopicIdOrderByIdDesc(USER_ID, dogId,
 				topic.getId())).isEmpty();
 	}
 
@@ -55,35 +82,35 @@ class GraduationUploadUrlIssuerTest {
 	void 커리큘럼을_다_마치지_않은_토픽이면_예외를_던진다() {
 		Topic topic = topicSeeder.incompleteTopic("분리불안");
 
-		assertThatThrownBy(() -> graduationUploadUrlIssuer.issue(USER_ID, topic.getId(), REQUEST))
+		assertThatThrownBy(() -> graduationUploadUrlIssuer.issue(USER_ID, dogId, topic.getId(), REQUEST))
 				.isInstanceOf(TopicNotCompletedException.class);
 	}
 
 	@Test
 	void 검수_대기_중에는_URL_발급을_거절한다() {
 		Topic topic = topicSeeder.completedTopic(USER_ID, "분리불안");
-		graduationSubmitter.submit(USER_ID, topic.getId(),
+		graduationSubmitter.submit(USER_ID, dogId, topic.getId(),
 				new GraduationSubmissionRequest("videos/graduation/42/" + topic.getId() + "/a.mp4"));
-		assertThatThrownBy(() -> graduationUploadUrlIssuer.issue(USER_ID, topic.getId(), REQUEST)).isInstanceOf(
+		assertThatThrownBy(() -> graduationUploadUrlIssuer.issue(USER_ID, dogId, topic.getId(), REQUEST)).isInstanceOf(
 				GraduationReviewPendingException.class);
 	}
 
 	@Test
 	void 이미_수료한_토픽이면_예외를_던진다() {
 		Topic topic = topicSeeder.completedTopic(USER_ID, "분리불안");
-		GraduationSubmission graduation = graduationSubmitter.submit(USER_ID, topic.getId(),
+		GraduationSubmission graduation = graduationSubmitter.submit(USER_ID, dogId, topic.getId(),
 				new GraduationSubmissionRequest("videos/graduation/42/" + topic.getId() + "/a.mp4"));
 		graduation.approve(null, Instant.now());
 		graduationSubmissionRepository.save(graduation);
 		topicSeeder.flushAndClear();
 
-		assertThatThrownBy(() -> graduationUploadUrlIssuer.issue(USER_ID, topic.getId(), REQUEST))
+		assertThatThrownBy(() -> graduationUploadUrlIssuer.issue(USER_ID, dogId, topic.getId(), REQUEST))
 				.isInstanceOf(GraduationAlreadyApprovedException.class);
 	}
 
 	@Test
 	void 존재하지_않는_토픽이면_예외를_던진다() {
-		assertThatThrownBy(() -> graduationUploadUrlIssuer.issue(USER_ID, 999L, REQUEST))
+		assertThatThrownBy(() -> graduationUploadUrlIssuer.issue(USER_ID, dogId, 999L, REQUEST))
 				.isInstanceOf(TopicNotFoundException.class);
 	}
 }

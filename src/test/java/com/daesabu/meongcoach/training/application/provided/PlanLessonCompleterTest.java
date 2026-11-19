@@ -2,14 +2,19 @@ package com.daesabu.meongcoach.training.application.provided;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
-import com.daesabu.meongcoach.entitlement.domain.exception.EntitlementRequiredException;
-import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;
+import com.daesabu.meongcoach.dog.application.required.DogRepository;
+import com.daesabu.meongcoach.dog.domain.DogFixture;
 import com.daesabu.meongcoach.support.ApplicationTest;
+import com.daesabu.meongcoach.training.application.required.CurriculumProgressRepository;
 import com.daesabu.meongcoach.training.application.required.LessonProgressRepository;
 import com.daesabu.meongcoach.training.application.required.PlanRepository;
+import com.daesabu.meongcoach.training.application.required.TrainedLessonRepository;
 import com.daesabu.meongcoach.training.domain.Curriculum;
 import com.daesabu.meongcoach.training.domain.CurriculumFixture;
+import com.daesabu.meongcoach.training.domain.CurriculumProgress;
+import com.daesabu.meongcoach.training.domain.CurriculumProgressStatus;
 import com.daesabu.meongcoach.training.domain.Lesson;
 import com.daesabu.meongcoach.training.domain.LessonFixture;
 import com.daesabu.meongcoach.training.domain.LessonProgress;
@@ -18,13 +23,17 @@ import com.daesabu.meongcoach.training.domain.PlanCreateCommand;
 import com.daesabu.meongcoach.training.domain.PlanStatus;
 import com.daesabu.meongcoach.training.domain.Topic;
 import com.daesabu.meongcoach.training.domain.TopicFixture;
+import com.daesabu.meongcoach.training.domain.TrainedLesson;
 import com.daesabu.meongcoach.training.domain.TrainingCategory;
 import com.daesabu.meongcoach.training.domain.TrainingCategoryFixture;
+import com.daesabu.meongcoach.training.domain.TrainingSource;
 import com.daesabu.meongcoach.training.domain.exception.PlanLessonOrderException;
 import com.daesabu.meongcoach.training.domain.exception.PlanNotActiveException;
 import com.daesabu.meongcoach.training.domain.exception.PlanNotFoundException;
 import jakarta.persistence.EntityManager;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
@@ -39,6 +48,10 @@ class PlanLessonCompleterTest {
 
 	private static final Long USER_ID = 42L;
 
+	private static final Long ABSENT_LESSON_ID = 999_999L;
+
+	private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
+
 	@Autowired
 	private PlanLessonCompleter completer;
 
@@ -49,14 +62,44 @@ class PlanLessonCompleterTest {
 	private LessonProgressRepository progressRepository;
 
 	@Autowired
+	private TrainedLessonRepository trainedLessonRepository;
+
+	@Autowired
+	private CurriculumProgressRepository curriculumProgressRepository;
+
+	@Autowired
 	private EntityManager entityManager;
 
 	@Autowired
 	private PlatformTransactionManager transactionManager;
 
+	@Autowired
+	private DogRepository dogRepository;
+
+	private Long dogId;
+
+	@Test
+	void 플랜_레슨을_완료하면_선택된_강아지가_아니라_플랜의_강아지에_완료_횟수를_기록한다() {
+		Long selectedDogId = dogId();
+		Long planDogId = dogRepository.save(DogFixture.unselected(USER_ID)).getId();
+		Curriculum curriculum = saveCurriculum();
+		Lesson lesson = saveLesson(curriculum, 1);
+		PlanCreateCommand command = new PlanCreateCommand(USER_ID, planDogId, "보리의 훈련 플랜", "목표");
+		Plan plan = planRepository.save(Plan.create(command, List.of(curriculum.getId())));
+		flushAndClear();
+
+		completer.complete(USER_ID, plan.getId(), lesson.getId());
+		flushAndClear();
+
+		assertThat(progressRepository.findByUserIdAndDogIdAndLessonId(USER_ID, planDogId, lesson.getId()))
+				.get().extracting(LessonProgress::getCompletedCount).isEqualTo(1);
+		assertThat(progressRepository.findByUserIdAndDogIdAndLessonId(USER_ID, selectedDogId, lesson.getId()))
+				.isEmpty();
+	}
+
 	@Test
 	void 현재_레슨을_완료하면_일반_학습과_플랜_기록을_함께_저장한다() {
-		Curriculum curriculum = saveCurriculum(false);
+		Curriculum curriculum = saveCurriculum();
 		Lesson first = saveLesson(curriculum, 1);
 		saveLesson(curriculum, 2);
 		Plan plan = savePlan(curriculum);
@@ -74,9 +117,9 @@ class PlanLessonCompleterTest {
 
 	@Test
 	void 플랜의_커리큘럼_순서대로_완료하고_마지막에_플랜을_완료한다() {
-		Curriculum first = saveCurriculum(false);
+		Curriculum first = saveCurriculum();
 		Lesson firstLesson = saveLesson(first, 1);
-		Curriculum second = saveCurriculum(false);
+		Curriculum second = saveCurriculum();
 		Lesson secondLesson = saveLesson(second, 1);
 		Plan plan = savePlan(second, first);
 		flushAndClear();
@@ -98,9 +141,9 @@ class PlanLessonCompleterTest {
 
 	@Test
 	void 다른_토픽의_첫_레슨은_앞_토픽을_마치지_않아도_완료한다() {
-		Curriculum walk = saveCurriculum(false);
+		Curriculum walk = saveCurriculum();
 		saveLesson(walk, 1);
-		Curriculum calm = saveCurriculum(false);
+		Curriculum calm = saveCurriculum();
 		Lesson calmLesson = saveLesson(calm, 1);
 		saveLesson(calm, 2);
 		Plan plan = savePlan(walk, calm);
@@ -117,7 +160,7 @@ class PlanLessonCompleterTest {
 
 	@Test
 	void 같은_토픽의_뒤_커리큘럼은_앞_커리큘럼을_마쳐야_완료한다() {
-		Curriculum first = saveCurriculum(false);
+		Curriculum first = saveCurriculum();
 		Lesson firstLesson = saveLesson(first, 1);
 		Curriculum second = saveCurriculum(first.getTopic(), 2);
 		Lesson secondLesson = saveLesson(second, 1);
@@ -138,7 +181,7 @@ class PlanLessonCompleterTest {
 
 	@Test
 	void 활성_플랜의_이미_완료한_레슨은_횟수를_다시_늘리지_않는다() {
-		Curriculum curriculum = saveCurriculum(false);
+		Curriculum curriculum = saveCurriculum();
 		Lesson first = saveLesson(curriculum, 1);
 		saveLesson(curriculum, 2);
 		Plan plan = savePlan(curriculum);
@@ -156,7 +199,7 @@ class PlanLessonCompleterTest {
 
 	@Test
 	void 마지막_레슨을_재요청해도_횟수와_완료_시각을_유지한다() {
-		Curriculum curriculum = saveCurriculum(false);
+		Curriculum curriculum = saveCurriculum();
 		Lesson lesson = saveLesson(curriculum, 1);
 		Plan plan = savePlan(curriculum);
 		flushAndClear();
@@ -173,7 +216,7 @@ class PlanLessonCompleterTest {
 
 	@Test
 	void 없는_플랜이나_다른_사용자의_플랜은_조회할_수_없다() {
-		Curriculum curriculum = saveCurriculum(false);
+		Curriculum curriculum = saveCurriculum();
 		Lesson lesson = saveLesson(curriculum, 1);
 		Plan plan = savePlan(curriculum);
 		flushAndClear();
@@ -183,12 +226,12 @@ class PlanLessonCompleterTest {
 		assertThatThrownBy(() -> completer.complete(43L, plan.getId(), lesson.getId()))
 				.isInstanceOf(PlanNotFoundException.class);
 		assertThat(findPlan(plan).getCompletedLessonIds()).isEmpty();
-		assertThat(progressRepository.findByUserIdAndLessonId(USER_ID, lesson.getId())).isEmpty();
+		assertThat(progressRepository.findByUserIdAndDogIdAndLessonId(USER_ID, dogId(), lesson.getId())).isEmpty();
 	}
 
 	@Test
 	void 교체된_플랜은_이미_완료한_레슨의_재요청도_거절한다() {
-		Curriculum curriculum = saveCurriculum(false);
+		Curriculum curriculum = saveCurriculum();
 		Lesson lesson = saveLesson(curriculum, 1);
 		Plan plan = savePlan(curriculum);
 		plan.completeLesson(lesson.getId());
@@ -197,12 +240,83 @@ class PlanLessonCompleterTest {
 
 		assertThatThrownBy(() -> completer.complete(USER_ID, plan.getId(), lesson.getId()))
 				.isInstanceOf(PlanNotActiveException.class);
-		assertThat(progressRepository.findByUserIdAndLessonId(USER_ID, lesson.getId())).isEmpty();
+		assertThat(progressRepository.findByUserIdAndDogIdAndLessonId(USER_ID, dogId(), lesson.getId())).isEmpty();
+		assertThat(trainedLessonRepository.count()).isZero();
+	}
+
+	@Test
+	void 플랜_레슨을_완료하면_그날_플랜으로_훈련한_기록과_커리큘럼_진행_기록을_남긴다() {
+		Curriculum curriculum = saveCurriculum();
+		Lesson lesson = saveLesson(curriculum, 1);
+		Plan plan = savePlan(curriculum);
+		flushAndClear();
+
+		completer.complete(USER_ID, plan.getId(), lesson.getId());
+		flushAndClear();
+
+		List<TrainedLesson> trainedLessons = findTrainedLessons();
+		assertThat(trainedLessons).hasSize(1);
+		TrainedLesson trainedLesson = trainedLessons.getFirst();
+		assertThat(trainedLesson.getLessonId()).isEqualTo(lesson.getId());
+		assertThat(trainedLesson.getSource()).isEqualTo(TrainingSource.PLAN);
+		assertThat(curriculumProgressRepository.findByUserIdAndDogIdAndCurriculumIdAndTrainedDate(USER_ID, dogId(),
+				curriculum.getId(), today()))
+				.get().extracting(CurriculumProgress::getStatus).isEqualTo(CurriculumProgressStatus.PENDING);
+	}
+
+	@Test
+	void 이미_완료한_플랜_레슨을_다시_요청하면_횟수는_그대로_두고_그날_훈련한_기록을_남긴다() {
+		Curriculum curriculum = saveCurriculum();
+		Lesson first = saveLesson(curriculum, 1);
+		saveLesson(curriculum, 2);
+		Plan plan = savePlan(curriculum);
+		plan.completeLesson(first.getId());
+		flushAndClear();
+
+		completer.complete(USER_ID, plan.getId(), first.getId());
+		flushAndClear();
+
+		assertThat(progressRepository.findByUserIdAndDogIdAndLessonId(USER_ID, dogId(), first.getId())).isEmpty();
+		assertThat(findPlan(plan).getCompletedLessonIds()).containsExactly(first.getId());
+		assertThat(findTrainedLessons()).extracting(TrainedLesson::getLessonId, TrainedLesson::getSource)
+				.containsExactly(tuple(first.getId(), TrainingSource.PLAN));
+		assertThat(curriculumProgressRepository.count()).isOne();
+	}
+
+	@Test
+	void 같은_날_플랜_레슨을_완료하고_다시_요청해도_훈련한_기록은_하나만_남는다() {
+		Curriculum curriculum = saveCurriculum();
+		Lesson first = saveLesson(curriculum, 1);
+		saveLesson(curriculum, 2);
+		Plan plan = savePlan(curriculum);
+		flushAndClear();
+		completer.complete(USER_ID, plan.getId(), first.getId());
+		flushAndClear();
+
+		completer.complete(USER_ID, plan.getId(), first.getId());
+		flushAndClear();
+
+		assertThat(findTrainedLessons()).hasSize(1);
+		assertThat(curriculumProgressRepository.count()).isOne();
+	}
+
+	@Test
+	void 완료한_플랜_레슨이_삭제된_뒤_다시_요청하면_기록_없이_끝난다() {
+		Curriculum curriculum = saveCurriculum();
+		saveLesson(curriculum, 1);
+		Plan plan = savePlan(curriculum);
+		plan.completeLesson(ABSENT_LESSON_ID);
+		flushAndClear();
+
+		completer.complete(USER_ID, plan.getId(), ABSENT_LESSON_ID);
+		flushAndClear();
+
+		assertThat(trainedLessonRepository.count()).isZero();
 	}
 
 	@Test
 	void 완료된_플랜에는_새_레슨을_완료할_수_없다() {
-		Curriculum curriculum = saveCurriculum(false);
+		Curriculum curriculum = saveCurriculum();
 		Lesson lesson = saveLesson(curriculum, 1);
 		Plan plan = savePlan(curriculum);
 		plan.complete(Instant.now());
@@ -215,7 +329,7 @@ class PlanLessonCompleterTest {
 
 	@Test
 	void 현재_차례가_아니거나_목록에_없는_레슨은_거절한다() {
-		Curriculum curriculum = saveCurriculum(false);
+		Curriculum curriculum = saveCurriculum();
 		saveLesson(curriculum, 1);
 		Lesson later = saveLesson(curriculum, 2);
 		Plan plan = savePlan(curriculum);
@@ -226,15 +340,15 @@ class PlanLessonCompleterTest {
 		assertThatThrownBy(() -> completer.complete(USER_ID, plan.getId(), -1L))
 				.isInstanceOf(PlanLessonOrderException.class);
 		assertThat(findPlan(plan).getCompletedLessonIds()).isEmpty();
-		assertThat(progressRepository.findByUserIdAndLessonId(USER_ID, later.getId())).isEmpty();
+		assertThat(progressRepository.findByUserIdAndDogIdAndLessonId(USER_ID, dogId(), later.getId())).isEmpty();
 	}
 
 	@Test
 	void 일반_학습에서_완료한_레슨도_플랜에서는_순서대로_다시_완료한다() {
-		Curriculum curriculum = saveCurriculum(false);
+		Curriculum curriculum = saveCurriculum();
 		Lesson first = saveLesson(curriculum, 1);
 		Lesson later = saveLesson(curriculum, 2);
-		LessonProgress progress = LessonProgress.start(USER_ID, later.getId());
+		LessonProgress progress = LessonProgress.start(USER_ID, dogId(), later.getId());
 		progress.complete();
 		progressRepository.save(progress);
 		Plan plan = savePlan(curriculum);
@@ -251,20 +365,6 @@ class PlanLessonCompleterTest {
 	}
 
 	@Test
-	void 이용권이_없으면_일반_학습과_플랜_기록을_변경하지_않는다() {
-		Curriculum curriculum = saveCurriculum(true);
-		Lesson lesson = saveLesson(curriculum, 1);
-		Plan plan = savePlan(curriculum);
-		flushAndClear();
-
-		assertThatThrownBy(() -> completer.complete(USER_ID, plan.getId(), lesson.getId()))
-				.isInstanceOf(EntitlementRequiredException.class);
-		assertThat(findPlan(plan).getCompletedLessonIds()).isEmpty();
-		assertThat(findPlan(plan).getStatus()).isEqualTo(PlanStatus.ACTIVE);
-		assertThat(progressRepository.findByUserIdAndLessonId(USER_ID, lesson.getId())).isEmpty();
-	}
-
-	@Test
 	@Transactional(propagation = Propagation.NOT_SUPPORTED)
 	void 같은_트랜잭션이_실패하면_flush된_일반_학습과_플랜_저장을_모두_롤백한다() {
 		TransactionTemplate transaction = new TransactionTemplate(transactionManager);
@@ -272,7 +372,7 @@ class PlanLessonCompleterTest {
 		AtomicReference<Long> lessonId = new AtomicReference<>();
 
 		assertThatThrownBy(() -> transaction.executeWithoutResult(status -> {
-			Curriculum curriculum = saveCurriculum(false);
+			Curriculum curriculum = saveCurriculum();
 			Lesson lesson = saveLesson(curriculum, 1);
 			Plan plan = savePlan(curriculum);
 			planId.set(plan.getId());
@@ -287,29 +387,29 @@ class PlanLessonCompleterTest {
 
 		transaction.executeWithoutResult(status -> {
 			assertThat(planRepository.findById(planId.get())).isEmpty();
-			assertThat(progressRepository.findByUserIdAndLessonId(USER_ID, lessonId.get())).isEmpty();
+			assertThat(progressRepository.findByUserIdAndDogIdAndLessonId(USER_ID, dogId(), lessonId.get())).isEmpty();
 		});
 	}
 
 	private Plan savePlan(Curriculum... curriculums) {
 		List<Long> curriculumIds = List.of(curriculums).stream().map(Curriculum::getId).toList();
-		PlanCreateCommand command = new PlanCreateCommand(USER_ID, 1L, "초코의 훈련 플랜", "목표");
+		PlanCreateCommand command = new PlanCreateCommand(USER_ID, dogId(), "초코의 훈련 플랜", "목표");
 		Plan plan = Plan.create(command, curriculumIds);
 		return planRepository.save(plan);
 	}
 
-	private Curriculum saveCurriculum(boolean premium) {
-		TrainingCategory category = TrainingCategoryFixture.create("교육", 1, null, null, EntitlementType.PUPPY);
+	private Curriculum saveCurriculum() {
+		TrainingCategory category = TrainingCategoryFixture.create("교육", 1, null, null);
 		entityManager.persist(category);
 		Topic topic = TopicFixture.create(category, "토픽", 1, null, null, null);
 		entityManager.persist(topic);
-		Curriculum curriculum = CurriculumFixture.create(topic, "커리큘럼", 1, null, null, premium);
+		Curriculum curriculum = CurriculumFixture.create(topic, "커리큘럼", 1, null, null);
 		entityManager.persist(curriculum);
 		return curriculum;
 	}
 
 	private Curriculum saveCurriculum(Topic topic, int order) {
-		Curriculum curriculum = CurriculumFixture.create(topic, "커리큘럼", order, null, null, false);
+		Curriculum curriculum = CurriculumFixture.create(topic, "커리큘럼", order, null, null);
 		entityManager.persist(curriculum);
 		return curriculum;
 	}
@@ -320,12 +420,28 @@ class PlanLessonCompleterTest {
 		return lesson;
 	}
 
+	private Long dogId() {
+		if (dogId == null) {
+			dogId = dogRepository.save(DogFixture.selected(USER_ID)).getId();
+		}
+		return dogId;
+	}
+
+	private List<TrainedLesson> findTrainedLessons() {
+		return trainedLessonRepository.findAllByUserIdAndDogIdAndTrainedDateBetween(USER_ID, dogId(), today(),
+				today());
+	}
+
+	private LocalDate today() {
+		return LocalDate.now(SEOUL);
+	}
+
 	private Plan findPlan(Plan plan) {
 		return planRepository.findById(plan.getId()).orElseThrow();
 	}
 
 	private int completedCount(Lesson lesson) {
-		return progressRepository.findByUserIdAndLessonId(USER_ID, lesson.getId())
+		return progressRepository.findByUserIdAndDogIdAndLessonId(USER_ID, dogId(), lesson.getId())
 				.orElseThrow().getCompletedCount();
 	}
 

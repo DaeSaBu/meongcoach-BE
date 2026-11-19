@@ -24,7 +24,7 @@ public class ChatQueryService implements ChatFinder {
 	private final ChatMessageRepository messages;
 
 	public ChatConversation findMemberConversation(long memberId) {
-		return conversations.findByMemberId(memberId).orElseThrow(ChatAccessDeniedException::new);
+		return conversations.findByMemberIdAndClosedAtIsNull(memberId).orElseThrow(ChatAccessDeniedException::new);
 	}
 
 	public ChatConversation findConversation(Long userId, long conversationId) {
@@ -41,7 +41,7 @@ public class ChatQueryService implements ChatFinder {
 	}
 
 	private void verifyAccess(ChatConversation conversation, long userId) {
-		if (conversation.isClosed() || (!conversation.isOwnedBy(userId) && !isOperator())) {
+		if (!conversation.isOwnedBy(userId) && !isOperator()) {
 			throw new ChatAccessDeniedException();
 		}
 	}
@@ -55,14 +55,36 @@ public class ChatQueryService implements ChatFinder {
 	}
 
 	public List<ChatConversation> conversations(long before, LocalDateTime beforeUpdatedAt) {
-		if ((before == 0) != (beforeUpdatedAt == null)) {
-			throw new ChatCursorInvalidException();
-		}
+		verifyConversationCursor(before, beforeUpdatedAt);
 		var page = PageRequest.of(0, 50);
 		if (before == 0) {
-			return conversations.findAllByOrderByLastMessageAtDescIdDesc(page);
+			return conversations.findByClosedAtIsNullOrderByLastMessageAtDescIdDesc(page);
 		}
 		return conversations.findPrevious(beforeUpdatedAt, before, page);
+	}
+
+	public List<ChatConversation> closedConversations(long before, LocalDateTime beforeUpdatedAt) {
+		verifyConversationCursor(before, beforeUpdatedAt);
+		var page = PageRequest.of(0, 50);
+		if (before == 0) {
+			return conversations.findByClosedAtIsNotNullOrderByLastMessageAtDescIdDesc(page);
+		}
+		return conversations.findPreviousClosed(beforeUpdatedAt, before, page);
+	}
+
+	public List<ChatConversation> memberConversations(Long memberId, long before, LocalDateTime beforeUpdatedAt) {
+		verifyConversationCursor(before, beforeUpdatedAt);
+		var page = PageRequest.of(0, 50);
+		if (before == 0) {
+			return conversations.findByMemberIdOrderByLastMessageAtDescIdDesc(memberId, page);
+		}
+		return conversations.findPreviousByMemberId(memberId, beforeUpdatedAt, before, page);
+	}
+
+	private void verifyConversationCursor(long before, LocalDateTime beforeUpdatedAt) {
+		if ((before == 0) ^ (beforeUpdatedAt == null)) {
+			throw new ChatCursorInvalidException();
+		}
 	}
 
 	public List<ChatMessage> latestMessages(Long userId, long conversationId) {

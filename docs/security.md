@@ -95,12 +95,12 @@ SHA-1 검증용이라 id_token의 `aud`가 되지 않습니다), 애플은 **iOS
 | 3-1 | `/api/dogs/profile/image` | `USER`, `ONBOARDING_USER`, `EXPERT`, `ADMIN` |
 | 4 | `DELETE /api/auth/me` | `USER`, `ONBOARDING_USER` |
 | 4-1 | `GET /api/users/me` | `USER`, `ONBOARDING_USER`, `EXPERT`, `ADMIN` |
-| 4-2 | `GET /api/support/conversations` | `ADMIN`, `EXPERT` |
+| 4-2 | `POST /api/coupons/redemptions` | `USER`, `ONBOARDING_USER`, `EXPERT`, `ADMIN` |
+| 4-3 | `GET /api/support/conversations` | `ADMIN`, `EXPERT` |
 | 5 | 그 외 전부 | `USER`, `EXPERT`, `ADMIN` |
 
 `/internal/**`는 이 체인이 아니라 notification 모듈이 정의한 별도 체인(`@Order(0)`, `securityMatcher("/internal/**")`)이 먼저 잡습니다.
 JWT 대신 `X-Internal-Secret` 헤더를 검사하며, 앱 버전 게이트도 `/api/` 경로만 보므로 걸리지 않습니다. ([notification.md](notification.md) "인증")
-채널톡 웹훅 인증은 [상담 모듈](support.md)이 소유합니다.
 
 3번은 온보딩 화면에 필요한 경로입니다 — 온보딩 완료 요청에 프로필 이미지 URL이 들어가므로
 기본 프로필 이미지 조회는 온보딩 중에도 열려 있어야 합니다. 이미지 업로드 presigned URL 발급은
@@ -113,6 +113,9 @@ JWT 대신 `X-Internal-Secret` 헤더를 검사하며, 앱 버전 게이트도 `
 
 4번은 스토어 심사관이 온보딩을 마치지 않은 채 탈퇴를 시험할 수 있어서 둔 예외입니다. `DELETE` 메서드만 열어,
 같은 경로에 나중에 생길 회원 조회·수정이 온보딩 회원에게 함께 열리지 않게 합니다.
+
+4-2번은 온보딩 화면에서 쿠폰 코드를 입력하기 때문에 열었습니다. `POST` 메서드만 열어,
+같은 경로에 나중에 생길 쿠폰 사용 내역 조회가 온보딩 회원에게 함께 열리지 않게 합니다. ([coupon.md](coupon.md))
 
 역할 어휘의 단일 원천은 `shared/security/AuthorityRole`입니다. `TokenType`과 같은 부류
 (영속되지 않는 보안 어휘)라서 shared에 두고, `user/domain/UserRole`(영속 도메인 상태)이
@@ -185,7 +188,7 @@ XSS 한 번으로 리프레시 토큰이 새어 나갑니다. 그래서 `X-App-P
 
 ## 필터 체인 구성
 
-앱 요청은 기본 무상태 체인에서 처리합니다. 내부 알림은 [알림 모듈](notification.md), 채널톡 웹훅은 [상담 모듈](support.md)의 전용 인증 체인에서 처리합니다.
+앱 요청은 기본 무상태 체인에서 처리합니다. 내부 알림은 [알림 모듈](notification.md)의 전용 인증 체인에서 처리합니다.
 
 - 앱 버전 게이트 — `CorsFilter` 바로 뒤에 `shared/security/AppVersionFilter`를 두어 인증보다 먼저 검사합니다.
   - CORS 뒤에 두어야 브라우저 preflight(앱 헤더 값이 없음)를 `CorsFilter`가 먼저 응답하고, 426·400 응답에도 CORS 헤더가 붙습니다.

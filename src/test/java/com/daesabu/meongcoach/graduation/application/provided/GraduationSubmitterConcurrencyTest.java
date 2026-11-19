@@ -57,6 +57,7 @@ class GraduationSubmitterConcurrencyTest {
 	private Long topicId;
 	private Long categoryId;
 	private Long submissionId;
+	private Long dogId;
 
 	@BeforeEach
 	void setUp() {
@@ -64,10 +65,11 @@ class GraduationSubmitterConcurrencyTest {
 		newTransaction = new TransactionTemplate(transactionManager);
 		newTransaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
 		transaction.executeWithoutResult(status -> {
+			dogId = topicSeeder.selectedDog(USER_ID);
 			Topic topic = topicSeeder.completedTopic(USER_ID, "동시 제출 검증");
 			topicId = topic.getId();
 			categoryId = topic.getTrainingCategory().getId();
-			GraduationSubmission graduation = graduationSubmitter.submit(USER_ID, topicId, request("first"));
+			GraduationSubmission graduation = graduationSubmitter.submit(USER_ID, null, topicId, request("first"));
 			submissionId = graduation.getId();
 		});
 	}
@@ -77,6 +79,9 @@ class GraduationSubmitterConcurrencyTest {
 		transaction.executeWithoutResult(status -> {
 			jdbcTemplate.update("delete from graduation_submissions where user_id = ?", USER_ID);
 			jdbcTemplate.update("delete from lesson_progress where user_id = ?", USER_ID);
+			jdbcTemplate.update("delete from trained_lessons where user_id = ?", USER_ID);
+			jdbcTemplate.update("delete from curriculum_progress where user_id = ?", USER_ID);
+			jdbcTemplate.update("delete from dogs where user_id = ?", USER_ID);
 			jdbcTemplate.update(
 					"delete from lessons where curriculum_id in (select id from curriculums where topic_id = ?)",
 					topicId);
@@ -120,8 +125,8 @@ class GraduationSubmitterConcurrencyTest {
 		try (var executor = Executors.newSingleThreadExecutor()) {
 			var loser = new AtomicReference<Future<?>>();
 			transaction.executeWithoutResult(status -> {
-				graduationSubmitter.submit(USER_ID, topicId, request("winner"));
-				loser.set(executor.submit(() -> graduationSubmitter.submit(USER_ID, topicId, request("loser"))));
+				graduationSubmitter.submit(USER_ID, null, topicId, request("winner"));
+				loser.set(executor.submit(() -> graduationSubmitter.submit(USER_ID, null, topicId, request("loser"))));
 				long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
 				boolean waiting = false;
 				while (System.nanoTime() < deadline && !waiting) {
@@ -140,7 +145,7 @@ class GraduationSubmitterConcurrencyTest {
 				"select count(*) from graduation_submissions where user_id = ? and status = 'SUBMITTED'", Integer.class,
 				USER_ID)).isEqualTo(1);
 		assertThat(
-				graduationSubmissionRepository.findFirstByUserIdAndTopicIdOrderByIdDesc(USER_ID, topicId).orElseThrow()
+				graduationSubmissionRepository.findFirstByUserIdAndDogIdAndTopicIdOrderByIdDesc(USER_ID, dogId, topicId).orElseThrow()
 						.getVideoObjectKey()).isEqualTo(key("winner"));
 		if (revision) {
 			assertThat(

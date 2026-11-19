@@ -3,7 +3,6 @@ package com.daesabu.meongcoach.training.domain;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -11,22 +10,8 @@ import org.springframework.test.util.ReflectionTestUtils;
 class TopicTest {
 
 	@Test
-	void 카테고리가_요구하는_이용권을_반환한다() {
-		Topic topic = topicIn(EntitlementType.PUPPY);
-
-		assertThat(topic.findRequiredEntitlementType()).contains(EntitlementType.PUPPY);
-	}
-
-	@Test
-	void 카테고리가_이용권을_요구하지_않으면_빈_값을_반환한다() {
-		Topic topic = topicIn(null);
-
-		assertThat(topic.findRequiredEntitlementType()).isEmpty();
-	}
-
-	@Test
 	void 모든_커리큘럼의_레슨_ID를_모아_반환한다() {
-		Topic topic = topicIn(null);
+		Topic topic = TopicFixture.create(10L);
 		Curriculum first = CurriculumFixture.create(topic, "1단계", 1, null, null);
 		Curriculum second = CurriculumFixture.create(topic, "2단계", 2, null, null);
 		attachLesson(first, 1L);
@@ -88,10 +73,10 @@ class TopicTest {
 		LessonFixture.create(curriculum, 1001L);
 		LessonFixture.create(curriculum, 1002L);
 
-		TopicCompletion completion = topic.completion(LessonProgresses.from(List.of()));
+		LessonProgresses progresses = LessonProgresses.from(List.of());
 
-		assertThat(completion.completedLessons()).isZero();
-		assertThat(completion.status()).isEqualTo(ProgressStatus.NOT_STARTED);
+		assertThat(topic.countCompletedLessons(progresses)).isZero();
+		assertThat(topic.determineStatus(progresses)).isEqualTo(ProgressStatus.NOT_STARTED);
 	}
 
 	@Test
@@ -103,10 +88,10 @@ class TopicTest {
 		LessonFixture.create(first, 1002L);
 		Lesson thirdLesson = LessonFixture.create(second, 2001L);
 
-		TopicCompletion completion = topic.completion(progresses(firstLesson, thirdLesson));
+		LessonProgresses progresses = progresses(firstLesson, thirdLesson);
 
-		assertThat(completion.completedLessons()).isEqualTo(2);
-		assertThat(completion.status()).isEqualTo(ProgressStatus.IN_PROGRESS);
+		assertThat(topic.countCompletedLessons(progresses)).isEqualTo(2);
+		assertThat(topic.determineStatus(progresses)).isEqualTo(ProgressStatus.IN_PROGRESS);
 	}
 
 	@Test
@@ -116,10 +101,10 @@ class TopicTest {
 		Lesson firstLesson = LessonFixture.create(curriculum, 1001L);
 		Lesson secondLesson = LessonFixture.create(curriculum, 1002L);
 
-		TopicCompletion completion = topic.completion(progresses(firstLesson, secondLesson));
+		LessonProgresses progresses = progresses(firstLesson, secondLesson);
 
-		assertThat(completion.completedLessons()).isEqualTo(2);
-		assertThat(completion.status()).isEqualTo(ProgressStatus.COMPLETED);
+		assertThat(topic.countCompletedLessons(progresses)).isEqualTo(2);
+		assertThat(topic.determineStatus(progresses)).isEqualTo(ProgressStatus.COMPLETED);
 	}
 
 	@Test
@@ -139,14 +124,9 @@ class TopicTest {
 		ReflectionTestUtils.setField(curriculum, "lessons", List.of(lesson));
 	}
 
-	private Topic topicIn(EntitlementType requiredEntitlementType) {
-		TrainingCategory category = TrainingCategoryFixture.create("퍼피 교육", 1, null, null, requiredEntitlementType);
-		return TopicFixture.create(category, "앉아", 1, null, null, null);
-	}
-
 	private LessonProgresses progresses(Lesson... lessons) {
 		List<LessonProgress> records = List.of(lessons).stream().map(lesson -> {
-			LessonProgress progress = LessonProgress.start(1L, lesson.getId());
+			LessonProgress progress = LessonProgress.start(1L, 7L, lesson.getId());
 			progress.complete();
 			return progress;
 		}).toList();

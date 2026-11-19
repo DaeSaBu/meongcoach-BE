@@ -84,7 +84,7 @@ class CurriculumRepositoryTest {
 	void 커리큘럼을_제작_전문가와_함께_조회한다() {
 		Expert expert = entityManager.persist(ExpertFixture.create("정은겸", "교수", null, null));
 		Curriculum curriculum = entityManager.persist(
-				CurriculumFixture.create(persistTopic("기본 교육"), "커리큘럼", 1, null, null, false, expert));
+				CurriculumFixture.create(persistTopic("기본 교육"), "커리큘럼", 1, null, null, expert));
 		flushAndClear();
 
 		Curriculum found = curriculumRepository.findById(curriculum.getId()).orElseThrow();

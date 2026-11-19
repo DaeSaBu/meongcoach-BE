@@ -67,6 +67,9 @@ class GraduationSubmitterAlertTest {
 		transaction.executeWithoutResult(status -> {
 			jdbcTemplate.update("delete from graduation_submissions where user_id = ?", USER_ID);
 			jdbcTemplate.update("delete from lesson_progress where user_id = ?", USER_ID);
+			jdbcTemplate.update("delete from trained_lessons where user_id = ?", USER_ID);
+			jdbcTemplate.update("delete from curriculum_progress where user_id = ?", USER_ID);
+			jdbcTemplate.update("delete from dogs where user_id = ?", USER_ID);
 			jdbcTemplate.update(
 					"delete from lessons where curriculum_id in (select id from curriculums where topic_id = ?)",
 					topicId);
@@ -78,7 +81,7 @@ class GraduationSubmitterAlertTest {
 
 	@Test
 	void 제출이_커밋되면_제출_정보를_알린다() {
-		GraduationSubmission submission = graduationSubmitter.submit(USER_ID, topicId, request());
+		GraduationSubmission submission = graduationSubmitter.submit(USER_ID, null, topicId, request());
 
 		ArgumentCaptor<Alert> captor = ArgumentCaptor.forClass(Alert.class);
 		verify(alertSender, timeout(ASYNC_TIMEOUT_MILLIS)).send(captor.capture());
@@ -93,7 +96,7 @@ class GraduationSubmitterAlertTest {
 	@Test
 	void 제출_트랜잭션이_롤백되면_알리지_않는다() {
 		transaction.executeWithoutResult(status -> {
-			graduationSubmitter.submit(USER_ID, topicId, request());
+			graduationSubmitter.submit(USER_ID, null, topicId, request());
 			status.setRollbackOnly();
 		});
 
@@ -104,7 +107,7 @@ class GraduationSubmitterAlertTest {
 	void 제출이_거절되면_알리지_않는다() {
 		GraduationSubmissionRequest invalidKey = new GraduationSubmissionRequest("videos/graduation/invalid.mp4");
 
-		assertThatThrownBy(() -> graduationSubmitter.submit(USER_ID, topicId, invalidKey))
+		assertThatThrownBy(() -> graduationSubmitter.submit(USER_ID, null, topicId, invalidKey))
 				.isInstanceOf(InvalidGraduationVideoKeyException.class);
 
 		verify(alertSender, after(ASYNC_SETTLE_MILLIS).never()).send(any());

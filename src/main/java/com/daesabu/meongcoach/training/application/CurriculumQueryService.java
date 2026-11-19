@@ -1,6 +1,6 @@
 package com.daesabu.meongcoach.training.application;
 
-import com.daesabu.meongcoach.entitlement.application.provided.EntitlementChecker;
+import com.daesabu.meongcoach.dog.application.provided.DogProfileFinder;
 import com.daesabu.meongcoach.training.application.provided.CurriculumFinder;
 import com.daesabu.meongcoach.training.application.provided.dto.CurriculumDetailResult;
 import com.daesabu.meongcoach.training.application.provided.dto.CurriculumListResult;
@@ -28,28 +28,27 @@ public class CurriculumQueryService implements CurriculumFinder {
 	private final CurriculumRepository curriculumRepository;
 	private final TopicSelectionRepository topicSelectionRepository;
 	private final LessonProgressRepository lessonProgressRepository;
-	private final EntitlementChecker entitlementChecker;
+	private final DogProfileFinder dogProfileFinder;
 
 	@Override
-	public CurriculumListResult findCurriculums(Long userId) {
-		Topic topic = findSelectedOrFirstTopic(userId);
-		LessonProgresses progresses = findProgresses(userId, topic.getAllLessonIds());
-		boolean hasEntitlement = hasEntitlement(userId, topic);
-		return CurriculumListResult.of(topic, progresses, hasEntitlement);
+	public CurriculumListResult findCurriculums(Long userId, Long dogId) {
+		Long resolvedDogId = dogProfileFinder.findDogProfileOrSelected(userId, dogId).id();
+		Topic topic = findSelectedOrFirstTopic(userId, resolvedDogId);
+		LessonProgresses progresses = findProgresses(userId, resolvedDogId, topic.getAllLessonIds());
+		return CurriculumListResult.of(topic, progresses);
 	}
 
 	@Override
-	public CurriculumDetailResult findCurriculum(Long userId, Long curriculumId) {
+	public CurriculumDetailResult findCurriculum(Long userId, Long dogId, Long curriculumId) {
 		Curriculum curriculum = curriculumRepository.findById(curriculumId)
 				.orElseThrow(() -> new CurriculumNotFoundException(curriculumId));
-		curriculum.findRequiredEntitlementType()
-				.ifPresent(type -> entitlementChecker.validateEntitlement(userId, type));
-		LessonProgresses progresses = findProgresses(userId, curriculum.getLessonIds());
+		Long resolvedDogId = dogProfileFinder.findDogProfileOrSelected(userId, dogId).id();
+		LessonProgresses progresses = findProgresses(userId, resolvedDogId, curriculum.getLessonIds());
 		return new CurriculumDetailResult(curriculum, progresses);
 	}
 
-	private Topic findSelectedOrFirstTopic(Long userId) {
-		return topicSelectionRepository.findByUserId(userId)
+	private Topic findSelectedOrFirstTopic(Long userId, Long dogId) {
+		return topicSelectionRepository.findByUserIdAndDogId(userId, dogId)
 				.map(TopicSelection::getTopicId)
 				.flatMap(topicRepository::findById)
 				.orElseGet(this::findFirstTopic);
@@ -60,14 +59,9 @@ public class CurriculumQueryService implements CurriculumFinder {
 				.orElseThrow(TopicNotConfiguredException::new);
 	}
 
-	private boolean hasEntitlement(Long userId, Topic topic) {
-		return topic.findRequiredEntitlementType()
-				.map(type -> entitlementChecker.hasEntitlement(userId, type))
-				.orElse(true);
-	}
-
-	private LessonProgresses findProgresses(Long userId, List<Long> lessonIds) {
-		List<LessonProgress> progresses = lessonProgressRepository.findAllByUserIdAndLessonIdIn(userId, lessonIds);
+	private LessonProgresses findProgresses(Long userId, Long dogId, List<Long> lessonIds) {
+		List<LessonProgress> progresses = lessonProgressRepository
+				.findAllByUserIdAndDogIdAndLessonIdIn(userId, dogId, lessonIds);
 		return LessonProgresses.from(progresses);
 	}
 }

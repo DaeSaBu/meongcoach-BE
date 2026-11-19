@@ -19,7 +19,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.daesabu.meongcoach.entitlement.domain.exception.EntitlementRequiredException;
 import com.daesabu.meongcoach.training.application.provided.CurrentPlanFinder;
 import com.daesabu.meongcoach.training.application.provided.PlanLessonCompleter;
 import com.daesabu.meongcoach.training.application.provided.PlanRegister;
@@ -195,17 +194,6 @@ class PlanControllerTest {
 	}
 
 	@Test
-	void 플랜_레슨의_이용권이_없으면_403을_반환한다() throws Exception {
-		doThrow(new EntitlementRequiredException()).when(planLessonCompleter).complete(42L, 21L, 11L);
-
-		mockMvc.perform(post("/api/plans/{planId}/lessons/{lessonId}/completion", 21L, 11L)
-						.principal(CURRENT_USER).header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
-				.andExpect(status().isForbidden())
-				.andExpect(jsonPath("$.code").value("ENTITLEMENT_REQUIRED"))
-				.andDo(document("plan/lesson-complete-entitlement-error", responseFields(ERROR_FIELDS)));
-	}
-
-	@Test
 	void 완료된_플랜에_회고를_기록하고_마무리_요약을_반환한다() throws Exception {
 		PlanOutcomeRecordRequest request = new PlanOutcomeRecordRequest("PARTIAL");
 		PlanCreateCommand command = new PlanCreateCommand(42L, 3L, "초코의 훈련 플랜", "선택한 훈련을 차근차근 익혀요");
@@ -321,7 +309,7 @@ class PlanControllerTest {
 		ReflectionTestUtils.setField(plan, "id", 21L);
 		ReflectionTestUtils.setField(plan, "createdAt", LocalDateTime.of(2026, 10, 23, 12, 0));
 		PlanCurriculumProgressResult curriculum = new PlanCurriculumProgressResult(7L, 3L, "현관 예절", "현관 매너", "현관에서 차분하게 기다리는 훈련", 2, 1,
-				ProgressStatus.IN_PROGRESS, true, List.of(new PlanLessonProgressResult(11L, "앉아서 기다리기", true),
+				ProgressStatus.IN_PROGRESS, List.of(new PlanLessonProgressResult(11L, "앉아서 기다리기", true),
 				new PlanLessonProgressResult(12L, "문을 열어도 기다리기", false)));
 		given(currentPlanFinder.find(42L, 3L)).willReturn(Optional.of(new CurrentPlanResult(plan, List.of(curriculum))));
 
@@ -334,7 +322,6 @@ class PlanControllerTest {
 				.andExpect(jsonPath("$.plan.expectation").value(nullValue()))
 				.andExpect(jsonPath("$.plan.curriculums[0].topicId").value(3))
 				.andExpect(jsonPath("$.plan.curriculums[0].topicTitle").value("현관 예절"))
-				.andExpect(jsonPath("$.plan.curriculums[0].locked").value(true))
 				.andExpect(jsonPath("$.plan.curriculums[0].status").value("IN_PROGRESS"))
 				.andExpect(jsonPath("$.plan.curriculums[0].lessons[0].completed").value(true))
 				.andExpect(jsonPath("$.plan.curriculums[0].lessons[1].lessonId").value(12))
@@ -359,7 +346,6 @@ class PlanControllerTest {
 						fieldWithPath("plan.curriculums[].totalLessons").description("전체 레슨 수"),
 						fieldWithPath("plan.curriculums[].completedLessons").description("이 플랜에서 완료한 레슨 수"),
 						fieldWithPath("plan.curriculums[].status").description("NOT_STARTED, IN_PROGRESS, COMPLETED"),
-						fieldWithPath("plan.curriculums[].locked").description("이용권이 없어 잠금 표시가 필요한지 여부, 조회 자체는 허용"),
 						fieldWithPath("plan.curriculums[].lessons").description("교육 순서의 레슨 목록"),
 						fieldWithPath("plan.curriculums[].lessons[].lessonId").description("기존 레슨 상세 조회에 사용하는 ID"),
 						fieldWithPath("plan.curriculums[].lessons[].title").description("레슨 제목"),

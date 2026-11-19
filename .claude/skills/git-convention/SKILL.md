@@ -48,7 +48,7 @@ user-invocable: true
 - 여러 모듈에 걸친 변경이나 적절한 이름이 없는 변경은 scope를 생략한다.
 - 영문 소문자와 하이픈으로 작성한다.
 - 이 저장소의 scope 후보는 Spring Modulith 모듈 패키지명과 같다. `auth`(로그인·토큰·자격증명), `user`(회원 역할·상태·프로필), `dog`(반려견 프로필), `training`(훈련 콘텐츠·학습 진도·훈련 플랜),
-  `analysis`(AI 영상 행동 분석), `llm`(AI 콘텐츠 생성·프롬프트 로딩), `onboarding`(온보딩 흐름 조합), `media`(이미지·영상 업로드), `health`(서비스 상태 확인), `entitlement`(이용권 동기화), `community`(게시글·멘션), `graduation`(토픽 수료·실습 인증), `home`(홈 화면 조합), `banner`(배너), `notification`(푸시 알림 토큰·수신 설정), `support`(고객 상담·채널톡 연동), `alert`(개발자 Slack 알림), `shared`(횡단 관심사).
+  `analysis`(AI 영상 행동 분석), `llm`(AI 콘텐츠 생성·프롬프트 로딩), `onboarding`(온보딩 흐름 조합), `media`(이미지·영상 업로드), `health`(서비스 상태 확인), `coupon`(쿠폰 코드 사용), `community`(게시글·멘션), `graduation`(토픽 수료·실습 인증), `home`(홈 화면 조합), `banner`(배너), `notification`(푸시 알림 토큰·수신 설정), `support`(고객 상담·채널톡 연동), `alert`(개발자 Slack 알림), `shared`(횡단 관심사).
 - 새 모듈을 추가하면 이 목록도 함께 갱신한다.
 
 ### Subject
@@ -92,10 +92,11 @@ user-invocable: true
 |---|---|---|
 | `main` | 배포 기준 | 직접 push 금지, `develop`에서만 머지 |
 | `develop` | 통합 개발 | 직접 push 금지, PR로만 머지 |
-| `feature/{이슈번호}` | 기능 개발 | Linear 이슈 기준 생성, `develop`에서 분기, PR base는 `develop` |
+| `feature/{이슈번호}-{작업 내용}` | 기능 개발 | Linear 이슈 기준 생성, `develop`에서 분기, PR base는 `develop` |
 
-- 브랜치명에는 Linear가 제공하는 이슈번호를 소문자로 그대로 쓴다. (예: `feature/dae-179`)
-- 작업 내용을 덧붙일 경우 `feature/dae-179-add-sns-login`처럼 영문 소문자와 하이픈으로 이어 쓴다.
+- 브랜치명에는 Linear가 제공하는 이슈번호를 소문자로 그대로 쓴다. (예: `dae-179`)
+- 이슈번호 뒤에는 작업 내용을 영문 소문자와 하이픈으로 이어 붙인다. (예: `feature/dae-179-add-sns-login`)
+- 작업자가 `feature/dae-720`, `refactor/dae-721`처럼 `{접두사}/dae-{숫자}`까지만 알려 주면 Linear 티켓 번호만 준 것이다. 그 이름 그대로 만들지 않고, 접두사와 이슈번호는 유지한 채 맡은 작업 내용을 요약해 뒤에 붙인 이름으로 브랜치를 만든다. (예: `feature/dae-720` → `feature/dae-720-allow-succeeded-to-failed`)
 - 한 이슈를 여러 브랜치로 나눠야 하는 경우 `feature/dae-179-2`처럼 뒤에 순번을 붙인다.
 - 머지 방향은 `feature → develop → main`이다.
 - 머지 전략은 아래 [PR 컨벤션](#pr-컨벤션)에서 정의한다.

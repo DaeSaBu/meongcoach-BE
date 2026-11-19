@@ -27,6 +27,10 @@ class TopicProgressFinderTest {
 
 	private static final Long USER_ID = 42L;
 
+	private static final Long DOG_ID = 7L;
+
+	private static final Long OTHER_DOG_ID = 8L;
+
 	@Autowired
 	private TopicProgressFinder finder;
 
@@ -46,7 +50,7 @@ class TopicProgressFinderTest {
 		saveLessons(saveCurriculum(firstTopic, 1), 1);
 		flushAndClear();
 
-		List<TopicProgressResult> result = finder.findAll(USER_ID);
+		List<TopicProgressResult> result = finder.findAll(USER_ID, DOG_ID);
 
 		assertThat(result).extracting(TopicProgressResult::id)
 				.containsExactly(firstTopic.getId(), second.getId(), last.getId());
@@ -68,13 +72,13 @@ class TopicProgressFinderTest {
 		List<Lesson> doneLessons = saveLessons(done, 2);
 		Curriculum next = saveCurriculum(topic, 2);
 		List<Lesson> nextLessons = saveLessons(next, 2);
-		complete(USER_ID, doneLessons.get(0));
-		complete(USER_ID, doneLessons.get(1));
-		complete(USER_ID, nextLessons.get(0));
-		complete(43L, nextLessons.get(1));
+		complete(USER_ID, DOG_ID, doneLessons.get(0));
+		complete(USER_ID, DOG_ID, doneLessons.get(1));
+		complete(USER_ID, DOG_ID, nextLessons.get(0));
+		complete(43L, DOG_ID, nextLessons.get(1));
 		flushAndClear();
 
-		TopicProgressResult result = finder.findAll(USER_ID).getFirst();
+		TopicProgressResult result = finder.findAll(USER_ID, DOG_ID).getFirst();
 
 		assertThat(result.totalLessons()).isEqualTo(4);
 		assertThat(result.completedLessons()).isEqualTo(3);
@@ -83,15 +87,31 @@ class TopicProgressFinderTest {
 	}
 
 	@Test
+	void 같은_사용자의_다른_강아지가_완료한_레슨은_세지_않는다() {
+		Topic topic = saveTopic(saveCategory("기본기", 1), "간식", 1);
+		Curriculum curriculum = saveCurriculum(topic, 1);
+		List<Lesson> lessons = saveLessons(curriculum, 2);
+		complete(USER_ID, DOG_ID, lessons.get(0));
+		complete(USER_ID, OTHER_DOG_ID, lessons.get(0));
+		complete(USER_ID, OTHER_DOG_ID, lessons.get(1));
+		flushAndClear();
+
+		TopicProgressResult result = finder.findAll(USER_ID, DOG_ID).getFirst();
+
+		assertThat(result.completedLessons()).isOne();
+		assertThat(result.status()).isEqualTo(ProgressStatus.IN_PROGRESS);
+	}
+
+	@Test
 	void 모든_레슨을_완료한_토픽은_첫_커리큘럼을_다음_커리큘럼으로_반환한다() {
 		Topic topic = saveTopic(saveCategory("기본기", 1), "간식", 1);
 		Curriculum first = saveCurriculum(topic, 1);
-		complete(USER_ID, saveLessons(first, 1).getFirst());
+		complete(USER_ID, DOG_ID, saveLessons(first, 1).getFirst());
 		Curriculum second = saveCurriculum(topic, 2);
-		complete(USER_ID, saveLessons(second, 1).getFirst());
+		complete(USER_ID, DOG_ID, saveLessons(second, 1).getFirst());
 		flushAndClear();
 
-		TopicProgressResult result = finder.findAll(USER_ID).getFirst();
+		TopicProgressResult result = finder.findAll(USER_ID, DOG_ID).getFirst();
 
 		assertThat(result.completedLessons()).isEqualTo(2);
 		assertThat(result.nextCurriculumId()).isEqualTo(first.getId());
@@ -104,7 +124,7 @@ class TopicProgressFinderTest {
 		saveLessons(curriculum, 1);
 		flushAndClear();
 
-		TopicProgressResult result = finder.findAll(USER_ID).getFirst();
+		TopicProgressResult result = finder.findAll(USER_ID, DOG_ID).getFirst();
 
 		assertThat(result.completedLessons()).isZero();
 		assertThat(result.nextCurriculumId()).isEqualTo(curriculum.getId());
@@ -115,13 +135,13 @@ class TopicProgressFinderTest {
 	void 마지막_학습_시각은_토픽에서_가장_최근에_완료한_레슨_기준이다() {
 		Topic topic = saveTopic(saveCategory("기본기", 1), "간식", 1);
 		List<Lesson> lessons = saveLessons(saveCurriculum(topic, 1), 2);
-		LessonProgress older = complete(USER_ID, lessons.get(0));
-		LessonProgress latest = complete(USER_ID, lessons.get(1));
+		LessonProgress older = complete(USER_ID, DOG_ID, lessons.get(0));
+		LessonProgress latest = complete(USER_ID, DOG_ID, lessons.get(1));
 		flushAndClear();
 		setUpdatedAt(older, LocalDateTime.of(2026, 11, 1, 9, 0));
 		setUpdatedAt(latest, LocalDateTime.of(2026, 11, 7, 21, 30));
 
-		TopicProgressResult result = finder.findAll(USER_ID).getFirst();
+		TopicProgressResult result = finder.findAll(USER_ID, DOG_ID).getFirst();
 
 		assertThat(result.lastStudiedAt()).isEqualTo(LocalDateTime.of(2026, 11, 7, 21, 30));
 	}
@@ -136,7 +156,7 @@ class TopicProgressFinderTest {
 		saveLessons(saveCurriculum(topic, 1), 1);
 		flushAndClear();
 
-		List<TopicProgressResult> result = finder.findAll(USER_ID);
+		List<TopicProgressResult> result = finder.findAll(USER_ID, DOG_ID);
 
 		assertThat(result).extracting(TopicProgressResult::id).containsExactly(topic.getId());
 	}
@@ -169,8 +189,8 @@ class TopicProgressFinderTest {
 		return lessons;
 	}
 
-	private LessonProgress complete(Long userId, Lesson lesson) {
-		LessonProgress progress = LessonProgress.start(userId, lesson.getId());
+	private LessonProgress complete(Long userId, Long dogId, Lesson lesson) {
+		LessonProgress progress = LessonProgress.start(userId, dogId, lesson.getId());
 		progress.complete();
 		entityManager.persist(progress);
 		return progress;

@@ -3,7 +3,6 @@ package com.daesabu.meongcoach.training.domain;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -24,7 +23,7 @@ class CurriculumTest {
 	void 완료한_레슨_id에_속한_레슨만_센다() {
 		Curriculum curriculum = curriculumWithLessonIds(1L, 2L, 3L);
 
-		int completed = curriculum.completion(completedProgresses(1L, 3L)).completedLessons();
+		int completed = curriculum.countCompletedLessons(completedProgresses(1L, 3L));
 
 		assertThat(completed).isEqualTo(2);
 	}
@@ -33,7 +32,7 @@ class CurriculumTest {
 	void 다른_커리큘럼의_레슨_id는_세지_않는다() {
 		Curriculum curriculum = curriculumWithLessonIds(1L, 2L);
 
-		int completed = curriculum.completion(completedProgresses(2L, 99L)).completedLessons();
+		int completed = curriculum.countCompletedLessons(completedProgresses(2L, 99L));
 
 		assertThat(completed).isEqualTo(1);
 	}
@@ -43,7 +42,7 @@ class CurriculumTest {
 		Curriculum curriculum = curriculumWithLessonIds();
 		LessonProgresses progresses = completedProgresses();
 
-		assertThatThrownBy(() -> curriculum.completion(progresses))
+		assertThatThrownBy(() -> curriculum.determineStatus(progresses))
 				.isInstanceOf(IllegalStateException.class)
 				.hasMessage("커리큘럼에는 레슨이 하나 이상 있어야 합니다.");
 	}
@@ -61,7 +60,7 @@ class CurriculumTest {
 	void 일부_레슨만_완료하면_진행_중_상태다() {
 		Curriculum curriculum = curriculumWithLessonIds(1L, 2L);
 
-		ProgressStatus status = curriculum.completion(completedProgresses(1L)).status();
+		ProgressStatus status = curriculum.determineStatus(completedProgresses(1L));
 
 		assertThat(status).isEqualTo(ProgressStatus.IN_PROGRESS);
 	}
@@ -70,57 +69,15 @@ class CurriculumTest {
 	void 모든_레슨을_완료하면_완료_상태다() {
 		Curriculum curriculum = curriculumWithLessonIds(1L, 2L);
 
-		ProgressStatus status = curriculum.completion(completedProgresses(1L, 2L)).status();
+		ProgressStatus status = curriculum.determineStatus(completedProgresses(1L, 2L));
 
 		assertThat(status).isEqualTo(ProgressStatus.COMPLETED);
 	}
 
 	@Test
-	void 유료_커리큘럼은_카테고리의_이용권을_요구한다() {
-		Curriculum curriculum = curriculumIn(EntitlementType.PUPPY, true);
-
-		assertThat(curriculum.findRequiredEntitlementType()).contains(EntitlementType.PUPPY);
-	}
-
-	@Test
-	void 맛보기_커리큘럼은_이용권을_요구하지_않는다() {
-		Curriculum curriculum = curriculumIn(EntitlementType.PUPPY, false);
-
-		assertThat(curriculum.findRequiredEntitlementType()).isEmpty();
-	}
-
-	@Test
-	void 이용권이_없는_카테고리의_커리큘럼은_유료여도_이용권을_요구하지_않는다() {
-		Curriculum curriculum = curriculumIn(null, true);
-
-		assertThat(curriculum.findRequiredEntitlementType()).isEmpty();
-	}
-
-	@Test
-	void 이용권을_요구하는_커리큘럼은_이용권이_없으면_잠긴다() {
-		Curriculum curriculum = curriculumIn(EntitlementType.PUPPY, true);
-
-		assertThat(curriculum.isLocked(false)).isTrue();
-	}
-
-	@Test
-	void 이용권을_요구하는_커리큘럼도_이용권이_있으면_잠기지_않는다() {
-		Curriculum curriculum = curriculumIn(EntitlementType.PUPPY, true);
-
-		assertThat(curriculum.isLocked(true)).isFalse();
-	}
-
-	@Test
-	void 이용권을_요구하지_않는_커리큘럼은_이용권이_없어도_잠기지_않는다() {
-		Curriculum curriculum = curriculumIn(EntitlementType.PUPPY, false);
-
-		assertThat(curriculum.isLocked(false)).isFalse();
-	}
-
-	@Test
 	void 제작_전문가가_있으면_전문가를_반환한다() {
 		Expert expert = ExpertFixture.create("정은겸", "교수", null, null);
-		Curriculum curriculum = CurriculumFixture.create(null, "커리큘럼", 1, null, null, false, expert);
+		Curriculum curriculum = CurriculumFixture.create(null, "커리큘럼", 1, null, null, expert);
 
 		assertThat(curriculum.findExpert()).contains(expert);
 	}
@@ -130,12 +87,6 @@ class CurriculumTest {
 		Curriculum curriculum = CurriculumFixture.create(null, "커리큘럼", 1, null, null);
 
 		assertThat(curriculum.findExpert()).isEmpty();
-	}
-
-	private Curriculum curriculumIn(EntitlementType requiredEntitlementType, boolean isPremium) {
-		TrainingCategory category = TrainingCategoryFixture.create("퍼피 교육", 1, null, null, requiredEntitlementType);
-		Topic topic = TopicFixture.create(category, "앉아", 1, null, null, null);
-		return CurriculumFixture.create(topic, "커리큘럼", 1, null, null, isPremium);
 	}
 
 	private Curriculum curriculumWithLessonIds(Long... lessonIds) {
@@ -153,7 +104,7 @@ class CurriculumTest {
 	private LessonProgresses completedProgresses(Long... lessonIds) {
 		List<LessonProgress> progresses = new ArrayList<>();
 		for (Long lessonId : lessonIds) {
-			LessonProgress progress = LessonProgress.start(1L, lessonId);
+			LessonProgress progress = LessonProgress.start(1L, 7L, lessonId);
 			progress.complete();
 			progresses.add(progress);
 		}

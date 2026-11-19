@@ -26,7 +26,7 @@ user-invocable: true
 Java 소스(`src/main/java`, `src/test/java`)의 주석은 interface에만 두고 동작만 적는다. 이 코드를 왜 이렇게 작성했는지는 커밋 body와 PR 설명에 적는다. (주석에 남은 결정이 다음 작성자에게 저장소 규칙으로 읽혀 다른 코드로 번지는 것을 막는다)
 
 - `//` 주석과 `/* */` 블록 주석은 쓰지 않는다. 주석 처리한 코드와 `TODO`도 남기지 않는다.
-- `/** */`는 interface 선언부와 interface 메서드에만 둔다. class·record·enum에는 타입·메서드·필드 어디에도 주석을 두지 않고, `package-info.java`에도 javadoc을 쓰지 않는다. (살아있는 예시: `dog/application/provided/DogRegister`, `entitlement/application/provided/EntitlementSynchronizer`)
+- `/** */`는 interface 선언부와 interface 메서드에만 둔다. class·record·enum에는 타입·메서드·필드 어디에도 주석을 두지 않고, `package-info.java`에도 javadoc을 쓰지 않는다. (살아있는 예시: `dog/application/provided/DogRegister`, `training/application/provided/LessonCompleter`)
 - interface javadoc에는 동작만 짧게 쓴다. 무엇을 받아 무엇을 반환하거나 바꾸는지, 어떤 조건에서 어떤 예외를 던지는지까지만 적는다. 결정 사항, 이렇게 구현하게 된 배경, 다른 방식을 택하지 않은 이유(자기 변호)는 쓰지 않는다.
 	- 판별 기준: 문장에 `~라서`·이유를 잇는 `~(이)라`·`~므로`·`~위해`·`~때문에`·`~대신`·`~가 아니라`가 들어가면 이유 서술이므로 지운다.
 - 이 규칙 이전에 작성한 주석(`//`, class·record·enum javadoc)이 아직 남아 있다. 일괄 삭제하지 않고 해당 파일을 수정할 때 지운다. 남아 있는 주석에 적힌 결정은 저장소 규칙이 아니므로, 그 주석을 근거로 다른 코드를 같은 형태로 바꾸지 않는다. 저장소 전체에 적용할 규칙이라면 AGENTS.md의 "문서 추가 방법"을 따라 이 스킬에 올린다.
@@ -56,7 +56,7 @@ Java 소스(`src/main/java`, `src/test/java`)의 주석은 interface에만 두�
 - 조회만 하는 provided 인터페이스는 `~Finder`, 그 구현은 `application`의 `~QueryService`로 둔다. 리포지토리로 조회하고 없으면 도메인 예외를 던지는 로직(`findBy~(...).orElseThrow(...)`)은 `~Finder` 메서드로 정의하고, `~ModifyService` 같은 다른 서비스는 리포지토리를 직접 호출하지 않고 `~Finder`를 주입받아 쓴다. (살아있는 예시: `community/application/provided/PostFinder` ↔ `PostQueryService`, `PostModifyService.update`) 이 규칙 이전에 만든 `~FinderService`(`BreedFinderService`, `DogProfileFinderService` 등)와 서비스 안의 직접 조회(`DogProfileUpdateService`)는 일괄 바꾸지 않고 해당 코드를 수정할 때 옮긴다.
 - `domain` 루트에는 엔티티·enum·일급 컬렉션·값 객체를 두고, 예외·에러코드는 `domain/exception`으로 분리한다. 값 객체용 하위 패키지(`vo`)는 만들지 않으며, 다른 모듈에 노출하는 값 객체만 `domain/shared`에 둔다.
 - 일급 컬렉션은 엔티티 하나로는 판단할 수 없는 규칙(마리 수 상한, 마지막 한 마리 삭제 금지처럼 한 사용자 소유 목록 전체를 봐야 하는 규칙)을 담을 때만 둔다. 영속화 단위가 아니라 application이 리포지토리로 조회한 목록을 생성자로 넘겨 만들며, 리포지토리를 참조하지 않는다. 규칙은 Spring 없는 단위 테스트로 검증한다. (살아있는 예시: `dog/domain/Dogs`)
-	- 목록 전체를 보고 판단한 결과로 새 엔티티가 생기면 그 생성도 일급 컬렉션이 맡는다. 기존 엔티티는 그 자리에서 바꾸고, 새로 만든 엔티티만 돌려주어 호출자가 저장한다. (살아있는 예시: 활성 이용권의 만료 시각을 반영하고 빠진 이용권은 만료시키며 없던 종류만 새로 부여하는 `entitlement/domain/Entitlements.synchronize`)
+	- 목록 전체를 보고 판단한 결과로 새 엔티티가 생기면 그 생성도 일급 컬렉션이 맡는다. 기존 엔티티는 그 자리에서 바꾸고, 새로 만든 엔티티만 돌려주어 호출자가 저장한다. (살아있는 예시: 이미 있는 시각은 두고 빠진 시각의 기본 수신 설정만 새로 만들어 돌려주는 `notification/domain/NotificationSchedules.createMissingDefaults`)
 - 일급 컬렉션의 규칙을 거쳐야만 호출할 수 있는 엔티티 메서드는 package-private으로 두어 application이 우회하지 못하게 한다. 같은 패키지의 도메인 단위 테스트는 그대로 호출하고, application 테스트는 일급 컬렉션을 경유해 상태를 만든다. (살아있는 예시: `Dog.delete()`)
 
 ---
@@ -122,7 +122,7 @@ Java 소스(`src/main/java`, `src/test/java`)의 주석은 interface에만 두�
 - 컨트롤러/서비스에 개별 `@ExceptionHandler`를 만들지 않고, 예외를 catch해서 에러 DTO를 직접 조립해 반환하지 않는다. 예상치 못한 예외도 전역 핸들러 fallback이 500으로 변환하므로 별도 방어 코드를 두지 않는다.
 - `domain/exception`에 모듈당 1개 `{모듈}ErrorCode` enum을 `ErrorCode` 구현으로 두고, 상수 이름은 `{모듈}_{원인}` 형식의 UPPER_SNAKE_CASE로 전역에서 유일하게 짓는다. `code()`가 `name()`을 반환하므로 상수 이름이 곧 클라이언트 분기용 에러 코드다.
 - 케이스별 구체 예외는 `DomainException`을 상속한 `~Exception`으로 둔다. 구체 타입이 있어야 테스트에서 `isInstanceOf`로 검증할 수 있다. 기본 메시지로 충분하면 `super(ErrorCode)`만 호출하고, 상황 정보가 필요하면 두 번째 인자로 detail을 넘긴다 — **detail은 응답에 그대로 노출되므로 민감 정보를 넣지 않는다.**
-- 클라이언트 요청으로 일어날 수 있는 규칙 위반은 위 `DomainException`으로, 호출 쪽이 이미 걸러야 해서 정상 흐름에서는 일어나지 않는 상태 전이는 `org.springframework.util.Assert.state`로 막는다. `Assert.state`는 호출 코드의 버그를 잡는 최후의 방어선이라 에러 코드 없이 `IllegalStateException`(전역 핸들러에서 500)으로 끝난다. 메시지는 응답에 드러나지 않고 원인은 스택 트레이스로 찾으므로, 값을 붙이지 않은 상수 문자열로 짧게 둔다. `Assert`는 `domain`에서만 쓴다(`AnnotationPatternTest`). (살아있는 예시: 일급 컬렉션이 고른 활성 행만 만료시키는 `Entitlement.expire()`)
+- 클라이언트 요청으로 일어날 수 있는 규칙 위반은 위 `DomainException`으로, 호출 쪽이 이미 걸러야 해서 정상 흐름에서는 일어나지 않는 상태 전이는 `org.springframework.util.Assert.state`로 막는다. `Assert.state`는 호출 코드의 버그를 잡는 최후의 방어선이라 에러 코드 없이 `IllegalStateException`(전역 핸들러에서 500)으로 끝난다. 메시지는 응답에 드러나지 않고 원인은 스택 트레이스로 찾으므로, 값을 붙이지 않은 상수 문자열로 짧게 둔다. `Assert`는 `domain`에서만 쓴다(`AnnotationPatternTest`). (살아있는 예시: 제출 상태에서만 판정하는 `GraduationSubmission.approve()`)
 - 예외를 catch해서 삼키거나 로그만 찍고 다시 던지지 않는다. 로깅은 전역 핸들러가 일괄 수행한다. (중복 로깅 금지)
 - `shared/exception`(`ErrorCode`, `DomainException`)은 순수 Java로 유지한다. `domain`은 상태 가드용 `Assert` 외에는 Spring에 의존할 수 없으므로 `ErrorCode.status()`는 `HttpStatus`가 아닌 `int`를 반환하고 `HttpStatus` 변환은 `GlobalExceptionHandler`에서만 한다. 같은 이유로 `domain`은 `shared/webapi`를 참조하지 않는다.
 - `adapter/integration`은 인프라 예외(`RestClientException` 등)를 그 자리에서 도메인 예외로 번역한다. DTO 조립이 아니라 계층 경계의 타입 번역이라 위 규칙과 충돌하지 않는다. 실패 원인은 구분해 내린다. (예: 소셜 로그인은 토큰 무효 401과 제공자 통신 실패 502를 다른 에러 코드로 내려 클라이언트가 재로그인과 재시도를 구분하게 한다)

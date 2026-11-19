@@ -14,6 +14,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.time.Instant;
@@ -26,7 +27,12 @@ import org.hibernate.type.SqlTypes;
 
 @Getter
 @Entity
-@Table(name = "graduation_submissions")
+@Table(name = "graduation_submissions", indexes = {
+		@Index(name = "uk_graduation_submissions_active", columnList = "user_id, dog_id, (topic_id)", unique = true,
+				options = "WHERE status IN ('SUBMITTED', 'APPROVED')"),
+		@Index(name = "idx_graduation_submissions_user_dog_topic_id",
+				columnList = "user_id, dog_id, topic_id, id DESC")
+})
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class GraduationSubmission extends BaseTimeEntity {
 
@@ -39,6 +45,9 @@ public class GraduationSubmission extends BaseTimeEntity {
 	private Long version;
 	@Column(nullable = false)
 	private Long userId;
+	@Column(nullable = false)
+	private Long dogId;
+
 	@Column(nullable = false)
 	private Long topicId;
 
@@ -65,6 +74,7 @@ public class GraduationSubmission extends BaseTimeEntity {
 	public static GraduationSubmission create(GraduationSubmissionCommand command) {
 		GraduationSubmission submission = new GraduationSubmission();
 		submission.userId = requireNonNull(command.userId());
+		submission.dogId = requireNonNull(command.dogId());
 		submission.topicId = requireNonNull(command.topicId());
 		submission.videoObjectKey = requireNonNull(command.videoObjectKey());
 		submission.submittedAt = requireNonNull(command.submittedAt());

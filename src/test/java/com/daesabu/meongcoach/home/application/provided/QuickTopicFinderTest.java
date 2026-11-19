@@ -84,10 +84,11 @@ class QuickTopicFinderTest {
 
 	@Test
 	void 두_살_전_강아지에게는_시니어를_포함한_모든_카테고리의_새_토픽을_보여_준다() {
-		JUNIOR_OR_LATER_TOPIC_IDS.stream().filter(id -> id != 404L).forEach(this::completeAll);
-		completeAll(1303L);
-		completeAll(1105L);
 		Long dogId = saveDog(USER_ID, TODAY.minusMonths(23));
+		JUNIOR_OR_LATER_TOPIC_IDS.stream().filter(id -> id != 404L).forEach(topicId -> completeAll(dogId, topicId));
+		completeAll(dogId, 1303L);
+		completeAll(dogId, 1105L);
+		flushAndClear();
 
 		List<QuickTopicResult> result = finder.find(USER_ID, dogId);
 
@@ -96,8 +97,9 @@ class QuickTopicFinderTest {
 
 	@Test
 	void 생일이_없는_강아지에게도_토픽을_추천한다() {
-		JUNIOR_OR_LATER_TOPIC_IDS.forEach(this::completeAll);
 		Long dogId = saveDog(USER_ID, null);
+		JUNIOR_OR_LATER_TOPIC_IDS.forEach(topicId -> completeAll(dogId, topicId));
+		flushAndClear();
 
 		List<QuickTopicResult> result = finder.find(USER_ID, dogId);
 
@@ -107,10 +109,11 @@ class QuickTopicFinderTest {
 
 	@Test
 	void 두_살_이후_강아지에게도_모든_카테고리의_새_토픽을_보여_준다() {
-		JUNIOR_OR_LATER_TOPIC_IDS.stream().filter(id -> id != 404L).forEach(this::completeAll);
-		completeAll(1303L);
-		completeAll(1105L);
 		Long dogId = saveDog(USER_ID, TODAY.minusMonths(24));
+		JUNIOR_OR_LATER_TOPIC_IDS.stream().filter(id -> id != 404L).forEach(topicId -> completeAll(dogId, topicId));
+		completeAll(dogId, 1303L);
+		completeAll(dogId, 1105L);
+		flushAndClear();
 
 		List<QuickTopicResult> result = finder.find(USER_ID, dogId);
 
@@ -120,8 +123,9 @@ class QuickTopicFinderTest {
 
 	@Test
 	void 플랜이_없으면_진행_중인_토픽을_추천하지_않는다() {
-		complete(USER_ID, 1601L, 0, LocalDateTime.of(2026, 11, 7, 9, 0));
 		Long dogId = saveDog(USER_ID, TODAY.minusYears(3));
+		complete(USER_ID, dogId, 1601L, 0, LocalDateTime.of(2026, 11, 7, 9, 0));
+		flushAndClear();
 
 		List<QuickTopicResult> result = finder.find(USER_ID, dogId);
 
@@ -131,10 +135,11 @@ class QuickTopicFinderTest {
 
 	@Test
 	void 플랜이_없고_미시작_토픽이_없으면_빈_목록을_반환한다() {
-		EARLY_TOPIC_IDS.forEach(this::completeAll);
-		JUNIOR_OR_LATER_TOPIC_IDS.stream().filter(id -> id != 1101L).forEach(this::completeAll);
-		complete(USER_ID, 1101L, 0, LocalDateTime.of(2026, 11, 7, 9, 0));
 		Long dogId = saveDog(USER_ID, TODAY.minusMonths(6));
+		EARLY_TOPIC_IDS.forEach(topicId -> completeAll(dogId, topicId));
+		JUNIOR_OR_LATER_TOPIC_IDS.stream().filter(id -> id != 1101L).forEach(topicId -> completeAll(dogId, topicId));
+		complete(USER_ID, dogId, 1101L, 0, LocalDateTime.of(2026, 11, 7, 9, 0));
+		flushAndClear();
 
 		List<QuickTopicResult> result = finder.find(USER_ID, dogId);
 
@@ -143,8 +148,9 @@ class QuickTopicFinderTest {
 
 	@Test
 	void 학습_기록이_없는_활성_플랜의_토픽만_새_토픽으로_반환한다() {
-		JUNIOR_OR_LATER_TOPIC_IDS.forEach(this::completeAll);
 		Long dogId = saveDog(USER_ID, TODAY.minusMonths(6));
+		JUNIOR_OR_LATER_TOPIC_IDS.forEach(topicId -> completeAll(dogId, topicId));
+		flushAndClear();
 		savePlan(dogId, 1601L);
 
 		List<QuickTopicResult> result = finder.find(USER_ID, dogId);
@@ -157,8 +163,8 @@ class QuickTopicFinderTest {
 	@Test
 	void 활성_플랜의_토픽을_플랜_순서대로_앞에_두고_진행_상태로_역할을_정한다() {
 		Long dogId = saveDog(USER_ID, TODAY.minusMonths(6));
-		complete(USER_ID, 1102L, 0, LocalDateTime.of(2026, 11, 7, 9, 0));
-		completeAll(1201L);
+		complete(USER_ID, dogId, 1102L, 0, LocalDateTime.of(2026, 11, 7, 9, 0));
+		completeAll(dogId, 1201L);
 		savePlan(dogId, 1201L, 1104L, 1102L);
 
 		List<QuickTopicResult> result = finder.find(USER_ID, dogId);
@@ -196,12 +202,13 @@ class QuickTopicFinderTest {
 
 	@Test
 	void 사진이_없는_토픽은_추천에서_뺀다() {
-		complete(USER_ID, 1101L, 0, LocalDateTime.of(2026, 11, 1, 9, 0));
-		complete(USER_ID, 1102L, 0, LocalDateTime.of(2026, 11, 2, 9, 0));
+		Long dogId = saveDog(USER_ID, TODAY.minusMonths(6));
+		complete(USER_ID, dogId, 1101L, 0, LocalDateTime.of(2026, 11, 1, 9, 0));
+		complete(USER_ID, dogId, 1102L, 0, LocalDateTime.of(2026, 11, 2, 9, 0));
 		clearThumbnail(1102L);
 		clearThumbnail(1201L);
 		clearBlankThumbnail(1303L);
-		Long dogId = saveDog(USER_ID, TODAY.minusMonths(6));
+		flushAndClear();
 
 		List<QuickTopicResult> result = finder.find(USER_ID, dogId);
 
@@ -212,8 +219,22 @@ class QuickTopicFinderTest {
 
 	@Test
 	void 다른_회원의_학습_기록은_이어서에_쓰지_않는다() {
-		complete(43L, 1101L, 0, LocalDateTime.of(2026, 11, 1, 9, 0));
 		Long dogId = saveDog(USER_ID, TODAY.minusMonths(6));
+		complete(43L, 430L, 1101L, 0, LocalDateTime.of(2026, 11, 1, 9, 0));
+		flushAndClear();
+
+		List<QuickTopicResult> result = finder.find(USER_ID, dogId);
+
+		assertThat(result).hasSize(5);
+		assertThat(result).extracting(QuickTopicResult::role).containsOnly(QuickTopicRole.NOT_STARTED);
+	}
+
+	@Test
+	void 같은_회원의_다른_강아지_학습_기록은_이어서에_쓰지_않는다() {
+		Long dogId = saveDog(USER_ID, TODAY.minusMonths(6));
+		Long otherDogId = saveDog(USER_ID, TODAY.minusMonths(6));
+		complete(USER_ID, otherDogId, 1101L, 0, LocalDateTime.of(2026, 11, 1, 9, 0));
+		flushAndClear();
 
 		List<QuickTopicResult> result = finder.find(USER_ID, dogId);
 
@@ -224,9 +245,9 @@ class QuickTopicFinderTest {
 	@Test
 	void 플랜이_있으면_플랜_밖의_진행_중_토픽으로_채우지_않는다() {
 		Long dogId = saveDog(USER_ID, TODAY.minusMonths(6));
-		complete(USER_ID, 1101L, 0, LocalDateTime.of(2026, 11, 7, 9, 0));
-		complete(USER_ID, 1102L, 0, LocalDateTime.of(2026, 11, 5, 9, 0));
-		complete(USER_ID, 1104L, 0, LocalDateTime.of(2026, 11, 3, 9, 0));
+		complete(USER_ID, dogId, 1101L, 0, LocalDateTime.of(2026, 11, 7, 9, 0));
+		complete(USER_ID, dogId, 1102L, 0, LocalDateTime.of(2026, 11, 5, 9, 0));
+		complete(USER_ID, dogId, 1104L, 0, LocalDateTime.of(2026, 11, 3, 9, 0));
 		savePlan(dogId, 1101L);
 
 		List<QuickTopicResult> result = finder.find(USER_ID, dogId);
@@ -238,8 +259,8 @@ class QuickTopicFinderTest {
 	@Test
 	void 진행_중인_플랜_토픽은_첫_칸에_이어서로_반환한다() {
 		Long dogId = saveDog(USER_ID, TODAY.minusMonths(6));
-		complete(USER_ID, 1101L, 0, LocalDateTime.of(2026, 11, 7, 9, 0));
-		completeAll(1102L);
+		complete(USER_ID, dogId, 1101L, 0, LocalDateTime.of(2026, 11, 7, 9, 0));
+		completeAll(dogId, 1102L);
 		savePlan(dogId, 1101L);
 
 		List<QuickTopicResult> result = finder.find(USER_ID, dogId);
@@ -251,7 +272,7 @@ class QuickTopicFinderTest {
 	@Test
 	void 플랜이_있으면_플랜_밖의_새_토픽으로_채우지_않는다() {
 		Long dogId = saveDog(USER_ID, TODAY.minusMonths(6));
-		completeAll(1101L);
+		completeAll(dogId, 1101L);
 		savePlan(dogId, 1102L);
 
 		List<QuickTopicResult> result = finder.find(USER_ID, dogId);
@@ -266,9 +287,9 @@ class QuickTopicFinderTest {
 	@Test
 	void 완료한_플랜의_토픽은_새_토픽에서_빼지_않는다() {
 		Long dogId = saveDog(USER_ID, TODAY.minusMonths(6));
-		JUNIOR_OR_LATER_TOPIC_IDS.stream().filter(id -> id != 404L).forEach(this::completeAll);
-		completeAll(1303L);
-		completeAll(1105L);
+		JUNIOR_OR_LATER_TOPIC_IDS.stream().filter(id -> id != 404L).forEach(topicId -> completeAll(dogId, topicId));
+		completeAll(dogId, 1303L);
+		completeAll(dogId, 1105L);
 		Plan plan = savePlan(dogId, 1201L);
 		plan.complete(Instant.now());
 		flushAndClear();
@@ -342,8 +363,9 @@ class QuickTopicFinderTest {
 				.executeUpdate();
 	}
 
-	private void complete(Long userId, Long topicId, int lessonIndex, LocalDateTime completedAt) {
-		LessonProgress progress = LessonProgress.start(userId, lessonsByTopic.get(topicId).get(lessonIndex).getId());
+	private void complete(Long userId, Long dogId, Long topicId, int lessonIndex, LocalDateTime completedAt) {
+		Long lessonId = lessonsByTopic.get(topicId).get(lessonIndex).getId();
+		LessonProgress progress = LessonProgress.start(userId, dogId, lessonId);
 		progress.complete();
 		entityManager.persist(progress);
 		entityManager.flush();
@@ -353,9 +375,9 @@ class QuickTopicFinderTest {
 				.executeUpdate();
 	}
 
-	private void completeAll(Long topicId) {
-		complete(USER_ID, topicId, 0, LocalDateTime.of(2026, 10, 1, 9, 0));
-		complete(USER_ID, topicId, 1, LocalDateTime.of(2026, 10, 1, 9, 30));
+	private void completeAll(Long dogId, Long topicId) {
+		complete(USER_ID, dogId, topicId, 0, LocalDateTime.of(2026, 10, 1, 9, 0));
+		complete(USER_ID, dogId, topicId, 1, LocalDateTime.of(2026, 10, 1, 9, 30));
 	}
 
 	private Long saveDog(Long userId, LocalDate birthDate) {

@@ -94,7 +94,7 @@ class AiAnalysisModifyServiceTest {
 
 	private AiAnalysis persistStartedAnalysis(Long userId, String videoObjectKey) {
 		AiAnalysis analysis = AiAnalysis.uploading(
-				new AiAnalysisUploadCommand(userId, videoObjectKey, Instant.now().plusSeconds(900), null));
+				new AiAnalysisUploadCommand(userId, 3L, videoObjectKey, Instant.now().plusSeconds(900), null));
 		analysis.startAnalysis();
 		return aiAnalysisRepository.saveAndFlush(analysis);
 	}

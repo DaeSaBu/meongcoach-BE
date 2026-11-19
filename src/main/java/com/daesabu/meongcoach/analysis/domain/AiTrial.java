@@ -13,6 +13,7 @@ import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.util.Assert;
 
 @Getter
 @Entity
@@ -23,7 +24,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class AiTrial extends BaseEntity {
 
-	public static final int DEFAULT_GRANTED_COUNT = 30;
+	public static final int DEFAULT_GRANTED_COUNT = 3;
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -36,6 +37,9 @@ public class AiTrial extends BaseEntity {
 	private int grantedCount;
 
 	@Column(nullable = false)
+	private int purchasedCount;
+
+	@Column(nullable = false)
 	private int usedCount;
 
 	public static AiTrial start(Long userId) {
@@ -43,6 +47,7 @@ public class AiTrial extends BaseEntity {
 
 		trial.userId = requireNonNull(userId);
 		trial.grantedCount = DEFAULT_GRANTED_COUNT;
+		trial.purchasedCount = 0;
 		trial.usedCount = 0;
 
 		return trial;
@@ -52,15 +57,28 @@ public class AiTrial extends BaseEntity {
 		usedCount++;
 	}
 
+	public void grant(int count) {
+		Assert.state(count > 0, "추가 부여 횟수는 1 이상이어야 한다");
+
+		grantedCount += count;
+	}
+
+	public void synchronizePurchasedCount(int count) {
+		Assert.state(count >= 0, "구매 횟수는 0 이상이어야 한다");
+
+		purchasedCount = count;
+		usedCount = Math.min(usedCount, maxCount());
+	}
+
 	public int maxCount() {
-		return grantedCount;
+		return grantedCount + purchasedCount;
 	}
 
 	public int remainingCount() {
-		return Math.max(0, grantedCount - usedCount);
+		return Math.max(0, maxCount() - usedCount);
 	}
 
 	public boolean isAvailable() {
-		return usedCount < grantedCount;
+		return usedCount < maxCount();
 	}
 }

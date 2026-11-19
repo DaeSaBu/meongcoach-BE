@@ -6,10 +6,9 @@ import java.util.List;
 
 public record CurriculumListResult(Topic topic, List<CurriculumResult> curriculums) {
 
-	public static CurriculumListResult of(Topic topic, LessonProgresses progresses,
-			boolean hasEntitlement) {
+	public static CurriculumListResult of(Topic topic, LessonProgresses progresses) {
 		List<CurriculumResult> curriculums = topic.getCurriculums().stream()
-				.map(curriculum -> CurriculumResult.of(curriculum, progresses, hasEntitlement))
+				.map(curriculum -> CurriculumResult.of(curriculum, progresses))
 				.toList();
 		return new CurriculumListResult(topic, curriculums);
 	}

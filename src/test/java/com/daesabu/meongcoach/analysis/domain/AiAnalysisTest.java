@@ -30,7 +30,7 @@ class AiAnalysisTest {
 	@Test
 	void 보호자가_남긴_맥락을_앞뒤_공백을_지워_저장한다() {
 		AiAnalysis analysis = AiAnalysis.uploading(
-				new AiAnalysisUploadCommand(1L, VIDEO_OBJECT_KEY, UPLOAD_EXPIRES_AT, "  퇴근하면 짖어요  "));
+				new AiAnalysisUploadCommand(1L, 3L, VIDEO_OBJECT_KEY, UPLOAD_EXPIRES_AT, "  퇴근하면 짖어요  "));
 
 		assertThat(analysis.getContext()).isEqualTo("퇴근하면 짖어요");
 	}
@@ -40,7 +40,7 @@ class AiAnalysisTest {
 	@ValueSource(strings = {"", "   "})
 	void 맥락이_비어_있으면_null로_저장한다(String context) {
 		AiAnalysis analysis = AiAnalysis.uploading(
-				new AiAnalysisUploadCommand(1L, VIDEO_OBJECT_KEY, UPLOAD_EXPIRES_AT, context));
+				new AiAnalysisUploadCommand(1L, 3L, VIDEO_OBJECT_KEY, UPLOAD_EXPIRES_AT, context));
 
 		assertThat(analysis.getContext()).isNull();
 	}
@@ -149,7 +149,7 @@ class AiAnalysisTest {
 	}
 
 	private static AiAnalysis uploadingAnalysis() {
-		return AiAnalysis.uploading(new AiAnalysisUploadCommand(1L, VIDEO_OBJECT_KEY, UPLOAD_EXPIRES_AT, null));
+		return AiAnalysis.uploading(new AiAnalysisUploadCommand(1L, 3L, VIDEO_OBJECT_KEY, UPLOAD_EXPIRES_AT, null));
 	}
 
 	private static AiAnalysis startedAnalysis() {

@@ -168,12 +168,19 @@ val postProcessOpenApiSpec = tasks.register("postProcessOpenApiSpec") {
 	description = "openapi3.json에 보안·앱 헤더 스킴과 모듈 태그를 주입하고 operationId를 정규화한다"
 	val specFile = layout.buildDirectory.file("api-spec/openapi3.json")
 	val publicPaths = listOf(
-		"/webhooks/channel-talk/support-replies", "/api/health", "/api/auth/login/social", "/api/auth/login/email", "/api/auth/token/refresh", "/api/auth/logout"
+		"/api/health", "/api/auth/login/social", "/api/auth/login/email", "/api/auth/token/refresh", "/api/auth/logout"
 	)
 	// 앱 버전 게이트(shared/security/AppVersionFilter)가 검사하지 않는 경로
-	val appHeaderExcludedPaths = setOf("/api/health", "/webhooks/channel-talk/support-replies")
+	val appHeaderExcludedPaths = setOf("/api/health")
 	val appHeaderSecurity = mapOf("appVersion" to emptyList<String>(), "appPlatform" to emptyList<String>())
 	val httpMethods = setOf("get", "post", "put", "patch", "delete", "head", "options")
+	// 컨트롤러에 @Deprecated(forRemoval = true)를 붙인 사용 중단 예정 API. 경로 → 메서드
+	val deprecatedOperations = mapOf(
+		"/api/ai/presigned-urls" to "post",
+		"/api/onboarding/presigned-urls" to "post",
+		"/api/community/comments/{commentId}/replies" to "get",
+		"/api/dogs/profile/image" to "get",
+	)
 	// REST Docs 스니펫 식별자의 모듈 접두어 → Swagger UI 그룹 태그. 선언 순서가 화면 표시 순서다
 	val moduleTags = linkedMapOf(
 		"auth" to "Auth",
@@ -184,12 +191,12 @@ val postProcessOpenApiSpec = tasks.register("postProcessOpenApiSpec") {
 		"training" to "Training",
 		"ai" to "AI",
 		"dog" to "Dog",
-		"entitlement" to "Entitlement",
 		"graduation" to "Graduation",
 		"plan" to "Plan",
 		"home" to "Home",
 		"community" to "Community",
 		"banner" to "Banner",
+		"coupon" to "Coupon",
 		"notification" to "Notification",
 		"support" to "Support",
 	)
@@ -223,6 +230,13 @@ val postProcessOpenApiSpec = tasks.register("postProcessOpenApiSpec") {
 					(operation as MutableMap<String, Any?>)["security"] = security
 				}
 			}
+		}
+
+		deprecatedOperations.forEach { (path, method) ->
+			@Suppress("UNCHECKED_CAST")
+			val operation = (paths[path] as? MutableMap<String, Any?>)?.get(method) as? MutableMap<String, Any?>
+			requireNotNull(operation) { "사용 중단 표시 대상이 스펙에 없습니다: $method $path" }
+			operation["deprecated"] = true
 		}
 
 		paths.values.forEach { pathItem ->

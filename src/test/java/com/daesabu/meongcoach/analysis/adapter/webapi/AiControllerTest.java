@@ -4,6 +4,7 @@ import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.docume
 import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.BDDMockito.willThrow;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.get;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.post;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
@@ -11,6 +12,7 @@ import static org.springframework.restdocs.payload.PayloadDocumentation.requestF
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
 import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
+import static org.springframework.restdocs.request.RequestDocumentation.queryParameters;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -21,6 +23,7 @@ import com.daesabu.meongcoach.analysis.application.provided.AiReportDetailResult
 import com.daesabu.meongcoach.analysis.application.provided.AiReportFinder;
 import com.daesabu.meongcoach.analysis.application.provided.AiReportResult;
 import com.daesabu.meongcoach.analysis.application.provided.AiTrialFinder;
+import com.daesabu.meongcoach.analysis.application.provided.AiTrialSynchronizer;
 import com.daesabu.meongcoach.analysis.application.provided.AiVideoUploadUrlIssuer;
 import com.daesabu.meongcoach.analysis.application.provided.AiVideoUploadUrlResult;
 import com.daesabu.meongcoach.analysis.application.provided.dto.AiAnalysisRegisterRequest;
@@ -30,6 +33,7 @@ import com.daesabu.meongcoach.analysis.domain.AiTrial;
 import com.daesabu.meongcoach.analysis.domain.AiTrialFixture;
 import com.daesabu.meongcoach.analysis.domain.exception.AiReportNotFoundException;
 import com.daesabu.meongcoach.analysis.domain.exception.AiReportTrialExceededException;
+import com.daesabu.meongcoach.analysis.domain.exception.AiTrialProviderUnavailableException;
 import com.daesabu.meongcoach.analysis.domain.exception.AiVideoDurationOutOfRangeException;
 import java.security.Principal;
 import java.time.LocalDateTime;
@@ -102,11 +106,14 @@ class AiControllerTest {
 	private AiTrialFinder aiTrialFinder;
 
 	@MockitoBean
+	private AiTrialSynchronizer aiTrialSynchronizer;
+
+	@MockitoBean
 	private AiAnalysisRegister aiAnalysisRegister;
 
 	@Test
 	void 리포트_목록을_최신순으로_반환한다() throws Exception {
-		given(aiReportFinder.findReports(42L)).willReturn(List.of(
+		given(aiReportFinder.findReports(42L, 3L)).willReturn(List.of(
 				new AiReportResult(11L, "videos/training/42/second.mp4", "물체를 물고 달리는 행동 분석",
 						AiAnalysisStatus.COMPLETED, LocalDateTime.of(2026, 8, 2, 10, 30, 0)),
 				new AiReportResult(10L, "videos/training/42/first.mp4", "분리불안 징후 행동 분석",
@@ -114,6 +121,7 @@ class AiControllerTest {
 		));
 
 		mockMvc.perform(get("/api/ai/reports")
+						.queryParam("dogId", "3")
 						.principal(CURRENT_USER)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isOk())
@@ -127,8 +135,12 @@ class AiControllerTest {
 				.andExpect(jsonPath("$.reports[1].title").value("분리불안 징후 행동 분석"))
 				.andExpect(jsonPath("$.reports[1].createdAt").value("2026-08-01T09:00:00"))
 				.andDo(document("ai/report-list",
+						queryParameters(
+								parameterWithName("dogId").optional()
+										.description("리포트를 조회할 강아지 ID. 생략하면 선택된 강아지")
+						),
 						responseFields(
-								fieldWithPath("reports[]").description("사용자의 AI 리포트 목록. 생성 시각 내림차순"),
+								fieldWithPath("reports[]").description("강아지의 AI 리포트 목록. 생성 시각 내림차순"),
 								fieldWithPath("reports[].reportId").description("리포트 ID"),
 								fieldWithPath("reports[].videoObjectKey").description("분석한 영상의 GCS 객체 키"),
 								fieldWithPath("reports[].title").optional()
@@ -144,7 +156,7 @@ class AiControllerTest {
 
 	@Test
 	void 리포트가_없으면_빈_배열과_200을_반환한다() throws Exception {
-		given(aiReportFinder.findReports(42L)).willReturn(List.of());
+		given(aiReportFinder.findReports(42L, null)).willReturn(List.of());
 
 		mockMvc.perform(get("/api/ai/reports").principal(CURRENT_USER))
 				.andExpect(status().isOk())
@@ -154,12 +166,12 @@ class AiControllerTest {
 
 	@Test
 	void 인증_주체에서_읽은_사용자로_리포트_목록_조회를_위임한다() throws Exception {
-		given(aiReportFinder.findReports(42L)).willReturn(List.of());
+		given(aiReportFinder.findReports(42L, null)).willReturn(List.of());
 
 		mockMvc.perform(get("/api/ai/reports").principal(CURRENT_USER))
 				.andExpect(status().isOk());
 
-		then(aiReportFinder).should().findReports(42L);
+		then(aiReportFinder).should().findReports(42L, null);
 	}
 
 	@Test
@@ -416,9 +428,10 @@ class AiControllerTest {
 
 	@Test
 	void 맥락을_담은_분석_건을_만들고_분석_건_ID와_영상_업로드_URL을_201로_반환한다() throws Exception {
-		given(aiAnalysisRegister.register(42L, ANALYSIS_REQUEST)).willReturn(ANALYSIS_RESULT);
+		given(aiAnalysisRegister.register(42L, 3L, ANALYSIS_REQUEST)).willReturn(ANALYSIS_RESULT);
 
 		mockMvc.perform(post("/api/ai/analyses")
+						.queryParam("dogId", "3")
 						.principal(CURRENT_USER)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
 						.contentType(MediaType.APPLICATION_JSON)
@@ -429,6 +442,10 @@ class AiControllerTest {
 				.andExpect(jsonPath("$.objectKey").value(VIDEO_OBJECT_KEY))
 				.andExpect(jsonPath("$.expiresInSeconds").value(900))
 				.andDo(document("ai/analysis-register",
+						queryParameters(
+								parameterWithName("dogId").optional()
+										.description("분석할 강아지 ID. 생략하면 선택된 강아지")
+						),
 						requestFields(
 								fieldWithPath("contentType").description(
 										"필수 입력. 업로드할 영상(압축 후)의 Content-Type. `video/mp4`, `video/quicktime`만 지원"),
@@ -455,7 +472,7 @@ class AiControllerTest {
 
 	@Test
 	void 인증_주체에서_읽은_사용자로_분석_건_생성을_위임한다() throws Exception {
-		given(aiAnalysisRegister.register(42L, ANALYSIS_REQUEST)).willReturn(ANALYSIS_RESULT);
+		given(aiAnalysisRegister.register(42L, null, ANALYSIS_REQUEST)).willReturn(ANALYSIS_RESULT);
 
 		mockMvc.perform(post("/api/ai/analyses")
 						.principal(CURRENT_USER)
@@ -463,13 +480,13 @@ class AiControllerTest {
 						.content(ANALYSIS_REGISTER_REQUEST))
 				.andExpect(status().isCreated());
 
-		then(aiAnalysisRegister).should().register(42L, ANALYSIS_REQUEST);
+		then(aiAnalysisRegister).should().register(42L, null, ANALYSIS_REQUEST);
 	}
 
 	@Test
 	void 맥락이_없어도_분석_건을_만든다() throws Exception {
 		AiAnalysisRegisterRequest request = new AiAnalysisRegisterRequest("video/mp4", 10485760L, 60L, null);
-		given(aiAnalysisRegister.register(42L, request)).willReturn(ANALYSIS_RESULT);
+		given(aiAnalysisRegister.register(42L, null, request)).willReturn(ANALYSIS_RESULT);
 
 		mockMvc.perform(post("/api/ai/analyses")
 						.principal(CURRENT_USER)
@@ -483,7 +500,7 @@ class AiControllerTest {
 	void 맥락_길이는_앞뒤_공백을_지운_뒤_센다() throws Exception {
 		String context = "가".repeat(500);
 		String request = ANALYSIS_REGISTER_REQUEST.replace(ANALYSIS_CONTEXT, "  " + context + "\\n");
-		given(aiAnalysisRegister.register(42L, new AiAnalysisRegisterRequest("video/mp4", 10485760L, 60L, context)))
+		given(aiAnalysisRegister.register(42L, null, new AiAnalysisRegisterRequest("video/mp4", 10485760L, 60L, context)))
 				.willReturn(ANALYSIS_RESULT);
 
 		mockMvc.perform(post("/api/ai/analyses")
@@ -509,7 +526,7 @@ class AiControllerTest {
 
 	@Test
 	void 체험_횟수를_소진했으면_분석_건_생성도_403과_에러_코드를_반환한다() throws Exception {
-		given(aiAnalysisRegister.register(42L, ANALYSIS_REQUEST))
+		given(aiAnalysisRegister.register(42L, null, ANALYSIS_REQUEST))
 				.willThrow(new AiReportTrialExceededException());
 
 		mockMvc.perform(post("/api/ai/analyses")
@@ -542,19 +559,19 @@ class AiControllerTest {
 
 	@Test
 	void 체험_횟수_사용_현황을_반환한다() throws Exception {
-		given(aiTrialFinder.findTrial(42L)).willReturn(AiTrialFixture.used(42L, 1));
+		given(aiTrialFinder.findTrial(42L)).willReturn(AiTrialFixture.purchased(42L, 20, 1));
 
 		mockMvc.perform(get("/api/ai/trial")
 						.principal(CURRENT_USER)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.usedCount").value(1))
-				.andExpect(jsonPath("$.maxCount").value(30))
-				.andExpect(jsonPath("$.remainingCount").value(29))
+				.andExpect(jsonPath("$.maxCount").value(23))
+				.andExpect(jsonPath("$.remainingCount").value(22))
 				.andDo(document("ai/trial",
 						responseFields(
 								fieldWithPath("usedCount").description("사용한 횟수. 분석이 완료될 때 1씩 늘고 실패·진행 중은 세지 않는다"),
-								fieldWithPath("maxCount").description("이 사용자에게 부여된 무료 체험 횟수. 기본 30"),
+								fieldWithPath("maxCount").description("이 사용자가 쓸 수 있는 전체 횟수. 부여 횟수(기본 3)와 구매 횟수의 합"),
 								fieldWithPath("remainingCount").description("남은 횟수. 소진했으면 0")
 						)
 				));
@@ -573,6 +590,46 @@ class AiControllerTest {
 	@Test
 	void 인증_정보가_없으면_체험_횟수_조회도_401을_반환한다() throws Exception {
 		mockMvc.perform(get("/api/ai/trial"))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+	}
+
+	@Test
+	void 인증한_사용자의_구매_횟수를_동기화하고_204를_반환한다() throws Exception {
+		mockMvc.perform(post("/api/ai/trial/synchronization")
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+				.andExpect(status().isNoContent())
+				.andDo(document("ai/trial-synchronize"));
+
+		then(aiTrialSynchronizer).should().synchronize(42L);
+	}
+
+	@Test
+	void 구매_횟수를_받아_오지_못하면_502와_에러_코드를_반환한다() throws Exception {
+		willThrow(new AiTrialProviderUnavailableException()).given(aiTrialSynchronizer).synchronize(42L);
+
+		mockMvc.perform(post("/api/ai/trial/synchronization")
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+				.andExpect(status().isBadGateway())
+				.andExpect(jsonPath("$.status").value(502))
+				.andExpect(jsonPath("$.code").value("AI_TRIAL_PROVIDER_UNAVAILABLE"))
+				.andDo(document("ai/trial-synchronize-error",
+						responseFields(
+								fieldWithPath("title").description("HTTP 상태 이름"),
+								fieldWithPath("status").description("HTTP 상태 코드"),
+								fieldWithPath("detail").description("사람이 읽을 수 있는 에러 설명"),
+								fieldWithPath("instance").description("에러가 발생한 요청 경로"),
+								fieldWithPath("code").description("클라이언트 분기용 에러 코드"),
+								fieldWithPath("timestamp").description("에러 발생 시각(UTC)")
+						)
+				));
+	}
+
+	@Test
+	void 인증_정보가_없으면_구매_횟수_동기화도_401을_반환한다() throws Exception {
+		mockMvc.perform(post("/api/ai/trial/synchronization"))
 				.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
 	}

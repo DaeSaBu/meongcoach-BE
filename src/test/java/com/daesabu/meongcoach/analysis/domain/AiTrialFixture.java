@@ -11,6 +11,12 @@ public final class AiTrialFixture {
 		return create(userId, AiTrial.DEFAULT_GRANTED_COUNT, usedCount);
 	}
 
+	public static AiTrial purchased(Long userId, int purchasedCount, int usedCount) {
+		AiTrial trial = create(userId, AiTrial.DEFAULT_GRANTED_COUNT, usedCount);
+		ReflectionTestUtils.setField(trial, "purchasedCount", purchasedCount);
+		return trial;
+	}
+
 	public static AiTrial create(Long userId, int grantedCount, int usedCount) {
 		AiTrial trial = new AiTrial();
 		ReflectionTestUtils.setField(trial, "userId", userId);

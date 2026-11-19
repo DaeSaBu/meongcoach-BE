@@ -108,17 +108,12 @@ meongcoach:
   notification:
     internal-secret: test-internal-secret
   channel-talk:
-    webhook-token: test-channel-talk-webhook-token
     member-hash-key: 4629de5def93d6a2abea6afa9bd5476d9c6cbc04223f9a2f7e517b535dde3e25
   revenuecat:
     base-url: https://api.revenuecat.test/v2
     api-key: test-revenuecat-api-key
     project-id: proj_test
-    entitlement-ids:
-      puppy: entl_test_puppy
-      junior: entl_test_junior
-      adult: entl_test_adult
-      senior: entl_test_senior
+    currency-code: CREDIT
   alert:
     slack:
       # 테스트는 Slack을 부르지 않는다. 꺼 두면 로그 전송기가 뜨고, Application 테스트는 AlertSender를 목으로 대체한다

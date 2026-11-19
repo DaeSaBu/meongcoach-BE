@@ -2,7 +2,6 @@ package com.daesabu.meongcoach.training.domain;
 
 import static jakarta.persistence.FetchType.LAZY;
 
-import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;
 import com.daesabu.meongcoach.shared.domain.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -15,8 +14,8 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -57,8 +56,10 @@ public class Topic extends BaseEntity {
 	@OrderBy("sortOrder ASC, id ASC")
 	private List<Curriculum> curriculums = new ArrayList<>();
 
-	public Optional<EntitlementType> findRequiredEntitlementType() {
-		return trainingCategory.findRequiredEntitlementType();
+	public static Comparator<Topic> trainingOrder() {
+		return Comparator.comparing(Topic::getTrainingCategory, TrainingCategory.trainingOrder())
+				.thenComparingInt(Topic::getSortOrder)
+				.thenComparing(Topic::getId);
 	}
 
 	public boolean isCompleted(LessonProgresses progresses) {
@@ -70,10 +71,14 @@ public class Topic extends BaseEntity {
 		return thumbnailUrl != null && !thumbnailUrl.isBlank();
 	}
 
-	public TopicCompletion completion(LessonProgresses progresses) {
+	public int countCompletedLessons(LessonProgresses progresses) {
+		return progresses.countCompletedIn(getAllLessonIds());
+	}
+
+	public ProgressStatus determineStatus(LessonProgresses progresses) {
 		List<Long> lessonIds = getAllLessonIds();
-		int completed = progresses.countCompletedIn(lessonIds);
-		return TopicCompletion.of(lessonIds.size(), completed);
+		int completedLessons = progresses.countCompletedIn(lessonIds);
+		return ProgressStatus.of(lessonIds.size(), completedLessons);
 	}
 
 	public List<Long> getAllLessonIds() {

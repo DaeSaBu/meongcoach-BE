@@ -13,6 +13,7 @@ import com.daesabu.meongcoach.analysis.domain.AiAnalysisUploadCommand;
 import com.daesabu.meongcoach.analysis.domain.AiTrial;
 import com.daesabu.meongcoach.analysis.domain.AiVideo;
 import com.daesabu.meongcoach.analysis.domain.exception.AiReportTrialExceededException;
+import com.daesabu.meongcoach.dog.application.provided.DogProfileFinder;
 import com.daesabu.meongcoach.media.application.provided.MediaUploadUrlIssuer;
 import com.daesabu.meongcoach.media.application.provided.dto.MediaUploadRequest;
 import com.daesabu.meongcoach.media.application.provided.dto.MediaUploadUrlResult;
@@ -31,11 +32,12 @@ public class AiVideoUploadUrlService implements AiVideoUploadUrlIssuer, AiAnalys
 	private final MediaUploadUrlIssuer mediaUploadUrlIssuer;
 	private final AiTrialFinder aiTrialFinder;
 	private final AiAnalysisRepository aiAnalysisRepository;
+	private final DogProfileFinder dogProfileFinder;
 
 	@Override
 	@Transactional
 	public AiVideoUploadUrlResult issue(Long userId, AiVideoUploadUrlRequest request) {
-		IssuedUpload issued = issueUpload(userId, request.contentType(), request.fileSizeBytes(),
+		IssuedUpload issued = issueUpload(userId, null, request.contentType(), request.fileSizeBytes(),
 				request.durationSeconds(), null);
 		MediaUploadUrlResult upload = issued.upload();
 		return new AiVideoUploadUrlResult(issued.analysis().getId(), upload.uploadUrl(), upload.publicUrl(),
@@ -44,28 +46,29 @@ public class AiVideoUploadUrlService implements AiVideoUploadUrlIssuer, AiAnalys
 
 	@Override
 	@Transactional
-	public AiAnalysisRegisterResult register(Long userId, AiAnalysisRegisterRequest request) {
-		IssuedUpload issued = issueUpload(userId, request.contentType(), request.fileSizeBytes(),
+	public AiAnalysisRegisterResult register(Long userId, Long dogId, AiAnalysisRegisterRequest request) {
+		IssuedUpload issued = issueUpload(userId, dogId, request.contentType(), request.fileSizeBytes(),
 				request.durationSeconds(), request.context());
 		MediaUploadUrlResult upload = issued.upload();
 		return new AiAnalysisRegisterResult(issued.analysis().getId(), upload.uploadUrl(), upload.objectKey(),
 				upload.expiresInSeconds());
 	}
 
-	private IssuedUpload issueUpload(Long userId, String contentType, Long fileSizeBytes, Long durationSeconds,
-			String context) {
+	private IssuedUpload issueUpload(Long userId, Long dogId, String contentType, Long fileSizeBytes,
+			Long durationSeconds, String context) {
 		AiTrial trial = aiTrialFinder.findTrial(userId);
 		if (!trial.isAvailable()) {
 			throw new AiReportTrialExceededException();
 		}
 		AiVideo.validateDuration(durationSeconds);
+		Long resolvedDogId = dogProfileFinder.findDogProfileOrSelected(userId, dogId).id();
 
 		MediaUploadRequest uploadRequest = MediaUploadRequest.video(AiVideo.SCOPE, userId, contentType,
 				fileSizeBytes, AiVideo.MAX_FILE_SIZE_BYTES);
 		MediaUploadUrlResult upload = mediaUploadUrlIssuer.issueToGcs(uploadRequest);
 		Instant uploadExpiresAt = Instant.now().plusSeconds(upload.expiresInSeconds());
 		AiAnalysisUploadCommand command =
-				new AiAnalysisUploadCommand(userId, upload.objectKey(), uploadExpiresAt, context);
+				new AiAnalysisUploadCommand(userId, resolvedDogId, upload.objectKey(), uploadExpiresAt, context);
 		AiAnalysis analysis = aiAnalysisRepository.save(AiAnalysis.uploading(command));
 		return new IssuedUpload(analysis, upload);
 	}

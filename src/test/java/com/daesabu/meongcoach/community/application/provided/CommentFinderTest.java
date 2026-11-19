@@ -392,6 +392,74 @@ class CommentFinderTest {
 				.isInstanceOf(CommentNotFoundException.class);
 	}
 
+	@Test
+	void 작성자가_쓴_댓글과_답글만_최신순으로_반환한다() {
+		Comment root = saveComment(USER_ID, "내 댓글");
+		saveComment(7L, "다른 사용자 댓글");
+		saveReply(root, USER_ID, "내 답글");
+		flushAndClear();
+
+		CommentListResult result = commentFinder.findCommentsByAuthor(42L, USER_ID, new CommentListRequest(null, 20));
+
+		assertThat(result.comments()).extracting(this::contentOf).containsExactly("내 답글", "내 댓글");
+		assertThat(result.nextCursor()).isNull();
+	}
+
+	@Test
+	void 작성자의_댓글을_다음_커서로_이어서_조회하면_중복이나_누락_없이_전체를_순회한다() {
+		saveComments(3);
+		flushAndClear();
+
+		CommentListResult first = commentFinder.findCommentsByAuthor(42L, USER_ID, new CommentListRequest(null, 2));
+		CommentListResult second = commentFinder.findCommentsByAuthor(42L, USER_ID,
+				new CommentListRequest(first.nextCursor(), 2));
+
+		assertThat(first.comments()).extracting(this::contentOf).containsExactly("댓글 3", "댓글 2");
+		assertThat(second.comments()).extracting(this::contentOf).containsExactly("댓글 1");
+		assertThat(second.nextCursor()).isNull();
+	}
+
+	@Test
+	void 작성자의_댓글에는_댓글이_달린_게시글이_함께_담긴다() {
+		saveComment(USER_ID, "내 댓글");
+		flushAndClear();
+
+		CommentListResult result = commentFinder.findCommentsByAuthor(42L, USER_ID, new CommentListRequest(null, 20));
+
+		Post commented = result.comments().getFirst().comment().getPost();
+		assertThat(commented.getId()).isEqualTo(post.getId());
+	}
+
+	@Test
+	void 삭제된_댓글은_작성자의_댓글_목록에서_제외한다() {
+		saveComment(USER_ID, "삭제된 댓글").delete();
+		saveComment(USER_ID, "남은 댓글");
+		flushAndClear();
+
+		CommentListResult result = commentFinder.findCommentsByAuthor(42L, USER_ID, new CommentListRequest(null, 20));
+
+		assertThat(result.comments()).extracting(this::contentOf).containsExactly("남은 댓글");
+	}
+
+	@Test
+	void 삭제된_게시글에_단_댓글은_작성자의_댓글_목록에서_제외한다() {
+		saveComment(USER_ID, "남은 게시글의 댓글");
+		Post deleted = savePost();
+		commentRepository.save(Comment.register(deleted, USER_ID, "삭제된 게시글의 댓글"));
+		deleted.delete();
+		flushAndClear();
+
+		CommentListResult result = commentFinder.findCommentsByAuthor(42L, USER_ID, new CommentListRequest(null, 20));
+
+		assertThat(result.comments()).extracting(this::contentOf).containsExactly("남은 게시글의 댓글");
+	}
+
+	@Test
+	void 작성자의_댓글_목록의_size가_허용_범위를_벗어나면_예외를_던진다() {
+		assertThatThrownBy(() -> commentFinder.findCommentsByAuthor(42L, USER_ID, new CommentListRequest(null, 51)))
+				.isInstanceOf(ConstraintViolationException.class);
+	}
+
 	private String contentOf(ReplyResult result) {
 		return result.comment().getContent().value();
 	}

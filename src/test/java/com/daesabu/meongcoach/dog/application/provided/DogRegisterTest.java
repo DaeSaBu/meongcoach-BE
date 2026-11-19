@@ -9,6 +9,7 @@ import com.daesabu.meongcoach.dog.domain.DogStatus;
 import com.daesabu.meongcoach.dog.domain.Dogs;
 import com.daesabu.meongcoach.dog.domain.exception.BreedRequiredException;
 import com.daesabu.meongcoach.dog.domain.exception.DogLimitExceededException;
+import com.daesabu.meongcoach.dog.domain.exception.DogNotFoundException;
 import com.daesabu.meongcoach.dog.domain.exception.InvalidDogSexException;
 import com.daesabu.meongcoach.dog.domain.exception.InvalidPersonalityException;
 import com.daesabu.meongcoach.dog.domain.shared.Breed;
@@ -247,6 +248,62 @@ class DogRegisterTest {
 		Long otherUserDogId = dogRegister.register(2L, registerInfo("MALE", Set.of()));
 
 		assertThat(dogRepository.findById(otherUserDogId)).isPresent();
+	}
+
+	@Test
+	void 강아지를_선택하면_기존에_선택된_강아지는_미선택이_된다() {
+		List<Long> dogIds = registerDogs(1L, 3);
+		entityManager.flush();
+		entityManager.clear();
+
+		dogRegister.select(1L, dogIds.get(1));
+
+		entityManager.flush();
+		entityManager.clear();
+		assertThat(dogRepository.findById(dogIds.get(0)).orElseThrow().getStatus()).isEqualTo(DogStatus.UNSELECTED);
+		assertThat(dogRepository.findById(dogIds.get(1)).orElseThrow().getStatus()).isEqualTo(DogStatus.SELECTED);
+		assertThat(dogRepository.findById(dogIds.get(2)).orElseThrow().getStatus()).isEqualTo(DogStatus.UNSELECTED);
+	}
+
+	@Test
+	void 이미_선택된_강아지를_선택하면_선택이_유지된다() {
+		List<Long> dogIds = registerDogs(1L, 2);
+
+		dogRegister.select(1L, dogIds.get(0));
+
+		entityManager.flush();
+		entityManager.clear();
+		assertThat(dogRepository.findById(dogIds.get(0)).orElseThrow().getStatus()).isEqualTo(DogStatus.SELECTED);
+		assertThat(dogRepository.findById(dogIds.get(1)).orElseThrow().getStatus()).isEqualTo(DogStatus.UNSELECTED);
+	}
+
+	@Test
+	void 다른_사용자의_강아지를_선택하면_예외를_던지고_선택은_바뀌지_않는다() {
+		Long dogId = dogRegister.register(1L, registerInfo("MALE", Set.of()));
+		Long otherUserSelectedDogId = dogRegister.register(2L, registerInfo("MALE", Set.of()));
+		Long otherUserDogId = dogRegister.register(2L, registerInfo("FEMALE", Set.of()));
+
+		assertThatThrownBy(() -> dogRegister.select(1L, otherUserDogId))
+				.isInstanceOf(DogNotFoundException.class);
+
+		entityManager.flush();
+		entityManager.clear();
+		assertThat(dogRepository.findById(dogId).orElseThrow().getStatus()).isEqualTo(DogStatus.SELECTED);
+		assertThat(dogRepository.findById(otherUserSelectedDogId).orElseThrow().getStatus())
+				.isEqualTo(DogStatus.SELECTED);
+		assertThat(dogRepository.findById(otherUserDogId).orElseThrow().getStatus()).isEqualTo(DogStatus.UNSELECTED);
+	}
+
+	@Test
+	void 삭제된_강아지를_선택하면_예외를_던진다() {
+		Long deletedDogId = registerDogs(1L, 2).getLast();
+		Dogs dogs = new Dogs(dogRepository.findAllByUserIdOrderByIdAsc(1L));
+		dogs.delete(deletedDogId);
+		entityManager.flush();
+		entityManager.clear();
+
+		assertThatThrownBy(() -> dogRegister.select(1L, deletedDogId))
+				.isInstanceOf(DogNotFoundException.class);
 	}
 
 	private List<Long> registerDogs(Long userId, int count) {

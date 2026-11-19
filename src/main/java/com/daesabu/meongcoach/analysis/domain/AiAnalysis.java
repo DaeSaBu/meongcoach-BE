@@ -10,6 +10,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
@@ -20,7 +21,8 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @Entity
-@Table(name = "ai_analyses")
+@Table(name = "ai_analyses", indexes = @Index(name = "idx_ai_analyses_user_dog_created_at",
+		columnList = "user_id, dog_id, created_at DESC, id DESC"))
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class AiAnalysis extends BaseTimeEntity {
 
@@ -32,6 +34,9 @@ public class AiAnalysis extends BaseTimeEntity {
 
 	@Column(nullable = false)
 	private Long userId;
+
+	@Column(nullable = false)
+	private Long dogId;
 
 	@Column(nullable = false, length = 512)
 	private String videoObjectKey;
@@ -52,6 +57,7 @@ public class AiAnalysis extends BaseTimeEntity {
 	public static AiAnalysis uploading(AiAnalysisUploadCommand command) {
 		AiAnalysis analysis = new AiAnalysis();
 		analysis.userId = command.userId();
+		analysis.dogId = command.dogId();
 		analysis.videoObjectKey = command.videoObjectKey();
 		analysis.uploadExpiresAt = command.uploadExpiresAt();
 		analysis.context = normalizeContext(command.context());

@@ -64,7 +64,7 @@ class PlanRegisterRetrainingTest {
 		entityManager.persist(curriculum);
 		Lesson lesson = LessonFixture.create(curriculum, "레슨", 1, 5);
 		entityManager.persist(lesson);
-		progress = LessonProgress.start(USER_ID, lesson.getId());
+		progress = LessonProgress.start(USER_ID, dog.getId(), lesson.getId());
 		progress.complete();
 		entityManager.persist(progress);
 		entityManager.flush();

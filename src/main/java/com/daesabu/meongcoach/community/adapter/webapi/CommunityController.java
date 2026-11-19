@@ -6,6 +6,7 @@ import com.daesabu.meongcoach.community.adapter.webapi.dto.CommentRegisterRespon
 import com.daesabu.meongcoach.community.adapter.webapi.dto.CommentUpdateResponse;
 import com.daesabu.meongcoach.community.adapter.webapi.dto.LikeResponse;
 import com.daesabu.meongcoach.community.adapter.webapi.dto.MyAuthorResponse;
+import com.daesabu.meongcoach.community.adapter.webapi.dto.MyCommentListResponse;
 import com.daesabu.meongcoach.community.adapter.webapi.dto.PostListResponse;
 import com.daesabu.meongcoach.community.adapter.webapi.dto.PostMediaUploadUrlResponse;
 import com.daesabu.meongcoach.community.adapter.webapi.dto.PostRegisterResponse;
@@ -71,6 +72,19 @@ public class CommunityController {
 		return MyAuthorResponse.from(author);
 	}
 
+	@GetMapping("/me/posts")
+	public PostListResponse findMyPosts(@CurrentUserId Long userId, @Valid @ModelAttribute PostListRequest request) {
+		PostListResult result = postFinder.findPostsByAuthor(userId, userId, request);
+		return PostListResponse.from(result);
+	}
+
+	@GetMapping("/me/comments")
+	public MyCommentListResponse findMyComments(@CurrentUserId Long userId,
+	                                            @Valid @ModelAttribute CommentListRequest request) {
+		CommentListResult result = commentFinder.findCommentsByAuthor(userId, userId, request);
+		return MyCommentListResponse.from(result);
+	}
+
 	@GetMapping("/users/{userId}/dog")
 	public AuthorDogResponse findAuthorDog(@PathVariable Long userId) {
 		Optional<AuthorDogResult> dog = authorFinder.findAuthorDog(userId);
@@ -124,6 +138,7 @@ public class CommunityController {
 		return CommentListResponse.from(result);
 	}
 
+	@Deprecated(forRemoval = true)
 	@GetMapping("/comments/{commentId}/replies")
 	public ReplyListResponse findReplies(@CurrentUserId Long userId, @PathVariable Long commentId,
 	                                     @Valid @ModelAttribute CommentListRequest request) {

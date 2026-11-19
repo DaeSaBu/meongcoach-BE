@@ -12,9 +12,9 @@ public interface LessonProgressRepository extends Repository<LessonProgress, Lon
 
 	LessonProgress saveAndFlush(LessonProgress progress);
 
-	List<LessonProgress> findAllByUserIdAndLessonIdIn(Long userId, Collection<Long> lessonIds);
+	List<LessonProgress> findAllByUserIdAndDogIdAndLessonIdIn(Long userId, Long dogId, Collection<Long> lessonIds);
 
-	Optional<LessonProgress> findByUserIdAndLessonId(Long userId, Long lessonId);
+	Optional<LessonProgress> findByUserIdAndDogIdAndLessonId(Long userId, Long dogId, Long lessonId);
 
 	long count();
 }

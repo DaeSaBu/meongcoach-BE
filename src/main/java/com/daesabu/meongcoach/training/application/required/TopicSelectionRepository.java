@@ -6,5 +6,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface TopicSelectionRepository extends JpaRepository<TopicSelection, Long> {
 
-	Optional<TopicSelection> findByUserId(Long userId);
+	Optional<TopicSelection> findByUserIdAndDogId(Long userId, Long dogId);
 }

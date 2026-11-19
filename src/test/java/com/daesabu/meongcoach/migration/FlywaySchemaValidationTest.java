@@ -140,6 +140,110 @@ class FlywaySchemaValidationTest {
 	}
 
 	@Test
+	void 종료_시각_컬럼_이름을_바꿔도_종료_시각을_보존하고_진행_중인_상담만_유일하다() throws Exception {
+		try (Connection connection = dataSource.getConnection()) {
+			connection.setAutoCommit(false);
+			try (var statement = connection.createStatement()) {
+				statement.execute("CREATE SCHEMA chat_closed_at_test");
+				statement.execute("SET LOCAL search_path TO chat_closed_at_test");
+				statement.execute("CREATE TABLE support_conversations (id BIGINT PRIMARY KEY, member_id BIGINT NOT NULL, deleted_at TIMESTAMP)");
+				statement.execute("CREATE UNIQUE INDEX uk_support_conversations_active_member ON support_conversations (member_id) WHERE deleted_at IS NULL");
+				statement.execute("INSERT INTO support_conversations VALUES (1, 42, '2026-11-01T09:00:00'), (2, 42, NULL)");
+				ScriptUtils.executeSqlScript(connection, new ClassPathResource("db/migration/V69__rename_support_conversation_closed_at.sql"));
+				try (var rows = statement.executeQuery("SELECT closed_at FROM support_conversations ORDER BY id")) {
+					assertThat(rows.next()).isTrue();
+					assertThat(rows.getObject(1, java.time.LocalDateTime.class)).isEqualTo(java.time.LocalDateTime.parse("2026-11-01T09:00:00"));
+					assertThat(rows.next()).isTrue();
+					assertThat(rows.getObject(1)).isNull();
+				}
+				statement.execute("INSERT INTO support_conversations VALUES (3, 42, NULL) ON CONFLICT (member_id) WHERE closed_at IS NULL DO NOTHING");
+				try (var rows = statement.executeQuery("SELECT count(*) FROM support_conversations WHERE member_id = 42 AND closed_at IS NULL")) {
+					assertThat(rows.next()).isTrue();
+					assertThat(rows.getLong(1)).isEqualTo(1);
+				}
+				statement.execute("UPDATE support_conversations SET closed_at = LOCALTIMESTAMP WHERE id = 2");
+				statement.execute("INSERT INTO support_conversations VALUES (4, 42, NULL)");
+				assertThatThrownBy(() -> statement.execute("INSERT INTO support_conversations VALUES (5, 42, NULL)"))
+						.isInstanceOf(java.sql.SQLException.class)
+						.satisfies(exception -> assertThat(((java.sql.SQLException) exception).getSQLState()).isEqualTo("23505"));
+			} finally {
+				connection.rollback();
+			}
+		}
+	}
+
+	@Test
+	void 삭제_시각을_도입해도_기존_상담은_삭제되지_않은_상태이고_삭제된_상담은_진행_중인_상담_유일성에서_빠진다() throws Exception {
+		try (Connection connection = dataSource.getConnection()) {
+			connection.setAutoCommit(false);
+			try (var statement = connection.createStatement()) {
+				statement.execute("CREATE SCHEMA chat_deleted_at_test");
+				statement.execute("SET LOCAL search_path TO chat_deleted_at_test");
+				statement.execute("CREATE TABLE support_conversations (id BIGINT PRIMARY KEY, member_id BIGINT NOT NULL, deleted_at TIMESTAMP)");
+				statement.execute("CREATE UNIQUE INDEX uk_support_conversations_active_member ON support_conversations (member_id) WHERE deleted_at IS NULL");
+				statement.execute("INSERT INTO support_conversations VALUES (1, 42, '2026-11-01T09:00:00'), (2, 42, NULL)");
+				ScriptUtils.executeSqlScript(connection, new ClassPathResource("db/migration/V69__rename_support_conversation_closed_at.sql"));
+				ScriptUtils.executeSqlScript(connection, new ClassPathResource("db/migration/V70__add_deleted_at_to_support_conversations.sql"));
+				try (var rows = statement.executeQuery("SELECT count(*) FROM support_conversations WHERE deleted_at IS NULL")) {
+					assertThat(rows.next()).isTrue();
+					assertThat(rows.getLong(1)).isEqualTo(2);
+				}
+				statement.execute("UPDATE support_conversations SET deleted_at = LOCALTIMESTAMP WHERE id = 2");
+				statement.execute("INSERT INTO support_conversations (id, member_id) VALUES (3, 42) "
+						+ "ON CONFLICT (member_id) WHERE closed_at IS NULL AND deleted_at IS NULL DO NOTHING");
+				try (var rows = statement.executeQuery("SELECT count(*) FROM support_conversations WHERE id = 3")) {
+					assertThat(rows.next()).isTrue();
+					assertThat(rows.getLong(1)).isEqualTo(1);
+				}
+				assertThatThrownBy(() -> statement.execute("INSERT INTO support_conversations (id, member_id) VALUES (4, 42)"))
+						.isInstanceOf(java.sql.SQLException.class)
+						.satisfies(exception -> assertThat(((java.sql.SQLException) exception).getSQLState()).isEqualTo("23505"));
+			} finally {
+				connection.rollback();
+			}
+		}
+	}
+
+	@Test
+	void 개설_후_1시간이_지난_메시지_없는_진행_중_상담만_종료한다() throws Exception {
+		try (Connection connection = dataSource.getConnection()) {
+			connection.setAutoCommit(false);
+			try (var statement = connection.createStatement()) {
+				statement.execute("CREATE SCHEMA chat_close_empty_test");
+				statement.execute("SET LOCAL search_path TO chat_close_empty_test");
+				statement.execute("CREATE TABLE support_conversations (id BIGINT PRIMARY KEY, created_at TIMESTAMP NOT NULL, "
+						+ "updated_at TIMESTAMP NOT NULL, closed_at TIMESTAMP, deleted_at TIMESTAMP)");
+				statement.execute("CREATE TABLE support_messages (id BIGINT PRIMARY KEY, conversation_id BIGINT NOT NULL)");
+				statement.execute("INSERT INTO support_conversations VALUES "
+						+ "(1, LOCALTIMESTAMP - INTERVAL '61 minutes', LOCALTIMESTAMP - INTERVAL '61 minutes', NULL, NULL), "
+						+ "(2, LOCALTIMESTAMP - INTERVAL '59 minutes', LOCALTIMESTAMP - INTERVAL '59 minutes', NULL, NULL), "
+						+ "(3, LOCALTIMESTAMP - INTERVAL '2 days', LOCALTIMESTAMP - INTERVAL '2 days', NULL, NULL), "
+						+ "(4, LOCALTIMESTAMP - INTERVAL '2 days', LOCALTIMESTAMP - INTERVAL '2 days', '2026-11-01T09:00:00', NULL), "
+						+ "(5, LOCALTIMESTAMP - INTERVAL '2 days', LOCALTIMESTAMP - INTERVAL '2 days', NULL, '2026-11-01T09:00:00')");
+				statement.execute("INSERT INTO support_messages VALUES (1, 3)");
+				ScriptUtils.executeSqlScript(connection, new ClassPathResource("db/migration/V73__close_empty_support_conversations.sql"));
+				try (var rows = statement.executeQuery("SELECT id FROM support_conversations WHERE closed_at IS NOT NULL ORDER BY id")) {
+					assertThat(rows.next()).isTrue();
+					assertThat(rows.getLong(1)).isEqualTo(1);
+					assertThat(rows.next()).isTrue();
+					assertThat(rows.getLong(1)).isEqualTo(4);
+					assertThat(rows.next()).isFalse();
+				}
+				try (var rows = statement.executeQuery("SELECT closed_at = updated_at FROM support_conversations WHERE id = 1")) {
+					assertThat(rows.next()).isTrue();
+					assertThat(rows.getBoolean(1)).isTrue();
+				}
+				try (var rows = statement.executeQuery("SELECT closed_at FROM support_conversations WHERE id = 4")) {
+					assertThat(rows.next()).isTrue();
+					assertThat(rows.getObject(1, java.time.LocalDateTime.class)).isEqualTo(java.time.LocalDateTime.parse("2026-11-01T09:00:00"));
+				}
+			} finally {
+				connection.rollback();
+			}
+		}
+	}
+
+	@Test
 	void 대화_ID를_분리해도_기존_소유자와_메시지는_유지하고_회원별_중복은_거절한다() throws Exception {
 		try (Connection connection = dataSource.getConnection()) {
 			connection.setAutoCommit(false);
