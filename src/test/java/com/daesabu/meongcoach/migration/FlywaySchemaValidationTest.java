@@ -221,7 +221,7 @@ class FlywaySchemaValidationTest {
 						+ "(4, LOCALTIMESTAMP - INTERVAL '2 days', LOCALTIMESTAMP - INTERVAL '2 days', '2026-11-01T09:00:00', NULL), "
 						+ "(5, LOCALTIMESTAMP - INTERVAL '2 days', LOCALTIMESTAMP - INTERVAL '2 days', NULL, '2026-11-01T09:00:00')");
 				statement.execute("INSERT INTO support_messages VALUES (1, 3)");
-				ScriptUtils.executeSqlScript(connection, new ClassPathResource("db/migration/V72__close_empty_support_conversations.sql"));
+				ScriptUtils.executeSqlScript(connection, new ClassPathResource("db/migration/V73__close_empty_support_conversations.sql"));
 				try (var rows = statement.executeQuery("SELECT id FROM support_conversations WHERE closed_at IS NOT NULL ORDER BY id")) {
 					assertThat(rows.next()).isTrue();
 					assertThat(rows.getLong(1)).isEqualTo(1);
