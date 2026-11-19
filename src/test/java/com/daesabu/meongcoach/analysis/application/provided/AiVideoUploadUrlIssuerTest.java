@@ -60,7 +60,7 @@ class AiVideoUploadUrlIssuerTest {
 	}
 
 	@ParameterizedTest
-	@ValueSource(ints = {0, 1, 29})
+	@ValueSource(ints = {0, 1, 2})
 	void 체험_횟수가_남아_있으면_분석_저장소의_훈련_영상_업로드_URL_발급을_위임한다(int usedCount) {
 		aiTrialRepository.saveAndFlush(AiTrialFixture.used(USER_ID, usedCount));
 
