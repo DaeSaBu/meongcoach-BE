@@ -6,6 +6,7 @@ import com.daesabu.meongcoach.support.ApplicationTest;
 import com.daesabu.meongcoach.support.application.provided.dto.ChatMessageRequest;
 import com.daesabu.meongcoach.support.application.required.ChatConversationRepository;
 import com.daesabu.meongcoach.support.domain.ChatConversation;
+import com.daesabu.meongcoach.support.domain.exception.ChatAccessDeniedException;
 import com.daesabu.meongcoach.support.domain.exception.ChatCursorInvalidException;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.User;
@@ -160,6 +161,37 @@ class ChatFinderTest {
 				.isInstanceOf(ChatCursorInvalidException.class);
 		assertThatThrownBy(() -> finder.memberConversations(owner, 0, LocalDateTime.now()))
 				.isInstanceOf(ChatCursorInvalidException.class);
+	}
+
+	@Test
+	void 삭제된_대화는_진행_중이든_종료됐든_목록과_조회에서_제외한다() {
+		Long owner = users.save(User.registerUser()).getId();
+		long deletedClosedId = register.open(owner).getId();
+		remover.close(owner, deletedClosedId);
+		long deletedOpenId = register.open(owner).getId();
+		conversations.flush();
+		jdbc.update("UPDATE support_conversations SET deleted_at = LOCALTIMESTAMP WHERE id IN (?, ?)", deletedClosedId, deletedOpenId);
+		em.clear();
+
+		assertThat(finder.memberConversations(owner, 0, null)).isEmpty();
+		assertThat(finder.conversations(0, null)).extracting(ChatConversation::getId).doesNotContain(deletedOpenId);
+		assertThat(finder.closedConversations(0, null)).extracting(ChatConversation::getId).doesNotContain(deletedClosedId);
+		assertThatThrownBy(() -> finder.findConversation(owner, deletedClosedId)).isInstanceOf(ChatAccessDeniedException.class);
+		assertThatThrownBy(() -> finder.latestMessages(owner, deletedOpenId)).isInstanceOf(ChatAccessDeniedException.class);
+	}
+
+	@Test
+	void 진행_중인_대화가_삭제된_회원은_새_대화를_연다() {
+		Long owner = users.save(User.registerUser()).getId();
+		long deletedId = register.open(owner).getId();
+		conversations.flush();
+		jdbc.update("UPDATE support_conversations SET deleted_at = LOCALTIMESTAMP WHERE id = ?", deletedId);
+		em.clear();
+
+		long reopenedId = register.open(owner).getId();
+
+		assertThat(reopenedId).isNotEqualTo(deletedId);
+		assertThat(finder.memberConversations(owner, 0, null)).extracting(ChatConversation::getId).containsExactly(reopenedId);
 	}
 
 	@Test
