@@ -59,7 +59,7 @@ flowchart LR
 ## 상담 종료와 시각
 
 [ChatRemover](../src/main/java/com/daesabu/meongcoach/support/application/provided/ChatRemover.java)는 대화의 종료 시각 `closedAt`을 기록합니다.
-엔티티 필드 `closedAt`은 `deleted_at` 컬럼에 매핑하며, 진행 중 대화의 부분 UNIQUE 인덱스도 이 컬럼을 기준으로 합니다.
+종료 시각은 `closed_at` 컬럼에 저장하며, 진행 중 대화의 부분 UNIQUE 인덱스(`WHERE closed_at IS NULL`)도 이 컬럼을 기준으로 합니다.
 대화 소유 회원과 ADMIN·EXPERT가 종료할 수 있습니다.
 이미 종료된 대화를 다시 닫으면 처음 종료 시각을 유지합니다.
 대화와 메시지는 DB에 보관합니다.
