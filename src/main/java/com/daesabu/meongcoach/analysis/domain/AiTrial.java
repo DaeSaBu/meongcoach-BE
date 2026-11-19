@@ -24,7 +24,7 @@ import org.springframework.util.Assert;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class AiTrial extends BaseEntity {
 
-	public static final int DEFAULT_GRANTED_COUNT = 30;
+	public static final int DEFAULT_GRANTED_COUNT = 3;
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
