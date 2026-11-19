@@ -17,7 +17,7 @@ public interface ChatConversationRepository extends JpaRepository<ChatConversati
 	@Query(value = """
 			INSERT INTO support_conversations (member_id, created_at, updated_at, last_message_at)
 			VALUES (:memberId, :now, :now, :now)
-			ON CONFLICT (member_id) WHERE closed_at IS NULL DO NOTHING
+			ON CONFLICT (member_id) WHERE closed_at IS NULL AND deleted_at IS NULL DO NOTHING
 			""", nativeQuery = true)
 	void insertIfAbsent(@Param("memberId") long memberId, @Param("now") LocalDateTime now);
 
