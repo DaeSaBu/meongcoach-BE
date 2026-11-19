@@ -45,6 +45,7 @@ public class AiController {
 		return AiReportDetailResponse.from(aiReportFinder.findReport(userId, reportId));
 	}
 
+	@Deprecated(forRemoval = true)
 	@PostMapping("/presigned-urls")
 	public AiVideoUploadUrlResponse issueVideoUploadUrl(@CurrentUserId Long userId,
 	                                                    @Valid @RequestBody AiVideoUploadUrlRequest request) {

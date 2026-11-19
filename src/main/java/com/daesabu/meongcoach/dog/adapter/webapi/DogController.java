@@ -79,6 +79,7 @@ public class DogController {
 		dogProfileDeleter.delete(userId, dogId);
 	}
 
+	@Deprecated(forRemoval = true)
 	@GetMapping("/profile/image")
 	public DogProfileImageResponse findProfileImage(@CurrentUserId Long userId,
 	                                                @RequestParam(required = false) Long dogId) {
