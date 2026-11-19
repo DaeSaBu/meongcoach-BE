@@ -24,4 +24,14 @@ public class AiTrialModifyService implements AiTrialRegister {
 		trial.grant(count);
 		aiTrialRepository.save(trial);
 	}
+
+	@Transactional
+	public void synchronizePurchasedCount(Long userId, int purchasedCount) {
+		aiTrialRepository.lockByUserId(userId);
+
+		AiTrial trial = aiTrialRepository.findByUserId(userId)
+				.orElseGet(() -> AiTrial.start(userId));
+		trial.synchronizePurchasedCount(purchasedCount);
+		aiTrialRepository.save(trial);
+	}
 }
