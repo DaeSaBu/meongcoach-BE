@@ -12,6 +12,7 @@ import com.daesabu.meongcoach.auth.application.required.TokenProvider;
 import com.daesabu.meongcoach.support.ApplicationTest;
 import com.daesabu.meongcoach.support.application.provided.ChatFinder;
 import com.daesabu.meongcoach.support.application.provided.ChatRegister;
+import com.daesabu.meongcoach.support.application.provided.ChatRemover;
 import com.daesabu.meongcoach.user.application.provided.RegisteredUserChecker;
 import com.daesabu.meongcoach.user.application.required.UserRepository;
 import com.daesabu.meongcoach.user.domain.User;
@@ -35,6 +36,7 @@ class ChatSecurityTest {
 	@Autowired UserRepository users;
 	@Autowired ChatRegister chats;
 	@Autowired ChatFinder finder;
+	@Autowired ChatRemover remover;
 	@Autowired TokenProvider tokens;
 	@Autowired EntityManager em;
 	@MockitoSpyBean RegisteredUserChecker registeredUsers;
@@ -80,6 +82,42 @@ class ChatSecurityTest {
 	}
 
 	@Test
+	void 회원은_닫힌_대화를_조회하지만_추가로_전송할_수_없다() throws Exception {
+		Long owner = member(UserRole.USER);
+		String token = bearer(owner);
+		long conversationId = chats.open(owner).getId();
+		mvc.perform(appPost(messages(conversationId)).header("Authorization", token)
+				.contentType(MediaType.APPLICATION_JSON).content(body()))
+				.andExpect(status().isOk());
+		remover.close(owner, conversationId);
+		em.flush();
+
+		mvc.perform(appGet(messages(conversationId)).header("Authorization", token))
+				.andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(1));
+		mvc.perform(appPost(messages(conversationId)).header("Authorization", token)
+				.contentType(MediaType.APPLICATION_JSON).content(body()))
+				.andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("SUPPORT_CHAT_CLOSED"));
+	}
+
+	@Test
+	void 회원은_본인_대화_목록만_조회한다() throws Exception {
+		Long owner = member(UserRole.USER);
+		long closedId = chats.open(owner).getId();
+		remover.close(owner, closedId);
+		em.flush();
+		long openId = chats.open(owner).getId();
+		chats.open(member(UserRole.USER));
+		em.flush();
+
+		mvc.perform(appGet("/api/support/conversations/me").header("Authorization", bearer(owner)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.length()").value(2))
+				.andExpect(jsonPath("$[0].id").value(openId))
+				.andExpect(jsonPath("$[1].id").value(closedId))
+				.andExpect(jsonPath("$[1].closedAt").isNotEmpty());
+	}
+
+	@Test
 	void 다른_회원의_대화와_관리자_목록은_거절한다() throws Exception {
 		Long owner = member(UserRole.USER);
 		long conversationId = chats.open(owner).getId();
@@ -94,6 +132,8 @@ class ChatSecurityTest {
 				.contentType(MediaType.APPLICATION_JSON).content(body()))
 				.andExpect(status().isForbidden());
 		mvc.perform(appGet("/api/support/conversations").header("Authorization", token))
+				.andExpect(status().isForbidden());
+		mvc.perform(appGet("/api/support/conversations").param("closed", "true").header("Authorization", token))
 				.andExpect(status().isForbidden());
 		assertThat(finder.latestMessages(owner, conversationId)).isEmpty();
 	}
@@ -140,6 +180,25 @@ class ChatSecurityTest {
 
 	@ParameterizedTest
 	@EnumSource(value = UserRole.class, names = {"ADMIN", "EXPERT"})
+	void 상담원는_종료된_대화와_진행_중인_대화를_나눠_조회한다(UserRole role) throws Exception {
+		Long owner = member(UserRole.USER);
+		long closedId = chats.open(owner).getId();
+		remover.close(owner, closedId);
+		long openId = chats.open(owner).getId();
+		em.flush();
+		String token = bearer(member(role));
+		mvc.perform(appGet("/api/support/conversations").param("closed", "true").header("Authorization", token))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$[?(@.id == " + closedId + ")].closedAt").isNotEmpty())
+				.andExpect(jsonPath("$[?(@.id == " + openId + ")]").isEmpty());
+		mvc.perform(appGet("/api/support/conversations").header("Authorization", token))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$[?(@.id == " + openId + ")]").isNotEmpty())
+				.andExpect(jsonPath("$[?(@.id == " + closedId + ")]").isEmpty());
+	}
+
+	@ParameterizedTest
+	@EnumSource(value = UserRole.class, names = {"ADMIN", "EXPERT"})
 	void 상담원_권한을_잃으면_기존_토큰으로도_다른_대화에_접근할_수_없다(UserRole role) throws Exception {
 		Long owner = member(UserRole.USER);
 		long conversationId = chats.open(owner).getId();
@@ -163,6 +222,7 @@ class ChatSecurityTest {
 				.andExpect(status().isUnauthorized());
 		mvc.perform(appGet("/api/support/conversations")).andExpect(status().isUnauthorized());
 		mvc.perform(appPost("/api/support/conversations/me")).andExpect(status().isUnauthorized());
+		mvc.perform(appGet("/api/support/conversations/me")).andExpect(status().isUnauthorized());
 	}
 
 	@Test
@@ -192,6 +252,8 @@ class ChatSecurityTest {
 		mvc.perform(appGet("/api/support/conversations").header("Authorization", token))
 				.andExpect(status().isForbidden());
 		mvc.perform(appPost("/api/support/conversations/me").header("Authorization", token))
+				.andExpect(status().isForbidden());
+		mvc.perform(appGet("/api/support/conversations/me").header("Authorization", token))
 				.andExpect(status().isForbidden());
 	}
 	@ParameterizedTest

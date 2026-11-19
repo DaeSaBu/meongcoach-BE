@@ -17,21 +17,43 @@ public interface ChatConversationRepository extends JpaRepository<ChatConversati
 	@Query(value = """
 			INSERT INTO support_conversations (member_id, created_at, updated_at, last_message_at)
 			VALUES (:memberId, :now, :now, :now)
-			ON CONFLICT (member_id) WHERE deleted_at IS NULL DO NOTHING
+			ON CONFLICT (member_id) WHERE closed_at IS NULL AND deleted_at IS NULL DO NOTHING
 			""", nativeQuery = true)
 	void insertIfAbsent(@Param("memberId") long memberId, @Param("now") LocalDateTime now);
 
-	Optional<ChatConversation> findByMemberId(long memberId);
+	Optional<ChatConversation> findByMemberIdAndClosedAtIsNull(long memberId);
 
-	List<ChatConversation> findAllByOrderByLastMessageAtDescIdDesc(Pageable pageable);
+	List<ChatConversation> findByClosedAtIsNullOrderByLastMessageAtDescIdDesc(Pageable pageable);
 
 	@Query("""
 			SELECT c FROM SupportConversation c
-			WHERE c.lastMessageAt < :updatedAt
-			OR (c.lastMessageAt = :updatedAt AND c.id < :id)
+			WHERE c.closedAt IS NULL
+			AND (c.lastMessageAt < :updatedAt OR (c.lastMessageAt = :updatedAt AND c.id < :id))
 			ORDER BY c.lastMessageAt DESC, c.id DESC
 			""")
 	List<ChatConversation> findPrevious(
+			@Param("updatedAt") LocalDateTime updatedAt, @Param("id") long id, Pageable pageable);
+
+	List<ChatConversation> findByClosedAtIsNotNullOrderByLastMessageAtDescIdDesc(Pageable pageable);
+
+	@Query("""
+			SELECT c FROM SupportConversation c
+			WHERE c.closedAt IS NOT NULL
+			AND (c.lastMessageAt < :updatedAt OR (c.lastMessageAt = :updatedAt AND c.id < :id))
+			ORDER BY c.lastMessageAt DESC, c.id DESC
+			""")
+	List<ChatConversation> findPreviousClosed(
+			@Param("updatedAt") LocalDateTime updatedAt, @Param("id") long id, Pageable pageable);
+
+	List<ChatConversation> findByMemberIdOrderByLastMessageAtDescIdDesc(long memberId, Pageable pageable);
+
+	@Query("""
+			SELECT c FROM SupportConversation c
+			WHERE c.memberId = :memberId
+			AND (c.lastMessageAt < :updatedAt OR (c.lastMessageAt = :updatedAt AND c.id < :id))
+			ORDER BY c.lastMessageAt DESC, c.id DESC
+			""")
+	List<ChatConversation> findPreviousByMemberId(@Param("memberId") long memberId,
 			@Param("updatedAt") LocalDateTime updatedAt, @Param("id") long id, Pageable pageable);
 
 	@Lock(LockModeType.PESSIMISTIC_WRITE)

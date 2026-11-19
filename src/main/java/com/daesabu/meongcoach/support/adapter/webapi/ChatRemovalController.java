@@ -19,7 +19,7 @@ public class ChatRemovalController {
 
 	@DeleteMapping("/{id}")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	public void leave(@CurrentUserId Long userId, @PathVariable @Positive long id) {
-		remover.leave(userId, id);
+	public void close(@CurrentUserId Long userId, @PathVariable @Positive long id) {
+		remover.close(userId, id);
 	}
 }
