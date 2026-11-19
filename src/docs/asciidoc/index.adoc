@@ -669,6 +669,23 @@ RevenueCat 장애·호출 한도 초과·연결 실패로 이용권을 확인하
 
 operation::entitlement/synchronize-error[snippets='http-response,response-fields']
 
+== Coupon API
+
+=== 쿠폰 사용
+
+link:{swagger-ui}#/Coupon/coupon-redemption-register[▶ Swagger에서 Try it out,window=swagger]
+
+쿠폰 코드를 입력해 AI 행동 분석 횟수를 받습니다. 쿠폰에 설정된 횟수만큼 사용자의 부여 횟수가 늘어나며, 늘어난 뒤의 현황은 <<_ai_리포트_체험_횟수_조회,AI 리포트 체험 횟수 조회>>로 확인합니다.
+코드의 앞뒤 공백과 대소문자는 구분하지 않습니다. 한 사용자는 같은 쿠폰을 한 번만 사용할 수 있고, 온보딩을 마치지 않은 회원도 호출할 수 있습니다.
+
+operation::coupon/redemption-register[snippets='http-request,request-fields,http-response,response-fields']
+
+==== 실패 응답
+
+이미 사용한 쿠폰이면 409(`COUPON_ALREADY_REDEEMED`), 일치하는 코드가 없으면 404(`COUPON_NOT_FOUND`), 입력 기한이 지났으면 400(`COUPON_EXPIRED`)을 반환합니다. 어느 경우에도 횟수는 바뀌지 않습니다.
+
+operation::coupon/redemption-register-error[snippets='http-response,response-fields']
+
 == Graduation API
 
 토픽의 모든 커리큘럼을 마친 회원이 실습 영상을 올리고(실습 인증), 운영자가 판정합니다. 승인하면 토픽 수료로 표시되며 보상은 없습니다.
