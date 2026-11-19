@@ -14,7 +14,7 @@ class AiTrialFreeCountMigrationTest {
 	void 기본_부여_횟수를_3회로_줄이고_추가_부여분은_보존하며_사용_횟수는_기본_부여분부터_쓴_것으로_맞춘다() {
 		DriverManagerDataSource dataSource = new DriverManagerDataSource(
 				"jdbc:tc:postgresql:18.3:///ai_trial_free_count_migration?TC_DAEMON=true", "test", "test");
-		Flyway.configure().dataSource(dataSource).target("69").load().migrate();
+		Flyway.configure().dataSource(dataSource).target("71").load().migrate();
 		JdbcTemplate jdbc = new JdbcTemplate(dataSource);
 		jdbc.update("""
 				insert into ai_trials (user_id, granted_count, used_count, created_at, updated_at)
@@ -26,7 +26,7 @@ class AiTrialFreeCountMigrationTest {
 				       (6, 10, 5, now(), now())
 				""");
 
-		Flyway.configure().dataSource(dataSource).target("70").load().migrate();
+		Flyway.configure().dataSource(dataSource).target("72").load().migrate();
 
 		assertThat(jdbc.queryForList("select user_id, granted_count, used_count from ai_trials order by user_id"))
 				.containsExactly(
