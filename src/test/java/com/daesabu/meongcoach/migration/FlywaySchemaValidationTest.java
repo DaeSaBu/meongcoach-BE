@@ -140,6 +140,39 @@ class FlywaySchemaValidationTest {
 	}
 
 	@Test
+	void 종료_시각_컬럼_이름을_바꿔도_종료_시각을_보존하고_진행_중인_상담만_유일하다() throws Exception {
+		try (Connection connection = dataSource.getConnection()) {
+			connection.setAutoCommit(false);
+			try (var statement = connection.createStatement()) {
+				statement.execute("CREATE SCHEMA chat_closed_at_test");
+				statement.execute("SET LOCAL search_path TO chat_closed_at_test");
+				statement.execute("CREATE TABLE support_conversations (id BIGINT PRIMARY KEY, member_id BIGINT NOT NULL, deleted_at TIMESTAMP)");
+				statement.execute("CREATE UNIQUE INDEX uk_support_conversations_active_member ON support_conversations (member_id) WHERE deleted_at IS NULL");
+				statement.execute("INSERT INTO support_conversations VALUES (1, 42, '2026-11-01T09:00:00'), (2, 42, NULL)");
+				ScriptUtils.executeSqlScript(connection, new ClassPathResource("db/migration/V69__rename_support_conversation_closed_at.sql"));
+				try (var rows = statement.executeQuery("SELECT closed_at FROM support_conversations ORDER BY id")) {
+					assertThat(rows.next()).isTrue();
+					assertThat(rows.getObject(1, java.time.LocalDateTime.class)).isEqualTo(java.time.LocalDateTime.parse("2026-11-01T09:00:00"));
+					assertThat(rows.next()).isTrue();
+					assertThat(rows.getObject(1)).isNull();
+				}
+				statement.execute("INSERT INTO support_conversations VALUES (3, 42, NULL) ON CONFLICT (member_id) WHERE closed_at IS NULL DO NOTHING");
+				try (var rows = statement.executeQuery("SELECT count(*) FROM support_conversations WHERE member_id = 42 AND closed_at IS NULL")) {
+					assertThat(rows.next()).isTrue();
+					assertThat(rows.getLong(1)).isEqualTo(1);
+				}
+				statement.execute("UPDATE support_conversations SET closed_at = LOCALTIMESTAMP WHERE id = 2");
+				statement.execute("INSERT INTO support_conversations VALUES (4, 42, NULL)");
+				assertThatThrownBy(() -> statement.execute("INSERT INTO support_conversations VALUES (5, 42, NULL)"))
+						.isInstanceOf(java.sql.SQLException.class)
+						.satisfies(exception -> assertThat(((java.sql.SQLException) exception).getSQLState()).isEqualTo("23505"));
+			} finally {
+				connection.rollback();
+			}
+		}
+	}
+
+	@Test
 	void 대화_ID를_분리해도_기존_소유자와_메시지는_유지하고_회원별_중복은_거절한다() throws Exception {
 		try (Connection connection = dataSource.getConnection()) {
 			connection.setAutoCommit(false);

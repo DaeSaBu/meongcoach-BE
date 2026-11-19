@@ -55,7 +55,7 @@ class ChatRemoverTest {
 
 		assertThat(conversations.findById(id)).get().extracting(ChatConversation::isClosed).isEqualTo(true);
 		assertThat(messages.existsById(message.getId())).isTrue();
-		assertThat(jdbc.queryForObject("SELECT deleted_at IS NOT NULL FROM support_conversations WHERE id = ?", Boolean.class, id)).isTrue();
+		assertThat(jdbc.queryForObject("SELECT closed_at IS NOT NULL FROM support_conversations WHERE id = ?", Boolean.class, id)).isTrue();
 		assertThat(finder.conversations(0, null)).extracting(ChatConversation::getId).doesNotContain(id);
 		assertThat(finder.latestMessages(owner, id)).extracting(ChatMessage::getId).containsExactly(message.getId());
 		assertThat(finder.latestMessages(other, otherId)).hasSize(1);
@@ -138,7 +138,7 @@ class ChatRemoverTest {
 		em.clear();
 
 		assertThat(conversations.findById(id).orElseThrow().isClosed()).isTrue();
-		assertThat(jdbc.queryForObject("SELECT deleted_at IS NOT NULL FROM support_conversations WHERE id = ?", Boolean.class, id)).isTrue();
+		assertThat(jdbc.queryForObject("SELECT closed_at IS NOT NULL FROM support_conversations WHERE id = ?", Boolean.class, id)).isTrue();
 		assertThat(register.open(owner).getId()).isNotEqualTo(id);
 		assertThat(finder.latestMessages(expert, id)).isEmpty();
 	}
