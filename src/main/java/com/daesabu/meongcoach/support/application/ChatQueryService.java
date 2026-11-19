@@ -82,7 +82,9 @@ public class ChatQueryService implements ChatFinder {
 	}
 
 	private void verifyConversationCursor(long before, LocalDateTime beforeUpdatedAt) {
-		if ((before == 0) != (beforeUpdatedAt == null)) {
+		// 커서는 ID(before)와 시각(beforeUpdatedAt)이 한 쌍이다. 둘 다 없으면 첫 페이지, 둘 다 있으면 다음 페이지다.
+		// 배타적 논리합(^)은 둘 중 하나만 비어 있을 때 참이므로, 한쪽만 전달한 요청을 거절한다.
+		if ((before == 0) ^ (beforeUpdatedAt == null)) {
 			throw new ChatCursorInvalidException();
 		}
 	}
