@@ -1,4 +1,4 @@
-package com.daesabu.meongcoach.shared.config;
+package com.daesabu.meongcoach.analysis.adapter.integration;
 
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -9,6 +9,7 @@ import org.springframework.validation.annotation.Validated;
 public record RevenueCatProperties(
 		@NotBlank String baseUrl,
 		@NotBlank String apiKey,
-		@NotBlank String projectId
+		@NotBlank String projectId,
+		@NotBlank String currencyCode
 ) {
 }
