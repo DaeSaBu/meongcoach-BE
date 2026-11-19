@@ -18,6 +18,7 @@ class AiTrialTest {
 
 		assertThat(trial.getUserId()).isEqualTo(USER_ID);
 		assertThat(trial.maxCount()).isEqualTo(3);
+		assertThat(trial.getPurchasedCount()).isZero();
 		assertThat(trial.getUsedCount()).isZero();
 		assertThat(trial.remainingCount()).isEqualTo(3);
 	}
@@ -102,6 +103,83 @@ class AiTrialTest {
 		AiTrial trial = AiTrial.start(USER_ID);
 
 		assertThatThrownBy(() -> trial.grant(count))
+				.isInstanceOf(IllegalStateException.class);
+	}
+
+	@Test
+	void 구매_횟수를_맞추면_최대_횟수와_잔여_횟수에_구매_횟수가_더해진다() {
+		AiTrial trial = AiTrialFixture.used(USER_ID, 2);
+
+		trial.synchronizePurchasedCount(20);
+
+		assertThat(trial.getPurchasedCount()).isEqualTo(20);
+		assertThat(trial.maxCount()).isEqualTo(23);
+		assertThat(trial.getUsedCount()).isEqualTo(2);
+		assertThat(trial.remainingCount()).isEqualTo(21);
+	}
+
+	@Test
+	void 구매_횟수를_다시_맞추면_더하지_않고_받은_값으로_바꾼다() {
+		AiTrial trial = AiTrialFixture.purchased(USER_ID, 20, 0);
+
+		trial.synchronizePurchasedCount(21);
+
+		assertThat(trial.getPurchasedCount()).isEqualTo(21);
+		assertThat(trial.maxCount()).isEqualTo(24);
+	}
+
+	@Test
+	void 부여_횟수를_모두_써도_구매_횟수가_남아_있으면_사용할_수_있다() {
+		AiTrial trial = AiTrialFixture.purchased(USER_ID, 1, 3);
+
+		assertThat(trial.isAvailable()).isTrue();
+		assertThat(trial.remainingCount()).isEqualTo(1);
+	}
+
+	@Test
+	void 부여_횟수와_구매_횟수를_모두_쓰면_소진했다() {
+		AiTrial trial = AiTrialFixture.purchased(USER_ID, 1, 4);
+
+		assertThat(trial.isAvailable()).isFalse();
+		assertThat(trial.remainingCount()).isZero();
+	}
+
+	@Test
+	void 구매_횟수가_줄어_사용_횟수가_최대_횟수를_넘으면_사용_횟수를_최대_횟수로_맞춘다() {
+		AiTrial trial = AiTrialFixture.purchased(USER_ID, 20, 15);
+
+		trial.synchronizePurchasedCount(0);
+
+		assertThat(trial.maxCount()).isEqualTo(3);
+		assertThat(trial.getUsedCount()).isEqualTo(3);
+		assertThat(trial.remainingCount()).isZero();
+	}
+
+	@Test
+	void 구매_횟수가_줄어도_사용_횟수가_최대_횟수_이하면_사용_횟수는_그대로다() {
+		AiTrial trial = AiTrialFixture.purchased(USER_ID, 20, 5);
+
+		trial.synchronizePurchasedCount(10);
+
+		assertThat(trial.getUsedCount()).isEqualTo(5);
+		assertThat(trial.remainingCount()).isEqualTo(8);
+	}
+
+	@Test
+	void 구매_횟수는_0으로_맞출_수_있다() {
+		AiTrial trial = AiTrial.start(USER_ID);
+
+		trial.synchronizePurchasedCount(0);
+
+		assertThat(trial.getPurchasedCount()).isZero();
+		assertThat(trial.maxCount()).isEqualTo(3);
+	}
+
+	@Test
+	void 구매_횟수는_음수로_맞출_수_없다() {
+		AiTrial trial = AiTrial.start(USER_ID);
+
+		assertThatThrownBy(() -> trial.synchronizePurchasedCount(-1))
 				.isInstanceOf(IllegalStateException.class);
 	}
 }
