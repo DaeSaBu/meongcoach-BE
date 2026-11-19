@@ -18,7 +18,7 @@ flowchart LR
 
 | 애그리거트 | 범위 | 저장 내용 |
 |---|---|---|
-| 콘텐츠(`TrainingCategory`·`Topic`·`Curriculum`·`Lesson`·`Card`) | 전체 사용자 공용 | 구성, 정렬 순서, 이용권 요구 조건 |
+| 콘텐츠(`TrainingCategory`·`Topic`·`Curriculum`·`Lesson`·`Card`) | 전체 사용자 공용 | 구성, 정렬 순서 |
 | `LessonProgress` | 사용자·반려견·레슨당 한 행 | 완료 횟수 |
 | `TopicSelection` | 사용자·반려견당 한 행 | 마지막으로 선택한 토픽 |
 | `Plan` | 사용자·반려견당 활성 한 행 | 커리큘럼 순서, 플랜 안에서 완료한 레슨 ID, 상태, 회고 |
@@ -32,7 +32,7 @@ flowchart LR
 
 - 사용자 기록은 모두 반려견별입니다. 같은 사용자의 다른 반려견 기록은 진행, 완료 판단, 플랜 준비 어디에도 섞이지 않습니다.
 - 컨트롤러가 받는 `dogId`는 선택입니다. 서비스가 `DogProfileFinder.findDogProfileOrSelected`로 반려견을 정하며, `dogId`가 없으면 선택된 반려견을 씁니다. 이 규칙은 dog 모듈 한 곳에만 있습니다.
-- 지정한 반려견이 없거나 본인 소유가 아니면, 또는 선택된 반려견이 없으면 `DogNotFoundException`(404)입니다. 레슨·토픽 존재와 이용권은 반려견보다 먼저 확인합니다.
+- 지정한 반려견이 없거나 본인 소유가 아니면, 또는 선택된 반려견이 없으면 `DogNotFoundException`(404)입니다. 레슨·토픽 존재는 반려견보다 먼저 확인합니다.
 - 다른 서비스가 이미 정한 반려견을 넘겨받는 조회(`TopicProgressFinder`, `TopicCompletionChecker`, `AiPlanPreparationFinder`)는 받은 `dogId`를 그대로 쓰고 다시 확인하지 않습니다.
 - 반려견별 전환(V65) 이전의 기록은 사용자 단위였습니다. 기존 행은 선택된 반려견으로, 선택된 반려견이 없으면 가장 먼저 등록한 반려견으로 옮겼고, 반려견이 한 마리도 없는 사용자의 행은 지웠습니다.
 
@@ -64,8 +64,7 @@ flowchart LR
 
 ## 레슨 완료
 
-- 레슨 완료는 레슨 존재와 이용권을 확인한 뒤 완료 횟수를 1 늘리고 갱신된 횟수를 반환합니다.
-- 이용권이 없으면 진행을 바꾸지 않고 `EntitlementRequiredException`을 던집니다.
+- 레슨 완료는 레슨 존재를 확인한 뒤 완료 횟수를 1 늘리고 갱신된 횟수를 반환합니다.
 - 같은 반려견·레슨의 동시 완료는 낙관적 잠금으로 감지합니다. 먼저 커밋한 완료만 반영하고 나머지는 409(`TRAINING_LESSON_COMPLETION_CONFLICT`)로 응답합니다.
 - 반복 완료의 갱신 유실은 `LessonProgress`의 `@Version`이, 동시 첫 완료의 중복 생성은 사용자·반려견·레슨 유니크 제약(`uk_lesson_progress_user_dog_lesson`)이 막습니다.
 - 충돌 판단 단위는 반려견·레슨 진행 행입니다. 같은 커리큘럼이나 토픽의 다른 레슨 완료와는 충돌하지 않습니다.
