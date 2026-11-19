@@ -75,4 +75,33 @@ class AiTrialTest {
 		assertThat(AiTrialFixture.create(USER_ID, 31, 30).isAvailable()).isTrue();
 		assertThat(AiTrialFixture.create(USER_ID, 5, 5).isAvailable()).isFalse();
 	}
+
+	@Test
+	void 추가로_부여하면_부여_횟수와_잔여_횟수가_그만큼_늘고_사용_횟수는_그대로다() {
+		AiTrial trial = AiTrialFixture.used(USER_ID, 12);
+
+		trial.grant(10);
+
+		assertThat(trial.maxCount()).isEqualTo(40);
+		assertThat(trial.getUsedCount()).isEqualTo(12);
+		assertThat(trial.remainingCount()).isEqualTo(28);
+	}
+
+	@Test
+	void 체험을_소진한_뒤_추가로_부여하면_다시_체험이_남는다() {
+		AiTrial trial = AiTrialFixture.used(USER_ID, 30);
+
+		trial.grant(10);
+
+		assertThat(trial.isAvailable()).isTrue();
+	}
+
+	@ParameterizedTest
+	@ValueSource(ints = {0, -1})
+	void 추가_부여_횟수가_1_미만이면_부여할_수_없다(int count) {
+		AiTrial trial = AiTrial.start(USER_ID);
+
+		assertThatThrownBy(() -> trial.grant(count))
+				.isInstanceOf(IllegalStateException.class);
+	}
 }
