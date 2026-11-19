@@ -13,13 +13,13 @@ class AiTrialTest {
 	private static final Long USER_ID = 7L;
 
 	@Test
-	void 처음_시작하면_30회를_부여받고_사용_횟수는_0이다() {
+	void 처음_시작하면_3회를_부여받고_사용_횟수는_0이다() {
 		AiTrial trial = AiTrial.start(USER_ID);
 
 		assertThat(trial.getUserId()).isEqualTo(USER_ID);
-		assertThat(trial.maxCount()).isEqualTo(30);
+		assertThat(trial.maxCount()).isEqualTo(3);
 		assertThat(trial.getUsedCount()).isZero();
-		assertThat(trial.remainingCount()).isEqualTo(30);
+		assertThat(trial.remainingCount()).isEqualTo(3);
 	}
 
 	@Test
@@ -30,66 +30,66 @@ class AiTrialTest {
 
 	@Test
 	void 사용하면_사용_횟수가_1_늘고_잔여_횟수가_1_줄어든다() {
-		AiTrial trial = AiTrialFixture.used(USER_ID, 2);
+		AiTrial trial = AiTrialFixture.used(USER_ID, 1);
 
 		trial.use();
 
-		assertThat(trial.getUsedCount()).isEqualTo(3);
-		assertThat(trial.remainingCount()).isEqualTo(27);
+		assertThat(trial.getUsedCount()).isEqualTo(2);
+		assertThat(trial.remainingCount()).isEqualTo(1);
 	}
 
 	@Test
 	void 부여_횟수를_모두_쓴_뒤에도_사용을_기록한다() {
-		AiTrial trial = AiTrialFixture.used(USER_ID, 30);
+		AiTrial trial = AiTrialFixture.used(USER_ID, 3);
 
 		trial.use();
 
-		assertThat(trial.getUsedCount()).isEqualTo(31);
+		assertThat(trial.getUsedCount()).isEqualTo(4);
 	}
 
 	@ParameterizedTest
-	@ValueSource(ints = {0, 1, 29})
+	@ValueSource(ints = {0, 1, 2})
 	void 사용_횟수가_부여_횟수_미만이면_체험이_남아_있다(int usedCount) {
 		assertThat(AiTrialFixture.used(USER_ID, usedCount).isAvailable()).isTrue();
 	}
 
 	@ParameterizedTest
-	@ValueSource(ints = {30, 31})
+	@ValueSource(ints = {3, 4})
 	void 사용_횟수가_부여_횟수_이상이면_체험을_소진했다(int usedCount) {
 		assertThat(AiTrialFixture.used(USER_ID, usedCount).isAvailable()).isFalse();
 	}
 
 	@ParameterizedTest
-	@CsvSource({"30, 0, 30", "30, 29, 1", "30, 30, 0", "35, 30, 5", "5, 3, 2"})
+	@CsvSource({"3, 0, 3", "3, 2, 1", "3, 3, 0", "13, 3, 10", "5, 3, 2"})
 	void 잔여_횟수는_부여_횟수에서_사용_횟수를_뺀_값이다(int grantedCount, int usedCount, int expected) {
 		assertThat(AiTrialFixture.create(USER_ID, grantedCount, usedCount).remainingCount()).isEqualTo(expected);
 	}
 
 	@Test
 	void 부여_횟수를_넘겨_사용한_경우에도_잔여_횟수는_0으로_내려간다() {
-		assertThat(AiTrialFixture.used(USER_ID, 31).remainingCount()).isZero();
+		assertThat(AiTrialFixture.used(USER_ID, 4).remainingCount()).isZero();
 	}
 
 	@Test
 	void 부여_횟수가_사용자마다_달라도_그_사용자의_부여_횟수로_소진을_판단한다() {
-		assertThat(AiTrialFixture.create(USER_ID, 31, 30).isAvailable()).isTrue();
+		assertThat(AiTrialFixture.create(USER_ID, 4, 3).isAvailable()).isTrue();
 		assertThat(AiTrialFixture.create(USER_ID, 5, 5).isAvailable()).isFalse();
 	}
 
 	@Test
 	void 추가로_부여하면_부여_횟수와_잔여_횟수가_그만큼_늘고_사용_횟수는_그대로다() {
-		AiTrial trial = AiTrialFixture.used(USER_ID, 12);
+		AiTrial trial = AiTrialFixture.used(USER_ID, 2);
 
 		trial.grant(10);
 
-		assertThat(trial.maxCount()).isEqualTo(40);
-		assertThat(trial.getUsedCount()).isEqualTo(12);
-		assertThat(trial.remainingCount()).isEqualTo(28);
+		assertThat(trial.maxCount()).isEqualTo(13);
+		assertThat(trial.getUsedCount()).isEqualTo(2);
+		assertThat(trial.remainingCount()).isEqualTo(11);
 	}
 
 	@Test
 	void 체험을_소진한_뒤_추가로_부여하면_다시_체험이_남는다() {
-		AiTrial trial = AiTrialFixture.used(USER_ID, 30);
+		AiTrial trial = AiTrialFixture.used(USER_ID, 3);
 
 		trial.grant(10);
 

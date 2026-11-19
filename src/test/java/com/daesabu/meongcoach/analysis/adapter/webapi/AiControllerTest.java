@@ -560,12 +560,12 @@ class AiControllerTest {
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.usedCount").value(1))
-				.andExpect(jsonPath("$.maxCount").value(30))
-				.andExpect(jsonPath("$.remainingCount").value(29))
+				.andExpect(jsonPath("$.maxCount").value(3))
+				.andExpect(jsonPath("$.remainingCount").value(2))
 				.andDo(document("ai/trial",
 						responseFields(
 								fieldWithPath("usedCount").description("사용한 횟수. 분석이 완료될 때 1씩 늘고 실패·진행 중은 세지 않는다"),
-								fieldWithPath("maxCount").description("이 사용자에게 부여된 무료 체험 횟수. 기본 30"),
+								fieldWithPath("maxCount").description("이 사용자에게 부여된 무료 체험 횟수. 기본 3"),
 								fieldWithPath("remainingCount").description("남은 횟수. 소진했으면 0")
 						)
 				));
