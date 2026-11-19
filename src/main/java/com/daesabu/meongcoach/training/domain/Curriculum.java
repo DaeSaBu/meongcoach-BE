@@ -2,7 +2,6 @@ package com.daesabu.meongcoach.training.domain;
 
 import static org.springframework.util.Assert.state;
 
-import com.daesabu.meongcoach.entitlement.domain.shared.EntitlementType;
 import com.daesabu.meongcoach.shared.domain.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -44,9 +43,6 @@ public class Curriculum extends BaseEntity {
 
 	@Column(nullable = false, columnDefinition = "TEXT")
 	private String description;
-
-	@Column(nullable = false)
-	private boolean isPremium;
 
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "topic_id", nullable = false)
@@ -98,16 +94,4 @@ public class Curriculum extends BaseEntity {
 	public Optional<Expert> findExpert() {
 		return Optional.ofNullable(expert);
 	}
-
-	public Optional<EntitlementType> findRequiredEntitlementType() {
-		if (!isPremium) {
-			return Optional.empty();
-		}
-		return topic.findRequiredEntitlementType();
-	}
-
-	public boolean isLocked(boolean hasEntitlement) {
-		return findRequiredEntitlementType().isPresent() && !hasEntitlement;
-	}
-
 }

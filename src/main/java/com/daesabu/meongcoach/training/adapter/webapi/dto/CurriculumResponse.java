@@ -5,11 +5,11 @@ import com.daesabu.meongcoach.training.domain.Curriculum;
 import com.daesabu.meongcoach.training.domain.ProgressStatus;
 
 public record CurriculumResponse(Long curriculumId, String curriculumTitle, int totalLessons, int completedLessons,
-		ProgressStatus status, boolean locked) {
+		ProgressStatus status) {
 
 	public static CurriculumResponse from(CurriculumResult result) {
 		Curriculum curriculum = result.curriculum();
 		return new CurriculumResponse(curriculum.getId(), curriculum.getTitle(), curriculum.getLessonsSize(),
-				result.completedLessons(), result.status(), result.locked());
+				result.completedLessons(), result.status());
 	}
 }
