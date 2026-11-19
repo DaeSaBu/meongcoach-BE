@@ -13,6 +13,7 @@ import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.util.Assert;
 
 @Getter
 @Entity
@@ -50,6 +51,12 @@ public class AiTrial extends BaseEntity {
 
 	public void use() {
 		usedCount++;
+	}
+
+	public void grant(int count) {
+		Assert.state(count > 0, "추가 부여 횟수는 1 이상이어야 한다");
+
+		grantedCount += count;
 	}
 
 	public int maxCount() {
