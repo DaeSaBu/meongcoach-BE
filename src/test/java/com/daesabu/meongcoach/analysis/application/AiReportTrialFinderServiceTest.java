@@ -54,7 +54,7 @@ class AiReportTrialFinderServiceTest {
 
 	@Test
 	void 다른_사용자의_현황은_조회하지_않는다() {
-		aiTrialRepository.saveAndFlush(AiTrialFixture.used(OTHER_USER_ID, 30));
+		aiTrialRepository.saveAndFlush(AiTrialFixture.used(OTHER_USER_ID, AiTrial.DEFAULT_GRANTED_COUNT));
 
 		AiTrial trial = aiTrialFinder.findTrial(USER_ID);
 
