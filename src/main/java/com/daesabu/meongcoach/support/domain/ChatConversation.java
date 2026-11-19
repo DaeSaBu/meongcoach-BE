@@ -19,7 +19,7 @@ import org.hibernate.annotations.ColumnDefault;
 @Entity(name = "SupportConversation")
 @Table(name = "support_conversations", indexes = {
 		@Index(name = "support_conversations_activity", columnList = "last_message_at DESC, id DESC"),
-		@Index(name = "uk_support_conversations_active_member", columnList = "(member_id)", unique = true, options = "WHERE deleted_at IS NULL")
+		@Index(name = "uk_support_conversations_active_member", columnList = "(member_id)", unique = true, options = "WHERE closed_at IS NULL")
 })
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -31,7 +31,6 @@ public class ChatConversation extends BaseEntity {
 	@Column(nullable = false)
 	private long memberId;
 
-	@Column(name = "deleted_at")
 	private LocalDateTime closedAt;
 
 	@Column(nullable = false)
