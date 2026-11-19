@@ -158,7 +158,7 @@ operation::user/me-error[snippets='http-response,response-fields']
 파일을 서버를 거치지 않고 스토리지에 직접 업로드하기 위한 API입니다. 이미지는 Cloudflare R2에 올립니다.
 액세스 토큰 인증이 필요합니다.
 
-AI 리포트용 영상 업로드 URL 발급은 무료 체험 횟수 검증과 함께 <<_ai_api,AI API>>에서 제공합니다.
+AI 리포트용 영상 업로드 URL 발급은 분석 횟수 검증과 함께 <<_ai_api,AI API>>에서 제공합니다.
 게시글 사진·영상 업로드 URL 발급은 <<_community_api,Community API>>에서 제공합니다.
 
 이미지 업로드는 다음 순서로 진행합니다.
@@ -401,7 +401,7 @@ operation::training/calendar-result-error[snippets='http-response,response-field
 `videoObjectKey`는 분석한 영상을 가리키는 GCS 객체 키입니다.
 영상 재생 URL(`videoUrl`)은 리포트 상세 조회에서만 1시간 유효 서명 URL로 내려가며, 영상이 아직 업로드되지 않은 리포트(`UPLOADING`·`FAILED_UPLOAD`)는 `null`입니다.
 
-AI 리포트 생성은 무료 체험으로 사용자에게 부여된 횟수(기본 3회)까지 가능합니다.
+AI 리포트 생성은 사용자에게 부여된 횟수(기본 3회)와 구매한 횟수를 합한 만큼 가능합니다.
 횟수를 소진하면 분석 건 생성과 영상 업로드 URL 발급이 403으로 거부됩니다.
 
 === AI 영상 분석 건 생성
@@ -409,7 +409,7 @@ AI 리포트 생성은 무료 체험으로 사용자에게 부여된 횟수(기�
 link:{swagger-ui}#/AI/ai-analysis-register[▶ Swagger에서 Try it out,window=swagger]
 
 보호자가 남긴 영상의 맥락(`context`)을 저장하고, 분석 건 ID와 영상을 Google Cloud Storage에 올릴 업로드 URL을 함께 발급합니다.
-무료 체험 횟수와 영상 길이 검증, 업로드 URL의 형식·크기 제한과 `Content-Length` 서명은 아래 <<_ai_리포트_영상_업로드_url_발급,영상 업로드 URL 발급>>과 같습니다.
+분석 횟수와 영상 길이 검증, 업로드 URL의 형식·크기 제한과 `Content-Length` 서명은 아래 <<_ai_리포트_영상_업로드_url_발급,영상 업로드 URL 발급>>과 같습니다.
 
 * `context`는 선택 입력이며 최대 500자입니다. 비우거나 생략하면 영상만으로 분석합니다.
 * 맥락은 영상 분석에 참고 정보로만 쓰이며, 영상과 맞지 않는 내용은 분석에 반영되지 않습니다.
@@ -439,7 +439,7 @@ NOTE: 사용 중단 예정(Deprecated)입니다. 앱이 호출하지 않는 API�
 
 맥락 입력과 강아지 지정을 지원하지 않습니다. 분석 건은 선택된 강아지로 저장합니다. 앱은 <<_ai_영상_분석_건_생성,분석 건 생성>>을 사용합니다.
 
-훈련 영상을 Google Cloud Storage에 직접 업로드하기 위한 API입니다. 무료 체험 횟수를 검증한 뒤 URL을 발급합니다.
+훈련 영상을 Google Cloud Storage에 직접 업로드하기 위한 API입니다. 분석 횟수를 검증한 뒤 URL을 발급합니다.
 최대 512MiB(536870912바이트)까지 단일 `PUT`으로 올리며, `video/mp4`(mp4)와 `video/quicktime`(mov) 두 형식만 허용합니다.
 영상 길이는 10초 이상 5분(300초) 이하만 허용하므로, 앱이 잰 길이를 `durationSeconds`에 정수 초로 보냅니다.
 
@@ -465,7 +465,7 @@ operation::ai/video-upload-url[snippets='http-request,request-fields,http-respon
 
 ==== 실패 응답
 
-부여된 무료 체험 횟수(기본 3회)를 소진하면 403(`AI_REPORT_TRIAL_EXCEEDED`)을 반환합니다.
+부여 횟수(기본 3회)와 구매 횟수를 모두 소진하면 403(`AI_REPORT_TRIAL_EXCEEDED`)을 반환합니다.
 영상 길이가 허용 범위를 벗어나면 `AI_VIDEO_DURATION_OUT_OF_RANGE`, 파일 크기가 상한을 넘으면 `MEDIA_VIDEO_FILE_SIZE_EXCEEDED`, 0 이하면 `MEDIA_INVALID_VIDEO_FILE_SIZE`,
 지원하지 않는 형식이면 `MEDIA_UNSUPPORTED_VIDEO_TYPE`을 400으로 반환합니다.
 
@@ -478,11 +478,32 @@ NOTE: 업로드한 영상의 재생 URL 발급 API는 아직 없습니다. 비�
 
 link:{swagger-ui}#/AI/ai-trial[▶ Swagger에서 Try it out,window=swagger]
 
-액세스 토큰으로 식별한 사용자의 무료 체험 사용 현황을 조회합니다.
+액세스 토큰으로 식별한 사용자의 분석 횟수 사용 현황을 조회합니다.
 사용 횟수는 분석이 완료될(`COMPLETED`) 때 1씩 늘고, 실패하거나 진행 중인 리포트는 세지 않습니다.
-`maxCount`는 사용자마다 다를 수 있으며 기본값은 30입니다.
+`maxCount`는 부여 횟수(기본 3, 쿠폰으로 늘어남)와 구매 횟수의 합입니다.
 
 operation::ai/trial[snippets='http-request,http-response,response-fields']
+
+=== AI 분석 구매 횟수 동기화
+
+link:{swagger-ui}#/AI/ai-trial-synchronize[▶ Swagger에서 Try it out,window=swagger]
+
+액세스 토큰으로 식별한 사용자의 구매 횟수를 RevenueCat에 기록된 In-App Currency 잔액으로 맞춥니다.
+인앱 결제를 마친 직후 호출하고, 이어서 체험 횟수 조회로 늘어난 횟수를 받습니다.
+같은 잔액으로 여러 번 호출해도 횟수는 한 번만 반영됩니다.
+환불로 잔액이 줄었으면 구매 횟수도 줄고, 남은 횟수는 0 아래로 내려가지 않습니다.
+
+남은 횟수는 체험 횟수 조회의 값만 표시합니다.
+RevenueCat SDK가 주는 잔액에는 부여 횟수가 없고 분석에 써도 줄지 않습니다.
+
+operation::ai/trial-synchronize[snippets='http-request,http-response']
+
+==== 실패 응답
+
+RevenueCat에서 잔액을 받아 오지 못하면 502(`AI_TRIAL_PROVIDER_UNAVAILABLE`)를 반환하고 저장된 횟수는 바꾸지 않습니다.
+잠시 후 다시 호출하면 됩니다.
+
+operation::ai/trial-synchronize-error[snippets='http-response,response-fields']
 
 === AI 리포트 목록 조회
 
