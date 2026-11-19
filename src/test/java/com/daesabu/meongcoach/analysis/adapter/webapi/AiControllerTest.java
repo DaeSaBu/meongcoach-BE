@@ -4,6 +4,7 @@ import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.docume
 import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.BDDMockito.willThrow;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.get;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.post;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
@@ -22,6 +23,7 @@ import com.daesabu.meongcoach.analysis.application.provided.AiReportDetailResult
 import com.daesabu.meongcoach.analysis.application.provided.AiReportFinder;
 import com.daesabu.meongcoach.analysis.application.provided.AiReportResult;
 import com.daesabu.meongcoach.analysis.application.provided.AiTrialFinder;
+import com.daesabu.meongcoach.analysis.application.provided.AiTrialSynchronizer;
 import com.daesabu.meongcoach.analysis.application.provided.AiVideoUploadUrlIssuer;
 import com.daesabu.meongcoach.analysis.application.provided.AiVideoUploadUrlResult;
 import com.daesabu.meongcoach.analysis.application.provided.dto.AiAnalysisRegisterRequest;
@@ -31,6 +33,7 @@ import com.daesabu.meongcoach.analysis.domain.AiTrial;
 import com.daesabu.meongcoach.analysis.domain.AiTrialFixture;
 import com.daesabu.meongcoach.analysis.domain.exception.AiReportNotFoundException;
 import com.daesabu.meongcoach.analysis.domain.exception.AiReportTrialExceededException;
+import com.daesabu.meongcoach.analysis.domain.exception.AiTrialProviderUnavailableException;
 import com.daesabu.meongcoach.analysis.domain.exception.AiVideoDurationOutOfRangeException;
 import java.security.Principal;
 import java.time.LocalDateTime;
@@ -101,6 +104,9 @@ class AiControllerTest {
 
 	@MockitoBean
 	private AiTrialFinder aiTrialFinder;
+
+	@MockitoBean
+	private AiTrialSynchronizer aiTrialSynchronizer;
 
 	@MockitoBean
 	private AiAnalysisRegister aiAnalysisRegister;
@@ -553,19 +559,19 @@ class AiControllerTest {
 
 	@Test
 	void 체험_횟수_사용_현황을_반환한다() throws Exception {
-		given(aiTrialFinder.findTrial(42L)).willReturn(AiTrialFixture.used(42L, 1));
+		given(aiTrialFinder.findTrial(42L)).willReturn(AiTrialFixture.purchased(42L, 20, 1));
 
 		mockMvc.perform(get("/api/ai/trial")
 						.principal(CURRENT_USER)
 						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.usedCount").value(1))
-				.andExpect(jsonPath("$.maxCount").value(3))
-				.andExpect(jsonPath("$.remainingCount").value(2))
+				.andExpect(jsonPath("$.maxCount").value(23))
+				.andExpect(jsonPath("$.remainingCount").value(22))
 				.andDo(document("ai/trial",
 						responseFields(
 								fieldWithPath("usedCount").description("사용한 횟수. 분석이 완료될 때 1씩 늘고 실패·진행 중은 세지 않는다"),
-								fieldWithPath("maxCount").description("이 사용자에게 부여된 무료 체험 횟수. 기본 3"),
+								fieldWithPath("maxCount").description("이 사용자가 쓸 수 있는 전체 횟수. 부여 횟수(기본 3)와 구매 횟수의 합"),
 								fieldWithPath("remainingCount").description("남은 횟수. 소진했으면 0")
 						)
 				));
@@ -584,6 +590,46 @@ class AiControllerTest {
 	@Test
 	void 인증_정보가_없으면_체험_횟수_조회도_401을_반환한다() throws Exception {
 		mockMvc.perform(get("/api/ai/trial"))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+	}
+
+	@Test
+	void 인증한_사용자의_구매_횟수를_동기화하고_204를_반환한다() throws Exception {
+		mockMvc.perform(post("/api/ai/trial/synchronization")
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+				.andExpect(status().isNoContent())
+				.andDo(document("ai/trial-synchronize"));
+
+		then(aiTrialSynchronizer).should().synchronize(42L);
+	}
+
+	@Test
+	void 구매_횟수를_받아_오지_못하면_502와_에러_코드를_반환한다() throws Exception {
+		willThrow(new AiTrialProviderUnavailableException()).given(aiTrialSynchronizer).synchronize(42L);
+
+		mockMvc.perform(post("/api/ai/trial/synchronization")
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+				.andExpect(status().isBadGateway())
+				.andExpect(jsonPath("$.status").value(502))
+				.andExpect(jsonPath("$.code").value("AI_TRIAL_PROVIDER_UNAVAILABLE"))
+				.andDo(document("ai/trial-synchronize-error",
+						responseFields(
+								fieldWithPath("title").description("HTTP 상태 이름"),
+								fieldWithPath("status").description("HTTP 상태 코드"),
+								fieldWithPath("detail").description("사람이 읽을 수 있는 에러 설명"),
+								fieldWithPath("instance").description("에러가 발생한 요청 경로"),
+								fieldWithPath("code").description("클라이언트 분기용 에러 코드"),
+								fieldWithPath("timestamp").description("에러 발생 시각(UTC)")
+						)
+				));
+	}
+
+	@Test
+	void 인증_정보가_없으면_구매_횟수_동기화도_401을_반환한다() throws Exception {
+		mockMvc.perform(post("/api/ai/trial/synchronization"))
 				.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
 	}

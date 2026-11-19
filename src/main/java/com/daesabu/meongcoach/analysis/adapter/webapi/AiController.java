@@ -8,6 +8,7 @@ import com.daesabu.meongcoach.analysis.adapter.webapi.dto.AiVideoUploadUrlRespon
 import com.daesabu.meongcoach.analysis.application.provided.AiAnalysisRegister;
 import com.daesabu.meongcoach.analysis.application.provided.AiReportFinder;
 import com.daesabu.meongcoach.analysis.application.provided.AiTrialFinder;
+import com.daesabu.meongcoach.analysis.application.provided.AiTrialSynchronizer;
 import com.daesabu.meongcoach.analysis.application.provided.AiVideoUploadUrlIssuer;
 import com.daesabu.meongcoach.analysis.application.provided.dto.AiAnalysisRegisterRequest;
 import com.daesabu.meongcoach.analysis.application.provided.dto.AiVideoUploadUrlRequest;
@@ -32,6 +33,7 @@ public class AiController {
 	private final AiReportFinder aiReportFinder;
 	private final AiVideoUploadUrlIssuer aiVideoUploadUrlIssuer;
 	private final AiTrialFinder aiTrialFinder;
+	private final AiTrialSynchronizer aiTrialSynchronizer;
 	private final AiAnalysisRegister aiAnalysisRegister;
 
 	@GetMapping("/reports")
@@ -63,5 +65,11 @@ public class AiController {
 	@GetMapping("/trial")
 	public AiTrialResponse findTrial(@CurrentUserId Long userId) {
 		return AiTrialResponse.from(aiTrialFinder.findTrial(userId));
+	}
+
+	@PostMapping("/trial/synchronization")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public void synchronizeTrial(@CurrentUserId Long userId) {
+		aiTrialSynchronizer.synchronize(userId);
 	}
 }

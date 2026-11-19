@@ -136,7 +136,7 @@ AI 분석은 수십 초가 걸리므로 요청-응답이 아니라 GCS 업로드
 
 #### analysis — AI 행동 분석
 
-- **책임**: 영상 업로드 URL 발급과 리포트 생성, 비동기 분석 파이프라인, 리포트 상태(업로드 중·분석 중·완료·실패) 관리, 사용자별 무료 체험 횟수(부여·사용) 관리
+- **책임**: 영상 업로드 URL 발급과 리포트 생성, 비동기 분석 파이프라인, 리포트 상태(업로드 중·분석 중·완료·실패) 관리, 사용자별 분석 횟수(부여·구매·사용) 관리
 - **역할**: `AiVideoUploadUrlIssuer`, `AiReportGenerator`, `AiReportFinder`, `AiTrialFinder`
 - **협력**: 업로드·다운로드 presigned URL은 `media`에 요청합니다. 분석할 때는 `training`의 `TopicFinder`로 토픽 목록을 받아 AI가 추천할 수 있는 훈련 후보로 넘깁니다. 외부로는 Pub/Sub에서 업로드 이벤트를 받고(`VideoUploadPubSubConsumer`), Gemini로 영상 분석과 제목 생성을 요청하며, Gemini 클라이언트·설정과 프롬프트 로딩은 `llm`의 것을 씁니다.
 

@@ -29,4 +29,4 @@
 - RevenueCat이 다루는 코드는 스토어가 발급하는 offer code·promo code이고 스토어 상품(구독 등)에만 적용됩니다. 임의 코드를 대조하는 기능은 없습니다.
 - 이용권(entitlement)은 만료 시각이 있는 접근 권한이라 "10회" 같은 횟수를 담지 못합니다.
 - 횟수를 담을 수 있는 In-App Currency는 잔액 체계가 이미 백엔드에 있으면 백엔드를 원천으로 두라고 안내합니다. 이 저장소는 분석 완료 시 `ai_trials`에서 차감합니다.
-- AI 분석 횟수를 인앱 결제로 팔게 되면 구매 이벤트에서 `AiTrialRegister.grant`를 호출해 같은 `ai_trials`에 더합니다.
+- 인앱 결제로 산 횟수는 In-App Currency 잔액으로 쌓이고, 백엔드는 그 잔액을 `ai_trials.purchased_count`로 옮겨 적습니다. 쿠폰 지급분(`granted_count`)과 컬럼이 달라 동기화가 쿠폰 지급분을 덮어쓰지 않습니다. ([ai-pipeline.md](ai-pipeline.md)의 구매 횟수 항목)

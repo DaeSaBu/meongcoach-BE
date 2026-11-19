@@ -1,6 +1,7 @@
 package com.daesabu.meongcoach.support;
 
 import com.daesabu.meongcoach.alert.application.required.AlertSender;
+import com.daesabu.meongcoach.analysis.application.required.PurchasedTrialCountReader;
 import com.daesabu.meongcoach.notification.application.required.NotificationSender;
 import com.daesabu.meongcoach.training.application.required.AiPlanGenerator;
 import java.lang.annotation.ElementType;
@@ -13,6 +14,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @SpringBootTest
-@MockitoBean(types = {AiPlanGenerator.class, NotificationSender.class, AlertSender.class})
+@MockitoBean(types = {PurchasedTrialCountReader.class, AiPlanGenerator.class, NotificationSender.class,
+		AlertSender.class})
 public @interface NonTransactionalApplicationTest {
 }
