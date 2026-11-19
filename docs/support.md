@@ -59,7 +59,7 @@ flowchart LR
 ## 상담 종료와 시각
 
 [ChatRemover](../src/main/java/com/daesabu/meongcoach/support/application/provided/ChatRemover.java)는 대화의 종료 시각 `closedAt`을 기록합니다.
-종료 시각은 `closed_at` 컬럼에 저장하며, 진행 중 대화의 부분 UNIQUE 인덱스(`WHERE closed_at IS NULL`)도 이 컬럼을 기준으로 합니다.
+종료 시각은 `closed_at` 컬럼에 저장합니다.
 대화 소유 회원과 ADMIN·EXPERT가 종료할 수 있습니다.
 이미 종료된 대화를 다시 닫으면 처음 종료 시각을 유지합니다.
 대화와 메시지는 DB에 보관합니다.
@@ -67,6 +67,20 @@ flowchart LR
 종료된 대화의 메시지 전송과 업로드 URL 발급은 `SUPPORT_CHAT_CLOSED`(409)로 거절합니다.
 상담원 목록 `GET /api/support/conversations`는 진행 중인 대화만 반환하고, `closed=true`를 전달하면 종료된 대화만 같은 정렬·커서 규칙으로 반환합니다.
 다시 상담을 열면 새 ID의 빈 대화를 만듭니다.
+
+## 종료와 삭제
+
+대화의 종료와 삭제는 서로 다른 상태입니다.
+
+| 컬럼 | 뜻 | 조회 |
+|---|---|---|
+| `closed_at` | 회원이나 상담원이 상담을 종료한 시각 | 목록과 메시지 조회에 나오고, 전송과 업로드만 거절합니다 |
+| `deleted_at` | 시스템이 대화를 삭제한 시각 | 엔티티의 `@SQLRestriction("deleted_at IS NULL")`으로 회원·상담원의 모든 목록과 조회에서 제외합니다 |
+
+삭제된 대화에 접근하면 없는 대화와 같이 `SUPPORT_CHAT_ACCESS_DENIED`(403)를 반환합니다.
+회원당 하나만 두는 진행 중 대화는 종료되지도 삭제되지도 않은 대화입니다(부분 UNIQUE 인덱스 `WHERE closed_at IS NULL AND deleted_at IS NULL`).
+진행 중인 대화가 삭제된 회원이 다시 상담을 열면 새 대화를 만듭니다.
+`deleted_at`을 기록하는 API는 없습니다. 삭제된 대화의 행과 메시지는 DB에 남습니다.
 
 대화는 `BaseEntity`, 메시지는 `BaseTimeEntity`의 `LocalDateTime` 시각을 사용합니다.
 생성·수정 시각은 공통 엔티티의 콜백으로 기록합니다.
