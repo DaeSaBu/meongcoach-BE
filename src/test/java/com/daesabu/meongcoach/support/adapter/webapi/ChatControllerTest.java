@@ -109,12 +109,53 @@ class ChatControllerTest {
 										parameterWithName("before").optional()
 												.description(
 														"이전 대화 ID, 최초 0; 최근 활동 시각·ID 내림차순 최대 50건"),
+										parameterWithName("beforeUpdatedAt").optional().description("이전 응답 마지막 대화의 updatedAt 원문; before와 함께 전달"),
+										parameterWithName("closed").optional().description("true면 종료된 대화만, 생략하거나 false면 진행 중인 대화만 반환")),
+								responseFields(
+										fieldWithPath("[].id").description("대화 ID"),
+										fieldWithPath("[].memberId").description("대화 소유 회원 ID"),
+										fieldWithPath("[].updatedAt").description("최종 활동 시각"),
+										fieldWithPath("[].closedAt").type(JsonFieldType.STRING).optional().description("종료 시각, 진행 중이면 null"))));
+	}
+
+	@Test
+	void 상담원_종료된_대화목록을_조회한다() throws Exception {
+		var closed = ChatConversationFixture.create(16, 42, LocalDateTime.parse("2026-10-01T00:00:00"));
+		ReflectionTestUtils.setField(closed, "closedAt", LocalDateTime.parse("2026-10-02T00:00:00"));
+		given(finder.closedConversations(0, null)).willReturn(List.of(closed));
+		mvc.perform(
+						get("/api/support/conversations")
+								.param("closed", "true")
+								.principal(() -> "42")
+								.header("Authorization", "Bearer access-token"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$[0].id").value(16))
+				.andExpect(jsonPath("$[0].closedAt").value("2026-10-02T00:00:00"))
+				.andDo(
+						document(
+								"support/chat-closed-list",
+								queryParameters(
+										parameterWithName("closed").description("true면 종료된 대화만 반환"),
+										parameterWithName("before").optional()
+												.description("이전 응답 마지막 대화 ID, 최초 0; 최근 활동 시각·ID 내림차순 최대 50건"),
 										parameterWithName("beforeUpdatedAt").optional().description("이전 응답 마지막 대화의 updatedAt 원문; before와 함께 전달")),
 								responseFields(
 										fieldWithPath("[].id").description("대화 ID"),
 										fieldWithPath("[].memberId").description("대화 소유 회원 ID"),
 										fieldWithPath("[].updatedAt").description("최종 활동 시각"),
-										fieldWithPath("[].closedAt").type(JsonFieldType.STRING).optional().description("종료 시각, 상담원 목록은 진행 중 대화만 반환해 항상 null"))));
+										fieldWithPath("[].closedAt").description("종료 시각"))));
+	}
+
+	@Test
+	void 종료된_대화목록_커서를_그대로_전달한다() throws Exception {
+		LocalDateTime timestamp = LocalDateTime.parse("2026-11-01T00:00:00.123456");
+		given(finder.closedConversations(17, timestamp)).willReturn(List.of());
+		mvc.perform(get("/api/support/conversations")
+				.param("closed", "true")
+				.param("before", "17").param("beforeUpdatedAt", timestamp.toString())
+				.principal(() -> "42"))
+				.andExpect(status().isOk());
+		verify(finder).closedConversations(17, timestamp);
 	}
 
 	@Test

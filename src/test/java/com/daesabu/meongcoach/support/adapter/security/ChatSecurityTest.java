@@ -133,6 +133,8 @@ class ChatSecurityTest {
 				.andExpect(status().isForbidden());
 		mvc.perform(appGet("/api/support/conversations").header("Authorization", token))
 				.andExpect(status().isForbidden());
+		mvc.perform(appGet("/api/support/conversations").param("closed", "true").header("Authorization", token))
+				.andExpect(status().isForbidden());
 		assertThat(finder.latestMessages(owner, conversationId)).isEmpty();
 	}
 
@@ -174,6 +176,25 @@ class ChatSecurityTest {
 				.andExpect(status().isOk());
 		mvc.perform(appGet("/api/support/conversations/capabilities").header("Authorization", token))
 				.andExpect(status().isOk()).andExpect(jsonPath("$.operator").value(true));
+	}
+
+	@ParameterizedTest
+	@EnumSource(value = UserRole.class, names = {"ADMIN", "EXPERT"})
+	void 상담원는_종료된_대화와_진행_중인_대화를_나눠_조회한다(UserRole role) throws Exception {
+		Long owner = member(UserRole.USER);
+		long closedId = chats.open(owner).getId();
+		remover.close(owner, closedId);
+		long openId = chats.open(owner).getId();
+		em.flush();
+		String token = bearer(member(role));
+		mvc.perform(appGet("/api/support/conversations").param("closed", "true").header("Authorization", token))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$[?(@.id == " + closedId + ")].closedAt").isNotEmpty())
+				.andExpect(jsonPath("$[?(@.id == " + openId + ")]").isEmpty());
+		mvc.perform(appGet("/api/support/conversations").header("Authorization", token))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$[?(@.id == " + openId + ")]").isNotEmpty())
+				.andExpect(jsonPath("$[?(@.id == " + closedId + ")]").isEmpty());
 	}
 
 	@ParameterizedTest

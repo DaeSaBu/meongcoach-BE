@@ -91,6 +91,61 @@ class ChatFinderTest {
 		assertThat(next).extracting(ChatConversation::getId).doesNotContain(closedId, latestId).startsWith(oldestId);
 	}
 
+	@Test
+	void 상담원은_닫힌_대화만_최근_활동순으로_조회한다() {
+		Long first = users.save(User.registerUser()).getId();
+		Long second = users.save(User.registerUser()).getId();
+		long olderClosedId = register.open(first).getId();
+		remover.close(first, olderClosedId);
+		long newerClosedId = register.open(first).getId();
+		remover.close(first, newerClosedId);
+		long openId = register.open(second).getId();
+		conversations.flush();
+		em.clear();
+		LocalDateTime latest = LocalDateTime.parse("2999-01-01T00:00:00");
+		setLastMessageAt(latest.minusSeconds(2), olderClosedId);
+		setLastMessageAt(latest.minusSeconds(1), newerClosedId);
+		setLastMessageAt(latest, openId);
+
+		var result = finder.closedConversations(0, null);
+
+		assertThat(result).extracting(ChatConversation::getId).doesNotContain(openId).startsWith(newerClosedId, olderClosedId);
+		assertThat(result).allMatch(ChatConversation::isClosed);
+	}
+
+	@Test
+	void 닫힌_대화_목록의_다음_페이지는_같은_시각이면_ID로_이어서_진행_중인_대화를_제외한다() {
+		Long first = users.save(User.registerUser()).getId();
+		Long second = users.save(User.registerUser()).getId();
+		long firstClosedId = register.open(first).getId();
+		remover.close(first, firstClosedId);
+		long secondClosedId = register.open(first).getId();
+		remover.close(first, secondClosedId);
+		long openId = register.open(second).getId();
+		long latestClosedId = register.open(first).getId();
+		remover.close(first, latestClosedId);
+		conversations.flush();
+		em.clear();
+		LocalDateTime tied = LocalDateTime.parse("2999-01-01T00:00:00.123456");
+		LocalDateTime latest = tied.plusSeconds(1);
+		setLastMessageAt(tied, firstClosedId, secondClosedId, openId);
+		setLastMessageAt(latest, latestClosedId);
+
+		var afterLatest = finder.closedConversations(latestClosedId, latest);
+		var afterSecond = finder.closedConversations(secondClosedId, tied);
+
+		assertThat(afterLatest).extracting(ChatConversation::getId).doesNotContain(openId).startsWith(secondClosedId, firstClosedId);
+		assertThat(afterSecond).extracting(ChatConversation::getId).doesNotContain(openId, secondClosedId).startsWith(firstClosedId);
+	}
+
+	@Test
+	void 닫힌_대화_목록_커서는_ID와_시각을_함께_전달해야_한다() {
+		assertThatThrownBy(() -> finder.closedConversations(1, null))
+				.isInstanceOf(ChatCursorInvalidException.class);
+		assertThatThrownBy(() -> finder.closedConversations(0, LocalDateTime.now()))
+				.isInstanceOf(ChatCursorInvalidException.class);
+	}
+
 	private void setLastMessageAt(LocalDateTime lastMessageAt, long... ids) {
 		for (long id : ids) {
 			jdbc.update("UPDATE support_conversations SET last_message_at = ? WHERE id = ?", lastMessageAt, id);
