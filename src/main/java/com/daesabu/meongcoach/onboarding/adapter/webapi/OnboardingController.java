@@ -43,6 +43,7 @@ public class OnboardingController {
 		return new OnboardingCompleteResponse(dogIds);
 	}
 
+	@Deprecated(forRemoval = true)
 	@PostMapping("/presigned-urls")
 	public OnboardingImageUploadUrlResponse issueImageUploadUrl(@CurrentUserId Long userId,
 	                                                            @Valid @RequestBody OnboardingImageUploadUrlRequest request) {
