@@ -273,6 +273,18 @@ class SecurityFilterChainTest {
 	}
 
 	@Test
+	void 온보딩_미완료_회원도_쿠폰_사용_경로에_접근할_수_있다() throws Exception {
+		AuthToken token = tokenProvider.issue(onboardingUserId);
+
+		mockMvc.perform(appPost("/api/coupons/redemptions")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer " + token.accessToken())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"code\": \"\"}"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("BAD_REQUEST"));
+	}
+
+	@Test
 	void 온보딩_미완료_회원은_허용된_메서드_외에는_회원_경로에_접근할_수_없다() throws Exception {
 		AuthToken token = tokenProvider.issue(onboardingUserId);
 

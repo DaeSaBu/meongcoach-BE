@@ -69,6 +69,8 @@ public class SecurityConfig {
 
 	private static final String MY_INFO_PATH = "/api/users/me";
 
+	private static final String COUPON_REDEMPTIONS_PATH = "/api/coupons/redemptions";
+
 	private static final String[] API_DOCS_PATHS = {"/swagger-ui/**"};
 
 	private static final List<String> CORS_ALLOWED_METHODS = List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS");
@@ -109,6 +111,9 @@ public class SecurityConfig {
 					auth.requestMatchers(HttpMethod.DELETE, WITHDRAW_PATH)
 							.hasAnyRole(AuthorityRole.USER.name(), AuthorityRole.ONBOARDING_USER.name());
 					auth.requestMatchers(HttpMethod.GET, MY_INFO_PATH)
+							.hasAnyRole(AuthorityRole.USER.name(), AuthorityRole.ONBOARDING_USER.name(),
+									AuthorityRole.EXPERT.name(), AuthorityRole.ADMIN.name());
+					auth.requestMatchers(HttpMethod.POST, COUPON_REDEMPTIONS_PATH)
 							.hasAnyRole(AuthorityRole.USER.name(), AuthorityRole.ONBOARDING_USER.name(),
 									AuthorityRole.EXPERT.name(), AuthorityRole.ADMIN.name());
 					auth.requestMatchers(HttpMethod.GET, "/api/support/conversations", "/api/support/conversations/")
