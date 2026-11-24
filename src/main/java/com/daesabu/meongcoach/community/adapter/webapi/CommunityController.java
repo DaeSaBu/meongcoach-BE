@@ -1,6 +1,7 @@
 package com.daesabu.meongcoach.community.adapter.webapi;
 
 import com.daesabu.meongcoach.community.adapter.webapi.dto.AuthorDogResponse;
+import com.daesabu.meongcoach.community.adapter.webapi.dto.BlockListResponse;
 import com.daesabu.meongcoach.community.adapter.webapi.dto.CommentListResponse;
 import com.daesabu.meongcoach.community.adapter.webapi.dto.CommentRegisterResponse;
 import com.daesabu.meongcoach.community.adapter.webapi.dto.CommentUpdateResponse;
@@ -14,6 +15,8 @@ import com.daesabu.meongcoach.community.adapter.webapi.dto.PostResponse;
 import com.daesabu.meongcoach.community.adapter.webapi.dto.PostUpdateResponse;
 import com.daesabu.meongcoach.community.adapter.webapi.dto.ReplyListResponse;
 import com.daesabu.meongcoach.community.application.provided.AuthorFinder;
+import com.daesabu.meongcoach.community.application.provided.BlockFinder;
+import com.daesabu.meongcoach.community.application.provided.BlockRegister;
 import com.daesabu.meongcoach.community.application.provided.CommentFinder;
 import com.daesabu.meongcoach.community.application.provided.CommentRegister;
 import com.daesabu.meongcoach.community.application.provided.ContentReportRegister;
@@ -23,6 +26,7 @@ import com.daesabu.meongcoach.community.application.provided.PostMediaUploadUrlI
 import com.daesabu.meongcoach.community.application.provided.PostRegister;
 import com.daesabu.meongcoach.community.application.provided.dto.AuthorDogResult;
 import com.daesabu.meongcoach.community.application.provided.dto.AuthorResult;
+import com.daesabu.meongcoach.community.application.provided.dto.BlockedUserResult;
 import com.daesabu.meongcoach.community.application.provided.dto.CommentListRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.CommentListResult;
 import com.daesabu.meongcoach.community.application.provided.dto.CommentRegisterRequest;
@@ -41,6 +45,7 @@ import com.daesabu.meongcoach.media.application.provided.dto.MediaUploadUrlResul
 import com.daesabu.meongcoach.report.application.provided.dto.ReportRegisterRequest;
 import com.daesabu.meongcoach.shared.security.CurrentUserId;
 import jakarta.validation.Valid;
+import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -68,6 +73,8 @@ public class CommunityController {
 	private final PostMediaUploadUrlIssuer postMediaUploadUrlIssuer;
 	private final AuthorFinder authorFinder;
 	private final ContentReportRegister contentReportRegister;
+	private final BlockRegister blockRegister;
+	private final BlockFinder blockFinder;
 
 	@GetMapping("/me")
 	public MyAuthorResponse findMyAuthor(@CurrentUserId Long userId) {
@@ -206,5 +213,23 @@ public class CommunityController {
 	public void reportComment(@CurrentUserId Long userId, @PathVariable Long commentId,
 	                          @Valid @RequestBody ReportRegisterRequest request) {
 		contentReportRegister.reportComment(userId, commentId, request);
+	}
+
+	@PostMapping("/users/{userId}/block")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public void blockUser(@CurrentUserId Long userId, @PathVariable("userId") Long targetUserId) {
+		blockRegister.block(userId, targetUserId);
+	}
+
+	@DeleteMapping("/users/{userId}/block")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public void unblockUser(@CurrentUserId Long userId, @PathVariable("userId") Long targetUserId) {
+		blockRegister.unblock(userId, targetUserId);
+	}
+
+	@GetMapping("/blocks")
+	public BlockListResponse findBlocks(@CurrentUserId Long userId) {
+		List<BlockedUserResult> result = blockFinder.findBlockedUsers(userId);
+		return BlockListResponse.from(result);
 	}
 }

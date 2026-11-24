@@ -867,6 +867,45 @@ operation::community/comment-report[snippets='http-request,path-parameters,reque
 
 operation::community/comment-report-error[snippets='http-response,response-fields']
 
+=== 사용자 차단
+
+다른 사용자를 차단하고, 차단을 해제하고, 차단한 사용자 목록을 조회합니다.
+
+==== 사용자 차단
+
+link:{swagger-ui}#/Community/community-user-block[▶ Swagger에서 Try it out,window=swagger]
+
+차단이 접수되면 본문 없이 204를 반환합니다. 이미 차단한 사용자를 다시 차단해도 204입니다.
+앱은 응답을 받은 뒤 목록을 다시 조회하거나, 이미 받아 둔 목록에서 그 사용자의 글을 가립니다.
+
+|===
+|상황 |상태 |에러 코드
+
+|자기 자신 |400 |`COMMUNITY_SELF_BLOCK_NOT_ALLOWED`
+|없는 회원 |404 |`USER_NOT_FOUND`
+|===
+
+operation::community/user-block[snippets='http-request,path-parameters,http-response']
+
+operation::community/user-block-error[snippets='http-response,response-fields']
+
+==== 차단 해제
+
+link:{swagger-ui}#/Community/community-user-unblock[▶ Swagger에서 Try it out,window=swagger]
+
+차단을 해제하면 본문 없이 204를 반환합니다. 차단하지 않은 사용자여도 204입니다.
+
+operation::community/user-unblock[snippets='http-request,path-parameters,http-response']
+
+==== 차단한 사용자 목록 조회
+
+link:{swagger-ui}#/Community/community-block-list[▶ Swagger에서 Try it out,window=swagger]
+
+내가 차단한 사용자를 최근에 차단한 순서로 모두 반환합니다. 페이지로 나누지 않습니다.
+`nickname`과 `profileImageUrl`은 게시글·댓글의 `author`와 같은 규칙으로 만듭니다. 차단한 사용자가 탈퇴했거나 선택된 강아지가 없으면(훈련사 계정 제외) 둘 다 null이며, 이때도 `userId`로 차단을 해제할 수 있습니다.
+
+operation::community/block-list[snippets='http-request,http-response,response-fields']
+
 === 내 작성자 정보 조회
 
 link:{swagger-ui}#/Community/community-my-author[▶ Swagger에서 Try it out,window=swagger]
@@ -893,6 +932,7 @@ operation::community/my-post-list[snippets='http-request,query-parameters,http-r
 
 operation::community/my-post-list-error[snippets='http-response,response-fields']
 
+[[_내가_쓴_댓글_목록_조회]]
 === 내가 쓴 댓글 목록 조회
 
 link:{swagger-ui}#/Community/community-my-comment-list[▶ Swagger에서 Try it out,window=swagger]
