@@ -604,7 +604,8 @@ class CommunityControllerTest {
 								fieldWithPath("media[]").description("게시글 사진·영상 목록. 배열 순서가 표시 순서이고, 없으면 빈 배열"),
 								fieldWithPath("media[].type").description("미디어 종류. IMAGE(사진), VIDEO(영상)"),
 								fieldWithPath("media[].url").description("미디어 공개 URL"),
-								fieldWithPath("commentCount").description("삭제되지 않은 댓글·답글 수. 댓글이 없으면 0"),
+								fieldWithPath("commentCount").description(
+										"삭제되지 않은 댓글·답글 수. 댓글이 없으면 0. 차단한 사용자의 댓글도 포함한다"),
 								fieldWithPath("likeCount").description("좋아요 수"),
 								fieldWithPath("likedByMe").description("내 좋아요 여부"),
 								fieldWithPath("createdAt").description("게시글 작성 시각(ISO-8601, 초 단위)")
@@ -1280,7 +1281,8 @@ class CommunityControllerTest {
 										"첨부한 사진·영상 목록. 첨부 순서대로이고, 첨부가 없으면 빈 배열"),
 								fieldWithPath("comments[].media[].type").description("미디어 종류. IMAGE(사진), VIDEO(영상)"),
 								fieldWithPath("comments[].media[].url").description("미디어 공개 URL"),
-								fieldWithPath("comments[].replyCount").description("삭제되지 않은 답글 수. 답글이 없으면 0"),
+								fieldWithPath("comments[].replyCount").description(
+										"삭제되지 않은 답글 수. 답글이 없으면 0. 차단한 사용자의 답글은 세지 않는다"),
 								fieldWithPath("comments[].likeCount").description("좋아요 수"),
 								fieldWithPath("comments[].likedByMe").description("내 좋아요 여부"),
 								fieldWithPath("comments[].createdAt").description("댓글 작성 시각(ISO-8601, 초 단위)"),
@@ -1893,7 +1895,7 @@ class CommunityControllerTest {
 				fieldWithPath("posts[].media[]").description("게시글 사진·영상 목록. 배열 순서가 표시 순서이고, 없으면 빈 배열"),
 				fieldWithPath("posts[].media[].type").description("미디어 종류. IMAGE(사진), VIDEO(영상)"),
 				fieldWithPath("posts[].media[].url").description("미디어 공개 URL"),
-				fieldWithPath("posts[].commentCount").description("삭제되지 않은 댓글·답글 수. 댓글이 없으면 0"),
+				fieldWithPath("posts[].commentCount").description("삭제되지 않은 댓글·답글 수. 댓글이 없으면 0. 차단한 사용자의 댓글도 포함한다"),
 				fieldWithPath("posts[].likeCount").description("좋아요 수"),
 				fieldWithPath("posts[].likedByMe").description("내 좋아요 여부"),
 				fieldWithPath("posts[].createdAt").description("게시글 작성 시각(ISO-8601, 초 단위)"),

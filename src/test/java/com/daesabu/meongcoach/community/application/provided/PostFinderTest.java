@@ -11,6 +11,7 @@ import com.daesabu.meongcoach.community.application.provided.dto.PostListRequest
 import com.daesabu.meongcoach.community.application.provided.dto.PostListResult;
 import com.daesabu.meongcoach.community.application.provided.dto.PostResult;
 import com.daesabu.meongcoach.community.application.required.PostRepository;
+import com.daesabu.meongcoach.community.application.required.UserBlockRepository;
 import com.daesabu.meongcoach.community.domain.MentionCommand;
 import com.daesabu.meongcoach.community.domain.MentionTargetType;
 import com.daesabu.meongcoach.community.domain.Post;
@@ -19,6 +20,7 @@ import com.daesabu.meongcoach.community.domain.PostMedia;
 import com.daesabu.meongcoach.community.domain.PostMediaCommand;
 import com.daesabu.meongcoach.community.domain.PostMediaType;
 import com.daesabu.meongcoach.community.domain.PostRegisterCommand;
+import com.daesabu.meongcoach.community.domain.UserBlock;
 import com.daesabu.meongcoach.community.domain.exception.PostNotFoundException;
 import com.daesabu.meongcoach.dog.application.required.DogRepository;
 import com.daesabu.meongcoach.dog.domain.Dog;
@@ -56,6 +58,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 class PostFinderTest {
 
 	private static final Long USER_ID = 42L;
+	private static final Long BLOCKED_USER_ID = 77L;
 	private static final Long LESSON_A_ID = 101L;
 	private static final Long LESSON_B_ID = 202L;
 	private static final String IMAGE_URL = "https://media.meongcoach.com/images/community-post/42/photo.jpg";
@@ -68,6 +71,9 @@ class PostFinderTest {
 
 	@Autowired
 	private PostRepository postRepository;
+
+	@Autowired
+	private UserBlockRepository userBlockRepository;
 
 	@Autowired
 	private UserRepository userRepository;
@@ -332,6 +338,71 @@ class PostFinderTest {
 	}
 
 	@Test
+	void 차단한_회원의_게시글은_목록에서_제외한다() {
+		savePost(USER_ID, "내 글");
+		savePost(BLOCKED_USER_ID, "차단한 회원의 글");
+		saveBlock(USER_ID, BLOCKED_USER_ID);
+		flushAndClear();
+
+		PostListResult result = postFinder.findPosts(USER_ID, new PostListRequest(null, 20, null));
+
+		assertThat(result.posts()).extracting(this::contentOf).containsExactly("내 글");
+	}
+
+	@Test
+	void 차단한_회원의_게시글을_빼고도_size개를_채워_다음_커서로_이어서_조회한다() {
+		savePost(USER_ID, "글 1");
+		savePost(BLOCKED_USER_ID, "차단한 회원의 글 1");
+		Post second = savePost(USER_ID, "글 2");
+		savePost(BLOCKED_USER_ID, "차단한 회원의 글 2");
+		savePost(USER_ID, "글 3");
+		saveBlock(USER_ID, BLOCKED_USER_ID);
+		flushAndClear();
+
+		PostListResult firstPage = postFinder.findPosts(USER_ID, new PostListRequest(null, 2, null));
+		PostListResult secondPage = postFinder.findPosts(USER_ID, new PostListRequest(firstPage.nextCursor(), 2, null));
+
+		assertThat(firstPage.posts()).extracting(this::contentOf).containsExactly("글 3", "글 2");
+		assertThat(firstPage.nextCursor()).isEqualTo(second.getId());
+		assertThat(secondPage.posts()).extracting(this::contentOf).containsExactly("글 1");
+		assertThat(secondPage.nextCursor()).isNull();
+	}
+
+	@Test
+	void 레슨을_넘겨도_차단한_회원의_게시글은_제외한다() {
+		savePost(USER_ID, "내 레슨 글", LESSON_A_ID);
+		savePost(BLOCKED_USER_ID, "차단한 회원의 레슨 글", LESSON_A_ID);
+		saveBlock(USER_ID, BLOCKED_USER_ID);
+		flushAndClear();
+
+		PostListResult result = postFinder.findPosts(USER_ID, new PostListRequest(null, 20, LESSON_A_ID));
+
+		assertThat(result.posts()).extracting(this::contentOf).containsExactly("내 레슨 글");
+	}
+
+	@Test
+	void 나를_차단한_회원의_게시글은_목록에_그대로_반환한다() {
+		savePost(BLOCKED_USER_ID, "나를 차단한 회원의 글");
+		saveBlock(BLOCKED_USER_ID, USER_ID);
+		flushAndClear();
+
+		PostListResult result = postFinder.findPosts(USER_ID, new PostListRequest(null, 20, null));
+
+		assertThat(result.posts()).extracting(this::contentOf).containsExactly("나를 차단한 회원의 글");
+	}
+
+	@Test
+	void 다른_회원이_차단한_회원의_게시글은_목록에_그대로_반환한다() {
+		savePost(BLOCKED_USER_ID, "다른 회원이 차단한 회원의 글");
+		saveBlock(43L, BLOCKED_USER_ID);
+		flushAndClear();
+
+		PostListResult result = postFinder.findPosts(USER_ID, new PostListRequest(null, 20, null));
+
+		assertThat(result.posts()).extracting(this::contentOf).containsExactly("다른 회원이 차단한 회원의 글");
+	}
+
+	@Test
 	void 게시글이_없으면_빈_목록을_반환한다() {
 		PostListResult result = postFinder.findPosts(42L, new PostListRequest(null, 20, null));
 
@@ -404,8 +475,8 @@ class PostFinderTest {
 		Lesson lesson = saveLesson("기본 교육");
 		Post saved = postRepository.save(Post.register(author.getId(), new PostRegisterCommand("본문",
 				new MentionCommand(MentionTargetType.LESSON, lesson.getId()), List.of(
-						new PostMediaCommand(PostMediaType.VIDEO, VIDEO_URL),
-						new PostMediaCommand(PostMediaType.IMAGE, IMAGE_URL)))));
+				new PostMediaCommand(PostMediaType.VIDEO, VIDEO_URL),
+				new PostMediaCommand(PostMediaType.IMAGE, IMAGE_URL)))));
 		flushAndClear();
 
 		PostResult result = postFinder.findPostDetail(42L, saved.getId());
@@ -447,6 +518,27 @@ class PostFinderTest {
 	}
 
 	@Test
+	void 차단한_회원의_게시글을_단건_조회하면_예외를_던진다() {
+		Post saved = savePost(BLOCKED_USER_ID, "차단한 회원의 글");
+		saveBlock(USER_ID, BLOCKED_USER_ID);
+		flushAndClear();
+
+		assertThatThrownBy(() -> postFinder.findPostDetail(USER_ID, saved.getId()))
+				.isInstanceOf(PostNotFoundException.class);
+	}
+
+	@Test
+	void 나를_차단한_회원의_게시글은_단건_조회할_수_있다() {
+		Post saved = savePost(BLOCKED_USER_ID, "나를 차단한 회원의 글");
+		saveBlock(BLOCKED_USER_ID, USER_ID);
+		flushAndClear();
+
+		PostResult result = postFinder.findPostDetail(USER_ID, saved.getId());
+
+		assertThat(contentOf(result)).isEqualTo("나를 차단한 회원의 글");
+	}
+
+	@Test
 	void 작성자가_쓴_게시글만_최신순으로_반환한다() {
 		savePost(USER_ID, "내 첫 글");
 		savePost(7L, "다른 사용자 글");
@@ -468,7 +560,8 @@ class PostFinderTest {
 		flushAndClear();
 
 		PostListResult first = postFinder.findPostsByAuthor(42L, USER_ID, new PostListRequest(null, 2, null));
-		PostListResult second = postFinder.findPostsByAuthor(42L, USER_ID, new PostListRequest(first.nextCursor(), 2, null));
+		PostListResult second = postFinder.findPostsByAuthor(42L, USER_ID,
+				new PostListRequest(first.nextCursor(), 2, null));
 
 		assertThat(first.posts()).extracting(this::contentOf).containsExactly("내 글 3", "내 글 2");
 		assertThat(second.posts()).extracting(this::contentOf).containsExactly("내 글 1");
@@ -533,6 +626,10 @@ class PostFinderTest {
 	private Post savePost(Long userId, String content, Long lessonId) {
 		MentionCommand mention = new MentionCommand(MentionTargetType.LESSON, lessonId);
 		return postRepository.save(Post.register(userId, new PostRegisterCommand(content, mention, List.of())));
+	}
+
+	private void saveBlock(Long blockerId, Long blockedId) {
+		userBlockRepository.save(UserBlock.register(blockerId, blockedId));
 	}
 
 	private User saveAuthorWithDogs() {

@@ -86,6 +86,20 @@ class BlockFinderTest {
 		assertThat(result).isEmpty();
 	}
 
+	@Test
+	void 차단한_회원이면_차단_여부가_참이다() {
+		saveBlock(USER_ID, OTHER_USER_ID);
+
+		assertThat(blockFinder.isBlocked(USER_ID, OTHER_USER_ID)).isTrue();
+	}
+
+	@Test
+	void 나를_차단한_회원을_내가_차단하지_않았으면_차단_여부가_거짓이다() {
+		saveBlock(OTHER_USER_ID, USER_ID);
+
+		assertThat(blockFinder.isBlocked(USER_ID, OTHER_USER_ID)).isFalse();
+	}
+
 	private void saveBlock(Long blockerId, Long blockedId) {
 		userBlockRepository.save(UserBlock.register(blockerId, blockedId));
 	}
