@@ -36,6 +36,7 @@
 | [docs/notification.md](docs/notification.md)                               | 푸시 알림 토큰·수신 설정 애그리거트, 내부 API 인증, 발송 대상 규칙 |
 | [docs/support.md](docs/support.md) | 자체 상담, 채널톡 회원 식별 |
 | [docs/alert.md](docs/alert.md)                                             | 개발자 Slack 알림 호출 방법, 메시지 형식, 설정, 비동기·실패 처리 |
+| [docs/report.md](docs/report.md) | 공통 신고 모듈 호출 방법, 대상 종류·사유 추가, 중복 신고 잠금, 문의와 분리한 이유 |
 | [docs/profiles.md](docs/profiles.md)                                       | local/dev/prod 프로파일 구성, DB·ddl-auto 정책 |
 
 ## 문서 추가 방법

@@ -181,6 +181,14 @@ API·채널 설정·답변 처리 규칙은 [docs/support.md](docs/support.md)�
 
 호출 방법·메시지 형식·설정은 [docs/alert.md](docs/alert.md)에 있습니다.
 
+#### report — 신고
+
+- **책임**: 회원이 특정 대상(게시글·댓글 등)에 사유를 붙여 남긴 신고 저장, 회원·대상당 1건 보장
+- **역할**: `ReportRegister`. 대상 종류(`ReportTargetType`)는 `domain/shared`로 노출합니다. API는 두지 않고, 신고를 받는 모듈이 자기 경로에 API를 둡니다.
+- **협력**: 신고가 접수되면 `alert`의 `Alerter`로 개발자에게 알립니다. 대상이 실제로 있는지는 호출 모듈(`community`)이 확인합니다.
+
+호출 방법·대상 종류와 사유 추가·문의와 분리한 이유는 [docs/report.md](docs/report.md)에 있습니다.
+
 #### health — 상태 확인
 
 - **책임**: 배포·모니터링용 헬스 체크 API(`/api/health`). 다른 모듈과 관계가 없습니다.
@@ -219,4 +227,5 @@ API·채널 설정·답변 처리 규칙은 [docs/support.md](docs/support.md)�
 | [docs/notification.md](docs/notification.md) | 푸시 알림 토큰·수신 설정 애그리거트, 내부 API 인증, 발송 대상 규칙 |
 | [docs/support.md](docs/support.md) | 실시간 상담·답변 푸시·구버전 채널톡 설정 |
 | [docs/alert.md](docs/alert.md) | 개발자 Slack 알림 호출 방법, 메시지 형식, 설정, 비동기·실패 처리 |
+| [docs/report.md](docs/report.md) | 공통 신고 모듈 호출 방법, 대상 종류·사유 추가, 중복 신고 잠금 |
 | [AGENTS.md](AGENTS.md) | 팀 개발 규칙 전체 목록 |
