@@ -12,10 +12,12 @@ import com.daesabu.meongcoach.community.application.provided.dto.ReplyResult;
 import com.daesabu.meongcoach.community.application.required.CommentClosureRepository;
 import com.daesabu.meongcoach.community.application.required.CommentRepository;
 import com.daesabu.meongcoach.community.application.required.PostRepository;
+import com.daesabu.meongcoach.community.application.required.UserBlockRepository;
 import com.daesabu.meongcoach.community.domain.Comment;
 import com.daesabu.meongcoach.community.domain.CommentClosure;
 import com.daesabu.meongcoach.community.domain.Post;
 import com.daesabu.meongcoach.community.domain.PostRegisterCommand;
+import com.daesabu.meongcoach.community.domain.UserBlock;
 import com.daesabu.meongcoach.community.domain.exception.CommentNotFoundException;
 import com.daesabu.meongcoach.community.domain.exception.PostNotFoundException;
 import com.daesabu.meongcoach.dog.application.required.DogRepository;
@@ -43,6 +45,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 class CommentFinderTest {
 
 	private static final Long USER_ID = 42L;
+	private static final Long BLOCKED_USER_ID = 77L;
 	private static final String UNSELECTED_DOG_IMAGE_URL = "https://media.meongcoach.com/images/dog-profile/42/choco.jpg";
 	private static final String SELECTED_DOG_IMAGE_URL = "https://media.meongcoach.com/images/dog-profile/42/bori.jpg";
 
@@ -57,6 +60,9 @@ class CommentFinderTest {
 
 	@Autowired
 	private CommentClosureRepository commentClosureRepository;
+
+	@Autowired
+	private UserBlockRepository userBlockRepository;
 
 	@Autowired
 	private UserRepository userRepository;
@@ -136,6 +142,63 @@ class CommentFinderTest {
 		CommentListResult result = commentFinder.findComments(42L, post.getId(), new CommentListRequest(null, 20));
 
 		assertThat(result.comments()).extracting(this::contentOf).containsExactly("남은 댓글");
+	}
+
+	@Test
+	void 차단한_회원의_루트_댓글은_반환하지_않는다() {
+		saveComment(USER_ID, "내 댓글");
+		saveComment(BLOCKED_USER_ID, "차단한 회원의 댓글");
+		saveBlock(USER_ID, BLOCKED_USER_ID);
+		flushAndClear();
+
+		CommentListResult result = commentFinder.findComments(USER_ID, post.getId(), new CommentListRequest(null, 20));
+
+		assertThat(result.comments()).extracting(this::contentOf).containsExactly("내 댓글");
+	}
+
+	@Test
+	void 차단한_회원의_루트_댓글을_빼고도_size개를_채워_다음_커서로_이어서_조회한다() {
+		saveComment(USER_ID, "댓글 1");
+		saveComment(BLOCKED_USER_ID, "차단한 회원의 댓글 1");
+		Comment second = saveComment(USER_ID, "댓글 2");
+		saveComment(BLOCKED_USER_ID, "차단한 회원의 댓글 2");
+		saveComment(USER_ID, "댓글 3");
+		saveBlock(USER_ID, BLOCKED_USER_ID);
+		flushAndClear();
+
+		CommentListResult firstPage = commentFinder.findComments(USER_ID, post.getId(),
+				new CommentListRequest(null, 2));
+		CommentListResult secondPage = commentFinder.findComments(USER_ID, post.getId(),
+				new CommentListRequest(firstPage.nextCursor(), 2));
+
+		assertThat(firstPage.comments()).extracting(this::contentOf).containsExactly("댓글 1", "댓글 2");
+		assertThat(firstPage.nextCursor()).isEqualTo(second.getId());
+		assertThat(secondPage.comments()).extracting(this::contentOf).containsExactly("댓글 3");
+		assertThat(secondPage.nextCursor()).isNull();
+	}
+
+	@Test
+	void 나를_차단한_회원의_댓글은_그대로_반환한다() {
+		saveComment(BLOCKED_USER_ID, "나를 차단한 회원의 댓글");
+		saveBlock(BLOCKED_USER_ID, USER_ID);
+		flushAndClear();
+
+		CommentListResult result = commentFinder.findComments(USER_ID, post.getId(), new CommentListRequest(null, 20));
+
+		assertThat(result.comments()).extracting(this::contentOf).containsExactly("나를 차단한 회원의 댓글");
+	}
+
+	@Test
+	void 차단한_회원의_답글은_답글_수에서_제외한다() {
+		Comment root = saveComment(USER_ID, "댓글");
+		saveReply(root, BLOCKED_USER_ID, "차단한 회원의 답글");
+		saveReply(root, USER_ID, "남은 답글");
+		saveBlock(USER_ID, BLOCKED_USER_ID);
+		flushAndClear();
+
+		CommentListResult result = commentFinder.findComments(USER_ID, post.getId(), new CommentListRequest(null, 20));
+
+		assertThat(result.comments().getFirst().replyCount()).isEqualTo(1L);
 	}
 
 	@Test
@@ -276,7 +339,8 @@ class CommentFinderTest {
 		flushAndClear();
 
 		ReplyListResult first = commentFinder.findReplies(42L, root.getId(), new CommentListRequest(null, 2));
-		ReplyListResult second = commentFinder.findReplies(42L, root.getId(), new CommentListRequest(first.nextCursor(), 2));
+		ReplyListResult second = commentFinder.findReplies(42L, root.getId(),
+				new CommentListRequest(first.nextCursor(), 2));
 
 		assertThat(first.replies()).extracting(this::contentOf).containsExactly("답글 1", "답글 2");
 		assertThat(first.nextCursor()).isNotNull();
@@ -292,6 +356,19 @@ class CommentFinderTest {
 		flushAndClear();
 
 		ReplyListResult result = commentFinder.findReplies(42L, root.getId(), new CommentListRequest(null, 20));
+
+		assertThat(result.replies()).extracting(this::contentOf).containsExactly("남은 답글");
+	}
+
+	@Test
+	void 차단한_회원의_답글은_반환하지_않는다() {
+		Comment root = saveComment(USER_ID, "루트 댓글");
+		saveReply(root, BLOCKED_USER_ID, "차단한 회원의 답글");
+		saveReply(root, USER_ID, "남은 답글");
+		saveBlock(USER_ID, BLOCKED_USER_ID);
+		flushAndClear();
+
+		ReplyListResult result = commentFinder.findReplies(USER_ID, root.getId(), new CommentListRequest(null, 20));
 
 		assertThat(result.replies()).extracting(this::contentOf).containsExactly("남은 답글");
 	}
@@ -455,6 +532,21 @@ class CommentFinderTest {
 	}
 
 	@Test
+	void 차단한_회원의_게시글에_단_댓글은_작성자의_댓글_목록에서_제외한다() {
+		saveComment(USER_ID, "남은 게시글의 댓글");
+		Post blockedUserPost = postRepository.save(
+				Post.register(BLOCKED_USER_ID, new PostRegisterCommand("차단한 회원의 글", null, List.of())));
+		commentRepository.save(Comment.register(blockedUserPost, USER_ID, "차단한 회원의 게시글에 단 댓글"));
+		saveBlock(USER_ID, BLOCKED_USER_ID);
+		flushAndClear();
+
+		CommentListResult result = commentFinder.findCommentsByAuthor(USER_ID, USER_ID,
+				new CommentListRequest(null, 20));
+
+		assertThat(result.comments()).extracting(this::contentOf).containsExactly("남은 게시글의 댓글");
+	}
+
+	@Test
 	void 작성자의_댓글_목록의_size가_허용_범위를_벗어나면_예외를_던진다() {
 		assertThatThrownBy(() -> commentFinder.findCommentsByAuthor(42L, USER_ID, new CommentListRequest(null, 51)))
 				.isInstanceOf(ConstraintViolationException.class);
@@ -488,6 +580,10 @@ class CommentFinderTest {
 		Comment reply = saveComment(userId, content);
 		commentClosureRepository.save(CommentClosure.reply(root, reply));
 		return reply;
+	}
+
+	private void saveBlock(Long blockerId, Long blockedId) {
+		userBlockRepository.save(UserBlock.register(blockerId, blockedId));
 	}
 
 	private User saveAuthorWithDogs() {

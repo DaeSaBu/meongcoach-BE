@@ -43,7 +43,8 @@ public class CommentQueryService implements CommentFinder {
 	@Override
 	public CommentListResult findComments(Long userId, Long postId, CommentListRequest request) {
 		validatePostExists(postId);
-		Slice<Comment> slice = commentQueryRepository.findRootComments(postId, request.cursor(), request.size());
+		Slice<Comment> slice = commentQueryRepository.findRootComments(userId, postId, request.cursor(),
+				request.size());
 
 		List<CommentResult> comments = compose(userId, slice.getContent());
 		Long nextCursor = nextCursorOf(slice);
@@ -53,7 +54,8 @@ public class CommentQueryService implements CommentFinder {
 	@Override
 	public ReplyListResult findReplies(Long userId, Long commentId, CommentListRequest request) {
 		validateRootComment(commentId);
-		Slice<Comment> slice = commentQueryRepository.findReplies(commentId, request.cursor(), request.size());
+		Slice<Comment> slice = commentQueryRepository.findReplies(userId, commentId, request.cursor(),
+				request.size());
 
 		List<ReplyResult> replies = composeReplies(userId, slice.getContent());
 		Long nextCursor = nextCursorOf(slice);
@@ -62,7 +64,8 @@ public class CommentQueryService implements CommentFinder {
 
 	@Override
 	public CommentListResult findCommentsByAuthor(Long userId, Long authorId, CommentListRequest request) {
-		Slice<Comment> slice = commentQueryRepository.findCommentsByUserId(authorId, request.cursor(), request.size());
+		Slice<Comment> slice = commentQueryRepository.findCommentsByUserId(userId, authorId, request.cursor(),
+				request.size());
 
 		List<CommentResult> comments = compose(userId, slice.getContent());
 		Long nextCursor = nextCursorOf(slice);
@@ -106,10 +109,11 @@ public class CommentQueryService implements CommentFinder {
 		Map<Long, AuthorResult> authors = findAuthors(comments);
 		List<Long> ids = comments.stream().map(Comment::getId).toList();
 		Map<Long, LikeSummary> likes = likeFinder.findCommentLikes(userId, ids);
-		Map<Long, Long> replyCounts = countReplies(comments);
+		Map<Long, Long> replyCounts = countReplies(userId, comments);
 		return comments.stream()
 				.map(comment -> new CommentResult(comment, authors.get(comment.getUserId()),
-						replyCounts.getOrDefault(comment.getId(), 0L), likes.get(comment.getId()).likeCount(), likes.get(comment.getId()).likedByMe()))
+						replyCounts.getOrDefault(comment.getId(), 0L), likes.get(comment.getId()).likeCount(),
+						likes.get(comment.getId()).likedByMe()))
 				.toList();
 	}
 
@@ -118,7 +122,8 @@ public class CommentQueryService implements CommentFinder {
 		List<Long> ids = replies.stream().map(Comment::getId).toList();
 		Map<Long, LikeSummary> likes = likeFinder.findCommentLikes(userId, ids);
 		return replies.stream()
-				.map(reply -> new ReplyResult(reply, authors.get(reply.getUserId()), likes.get(reply.getId()).likeCount(), likes.get(reply.getId()).likedByMe()))
+				.map(reply -> new ReplyResult(reply, authors.get(reply.getUserId()),
+						likes.get(reply.getId()).likeCount(), likes.get(reply.getId()).likedByMe()))
 				.toList();
 	}
 
@@ -129,11 +134,11 @@ public class CommentQueryService implements CommentFinder {
 		return authorProfiles.findByUserIds(userIds);
 	}
 
-	private Map<Long, Long> countReplies(List<Comment> comments) {
+	private Map<Long, Long> countReplies(Long userId, List<Comment> comments) {
 		List<Long> rootIds = comments.stream()
 				.map(Comment::getId)
 				.toList();
-		return commentQueryRepository.countReplies(rootIds);
+		return commentQueryRepository.countReplies(userId, rootIds);
 	}
 
 	private Long nextCursorOf(Slice<Comment> slice) {

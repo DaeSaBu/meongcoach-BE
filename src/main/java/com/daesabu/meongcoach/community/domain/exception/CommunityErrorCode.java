@@ -13,7 +13,9 @@ public enum CommunityErrorCode implements ErrorCode {
 	COMMUNITY_POST_MEDIA_COUNT_EXCEEDED(400, "첨부할 수 있는 미디어 개수를 넘었습니다."),
 	COMMUNITY_POST_MEDIA_DUPLICATED(400, "같은 미디어를 중복으로 첨부할 수 없습니다."),
 	COMMUNITY_POST_MEDIA_TYPE_INVALID(400, "지원하지 않는 미디어 종류입니다."),
-	COMMUNITY_COMMENT_MEDIA_COUNT_EXCEEDED(400, "댓글에 첨부할 수 있는 미디어 개수를 넘었습니다.");
+	COMMUNITY_COMMENT_MEDIA_COUNT_EXCEEDED(400, "댓글에 첨부할 수 있는 미디어 개수를 넘었습니다."),
+	COMMUNITY_SELF_REPORT_NOT_ALLOWED(400, "본인이 작성한 글은 신고할 수 없습니다."),
+	COMMUNITY_SELF_BLOCK_NOT_ALLOWED(400, "자기 자신은 차단할 수 없습니다.");
 
 	private final int status;
 	private final String message;

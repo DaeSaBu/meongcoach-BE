@@ -2,6 +2,7 @@ package com.daesabu.meongcoach.community.application;
 
 import static java.util.Optional.ofNullable;
 
+import com.daesabu.meongcoach.community.application.provided.BlockFinder;
 import com.daesabu.meongcoach.community.application.provided.LikeFinder;
 import com.daesabu.meongcoach.community.application.provided.PostFinder;
 import com.daesabu.meongcoach.community.application.provided.dto.AuthorResult;
@@ -37,11 +38,12 @@ public class PostQueryService implements PostFinder {
 	private final PostQueryRepository postQueryRepository;
 	private final AuthorProfiles authorProfiles;
 	private final LikeFinder likeFinder;
+	private final BlockFinder blockFinder;
 	private final MentionTargetReaders mentionTargetReaders;
 
 	@Override
 	public PostListResult findPosts(Long userId, PostListRequest request) {
-		Slice<Post> slice = getSlice(request);
+		Slice<Post> slice = getSlice(userId, request);
 
 		List<PostResult> posts = compose(userId, slice.getContent());
 		Long nextCursor = nextCursorOf(slice);
@@ -80,13 +82,20 @@ public class PostQueryService implements PostFinder {
 	@Override
 	public PostResult findPostDetail(Long userId, Long postId) {
 		Post post = findPost(postId);
+		validateNotBlocked(userId, post);
 
 		List<PostResult> results = compose(userId, List.of(post));
 		return results.getFirst();
 	}
 
-	private Slice<Post> getSlice(PostListRequest request) {
-		return postQueryRepository.findPosts(request.cursor(), request.lessonId(), request.size());
+	private Slice<Post> getSlice(Long userId, PostListRequest request) {
+		return postQueryRepository.findPosts(userId, request.cursor(), request.lessonId(), request.size());
+	}
+
+	private void validateNotBlocked(Long userId, Post post) {
+		if (blockFinder.isBlocked(userId, post.getUserId())) {
+			throw new PostNotFoundException(post.getId());
+		}
 	}
 
 	private Long nextCursorOf(Slice<Post> slice) {
@@ -123,7 +132,8 @@ public class PostQueryService implements PostFinder {
 	}
 
 	private PostResult toResult(Post post, Map<Long, AuthorResult> authors,
-	                            Map<MentionTargetType, Map<Long, MentionTargetResult>> mentionTargets, LikeSummary likes) {
+	                            Map<MentionTargetType, Map<Long, MentionTargetResult>> mentionTargets,
+	                            LikeSummary likes) {
 		AuthorResult author = authors.get(post.getUserId());
 		MentionTargetResult mentionTarget = ofNullable(post.getMention())
 				.map(mention -> mentionTargets.get(mention.getTargetType()).get(mention.getTargetId()))

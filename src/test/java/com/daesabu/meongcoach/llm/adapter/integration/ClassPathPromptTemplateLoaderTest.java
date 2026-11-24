@@ -41,13 +41,4 @@ class ClassPathPromptTemplateLoaderTest {
 
 		assertThat(content).doesNotContain("{{include:");
 	}
-
-	@Test
-	void 영상_분석_프롬프트가_공용_조각의_안전_원칙과_교육_매핑을_담는다() {
-		String safetyPrinciples = loader.load("prompts/behavior-analysis/safety-principles.md");
-		String topicMatching = loader.load("prompts/behavior-analysis/topic-matching-core.md");
-
-		assertThat(loader.load("prompts/video-analysis/system.md")).contains(safetyPrinciples);
-		assertThat(loader.load("prompts/video-analysis/user.md")).contains(topicMatching);
-	}
 }

@@ -1,5 +1,6 @@
 package com.daesabu.meongcoach.community.application;
 
+import com.daesabu.meongcoach.community.application.provided.BlockFinder;
 import com.daesabu.meongcoach.community.domain.CommentNotification;
 import com.daesabu.meongcoach.community.domain.CommentRegisteredEvent;
 import com.daesabu.meongcoach.notification.application.provided.EventNotificationDispatcher;
@@ -20,11 +21,12 @@ public class CommentNotificationListener {
 	private static final String TARGET_KIND = "USERS";
 
 	private final EventNotificationDispatcher eventNotificationDispatcher;
+	private final BlockFinder blockFinder;
 
 	@Async
 	@TransactionalEventListener
 	public void notify(CommentRegisteredEvent event) {
-		List<Long> recipientIds = event.recipientIds();
+		List<Long> recipientIds = blockFinder.findUsersNotBlocking(event.commenterId(), event.recipientIds());
 		if (recipientIds.isEmpty()) {
 			return;
 		}

@@ -60,7 +60,7 @@ public class GeminiVideoAnalyzer implements VideoAnalyzer {
 	private static final String SECTION_MARK = "##";
 	private static final String ESCAPED_SECTION_MARK = "#";
 	private static final Map<DogSex, String> SEX_LABELS = Map.of(DogSex.MALE, "수컷", DogSex.FEMALE, "암컷");
-	private static final List<String> REASONING_FIELDS = List.of("observation", "interpretation", "decision");
+	private static final List<String> REASONING_FIELDS = List.of("observation", "decision");
 	private static final String JSON_MIME_TYPE = "application/json";
 	private static final int CANDIDATE_COUNT = 1;
 
@@ -80,15 +80,15 @@ public class GeminiVideoAnalyzer implements VideoAnalyzer {
 		this.topicFinder = topicFinder;
 		this.objectMapper = objectMapper;
 		this.userPrompt = promptTemplateLoader.load(USER_PROMPT_PATH);
-		this.generateConfig = GenerateContentConfig.builder()
+		GenerateContentConfig.Builder configBuilder = GenerateContentConfig.builder()
 				.systemInstruction(Content.fromParts(Part.fromText(promptTemplateLoader.load(SYSTEM_PROMPT_PATH))))
 				.responseMimeType(JSON_MIME_TYPE)
 				.responseJsonSchema(objectMapper.readValue(promptTemplateLoader.load(SCHEMA_PATH), Map.class))
 				.candidateCount(CANDIDATE_COUNT)
 				.maxOutputTokens(properties.maxOutputTokens())
-				.temperature(properties.temperature())
-				.thinkingConfig(ThinkingConfig.builder().thinkingLevel(properties.thinkingLevel()))
-				.build();
+				.thinkingConfig(ThinkingConfig.builder().thinkingLevel(properties.thinkingLevel()));
+		properties.temperatureFor(properties.videoModel()).ifPresent(configBuilder::temperature);
+		this.generateConfig = configBuilder.build();
 		requirePlaceholder(TOPICS_PLACEHOLDER);
 		requirePlaceholder(DOG_PROFILE_PLACEHOLDER);
 		requirePlaceholder(OWNER_CONTEXT_PLACEHOLDER);
@@ -135,7 +135,7 @@ public class GeminiVideoAnalyzer implements VideoAnalyzer {
 	private String generateOrThrow(File video, String prompt, String videoUri) {
 		GenerateContentResponse response;
 		try {
-			response = client.models.generateContent(properties.model(), userContent(video, prompt), generateConfig);
+			response = client.models.generateContent(properties.videoModel(), userContent(video, prompt), generateConfig);
 		}
 		catch (ApiException | GenAiIOException e) {
 			throw new VideoAnalysisFailedException("영상 분석 모델 호출에 실패했습니다: " + videoUri, e);

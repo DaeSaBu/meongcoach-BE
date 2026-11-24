@@ -9,9 +9,11 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
 import com.daesabu.meongcoach.community.application.required.PostRepository;
+import com.daesabu.meongcoach.community.application.required.UserBlockRepository;
 import com.daesabu.meongcoach.community.domain.Comment;
 import com.daesabu.meongcoach.community.domain.Post;
 import com.daesabu.meongcoach.community.domain.PostRegisterCommand;
+import com.daesabu.meongcoach.community.domain.UserBlock;
 import com.daesabu.meongcoach.notification.application.required.DeviceInstallationRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationEventSettingRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationSender;
@@ -65,6 +67,9 @@ class LikeRegisterNotificationTest {
 	private PostRepository posts;
 
 	@Autowired
+	private UserBlockRepository blocks;
+
+	@Autowired
 	private DeviceInstallationRepository installations;
 
 	@Autowired
@@ -94,7 +99,8 @@ class LikeRegisterNotificationTest {
 			rootAuthorId = saveUser("댓글주인", ROOT_AUTHOR_FID);
 			commenterId = saveUser("멍멍이집사", COMMENTER_FID);
 			participantId = saveUser("산책러", PARTICIPANT_FID);
-			postId = posts.save(Post.register(postAuthorId, new PostRegisterCommand("오늘 앉아 훈련 성공!", null, List.of()))).getId();
+			postId = posts.save(Post.register(postAuthorId, new PostRegisterCommand("오늘 앉아 훈련 성공!", null, List.of())))
+					.getId();
 		});
 		given(sender.send(anyList())).willAnswer(invocation -> {
 			List<PushNotification> notifications = invocation.getArgument(0);
@@ -107,11 +113,16 @@ class LikeRegisterNotificationTest {
 	void cleanUp() {
 		transaction.executeWithoutResult(status -> {
 			jdbcTemplate.update("delete from post_likes where post_id = ?", postId);
-			jdbcTemplate.update("delete from comment_likes where comment_id in (select id from comments where post_id = ?)", postId);
-			jdbcTemplate.update("delete from comment_closures where descendant_id in (select id from comments where post_id = ?)", postId);
+			jdbcTemplate.update(
+					"delete from comment_likes where comment_id in (select id from comments where post_id = ?)",
+					postId);
+			jdbcTemplate.update(
+					"delete from comment_closures where descendant_id in (select id from comments where post_id = ?)",
+					postId);
 			jdbcTemplate.update("delete from comments where post_id = ?", postId);
 			jdbcTemplate.update("delete from posts where id = ?", postId);
 			userIds.forEach(userId -> {
+				jdbcTemplate.update("delete from user_blocks where blocker_id = ?", userId);
 				jdbcTemplate.update("delete from notification_event_settings where user_id = ?", userId);
 				jdbcTemplate.update("delete from device_installations where user_id = ?", userId);
 				jdbcTemplate.update("delete from users where id = ?", userId);
@@ -168,7 +179,17 @@ class LikeRegisterNotificationTest {
 	@Test
 	void 좋아요_알림을_끈_회원에게는_보내지_않는다() {
 		transaction.executeWithoutResult(status -> jdbcTemplate.update(
-				"update notification_event_settings set enabled = false where user_id = ? and type = ?", postAuthorId, "LIKE"));
+				"update notification_event_settings set enabled = false where user_id = ? and type = ?", postAuthorId,
+				"LIKE"));
+
+		likeRegister.likePost(commenterId, postId);
+
+		verify(sender, after(ASYNC_SETTLE_MILLIS).never()).send(any());
+	}
+
+	@Test
+	void 좋아요를_누른_회원을_차단한_작성자에게는_알리지_않는다() {
+		blocks.save(UserBlock.register(postAuthorId, commenterId));
 
 		likeRegister.likePost(commenterId, postId);
 
@@ -237,7 +258,9 @@ class LikeRegisterNotificationTest {
 		Long userId = users.save(user).getId();
 		userIds.add(userId);
 		profileIds.add(user.getProfile().getId());
-		installations.save(DeviceInstallation.register(userId, new DeviceInstallationRegisterCommand(fid, DevicePlatform.IOS), Instant.now()));
+		installations.save(
+				DeviceInstallation.register(userId, new DeviceInstallationRegisterCommand(fid, DevicePlatform.IOS),
+						Instant.now()));
 		settings.save(NotificationEventSetting.create(userId, NotificationEventType.LIKE, true));
 		return userId;
 	}

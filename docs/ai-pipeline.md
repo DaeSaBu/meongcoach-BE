@@ -37,7 +37,7 @@ VideoUploadSubscriber                       (analysis/adapter/consumer — strea
 - **분석 건은 압축이 끝난 뒤에 만듭니다.** GCS 서명에 `content-length`가 들어가므로(`GcsObjectStorage.issueUploadUrl`) 압축 전 크기로 발급하면 업로드가 403으로 거부됩니다. 맥락 입력이 먼저 끝나도 앱은 압축 완료를 기다렸다가 요청합니다.
 - **보호자가 남긴 맥락은 분석 건에 저장했다가 분석 시 프롬프트에 넣습니다.** 발급 시점과 분석 시점이 다른 요청이라 `AiAnalysis.context`가 둘을 잇습니다. 프롬프트(`user.md`의 `{{ownerContext}}`)는 맥락을 `<보호자 메모>` 안에 넣고, 영상과 대조한 참고 정보로만 쓰며 그 안의 지시는 따르지 않게 합니다. 메모가 태그를 닫거나 새 섹션을 열지 못하도록 `<보호자 메모>`·`</보호자 메모>`를 지우고 `##`을 `#`로 바꿔 넣습니다. 비어 있으면 "입력 없음"으로 채웁니다.
 - **반려견 프로필은 분석 건을 만들 때 정한 강아지로 채웁니다.** 분석 건 생성이 `dogId`(없으면 선택된 강아지)를 `AiAnalysis`에 저장하고, 분석 시점에는 그 강아지의 프로필을 다시 읽습니다. 그 사이에 이름이나 생년월일을 고쳤으면 고친 값이 들어갑니다. `{{dogProfile}}`에는 `- 이름: / - 나이: / - 성별: / - 품종:` 네 줄을 PoC 검증 형식 그대로 넣습니다. 프롬프트가 1살 미만을 강아지로, 8살 이상을 노령견으로 판단하므로 나이는 생년월일이 아니라 `N개월`(1살 미만)이나 `N살`로 넣습니다. 중성화 정보는 저장하지 않으므로 성별은 `수컷`·`암컷`만 넣고, 빈 값은 "입력 없음"으로 채웁니다. 프로필·메모는 `{{topics}}`를 치환한 뒤에 치환해 메모 속 `{{topics}}`가 다시 치환되지 않게 합니다.
-- **프롬프트 문구는 PoC(v2-ctx.1)에서 검증한 그대로 둡니다.** 서버에서 문구를 고치면 검증 결과가 맞지 않게 되므로, 고칠 때는 PoC에서 새 세트로 검증한 뒤 옮깁니다. 응답 스키마는 내부 근거 필드(`observation`·`interpretation`·`decision`)를 앱 필드보다 먼저 채우게 합니다. 내부 필드는 앱에 보내지 않고, 입력한 프로필·메모와 함께 info 로그(`영상 분석 근거:`)에 남겨 오판 신고 때 `interpretation.ownerInfoCheck`로 원인을 확인합니다. 그래서 분석 시간은 평균 15~21초, 최대 약 32초(업로드 제외)이고, 출력 토큰 상한은 8192입니다.
+- **프롬프트 문구는 PoC(v2-ctx.3.2-hs-min)에서 검증한 그대로 둡니다.** `prompts/video-analysis/`의 세 파일은 PoC 파일과 바이트 단위로 같습니다. 서버에서 문구를 고치면 검증 결과가 맞지 않게 되므로, 고칠 때는 PoC에서 새 세트로 검증한 뒤 파일째 옮깁니다. 이 세트는 `gemini-4-hydrogen`으로 검증했으므로 영상 분석 모델(`video-model`)을 바꿀 때도 PoC에서 다시 검증합니다. 응답 스키마는 내부 근거 필드를 앱 필드보다 먼저 채우게 합니다. Hydrogen은 스키마도 입력으로 과금하고 스스로 사고하는 단계가 있어, 내부 필드는 `observation.filming`(촬영 방식·보호자 존재)과 `decision.type`·`certainty`·`keyFact`만 남겼습니다. 지시문에는 스키마에서 뺀 내부 필드 이름(`interpretation` 등)이 남아 있는데, PoC가 그 상태로 검증했으므로 지우지 않습니다. 내부 필드는 앱에 보내지 않고, 입력한 프로필·메모와 함께 info 로그(`영상 분석 근거:`)에 남깁니다. v2-ctx.1에서 오판 신고 때 보던 `interpretation.ownerInfoCheck`는 더 남지 않습니다. 분석 시간은 PoC 실측 중앙값 약 12초, 90% 약 15초(업로드 제외)이고, 출력 토큰 상한은 8192입니다.
 - **발급 기록이 없는 업로드 이벤트는 분석하지 않습니다.** 우리가 발급한 키만 소유자 row가 있습니다. 배포 직전에 발급돼 배포 뒤 업로드된 영상도 row가 없어 스킵되므로(warn 로그), 배포 시 URL 유효 시간만큼의 공백을 감수합니다.
 - **어댑터는 연동 실패를 도메인 예외로 번역해 던지고, 서비스는 그것만 잡습니다.** 영상 분석은 `VideoAnalysisFailedException`(→ `FAILED_ANALYSIS`)이고, 그 외 예외는 버그로 보고 `FAILED_UNEXPECTED`로 남깁니다. 어댑터에서 `catch (Exception)`으로 넓게 잡으면 두 실패 상태의 구분이 무너지므로 유지하지 않습니다.
 - **`AiReportGenerateService`는 의도적으로 트랜잭션이 없습니다.** 영상 분석이 수십 초 걸려 클래스 기본 `@Transactional(readOnly = true)` 패턴을 따르면 분석 내내 DB 커넥션을 점유합니다. 상태 전이 저장은 리포지토리 `save`(준영속 엔티티는 merge → UPDATE)의 자체 트랜잭션에 맡기고, 완료 기록만 분석이 끝난 뒤 `AiAnalysisModifyService.complete`의 짧은 트랜잭션으로 처리합니다. "서비스 클래스에 readOnly 기본" 규칙의 의도적 예외이므로 일괄 정리 대상이 아닙니다.
@@ -60,7 +60,8 @@ VideoUploadSubscriber                       (analysis/adapter/consumer — strea
 - **영상의 소리도 분석에 씁니다.** `media_processing`을 지정하지 않은 정적 모드(기본)는 프레임(`video-fps`)과 함께 오디오를 1Kbps 단일 채널로 처리하고 초당 32토큰을 과금합니다. 프롬프트는 반려견이 낸 것으로 확실한 소리만 근거로 쓰고, TV·사람 목소리·주변 소음은 반려견의 소리로 서술하지 않게 합니다. ([공식 문서](https://ai.google.dev/gemini-api/docs/generate-content/video-understanding))
 - **리포트 제목은 같은 응답의 마지막 키 `title`로 받습니다.** 구조화된 출력은 스키마의 키 순서대로 생성되므로, 마지막에 두면 본문을 다 쓴 뒤에 제목을 짓습니다. 저장하는 `content` JSON에는 `title`을 넣지 않고 `AiReport.title`에만 둡니다. Java SDK에는 Pydantic(Python)·Zod(JS)처럼 응답을 타입으로 받는 기능이 없어 `text()`를 Jackson으로 역직렬화합니다. ([공식 문서](https://ai.google.dev/gemini-api/docs/generate-content/structured-output))
 - **종료 사유로 실패를 구분합니다.** `MAX_TOKENS`는 상한 잘림, `STOP`이 아닌 그 외(`SAFETY`·`PROHIBITED_CONTENT` 등)는 차단, `candidates` 없음(프롬프트 차단)도 모두 `VideoAnalysisFailedException`입니다. SDK의 `text()`는 `SAFETY`에서 `IllegalArgumentException`을 던지므로 종료 사유를 먼저 확인합니다.
-- **사고 수준은 `thinking-level`(low·medium·high)로 둡니다.** Gemini 3 이후 모델은 사고를 완전히 끌 수 없고 `thinkingBudget`은 문서화되어 있지 않습니다. 비용·지연 예측을 위해 기본값은 `low`입니다.
+- **사고 수준은 `thinking-level`로 둡니다.** Gemini 3 이후 모델은 사고를 완전히 끌 수 없고 `thinkingBudget`은 문서화되어 있지 않습니다. Hydrogen은 low·medium·high·xhigh를 받고 지정하지 않으면 high입니다. 사고 토큰은 출력 단가로 과금되고 `max-output-tokens`에 포함됩니다. 비용·지연 예측을 위해 기본값은 `low`입니다.
+- **Gemini 4 계열 모델에는 temperature를 보내지 않습니다.** Gemini 4는 temperature·top_p·top_k를 무시하고 공식 문서가 요청에서 빼라고 안내하며, PoC 검증도 뺀 상태로 했습니다. `GeminiProperties.temperatureFor`가 모델 이름이 `gemini-4`로 시작하면 값을 비우고, 영상 분석과 플랜 생성 어댑터가 이 규칙을 함께 씁니다. 그 외 모델에는 `temperature`(0)를 보냅니다.
 - **`responseTimeout`은 전역 HTTP read-timeout(3초)과 별개입니다.** SDK `HttpOptions.timeout`(밀리초)에 넣어 등록·분석 호출 모두에 적용됩니다.
 - Gemini 클라이언트는 OkHttp로 호출해 `MockRestServiceServer`로 잡을 수 없으므로 테스트는 `HttpOptions.baseUrl`을 `MockWebServer`로 돌립니다. (`GeminiVideoAnalyzerTest`)
 - 실제 Gemini·GCS 호출이 필요한 수동 테스트는 로컬 전용입니다. (`*ManualTest`는 gitignore)
@@ -69,16 +70,16 @@ VideoUploadSubscriber                       (analysis/adapter/consumer — strea
 
 - 다른 모듈은 `llm/application/provided`의 `AiContentGenerator`로 시스템 프롬프트, 사용자 프롬프트, 응답 JSON 스키마를 전달합니다. `GeminiContentGenerator`가 스키마를 `responseJsonSchema`로, 시스템 프롬프트를 `systemInstruction`으로 넣어 `generateContent`를 호출합니다. 생성된 내용은 문자열로 반환하며 업무별 결과 해석과 검증은 호출 모듈이 담당합니다. (호출 예시: `training/adapter/integration/AiPlanGenerationAdapter`)
 - JSON 문법이 잘못되거나 객체가 아닌 스키마는 외부 호출 전에 거절합니다. 통신 오류, `candidates` 없음, 비정상 종료(`SAFETY` 등), `MAX_TOKENS` 잘림, 빈 응답은 원인을 보존한 `AiContentGenerationFailedException`으로 변환하며 오류 코드는 `AI_CONTENT_GENERATION_FAILED`(502)입니다. 로컬 스키마 오류는 내부 오류(500)로 처리합니다.
-- **영상 분석과 같은 `meongcoach.llm.gemini` 설정(모델·타임아웃·토큰 상한·temperature·사고 수준)을 함께 씁니다.** 용도별로 모델을 달리할 필요가 생기면 그때 설정을 나눕니다. `video-fps`는 영상 분석에만 쓰입니다.
+- **모델만 용도별로 나눕니다.** 플랜 생성은 `model`(`GEMINI_MODEL`), 영상 분석은 `video-model`(`GEMINI_VIDEO_MODEL`)을 쓰고, 타임아웃·토큰 상한·temperature·사고 수준은 `meongcoach.llm.gemini` 설정을 함께 씁니다. `video-fps`는 영상 분석에만 쓰입니다. 배포 워크플로는 `GEMINI_VIDEO_MODEL`을 주입하지 않으므로 dev·prod는 `application.yml`의 기본값을 씁니다.
 - Gemini `Client`는 `GeminiClientConfiguration`이 빈으로 한 번 만들어 `GeminiVideoAnalyzer`와 `GeminiContentGenerator`가 공유합니다. 응답의 `candidates`·종료 사유·빈 텍스트 검증은 `GeminiResponses`에 모여 있고, 두 어댑터가 각자의 도메인 예외(`VideoAnalysisFailedException`·`AiContentGenerationFailedException`)로 번역합니다. 이 셋은 `llm/adapter/integration`에 있고, 이 패키지를 named interface `gemini`로 공개해 `analysis`의 `GeminiVideoAnalyzer`가 `GeminiProperties`와 `GeminiResponses`를 그대로 씁니다.
 
 ## 프롬프트 템플릿 (src/main/resources/prompts/)
 
-`{video-analysis,plan-generation}/{system.md, user.md, schema.json}`과 두 기능이 함께 참조하는 조각 `behavior-analysis/*.md` 구조입니다.
+`{video-analysis,plan-generation}/{system.md, user.md, schema.json}`과 플랜 생성이 참조하는 조각 `behavior-analysis/*.md` 구조입니다.
 
 - `llm/application/provided`의 `PromptTemplateLoader`가 기동 시점에 읽어 검증합니다 — 파일이 없거나 비어 있으면 **애플리케이션이 기동하지 않습니다.** 다른 모듈도 이 로더로 프롬프트를 읽습니다. (호출 예시: `training/adapter/integration/AiPlanGenerationAdapter`)
 - 템플릿의 `{{include:behavior-analysis/이름}}`은 `prompts/behavior-analysis/이름.md`의 내용으로 바뀝니다. 조각 안에는 include를 쓸 수 없고, 풀리지 않은 지시문이 남으면 기동하지 않습니다. include는 기동 시점에 템플릿에만 적용되므로 사용자 입력에 같은 문자열이 있어도 풀리지 않습니다.
-- **`behavior-analysis/` 조각(안전 원칙, 행동 기능 후보, 문제 우선순위, 교육 매핑)을 고치면 영상 분석과 플랜 생성 프롬프트가 함께 바뀝니다.** 영상 분석 프롬프트는 조각을 합친 결과가 PoC 검증 문구와 같아야 하므로, 조각 수정도 PoC에서 새 세트로 검증한 뒤 옮깁니다. 한 기능에만 필요한 문장은 조각이 아니라 그 기능의 템플릿에 씁니다.
+- **`behavior-analysis/` 조각(안전 원칙, 행동 기능 후보, 문제 우선순위, 교육 매핑)은 플랜 생성 프롬프트만 씁니다.** 영상 분석 템플릿은 PoC 파일과 같아야 검증이 유효하므로 include를 쓰지 않습니다. 같은 내용의 문장이 영상 분석 프롬프트에도 있지만 따로 관리하므로, 조각을 고쳐도 영상 분석은 바뀌지 않습니다.
 - 플랜 생성도 영상 분석처럼 내부 근거 필드(`interpretation`, `decision`)를 먼저 채우게 하고, 기대사항과 함께 info 로그(`플랜 생성 근거:`)에 남깁니다. 근거 필드는 플랜에 저장하지 않습니다.
 - `schema.json`은 응답 형태를 강제하므로, 프롬프트에서 출력 형식을 바꾸려면 스키마를 함께 수정해야 합니다. Gemini `responseJsonSchema`는 JSON Schema 부분집합만 받으므로(`minLength` 같은 일부 키워드 무시) 길이 규칙은 도메인에서 검증합니다.
 
