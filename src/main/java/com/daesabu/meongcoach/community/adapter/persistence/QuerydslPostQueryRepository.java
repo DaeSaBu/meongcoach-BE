@@ -1,5 +1,6 @@
 package com.daesabu.meongcoach.community.adapter.persistence;
 
+import static com.daesabu.meongcoach.community.adapter.persistence.UserBlockPredicates.notBlockedBy;
 import static com.daesabu.meongcoach.community.domain.QPost.post;
 
 import com.daesabu.meongcoach.community.application.required.PostQueryRepository;
@@ -21,8 +22,8 @@ public class QuerydslPostQueryRepository implements PostQueryRepository {
 	private final JPAQueryFactory queryFactory;
 
 	@Override
-	public Slice<Post> findPosts(Long cursor, Long lessonId, int size) {
-		return findPosts(null, cursor, lessonId, size);
+	public Slice<Post> findPosts(Long viewerId, Long cursor, Long lessonId, int size) {
+		return findPosts(notBlockedBy(viewerId, post.userId), cursor, lessonId, size);
 	}
 
 	@Override

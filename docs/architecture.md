@@ -19,7 +19,7 @@ com.daesabu.meongcoach
 ├── media        ← 이미지·영상 업로드 URL 발급 (R2/GCS)
 ├── onboarding   ← 온보딩 흐름 조합
 ├── coupon       ← 쿠폰 코드 사용. 사용 시 analysis에 AI 분석 횟수 부여를 요청
-├── community    ← 게시글·댓글. 훈련 카드 등 다른 모듈의 대상을 멘션할 수 있고, 댓글 알림을 notification에, 신고 저장을 report에 요청
+├── community    ← 게시글·댓글·사용자 차단. 훈련 카드 등 다른 모듈의 대상을 멘션할 수 있고, 댓글 알림을 notification에, 신고 저장을 report에, 차단 알림을 alert에 요청
 ├── graduation   ← 토픽 수료(실습 인증) 제출·조회. 수료 사실의 유일한 출처
 ├── home         ← 홈 화면 조합. 「바로 훈련해볼까요?」 토픽 추천 (training 조합)
 ├── support      ← 자체 상담·채널톡 회원 식별. notification의 공개 발송 API를 호출

@@ -21,6 +21,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.daesabu.meongcoach.community.application.provided.AuthorFinder;
+import com.daesabu.meongcoach.community.application.provided.BlockFinder;
+import com.daesabu.meongcoach.community.application.provided.BlockRegister;
 import com.daesabu.meongcoach.community.application.provided.CommentFinder;
 import com.daesabu.meongcoach.community.application.provided.CommentRegister;
 import com.daesabu.meongcoach.community.application.provided.ContentReportRegister;
@@ -30,6 +32,7 @@ import com.daesabu.meongcoach.community.application.provided.PostMediaUploadUrlI
 import com.daesabu.meongcoach.community.application.provided.PostRegister;
 import com.daesabu.meongcoach.community.application.provided.dto.AuthorDogResult;
 import com.daesabu.meongcoach.community.application.provided.dto.AuthorResult;
+import com.daesabu.meongcoach.community.application.provided.dto.BlockedUserResult;
 import com.daesabu.meongcoach.community.application.provided.dto.CommentListRequest;
 import com.daesabu.meongcoach.community.application.provided.dto.CommentListResult;
 import com.daesabu.meongcoach.community.application.provided.dto.CommentRegisterRequest;
@@ -61,6 +64,7 @@ import com.daesabu.meongcoach.community.domain.exception.InvalidCommentContentEx
 import com.daesabu.meongcoach.community.domain.exception.MentionTargetNotFoundException;
 import com.daesabu.meongcoach.community.domain.exception.PostMediaCountExceededException;
 import com.daesabu.meongcoach.community.domain.exception.PostNotFoundException;
+import com.daesabu.meongcoach.community.domain.exception.SelfBlockNotAllowedException;
 import com.daesabu.meongcoach.community.domain.exception.SelfReportNotAllowedException;
 import com.daesabu.meongcoach.dog.domain.shared.Breed;
 import com.daesabu.meongcoach.dog.domain.shared.DogSex;
@@ -117,6 +121,12 @@ class CommunityControllerTest {
 	@MockitoBean
 	private ContentReportRegister contentReportRegister;
 
+	@MockitoBean
+	private BlockRegister blockRegister;
+
+	@MockitoBean
+	private BlockFinder blockFinder;
+
 	@Test
 	void 내_작성자_정보를_반환한다() throws Exception {
 		given(authorFinder.findAuthor(42L)).willReturn(Optional.of(
@@ -134,8 +144,10 @@ class CommunityControllerTest {
 								fieldWithPath("author").optional()
 										.description("내 작성자 요약. 게시글·댓글의 author와 같다. 선택된 강아지가 없으면(훈련사 계정 제외) null"),
 								fieldWithPath("author.userId").description("내 회원 ID"),
-								fieldWithPath("author.nickname").description("내 표시 이름. 게시글·댓글의 author.nickname과 같은 규칙으로 만든다"),
-								fieldWithPath("author.profileImageUrl").description("선택한 강아지의 프로필 이미지 URL. 이미지를 등록하지 않았으면 빈 문자열"))));
+								fieldWithPath("author.nickname").description(
+										"내 표시 이름. 게시글·댓글의 author.nickname과 같은 규칙으로 만든다"),
+								fieldWithPath("author.profileImageUrl").description(
+										"선택한 강아지의 프로필 이미지 URL. 이미지를 등록하지 않았으면 빈 문자열"))));
 	}
 
 	@Test
@@ -173,7 +185,8 @@ class CommunityControllerTest {
 				.andExpect(jsonPath("$.dog.sex").value("FEMALE"))
 				.andExpect(jsonPath("$.dog.age").value(3))
 				.andDo(document("community/author-dog",
-						pathParameters(parameterWithName("userId").description("강아지 정보를 볼 회원 ID. 게시글·댓글의 author.userId")),
+						pathParameters(
+								parameterWithName("userId").description("강아지 정보를 볼 회원 ID. 게시글·댓글의 author.userId")),
 						responseFields(
 								fieldWithPath("dog").optional()
 										.description("회원이 선택한 강아지의 공개 정보. 훈련사(EXPERT) 계정이거나 선택된 강아지가 없으면 null"),
@@ -182,7 +195,8 @@ class CommunityControllerTest {
 								fieldWithPath("dog.breed.label").description("견종 표시 이름"),
 								fieldWithPath("dog.sex").description("성별. MALE(수컷) 또는 FEMALE(암컷)"),
 								fieldWithPath("dog.age").optional().description("만 나이(살). 생일을 등록하지 않았으면 null"),
-								fieldWithPath("dog.profileImageUrl").description("강아지 프로필 이미지 URL. 이미지를 등록하지 않았으면 빈 문자열"))));
+								fieldWithPath("dog.profileImageUrl").description(
+										"강아지 프로필 이미지 URL. 이미지를 등록하지 않았으면 빈 문자열"))));
 	}
 
 	@Test
@@ -198,8 +212,10 @@ class CommunityControllerTest {
 	@Test
 	void 게시글_목록을_다음_커서와_함께_반환한다() throws Exception {
 		List<PostMediaCommand> media = List.of(
-				new PostMediaCommand(PostMediaType.IMAGE, "https://media.meongcoach.com/images/community-post/7/photo.jpg"),
-				new PostMediaCommand(PostMediaType.VIDEO, "https://media.meongcoach.com/videos/community-post/7/clip.mp4"));
+				new PostMediaCommand(PostMediaType.IMAGE,
+						"https://media.meongcoach.com/images/community-post/7/photo.jpg"),
+				new PostMediaCommand(PostMediaType.VIDEO,
+						"https://media.meongcoach.com/videos/community-post/7/clip.mp4"));
 		Post commented = PostFixture.create(30L, 7L, "이 레슨 따라해봤어요", null, media,
 				LocalDateTime.of(2026, 10, 19, 10, 30, 0));
 		ReflectionTestUtils.setField(commented, "commentCount", 3);
@@ -229,7 +245,8 @@ class CommunityControllerTest {
 				.andExpect(jsonPath("$.posts[0].content").value("이 레슨 따라해봤어요"))
 				.andExpect(jsonPath("$.posts[0].author.userId").value(7))
 				.andExpect(jsonPath("$.posts[0].author.nickname").value("초코 보호자"))
-				.andExpect(jsonPath("$.posts[0].author.profileImageUrl").value("https://media.meongcoach.com/images/dog-profile/7/choco.jpg"))
+				.andExpect(jsonPath("$.posts[0].author.profileImageUrl").value(
+						"https://media.meongcoach.com/images/dog-profile/7/choco.jpg"))
 				.andExpect(jsonPath("$.posts[0].mention.targetType").value("LESSON"))
 				.andExpect(jsonPath("$.posts[0].mention.targetId").value(101))
 				.andExpect(jsonPath("$.posts[0].mention.categoryId").value(1))
@@ -268,7 +285,8 @@ class CommunityControllerTest {
 
 	@Test
 	void 커서와_size를_생략하면_첫_페이지를_기본_크기로_조회한다() throws Exception {
-		given(postFinder.findPosts(eq(42L), any(PostListRequest.class))).willReturn(new PostListResult(List.of(), null));
+		given(postFinder.findPosts(eq(42L), any(PostListRequest.class))).willReturn(
+				new PostListResult(List.of(), null));
 
 		mockMvc.perform(get("/api/community/posts").principal(CURRENT_USER))
 				.andExpect(status().isOk())
@@ -282,7 +300,8 @@ class CommunityControllerTest {
 	void 작성자_프로필이나_멘션_대상이_없으면_null로_반환한다() throws Exception {
 		PostResult orphan = new PostResult(
 				PostFixture.create(1L, 7L, "본문", LocalDateTime.of(2026, 10, 19, 9, 0, 0)), null, null, 0L, false);
-		given(postFinder.findPosts(eq(42L), any(PostListRequest.class))).willReturn(new PostListResult(List.of(orphan), null));
+		given(postFinder.findPosts(eq(42L), any(PostListRequest.class))).willReturn(
+				new PostListResult(List.of(orphan), null));
 
 		mockMvc.perform(get("/api/community/posts").principal(CURRENT_USER))
 				.andExpect(status().isOk())
@@ -341,7 +360,8 @@ class CommunityControllerTest {
 	@Test
 	void 내가_쓴_게시글_목록을_다음_커서와_함께_반환한다() throws Exception {
 		Post mine = PostFixture.create(30L, 42L, "이 레슨 따라해봤어요", null,
-				List.of(new PostMediaCommand(PostMediaType.IMAGE, "https://media.meongcoach.com/images/community-post/42/photo.jpg")),
+				List.of(new PostMediaCommand(PostMediaType.IMAGE,
+						"https://media.meongcoach.com/images/community-post/42/photo.jpg")),
 				LocalDateTime.of(2026, 10, 19, 10, 30, 0));
 		ReflectionTestUtils.setField(mine, "commentCount", 3);
 		PostResult withMention = new PostResult(
@@ -384,14 +404,16 @@ class CommunityControllerTest {
 
 	@Test
 	void 내가_쓴_게시글_목록의_커서와_size를_생략하면_첫_페이지를_기본_크기로_조회한다() throws Exception {
-		given(postFinder.findPostsByAuthor(eq(42L), eq(42L), any(PostListRequest.class))).willReturn(new PostListResult(List.of(), null));
+		given(postFinder.findPostsByAuthor(eq(42L), eq(42L), any(PostListRequest.class))).willReturn(
+				new PostListResult(List.of(), null));
 
 		mockMvc.perform(get("/api/community/me/posts").principal(CURRENT_USER))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.posts").isEmpty())
 				.andExpect(jsonPath("$.nextCursor").value(nullValue()));
 
-		then(postFinder).should().findPostsByAuthor(42L, 42L, new PostListRequest(null, PostListRequest.DEFAULT_SIZE, null));
+		then(postFinder).should()
+				.findPostsByAuthor(42L, 42L, new PostListRequest(null, PostListRequest.DEFAULT_SIZE, null));
 	}
 
 	@Test
@@ -423,10 +445,12 @@ class CommunityControllerTest {
 		Post post = PostFixture.create(30L, 7L, "이 레슨 따라해봤어요", LocalDateTime.of(2026, 10, 19, 10, 30, 0));
 		CommentResult withMedia = new CommentResult(
 				CommentFixture.create(101L, post, 42L, "저희 강아지도 성공했어요!",
-						List.of(new PostMediaCommand(PostMediaType.IMAGE, "https://media.meongcoach.com/images/community-post/42/shot.jpg")),
+						List.of(new PostMediaCommand(PostMediaType.IMAGE,
+								"https://media.meongcoach.com/images/community-post/42/shot.jpg")),
 						LocalDateTime.of(2026, 10, 19, 12, 0, 0)), null, 0L, 2L, true);
 		CommentResult withoutMedia = new CommentResult(
-				CommentFixture.create(100L, post, 42L, "축하해요!", LocalDateTime.of(2026, 10, 19, 11, 0, 0)), null, 0L, 0L, false);
+				CommentFixture.create(100L, post, 42L, "축하해요!", LocalDateTime.of(2026, 10, 19, 11, 0, 0)), null, 0L, 0L,
+				false);
 		given(commentFinder.findCommentsByAuthor(42L, 42L, new CommentListRequest(102L, 2)))
 				.willReturn(new CommentListResult(List.of(withMedia, withoutMedia), 100L));
 
@@ -440,7 +464,8 @@ class CommunityControllerTest {
 				.andExpect(jsonPath("$.comments[0].postContent").value("이 레슨 따라해봤어요"))
 				.andExpect(jsonPath("$.comments[0].content").value("저희 강아지도 성공했어요!"))
 				.andExpect(jsonPath("$.comments[0].media[0].type").value("IMAGE"))
-				.andExpect(jsonPath("$.comments[0].media[0].url").value("https://media.meongcoach.com/images/community-post/42/shot.jpg"))
+				.andExpect(jsonPath("$.comments[0].media[0].url").value(
+						"https://media.meongcoach.com/images/community-post/42/shot.jpg"))
 				.andExpect(jsonPath("$.comments[0].likeCount").value(2))
 				.andExpect(jsonPath("$.comments[0].likedByMe").value(true))
 				.andExpect(jsonPath("$.comments[0].createdAt").value("2026-10-19T12:00:00"))
@@ -460,7 +485,8 @@ class CommunityControllerTest {
 								fieldWithPath("comments[].postId").description("댓글이 달린 게시글 ID"),
 								fieldWithPath("comments[].postContent").description("댓글이 달린 게시글 본문"),
 								fieldWithPath("comments[].content").description("댓글 본문"),
-								fieldWithPath("comments[].media[]").description("첨부한 사진·영상 목록. 첨부 순서대로이고, 첨부가 없으면 빈 배열"),
+								fieldWithPath("comments[].media[]").description(
+										"첨부한 사진·영상 목록. 첨부 순서대로이고, 첨부가 없으면 빈 배열"),
 								fieldWithPath("comments[].media[].type").description("미디어 종류. IMAGE(사진), VIDEO(영상)"),
 								fieldWithPath("comments[].media[].url").description("미디어 공개 URL"),
 								fieldWithPath("comments[].likeCount").description("좋아요 수"),
@@ -482,7 +508,8 @@ class CommunityControllerTest {
 				.andExpect(jsonPath("$.comments").isEmpty())
 				.andExpect(jsonPath("$.nextCursor").value(nullValue()));
 
-		then(commentFinder).should().findCommentsByAuthor(42L, 42L, new CommentListRequest(null, CommentListRequest.DEFAULT_SIZE));
+		then(commentFinder).should()
+				.findCommentsByAuthor(42L, 42L, new CommentListRequest(null, CommentListRequest.DEFAULT_SIZE));
 	}
 
 	@Test
@@ -512,7 +539,8 @@ class CommunityControllerTest {
 	@Test
 	void 게시글_하나를_반환한다() throws Exception {
 		List<PostMediaCommand> media = List.of(
-				new PostMediaCommand(PostMediaType.IMAGE, "https://media.meongcoach.com/images/community-post/7/photo.jpg"));
+				new PostMediaCommand(PostMediaType.IMAGE,
+						"https://media.meongcoach.com/images/community-post/7/photo.jpg"));
 		Post commented = PostFixture.create(30L, 7L, "이 레슨 따라해봤어요", null, media,
 				LocalDateTime.of(2026, 10, 19, 10, 30, 0));
 		ReflectionTestUtils.setField(commented, "commentCount", 3);
@@ -557,8 +585,10 @@ class CommunityControllerTest {
 								fieldWithPath("author").optional()
 										.description("작성자 요약. 작성자가 탈퇴했거나 선택된 강아지가 없으면(훈련사 계정 제외) null"),
 								fieldWithPath("author.userId").description("작성자 회원 ID"),
-								fieldWithPath("author.nickname").description("작성자 표시 이름. 작성자가 선택한 강아지 이름 뒤에 ' 보호자'를 붙인다. 훈련사(EXPERT) 계정은 프로필 닉네임을 그대로 쓴다"),
-								fieldWithPath("author.profileImageUrl").description("작성자가 선택한 강아지의 프로필 이미지 URL. 훈련사(EXPERT) 계정은 회원 프로필 이미지 URL. 이미지를 등록하지 않았으면 빈 문자열"),
+								fieldWithPath("author.nickname").description(
+										"작성자 표시 이름. 작성자가 선택한 강아지 이름 뒤에 ' 보호자'를 붙인다. 훈련사(EXPERT) 계정은 프로필 닉네임을 그대로 쓴다"),
+								fieldWithPath("author.profileImageUrl").description(
+										"작성자가 선택한 강아지의 프로필 이미지 URL. 훈련사(EXPERT) 계정은 회원 프로필 이미지 URL. 이미지를 등록하지 않았으면 빈 문자열"),
 								fieldWithPath("mention").optional()
 										.description("멘션 대상 요약. 멘션이 없거나 멘션 대상이 없으면 null"),
 								fieldWithPath("mention.targetType").description("멘션 대상 종류. 현재 LESSON(레슨)만 있다"),
@@ -574,10 +604,11 @@ class CommunityControllerTest {
 								fieldWithPath("media[]").description("게시글 사진·영상 목록. 배열 순서가 표시 순서이고, 없으면 빈 배열"),
 								fieldWithPath("media[].type").description("미디어 종류. IMAGE(사진), VIDEO(영상)"),
 								fieldWithPath("media[].url").description("미디어 공개 URL"),
-								fieldWithPath("commentCount").description("삭제되지 않은 댓글·답글 수. 댓글이 없으면 0"),
+								fieldWithPath("commentCount").description(
+										"삭제되지 않은 댓글·답글 수. 댓글이 없으면 0. 차단한 사용자의 댓글도 포함한다"),
 								fieldWithPath("likeCount").description("좋아요 수"),
-						fieldWithPath("likedByMe").description("내 좋아요 여부"),
-						fieldWithPath("createdAt").description("게시글 작성 시각(ISO-8601, 초 단위)")
+								fieldWithPath("likedByMe").description("내 좋아요 여부"),
+								fieldWithPath("createdAt").description("게시글 작성 시각(ISO-8601, 초 단위)")
 						)
 				));
 	}
@@ -661,7 +692,7 @@ class CommunityControllerTest {
 								fieldWithPath("media[]").description("첨부한 사진·영상 목록. 요청 순서대로이고, 첨부 없이 작성했으면 빈 배열"),
 								fieldWithPath("media[].type").description("미디어 종류. IMAGE(사진), VIDEO(영상)"),
 								fieldWithPath("media[].url").description("미디어 공개 URL"),
-						fieldWithPath("createdAt").description("게시글 작성 시각(ISO-8601, 초 단위)")
+								fieldWithPath("createdAt").description("게시글 작성 시각(ISO-8601, 초 단위)")
 						)
 				));
 	}
@@ -802,10 +833,12 @@ class CommunityControllerTest {
 								fieldWithPath("mention.targetType").description("멘션 대상 종류. 현재 LESSON(레슨)만 받는다"),
 								fieldWithPath("mention.targetId").description("멘션 대상 ID(양의 정수)"),
 								fieldWithPath("media").optional()
-										.description("수정 후 남길 사진·영상 전체. 배열 순서가 표시 순서이고, 사진 3개·영상 2개까지. 생략하면 기존 미디어를 모두 제거한다"),
+										.description(
+												"수정 후 남길 사진·영상 전체. 배열 순서가 표시 순서이고, 사진 3개·영상 2개까지. 생략하면 기존 미디어를 모두 제거한다"),
 								fieldWithPath("media[].type").description("미디어 종류. IMAGE(사진), VIDEO(영상)"),
 								fieldWithPath("media[].url")
-										.description("기존 미디어 URL 또는 게시글 미디어 업로드 URL 발급 응답의 공개 URL. 본인이 게시글 용도로 올린 파일만 받는다")
+										.description(
+												"기존 미디어 URL 또는 게시글 미디어 업로드 URL 발급 응답의 공개 URL. 본인이 게시글 용도로 올린 파일만 받는다")
 						),
 						responseFields(
 								fieldWithPath("postId").description("수정한 게시글 ID"),
@@ -817,7 +850,7 @@ class CommunityControllerTest {
 								fieldWithPath("media[]").description("사진·영상 목록. 요청 순서대로이고, 미디어 없이 수정했으면 빈 배열"),
 								fieldWithPath("media[].type").description("미디어 종류. IMAGE(사진), VIDEO(영상)"),
 								fieldWithPath("media[].url").description("미디어 공개 URL"),
-						fieldWithPath("createdAt").description("게시글 작성 시각(ISO-8601, 초 단위)")
+								fieldWithPath("createdAt").description("게시글 작성 시각(ISO-8601, 초 단위)")
 						)
 				));
 	}
@@ -969,7 +1002,7 @@ class CommunityControllerTest {
 								fieldWithPath("media[]").description("첨부한 사진·영상 목록. 요청 순서대로이고, 첨부 없이 작성했으면 빈 배열"),
 								fieldWithPath("media[].type").description("미디어 종류. IMAGE(사진), VIDEO(영상)"),
 								fieldWithPath("media[].url").description("미디어 공개 URL"),
-						fieldWithPath("createdAt").description("댓글 작성 시각(ISO-8601, 초 단위)")
+								fieldWithPath("createdAt").description("댓글 작성 시각(ISO-8601, 초 단위)")
 						)
 				));
 	}
@@ -1070,7 +1103,8 @@ class CommunityControllerTest {
 		String videoUrl = "https://media.meongcoach.com/videos/community-post/42/clip.mp4";
 		given(commentRegister.update(42L, 101L, new CommentUpdateRequest("저희 강아지도 두 번째에 성공했어요!")))
 				.willReturn(CommentFixture.create(101L, post, 42L, "저희 강아지도 두 번째에 성공했어요!",
-						List.of(new PostMediaCommand(PostMediaType.VIDEO, videoUrl)), LocalDateTime.of(2026, 10, 21, 9, 0, 0)));
+						List.of(new PostMediaCommand(PostMediaType.VIDEO, videoUrl)),
+						LocalDateTime.of(2026, 10, 21, 9, 0, 0)));
 
 		mockMvc.perform(put("/api/community/comments/{commentId}", 101L)
 						.principal(CURRENT_USER)
@@ -1088,9 +1122,11 @@ class CommunityControllerTest {
 				.andExpect(jsonPath("$.media[0].url").value(videoUrl))
 				.andExpect(jsonPath("$.createdAt").value("2026-10-21T09:00:00"))
 				.andDo(document("community/comment-update",
-						pathParameters(parameterWithName("commentId").description("수정할 댓글 ID. 본인이 작성한 댓글·답글만 수정할 수 있다")),
+						pathParameters(
+								parameterWithName("commentId").description("수정할 댓글 ID. 본인이 작성한 댓글·답글만 수정할 수 있다")),
 						requestFields(
-								fieldWithPath("content").description("필수 입력. 댓글 본문. 공백만으로 채울 수 없고 150자 이하. 첨부한 사진·영상은 바꿀 수 없다")
+								fieldWithPath("content").description(
+										"필수 입력. 댓글 본문. 공백만으로 채울 수 없고 150자 이하. 첨부한 사진·영상은 바꿀 수 없다")
 						),
 						responseFields(
 								fieldWithPath("commentId").description("수정한 댓글 ID"),
@@ -1100,7 +1136,7 @@ class CommunityControllerTest {
 								fieldWithPath("media[]").description("작성할 때 첨부한 사진·영상 목록. 첨부가 없으면 빈 배열"),
 								fieldWithPath("media[].type").description("미디어 종류. IMAGE(사진), VIDEO(영상)"),
 								fieldWithPath("media[].url").description("미디어 공개 URL"),
-						fieldWithPath("createdAt").description("댓글 작성 시각(ISO-8601, 초 단위)")
+								fieldWithPath("createdAt").description("댓글 작성 시각(ISO-8601, 초 단위)")
 						)
 				));
 	}
@@ -1191,11 +1227,14 @@ class CommunityControllerTest {
 		Post post = PostFixture.create(30L, 7L, "이 레슨 따라해봤어요", LocalDateTime.of(2026, 10, 19, 10, 30, 0));
 		CommentResult withProfile = new CommentResult(
 				CommentFixture.create(100L, post, 7L, "저희 강아지도 성공했어요!",
-						List.of(new PostMediaCommand(PostMediaType.IMAGE, "https://media.meongcoach.com/images/community-post/42/shot.jpg")),
+						List.of(new PostMediaCommand(PostMediaType.IMAGE,
+								"https://media.meongcoach.com/images/community-post/42/shot.jpg")),
 						LocalDateTime.of(2026, 10, 19, 11, 0, 0)),
-				new AuthorResult(7L, "초코", "https://media.meongcoach.com/images/dog-profile/7/choco.jpg"), 3L, 0L, false);
+				new AuthorResult(7L, "초코", "https://media.meongcoach.com/images/dog-profile/7/choco.jpg"), 3L, 0L,
+				false);
 		CommentResult withoutProfile = new CommentResult(
-				CommentFixture.create(101L, post, 8L, "축하해요!", LocalDateTime.of(2026, 10, 19, 12, 0, 0)), null, 0L, 0L, false);
+				CommentFixture.create(101L, post, 8L, "축하해요!", LocalDateTime.of(2026, 10, 19, 12, 0, 0)), null, 0L, 0L,
+				false);
 		given(commentFinder.findComments(42L, 30L, new CommentListRequest(99L, 2)))
 				.willReturn(new CommentListResult(List.of(withProfile, withoutProfile), 101L));
 
@@ -1211,7 +1250,8 @@ class CommunityControllerTest {
 				.andExpect(jsonPath("$.comments[0].author.nickname").value("초코 보호자"))
 				.andExpect(jsonPath("$.comments[0].replyCount").value(3))
 				.andExpect(jsonPath("$.comments[0].media[0].type").value("IMAGE"))
-				.andExpect(jsonPath("$.comments[0].media[0].url").value("https://media.meongcoach.com/images/community-post/42/shot.jpg"))
+				.andExpect(jsonPath("$.comments[0].media[0].url").value(
+						"https://media.meongcoach.com/images/community-post/42/shot.jpg"))
 				.andExpect(jsonPath("$.comments[1].media").isEmpty())
 				.andExpect(jsonPath("$.comments[0].createdAt").value("2026-10-19T11:00:00"))
 				.andExpect(jsonPath("$.comments[1].commentId").value(101))
@@ -1233,15 +1273,19 @@ class CommunityControllerTest {
 								fieldWithPath("comments[].author").optional()
 										.description("작성자 요약. 작성자가 탈퇴했거나 선택된 강아지가 없으면(훈련사 계정 제외) null"),
 								fieldWithPath("comments[].author.userId").description("작성자 회원 ID"),
-								fieldWithPath("comments[].author.nickname").description("작성자 표시 이름. 작성자가 선택한 강아지 이름 뒤에 ' 보호자'를 붙인다. 훈련사(EXPERT) 계정은 프로필 닉네임을 그대로 쓴다"),
-								fieldWithPath("comments[].author.profileImageUrl").description("작성자가 선택한 강아지의 프로필 이미지 URL. 훈련사(EXPERT) 계정은 회원 프로필 이미지 URL. 이미지를 등록하지 않았으면 빈 문자열"),
-								fieldWithPath("comments[].media[]").description("첨부한 사진·영상 목록. 첨부 순서대로이고, 첨부가 없으면 빈 배열"),
+								fieldWithPath("comments[].author.nickname").description(
+										"작성자 표시 이름. 작성자가 선택한 강아지 이름 뒤에 ' 보호자'를 붙인다. 훈련사(EXPERT) 계정은 프로필 닉네임을 그대로 쓴다"),
+								fieldWithPath("comments[].author.profileImageUrl").description(
+										"작성자가 선택한 강아지의 프로필 이미지 URL. 훈련사(EXPERT) 계정은 회원 프로필 이미지 URL. 이미지를 등록하지 않았으면 빈 문자열"),
+								fieldWithPath("comments[].media[]").description(
+										"첨부한 사진·영상 목록. 첨부 순서대로이고, 첨부가 없으면 빈 배열"),
 								fieldWithPath("comments[].media[].type").description("미디어 종류. IMAGE(사진), VIDEO(영상)"),
 								fieldWithPath("comments[].media[].url").description("미디어 공개 URL"),
-								fieldWithPath("comments[].replyCount").description("삭제되지 않은 답글 수. 답글이 없으면 0"),
+								fieldWithPath("comments[].replyCount").description(
+										"삭제되지 않은 답글 수. 답글이 없으면 0. 차단한 사용자의 답글은 세지 않는다"),
 								fieldWithPath("comments[].likeCount").description("좋아요 수"),
-						fieldWithPath("comments[].likedByMe").description("내 좋아요 여부"),
-						fieldWithPath("comments[].createdAt").description("댓글 작성 시각(ISO-8601, 초 단위)"),
+								fieldWithPath("comments[].likedByMe").description("내 좋아요 여부"),
+								fieldWithPath("comments[].createdAt").description("댓글 작성 시각(ISO-8601, 초 단위)"),
 								fieldWithPath("nextCursor").optional()
 										.description("다음 페이지 요청에 cursor로 보낼 값. 마지막 페이지면 null")
 						)
@@ -1279,7 +1323,8 @@ class CommunityControllerTest {
 				.andExpect(jsonPath("$.comments").isEmpty())
 				.andExpect(jsonPath("$.nextCursor").value(nullValue()));
 
-		then(commentFinder).should().findComments(42L, 30L, new CommentListRequest(null, CommentListRequest.DEFAULT_SIZE));
+		then(commentFinder).should()
+				.findComments(42L, 30L, new CommentListRequest(null, CommentListRequest.DEFAULT_SIZE));
 	}
 
 	@Test
@@ -1298,7 +1343,8 @@ class CommunityControllerTest {
 		Post post = PostFixture.create(30L, 7L, "이 레슨 따라해봤어요", LocalDateTime.of(2026, 10, 19, 10, 30, 0));
 		ReplyResult reply = new ReplyResult(
 				CommentFixture.create(102L, post, 7L, "감사합니다!",
-						List.of(new PostMediaCommand(PostMediaType.VIDEO, "https://media.meongcoach.com/videos/community-post/42/clip.mp4")),
+						List.of(new PostMediaCommand(PostMediaType.VIDEO,
+								"https://media.meongcoach.com/videos/community-post/42/clip.mp4")),
 						LocalDateTime.of(2026, 10, 19, 13, 0, 0)),
 				new AuthorResult(7L, "초코", "https://media.meongcoach.com/images/dog-profile/7/choco.jpg"), 0L, false);
 		given(commentFinder.findReplies(42L, 100L, new CommentListRequest(101L, 1)))
@@ -1315,7 +1361,8 @@ class CommunityControllerTest {
 				.andExpect(jsonPath("$.replies[0].author.userId").value(7))
 				.andExpect(jsonPath("$.replies[0].author.nickname").value("초코 보호자"))
 				.andExpect(jsonPath("$.replies[0].media[0].type").value("VIDEO"))
-				.andExpect(jsonPath("$.replies[0].media[0].url").value("https://media.meongcoach.com/videos/community-post/42/clip.mp4"))
+				.andExpect(jsonPath("$.replies[0].media[0].url").value(
+						"https://media.meongcoach.com/videos/community-post/42/clip.mp4"))
 				.andExpect(jsonPath("$.replies[0].createdAt").value("2026-10-19T13:00:00"))
 				.andExpect(jsonPath("$.nextCursor").value(102))
 				.andDo(document("community/reply-list",
@@ -1332,14 +1379,16 @@ class CommunityControllerTest {
 								fieldWithPath("replies[].author").optional()
 										.description("작성자 요약. 작성자가 탈퇴했거나 선택된 강아지가 없으면(훈련사 계정 제외) null"),
 								fieldWithPath("replies[].author.userId").description("작성자 회원 ID"),
-								fieldWithPath("replies[].author.nickname").description("작성자 표시 이름. 작성자가 선택한 강아지 이름 뒤에 ' 보호자'를 붙인다. 훈련사(EXPERT) 계정은 프로필 닉네임을 그대로 쓴다"),
-								fieldWithPath("replies[].author.profileImageUrl").description("작성자가 선택한 강아지의 프로필 이미지 URL. 훈련사(EXPERT) 계정은 회원 프로필 이미지 URL. 이미지를 등록하지 않았으면 빈 문자열"),
+								fieldWithPath("replies[].author.nickname").description(
+										"작성자 표시 이름. 작성자가 선택한 강아지 이름 뒤에 ' 보호자'를 붙인다. 훈련사(EXPERT) 계정은 프로필 닉네임을 그대로 쓴다"),
+								fieldWithPath("replies[].author.profileImageUrl").description(
+										"작성자가 선택한 강아지의 프로필 이미지 URL. 훈련사(EXPERT) 계정은 회원 프로필 이미지 URL. 이미지를 등록하지 않았으면 빈 문자열"),
 								fieldWithPath("replies[].media[]").description("첨부한 사진·영상 목록. 첨부 순서대로이고, 첨부가 없으면 빈 배열"),
 								fieldWithPath("replies[].media[].type").description("미디어 종류. IMAGE(사진), VIDEO(영상)"),
 								fieldWithPath("replies[].media[].url").description("미디어 공개 URL"),
 								fieldWithPath("replies[].likeCount").description("좋아요 수"),
-						fieldWithPath("replies[].likedByMe").description("내 좋아요 여부"),
-						fieldWithPath("replies[].createdAt").description("답글 작성 시각(ISO-8601, 초 단위)"),
+								fieldWithPath("replies[].likedByMe").description("내 좋아요 여부"),
+								fieldWithPath("replies[].createdAt").description("답글 작성 시각(ISO-8601, 초 단위)"),
 								fieldWithPath("nextCursor").optional()
 										.description("다음 페이지 요청에 cursor로 보낼 값. 마지막 페이지면 null")
 						)
@@ -1385,15 +1434,18 @@ class CommunityControllerTest {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.uploadUrl").value(
 						"https://account.r2.cloudflarestorage.com/bucket/videos/community-post/42/key.mp4?X-Amz-Signature=sig"))
-				.andExpect(jsonPath("$.publicUrl").value("https://images.meongcoach.com/videos/community-post/42/key.mp4"))
+				.andExpect(
+						jsonPath("$.publicUrl").value("https://images.meongcoach.com/videos/community-post/42/key.mp4"))
 				.andExpect(jsonPath("$.expiresInSeconds").value(600))
 				.andDo(document("community/post-media-upload-url",
 						requestFields(
 								fieldWithPath("mediaType").description("미디어 종류. IMAGE(사진) 또는 VIDEO(영상)"),
 								fieldWithPath("contentType")
-										.description("파일 형식. 사진은 image/jpeg·image/png·image/webp, 영상은 video/mp4·video/quicktime"),
+										.description(
+												"파일 형식. 사진은 image/jpeg·image/png·image/webp, 영상은 video/mp4·video/quicktime"),
 								fieldWithPath("fileSizeBytes")
-										.description("업로드할 파일 크기(바이트, 양의 정수). 영상은 512MiB(536870912) 이하여야 하고 업로드 URL 서명에 포함된다. 사진은 상한이 없다")
+										.description(
+												"업로드할 파일 크기(바이트, 양의 정수). 영상은 512MiB(536870912) 이하여야 하고 업로드 URL 서명에 포함된다. 사진은 상한이 없다")
 						),
 						responseFields(
 								fieldWithPath("uploadUrl").description(
@@ -1450,8 +1502,8 @@ class CommunityControllerTest {
 		given(likeRegister.likePost(42L, 30L)).willReturn(new LikeSummary(3L, true));
 
 		mockMvc.perform(post("/api/community/posts/{postId}/like", 30L)
-				.principal(CURRENT_USER)
-				.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.likeCount").value(3))
 				.andExpect(jsonPath("$.likedByMe").value(true))
@@ -1466,8 +1518,8 @@ class CommunityControllerTest {
 		given(likeRegister.likePost(42L, 999L)).willThrow(new PostNotFoundException(999L));
 
 		mockMvc.perform(post("/api/community/posts/{postId}/like", 999L)
-				.principal(CURRENT_USER)
-				.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isNotFound())
 				.andDo(document("community/post-like-error",
 						pathParameters(parameterWithName("postId").description("게시글 ID")),
@@ -1484,8 +1536,8 @@ class CommunityControllerTest {
 		given(likeRegister.unlikePost(42L, 30L)).willReturn(new LikeSummary(3L, false));
 
 		mockMvc.perform(delete("/api/community/posts/{postId}/like", 30L)
-				.principal(CURRENT_USER)
-				.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.likeCount").value(3))
 				.andExpect(jsonPath("$.likedByMe").value(false))
@@ -1500,8 +1552,8 @@ class CommunityControllerTest {
 		given(likeRegister.unlikePost(42L, 999L)).willThrow(new PostNotFoundException(999L));
 
 		mockMvc.perform(delete("/api/community/posts/{postId}/like", 999L)
-				.principal(CURRENT_USER)
-				.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isNotFound())
 				.andDo(document("community/post-unlike-error",
 						pathParameters(parameterWithName("postId").description("게시글 ID")),
@@ -1518,8 +1570,8 @@ class CommunityControllerTest {
 		given(likeRegister.likeComment(42L, 30L)).willReturn(new LikeSummary(3L, true));
 
 		mockMvc.perform(post("/api/community/comments/{commentId}/like", 30L)
-				.principal(CURRENT_USER)
-				.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.likeCount").value(3))
 				.andExpect(jsonPath("$.likedByMe").value(true))
@@ -1534,8 +1586,8 @@ class CommunityControllerTest {
 		given(likeRegister.likeComment(42L, 999L)).willThrow(new CommentNotFoundException(999L));
 
 		mockMvc.perform(post("/api/community/comments/{commentId}/like", 999L)
-				.principal(CURRENT_USER)
-				.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isNotFound())
 				.andDo(document("community/comment-like-error",
 						pathParameters(parameterWithName("commentId").description("댓글 ID")),
@@ -1552,8 +1604,8 @@ class CommunityControllerTest {
 		given(likeRegister.unlikeComment(42L, 30L)).willReturn(new LikeSummary(3L, false));
 
 		mockMvc.perform(delete("/api/community/comments/{commentId}/like", 30L)
-				.principal(CURRENT_USER)
-				.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.likeCount").value(3))
 				.andExpect(jsonPath("$.likedByMe").value(false))
@@ -1568,8 +1620,8 @@ class CommunityControllerTest {
 		given(likeRegister.unlikeComment(42L, 999L)).willThrow(new CommentNotFoundException(999L));
 
 		mockMvc.perform(delete("/api/community/comments/{commentId}/like", 999L)
-				.principal(CURRENT_USER)
-				.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
 				.andExpect(status().isNotFound())
 				.andDo(document("community/comment-unlike-error",
 						pathParameters(parameterWithName("commentId").description("댓글 ID")),
@@ -1719,8 +1771,86 @@ class CommunityControllerTest {
 		then(contentReportRegister).shouldHaveNoInteractions();
 	}
 
+	@Test
+	void 사용자를_차단하면_204를_반환한다() throws Exception {
+		mockMvc.perform(post("/api/community/users/{userId}/block", 7L)
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+				.andExpect(status().isNoContent())
+				.andDo(document("community/user-block",
+						pathParameters(parameterWithName("userId").description("차단할 회원 ID"))));
+
+		then(blockRegister).should().block(42L, 7L);
+	}
+
+	@Test
+	void 자기_자신을_차단하면_400을_반환한다() throws Exception {
+		willThrow(new SelfBlockNotAllowedException())
+				.given(blockRegister).block(42L, 42L);
+
+		mockMvc.perform(post("/api/community/users/{userId}/block", 42L)
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("COMMUNITY_SELF_BLOCK_NOT_ALLOWED"))
+				.andDo(document("community/user-block-error",
+						pathParameters(parameterWithName("userId").description("차단할 회원 ID")),
+						responseFields(problemFields())));
+	}
+
+	@Test
+	void 인증_없이_차단할_수_없다() throws Exception {
+		mockMvc.perform(post("/api/community/users/7/block"))
+				.andExpect(status().isUnauthorized());
+
+		then(blockRegister).shouldHaveNoInteractions();
+	}
+
+	@Test
+	void 차단을_해제하면_204를_반환한다() throws Exception {
+		mockMvc.perform(delete("/api/community/users/{userId}/block", 7L)
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+				.andExpect(status().isNoContent())
+				.andDo(document("community/user-unblock",
+						pathParameters(parameterWithName("userId").description("차단을 해제할 회원 ID"))));
+
+		then(blockRegister).should().unblock(42L, 7L);
+	}
+
+	@Test
+	void 차단한_사용자_목록을_반환한다() throws Exception {
+		AuthorResult guardian = new AuthorResult(7L, "보리",
+				"https://media.meongcoach.com/images/dog-profile/7/bori.jpg");
+		given(blockFinder.findBlockedUsers(42L))
+				.willReturn(List.of(new BlockedUserResult(7L, guardian), new BlockedUserResult(8L, null)));
+
+		mockMvc.perform(get("/api/community/blocks")
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.blocks[0].userId").value(7))
+				.andExpect(jsonPath("$.blocks[0].nickname").value("보리 보호자"))
+				.andExpect(jsonPath("$.blocks[0].profileImageUrl")
+						.value("https://media.meongcoach.com/images/dog-profile/7/bori.jpg"))
+				.andExpect(jsonPath("$.blocks[1].userId").value(8))
+				.andExpect(jsonPath("$.blocks[1].nickname").value(nullValue()))
+				.andExpect(jsonPath("$.blocks[1].profileImageUrl").value(nullValue()))
+				.andDo(document("community/block-list",
+						responseFields(
+								fieldWithPath("blocks[]").description("차단한 사용자 목록. 최근에 차단한 순서이고, 없으면 빈 배열"),
+								fieldWithPath("blocks[].userId").description("차단한 회원 ID"),
+								fieldWithPath("blocks[].nickname").optional()
+										.description("차단한 사용자의 표시 이름. 게시글·댓글의 author.nickname과 같은 규칙으로 만든다. "
+												+ "탈퇴했거나 선택된 강아지가 없으면(훈련사 계정 제외) null"),
+								fieldWithPath("blocks[].profileImageUrl").optional()
+										.description(
+												"차단한 사용자의 프로필 이미지 URL. 게시글·댓글의 author.profileImageUrl과 같은 규칙으로 만든다. "
+														+ "nickname이 null이면 함께 null"))));
+	}
+
 	private static FieldDescriptor[] reportRequestFields() {
-		return new FieldDescriptor[]{
+		return new FieldDescriptor[] {
 				fieldWithPath("reason").description("필수 입력. 신고 사유. SPAM(스팸·광고), ABUSE(욕설·비방·혐오), SEXUAL(음란·선정), "
 						+ "ANIMAL_CRUELTY(동물 학대), PRIVACY(개인정보 노출), MISINFORMATION(잘못된 정보), OTHER(기타)"),
 				fieldWithPath("detail").optional().description("선택 입력. 신고 상세 내용. 500자 이내")
@@ -1728,7 +1858,7 @@ class CommunityControllerTest {
 	}
 
 	private static FieldDescriptor[] problemFields() {
-		return new FieldDescriptor[]{
+		return new FieldDescriptor[] {
 				fieldWithPath("title").description("HTTP 상태 이름"),
 				fieldWithPath("status").description("HTTP 상태 코드"),
 				fieldWithPath("detail").description("사람이 읽을 수 있는 에러 설명"),
@@ -1739,15 +1869,17 @@ class CommunityControllerTest {
 	}
 
 	private static FieldDescriptor[] postListFields() {
-		return new FieldDescriptor[]{
+		return new FieldDescriptor[] {
 				fieldWithPath("posts[]").description("게시글 목록. 최신순(게시글 ID 내림차순)"),
 				fieldWithPath("posts[].postId").description("게시글 ID"),
 				fieldWithPath("posts[].content").description("게시글 본문"),
 				fieldWithPath("posts[].author").optional()
 						.description("작성자 요약. 작성자가 탈퇴했거나 선택된 강아지가 없으면(훈련사 계정 제외) null"),
 				fieldWithPath("posts[].author.userId").description("작성자 회원 ID"),
-				fieldWithPath("posts[].author.nickname").description("작성자 표시 이름. 작성자가 선택한 강아지 이름 뒤에 ' 보호자'를 붙인다. 훈련사(EXPERT) 계정은 프로필 닉네임을 그대로 쓴다"),
-				fieldWithPath("posts[].author.profileImageUrl").description("작성자가 선택한 강아지의 프로필 이미지 URL. 훈련사(EXPERT) 계정은 회원 프로필 이미지 URL. 이미지를 등록하지 않았으면 빈 문자열"),
+				fieldWithPath("posts[].author.nickname").description(
+						"작성자 표시 이름. 작성자가 선택한 강아지 이름 뒤에 ' 보호자'를 붙인다. 훈련사(EXPERT) 계정은 프로필 닉네임을 그대로 쓴다"),
+				fieldWithPath("posts[].author.profileImageUrl").description(
+						"작성자가 선택한 강아지의 프로필 이미지 URL. 훈련사(EXPERT) 계정은 회원 프로필 이미지 URL. 이미지를 등록하지 않았으면 빈 문자열"),
 				fieldWithPath("posts[].mention").optional()
 						.description("멘션 대상 요약. 멘션이 없거나 멘션 대상이 없으면 null"),
 				fieldWithPath("posts[].mention.targetType").description("멘션 대상 종류. 현재 LESSON(레슨)만 있다"),
@@ -1763,7 +1895,7 @@ class CommunityControllerTest {
 				fieldWithPath("posts[].media[]").description("게시글 사진·영상 목록. 배열 순서가 표시 순서이고, 없으면 빈 배열"),
 				fieldWithPath("posts[].media[].type").description("미디어 종류. IMAGE(사진), VIDEO(영상)"),
 				fieldWithPath("posts[].media[].url").description("미디어 공개 URL"),
-				fieldWithPath("posts[].commentCount").description("삭제되지 않은 댓글·답글 수. 댓글이 없으면 0"),
+				fieldWithPath("posts[].commentCount").description("삭제되지 않은 댓글·답글 수. 댓글이 없으면 0. 차단한 사용자의 댓글도 포함한다"),
 				fieldWithPath("posts[].likeCount").description("좋아요 수"),
 				fieldWithPath("posts[].likedByMe").description("내 좋아요 여부"),
 				fieldWithPath("posts[].createdAt").description("게시글 작성 시각(ISO-8601, 초 단위)"),
