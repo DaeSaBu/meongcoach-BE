@@ -7,12 +7,11 @@ public record ReportRegisteredEvent(
 		Long reporterId,
 		ReportTargetType targetType,
 		Long targetId,
-		ReportReason reason,
-		String detail
+		ReportReason reason
 ) {
 
 	public static ReportRegisteredEvent from(Report report) {
 		return new ReportRegisteredEvent(report.getId(), report.getReporterId(), report.getTargetType(),
-				report.getTargetId(), report.getReason(), report.getDetail());
+				report.getTargetId(), report.getReason());
 	}
 }

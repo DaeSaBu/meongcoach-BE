@@ -21,7 +21,6 @@ public class ReportAlertListener {
 				AlertField.of("targetType", event.targetType()),
 				AlertField.of("targetId", event.targetId()),
 				AlertField.of("reason", event.reason()),
-				AlertField.of("reporterId", event.reporterId()),
-				AlertField.of("detail", event.detail())));
+				AlertField.of("reporterId", event.reporterId())));
 	}
 }
