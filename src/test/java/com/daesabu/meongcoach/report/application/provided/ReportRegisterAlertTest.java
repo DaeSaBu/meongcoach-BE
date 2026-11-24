@@ -53,7 +53,7 @@ class ReportRegisterAlertTest {
 	}
 
 	@Test
-	void 신고가_커밋되면_신고_정보를_알린다() {
+	void 신고가_커밋되면_상세_내용을_뺀_신고_정보를_알린다() {
 		reportRegister.register(REPORTER_ID, ReportTargetType.COMMUNITY_COMMENT, TARGET_ID, REQUEST);
 
 		Report report = reportRepository.findAll().getFirst();
@@ -66,8 +66,7 @@ class ReportRegisterAlertTest {
 				AlertField.of("targetType", "COMMUNITY_COMMENT"),
 				AlertField.of("targetId", TARGET_ID),
 				AlertField.of("reason", "ANIMAL_CRUELTY"),
-				AlertField.of("reporterId", REPORTER_ID),
-				AlertField.of("detail", "강아지를 때려요"));
+				AlertField.of("reporterId", REPORTER_ID));
 	}
 
 	@Test
