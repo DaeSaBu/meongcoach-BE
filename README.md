@@ -228,4 +228,5 @@ API·채널 설정·답변 처리 규칙은 [docs/support.md](docs/support.md)�
 | [docs/support.md](docs/support.md) | 실시간 상담·답변 푸시·구버전 채널톡 설정 |
 | [docs/alert.md](docs/alert.md) | 개발자 Slack 알림 호출 방법, 메시지 형식, 설정, 비동기·실패 처리 |
 | [docs/report.md](docs/report.md) | 공통 신고 모듈 호출 방법, 대상 종류·사유 추가, 중복 신고 잠금 |
+| [docs/community-block.md](docs/community-block.md) | 사용자 차단의 단방향 숨김, 조회에 차단 조건을 넣는 방법 |
 | [AGENTS.md](AGENTS.md) | 팀 개발 규칙 전체 목록 |
