@@ -5,9 +5,11 @@ import com.daesabu.meongcoach.report.application.provided.dto.ReportRegisterRequ
 import com.daesabu.meongcoach.report.application.required.ReportRepository;
 import com.daesabu.meongcoach.report.domain.Report;
 import com.daesabu.meongcoach.report.domain.ReportRegisterCommand;
+import com.daesabu.meongcoach.report.domain.ReportRegisteredEvent;
 import com.daesabu.meongcoach.report.domain.exception.ReportAlreadyRegisteredException;
 import com.daesabu.meongcoach.report.domain.shared.ReportTargetType;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -19,6 +21,7 @@ import org.springframework.validation.annotation.Validated;
 public class ReportModifyService implements ReportRegister {
 
 	private final ReportRepository reportRepository;
+	private final ApplicationEventPublisher eventPublisher;
 
 	@Override
 	@Transactional
@@ -29,6 +32,7 @@ public class ReportModifyService implements ReportRegister {
 			throw new ReportAlreadyRegisteredException();
 		}
 
-		reportRepository.save(Report.register(command));
+		Report report = reportRepository.save(Report.register(command));
+		eventPublisher.publishEvent(ReportRegisteredEvent.from(report));
 	}
 }
