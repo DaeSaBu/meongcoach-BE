@@ -822,6 +822,51 @@ operation::community/comment-unlike[snippets='http-request,path-parameters,http-
 
 operation::community/comment-unlike-error[snippets='http-response,response-fields']
 
+=== 게시글·댓글 신고
+
+게시글과 댓글(답글 포함)을 신고합니다. 신고가 접수되면 본문 없이 204를 반환합니다.
+`reason`에는 신고 사유 코드를, `detail`에는 상세 내용을 500자 이내로 보냅니다. `detail`은 생략할 수 있습니다.
+
+|===
+|사유 코드 |뜻
+
+|`SPAM` |스팸·광고
+|`ABUSE` |욕설·비방·혐오
+|`SEXUAL` |음란·선정
+|`ANIMAL_CRUELTY` |동물 학대
+|`PRIVACY` |개인정보 노출
+|`MISINFORMATION` |잘못된 정보
+|`OTHER` |기타
+|===
+
+|===
+|상황 |상태 |에러 코드
+
+|삭제되거나 없는 게시글 |404 |`COMMUNITY_POST_NOT_FOUND`
+|삭제되거나 없는 댓글, 삭제된 게시글의 댓글 |404 |`COMMUNITY_COMMENT_NOT_FOUND`
+|본인이 쓴 게시글·댓글 |400 |`COMMUNITY_SELF_REPORT_NOT_ALLOWED`
+|지원하지 않는 사유 코드 |400 |`REPORT_REASON_INVALID`
+|이미 신고한 게시글·댓글 |409 |`REPORT_ALREADY_REGISTERED`
+|===
+
+앱은 본인이 쓴 글에는 신고 버튼을 보여 주지 않습니다.
+
+==== 게시글 신고
+
+link:{swagger-ui}#/Community/community-post-report[▶ Swagger에서 Try it out,window=swagger]
+
+operation::community/post-report[snippets='http-request,path-parameters,request-fields,http-response']
+
+operation::community/post-report-error[snippets='http-response,response-fields']
+
+==== 댓글 신고
+
+link:{swagger-ui}#/Community/community-comment-report[▶ Swagger에서 Try it out,window=swagger]
+
+operation::community/comment-report[snippets='http-request,path-parameters,request-fields,http-response']
+
+operation::community/comment-report-error[snippets='http-response,response-fields']
+
 === 내 작성자 정보 조회
 
 link:{swagger-ui}#/Community/community-my-author[▶ Swagger에서 Try it out,window=swagger]
