@@ -22,6 +22,7 @@
 | 문서                                                                         | 내용                         |
 |----------------------------------------------------------------------------|----------------------------|
 | [.claude/skills/git-convention/SKILL.md](.claude/skills/git-convention/SKILL.md) | 커밋 메시지, 브랜치 전략, PR 규칙 (Claude Code 스킬) |
+| [.claude/skills/linear-convention/SKILL.md](.claude/skills/linear-convention/SKILL.md) | Linear 티켓 찾기·만들기, 티켓 기본값과 본문 형식, 상태 변경 규칙 (Claude Code 스킬) |
 | [.claude/skills/code-convention/SKILL.md](.claude/skills/code-convention/SKILL.md) | 코드 스타일, 주석, 네이밍, 트랜잭션, Lombok/DTO, 예외 정의 규칙 (Claude Code 스킬) |
 | [.claude/skills/code-convention/references/test-convention.md](.claude/skills/code-convention/references/test-convention.md) | 테스트 작성, RestDocs 문서화, ArchUnit 규칙 (code-convention 스킬 참조 문서) |
 | [docs/api-docs.md](docs/api-docs.md) | REST Docs 빌드, OpenAPI 후처리, Swagger UI 확인 경로 |

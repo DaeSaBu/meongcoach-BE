@@ -94,6 +94,7 @@ user-invocable: true
 | `develop` | 통합 개발 | 직접 push 금지, PR로만 머지 |
 | `feature/{이슈번호}-{작업 내용}` | 기능 개발 | Linear 이슈 기준 생성, `develop`에서 분기, PR base는 `develop` |
 
+- 브랜치를 만들기 전에 Linear 티켓을 찾고, 없으면 만든다. 절차는 [linear-convention 스킬](../linear-convention/SKILL.md)을 따른다.
 - 브랜치명에는 Linear가 제공하는 이슈번호를 소문자로 그대로 쓴다. (예: `dae-179`)
 - 이슈번호 뒤에는 작업 내용을 영문 소문자와 하이픈으로 이어 붙인다. (예: `feature/dae-179-add-sns-login`)
 - 작업자가 `feature/dae-720`, `refactor/dae-721`처럼 `{접두사}/dae-{숫자}`까지만 알려 주면 Linear 티켓 번호만 준 것이다. 그 이름 그대로 만들지 않고, 접두사와 이슈번호는 유지한 채 맡은 작업 내용을 요약해 뒤에 붙인 이름으로 브랜치를 만든다. (예: `feature/dae-720` → `feature/dae-720-allow-succeeded-to-failed`)
