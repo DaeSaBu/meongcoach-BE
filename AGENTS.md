@@ -22,6 +22,7 @@
 | 문서                                                                         | 내용                         |
 |----------------------------------------------------------------------------|----------------------------|
 | [.claude/skills/git-convention/SKILL.md](.claude/skills/git-convention/SKILL.md) | 커밋 메시지, 브랜치 전략, PR 규칙 (Claude Code 스킬) |
+| [.claude/skills/linear-convention/SKILL.md](.claude/skills/linear-convention/SKILL.md) | Linear 티켓 찾기·만들기, 티켓 기본값과 본문 형식, 상태 변경 규칙 (Claude Code 스킬) |
 | [.claude/skills/code-convention/SKILL.md](.claude/skills/code-convention/SKILL.md) | 코드 스타일, 주석, 네이밍, 트랜잭션, Lombok/DTO, 예외 정의 규칙 (Claude Code 스킬) |
 | [.claude/skills/code-convention/references/test-convention.md](.claude/skills/code-convention/references/test-convention.md) | 테스트 작성, RestDocs 문서화, ArchUnit 규칙 (code-convention 스킬 참조 문서) |
 | [docs/api-docs.md](docs/api-docs.md) | REST Docs 빌드, OpenAPI 후처리, Swagger UI 확인 경로 |
@@ -35,6 +36,7 @@
 | [docs/notification.md](docs/notification.md)                               | 푸시 알림 토큰·수신 설정 애그리거트, 내부 API 인증, 발송 대상 규칙 |
 | [docs/support.md](docs/support.md) | 자체 상담, 채널톡 회원 식별 |
 | [docs/alert.md](docs/alert.md)                                             | 개발자 Slack 알림 호출 방법, 메시지 형식, 설정, 비동기·실패 처리 |
+| [docs/report.md](docs/report.md) | 공통 신고 모듈 호출 방법, 대상 종류·사유 추가, 중복 신고 잠금, 문의와 분리한 이유 |
 | [docs/profiles.md](docs/profiles.md)                                       | local/dev/prod 프로파일 구성, DB·ddl-auto 정책 |
 
 ## 문서 추가 방법
