@@ -31,7 +31,11 @@ import tools.jackson.databind.ObjectMapper;
 class GeminiContentGeneratorTest {
 
 	private static final String MODEL = "gemini-test";
-	private static final String GENERATE_PATH = "/v1beta/models/" + MODEL + ":generateContent";
+	private static final String GEMINI_4_MODEL = "gemini-4-test";
+	private static final String VIDEO_MODEL = "gemini-video-test";
+	private static final String GENERATE_ACTION = ":generateContent";
+	private static final String GENERATE_PATH = "/v1beta/models/" + MODEL + GENERATE_ACTION;
+	private static final String GEMINI_4_GENERATE_PATH = "/v1beta/models/" + GEMINI_4_MODEL + GENERATE_ACTION;
 	private static final String SCHEMA = """
 			{"type":"object","properties":{"goal":{"type":"string"}},
 			"required":["goal"],"additionalProperties":false}
@@ -50,7 +54,7 @@ class GeminiContentGeneratorTest {
 			@Override
 			public MockResponse dispatch(RecordedRequest request) {
 				requests.add(request);
-				if (Objects.requireNonNull(request.getPath()).startsWith(GENERATE_PATH)) {
+				if (Objects.requireNonNull(request.getPath()).contains(GENERATE_ACTION)) {
 					return generateResponse;
 				}
 				return new MockResponse().setResponseCode(404);
@@ -58,13 +62,17 @@ class GeminiContentGeneratorTest {
 		});
 		server.start();
 
+		generator = createGenerator(MODEL);
+	}
+
+	private AiContentGenerator createGenerator(String model) {
 		GeminiProperties properties = new GeminiProperties(
-				"test-gemini-api-key", MODEL, Duration.ofMinutes(5), 4096, 0.0f, "low", 1.0);
+				"test-gemini-api-key", model, VIDEO_MODEL, Duration.ofMinutes(5), 4096, 0.0f, "low", 1.0);
 		Client client = Client.builder()
 				.apiKey(properties.apiKey())
 				.httpOptions(HttpOptions.builder().baseUrl(server.url("/").toString()).build())
 				.build();
-		generator = new GeminiContentGenerator(client, properties, objectMapper);
+		return new GeminiContentGenerator(client, properties, objectMapper);
 	}
 
 	@AfterEach
@@ -92,6 +100,17 @@ class GeminiContentGeneratorTest {
 		assertThat(body.at("/generationConfig/maxOutputTokens").asInt()).isEqualTo(4096);
 		assertThat(body.at("/generationConfig/temperature").asDouble()).isEqualTo(0.0);
 		assertThat(body.at("/generationConfig/thinkingConfig/thinkingLevel").asString()).isEqualTo("low");
+	}
+
+	@Test
+	void Gemini_4_계열_모델에는_temperature를_보내지_않는다() {
+		givenModelResponds("{\"goal\":\"산책을 편안하게 해요\"}");
+		AiContentGenerator gemini4Generator = createGenerator(GEMINI_4_MODEL);
+
+		gemini4Generator.generate(request(SCHEMA));
+
+		JsonNode body = objectMapper.readTree(requestTo(GEMINI_4_GENERATE_PATH).getBody().readUtf8());
+		assertThat(body.at("/generationConfig/temperature").isMissingNode()).isTrue();
 	}
 
 	@ParameterizedTest
