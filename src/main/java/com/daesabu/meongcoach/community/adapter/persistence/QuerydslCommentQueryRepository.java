@@ -1,5 +1,6 @@
 package com.daesabu.meongcoach.community.adapter.persistence;
 
+import static com.daesabu.meongcoach.community.adapter.persistence.UserBlockPredicates.notBlockedBy;
 import static com.daesabu.meongcoach.community.domain.QComment.comment;
 import static com.daesabu.meongcoach.community.domain.QCommentClosure.commentClosure;
 import static java.util.stream.Collectors.toMap;
@@ -31,9 +32,10 @@ public class QuerydslCommentQueryRepository implements CommentQueryRepository {
 	private final JPAQueryFactory queryFactory;
 
 	@Override
-	public Slice<Comment> findRootComments(Long postId, Long cursor, int size) {
+	public Slice<Comment> findRootComments(Long viewerId, Long postId, Long cursor, int size) {
 		List<Comment> comments = queryFactory.selectFrom(comment)
-				.where(comment.post.id.eq(postId), idGreaterThan(comment, cursor), isRoot(), comment.deletedAt.isNull())
+				.where(comment.post.id.eq(postId), idGreaterThan(comment, cursor), isRoot(), comment.deletedAt.isNull(),
+						notBlockedBy(viewerId, comment.userId))
 				.orderBy(comment.id.asc())
 				.limit(size + 1)
 				.fetch();
@@ -41,7 +43,7 @@ public class QuerydslCommentQueryRepository implements CommentQueryRepository {
 	}
 
 	@Override
-	public Map<Long, Long> countReplies(Collection<Long> rootIds) {
+	public Map<Long, Long> countReplies(Long viewerId, Collection<Long> rootIds) {
 		if (rootIds.isEmpty()) {
 			return Map.of();
 		}
@@ -50,7 +52,7 @@ public class QuerydslCommentQueryRepository implements CommentQueryRepository {
 				.from(commentClosure)
 				.join(commentClosure.descendant, reply)
 				.where(commentClosure.ancestor.id.in(rootIds), commentClosure.depth.eq(CommentClosure.REPLY_DEPTH),
-						reply.deletedAt.isNull())
+						reply.deletedAt.isNull(), notBlockedBy(viewerId, reply.userId))
 				.groupBy(commentClosure.ancestor.id)
 				.fetch();
 		return rows.stream()
@@ -58,12 +60,12 @@ public class QuerydslCommentQueryRepository implements CommentQueryRepository {
 	}
 
 	@Override
-	public Slice<Comment> findReplies(Long rootId, Long cursor, int size) {
+	public Slice<Comment> findReplies(Long viewerId, Long rootId, Long cursor, int size) {
 		List<Comment> replies = queryFactory.select(reply)
 				.from(commentClosure)
 				.join(commentClosure.descendant, reply)
 				.where(commentClosure.ancestor.id.eq(rootId), commentClosure.depth.eq(CommentClosure.REPLY_DEPTH),
-						reply.deletedAt.isNull(), idGreaterThan(reply, cursor))
+						reply.deletedAt.isNull(), idGreaterThan(reply, cursor), notBlockedBy(viewerId, reply.userId))
 				.orderBy(reply.id.asc())
 				.limit(size + 1)
 				.fetch();
@@ -81,10 +83,10 @@ public class QuerydslCommentQueryRepository implements CommentQueryRepository {
 	}
 
 	@Override
-	public Slice<Comment> findCommentsByUserId(Long userId, Long cursor, int size) {
+	public Slice<Comment> findCommentsByUserId(Long viewerId, Long userId, Long cursor, int size) {
 		List<Comment> comments = queryFactory.selectFrom(comment)
 				.where(comment.userId.eq(userId), comment.deletedAt.isNull(), comment.post.deletedAt.isNull(),
-						idLessThan(cursor))
+						notBlockedBy(viewerId, comment.post.userId), idLessThan(cursor))
 				.orderBy(comment.id.desc())
 				.limit(size + 1)
 				.fetch();

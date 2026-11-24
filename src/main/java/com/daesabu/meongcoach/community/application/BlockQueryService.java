@@ -29,4 +29,9 @@ public class BlockQueryService implements BlockFinder {
 				.map(blockedId -> new BlockedUserResult(blockedId, authors.get(blockedId)))
 				.toList();
 	}
+
+	@Override
+	public boolean isBlocked(Long userId, Long targetUserId) {
+		return userBlockRepository.existsByBlockerIdAndBlockedId(userId, targetUserId);
+	}
 }

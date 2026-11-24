@@ -12,17 +12,16 @@ import jakarta.validation.Valid;
 public interface PostFinder {
 
 	/**
-	 * 삭제되지 않은 게시글을 ID 내림차순으로 size개까지 반환한다. cursor가 있으면 그보다 작은 ID의 게시글만 반환한다.
-	 * lessonId가 있으면 그 레슨을 멘션한 게시글만 반환한다.
-	 * 다음 페이지가 있으면 nextCursor에 마지막 게시글 ID가 담기고, 없으면 null이다.
-	 * 각 게시글에는 작성자 프로필 요약과 멘션 대상 요약이 함께 담기고, 게시글의 미디어는 등록 순서대로 조회된다.
-	 * 좋아요 수와 userId 사용자의 좋아요 여부를 포함한다. 프로필이 없는 작성자는 author가 null이고, 멘션이 없거나 멘션 대상이 없으면 mentionTarget이 null이다.
+	 * 삭제되지 않은 게시글을 ID 내림차순으로 size개까지 반환한다. userId 사용자가 차단한 회원의 게시글은 담기지 않는다. cursor가 있으면 그보다 작은 ID의 게시글만 반환한다.
+	 * lessonId가 있으면 그 레슨을 멘션한 게시글만 반환한다. 다음 페이지가 있으면 nextCursor에 마지막 게시글 ID가 담기고, 없으면 null이다. 각 게시글에는 작성자 프로필 요약과 멘션 대상
+	 * 요약이 함께 담기고, 게시글의 미디어는 등록 순서대로 조회된다. 좋아요 수와 userId 사용자의 좋아요 여부를 포함한다. 프로필이 없는 작성자는 author가 null이고, 멘션이 없거나 멘션 대상이
+	 * 없으면 mentionTarget이 null이다.
 	 */
 	PostListResult findPosts(Long userId, @Valid PostListRequest request);
 
 	/**
-	 * authorId 사용자가 작성하고 삭제되지 않은 게시글을 ID 내림차순으로 size개까지 반환한다.
-	 * cursor, lessonId, nextCursor와 각 게시글에 담기는 값은 findPosts와 같고, 좋아요 여부는 userId 사용자 기준이다.
+	 * authorId 사용자가 작성하고 삭제되지 않은 게시글을 ID 내림차순으로 size개까지 반환한다. cursor, lessonId, nextCursor와 각 게시글에 담기는 값은 findPosts와
+	 * 같고, 좋아요 여부는 userId 사용자 기준이다.
 	 */
 	PostListResult findPostsByAuthor(Long userId, Long authorId, @Valid PostListRequest request);
 
@@ -42,9 +41,9 @@ public interface PostFinder {
 	Post findPost(Long userId, Long postId);
 
 	/**
-	 * 게시글 하나를 작성자 프로필 요약, 멘션 대상 요약과 함께 반환하며, 게시글의 미디어는 등록 순서대로 조회된다.
-	 * 좋아요 수와 userId 사용자의 좋아요 여부를 포함한다. 프로필이 없는 작성자는 author가 null이고, 멘션이 없거나 멘션 대상이 없으면 mentionTarget이 null이다.
-	 * 게시글이 없거나 삭제됐으면 PostNotFoundException을 던진다.
+	 * 게시글 하나를 작성자 프로필 요약, 멘션 대상 요약과 함께 반환하며, 게시글의 미디어는 등록 순서대로 조회된다. 좋아요 수와 userId 사용자의 좋아요 여부를 포함한다. 프로필이 없는 작성자는
+	 * author가 null이고, 멘션이 없거나 멘션 대상이 없으면 mentionTarget이 null이다. 게시글이 없거나 삭제됐거나 userId 사용자가 차단한 회원의 게시글이면
+	 * PostNotFoundException을 던진다.
 	 */
 	PostResult findPostDetail(Long userId, Long postId);
 }
