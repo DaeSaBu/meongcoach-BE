@@ -5,8 +5,10 @@ import com.daesabu.meongcoach.community.application.provided.dto.AuthorResult;
 import com.daesabu.meongcoach.community.application.provided.dto.BlockedUserResult;
 import com.daesabu.meongcoach.community.application.required.UserBlockRepository;
 import com.daesabu.meongcoach.community.domain.UserBlock;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,5 +35,16 @@ public class BlockQueryService implements BlockFinder {
 	@Override
 	public boolean isBlocked(Long userId, Long targetUserId) {
 		return userBlockRepository.existsByBlockerIdAndBlockedId(userId, targetUserId);
+	}
+
+	@Override
+	public List<Long> findUsersNotBlocking(Long targetUserId, Collection<Long> userIds) {
+		if (userIds.isEmpty()) {
+			return List.of();
+		}
+		Set<Long> blockerIds = userBlockRepository.findBlockerIds(targetUserId, userIds);
+		return userIds.stream()
+				.filter(userId -> !blockerIds.contains(userId))
+				.toList();
 	}
 }

@@ -1,7 +1,9 @@
 package com.daesabu.meongcoach.community.application.required;
 
 import com.daesabu.meongcoach.community.domain.UserBlock;
+import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
@@ -19,6 +21,12 @@ public interface UserBlockRepository extends JpaRepository<UserBlock, Long> {
 	 * 회원이 차단한 기록을 최근에 차단한 순서로 조회한다.
 	 */
 	List<UserBlock> findByBlockerIdOrderByIdDesc(Long blockerId);
+
+	/**
+	 * 회원 ID 목록 중 대상 회원을 차단한 회원의 ID를 반환한다.
+	 */
+	@Query("select b.blockerId from UserBlock b where b.blockedId = :blockedId and b.blockerId in :blockerIds")
+	Set<Long> findBlockerIds(Long blockedId, Collection<Long> blockerIds);
 
 	/**
 	 * 회원이 대상 회원을 차단한 기록을 삭제한다. 기록이 없으면 아무것도 하지 않는다.

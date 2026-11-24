@@ -1,5 +1,6 @@
 package com.daesabu.meongcoach.community.application;
 
+import com.daesabu.meongcoach.community.application.provided.BlockFinder;
 import com.daesabu.meongcoach.community.domain.LikeNotification;
 import com.daesabu.meongcoach.community.domain.LikeRegisteredEvent;
 import com.daesabu.meongcoach.notification.application.provided.EventNotificationDispatcher;
@@ -20,11 +21,12 @@ public class LikeNotificationListener {
 	private static final String TARGET_KIND = "USERS";
 
 	private final EventNotificationDispatcher eventNotificationDispatcher;
+	private final BlockFinder blockFinder;
 
 	@Async
 	@TransactionalEventListener
 	public void notify(LikeRegisteredEvent event) {
-		List<Long> recipientIds = event.recipientIds();
+		List<Long> recipientIds = blockFinder.findUsersNotBlocking(event.likerId(), event.recipientIds());
 		if (recipientIds.isEmpty()) {
 			return;
 		}
