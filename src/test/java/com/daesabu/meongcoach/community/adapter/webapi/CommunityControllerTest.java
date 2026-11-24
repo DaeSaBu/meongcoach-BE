@@ -23,6 +23,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.daesabu.meongcoach.community.application.provided.AuthorFinder;
 import com.daesabu.meongcoach.community.application.provided.CommentFinder;
 import com.daesabu.meongcoach.community.application.provided.CommentRegister;
+import com.daesabu.meongcoach.community.application.provided.ContentReportRegister;
 import com.daesabu.meongcoach.community.application.provided.LikeRegister;
 import com.daesabu.meongcoach.community.application.provided.PostFinder;
 import com.daesabu.meongcoach.community.application.provided.PostMediaUploadUrlIssuer;
@@ -60,11 +61,14 @@ import com.daesabu.meongcoach.community.domain.exception.InvalidCommentContentEx
 import com.daesabu.meongcoach.community.domain.exception.MentionTargetNotFoundException;
 import com.daesabu.meongcoach.community.domain.exception.PostMediaCountExceededException;
 import com.daesabu.meongcoach.community.domain.exception.PostNotFoundException;
+import com.daesabu.meongcoach.community.domain.exception.SelfReportNotAllowedException;
 import com.daesabu.meongcoach.dog.domain.shared.Breed;
 import com.daesabu.meongcoach.dog.domain.shared.DogSex;
 import com.daesabu.meongcoach.dog.domain.shared.RegisteredBreed;
 import com.daesabu.meongcoach.media.application.provided.dto.MediaUploadUrlResult;
 import com.daesabu.meongcoach.media.domain.exception.VideoFileSizeExceededException;
+import com.daesabu.meongcoach.report.application.provided.dto.ReportRegisterRequest;
+import com.daesabu.meongcoach.report.domain.exception.ReportAlreadyRegisteredException;
 import java.security.Principal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -109,6 +113,9 @@ class CommunityControllerTest {
 
 	@MockitoBean
 	private PostMediaUploadUrlIssuer postMediaUploadUrlIssuer;
+
+	@MockitoBean
+	private ContentReportRegister contentReportRegister;
 
 	@Test
 	void 내_작성자_정보를_반환한다() throws Exception {
@@ -1579,6 +1586,156 @@ class CommunityControllerTest {
 		mockMvc.perform(post("/api/community/posts/30/like"))
 				.andExpect(status().isUnauthorized());
 		then(likeRegister).shouldHaveNoInteractions();
+	}
+
+	@Test
+	void 게시글을_신고하면_204를_반환한다() throws Exception {
+		mockMvc.perform(post("/api/community/posts/{postId}/report", 30L)
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "reason": "SPAM",
+								  "detail": "같은 광고를 계속 올려요"
+								}
+								"""))
+				.andExpect(status().isNoContent())
+				.andDo(document("community/post-report",
+						pathParameters(parameterWithName("postId").description("신고할 게시글 ID")),
+						requestFields(reportRequestFields())));
+
+		then(contentReportRegister).should()
+				.reportPost(42L, 30L, new ReportRegisterRequest("SPAM", "같은 광고를 계속 올려요"));
+	}
+
+	@Test
+	void 이미_신고한_게시글을_다시_신고하면_409를_반환한다() throws Exception {
+		willThrow(new ReportAlreadyRegisteredException())
+				.given(contentReportRegister).reportPost(42L, 30L, new ReportRegisterRequest("SPAM", null));
+
+		mockMvc.perform(post("/api/community/posts/{postId}/report", 30L)
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "reason": "SPAM"
+								}
+								"""))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code").value("REPORT_ALREADY_REGISTERED"))
+				.andDo(document("community/post-report-error",
+						pathParameters(parameterWithName("postId").description("신고할 게시글 ID")),
+						responseFields(problemFields())));
+	}
+
+	@Test
+	void 게시글_신고_사유가_비어_있으면_400을_반환한다() throws Exception {
+		mockMvc.perform(post("/api/community/posts/{postId}/report", 30L)
+						.principal(CURRENT_USER)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "reason": " "
+								}
+								"""))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.errors[0].field").value("reason"));
+
+		then(contentReportRegister).shouldHaveNoInteractions();
+	}
+
+	@Test
+	void 게시글_신고_상세_내용이_500자를_넘으면_400을_반환한다() throws Exception {
+		mockMvc.perform(post("/api/community/posts/{postId}/report", 30L)
+						.principal(CURRENT_USER)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "reason": "OTHER",
+								  "detail": "%s"
+								}
+								""".formatted("가".repeat(501))))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.errors[0].field").value("detail"));
+
+		then(contentReportRegister).shouldHaveNoInteractions();
+	}
+
+	@Test
+	void 댓글을_신고하면_204를_반환한다() throws Exception {
+		mockMvc.perform(post("/api/community/comments/{commentId}/report", 101L)
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "reason": "ABUSE",
+								  "detail": "욕설이 있어요"
+								}
+								"""))
+				.andExpect(status().isNoContent())
+				.andDo(document("community/comment-report",
+						pathParameters(parameterWithName("commentId").description("신고할 댓글 또는 답글 ID")),
+						requestFields(reportRequestFields())));
+
+		then(contentReportRegister).should()
+				.reportComment(42L, 101L, new ReportRegisterRequest("ABUSE", "욕설이 있어요"));
+	}
+
+	@Test
+	void 본인이_쓴_댓글을_신고하면_400을_반환한다() throws Exception {
+		willThrow(new SelfReportNotAllowedException())
+				.given(contentReportRegister).reportComment(42L, 101L, new ReportRegisterRequest("ABUSE", null));
+
+		mockMvc.perform(post("/api/community/comments/{commentId}/report", 101L)
+						.principal(CURRENT_USER)
+						.header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "reason": "ABUSE"
+								}
+								"""))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("COMMUNITY_SELF_REPORT_NOT_ALLOWED"))
+				.andDo(document("community/comment-report-error",
+						pathParameters(parameterWithName("commentId").description("신고할 댓글 또는 답글 ID")),
+						responseFields(problemFields())));
+	}
+
+	@Test
+	void 인증_없이_신고할_수_없다() throws Exception {
+		mockMvc.perform(post("/api/community/posts/30/report")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "reason": "SPAM"
+								}
+								"""))
+				.andExpect(status().isUnauthorized());
+
+		then(contentReportRegister).shouldHaveNoInteractions();
+	}
+
+	private static FieldDescriptor[] reportRequestFields() {
+		return new FieldDescriptor[]{
+				fieldWithPath("reason").description("필수 입력. 신고 사유. SPAM(스팸·광고), ABUSE(욕설·비방·혐오), SEXUAL(음란·선정), "
+						+ "ANIMAL_CRUELTY(동물 학대), PRIVACY(개인정보 노출), MISINFORMATION(잘못된 정보), OTHER(기타)"),
+				fieldWithPath("detail").optional().description("선택 입력. 신고 상세 내용. 500자 이내")
+		};
+	}
+
+	private static FieldDescriptor[] problemFields() {
+		return new FieldDescriptor[]{
+				fieldWithPath("title").description("HTTP 상태 이름"),
+				fieldWithPath("status").description("HTTP 상태 코드"),
+				fieldWithPath("detail").description("사람이 읽을 수 있는 에러 설명"),
+				fieldWithPath("instance").description("에러가 발생한 요청 경로"),
+				fieldWithPath("code").description("클라이언트 분기용 에러 코드"),
+				fieldWithPath("timestamp").description("에러 발생 시각(UTC)")
+		};
 	}
 
 	private static FieldDescriptor[] postListFields() {

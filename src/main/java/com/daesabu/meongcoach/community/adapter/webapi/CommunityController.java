@@ -16,6 +16,7 @@ import com.daesabu.meongcoach.community.adapter.webapi.dto.ReplyListResponse;
 import com.daesabu.meongcoach.community.application.provided.AuthorFinder;
 import com.daesabu.meongcoach.community.application.provided.CommentFinder;
 import com.daesabu.meongcoach.community.application.provided.CommentRegister;
+import com.daesabu.meongcoach.community.application.provided.ContentReportRegister;
 import com.daesabu.meongcoach.community.application.provided.LikeRegister;
 import com.daesabu.meongcoach.community.application.provided.PostFinder;
 import com.daesabu.meongcoach.community.application.provided.PostMediaUploadUrlIssuer;
@@ -37,6 +38,7 @@ import com.daesabu.meongcoach.community.domain.Comment;
 import com.daesabu.meongcoach.community.domain.LikeSummary;
 import com.daesabu.meongcoach.community.domain.Post;
 import com.daesabu.meongcoach.media.application.provided.dto.MediaUploadUrlResult;
+import com.daesabu.meongcoach.report.application.provided.dto.ReportRegisterRequest;
 import com.daesabu.meongcoach.shared.security.CurrentUserId;
 import jakarta.validation.Valid;
 import java.util.Optional;
@@ -65,6 +67,7 @@ public class CommunityController {
 	private final CommentFinder commentFinder;
 	private final PostMediaUploadUrlIssuer postMediaUploadUrlIssuer;
 	private final AuthorFinder authorFinder;
+	private final ContentReportRegister contentReportRegister;
 
 	@GetMapping("/me")
 	public MyAuthorResponse findMyAuthor(@CurrentUserId Long userId) {
@@ -189,5 +192,19 @@ public class CommunityController {
 	public LikeResponse unlikeComment(@CurrentUserId Long userId, @PathVariable Long commentId) {
 		LikeSummary result = likeRegister.unlikeComment(userId, commentId);
 		return LikeResponse.from(result);
+	}
+
+	@PostMapping("/posts/{postId}/report")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public void reportPost(@CurrentUserId Long userId, @PathVariable Long postId,
+	                       @Valid @RequestBody ReportRegisterRequest request) {
+		contentReportRegister.reportPost(userId, postId, request);
+	}
+
+	@PostMapping("/comments/{commentId}/report")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public void reportComment(@CurrentUserId Long userId, @PathVariable Long commentId,
+	                          @Valid @RequestBody ReportRegisterRequest request) {
+		contentReportRegister.reportComment(userId, commentId, request);
 	}
 }
