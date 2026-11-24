@@ -100,6 +100,23 @@ class BlockFinderTest {
 		assertThat(blockFinder.isBlocked(USER_ID, OTHER_USER_ID)).isFalse();
 	}
 
+	@Test
+	void 대상_회원을_차단하지_않은_회원만_순서를_유지해_반환한다() {
+		saveBlock(44L, USER_ID);
+		saveBlock(45L, OTHER_USER_ID);
+
+		List<Long> result = blockFinder.findUsersNotBlocking(USER_ID, List.of(46L, 44L, 45L, 43L));
+
+		assertThat(result).containsExactly(46L, 45L, 43L);
+	}
+
+	@Test
+	void 회원_목록이_비어_있으면_빈_목록을_반환한다() {
+		List<Long> result = blockFinder.findUsersNotBlocking(USER_ID, List.of());
+
+		assertThat(result).isEmpty();
+	}
+
 	private void saveBlock(Long blockerId, Long blockedId) {
 		userBlockRepository.save(UserBlock.register(blockerId, blockedId));
 	}

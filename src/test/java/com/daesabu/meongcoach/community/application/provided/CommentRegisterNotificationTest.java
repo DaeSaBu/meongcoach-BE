@@ -10,9 +10,11 @@ import static org.mockito.Mockito.verify;
 
 import com.daesabu.meongcoach.community.application.provided.dto.CommentRegisterRequest;
 import com.daesabu.meongcoach.community.application.required.PostRepository;
+import com.daesabu.meongcoach.community.application.required.UserBlockRepository;
 import com.daesabu.meongcoach.community.domain.Comment;
 import com.daesabu.meongcoach.community.domain.Post;
 import com.daesabu.meongcoach.community.domain.PostRegisterCommand;
+import com.daesabu.meongcoach.community.domain.UserBlock;
 import com.daesabu.meongcoach.notification.application.required.DeviceInstallationRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationEventSettingRepository;
 import com.daesabu.meongcoach.notification.application.required.NotificationSender;
@@ -63,6 +65,9 @@ class CommentRegisterNotificationTest {
 	private PostRepository posts;
 
 	@Autowired
+	private UserBlockRepository blocks;
+
+	@Autowired
 	private DeviceInstallationRepository installations;
 
 	@Autowired
@@ -92,7 +97,8 @@ class CommentRegisterNotificationTest {
 			rootAuthorId = saveUser("댓글주인", ROOT_AUTHOR_FID);
 			commenterId = saveUser("멍멍이집사", COMMENTER_FID);
 			participantId = saveUser("산책러", PARTICIPANT_FID);
-			postId = posts.save(Post.register(postAuthorId, new PostRegisterCommand("오늘 앉아 훈련 성공!", null, List.of()))).getId();
+			postId = posts.save(Post.register(postAuthorId, new PostRegisterCommand("오늘 앉아 훈련 성공!", null, List.of())))
+					.getId();
 		});
 		given(sender.send(anyList())).willAnswer(invocation -> {
 			List<PushNotification> notifications = invocation.getArgument(0);
@@ -104,10 +110,13 @@ class CommentRegisterNotificationTest {
 	@AfterEach
 	void cleanUp() {
 		transaction.executeWithoutResult(status -> {
-			jdbcTemplate.update("delete from comment_closures where descendant_id in (select id from comments where post_id = ?)", postId);
+			jdbcTemplate.update(
+					"delete from comment_closures where descendant_id in (select id from comments where post_id = ?)",
+					postId);
 			jdbcTemplate.update("delete from comments where post_id = ?", postId);
 			jdbcTemplate.update("delete from posts where id = ?", postId);
 			userIds.forEach(userId -> {
+				jdbcTemplate.update("delete from user_blocks where blocker_id = ?", userId);
 				jdbcTemplate.update("delete from notification_event_settings where user_id = ?", userId);
 				jdbcTemplate.update("delete from device_installations where user_id = ?", userId);
 				jdbcTemplate.update("delete from users where id = ?", userId);
@@ -141,7 +150,8 @@ class CommentRegisterNotificationTest {
 
 		verify(sender, timeout(ASYNC_TIMEOUT_MILLIS).times(2)).send(anyList());
 		List<PushNotification> replyBatch = batches.get(1);
-		assertThat(replyBatch).extracting(PushNotification::fid).containsExactlyInAnyOrder(POST_AUTHOR_FID, ROOT_AUTHOR_FID);
+		assertThat(replyBatch).extracting(PushNotification::fid)
+				.containsExactlyInAnyOrder(POST_AUTHOR_FID, ROOT_AUTHOR_FID);
 		assertThat(replyBatch).extracting(PushNotification::title).containsOnly((String) null);
 		assertThat(replyBatch).extracting(PushNotification::body).containsOnly("답글이 달렸어요: 저도 축하해요!");
 	}
@@ -189,6 +199,27 @@ class CommentRegisterNotificationTest {
 	}
 
 	@Test
+	void 댓글_작성자를_차단한_회원에게는_알리지_않는다() {
+		blocks.save(UserBlock.register(postAuthorId, commenterId));
+
+		commentRegister.register(commenterId, postId, new CommentRegisterRequest("축하해요!", null));
+
+		verify(sender, after(ASYNC_SETTLE_MILLIS).never()).send(any());
+	}
+
+	@Test
+	void 댓글_작성자를_차단하지_않은_회원에게는_그대로_알린다() {
+		commentRegister.register(participantId, postId, new CommentRegisterRequest("축하해요!", null));
+		verify(sender, timeout(ASYNC_TIMEOUT_MILLIS)).send(anyList());
+		blocks.save(UserBlock.register(postAuthorId, commenterId));
+
+		commentRegister.register(commenterId, postId, new CommentRegisterRequest("저도 축하해요!", null));
+
+		verify(sender, timeout(ASYNC_TIMEOUT_MILLIS).times(2)).send(anyList());
+		assertThat(batches.get(1)).extracting(PushNotification::fid).containsExactly(PARTICIPANT_FID);
+	}
+
+	@Test
 	void 댓글_등록_트랜잭션이_롤백되면_알리지_않는다() {
 		transaction.executeWithoutResult(status -> {
 			commentRegister.register(commenterId, postId, new CommentRegisterRequest("축하해요!", null));
@@ -204,7 +235,9 @@ class CommentRegisterNotificationTest {
 		Long userId = users.save(user).getId();
 		userIds.add(userId);
 		profileIds.add(user.getProfile().getId());
-		installations.save(DeviceInstallation.register(userId, new DeviceInstallationRegisterCommand(fid, DevicePlatform.IOS), Instant.now()));
+		installations.save(
+				DeviceInstallation.register(userId, new DeviceInstallationRegisterCommand(fid, DevicePlatform.IOS),
+						Instant.now()));
 		settings.save(NotificationEventSetting.create(userId, NotificationEventType.COMMENT, true));
 		return userId;
 	}
