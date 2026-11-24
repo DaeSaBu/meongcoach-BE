@@ -49,15 +49,15 @@ public class GeminiContentGenerator implements AiContentGenerator {
 
 	private GenerateContentConfig buildConfig(AiContentGenerateRequest request) {
 		Map<String, Object> responseSchema = parseSchema(request.responseSchema());
-		return GenerateContentConfig.builder()
+		GenerateContentConfig.Builder builder = GenerateContentConfig.builder()
 				.systemInstruction(Content.fromParts(Part.fromText(request.systemPrompt())))
 				.responseMimeType(JSON_MIME_TYPE)
 				.responseJsonSchema(responseSchema)
 				.candidateCount(CANDIDATE_COUNT)
 				.maxOutputTokens(properties.maxOutputTokens())
-				.temperature(properties.temperature())
-				.thinkingConfig(ThinkingConfig.builder().thinkingLevel(properties.thinkingLevel()))
-				.build();
+				.thinkingConfig(ThinkingConfig.builder().thinkingLevel(properties.thinkingLevel()));
+		properties.temperatureFor(properties.model()).ifPresent(builder::temperature);
+		return builder.build();
 	}
 
 	private Map<String, Object> parseSchema(String responseSchema) {

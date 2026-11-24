@@ -40,8 +40,12 @@ import tools.jackson.databind.ObjectMapper;
 class GeminiVideoAnalyzerTest {
 
 	private static final String MODEL = "gemini-test";
+	private static final String VIDEO_MODEL = "gemini-video-test";
+	private static final String GEMINI_4_VIDEO_MODEL = "gemini-4-video-test";
 	private static final String REGISTER_PATH = "/v1beta/files:register";
-	private static final String GENERATE_PATH = "/v1beta/models/" + MODEL + ":generateContent";
+	private static final String GENERATE_ACTION = ":generateContent";
+	private static final String GENERATE_PATH = "/v1beta/models/" + VIDEO_MODEL + GENERATE_ACTION;
+	private static final String GEMINI_4_GENERATE_PATH = "/v1beta/models/" + GEMINI_4_VIDEO_MODEL + GENERATE_ACTION;
 	private static final String VIDEO_URI = "gs://test-ai-video-bucket/videos/training/7/key.mp4";
 	private static final String REGISTERED_FILE_URI = "https://generativelanguage.googleapis.com/v1beta/files/abc";
 	private static final List<TopicResult> TOPICS = List.of(
@@ -75,7 +79,7 @@ class GeminiVideoAnalyzerTest {
 				if (Objects.requireNonNull(request.getPath()).startsWith(REGISTER_PATH)) {
 					return registerResponse;
 				}
-				if (request.getPath().startsWith(GENERATE_PATH)) {
+				if (request.getPath().contains(GENERATE_ACTION)) {
 					return generateResponse;
 				}
 				return new MockResponse().setResponseCode(404);
@@ -83,17 +87,20 @@ class GeminiVideoAnalyzerTest {
 		});
 		server.start();
 		registerResponse = json(registerResponseJson("video/mp4"));
+		analyzer = createAnalyzer(VIDEO_MODEL);
+	}
 
+	private GeminiVideoAnalyzer createAnalyzer(String videoModel) {
 		TopicFinder topicFinder = mock(TopicFinder.class);
 		when(topicFinder.findAllOrdered()).thenReturn(TOPICS);
 		GeminiProperties properties = new GeminiProperties(
-				"test-gemini-api-key", MODEL, Duration.ofMinutes(5), 4096, 0.0f, "low", 1.0);
+				"test-gemini-api-key", MODEL, videoModel, Duration.ofMinutes(5), 4096, 0.0f, "low", 1.0);
 		Client client = Client.builder()
 				.apiKey(properties.apiKey())
 				.httpOptions(HttpOptions.builder().baseUrl(server.url("/").toString()).build())
 				.build();
 		GoogleCredentials credentials = GoogleCredentials.create(new AccessToken("test-access-token", null));
-		analyzer = new GeminiVideoAnalyzer(client, properties, credentials, topicFinder, objectMapper,
+		return new GeminiVideoAnalyzer(client, properties, credentials, topicFinder, objectMapper,
 				new ClassPathPromptTemplateLoader());
 	}
 
@@ -158,14 +165,49 @@ class GeminiVideoAnalyzerTest {
 
 		String body = requestTo(GENERATE_PATH).getBody().readUtf8();
 		assertThat(objectMapper.readTree(body).at("/generationConfig/responseJsonSchema/required").toString())
-				.isEqualTo("[\"observation\",\"interpretation\",\"decision\",\"recommend\",\"report\","
-						+ "\"solution\",\"title\"]");
+				.isEqualTo("[\"observation\",\"decision\",\"recommend\",\"report\",\"solution\",\"title\"]");
+	}
+
+	@Test
+	void 영상_분석용_모델로만_분석을_요청한다() {
+		givenModelResponds(VALID_RESPONSE_JSON);
+
+		analyzer.analyze(VIDEO_URI, CONTEXT, DOG);
+
+		assertThat(requests)
+				.extracting(RecordedRequest::getPath)
+				.filteredOn(path -> path.contains(GENERATE_ACTION))
+				.singleElement()
+				.asString()
+				.startsWith(GENERATE_PATH);
+	}
+
+	@Test
+	void Gemini_4_계열이_아닌_모델에는_temperature를_보낸다() {
+		givenModelResponds(VALID_RESPONSE_JSON);
+
+		analyzer.analyze(VIDEO_URI, CONTEXT, DOG);
+
+		String body = requestTo(GENERATE_PATH).getBody().readUtf8();
+		assertThat(objectMapper.readTree(body).at("/generationConfig/temperature").asDouble()).isEqualTo(0.0);
+	}
+
+	@Test
+	void Gemini_4_계열_모델에는_temperature를_보내지_않는다() {
+		givenModelResponds(VALID_RESPONSE_JSON);
+		GeminiVideoAnalyzer gemini4Analyzer = createAnalyzer(GEMINI_4_VIDEO_MODEL);
+
+		gemini4Analyzer.analyze(VIDEO_URI, CONTEXT, DOG);
+
+		String body = requestTo(GEMINI_4_GENERATE_PATH).getBody().readUtf8();
+		assertThat(objectMapper.readTree(body).at("/generationConfig/temperature").isMissingNode()).isTrue();
 	}
 
 	@Test
 	void 응답의_내부_근거_필드는_결과에_담지_않는다() {
-		String withReasoning = "{\"observation\":{\"scene\":\"거실\"},\"interpretation\":{\"ownerInfoCheck\":[]},"
-				+ "\"decision\":{\"type\":\"problem\"}," + VALID_RESPONSE_JSON.substring(1);
+		String withReasoning = "{\"observation\":{\"filming\":{\"setup\":\"handheld\",\"ownerPresence\":\"present\","
+				+ "\"evidence\":\"화면이 흔들려요\"}},\"decision\":{\"type\":\"problem\",\"certainty\":\"clear\","
+				+ "\"keyFact\":\"없음\"}," + VALID_RESPONSE_JSON.substring(1);
 		givenModelResponds(withReasoning);
 
 		VideoAnalysisResult result = analyzer.analyze(VIDEO_URI, CONTEXT, DOG);
@@ -378,7 +420,7 @@ class GeminiVideoAnalyzerTest {
 		assertThatThrownBy(() -> analyzer.analyze(VIDEO_URI, CONTEXT, DOG))
 				.isInstanceOf(VideoAnalysisFailedException.class)
 				.hasMessageContaining("등록");
-		assertThat(requests).noneMatch(request -> Objects.requireNonNull(request.getPath()).startsWith(GENERATE_PATH));
+		assertThat(requests).noneMatch(request -> Objects.requireNonNull(request.getPath()).contains(GENERATE_ACTION));
 	}
 
 	@Test

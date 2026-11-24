@@ -18,6 +18,7 @@ class GeminiConfigurationTest {
 				.withPropertyValues(
 						"meongcoach.llm.gemini.api-key=test-key",
 						"meongcoach.llm.gemini.model=gemini-test",
+						"meongcoach.llm.gemini.video-model=gemini-video-test",
 						"meongcoach.llm.gemini.response-timeout=5m",
 						"meongcoach.llm.gemini.max-output-tokens=4096",
 						"meongcoach.llm.gemini.temperature=0",
@@ -27,7 +28,8 @@ class GeminiConfigurationTest {
 					assertThat(context).hasNotFailed();
 					GeminiProperties properties = context.getBean(GeminiProperties.class);
 					assertThat(properties).isEqualTo(new GeminiProperties(
-							"test-key", "gemini-test", Duration.ofMinutes(5), 4096, 0.0f, "low", 1.0));
+							"test-key", "gemini-test", "gemini-video-test", Duration.ofMinutes(5), 4096, 0.0f, "low",
+							1.0));
 				});
 	}
 
@@ -38,6 +40,7 @@ class GeminiConfigurationTest {
 				.withPropertyValues(
 						"meongcoach.llm.gemini.api-key=test-key",
 						"meongcoach.llm.gemini.model=gemini-test",
+						"meongcoach.llm.gemini.video-model=gemini-video-test",
 						"meongcoach.llm.gemini.response-timeout=5m",
 						"meongcoach.llm.gemini.max-output-tokens=4096",
 						"meongcoach.llm.gemini.temperature=0",
@@ -53,6 +56,7 @@ class GeminiConfigurationTest {
 				.withPropertyValues(
 						"meongcoach.llm.gemini.api-key=test-key",
 						"meongcoach.llm.gemini.model=gemini-test",
+						"meongcoach.llm.gemini.video-model=gemini-video-test",
 						"meongcoach.llm.gemini.response-timeout=5m",
 						"meongcoach.llm.gemini.max-output-tokens=4096",
 						"meongcoach.llm.gemini.temperature=0",
