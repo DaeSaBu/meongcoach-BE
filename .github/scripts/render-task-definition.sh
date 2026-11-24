@@ -39,10 +39,6 @@ IMAGE_URI=${3}
 # REVENUECAT_BASE_URL은 application.yml에 기본값이 있어 주입하지 않는다.
 : "${REVENUECAT_API_KEY:?REVENUECAT_API_KEY가 필요합니다.}"
 : "${REVENUECAT_PROJECT_ID:?REVENUECAT_PROJECT_ID가 필요합니다.}"
-: "${REVENUECAT_ENTITLEMENT_ID_PUPPY:?REVENUECAT_ENTITLEMENT_ID_PUPPY가 필요합니다.}"
-: "${REVENUECAT_ENTITLEMENT_ID_JUNIOR:?REVENUECAT_ENTITLEMENT_ID_JUNIOR가 필요합니다.}"
-: "${REVENUECAT_ENTITLEMENT_ID_ADULT:?REVENUECAT_ENTITLEMENT_ID_ADULT가 필요합니다.}"
-: "${REVENUECAT_ENTITLEMENT_ID_SENIOR:?REVENUECAT_ENTITLEMENT_ID_SENIOR가 필요합니다.}"
 : "${ALERT_SLACK_GRADUATION_WEBHOOK_URL:?ALERT_SLACK_GRADUATION_WEBHOOK_URL이 필요합니다.}"
 
 # jq 결과는 stdout으로 나간다. workflow가 이를 register-task-definition 입력 파일로 저장한다.
@@ -73,10 +69,6 @@ jq \
 	--arg gemini_model "${GEMINI_MODEL:-}" \
 	--arg revenuecat_api_key "${REVENUECAT_API_KEY:-}" \
 	--arg revenuecat_project_id "${REVENUECAT_PROJECT_ID:-}" \
-	--arg revenuecat_entitlement_id_puppy "${REVENUECAT_ENTITLEMENT_ID_PUPPY:-}" \
-	--arg revenuecat_entitlement_id_junior "${REVENUECAT_ENTITLEMENT_ID_JUNIOR:-}" \
-	--arg revenuecat_entitlement_id_adult "${REVENUECAT_ENTITLEMENT_ID_ADULT:-}" \
-	--arg revenuecat_entitlement_id_senior "${REVENUECAT_ENTITLEMENT_ID_SENIOR:-}" \
 	--arg alert_slack_graduation_webhook_url "${ALERT_SLACK_GRADUATION_WEBHOOK_URL:-}" \
 	--arg sentry_dsn "${SENTRY_DSN:-}" \
 	--arg sentry_release "${SENTRY_RELEASE:-}" \
@@ -191,10 +183,6 @@ jq \
 							{"name": "GEMINI_API_KEY", "value": $gemini_api_key},
 							{"name": "REVENUECAT_API_KEY", "value": $revenuecat_api_key},
 							{"name": "REVENUECAT_PROJECT_ID", "value": $revenuecat_project_id},
-							{"name": "REVENUECAT_ENTITLEMENT_ID_PUPPY", "value": $revenuecat_entitlement_id_puppy},
-							{"name": "REVENUECAT_ENTITLEMENT_ID_JUNIOR", "value": $revenuecat_entitlement_id_junior},
-							{"name": "REVENUECAT_ENTITLEMENT_ID_ADULT", "value": $revenuecat_entitlement_id_adult},
-							{"name": "REVENUECAT_ENTITLEMENT_ID_SENIOR", "value": $revenuecat_entitlement_id_senior},
 							{"name": "ALERT_SLACK_GRADUATION_WEBHOOK_URL", "value": $alert_slack_graduation_webhook_url}
 						] +
 						# 미설정 시 application.yml의 기본값을 쓰도록 주입 자체를 생략한다
